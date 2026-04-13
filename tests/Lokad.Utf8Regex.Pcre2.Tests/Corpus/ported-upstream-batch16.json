@@ -1,0 +1,109 @@
+[
+  {
+    "Id": "pcre2.testinput1.define-subroutine.bbbb",
+    "Pattern": "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbbb",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "bb",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 2,
+          "ValueText": "bb"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5891"
+  },
+  {
+    "Id": "pcre2.testinput1.define-subroutine.baaab-no-match",
+    "Pattern": "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "baaab",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5892"
+  },
+  {
+    "Id": "pcre2.testinput1.lookbehind-zero-quantifier.acx",
+    "Pattern": "(?<=a(B){0}c)X",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "acX",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "X",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 3,
+          "ValueText": "X"
+        },
+        {
+          "Number": 1,
+          "Success": false
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5886-5887"
+  }
+]

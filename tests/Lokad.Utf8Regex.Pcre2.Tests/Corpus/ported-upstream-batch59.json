@@ -1,0 +1,258 @@
+[
+  {
+    "Id": "pcre2.testinput6.count-branch-reset-nested.xabcxxxyzx",
+    "Pattern": "(x)(?|(abc)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcxxxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-nested-global-count"
+  },
+  {
+    "Id": "pcre2.testinput6.enumerate-branch-reset-nested.xabcxxxyzx",
+    "Pattern": "(x)(?|(abc)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcxxxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "xabcx"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 5,
+          "EndOffsetInBytes": 10,
+          "ValueText": "xxyzx"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-nested-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput6.count-branch-reset-nested-second-capture.xabcpqrxxxyzx",
+    "Pattern": "(x)(?|(abc)(pqr)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcpqrxxxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-nested-second-capture-global-count"
+  },
+  {
+    "Id": "pcre2.testinput6.enumerate-branch-reset-nested-second-capture.xabcpqrxxxyzx",
+    "Pattern": "(x)(?|(abc)(pqr)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcpqrxxxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 8,
+          "ValueText": "xabcpqrx"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 8,
+          "EndOffsetInBytes": 13,
+          "ValueText": "xxyzx"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-nested-second-capture-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-branch-reset-subroutine.abcabcxyzabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabcxyzabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-subroutine-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-branch-reset-subroutine.abcabcxyzabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabcxyzabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "abcabc"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 6,
+          "EndOffsetInBytes": 12,
+          "ValueText": "xyzabc"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-subroutine-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-branch-reset-same-name-followup.allowdup.aaaccccaaabccccb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaccccaaabccccb",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-same-name-followup-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-branch-reset-same-name-followup.allowdup.aaaccccaaabccccb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaccccaaabccccb",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 10,
+          "ValueText": "aaaccccaaa"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 10,
+          "EndOffsetInBytes": 16,
+          "ValueText": "bccccb"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:branch-reset-same-name-followup-global-enumerate"
+  }
+]

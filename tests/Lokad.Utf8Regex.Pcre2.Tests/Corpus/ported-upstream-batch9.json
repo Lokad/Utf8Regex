@@ -1,0 +1,553 @@
+[
+  {
+    "Id": "pcre2.testinput2.extsub-numbered-backslash1.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\1<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>b<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4364-4364"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-numbered-backslash2.unknown-substring",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\2<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4365-4365"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-group-zero-g.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<0><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>abc<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4376-4376"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-group-one-g.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<1><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>b<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4377-4377"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-braced.success",
+    "Pattern": "(*:pear)apple",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZappleZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${*MARK}<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>pear<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4382-4383"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-angle.invalid",
+    "Pattern": "(*:pear)apple",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZappleZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<*MARK><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4384-4384"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-g.invalid",
+    "Pattern": "(*:pear)apple",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZappleZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<*MARK><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4385-4385"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced.success",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${named}<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>b<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4387-4388"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced-unknown.error",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${noexist}<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4389-4389"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced-empty.invalid",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${}<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4390-4390"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-angle.success",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<named><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>b<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4393-4393"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-angle-unknown.error",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<noexist><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4394-4394"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-g.success",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<named><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z>b<Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4398-4398"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-g-unknown.error",
+    "Pattern": "a(?<named>b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<noexist><",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4399-4399"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-yes-no.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ yes : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z> yes Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4405-4405"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-branch.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ \\g<1> : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z> b Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4408-4408"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ $<1> : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4412-4412"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-malformed-open-brace.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4425-4425"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MissingClosingReplacementBrace",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4426-4426"
+  }
+]

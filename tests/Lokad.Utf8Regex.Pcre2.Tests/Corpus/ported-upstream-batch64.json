@@ -1,0 +1,91 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only.literal-success",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "123abc456",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "xyz",
+    "SubstitutionOptions": [
+      "SubstituteReplacementOnly"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "xyz",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6286-6287"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-templated-global.success",
+    "Pattern": "a(?<ONE>b)c(?<TWO>d)e",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcde-abcde-",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X$ONE+${TWO}Z",
+    "SubstitutionOptions": [
+      "SubstituteReplacementOnly"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Xb+dZXb+dZ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6289-6290"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-literal-flag.success",
+    "Pattern": "a(?:(b)|(c))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": ">>ac<<",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "${1:+$1\\:$1:$2}",
+    "SubstitutionOptions": [
+      "Extended",
+      "SubstituteLiteral",
+      "SubstituteReplacementOnly"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "${1:+$1\\:$1:$2}",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4925-4925"
+  }
+]

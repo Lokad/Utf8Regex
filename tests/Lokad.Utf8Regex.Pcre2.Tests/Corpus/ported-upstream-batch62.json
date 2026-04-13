@@ -1,0 +1,89 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.full-match",
+    "Pattern": "abcd",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcd",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "wxyz",
+    "SubstitutionOptions": [
+      "SubstituteMatched"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "wxyz",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4966-4967"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.no-match",
+    "Pattern": "abcd",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "pqrs ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "wxyz",
+    "SubstitutionOptions": [
+      "SubstituteMatched"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "pqrs ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4966-4968"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.global",
+    "Pattern": "abcd",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": ">abcd1234abcd5678<",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "wxyz",
+    "SubstitutionOptions": [
+      "SubstituteMatched"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": ">wxyz1234wxyz5678<",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4970-4971"
+  }
+]

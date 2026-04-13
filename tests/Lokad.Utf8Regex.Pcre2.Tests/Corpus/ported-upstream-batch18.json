@@ -1,0 +1,710 @@
+[
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.a",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "a",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5972"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.aba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "aba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5973"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "abba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 4,
+          "ValueText": "abba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 4,
+          "ValueText": "abba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5974"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abcba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abcba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5975"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.ababa",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababa",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "ababa",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "ababa"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "ababa"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5976"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abccba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abccba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "abccba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "abccba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "abccba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5977"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcdcba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcdcba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 7,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcdcba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 7,
+          "ValueText": "abcdcba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 7,
+          "ValueText": "abcdcba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5978"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcddcba",
+    "Pattern": "^((.)(?1)\\2|.?)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcddcba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 8,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcddcba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 8,
+          "ValueText": "abcddcba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 8,
+          "ValueText": "abcddcba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5979"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-alt.bab",
+    "Pattern": "^(.)(\\1|a(?2))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bab",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "bab",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "bab"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 3,
+          "ValueText": "ab"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5981-5982"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-optional.abcba",
+    "Pattern": "^(.|(.)(?1)?\\2)$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcba",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcba",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abcba"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abcba"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5984-5985"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead.abc",
+    "Pattern": "^(?(?=(a))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5987-5988"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead.abc",
+    "Pattern": "^(?(?!(a))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5990-5991"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead-accept.abc",
+    "Pattern": "^(?(?=(a)(*ACCEPT))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5993-5994"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead-accept.abc",
+    "Pattern": "^(?(?!(a)(*ACCEPT))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5996-5997"
+  },
+  {
+    "Id": "pcre2.testinput1.subroutine-prefix-digits.a123a",
+    "Pattern": "^(?1)\\d{3}(a)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a123a",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "a123a",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "a123a"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5999-6000"
+  }
+]

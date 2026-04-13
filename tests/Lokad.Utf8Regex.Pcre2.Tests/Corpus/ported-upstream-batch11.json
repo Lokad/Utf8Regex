@@ -1,0 +1,593 @@
+[
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "aaaaaa",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "aaaaaa"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aaa"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        }
+      ]
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5873"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.bb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bb",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "bb",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 2,
+          "ValueText": "bb"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        }
+      ]
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaccccaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 10,
+      "HasContiguousByteRange": true,
+      "ValueText": "aaaccccaaa",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 10,
+          "ValueText": "aaaccccaaa"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aaa"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 7,
+          "ValueText": "cccc"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        },
+        {
+          "Name": "a",
+          "Number": 2
+        }
+      ]
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5877"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bccccb",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "bccccb",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "bccccb"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 5,
+          "ValueText": "cccc"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        },
+        {
+          "Name": "a",
+          "Number": 2
+        }
+      ]
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.bad-option-ab",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadOption",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8331-8331",
+    "Notes": "Upstream replacement-only partial mode without the dedicated replacement-only option. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-match-ab",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8332-8333",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.success-abc",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "FOOc",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8334-8334",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.match-captures-zabc",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "zabc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$&|$1|$`<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": ">ab|a|z<c",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8335-8335",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-subject",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$_<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialSubs",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8336-8338",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-post",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$'<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialSubs",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8338-8339",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.bad-option-ab",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadOption",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8343-8343",
+    "Notes": "Upstream replacement-only partial mode without the dedicated replacement-only option. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-match-a",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8344-8345",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-ab",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "FOO",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8346-8346",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-abc",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "FOOc",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8347-8347",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.match-captures-zabc",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "zabc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$&|$1|$`<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": ">ab|a|z<c",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8348-8348",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-subject",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$_<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialSubs",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8350-8351",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-post",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$'<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Soft",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialSubs",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8351-8352",
+    "Notes": "Upstream replacement-only partial mode. SPEC-PCRE2 does not expose this mode."
+  }
+]

@@ -17,6 +17,13 @@ internal enum LokadPublicBenchmarkOperation : byte
 
 internal sealed class LokadPublicBenchmarkContext
 {
+    internal readonly record struct Definition(
+        string Input,
+        string Replacement,
+        string Pattern,
+        RegexOptions Options,
+        LokadPublicBenchmarkOperation Operation);
+
     private static readonly string[] s_caseIds =
     [
         "common/email-match",
@@ -94,6 +101,12 @@ internal sealed class LokadPublicBenchmarkContext
     public Regex CompiledRegex { get; }
 
     public static IReadOnlyList<string> GetAllCaseIds() => s_caseIds;
+
+    internal static Definition GetDefinition(string caseId)
+    {
+        var (input, replacement, pattern, options, operation) = Resolve(caseId);
+        return new Definition(input, replacement, pattern, options, operation);
+    }
 
     public int ExecuteUtf8Regex() => Execute(Utf8Regex);
 

@@ -1,0 +1,145 @@
+[
+  {
+    "Id": "pcre2.testinput1.k-reset-alt.foobar",
+    "Pattern": "(foo)(\\Kbar|baz)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobar",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "bar",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 6,
+          "ValueText": "bar"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "foo"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 6,
+          "ValueText": "bar"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4390-4391"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-alt.foobaz",
+    "Pattern": "(foo)(\\Kbar|baz)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobaz",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "foobaz",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "foobaz"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "foo"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 6,
+          "ValueText": "baz"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4392-4393"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-grouped.foobarbaz",
+    "Pattern": "(foo\\Kbar)baz",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobarbaz",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 9,
+      "HasContiguousByteRange": true,
+      "ValueText": "barbaz",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 9,
+          "ValueText": "barbaz"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "foobar"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4394-4395"
+  }
+]

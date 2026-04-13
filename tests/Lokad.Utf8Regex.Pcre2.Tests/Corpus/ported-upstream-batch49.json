@@ -1,0 +1,466 @@
+[
+  {
+    "Id": "pcre2.probe.anchor-r-soft-full-cr",
+    "Pattern": "^\\R",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-soft-cr"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-hard-partial-cr",
+    "Pattern": "^\\R",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-hard-cr"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-range-x-soft-partial-one-cr",
+    "Pattern": "^\\R{2,3}x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-range-x-soft-one-cr"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-range-x-soft-partial-two-cr",
+    "Pattern": "^\\R{2,3}x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-range-x-soft-two-cr"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-range-x-full",
+    "Pattern": "^\\R{2,3}x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\rx",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\rx",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-range-x-full"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-range-reluctant-x-soft-partial-three-cr",
+    "Pattern": "^\\R{2,3}?x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\r\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\r\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-range-reluctant-soft-three-cr"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-optional-x-soft-full-x",
+    "Pattern": "^\\R?x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "x",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "x",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-optional-x-full-x"
+  },
+  {
+    "Id": "pcre2.probe.anchor-r-plus-x-soft-partial-crlf",
+    "Pattern": "^\\R+x",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\n",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\n",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-r-plus-x-soft-crlf"
+  },
+  {
+    "Id": "pcre2.probe.anchor-a-dollar-crlf-soft-partial",
+    "Pattern": "^a$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "a\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-a-dollar-crlf-soft"
+  },
+  {
+    "Id": "pcre2.probe.anchor-a-dollar-or-ar-crlf-soft-full",
+    "Pattern": "^(a$|a\\r)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "a\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-a-dollar-or-ar-crlf-soft"
+  },
+  {
+    "Id": "pcre2.probe.anchor-a-dollar-or-ar-crlf-hard-partial",
+    "Pattern": "^(a$|a\\r)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "a\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-anchor-a-dollar-or-ar-crlf-hard"
+  },
+  {
+    "Id": "pcre2.probe.dot-crlf-soft-full-cr",
+    "Pattern": ".",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-dot-crlf-soft-cr"
+  },
+  {
+    "Id": "pcre2.probe.dot-crlf-hard-partial-cr",
+    "Pattern": ".",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 1,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-dot-crlf-hard-cr"
+  },
+  {
+    "Id": "pcre2.probe.dot-range-crlf-soft-full-two-cr",
+    "Pattern": ".{2,3}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-dot-range-crlf-soft-two-cr"
+  },
+  {
+    "Id": "pcre2.probe.dot-range-crlf-hard-partial-three-cr",
+    "Pattern": ".{2,3}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\r\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\r\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-dot-range-crlf-hard-three-cr"
+  },
+  {
+    "Id": "pcre2.probe.dot-range-reluctant-crlf-soft-full-two-cr",
+    "Pattern": ".{2,3}?",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Crlf",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "\r\r",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "\r\r",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-dot-range-reluctant-crlf-soft-two-cr"
+  }
+]

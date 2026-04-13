@@ -1,0 +1,232 @@
+[
+  {
+    "Id": "pcre2.testinput1.k-reset-define-subroutine.ab",
+    "Pattern": "^(?&t)(?(DEFINE)(?<t>a\\Kb))$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 1,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 2,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4739-4740"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-repeat-possessive.ababc",
+    "Pattern": "(?:a\\Kb)*+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5753-5754"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-atomic-repeat.ababc",
+    "Pattern": "(?>a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5756-5757"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-repeat.ababc",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5759-5760"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured-repeat-possessive.ababc",
+    "Pattern": "(a\\Kb)*+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 4,
+          "ValueText": "ab"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5762-5763"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured-repeat.ababc",
+    "Pattern": "(a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "b",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 4,
+          "ValueText": "ab"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5765-5766"
+  }
+]

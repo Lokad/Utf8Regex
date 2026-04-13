@@ -1,0 +1,350 @@
+[
+  {
+    "Id": "pcre2.testinput1.count-kreset-define-subroutine-ab",
+    "Pattern": "^(?&t)(?(DEFINE)(?<t>a\\Kb))$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-define-subroutine-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-define-subroutine-ab",
+    "Pattern": "^(?&t)(?(DEFINE)(?<t>a\\Kb))$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 2,
+          "ValueText": "b"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-define-subroutine-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-kreset-repeat-ab-possessive.ababc",
+    "Pattern": "(?:a\\Kb)*+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-repeat-possessive-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-repeat-ab-possessive.ababc",
+    "Pattern": "(?:a\\Kb)*+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-repeat-possessive-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-kreset-atomic-repeat-ab.ababc",
+    "Pattern": "(?>a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-atomic-repeat-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-atomic-repeat-ab.ababc",
+    "Pattern": "(?>a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-atomic-repeat-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-kreset-repeat-ab.ababc",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-repeat-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-repeat-ab.ababc",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "b"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-repeat-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-kreset-recursive-any.abac",
+    "Pattern": "a\\K.(?0)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-recursive-any-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-recursive-any.abac",
+    "Pattern": "a\\K.(?0)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "c"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-recursive-any-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-kreset-recursive-captured.abac",
+    "Pattern": "(a\\K.(?1)*)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-recursive-captured-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-kreset-recursive-captured.abac",
+    "Pattern": "(a\\K.(?1)*)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "c"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:k-reset-recursive-captured-global-enumerate"
+  }
+]

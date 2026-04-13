@@ -1,0 +1,228 @@
+[
+  {
+    "Id": "pcre2.testinput1.enumerate-zero-length-g-boundary.abc",
+    "Pattern": "(?<=\\G.)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 3,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 1,
+          "ValueText": ""
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 2,
+          "ValueText": ""
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 3,
+          "ValueText": ""
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-6300-6301"
+  },
+  {
+    "Id": "pcre2.testinput1.count-zero-length-g-boundary.abc",
+    "Pattern": "(?<=\\G.)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 3,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-6300-6301"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-duplicate-repeat.aaaaa",
+    "Pattern": "(?<=\\Ka)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4622-4623",
+    "Notes": "Upstream PCRE2 reports repeated successful matches at the same location under global iteration. SPEC-PCRE2 rejects such non-monotone iterative matches."
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-duplicate-repeat.aaaaa",
+    "Pattern": "(?<=\\Ka)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4622-4623",
+    "Notes": "Upstream PCRE2 reports repeated successful matches at the same location under global iteration. SPEC-PCRE2 rejects such non-monotone iterative matches."
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-overlap.abc",
+    "Pattern": "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4629-4630",
+    "Notes": "Upstream PCRE2 reports overlapping and non-monotone global matches. SPEC-PCRE2 rejects such iterative results."
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-overlap.abc",
+    "Pattern": "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4629-4630",
+    "Notes": "Upstream PCRE2 reports overlapping and non-monotone global matches. SPEC-PCRE2 rejects such iterative results."
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-not-sorted.abc",
+    "Pattern": "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4633-4634",
+    "Notes": "Upstream PCRE2 reports successful matches out of offset order. SPEC-PCRE2 rejects non-monotone iterative matches."
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-not-sorted.abc",
+    "Pattern": "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4633-4634",
+    "Notes": "Upstream PCRE2 reports successful matches out of offset order. SPEC-PCRE2 rejects non-monotone iterative matches."
+  }
+]

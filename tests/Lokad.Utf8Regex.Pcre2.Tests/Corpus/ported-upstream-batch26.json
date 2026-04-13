@@ -1,0 +1,81 @@
+[
+  {
+    "Id": "pcre2.testinput1.k-reset-recursive-any.abac",
+    "Pattern": "a\\K.(?0)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "c",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "c"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-6559-6560"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-recursive-captured.abac",
+    "Pattern": "(a\\K.(?1)*)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "c",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 4,
+          "ValueText": "c"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 4,
+          "ValueText": "abac"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-6562-6563"
+  }
+]

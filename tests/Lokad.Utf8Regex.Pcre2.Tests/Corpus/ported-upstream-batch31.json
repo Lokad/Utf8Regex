@@ -1,0 +1,58 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-abc-pqr-single",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "123abc456",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "pqr",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "123pqr456",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4259-4261"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-z-single",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "XabcY",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "Z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "XZY",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-7763-7765"
+  }
+]

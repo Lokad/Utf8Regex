@@ -1,0 +1,139 @@
+[
+  {
+    "Id": "pcre2.testinput2.count-error-lookaround-k-sneaky-lookahead-runtime",
+    "Pattern": "(?(DEFINE)(?<sneaky>b\\K))a(?=(?&sneaky))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419"
+  },
+  {
+    "Id": "pcre2.testinput2.count-error-lookaround-k-sneaky-lookbehind-runtime",
+    "Pattern": "a|(?(DEFINE)(?<sneaky>\\Ka))(?<=(?&sneaky))b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6425-6426"
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-sneaky-global-lookbehind-first-branch",
+    "Pattern": "a|(?(DEFINE)(?<sneaky>\\K\\Ga))(?<=(?&sneaky))b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-error-lookaround-k-sneaky-lookahead-runtime",
+    "Pattern": "(?(DEFINE)(?<sneaky>b\\K))a(?=(?&sneaky))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-sneaky-global-lookbehind-first-branch",
+    "Pattern": "a|(?(DEFINE)(?<sneaky>\\K\\Ga))(?<=(?&sneaky))b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "a"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430"
+  }
+]

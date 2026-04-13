@@ -1,0 +1,234 @@
+[
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-then.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ \\o{Z} : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4406-4406"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-else.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ yes : \\o{Z} }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4407-4407"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-missing-close-then.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ \\g<1 : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4410-4410"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-missing-close-else.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ yes : \\g<1 }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4411-4411"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-else.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ yes : $<1> }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z> yes Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4413-4413"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-missing-close-then.invalid",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ $<1 : no }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4414-4414"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-missing-close-else.success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ yes : $<1 }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z> yes Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4415-4415"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-success",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1:+ \\o{100} : \\o{100} }",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Z> @ Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4420-4420"
+  }
+]

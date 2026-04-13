@@ -1,0 +1,292 @@
+[
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace-with-tail.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1Z",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MissingClosingReplacementBrace",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4427-4427"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace-with-semicolon.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${1;",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MissingClosingReplacementBrace",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4428-4428"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-open-only.invalid",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4429-4429"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<1",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4430-4430"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close-with-tail.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<1Z",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4431-4431"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close-with-semicolon.error",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$<1;",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "MalformedReplacementPattern",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4432-4432"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-open-only.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4433-4433"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<1",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4434-4434"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close-with-tail.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<1Z",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4435-4435"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close-with-semicolon.bad-escape",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ZabcZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">\\g<1;",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "BadReplacementEscape",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4436-4436"
+  }
+]

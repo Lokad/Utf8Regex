@@ -1,0 +1,61 @@
+[
+  {
+    "Id": "pcre2.testinput22.backslash-c.allowed-utf-basic-match",
+    "Pattern": "ab\\Cde",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abXde",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "abXde",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abXde"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput22:backslash-c-allowed-utf-basic-match"
+  },
+  {
+    "Id": "pcre2.testinput22.backslash-c-utf-lookbehind-error",
+    "Pattern": "(?<=ab\\Cde)X",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "BackslashCInUtfLookbehind"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput22:backslash-c-utf-lookbehind-error"
+  }
+]

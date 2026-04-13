@@ -1,0 +1,66 @@
+[
+  {
+    "Id": "pcre2.testinput22.count-backslash-c.allowed-utf-basic-match.abXdeabYde",
+    "Pattern": "ab\\Cde",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abXdeabYde",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:backslash-c-global-count"
+  },
+  {
+    "Id": "pcre2.testinput22.enumerate-backslash-c.allowed-utf-basic-match.abXdeabYde",
+    "Pattern": "ab\\Cde",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abXdeabYde",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abXde"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 5,
+          "EndOffsetInBytes": 10,
+          "ValueText": "abYde"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:backslash-c-global-enumerate"
+  }
+]

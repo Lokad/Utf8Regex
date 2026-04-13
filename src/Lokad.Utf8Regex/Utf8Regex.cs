@@ -572,6 +572,60 @@ public sealed partial class Utf8Regex
         return MatchViaCompiledEngine(input, validation, budget: null);
     }
 
+    internal int Pcre2CountAtByteOffset(ReadOnlySpan<byte> input, int startOffsetInBytes) // PCRE2-INTEGRATION-POINT
+    {
+        var remaining = input[startOffsetInBytes..];
+        if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
+        {
+            return CountViaCompiledEngine(remaining, default, CreateExecutionBudget());
+        }
+
+        if (CanUseWellFormedOnlyValidation())
+        {
+            Utf8Validation.ThrowIfInvalidOnly(remaining);
+            if (RejectsByRequiredPrefilter(remaining))
+            {
+                return 0;
+            }
+
+            return CountViaCompiledEngine(remaining, default, CreateExecutionBudget());
+        }
+
+        var validation = Utf8Validation.Validate(remaining);
+        if (RejectsByRequiredPrefilter(remaining))
+        {
+            return 0;
+        }
+
+        return CountViaCompiledEngine(remaining, validation, CreateExecutionBudget());
+    }
+
+    internal Utf8ValueMatchEnumerator Pcre2EnumerateMatchesAtByteOffset(ReadOnlySpan<byte> input, int startOffsetInBytes) // PCRE2-INTEGRATION-POINT
+    {
+        var remaining = input[startOffsetInBytes..];
+        var literal = _regexPlan.LiteralUtf8;
+        var budget = CreateExecutionBudget();
+        if (UsesRightToLeft())
+        {
+            var analysis = Utf8InputAnalyzer.Analyze(remaining);
+            return new Utf8ValueMatchEnumerator(remaining, Encoding.UTF8.GetString(remaining), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
+        }
+
+        if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
+        {
+            Utf8Validation.ThrowIfInvalidOnly(remaining);
+            return CreateMatchEnumeratorViaCompiledEngine(remaining, default, literal, budget);
+        }
+
+        var validation = Utf8Validation.Validate(remaining);
+        return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, literal, budget);
+    }
+
+    internal Utf8PreparedValueMatchEnumerator Pcre2EnumeratePreparedValueMatchesAtByteOffset(ReadOnlySpan<byte> input, int startOffsetInBytes) // PCRE2-INTEGRATION-POINT
+    {
+        return new Utf8PreparedValueMatchEnumerator(input, _regexPlan.SearchPlan.PreparedSearcher, startOffsetInBytes);
+    }
+
     private static void ValidateOptions(RegexOptions options)
     {
         _ = new Regex(string.Empty, Utf8RegexSyntax.NormalizeNonSemanticOptions(options), Regex.InfiniteMatchTimeout);

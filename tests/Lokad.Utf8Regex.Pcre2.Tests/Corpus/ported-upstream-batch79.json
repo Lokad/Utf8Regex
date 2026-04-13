@@ -1,0 +1,362 @@
+[
+  {
+    "Id": "pcre2.testinput1.count-conditional-lookahead-plus.bbakbbak",
+    "Pattern": "((?(?=(a))a)+k)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbakbbak",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-lookahead-plus-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-lookahead-plus.bbakbbak",
+    "Pattern": "((?(?=(a))a)+k)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbakbbak",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 4,
+          "ValueText": "ak"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 6,
+          "EndOffsetInBytes": 8,
+          "ValueText": "ak"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-lookahead-plus-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-conditional-lookahead-empty-alt.bbakbbak",
+    "Pattern": "((?(?=(a))a|)+k)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbakbbak",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-lookahead-empty-alt-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-lookahead-empty-alt.bbakbbak",
+    "Pattern": "((?(?=(a))a|)+k)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbakbbak",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 4,
+          "ValueText": "ak"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 6,
+          "EndOffsetInBytes": 8,
+          "ValueText": "ak"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-lookahead-empty-alt-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-conditional-anchor-lookahead.abcabc",
+    "Pattern": "^(?(?=(a))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-lookahead-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-anchor-lookahead.abcabc",
+    "Pattern": "^(?(?=(a))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-lookahead-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-conditional-anchor-negative-lookahead.abcabc",
+    "Pattern": "^(?(?!(a))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-negative-lookahead-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-anchor-negative-lookahead.abcabc",
+    "Pattern": "^(?(?!(a))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-negative-lookahead-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-conditional-anchor-lookahead-accept.abcabc",
+    "Pattern": "^(?(?=(a)(*ACCEPT))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-lookahead-accept-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-anchor-lookahead-accept.abcabc",
+    "Pattern": "^(?(?=(a)(*ACCEPT))abc|def)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-lookahead-accept-global-enumerate"
+  },
+  {
+    "Id": "pcre2.testinput1.count-conditional-anchor-negative-lookahead-accept.abcabc",
+    "Pattern": "^(?(?!(a)(*ACCEPT))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-negative-lookahead-accept-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-conditional-anchor-negative-lookahead-accept.abcabc",
+    "Pattern": "^(?(?!(a)(*ACCEPT))def|abc)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:conditional-anchor-negative-lookahead-accept-global-enumerate"
+  }
+]

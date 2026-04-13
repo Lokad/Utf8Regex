@@ -1,0 +1,83 @@
+[
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.abcabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcabc",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.xyzabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "xyzabc",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.xyzxyz-no-match",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzxyz",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "HasContiguousByteRange": true,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  }
+]

@@ -1,0 +1,89 @@
+[
+  {
+    "Id": "pcre2.probe.foo-full-none-offset",
+    "Pattern": "foo",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxfoo",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "foo",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-managed-none-full-offset"
+  },
+  {
+    "Id": "pcre2.probe.foo-partial-soft",
+    "Pattern": "foo",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxfo",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "fo",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-managed-soft-partial-suffix"
+  },
+  {
+    "Id": "pcre2.probe.foo-partial-hard",
+    "Pattern": "foo",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxf",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "f",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-managed-hard-partial-suffix"
+  }
+]

@@ -1,0 +1,110 @@
+[
+  {
+    "Id": "pcre2.spec.replace-branch-reset-subroutine.global-capture-reference",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc xyzabc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<abc> <xyz>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:branch-reset subroutine replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-branch-reset-greference.global-capture-reference",
+    "Pattern": "(?|(aaa)|(b))\\g{1}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaaa bb",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<aaa> <b>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:branch-reset greference replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-branch-reset-same-name-backref.named-and-last-captured",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaaa bb",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$a|$+>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<aaa|aaa> <b|b>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:branch-reset same-name backref replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-mark-skip.mark-and-capture-reference",
+    "Pattern": "(*MARK:A)(*SKIP:B)(C|X)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "C X",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<${*MARK}:$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<A:C> X",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:mark-skip replacement via native repeated detailed matching"
+  }
+]

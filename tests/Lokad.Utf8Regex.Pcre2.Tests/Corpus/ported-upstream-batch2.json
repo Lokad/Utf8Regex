@@ -1,0 +1,396 @@
+[
+  {
+    "Id": "pcre2.testinput1.the-quick-brown-fox.hit.embedded",
+    "Pattern": "the quick brown fox",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "What do you know about the quick brown fox?",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 23,
+      "EndOffsetInBytes": 42,
+      "HasContiguousByteRange": true,
+      "ValueText": "the quick brown fox",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 23,
+          "EndOffsetInBytes": 42,
+          "ValueText": "the quick brown fox"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:the-quick-brown-fox:subject-2"
+  },
+  {
+    "Id": "pcre2.testinput2.anchored.abc.no-match-defabc",
+    "Pattern": "^abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "defabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "HasContiguousByteRange": true,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:anchored-abc:no-match-1"
+  },
+  {
+    "Id": "pcre2.testinput1.capture-repeat.abczz",
+    "Pattern": "^(abc){1,2}zz",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abczz",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "abczz",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abczz"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:capture-repeat:subject-1"
+  },
+  {
+    "Id": "pcre2.testinput1.lazy-quantifier.bbbc",
+    "Pattern": "^(b+?|a){1,2}?c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbbc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "bbbc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 4,
+          "ValueText": "bbbc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 3,
+          "ValueText": "bb"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lazy-quantifier:subject-3"
+  },
+  {
+    "Id": "pcre2.testinput1.greedy-quantifier.bbbc",
+    "Pattern": "^(b+|a){1,2}c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbbc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 4,
+      "HasContiguousByteRange": true,
+      "ValueText": "bbbc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 4,
+          "ValueText": "bbbc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "bbb"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:greedy-quantifier:subject-3"
+  },
+  {
+    "Id": "pcre2.testinput1.reluctant-alternation.bbabc",
+    "Pattern": "^(ba|b*){1,2}?bc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bbabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "bbabc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "bbabc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 3,
+          "ValueText": "ba"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:reluctant-alternation:subject-2"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.invalid-after-parens-query-x",
+    "Pattern": "(?X)ab\\idef",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "InvalidAfterParensQuery"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-invalid-after-parens-query-1"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.quantifier-too-big",
+    "Pattern": "z{65536}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "QuantifierTooBig"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-quantifier-too-big"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.escape-invalid-in-class-b",
+    "Pattern": "[\\B]",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "EscapeInvalidInClass"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-escape-invalid-in-class-b"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.class-range-order",
+    "Pattern": "[z-a]",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "ClassRangeOrder"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-class-range-order"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error-quantifier-invalid",
+    "Pattern": "^*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "QuantifierInvalid"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-quantifier-invalid"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.missing-closing-parenthesis",
+    "Pattern": "(abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "MissingClosingParenthesis"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-missing-closing-parenthesis"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.missing-comment-closing",
+    "Pattern": "(?# abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "MissingCommentClosing"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:compile-error-missing-comment-closing"
+  }
+]

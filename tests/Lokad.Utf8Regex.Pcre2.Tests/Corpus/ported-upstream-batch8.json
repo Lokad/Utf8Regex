@@ -1,0 +1,519 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar1.error-on-a",
+    "Pattern": "A|(B)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "A",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnsetReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5026-5027"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar1.empty-on-a-with-flag",
+    "Pattern": "A|(B)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "A",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "><",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5028-5029"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar-plus.error-on-a",
+    "Pattern": "A|(B)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "A",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$+<",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnsetReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5030-5031"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar-plus.empty-on-a-with-flag",
+    "Pattern": "A|(B)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "A",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$+<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "><",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5032-5033"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.error-on-cat",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnsetReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5195-5195"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.empty-on-cat-with-flag",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "c><t",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5196-5196"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.value-on-xbcom-with-flag",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xbcom",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "x>b<om",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5197-5197"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-default.error-on-group-2",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${2:-xx}<",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5200-5200"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-fallback-on-group-2",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${2:-xx}<",
+    "SubstitutionOptions": [
+      "Extended",
+      "UnknownUnset"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "c>xx<t",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5201-5201"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-fallback-on-name-x",
+    "Pattern": "a|(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">${X:-xx}<",
+    "SubstitutionOptions": [
+      "Extended",
+      "UnknownUnset"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "c>xx<t",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5202-5202"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-unset-empty-on-cat",
+    "Pattern": "a|(?'X'b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$X<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "c><t",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5204-5205"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-unset-empty-on-xbcom",
+    "Pattern": "a|(?'X'b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xbcom",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$X<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "x>b<om",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5204-5206"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name.error-by-default",
+    "Pattern": "a|(?'X'b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$Y<",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5208-5208"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name-empty-under-unknown-unset",
+    "Pattern": "a|(?'X'b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$Y<",
+    "SubstitutionOptions": [
+      "UnsetEmpty",
+      "UnknownUnset"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "c><t",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5210-5210"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name-error-when-unset-empty-disabled",
+    "Pattern": "a|(?'X'b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "cat",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$Y<",
+    "SubstitutionOptions": [
+      "UnknownUnset"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnsetReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5211-5211"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.unknown-by-default",
+    "Pattern": "ABC",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABC",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$+z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5036-5036"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.empty-under-unknown-unset",
+    "Pattern": "ABC",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABC",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$+z",
+    "SubstitutionOptions": [
+      "UnknownUnset"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5037-5037"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.error-under-unset-empty",
+    "Pattern": "ABC",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABC",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$+z",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "UnknownReplacementGroup",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5038-5038"
+  }
+]

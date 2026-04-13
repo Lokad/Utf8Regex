@@ -1,0 +1,627 @@
+{
+  "SchemaVersion": 1,
+  "Sections": {
+    "pcre2-managed-compatible-ismatch": {
+      "Cases": {
+        "common/backtracking": {
+          "Utf8Pcre2": 1.63842,
+          "Utf8Regex": 0.18925,
+          "PredecodedRegex": 1.3841,
+          "DecodeThenRegex": 1.7099799999999998
+        },
+        "common/date-match": {
+          "Utf8Pcre2": 0.24641,
+          "Utf8Regex": 0.19138,
+          "PredecodedRegex": 0.18575999999999998,
+          "DecodeThenRegex": 0.23187
+        },
+        "common/date-miss": {
+          "Utf8Pcre2": 1.22813,
+          "Utf8Regex": 0.37085999999999997,
+          "PredecodedRegex": 1.08484,
+          "DecodeThenRegex": 1.2065
+        },
+        "common/email-match": {
+          "Utf8Pcre2": 0.54568,
+          "Utf8Regex": 0.16819,
+          "PredecodedRegex": 0.6737,
+          "DecodeThenRegex": 0.5219699999999999
+        },
+        "common/email-miss": {
+          "Utf8Pcre2": 0.66318,
+          "Utf8Regex": 0.1509,
+          "PredecodedRegex": 0.78364,
+          "DecodeThenRegex": 0.6634899999999999
+        },
+        "common/ip-match": {
+          "Utf8Pcre2": 0.41166,
+          "Utf8Regex": 0.20362,
+          "PredecodedRegex": 0.33752,
+          "DecodeThenRegex": 0.45226000000000005
+        },
+        "common/ip-miss": {
+          "Utf8Pcre2": 0.40185,
+          "Utf8Regex": 0.12,
+          "PredecodedRegex": 0.3319,
+          "DecodeThenRegex": 0.50358
+        },
+        "common/one-node-backtracking": {
+          "Utf8Pcre2": 1.15867,
+          "Utf8Regex": 0.15455,
+          "PredecodedRegex": 1.15278,
+          "DecodeThenRegex": 1.29366
+        },
+        "common/uri-match": {
+          "Utf8Pcre2": 0.5815899999999999,
+          "Utf8Regex": 0.17267000000000002,
+          "PredecodedRegex": 0.42623999999999995,
+          "DecodeThenRegex": 0.5962
+        },
+        "common/uri-miss": {
+          "Utf8Pcre2": 0.47721,
+          "Utf8Regex": 0.17325,
+          "PredecodedRegex": 0.35334,
+          "DecodeThenRegex": 0.37906999999999996
+        },
+        "industry/boostdocs-credit-card-match": {
+          "Utf8Pcre2": 0.54947,
+          "Utf8Regex": 0.22043000000000001,
+          "PredecodedRegex": 0.45393,
+          "DecodeThenRegex": 0.31183
+        },
+        "industry/boostdocs-date-match": {
+          "Utf8Pcre2": 0.18294000000000002,
+          "Utf8Regex": 0.20431,
+          "PredecodedRegex": 0.13619,
+          "DecodeThenRegex": 0.17385
+        },
+        "industry/boostdocs-float-match": {
+          "Utf8Pcre2": 0.1538,
+          "Utf8Regex": 0.16798,
+          "PredecodedRegex": 0.1304,
+          "DecodeThenRegex": 0.23093000000000002
+        },
+        "industry/boostdocs-ftp-line-match": {
+          "Utf8Pcre2": 0.23933000000000001,
+          "Utf8Regex": 0.16391,
+          "PredecodedRegex": 0.23588,
+          "DecodeThenRegex": 0.36980999999999997
+        },
+        "industry/boostdocs-postcode-match": {
+          "Utf8Pcre2": 0.16610999999999998,
+          "Utf8Regex": 0.14889000000000002,
+          "PredecodedRegex": 0.14887999999999998,
+          "DecodeThenRegex": 0.22895
+        },
+        "simple/ab-plus": {
+          "Utf8Pcre2": 0.89331,
+          "Utf8Regex": 0.86556,
+          "PredecodedRegex": 0.15222,
+          "DecodeThenRegex": 0.12015999999999999
+        },
+        "simple/foo-dense": {
+          "Utf8Pcre2": 1.05467,
+          "Utf8Regex": 0.9425100000000001,
+          "PredecodedRegex": 0.06955,
+          "DecodeThenRegex": 0.10814000000000001
+        },
+        "simple/foo-optional-bar": {
+          "Utf8Pcre2": 1.3847200000000002,
+          "Utf8Regex": 1.26787,
+          "PredecodedRegex": 0.15292999999999998,
+          "DecodeThenRegex": 0.15834
+        },
+        "simple/httpclient-caseless": {
+          "Utf8Pcre2": 1.86907,
+          "Utf8Regex": 1.60169,
+          "PredecodedRegex": 0.18797,
+          "DecodeThenRegex": 0.25625
+        },
+        "simple/loglevel-multiline": {
+          "Utf8Pcre2": 0.1914,
+          "Utf8Regex": 0.75572,
+          "PredecodedRegex": 0.18009,
+          "DecodeThenRegex": 0.17572000000000002
+        }
+      }
+    },
+    "pcre2-managed-compatible-count": {
+      "Cases": {
+        "simple/ab-plus": {
+          "Utf8Pcre2": 1.00892,
+          "Utf8Regex": 0.9682200000000001,
+          "PredecodedRegex": 0.31448000000000004,
+          "DecodeThenRegex": 0.36748000000000003
+        },
+        "simple/foo-dense": {
+          "Utf8Pcre2": 0.75568,
+          "Utf8Regex": 0.7554,
+          "PredecodedRegex": 0.2014,
+          "DecodeThenRegex": 0.23964000000000002
+        },
+        "simple/foo-optional-bar": {
+          "Utf8Pcre2": 2.2302,
+          "Utf8Regex": 2.25006,
+          "PredecodedRegex": 0.5054,
+          "DecodeThenRegex": 0.56616
+        },
+        "simple/httpclient-caseless": {
+          "Utf8Pcre2": 0.7518199999999999,
+          "Utf8Regex": 0.8446799999999999,
+          "PredecodedRegex": 0.79548,
+          "DecodeThenRegex": 0.8162
+        },
+        "simple/loglevel-multiline": {
+          "Utf8Pcre2": 0.29498,
+          "Utf8Regex": 0.9126799999999999,
+          "PredecodedRegex": 0.23435999999999998,
+          "DecodeThenRegex": 0.2616
+        },
+        "common/matches-set": {
+          "Utf8Pcre2": 257.98,
+          "Utf8Regex": 9.145,
+          "PredecodedRegex": 253.455,
+          "DecodeThenRegex": 255.85
+        },
+        "common/matches-boundary": {
+          "Utf8Pcre2": 248.64499999999998,
+          "Utf8Regex": 9.379999999999999,
+          "PredecodedRegex": 242.075,
+          "DecodeThenRegex": 243.945
+        },
+        "common/matches-word": {
+          "Utf8Pcre2": 3.3600000000000003,
+          "Utf8Regex": 3.255,
+          "PredecodedRegex": 5.945,
+          "DecodeThenRegex": 7.305
+        },
+        "common/matches-words": {
+          "Utf8Pcre2": 8.209999999999999,
+          "Utf8Regex": 6.935,
+          "PredecodedRegex": 102.79,
+          "DecodeThenRegex": 106.56500000000001
+        }
+      }
+    },
+    "pcre2-managed-compatible-enumerate": {
+      "Cases": {
+        "simple/ab-plus": {
+          "Utf8Pcre2": 7.0251399999999995,
+          "Utf8Regex": 4.90004,
+          "PredecodedRegex": 0.36954000000000004,
+          "DecodeThenRegex": 0.39524000000000004
+        },
+        "simple/foo-dense": {
+          "Utf8Pcre2": 6.9127,
+          "Utf8Regex": 10.3522,
+          "PredecodedRegex": 0.23586,
+          "DecodeThenRegex": 0.2658
+        },
+        "simple/foo-optional-bar": {
+          "Utf8Pcre2": 7.17708,
+          "Utf8Regex": 31.982259999999997,
+          "PredecodedRegex": 0.56462,
+          "DecodeThenRegex": 0.6088
+        },
+        "simple/httpclient-caseless": {
+          "Utf8Pcre2": 7.7144,
+          "Utf8Regex": 13.116179999999998,
+          "PredecodedRegex": 0.8339200000000001,
+          "DecodeThenRegex": 1.0847799999999999
+        },
+        "simple/loglevel-multiline": {
+          "Utf8Pcre2": 10.89034,
+          "Utf8Regex": 4.83746,
+          "PredecodedRegex": 0.23128,
+          "DecodeThenRegex": 0.28772
+        }
+      }
+    },
+    "pcre2-managed-compatible-matchmany": {
+      "Cases": {
+        "simple/ab-plus": {
+          "Utf8Pcre2": 0.6822199999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "simple/foo-dense": {
+          "Utf8Pcre2": 1.34352,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "simple/foo-optional-bar": {
+          "Utf8Pcre2": 0.81424,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "simple/httpclient-caseless": {
+          "Utf8Pcre2": 1.4706,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "simple/loglevel-multiline": {
+          "Utf8Pcre2": 4.60288,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    },
+    "pcre2-managed-compatible-replace": {
+      "Cases": {
+        "common/replace-words": {
+          "Utf8Pcre2": 161.34,
+          "Utf8Regex": 153.82999999999998,
+          "PredecodedRegex": 163.63,
+          "DecodeThenRegex": 121.66
+        },
+        "simple/ab-plus": {
+          "Utf8Pcre2": 0.55192,
+          "Utf8Regex": 1.69208,
+          "PredecodedRegex": 0.89474,
+          "DecodeThenRegex": 0.5544399999999999
+        },
+        "simple/foo-dense": {
+          "Utf8Pcre2": 0.5925,
+          "Utf8Regex": 4.067080000000001,
+          "PredecodedRegex": 0.50348,
+          "DecodeThenRegex": 0.55632
+        },
+        "simple/foo-optional-bar": {
+          "Utf8Pcre2": 0.69924,
+          "Utf8Regex": 1.1506,
+          "PredecodedRegex": 0.9260799999999999,
+          "DecodeThenRegex": 1.14726
+        },
+        "simple/httpclient-caseless": {
+          "Utf8Pcre2": 1.6708,
+          "Utf8Regex": 5.610180000000001,
+          "PredecodedRegex": 0.8422200000000001,
+          "DecodeThenRegex": 1.58998
+        },
+        "simple/loglevel-multiline": {
+          "Utf8Pcre2": 0.6148,
+          "Utf8Regex": 1.12754,
+          "PredecodedRegex": 0.29324,
+          "DecodeThenRegex": 0.46126000000000006
+        }
+      }
+    },
+    "pcre2-special-ismatch": {
+      "Cases": {
+        "pcre2/backslash-c-literal": {
+          "Utf8Pcre2": 0.2286,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-backref": {
+          "Utf8Pcre2": 0.23204,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/conditional-accept-negative-lookahead": {
+          "Utf8Pcre2": 0.17656,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/conditional-lookahead": {
+          "Utf8Pcre2": 0.21474000000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/conditional-negative-lookahead": {
+          "Utf8Pcre2": 0.1621,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/recursive-optional": {
+          "Utf8Pcre2": 0.20598000000000002,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/recursive-palindrome": {
+          "Utf8Pcre2": 0.22391999999999998,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/subroutine-prefix-digits": {
+          "Utf8Pcre2": 0.2092,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    },
+    "pcre2-special-count": {
+      "Cases": {
+        "pcre2/branch-reset-backref": {
+          "Utf8Pcre2": 0.5043500000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-basic": {
+          "Utf8Pcre2": 5.187399999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-followup": {
+          "Utf8Pcre2": 4.9811000000000005,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-nested": {
+          "Utf8Pcre2": 5.1306,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/duplicate-names": {
+          "Utf8Pcre2": 5.03275,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-atomic-alt": {
+          "Utf8Pcre2": 4.9338,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-bar-or-baz": {
+          "Utf8Pcre2": 5.5825,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-captured-repeat": {
+          "Utf8Pcre2": 5.026800000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-global": {
+          "Utf8Pcre2": 5.185149999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-repeat": {
+          "Utf8Pcre2": 4.960850000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/same-start-global": {
+          "Utf8Pcre2": 4.948,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    },
+    "pcre2-special-enumerate": {
+      "Cases": {
+        "pcre2/branch-reset-backref": {
+          "Utf8Pcre2": 6.79805,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-basic": {
+          "Utf8Pcre2": 7.363300000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-followup": {
+          "Utf8Pcre2": 6.7592,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-nested": {
+          "Utf8Pcre2": 6.7698,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/duplicate-names": {
+          "Utf8Pcre2": 6.78015,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-atomic-alt": {
+          "Utf8Pcre2": 6.729,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-bar-or-baz": {
+          "Utf8Pcre2": 6.98905,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-captured-repeat": {
+          "Utf8Pcre2": 6.8915,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-global": {
+          "Utf8Pcre2": 6.83405,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-repeat": {
+          "Utf8Pcre2": 6.7305,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/same-start-global": {
+          "Utf8Pcre2": 6.8051,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    },
+    "pcre2-special-matchmany": {
+      "Cases": {
+        "pcre2/branch-reset-backref": {
+          "Utf8Pcre2": 6.74575,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-basic": {
+          "Utf8Pcre2": 6.773899999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-followup": {
+          "Utf8Pcre2": 6.8033,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-nested": {
+          "Utf8Pcre2": 7.0196499999999995,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/duplicate-names": {
+          "Utf8Pcre2": 6.7429499999999996,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-atomic-alt": {
+          "Utf8Pcre2": 6.77355,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-bar-or-baz": {
+          "Utf8Pcre2": 6.79405,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-captured-repeat": {
+          "Utf8Pcre2": 6.8239,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-global": {
+          "Utf8Pcre2": 6.686850000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-repeat": {
+          "Utf8Pcre2": 6.73275,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/same-start-global": {
+          "Utf8Pcre2": 6.81925,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    },
+    "pcre2-special-replace": {
+      "Cases": {
+        "pcre2/branch-reset-backref": {
+          "Utf8Pcre2": 6.866350000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-basic": {
+          "Utf8Pcre2": 6.638850000000001,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-followup": {
+          "Utf8Pcre2": 6.5317,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/branch-reset-nested": {
+          "Utf8Pcre2": 6.978899999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/duplicate-names": {
+          "Utf8Pcre2": 7.0808,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-atomic-alt": {
+          "Utf8Pcre2": 6.5325500000000005,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-bar-or-baz": {
+          "Utf8Pcre2": 6.5862,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-captured-repeat": {
+          "Utf8Pcre2": 6.60025,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-global": {
+          "Utf8Pcre2": 6.551699999999999,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/kreset-repeat": {
+          "Utf8Pcre2": 6.4996,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        },
+        "pcre2/same-start-global": {
+          "Utf8Pcre2": 0.6554,
+          "Utf8Regex": null,
+          "PredecodedRegex": null,
+          "DecodeThenRegex": null
+        }
+      }
+    }
+  }
+}

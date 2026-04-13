@@ -1,0 +1,3033 @@
+[
+  {
+    "Id": "pcre2.spec.replace-k-reset-123-abc.whole-match-only",
+    "Source": "pcre2:testdata/testinput2:123-k-reset replacement span",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-abc-123.whole-match-only",
+    "Source": "pcre2:testdata/testinput2:abc-k-reset replacement span",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-alt.foobar-captures",
+    "Source": "pcre2:testdata/testinput1:k-reset alternation replacement on the reset branch",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-alt.foobaz-captures",
+    "Source": "pcre2:testdata/testinput1:k-reset alternation replacement on the non-reset branch",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-anchor-abc.zero-length-insert-after-prefix",
+    "Source": "pcre2:testdata/testinput2:abc-k-reset zero-length replacement inserts after the consumed prefix",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-anchor-cz-or-ac.acz-and-ac",
+    "Source": "pcre2:testdata/testinput1:k-reset anchored alternation replacement distinguishes reset and non-reset branches",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-anchor-lookahead-or-abc.zero-length-insert-at-anchor",
+    "Source": "pcre2:testdata/testinput2:anchor lookahead-or-k-reset zero-length replacement inserts at the original anchor",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-atomic-alt.abz-and-ab",
+    "Source": "pcre2:testdata/testinput1:atomic k-reset alternation replacement distinguishes reset and fallback branches",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-atomic-repeat.ababc",
+    "Source": "pcre2:testdata/testinput1:atomic repeated k-reset replacement uses the last iteration span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-captured-ab.whole-and-capture",
+    "Source": "pcre2:testdata/testinput1:captured k-reset replacement uses group 1 outside group 0 span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-captured-atomic-ab.whole-and-capture",
+    "Source": "pcre2:testdata/testinput1:captured atomic k-reset replacement exposes the outer captured span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-define-subroutine.ab",
+    "Source": "pcre2:testdata/testinput1:k-reset define-subroutine replacement span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-grouped.foobarbaz-captures",
+    "Source": "pcre2:testdata/testinput1:grouped k-reset replacement retains the original captured group span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-recursive-any.abac",
+    "Source": "pcre2:testdata/testinput1:recursive k-reset replacement uses the terminal recursive span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-recursive-captured.abac",
+    "Source": "pcre2:testdata/testinput1:recursive captured k-reset replacement exposes the full recursive capture",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-repeat-possessive.ababc",
+    "Source": "pcre2:testdata/testinput1:possessive repeated k-reset replacement uses the last iteration span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-repeat.ababc",
+    "Source": "pcre2:testdata/testinput1:repeated k-reset replacement uses the last iteration span",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.atomic-alt-reluctant.exact-two",
+    "Source": "pcre2:testdata/testinput1:lines-5944-5945",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.atomic-alt-reluctant.long",
+    "Source": "pcre2:testdata/testinput1:lines-5941-5942",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.abcabc",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4423",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.match-abcabc",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4423",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.match-xyzxyz",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4424",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.no-match-abcxyz",
+    "Source": "pcre2:testdata/testinput1:lines-4425-4426",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.xyzxyz",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4424",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-basic.match-xaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5868-5870",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-basic.match-xbc",
+    "Source": "pcre2:testdata/testinput1:lines-5868-5870",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-basic.xaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5868-5870",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-basic.xbc",
+    "Source": "pcre2:testdata/testinput1:lines-5868-5870",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5873",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.detailed.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5873",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.detailed.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.match.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5873",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.match.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.match.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5873",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupname-backref.match.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5877",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.match.aaaccccaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5877",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.match.bccccb",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.detailed.aaaccccaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5877",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.detailed.bccccb",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.match.aaaccccaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5877",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.match.bccccb",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-g-reference.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5858-5860",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-g-reference.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5858-5860",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-g-reference.match-aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5858-5860",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-g-reference.match-bb",
+    "Source": "pcre2:testdata/testinput1:lines-5858-5860",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-backref.aaaaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-backref.bb",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-followup.aaaccccaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-followup.bccccb",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.abcabc",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.abcabc",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.xyzabc",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.match.xyzxyz-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.xyzabc",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.xyzxyz-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.capture-repeat.abcabczz",
+    "Source": "pcre2:testdata/testinput1:capture-repeat:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.capture-repeat.abczz",
+    "Source": "pcre2:testdata/testinput1:capture-repeat:subject-1",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.capture-repeat.match.abcabczz",
+    "Source": "pcre2:testdata/testinput1:capture-repeat:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.capture-repeat.match.abczz",
+    "Source": "pcre2:testdata/testinput1:capture-repeat:subject-1",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.abd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.abx-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.abxabd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.bad",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.match.abd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.match.abx-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.match.abxabd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.match.bad",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.match.xabd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.commit-subroutine.xabd",
+    "Source": "pcre2:testdata/testinput1:lines-5913-5918",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead-accept.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5993-5994",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead-accept.match.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5993-5994",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5987-5988",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-lookahead.match.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5987-5988",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead-accept.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5996-5997",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead-accept.match.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5996-5997",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5990-5991",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead.match.abc",
+    "Source": "pcre2:testdata/testinput1:lines-5990-5991",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-lookahead-empty-alt.bbak",
+    "Source": "pcre2:testdata/testinput1:lines-5950-5951",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-lookahead-empty-alt.match.bbak",
+    "Source": "pcre2:testdata/testinput1:lines-5950-5951",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-lookahead-plus.bbak",
+    "Source": "pcre2:testdata/testinput1:lines-5947-5948",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.conditional-lookahead-plus.match.bbak",
+    "Source": "pcre2:testdata/testinput1:lines-5947-5948",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.count-k-empty-global.xabcdefghi",
+    "Source": "pcre2:testdata/testinput1:lines-4397-4398",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.count-k-value-global.xabcdefghi",
+    "Source": "pcre2:testdata/testinput1:lines-4400-4401",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.count-zero-length-g-boundary.abc",
+    "Source": "pcre2:testdata/testinput1:lines-6300-6301",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.count-zero-length-lookahead-global.abcdecba",
+    "Source": "pcre2:testdata/testinput1:lines-4403-4404",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.define-subroutine.baaab-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5892",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.define-subroutine.bbbb",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5891",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.define-subroutine.match.baaab-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5892",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.define-subroutine.match.bbbb",
+    "Source": "pcre2:testdata/testinput1:lines-5889-5891",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-k-empty-global.xabcdefghi",
+    "Source": "pcre2:testdata/testinput1:lines-4397-4398",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-k-value-global.xabcdefghi",
+    "Source": "pcre2:testdata/testinput1:lines-4400-4401",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-zero-length-g-boundary.abc",
+    "Source": "pcre2:testdata/testinput1:lines-6300-6301",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-zero-length-lookahead-global.abcdecba",
+    "Source": "pcre2:testdata/testinput1:lines-4403-4404",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.greedy-quantifier.bbbc",
+    "Source": "pcre2:testdata/testinput1:greedy-quantifier:subject-3",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.greedy-quantifier.match.bbbc",
+    "Source": "pcre2:testdata/testinput1:greedy-quantifier:subject-3",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.ignorecase-backref.case-switch",
+    "Source": "pcre2:testdata/testinput1:lines-5903-5904",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.ignorecase-backref.match.case-switch",
+    "Source": "pcre2:testdata/testinput1:lines-5903-5904",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-alt.foobar",
+    "Source": "pcre2:testdata/testinput1:lines-4390-4391",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-alt.foobaz",
+    "Source": "pcre2:testdata/testinput1:lines-4392-4393",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-anchor-abc.defabcxyz",
+    "Source": "pcre2:testdata/testinput1:lines-4408-4409",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-anchor-cz-or-ac.ac",
+    "Source": "pcre2:testdata/testinput1:lines-4733-4734",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-atomic-alt.ab",
+    "Source": "pcre2:testdata/testinput1:lines-4736-4737",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-atomic-repeat.ababc",
+    "Source": "pcre2:testdata/testinput1:lines-5756-5757",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-atomic.ab",
+    "Source": "pcre2:testdata/testinput1:lines-4724-4725",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured-atomic.ab",
+    "Source": "pcre2:testdata/testinput1:lines-4727-4728",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured-repeat-possessive.ababc",
+    "Source": "pcre2:testdata/testinput1:lines-5762-5763",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured-repeat.ababc",
+    "Source": "pcre2:testdata/testinput1:lines-5765-5766",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-captured.ab",
+    "Source": "pcre2:testdata/testinput1:lines-4730-4731",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-define-subroutine.ab",
+    "Source": "pcre2:testdata/testinput1:lines-4739-4740",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-grouped.foobarbaz",
+    "Source": "pcre2:testdata/testinput1:lines-4394-4395",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-recursive-any.abac",
+    "Source": "pcre2:testdata/testinput1:lines-6559-6560",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-recursive-captured.abac",
+    "Source": "pcre2:testdata/testinput1:lines-6562-6563",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-repeat-possessive.ababc",
+    "Source": "pcre2:testdata/testinput1:lines-5753-5754",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset-repeat.ababc",
+    "Source": "pcre2:testdata/testinput1:lines-5759-5760",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.k-reset.foo-bar",
+    "Source": "pcre2:testdata/testinput1:k-reset-basic",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-123abc.match",
+    "Source": "pcre2:testdata/testinput1:lines-6188-6189",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-abc123.match",
+    "Source": "pcre2:testdata/testinput1:lines-6186-6187",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-anchor-abc.match.hit",
+    "Source": "pcre2:testdata/testinput1:lines-6191-6192",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-anchor-abc.match.no-hit",
+    "Source": "pcre2:testdata/testinput1:lines-6191-6193",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-anchor-cz-or-ac.match",
+    "Source": "pcre2:testdata/testinput1:lines-6207-6208",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-anchor-lookahead-or-abc.match",
+    "Source": "pcre2:testdata/testinput1:lines-6195-6196",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-atomic-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6198-6199",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-atomic-alt-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6210-6211",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-atomic-repeat-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6221-6222",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-bar-or-baz.match.foobar",
+    "Source": "pcre2:testdata/testinput1:lines-6113-6114",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-bar-or-baz.match.foobaz",
+    "Source": "pcre2:testdata/testinput1:lines-6113-6115",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-captured-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6204-6205",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-captured-atomic-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6201-6202",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-captured-repeat-ab-possessive.match",
+    "Source": "pcre2:testdata/testinput1:lines-6227-6228",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-captured-repeat-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6230-6231",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-define-subroutine-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6214-6215",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-foobar.match",
+    "Source": "pcre2:testdata/testinput1:lines-6078-6079",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-foobarbaz.match",
+    "Source": "pcre2:testdata/testinput1:lines-6117-6118",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-recursive-any.match",
+    "Source": "pcre2:testdata/testinput1:lines-6237-6238",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-recursive-captured.match",
+    "Source": "pcre2:testdata/testinput1:lines-6240-6241",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-repeat-ab-possessive.match",
+    "Source": "pcre2:testdata/testinput1:lines-6218-6219",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.kreset-repeat-ab.match",
+    "Source": "pcre2:testdata/testinput1:lines-6224-6225",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.lazy-lookahead-dotall.aabc",
+    "Source": "pcre2:testdata/testinput1:lines-5900-5901",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.lazy-quantifier.bbbc",
+    "Source": "pcre2:testdata/testinput1:lazy-quantifier:subject-3",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.lazy-quantifier.match.bbbc",
+    "Source": "pcre2:testdata/testinput1:lazy-quantifier:subject-3",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.lookbehind-zero-quantifier.acx",
+    "Source": "pcre2:testdata/testinput1:lines-5886-5887",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.lookbehind-zero-quantifier.match.acx",
+    "Source": "pcre2:testdata/testinput1:lines-5886-5887",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.addr-spec",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.angle-only",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.display-name-angle",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal-quoted-brackets",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.empty-domain-literal",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.missing-angle-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.quick-brown-fox-no-match",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.quoted-display-name-comment",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.unquoted-display-name-comment",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.x400-relay",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.negative-lookahead-alt.ab",
+    "Source": "pcre2:testdata/testinput1:lines-5956-5958",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.negative-lookahead-alt.ac",
+    "Source": "pcre2:testdata/testinput1:lines-5956-5958",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.optional-branch-in-quantifier.aaaa",
+    "Source": "pcre2:testdata/testinput1:lines-5908-5909",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.positive-lookahead-alt.ab",
+    "Source": "pcre2:testdata/testinput1:lines-5960-5962",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.positive-lookahead-alt.ac",
+    "Source": "pcre2:testdata/testinput1:lines-5960-5962",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.positive-lookahead-alt.match.ab",
+    "Source": "pcre2:testdata/testinput1:lines-5960-5962",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-alt.bab",
+    "Source": "pcre2:testdata/testinput1:lines-5981-5982",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-alt.match.bab",
+    "Source": "pcre2:testdata/testinput1:lines-5981-5982",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-alt.match.bab.repeat-batch56",
+    "Source": "pcre2:testdata/testinput1:lines-5981-5982",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-optional.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5984-5985",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-optional.match.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5984-5985",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.a",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5972",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.aba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5973",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.ababa",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5976",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5974",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5975",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abccba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5977",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcdcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5978",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.abcddcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5979",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.a",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5972",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.aba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5973",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.ababa",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5976",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.abba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5974",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5975",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.abccba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5977",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.abcdcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5978",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome-optional.match.abcddcba",
+    "Source": "pcre2:testdata/testinput1:lines-5971-5979",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.a",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5968",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.aba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5968",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.ababa",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5970",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5969",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.abcdcba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5971",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.match.a",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5968",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.match.aba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5968",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.match.ababa",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5970",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.match.abcba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5969",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.recursive-palindrome.match.abcdcba",
+    "Source": "pcre2:testdata/testinput1:lines-5964-5971",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.reluctant-alternation.bbabc",
+    "Source": "pcre2:testdata/testinput1:reluctant-alternation:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.reluctant-alternation.match.bbabc",
+    "Source": "pcre2:testdata/testinput1:reluctant-alternation:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.subroutine-prefix-digits.a123a",
+    "Source": "pcre2:testdata/testinput1:lines-5999-6000",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.subroutine-prefix-digits.match.a123a",
+    "Source": "pcre2:testdata/testinput1:lines-5999-6000",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.the-quick-brown-fox.caseless.hit",
+    "Source": "pcre2:testdata/testinput1:the-quick-brown-fox-caseless:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.the-quick-brown-fox.hit.embedded",
+    "Source": "pcre2:testdata/testinput1:the-quick-brown-fox:subject-2",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.the-quick-brown-fox.hit.subject-only",
+    "Source": "pcre2:testdata/testinput1:the-quick-brown-fox:subject-1",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput1.the-quick-brown-fox.no-match.case-sensitive",
+    "Source": "pcre2:testdata/testinput1:the-quick-brown-fox:no-match-1",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.anchored.abc.no-match-defabc",
+    "Source": "pcre2:testdata/testinput2:anchored-abc:no-match-1",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error-quantifier-invalid",
+    "Source": "pcre2:testdata/testinput2:compile-error-quantifier-invalid",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error-unrecognized-escape",
+    "Source": "pcre2:testdata/testinput2:compile-error-unrecognized-escape",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.class-range-order",
+    "Source": "pcre2:testdata/testinput2:compile-error-class-range-order",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.escape-invalid-in-class-b",
+    "Source": "pcre2:testdata/testinput2:compile-error-escape-invalid-in-class-b",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.invalid-after-parens-query-x",
+    "Source": "pcre2:testdata/testinput2:compile-error-invalid-after-parens-query-1",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-negative-lookahead",
+    "Source": "pcre2:testdata/testinput2:lines-6395-6396",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-negative-lookbehind",
+    "Source": "pcre2:testdata/testinput2:lines-6405-6406",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-positive-lookahead",
+    "Source": "pcre2:testdata/testinput2:lines-6390-6391",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-positive-lookbehind",
+    "Source": "pcre2:testdata/testinput2:lines-6400-6401",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.missing-character-class-end",
+    "Source": "pcre2:testdata/testinput2:compile-error-missing-class-end",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.missing-closing-parenthesis",
+    "Source": "pcre2:testdata/testinput2:compile-error-missing-closing-parenthesis",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.missing-comment-closing",
+    "Source": "pcre2:testdata/testinput2:compile-error-missing-comment-closing",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.quantifier-order",
+    "Source": "pcre2:testdata/testinput2:compile-error-x-5-4",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.quantifier-too-big",
+    "Source": "pcre2:testdata/testinput2:compile-error-quantifier-too-big",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-empty-and-def-after-abc",
+    "Source": "pcre2:testdata/testinput2:lines-4268-4269",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-error-lookaround-k-sneaky-lookahead-runtime",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-error-lookaround-k-sneaky-lookbehind-runtime",
+    "Source": "pcre2:testdata/testinput2:lines-6425-6426",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-duplicate-repeat.aaaaa",
+    "Source": "pcre2:testdata/testinput2:lines-4622-4623",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-not-sorted.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4633-4634",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-overlap.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4629-4630",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.count-lookaround-k-sneaky-global-lookbehind-first-branch",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-empty-and-def-after-abc",
+    "Source": "pcre2:testdata/testinput2:lines-4268-4269",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-error-lookaround-k-sneaky-lookahead-runtime",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-duplicate-repeat.aaaaa",
+    "Source": "pcre2:testdata/testinput2:lines-4622-4623",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-not-sorted.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4633-4634",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-overlap.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4629-4630",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.enumerate-lookaround-k-sneaky-global-lookbehind-first-branch",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "EnumerateMatches",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close-with-semicolon.error",
+    "Source": "pcre2:testdata/testinput2:lines-4432-4432",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close-with-tail.error",
+    "Source": "pcre2:testdata/testinput2:lines-4431-4431",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-missing-close.error",
+    "Source": "pcre2:testdata/testinput2:lines-4430-4430",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-angle-open-only.invalid",
+    "Source": "pcre2:testdata/testinput2:lines-4429-4429",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-bad-escape-k.error",
+    "Source": "pcre2:testdata/testinput2:lines-4917-4918",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-capture1.success",
+    "Source": "pcre2:testdata/testinput2:lines-4989-4990",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-capture2.success",
+    "Source": "pcre2:testdata/testinput2:lines-4992-4993",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-capture3.unknown",
+    "Source": "pcre2:testdata/testinput2:lines-4995-4996",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-case-transforms-second.success",
+    "Source": "pcre2:testdata/testinput2:lines-4963-4964",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-case-transforms.success",
+    "Source": "pcre2:testdata/testinput2:lines-4911-4912",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-bad-escape-k.error",
+    "Source": "pcre2:testdata/testinput2:lines-4941-4945",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-case-transforms-global.success",
+    "Source": "pcre2:testdata/testinput2:lines-4914-4915",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-else.success",
+    "Source": "pcre2:testdata/testinput2:lines-4413-4413",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-missing-close-else.success",
+    "Source": "pcre2:testdata/testinput2:lines-4415-4415",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle-missing-close-then.invalid",
+    "Source": "pcre2:testdata/testinput2:lines-4414-4414",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-dollar-angle.error",
+    "Source": "pcre2:testdata/testinput2:lines-4412-4412",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-branch.success",
+    "Source": "pcre2:testdata/testinput2:lines-4408-4408",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-missing-close-else.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4411-4411",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-g-missing-close-then.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4410-4410",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-inline-colon.success-ab",
+    "Source": "pcre2:testdata/testinput2:lines-4923-4923",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-inline-colon.success-ac",
+    "Source": "pcre2:testdata/testinput2:lines-4924-4924",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-minus.success-ab",
+    "Source": "pcre2:testdata/testinput2:lines-4927-4928",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-minus.success-ac",
+    "Source": "pcre2:testdata/testinput2:lines-4927-4929",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-else.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4407-4407",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-success",
+    "Source": "pcre2:testdata/testinput2:lines-4420-4420",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-octal-then.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4406-4406",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-plus-minus.success-ab",
+    "Source": "pcre2:testdata/testinput2:lines-4920-4921",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-plus-minus.success-ac",
+    "Source": "pcre2:testdata/testinput2:lines-4920-4922",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-conditional-yes-no.success",
+    "Source": "pcre2:testdata/testinput2:lines-4405-4405",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close-with-semicolon.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4436-4436",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close-with-tail.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4435-4435",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-missing-close.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4434-4434",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-g-open-only.bad-escape",
+    "Source": "pcre2:testdata/testinput2:lines-4433-4433",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-group-one-g.success",
+    "Source": "pcre2:testdata/testinput2:lines-4377-4377",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-group-zero-g.success",
+    "Source": "pcre2:testdata/testinput2:lines-4376-4376",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-inline-transform-branch.success",
+    "Source": "pcre2:testdata/testinput2:lines-4935-4935",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-malformed-open-brace.error",
+    "Source": "pcre2:testdata/testinput2:lines-4425-4425",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-angle.invalid",
+    "Source": "pcre2:testdata/testinput2:lines-4384-4384",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-braced.success",
+    "Source": "pcre2:testdata/testinput2:lines-4382-4383",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-mark-g.invalid",
+    "Source": "pcre2:testdata/testinput2:lines-4385-4385",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace-with-semicolon.error",
+    "Source": "pcre2:testdata/testinput2:lines-4428-4428",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace-with-tail.error",
+    "Source": "pcre2:testdata/testinput2:lines-4427-4427",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-missing-closing-brace.error",
+    "Source": "pcre2:testdata/testinput2:lines-4426-4426",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-angle-unknown.error",
+    "Source": "pcre2:testdata/testinput2:lines-4394-4394",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-angle.success",
+    "Source": "pcre2:testdata/testinput2:lines-4393-4393",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced-empty.invalid",
+    "Source": "pcre2:testdata/testinput2:lines-4390-4390",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced-unknown.error",
+    "Source": "pcre2:testdata/testinput2:lines-4389-4389",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-braced.success",
+    "Source": "pcre2:testdata/testinput2:lines-4387-4388",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-g-unknown.error",
+    "Source": "pcre2:testdata/testinput2:lines-4399-4399",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-g.success",
+    "Source": "pcre2:testdata/testinput2:lines-4398-4398",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-long.success",
+    "Source": "pcre2:testdata/testinput2:lines-5002-5003",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-named-mixedcase.success",
+    "Source": "pcre2:testdata/testinput2:lines-4999-5000",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-no-capture-reference.unknown",
+    "Source": "pcre2:testdata/testinput2:lines-4947-4948",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-numbered-backslash1.success",
+    "Source": "pcre2:testdata/testinput2:lines-4364-4364",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-numbered-backslash2.unknown-substring",
+    "Source": "pcre2:testdata/testinput2:lines-4365-4365",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-octal-braced.success",
+    "Source": "pcre2:testdata/testinput2:lines-4981-4982",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-octal-legacy-leading-zero.success",
+    "Source": "pcre2:testdata/testinput2:lines-4975-4976",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-octal-legacy-no-leading-zero.success",
+    "Source": "pcre2:testdata/testinput2:lines-4978-4979",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-outer-transform-branch.success",
+    "Source": "pcre2:testdata/testinput2:lines-4936-4936",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-quoted-literal-and-upper.success",
+    "Source": "pcre2:testdata/testinput2:lines-4931-4932",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.extsub-unknown-name-reference.unknown",
+    "Source": "pcre2:testdata/testinput2:lines-4950-4951",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.k-reset-abc123.xyzabc123pqr",
+    "Source": "pcre2:testdata/testinput2:lines-2778-2779",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.k-reset-anchor-abc.abcdef",
+    "Source": "pcre2:testdata/testinput1:lines-4406-4407",
+    "SourceFile": "testdata/testinput1",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.k-reset-anchor-lookahead-or-abc.abcdef",
+    "Source": "pcre2:testdata/testinput2:lines-2807-2808",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-conditional-gc-not-sorted.match",
+    "Source": "pcre2:testdata/testinput2:lines-6312-6313",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-conditional-gc-overlap.match",
+    "Source": "pcre2:testdata/testinput2:lines-6309-6310",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-lookbehind-a.match",
+    "Source": "pcre2:testdata/testinput2:lines-6292-6293",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-runtime-disallowed-lookaround1.match-error",
+    "Source": "pcre2:testdata/testinput2:lines-6433-6434",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-runtime-disallowed-lookaround2.match-error",
+    "Source": "pcre2:testdata/testinput2:lines-6436-6437",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-sneaky-global-lookbehind-define.match",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-sneaky-lookbehind-define.match",
+    "Source": "pcre2:testdata/testinput2:lines-6425-6426",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-conditional-bad-subject",
+    "Source": "pcre2:testdata/testinput2:lines-6442-6443",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-conditional-bad-subject.match",
+    "Source": "pcre2:testdata/testinput2:lines-6442-6443",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-1",
+    "Source": "pcre2:testdata/testinput2:lines-6433-6434",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-2",
+    "Source": "pcre2:testdata/testinput2:lines-6436-6437",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-sneaky-lookahead-runtime",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-sneaky-lookahead-runtime.match",
+    "Source": "pcre2:testdata/testinput2:lines-6418-6419",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-duplicate-repeat.aaaaa",
+    "Source": "pcre2:testdata/testinput2:lines-4622-4623",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-not-sorted.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4633-4634",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-overlap.abc",
+    "Source": "pcre2:testdata/testinput2:lines-4629-4630",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-runtime-conditional-safe",
+    "Source": "pcre2:testdata/testinput2:lines-6439-6441",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-runtime-conditional-safe.match",
+    "Source": "pcre2:testdata/testinput2:lines-6439-6441",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-sneaky-lookahead-allow",
+    "Source": "pcre2:testdata/testinput2:lines-6415-6416",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-sneaky-lookahead-allow.match",
+    "Source": "pcre2:testdata/testinput2:lines-6415-6416",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-sneaky-global-lookbehind-define-first-branch",
+    "Source": "pcre2:testdata/testinput2:lines-6429-6430",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.match-sneaky-lookbehind-define-first-branch",
+    "Source": "pcre2:testdata/testinput2:lines-6425-6426",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.bad-option-ab",
+    "Source": "pcre2:testdata/testinput2:lines-8331-8331",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.match-captures-zabc",
+    "Source": "pcre2:testdata/testinput2:lines-8335-8335",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-match-ab",
+    "Source": "pcre2:testdata/testinput2:lines-8332-8333",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-post",
+    "Source": "pcre2:testdata/testinput2:lines-8338-8339",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-subject",
+    "Source": "pcre2:testdata/testinput2:lines-8336-8338",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.success-abc",
+    "Source": "pcre2:testdata/testinput2:lines-8334-8334",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.bad-option-ab",
+    "Source": "pcre2:testdata/testinput2:lines-8343-8343",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.match-captures-zabc",
+    "Source": "pcre2:testdata/testinput2:lines-8348-8348",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-match-a",
+    "Source": "pcre2:testdata/testinput2:lines-8344-8345",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-post",
+    "Source": "pcre2:testdata/testinput2:lines-8351-8352",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-subject",
+    "Source": "pcre2:testdata/testinput2:lines-8350-8351",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-ab",
+    "Source": "pcre2:testdata/testinput2:lines-8346-8346",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-abc",
+    "Source": "pcre2:testdata/testinput2:lines-8347-8347",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-match",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-match",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-subs",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-subs",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.success-simple",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:success-simple",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-dollar-dollar-global",
+    "Source": "pcre2:testdata/testinput2:lines-4220-4221",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-dollar-dollar-single",
+    "Source": "pcre2:testdata/testinput2:lines-4217-4219",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-lowercase-global",
+    "Source": "pcre2:testdata/testinput2:lines-4262-4265",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-lowercase-single",
+    "Source": "pcre2:testdata/testinput2:lines-4259-4261",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-pqr-single",
+    "Source": "pcre2:testdata/testinput2:lines-4259-4261",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-star-single",
+    "Source": "pcre2:testdata/testinput2:lines-6334-6335",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-xy-single",
+    "Source": "pcre2:testdata/testinput2:lines-4329-4330",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-xyz-global",
+    "Source": "pcre2:testdata/testinput2:lines-4213-4214",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-xyz-no-match",
+    "Source": "pcre2:testdata/testinput2:lines-4205-4208",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-xyz-single",
+    "Source": "pcre2:testdata/testinput2:lines-4205-4208",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-yy-no-match-uppercase",
+    "Source": "pcre2:testdata/testinput2:lines-8275-8277",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-z-single",
+    "Source": "pcre2:testdata/testinput2:lines-7763-7765",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.empty-under-unknown-unset",
+    "Source": "pcre2:testdata/testinput2:lines-5037-5037",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.error-under-unset-empty",
+    "Source": "pcre2:testdata/testinput2:lines-5038-5038",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dollar-plusz.unknown-by-default",
+    "Source": "pcre2:testdata/testinput2:lines-5036-5036",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-default.error-on-group-2",
+    "Source": "pcre2:testdata/testinput2:lines-5200-5200",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-fallback-on-group-2",
+    "Source": "pcre2:testdata/testinput2:lines-5201-5201",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-extended-unknown-unset-fallback-on-name-x",
+    "Source": "pcre2:testdata/testinput2:lines-5202-5202",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-global-empty-and-def-after-abc",
+    "Source": "pcre2:testdata/testinput2:lines-4268-4269",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-global-mixed-alternation-substitute-matched.empty-under-unset-empty",
+    "Source": "pcre2:testdata/testinput2:lines-6312-6315",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-global-mixed-alternation-substitute-matched.error-by-default",
+    "Source": "pcre2:testdata/testinput2:lines-6312-6315",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-global-mixed-alternation-unset-capture.empty-under-unset-empty",
+    "Source": "pcre2:testdata/testinput2:lines-6323-6324",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-global-mixed-alternation-unset-capture.error-by-default",
+    "Source": "pcre2:testdata/testinput2:lines-6323-6324",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-group-zero.single-char",
+    "Source": "pcre2:testdata/testinput2:lines-4271-4272",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-braced-name-syntax",
+    "Source": "pcre2:testdata/testinput2:lines-4250-4251",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-braced-name-unclosed",
+    "Source": "pcre2:testdata/testinput2:lines-4247-4248",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-dollar-name",
+    "Source": "pcre2:testdata/testinput2:lines-4238-4239",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-dollar-plus-plus",
+    "Source": "pcre2:testdata/testinput2:lines-4235-4236",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-mark-token-case",
+    "Source": "pcre2:testdata/testinput2:lines-4302-4303",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-mark-token-name",
+    "Source": "pcre2:testdata/testinput2:lines-4296-4297",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-invalid-mark-token-unclosed",
+    "Source": "pcre2:testdata/testinput2:lines-4299-4300",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-mark.global",
+    "Source": "pcre2:testdata/testinput2:lines-4283-4285",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-mark.single-with-suffix",
+    "Source": "pcre2:testdata/testinput2:lines-4288-4289",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-captures.global",
+    "Source": "pcre2:testdata/testinput2:lines-4232-4234",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-captures.single",
+    "Source": "pcre2:testdata/testinput2:lines-4229-4231",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-unset-empty-on-cat",
+    "Source": "pcre2:testdata/testinput2:lines-5204-5205",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-unset-empty-on-xbcom",
+    "Source": "pcre2:testdata/testinput2:lines-5204-5206",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-numbered-captures.global",
+    "Source": "pcre2:testdata/testinput2:lines-4226-4228",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-numbered-captures.single",
+    "Source": "pcre2:testdata/testinput2:lines-4223-4225",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-post-match.success",
+    "Source": "pcre2:testdata/testinput2:lines-5010-5010",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-pre-match.success",
+    "Source": "pcre2:testdata/testinput2:lines-5009-5009",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-empty-match-bumpalong.success",
+    "Source": "pcre2:testdata/testinput2:lines-7721-7722",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-literal-flag.success",
+    "Source": "pcre2:testdata/testinput2:lines-4925-4925",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-mixed-alternation-second-subject.success",
+    "Source": "pcre2:testdata/testinput2:lines-6292-6295",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-mixed-alternation.success",
+    "Source": "pcre2:testdata/testinput2:lines-6292-6294",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-offset.success",
+    "Source": "pcre2:testdata/testinput2:lines-7703-7704",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-pre-match.success",
+    "Source": "pcre2:testdata/testinput2:lines-7711-7712",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-templated-global.success",
+    "Source": "pcre2:testdata/testinput2:lines-6289-6290",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only.literal-success",
+    "Source": "pcre2:testdata/testinput2:lines-6286-6287",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-match",
+    "Source": "pcre2:testdata/testinput2:lines-5007-5008",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-prefix",
+    "Source": "pcre2:testdata/testinput2:lines-5008-5009",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-subject",
+    "Source": "pcre2:testdata/testinput2:lines-5010-5011",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-suffix",
+    "Source": "pcre2:testdata/testinput2:lines-5009-5010",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-subject.success",
+    "Source": "pcre2:testdata/testinput2:lines-5011-5011",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal-overrides-extended",
+    "Source": "pcre2:testdata/testinput2:lines-4925-4925",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal-overrides-extended-escapes",
+    "Source": "pcre2:testdata/testinput2:lines-4903-4904",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal.global-escapes-kept",
+    "Source": "pcre2:testdata/testinput2:lines-4908-4909",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal.simple",
+    "Source": "pcre2:testdata/testinput2:lines-4346-4348",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched-captured-global.success",
+    "Source": "pcre2:testdata/testinput2:lines-6306-6307",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.full-match",
+    "Source": "pcre2:testdata/testinput2:lines-4966-4967",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.global",
+    "Source": "pcre2:testdata/testinput2:lines-4970-4971",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched.no-match",
+    "Source": "pcre2:testdata/testinput2:lines-4966-4968",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-swap-two-groups.global",
+    "Source": "pcre2:testdata/testinput2:lines-4280-4281",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-swap-two-groups.single",
+    "Source": "pcre2:testdata/testinput2:lines-4274-4275",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name-empty-under-unknown-unset",
+    "Source": "pcre2:testdata/testinput2:lines-5210-5210",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name-error-when-unset-empty-disabled",
+    "Source": "pcre2:testdata/testinput2:lines-5211-5211",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unknown-name.error-by-default",
+    "Source": "pcre2:testdata/testinput2:lines-5208-5208",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar-plus.empty-on-a-with-flag",
+    "Source": "pcre2:testdata/testinput2:lines-5032-5033",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar-plus.error-on-a",
+    "Source": "pcre2:testdata/testinput2:lines-5030-5031",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar1.empty-on-a-with-flag",
+    "Source": "pcre2:testdata/testinput2:lines-5028-5029",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-dollar1.error-on-a",
+    "Source": "pcre2:testdata/testinput2:lines-5026-5027",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.empty-on-cat-with-flag",
+    "Source": "pcre2:testdata/testinput2:lines-5196-5196",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.error-on-cat",
+    "Source": "pcre2:testdata/testinput2:lines-5195-5195",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-unset-group-numeric.value-on-xbcom-with-flag",
+    "Source": "pcre2:testdata/testinput2:lines-5197-5197",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-whole-match.success",
+    "Source": "pcre2:testdata/testinput2:lines-5008-5008",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.substitute-extended.conditional-name-missing",
+    "Source": "pcre2:testdata/testinput2:substitute-extended-conditional-name:subject-1",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.substitute-extended.conditional-name-present",
+    "Source": "pcre2:testdata/testinput2:substitute-extended-conditional-name:subject-2",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput2.substitute-matched.foo-to-bar",
+    "Source": "pcre2:testdata/testinput2:substitute-matched-basic",
+    "SourceFile": "testdata/testinput2",
+    "Operation": "Replace",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.dupnames.barbar",
+    "Source": "pcre2:testdata/testinput20:dupnames:subject-2",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.dupnames.foofoo",
+    "Source": "pcre2:testdata/testinput20:dupnames:subject-1",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.dupnames.match-barbar",
+    "Source": "pcre2:testdata/testinput20:dupnames:subject-2",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.dupnames.match-foofoo",
+    "Source": "pcre2:testdata/testinput20:dupnames:subject-1",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.mark-skip.match-c",
+    "Source": "pcre2:testdata/testinput20:mark-skip:subject-1",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.mark-skip.match.match-c",
+    "Source": "pcre2:testdata/testinput20:mark-skip:subject-1",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.mark-skip.match.no-match-d",
+    "Source": "pcre2:testdata/testinput20:mark-skip:subject-2",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput20.mark-skip.no-match-d",
+    "Source": "pcre2:testdata/testinput20:mark-skip:no-match-1",
+    "SourceFile": "testdata/testinput20",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput21.compile-error-never-backslash-c",
+    "Source": "pcre2:testdata/testinput21:never-backslash-c",
+    "SourceFile": "testdata/testinput21",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput22.backslash-c-utf-lookbehind-error",
+    "Source": "pcre2:testdata/testinput22:backslash-c-utf-lookbehind-error",
+    "SourceFile": "testdata/testinput22",
+    "Operation": "Compile",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput22.backslash-c.allowed-utf-basic-match",
+    "Source": "pcre2:testdata/testinput22:backslash-c-allowed-utf-basic-match",
+    "SourceFile": "testdata/testinput22",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput5.partial-soft.f-dot-star",
+    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star",
+    "SourceFile": "testdata/testinput5",
+    "Operation": "Probe",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.match.xabcpqrx",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4243",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.match.xxyzx",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4244",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xabcpqrx",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4243",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xxyzx",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4244",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.match-xabcx",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4239",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.match-xxyzx",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4240",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.xabcx",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4239",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.xxyzx",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4240",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset.basic-abc",
+    "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-1",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset.basic-xyz",
+    "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-2",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "MatchDetailed",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset.basic.match-abc",
+    "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-1",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset.basic.match-xyz",
+    "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-2",
+    "SourceFile": "testdata/testinput6",
+    "Operation": "Match",
+    "Status": "Active"
+  }
+]

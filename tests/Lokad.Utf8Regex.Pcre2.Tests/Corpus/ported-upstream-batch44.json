@@ -1,0 +1,147 @@
+[
+  {
+    "Id": "pcre2.probe.word-boundary-the-cat-soft-full",
+    "Pattern": "\\bthe cat\\b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "the cat",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 7,
+      "HasContiguousByteRange": true,
+      "ValueText": "the cat",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-word-boundary-soft-full"
+  },
+  {
+    "Id": "pcre2.probe.word-boundary-the-cat-hard-partial",
+    "Pattern": "\\bthe cat\\b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "the cat",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 7,
+      "HasContiguousByteRange": true,
+      "ValueText": "the cat",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput6-word-boundary-hard-partial"
+  },
+  {
+    "Id": "pcre2.probe.word-boundary-abc-full-none",
+    "Pattern": "\\babc\\b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "+++abc+++",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput2-word-boundary-abc-full"
+  },
+  {
+    "Id": "pcre2.probe.word-boundary-abc-soft-partial",
+    "Pattern": "\\babc\\b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "+++ab",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "ab",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput2-word-boundary-abc-soft-partial"
+  },
+  {
+    "Id": "pcre2.probe.word-boundary-abc-hard-partial",
+    "Pattern": "\\babc\\b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "+++ab",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Hard",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 3,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "ab",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:testoutput2-word-boundary-abc-hard-partial"
+  }
+]

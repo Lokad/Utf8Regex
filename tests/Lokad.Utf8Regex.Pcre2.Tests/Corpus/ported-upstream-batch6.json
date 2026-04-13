@@ -1,0 +1,703 @@
+[
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.abcabc",
+    "Pattern": "(?|(abc)|(xyz))\\1",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcabc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "abcabc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4423"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.xyzxyz",
+    "Pattern": "(?|(abc)|(xyz))\\1",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzxyz",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "xyzxyz",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "xyzxyz"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "xyz"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4422-4424"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-backref.no-match-abcxyz",
+    "Pattern": "(?|(abc)|(xyz))\\1",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcxyz",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "HasContiguousByteRange": true,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4425-4426"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.xabcx",
+    "Pattern": "(x)(?|(abc)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcx",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "xabcx",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "xabcx"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "x"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 4,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 3,
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 5,
+          "ValueText": "x"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4239"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested.xxyzx",
+    "Pattern": "(x)(?|(abc)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "xxyzx",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "xxyzx"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "x"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 4,
+          "ValueText": "xyz"
+        },
+        {
+          "Number": 3,
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 5,
+          "ValueText": "x"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput6:lines-4238-4240"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xabcpqrx",
+    "Pattern": "(x)(?|(abc)(pqr)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcpqrx",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 8,
+      "HasContiguousByteRange": true,
+      "ValueText": "xabcpqrx",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 8,
+          "ValueText": "xabcpqrx"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "x"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 4,
+          "ValueText": "abc"
+        },
+        {
+          "Number": 3,
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 7,
+          "ValueText": "pqr"
+        },
+        {
+          "Number": 4,
+          "Success": true,
+          "StartOffsetInBytes": 7,
+          "EndOffsetInBytes": 8,
+          "ValueText": "x"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4243"
+  },
+  {
+    "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xxyzx",
+    "Pattern": "(x)(?|(abc)(pqr)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxyzx",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "xxyzx",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "xxyzx"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "x"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 4,
+          "ValueText": "xyz"
+        },
+        {
+          "Number": 3,
+          "Success": false
+        },
+        {
+          "Number": 4,
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 5,
+          "ValueText": "x"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput6:lines-4242-4244"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-numbered-captures.single",
+    "Pattern": "a(b)c(d)e",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcde",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X$1Y${2}Z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "XbYdZ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4223-4225"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-numbered-captures.global",
+    "Pattern": "a(b)c(d)e",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcde-abcde",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X$1Y${2}Z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "XbYdZ-XbYdZ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4226-4228"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-captures.single",
+    "Pattern": "a(?<ONE>b)c(?<TWO>d)e",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcde",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X$ONE+${TWO}Z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Xb+dZ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4229-4231"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-named-captures.global",
+    "Pattern": "a(?<ONE>b)c(?<TWO>d)e",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcde-abcde-",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X$ONE+${TWO}Z",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "Xb+dZ-Xb+dZ-",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4232-4234"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-group-zero.single-char",
+    "Pattern": ".",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$0",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4271-4272"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-swap-two-groups.single",
+    "Pattern": "(.)(.)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$2+$1",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "b+ac",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4274-4275"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-swap-two-groups.global",
+    "Pattern": "(.)(.)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcdefgh",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "$2$1",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "badcfehg",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4280-4281"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-mark.global",
+    "Pattern": "(*:pear)apple|(*:orange)lemon|(*:strawberry)blackberry",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "apple lemon blackberry",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "${*MARK}",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "pear orange strawberry",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4283-4285"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-mark.single-with-suffix",
+    "Pattern": "(*:pear)apple|(*:orange)lemon|(*:strawberry)blackberry",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "apple lemon blackberry",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "${*MARK} sauce,",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "pear sauce, lemon blackberry",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4288-4289"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-match",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "LabcR",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$&>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "L<abc>R",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5007-5008"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-prefix",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "LabcR",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$`>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "L<L>R",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5008-5009"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-suffix",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "LabcR",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$'>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "L<R>R",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5009-5010"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-special-token-subject",
+    "Pattern": "a(b)c",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "LabcR",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$_>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "L<LabcR>R",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-5010-5011"
+  }
+]

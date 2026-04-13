@@ -37,6 +37,8 @@ Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf
         }
     }
 
+dotnet build-server shutdown | Out-Null
+
 if (-not $SkipBuild) {
     dotnet build .\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore
     if ($LASTEXITCODE -ne 0) {

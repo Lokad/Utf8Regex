@@ -1,0 +1,58 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-abc-lowercase-single",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "123abc456",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "xyz",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "123xyz456",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4259-4261"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-abc-lowercase-global",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "123abc456abc789",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "xyz",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "123xyz456xyz789",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4262-4265"
+  }
+]

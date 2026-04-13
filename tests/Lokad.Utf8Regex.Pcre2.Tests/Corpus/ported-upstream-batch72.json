@@ -1,0 +1,137 @@
+[
+  {
+    "Id": "pcre2.spec.replace-k-reset-foo-bar.whole-and-prefix-capture",
+    "Pattern": "(foo)\\Kbar",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobar xxfoobar",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "foo<bar/foo> xxfoo<bar/foo>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:k-reset replacement keeps the consumed prefix outside the replacement span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-abc-123.whole-match-only",
+    "Pattern": "abc\\K123",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzabc123pqr abc123",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "xyzabc<123>pqr abc<123>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:abc-k-reset replacement span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-123-abc.whole-match-only",
+    "Pattern": "123\\Kabc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxxx123abc yyyy123abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "xxxx123<abc> yyyy123<abc>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:123-k-reset replacement span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-captured-ab.whole-and-capture",
+    "Pattern": "(a\\Kb)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abxab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a<b/ab>xa<b/ab>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:captured k-reset replacement uses group 1 outside group 0 span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-captured-atomic-ab.whole-and-capture",
+    "Pattern": "((?>a\\Kb))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abxab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a<b/ab>xa<b/ab>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:captured atomic k-reset replacement exposes the outer captured span"
+  }
+]

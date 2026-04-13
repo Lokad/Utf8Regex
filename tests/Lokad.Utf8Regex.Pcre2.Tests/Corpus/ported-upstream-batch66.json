@@ -1,0 +1,60 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-replacement-only-mixed-alternation-second-subject.success",
+    "Pattern": "a(b)c|xyz",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abxyzpqrabcxyz",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [
+      "SubstituteReplacementOnly"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<xyz><abc><xyz>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6292-6295"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-matched-captured-global.success",
+    "Pattern": "a(..)d",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzabcdxyzabcdxyz",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$1<",
+    "SubstitutionOptions": [
+      "SubstituteMatched"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "xyz>bc<xyz>bc<xyz",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6306-6307"
+  }
+]

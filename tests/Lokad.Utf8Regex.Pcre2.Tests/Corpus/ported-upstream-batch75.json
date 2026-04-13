@@ -1,0 +1,164 @@
+[
+  {
+    "Id": "pcre2.spec.replace-k-reset-define-subroutine.ab",
+    "Pattern": "^(?&t)(?(DEFINE)(?<t>a\\Kb))$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a<b>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:k-reset define-subroutine replacement span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-repeat-possessive.ababc",
+    "Pattern": "(?:a\\Kb)*+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "aba<b><>c<>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:possessive repeated k-reset replacement uses the last iteration span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-atomic-repeat.ababc",
+    "Pattern": "(?>a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "aba<b><>c<>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:atomic repeated k-reset replacement uses the last iteration span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-repeat.ababc",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ababc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "aba<b><>c<>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:repeated k-reset replacement uses the last iteration span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-recursive-any.abac",
+    "Pattern": "a\\K.(?0)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "aba<c>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:recursive k-reset replacement uses the terminal recursive span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-recursive-captured.abac",
+    "Pattern": "(a\\K.(?1)*)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abac",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "aba<c/abac>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:recursive captured k-reset replacement exposes the full recursive capture"
+  }
+]

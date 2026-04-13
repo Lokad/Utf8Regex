@@ -1,0 +1,85 @@
+[
+  {
+    "Id": "pcre2.spec.replace-branch-reset-basic.global-capture-reference",
+    "Pattern": "(?|(abc)|(xyz))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc xyz",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<abc> <xyz>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:branch-reset basic replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-branch-reset-nested-second-capture.unset-empty",
+    "Pattern": "(x)(?|(abc)(pqr)|(xyz))(x)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xabcpqrxxxyzx",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$2/$3>",
+    "SubstitutionOptions": [
+      "UnsetEmpty"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<abc/pqr><xyz/>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:branch-reset nested second-capture replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-branch-reset-same-name-followup.duplicate-name-and-last-captured",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaccccaaa bccccb",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$a|$+>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<aaa|cccc> <b|cccc>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:duplicate-name followup replacement via native repeated detailed matching"
+  }
+]

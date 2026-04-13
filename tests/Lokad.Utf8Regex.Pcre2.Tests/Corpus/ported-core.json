@@ -1,0 +1,111 @@
+[
+  {
+    "Id": "pcre2.basic.literal.hit",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxabcxx",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 5,
+      "HasContiguousByteRange": true,
+      "ValueText": "abc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 5,
+          "ValueText": "abc"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/manual-seed/basic-literal-hit",
+    "Notes": "Seed case for the local PCRE2 corpus harness."
+  },
+  {
+    "Id": "pcre2.basic.literal.miss",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xxxx",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "HasContiguousByteRange": true,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/manual-seed/basic-literal-miss"
+  },
+  {
+    "Id": "pcre2.spec.lookaround-k.nonmonotone",
+    "Pattern": "(?=ab\\K)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": true,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "NotSupportedException"
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "ported/spec-pcre2/nonmonotone-global-iteration",
+    "Notes": "Tracks the spec decision that global iteration rejects successful non-monotone matches."
+  },
+  {
+    "Id": "pcre2.outofscope.callout",
+    "Pattern": "a(?C1)b",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "CalloutUnsupported"
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "ported/spec-pcre2/callout-non-goal"
+  }
+]

@@ -1,0 +1,114 @@
+[
+  {
+    "Id": "pcre2.probe.foo-full-none",
+    "Pattern": "foo",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foo",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "foo",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-managed-none-full"
+  },
+  {
+    "Id": "pcre2.probe.foo-no-match-none",
+    "Pattern": "foo",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bar",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-managed-none-no-match"
+  },
+  {
+    "Id": "pcre2.probe.f-dot-star-full-none",
+    "Pattern": "f.*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [
+      "DotAll"
+    ],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "for",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "for",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-f-dot-star-none-full"
+  },
+  {
+    "Id": "pcre2.probe.f-dot-star-no-match-none",
+    "Pattern": "f.*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [
+      "DotAll"
+    ],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bar",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "None",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/spec-driven:probe-f-dot-star-none-no-match"
+  }
+]

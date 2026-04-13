@@ -187,6 +187,50 @@ internal readonly struct PreparedSearcher
         }
     }
 
+    public bool TryFindNextNonOverlappingLiteral(ReadOnlySpan<byte> input, ref int nextStart, out int index, out int matchedLength)
+    {
+        index = -1;
+        matchedLength = 0;
+
+        if ((uint)nextStart > (uint)input.Length)
+        {
+            return false;
+        }
+
+        switch (Kind)
+        {
+            case PreparedSearcherKind.ExactLiteral:
+            case PreparedSearcherKind.IgnoreCaseLiteral:
+                var relative = LiteralSearch.IndexOf(input[nextStart..]);
+                if (relative < 0)
+                {
+                    nextStart = input.Length;
+                    return false;
+                }
+
+                index = nextStart + relative;
+                matchedLength = LiteralSearch.Length;
+                nextStart = index + matchedLength;
+                return true;
+
+            case PreparedSearcherKind.QuotedAsciiRun:
+                var quotedRelative = QuotedAsciiRunSearch.IndexOf(input[nextStart..]);
+                if (quotedRelative < 0)
+                {
+                    nextStart = input.Length;
+                    return false;
+                }
+
+                index = nextStart + quotedRelative;
+                matchedLength = QuotedAsciiRunSearch.MatchLength;
+                nextStart = index + matchedLength;
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public int FindLast(ReadOnlySpan<byte> input)
     {
         return Kind switch

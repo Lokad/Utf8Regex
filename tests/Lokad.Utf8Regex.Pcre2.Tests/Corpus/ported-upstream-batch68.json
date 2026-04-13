@@ -1,0 +1,56 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-dupnames-foobar.named-reference-foo",
+    "Pattern": "(?:(?<n>foo)|(?<n>bar))\\k<n>",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foofoo barbar",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$n>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<foo> <bar>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:duplicate-name replacement via native repeated detailed matching"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-dupnames-foobar.last-captured-reference",
+    "Pattern": "(?:(?<n>foo)|(?<n>bar))\\k<n>",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foofoo barbar",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$+>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<foo> <bar>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:last-captured replacement via native repeated detailed matching"
+  }
+]

@@ -1,0 +1,328 @@
+[
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.abcabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "abcabc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "abcabc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "abc"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.xyzabc",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzabc",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "xyzabc",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "xyzabc"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "xyz"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-subroutine.xyzxyz-no-match",
+    "Pattern": "(?|(abc)|(xyz))(?1)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "xyzxyz",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "NoMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-4429-4433"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-backref.aaaaaa",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "aaaaaa",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "aaaaaa"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aaa"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "Notes": "Upstream uses the same capture name across branch-reset alternatives. The curated model records the stable resulting name table entry only."
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-backref.bb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bb",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "HasContiguousByteRange": true,
+      "ValueText": "bb",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 2,
+          "ValueText": "bb"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5872-5874",
+    "Notes": "Upstream uses the same capture name across branch-reset alternatives. The curated model records the stable resulting name table entry only."
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-followup.aaaccccaaa",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "aaaccccaaa",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 10,
+      "HasContiguousByteRange": true,
+      "ValueText": "aaaccccaaa",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 10,
+          "ValueText": "aaaccccaaa"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "aaa"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 3,
+          "EndOffsetInBytes": 7,
+          "ValueText": "cccc"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        },
+        {
+          "Name": "a",
+          "Number": 2
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878"
+  },
+  {
+    "Id": "pcre2.testinput1.branch-reset-same-name-followup.bccccb",
+    "Pattern": "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": true,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bccccb",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 6,
+      "HasContiguousByteRange": true,
+      "ValueText": "bccccb",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 6,
+          "ValueText": "bccccb"
+        },
+        {
+          "Number": 1,
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 1,
+          "ValueText": "b"
+        },
+        {
+          "Number": 2,
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 5,
+          "ValueText": "cccc"
+        }
+      ],
+      "NameEntries": [
+        {
+          "Name": "a",
+          "Number": 1
+        },
+        {
+          "Name": "a",
+          "Number": 2
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:lines-5876-5878"
+  }
+]

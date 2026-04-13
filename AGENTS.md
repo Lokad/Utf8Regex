@@ -81,6 +81,18 @@ README benchmark snapshot model:
   - `--refresh-readme-benchmarks` for one or more whole sections when needed
 - Use bulk section refresh sparingly; it is slower and more likely to leave unrelated rows stale while you are iterating.
 
+PCRE2 benchmark snapshot and diagnostics:
+
+- `PCRE2.Benchmarks.json` is the PCRE2 benchmark source of truth for prioritization.
+- Prefer:
+  - `--refresh-pcre2-benchmark-case`
+  - `--refresh-pcre2-benchmarks`
+  - `--emit-pcre2-priority-report`
+  - `--inspect-pcre2-case`
+  - `--measure-pcre2-compatible-case`
+  - `--measure-pcre2-special-case`
+- PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
+
 Current intended uses:
 
 - --inspect-pattern
@@ -149,3 +161,14 @@ Custom CLI invocation rule:
 dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-case-deep common/match-word 20
 dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-compiled-microcost-case lokad/imports/module-imports 20
 `
+
+## PCRE2 isolation rule
+
+If PCRE2 support is implemented, keep it removable by construction:
+
+- put PCRE2 implementation under `src/Lokad.Utf8Regex.Pcre2/`
+- ensure every PCRE2-specific public type, internal type, namespace, folder, and test fixture name contains `Pcre2`
+- do not add PCRE2-only helpers anonymously to the core project
+- mark any unavoidable core hooks with `PCRE2-INTEGRATION-POINT`
+- keep the PCRE2 profile strictly managed: no P/Invoke, no `NativeLibrary`, no external PCRE2 binary, and no RID-specific native packaging
+- the sole acceptable non-BCL implementation dependency for the PCRE2 profile is the existing `Lokad.Utf8Regex` library

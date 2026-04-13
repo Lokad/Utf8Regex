@@ -1,0 +1,114 @@
+[
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.bad-option-ab",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8331-8331",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.match-captures-zabc",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8335-8335",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-match-ab",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8332-8333",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-post",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8338-8339",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.partial-subs-subject",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8336-8338",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-hard-replace.success-abc",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8334-8334",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.bad-option-ab",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8343-8343",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.match-captures-zabc",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8348-8348",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-match-a",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8344-8345",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-post",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8351-8352",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.partial-subs-subject",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8350-8351",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-ab",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8346-8346",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replace.success-abc",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-8347-8347",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-match",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-match",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-subs",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-subs",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.success-simple",
+    "Operation": "Replace",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:success-simple",
+    "Reason": "ReplacementOnlyPartialModeNotExposed"
+  }
+]

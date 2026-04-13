@@ -1,0 +1,120 @@
+[
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal.simple",
+    "Pattern": "abc",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "123abc123",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "XYZ",
+    "SubstitutionOptions": [
+      "SubstituteLiteral"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "123XYZ123",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4346-4348"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal.global-escapes-kept",
+    "Pattern": "abcd",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "XabcdYabcdZ",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "\\$1$2\\",
+    "SubstitutionOptions": [
+      "SubstituteLiteral"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "X\\$1$2\\Y\\$1$2\\Z",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4908-4909"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal-overrides-extended",
+    "Pattern": "a(?:(b)|(c))",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": ">>ac<<",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "${1:+$1\\:$1:$2}",
+    "SubstitutionOptions": [
+      "Extended",
+      "SubstituteLiteral"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": ">>${1:+$1\\:$1:$2}<<",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4925-4925"
+  },
+  {
+    "Id": "pcre2.testinput2.replace-substitute-literal-overrides-extended-escapes",
+    "Pattern": "abcd",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": ">>abcd<<",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "w\\rx\\x82y\\o{333}z(\\Q12\\$34$$\\x34\\E5$$)",
+    "SubstitutionOptions": [
+      "Extended",
+      "SubstituteLiteral"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": ">>w\\rx\\x82y\\o{333}z(\\Q12\\$34$$\\x34\\E5$$)<<",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-4903-4904"
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "Id": "pcre2.spec.replace-subroutine-prefix-digits.capture-and-whole-match",
+    "Pattern": "^(?1)\\d{3}(a)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a123a",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1/$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<a/a123a>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:subroutine-prefix-digits replacement via detailed native matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-commit-subroutine.capture-reference",
+    "Pattern": "(?1)(A(*COMMIT)|B)D",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABD BAD",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<B> <A>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:commit-subroutine replacement via detailed native matching"
+  },
+  {
+    "Id": "pcre2.spec.replace-define-subroutine.capture-reference",
+    "Pattern": "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bb xbb",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<b> x<b>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:define-subroutine replacement via detailed native matching"
+  }
+]

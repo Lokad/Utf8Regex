@@ -1,0 +1,137 @@
+[
+  {
+    "Id": "pcre2.spec.replace-k-reset-alt.foobar-captures",
+    "Pattern": "(foo)(\\Kbar|baz)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobar",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1/$2>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "foo<bar/foo/bar>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:k-reset alternation replacement on the reset branch"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-alt.foobaz-captures",
+    "Pattern": "(foo)(\\Kbar|baz)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobaz",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1/$2>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "<foobaz/foo/baz>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:k-reset alternation replacement on the non-reset branch"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-grouped.foobarbaz-captures",
+    "Pattern": "(foo\\Kbar)baz",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foobarbaz xxfoobarbaz",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0/$1>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "foo<barbaz/foobar> xxfoo<barbaz/foobar>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:grouped k-reset replacement retains the original captured group span"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-anchor-cz-or-ac.acz-and-ac",
+    "Pattern": "^a\\Kcz|ac",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "acz ac",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a<cz> <ac>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:k-reset anchored alternation replacement distinguishes reset and non-reset branches"
+  },
+  {
+    "Id": "pcre2.spec.replace-k-reset-atomic-alt.abz-and-ab",
+    "Pattern": "(?>a\\Kbz|ab)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abz ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "<$0>",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "a<bz> <ab>",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput1:atomic k-reset alternation replacement distinguishes reset and fallback branches"
+  }
+]

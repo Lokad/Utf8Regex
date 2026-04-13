@@ -1,0 +1,175 @@
+[
+  {
+    "Id": "pcre2.testinput5.partial-soft.f-dot-star",
+    "Pattern": "f.*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [
+      "DotAll"
+    ],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "for",
+    "StartOffsetInBytes": 0,
+    "PartialMode": "Soft",
+    "Operation": "Probe",
+    "Expected": {
+      "Outcome": "PartialMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "HasContiguousByteRange": true,
+      "ValueText": "for",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star"
+  },
+  {
+    "Id": "pcre2.testinput2.substitute-extended.conditional-name-missing",
+    "Pattern": "foo(?<Bar>BAR)?",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "foo",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X${Bar:+\\:\\:text}Y",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "XY",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:substitute-extended-conditional-name:subject-1"
+  },
+  {
+    "Id": "pcre2.testinput2.substitute-extended.conditional-name-present",
+    "Pattern": "foo(?<Bar>BAR)?",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "fooBAR",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "X${Bar:+\\:\\:text}Y",
+    "SubstitutionOptions": [
+      "Extended"
+    ],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "X::textY",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:substitute-extended-conditional-name:subject-2"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-match",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialMatch",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-match"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.success-simple",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "FOO",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "FOO",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:success-simple"
+  },
+  {
+    "Id": "pcre2.testinput2.partial-soft-replacement.error-partial-subs",
+    "Pattern": "(a)b+",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abc",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": ">$_<",
+    "SubstitutionOptions": [],
+    "PartialMode": "Hard",
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "ReplacementError",
+      "ErrorKind": "PartialSubs",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:partial-replacement-hard:error-partial-subs"
+  }
+]

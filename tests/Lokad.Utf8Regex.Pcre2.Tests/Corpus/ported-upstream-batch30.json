@@ -1,0 +1,113 @@
+[
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-1",
+    "Pattern": "(?=.{10}(?1))x(\\K){0}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "x1234567890",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6433-6434"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-2",
+    "Pattern": "(?=.{10}(.))(*scs:(1)(?2))x(\\K){0}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "x1234567890",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6436-6437"
+  },
+  {
+    "Id": "pcre2.testinput2.match-lookaround-k-runtime-conditional-safe",
+    "Pattern": "(?=.{5}(?1))\\d*(\\K){0}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "1234567890",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 5,
+      "EndOffsetInBytes": 10,
+      "HasContiguousByteRange": true,
+      "ValueText": "67890",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 5,
+          "EndOffsetInBytes": 10,
+          "ValueText": "67890"
+        }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6439-6441"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-conditional-bad-subject",
+    "Pattern": "(?=.{5}(?1))\\d*(\\K){0}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "abcdefgh",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "MatchError",
+      "ErrorKind": "DisallowedLookaroundBackslashK",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6442-6443"
+  }
+]

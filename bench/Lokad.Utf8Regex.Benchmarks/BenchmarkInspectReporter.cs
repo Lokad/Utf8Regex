@@ -10,10 +10,11 @@ using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
-internal static class BenchmarkInspectReporter
+internal static partial class BenchmarkInspectReporter
 {
     public static int RunInspectPattern(string pattern, string? optionsText)
     {
@@ -4323,30 +4324,15 @@ internal static class BenchmarkInspectReporter
     private static double MeasureMedianMicroseconds(int samples, int iterations, Func<int> action)
     {
         var sampleValues = new double[samples];
-        var sink = 0;
-
-        for (var i = 0; i < 5; i++)
-        {
-            sink ^= action();
-        }
 
         for (var sample = 0; sample < samples; sample++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-
-            var stopwatch = Stopwatch.StartNew();
-            for (var i = 0; i < iterations; i++)
-            {
-                sink ^= action();
-            }
-
-            stopwatch.Stop();
-            sampleValues[sample] = stopwatch.Elapsed.TotalMicroseconds / iterations;
+            sampleValues[sample] = MeasureCore(iterations, action).Elapsed.TotalMicroseconds / iterations;
         }
 
-        GC.KeepAlive(sink);
         Array.Sort(sampleValues);
         return sampleValues[sampleValues.Length / 2];
     }
@@ -4585,10 +4571,20 @@ internal static class BenchmarkInspectReporter
 
         return string.Join(" ", values.ToArray().Select(static b => b.ToString("X2", CultureInfo.InvariantCulture)));
     }
+    private static void Measure(string label, int samples, int iterations, Func<int> action)
+    {
+        var measurement = MeasureMedianCore(samples, iterations, action);
+        Console.WriteLine($"{label,-18}: {measurement.Elapsed.TotalMilliseconds,10:F3} ms total | {measurement.Elapsed.TotalMicroseconds / iterations,10:F3} us/op | sink={measurement.Sink}");
+    }
+
     private static void Measure(string label, int iterations, Func<int> action)
+        => Measure(label, 1, iterations, action);
+
+    private static (TimeSpan Elapsed, int Sink) MeasureCore(int iterations, Func<int> action)
     {
         var sink = 0;
-        for (var i = 0; i < 5; i++)
+        var warmupIterations = Math.Clamp(iterations * 64, 65536, 262144);
+        for (var i = 0; i < warmupIterations; i++)
         {
             sink ^= action();
         }
@@ -4600,8 +4596,70 @@ internal static class BenchmarkInspectReporter
         }
 
         stopwatch.Stop();
-        Console.WriteLine($"{label,-18}: {stopwatch.Elapsed.TotalMilliseconds,10:F3} ms total | {stopwatch.Elapsed.TotalMicroseconds / iterations,10:F3} us/op | sink={sink}");
+        return (stopwatch.Elapsed, sink);
     }
+
+    private static (TimeSpan Elapsed, int Sink) MeasureMedianCore(int samples, int iterations, Func<int> action)
+    {
+        var sampleValues = new (TimeSpan Elapsed, int Sink)[samples];
+        for (var sample = 0; sample < samples; sample++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            sampleValues[sample] = MeasureCore(iterations, action);
+        }
+
+        Array.Sort(sampleValues, static (x, y) => x.Elapsed.CompareTo(y.Elapsed));
+        return sampleValues[sampleValues.Length / 2];
+    }
+
+    private static bool TryParseMicrosecondsLine(string line, string label, out double value)
+    {
+        value = 0;
+        if (!line.StartsWith(label, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var marker = " us/op";
+        var markerIndex = line.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0)
+        {
+            return false;
+        }
+
+        var pipeIndex = line.LastIndexOf('|', markerIndex);
+        if (pipeIndex < 0)
+        {
+            return false;
+        }
+
+        var numberText = line[(pipeIndex + 1)..markerIndex].Trim();
+        return double.TryParse(numberText, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static string ExtractValueAfterColon(string line)
+    {
+        var colonIndex = line.IndexOf(':');
+        return colonIndex < 0 ? string.Empty : line[(colonIndex + 1)..].Trim();
+    }
+
+    private static string FormatLedgerValue(double? microseconds)
+        => microseconds is null ? "-" : microseconds.Value.ToString("F3", CultureInfo.InvariantCulture);
+
+    private static string FormatLedgerRatio(double? numerator, double? denominator)
+    {
+        if (numerator is null || denominator is null || denominator.Value == 0)
+        {
+            return "-";
+        }
+
+        return (numerator.Value / denominator.Value).ToString("F2", CultureInfo.InvariantCulture) + "x";
+    }
+
+    private static double MeasureMicroseconds(int samples, int iterations, Func<int> action)
+        => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;
 
     private static int ExecuteUtf8(Utf8RegexBenchmarkContext context)
     {

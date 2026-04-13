@@ -1,0 +1,9 @@
+[
+  {
+    "Id": "pcre2.outofscope.callout",
+    "Operation": "Compile",
+    "Status": "OutOfScopeBySpec",
+    "Source": "ported/spec-pcre2/callout-non-goal",
+    "Reason": "CalloutNonGoal"
+  }
+]

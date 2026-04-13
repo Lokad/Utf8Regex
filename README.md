@@ -4,6 +4,13 @@
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you want to avoid decoding to UTF-16 before every regex operation.
 
+```powershell
+dotnet add package Lokad.Utf8Regex
+dotnet add package Lokad.Utf8Regex.Pcre2
+```
+
+The [PCRE2 support](src/Lokad.Utf8Regex.Pcre2/README.md) is optional.
+
 ## Support Scope
 
 - Semantic oracle: `Utf8Regex` follows `System.Text.RegularExpressions.Regex` on `.NET 10`.

@@ -1,0 +1,94 @@
+[
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-positive-lookahead",
+    "Pattern": "(?=a\\Kb)ab",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "LookaroundBackslashKDisabled"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6390-6391"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-negative-lookahead",
+    "Pattern": "(?!a\\Kb)ac",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "LookaroundBackslashKDisabled"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6395-6396"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-positive-lookbehind",
+    "Pattern": "^abc(?<=b\\Kc)d",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "LookaroundBackslashKDisabled"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6400-6401"
+  },
+  {
+    "Id": "pcre2.testinput2.compile-error.lookaround-k-negative-lookbehind",
+    "Pattern": "^abc(?<!b\\Kq)d",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "LookaroundBackslashKDisabled"
+    },
+    "Status": "Active",
+    "Source": "pcre2:testdata/testinput2:lines-6405-6406"
+  }
+]

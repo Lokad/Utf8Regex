@@ -1,0 +1,188 @@
+[
+  {
+    "Id": "pcre2.testinput1.count-subroutine-prefix-digits.a123a",
+    "Pattern": "^(?1)\\d{3}(a)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a123a",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:subroutine-prefix-digits-global-count"
+  },
+  {
+    "Id": "pcre2.testinput1.enumerate-subroutine-prefix-digits.a123a",
+    "Pattern": "^(?1)\\d{3}(a)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a123a",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 1,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 5,
+          "ValueText": "a123a"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "ported/upstream:subroutine-prefix-digits-global-enumerate"
+  },
+  {
+    "Id": "pcre2.spec.count-commit-subroutine.abd-bad",
+    "Pattern": "(?1)(A(*COMMIT)|B)D",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABD BAD",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:commit-subroutine-global-count"
+  },
+  {
+    "Id": "pcre2.spec.enumerate-commit-subroutine.abd-bad",
+    "Pattern": "(?1)(A(*COMMIT)|B)D",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ABD BAD",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 3,
+          "ValueText": "ABD"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 7,
+          "ValueText": "BAD"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:commit-subroutine-global-enumerate"
+  },
+  {
+    "Id": "pcre2.spec.count-define-subroutine.bb-xbb",
+    "Pattern": "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bb xbb",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:define-subroutine-global-count"
+  },
+  {
+    "Id": "pcre2.spec.enumerate-define-subroutine.bb-xbb",
+    "Pattern": "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "bb xbb",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 0,
+          "EndOffsetInBytes": 2,
+          "ValueText": "bb"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 4,
+          "EndOffsetInBytes": 6,
+          "ValueText": "bb"
+        }
+      ]
+    },
+    "Status": "Active",
+    "Source": "spec-pcre2:define-subroutine-global-enumerate"
+  }
+]
