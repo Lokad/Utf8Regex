@@ -1,0 +1,191 @@
+// 2025-12-03: Derived from anonymized historical examples
+// Customer identifiers, dashboard ids, and proprietary paths were removed.
+
+import "_GlobalParameters" as GP with
+  CurrencyUnit
+  ColorPrimary
+  ColorLightPrimary
+  ColorLightWarning
+  LinkLocationSupplierInspector
+  LinkLocationRegionInspector
+  LinkHomeDashboard
+
+read "/clean/Items.ion" as Items[item_id unsafe] with
+  item_id : text
+  location_id : text
+  Reference : text
+  Name : text
+  Category : text
+  Supplier : text
+  ReorderCycle : number
+  DispatchCycle : number
+  LeadTime : number
+  BuyPrice : number
+  SellPrice : number
+  MOQ : number
+  LotMultiplier : number
+  StockOnHand : number
+  StockOnOrder : number
+  IsActive : boolean
+  ImagePath : text
+  IsClean : boolean
+  LeadTimeDistribution : ranvar
+
+read "/clean/Orders.ion" as Orders expect [item_id, date] with
+  item_id : text
+  "OrderDate" as date : date
+  location_id : text
+  Quantity : number
+  NetAmount : number
+  OrderId : text
+  IsFirstOrder : boolean
+  HealthLog : text
+  IsClean : boolean
+
+read "/clean/PurchaseOrders.ion" as PurchaseOrders expect [item_id, date] with
+  item_id : text
+  "OrderDate" as date : date
+  location_id : text
+  DeliveryDate : date
+  Quantity : number
+  Supplier : text
+  PurchaseOrderNo : text
+  IsInCatalog : boolean
+  IsClean : boolean
+  InputDate : date
+  InputPath : text
+
+read "/clean/Stock.ion" as Stock expect [item_id, date] with
+  item_id : text
+  StockOnHand : number
+  StockOnOrder : number
+  "StockDate" as date : date
+  IsInCatalog : boolean
+
+read "/clean/Forecast/Weekly.ion" as WeeklyForecast expect [item_id, date] with
+  item_id : text
+  "Monday" as date : date
+  DemandQty : number
+  IsPast : boolean
+  Baseline : number
+  Demand : ranvar
+  TotalDemand : ranvar
+
+read "/clean/Results/DispatchRecommendations.ion" as DispatchRecommendations expect [item_id] with
+  item_id : text
+  location_id : text
+  BuyPrice : number
+  Margin : number
+  StockOnHand : number
+  StockOnOrder : number
+  DispatchQty : number
+  CurrentFillRate : number
+  NewFillRate : number
+  SalesWeight : number
+  OverallFillRateContribution : number
+  AvgDemandOnLeadTime : number
+
+read "/clean/Results/DispatchMicroDecisions.ion" as DispatchMicroDecisions expect [item_id] with
+  Rank : number
+  item_id : text
+  location_id : text
+  Supplier : text
+  BuyPrice : number
+  SellPrice : number
+  StockOnHand : number
+  StockOnOrder : number
+  DispatchQty : number
+  MinQty : number
+  MaxQty : number
+  TransportationLeadTime : number
+  DispatchLeadTime : number
+  CurrentFillRate : number
+  FillRateDelta : number
+  CumFillRateDelta : number
+  Reward : number
+  Score : number
+  IsEligible : boolean
+
+read form with
+  ReviewMode : text
+  IncludeInactive : boolean
+  Region : text
+
+///#region Setup
+today = today()
+start_date = today - 180
+end_date = today
+pcs_unit = "units"
+currency = GP.CurrencyUnit
+
+Items.RecentSales = sum(Orders.Quantity) when (date >= end_date - 30) by item_id at Items.item_id
+Items.AnnualSales = sum(Orders.Quantity) when (date >= end_date - 365) by item_id at Items.item_id
+Items.ExpectedDemand = sum(WeeklyForecast.DemandQty) when (date <= end_date + 84) by item_id at Items.item_id
+Items.DispatchNeed = max(0, Items.ExpectedDemand - (Items.StockOnHand + Items.StockOnOrder))
+Items.DispatchBucket =
+  if Items.DispatchNeed > 100 then "high"
+  else if Items.DispatchNeed > 25 then "medium"
+  else "low"
+
+DispatchRecommendations.PriorityScore =
+  DispatchRecommendations.SalesWeight
+  + DispatchRecommendations.OverallFillRateContribution * 100
+  - DispatchRecommendations.DispatchQty / 20
+
+DispatchMicroDecisions.DisplayScore = round(DispatchMicroDecisions.Score, 2)
+DispatchMicroDecisions.DisplayReward = round(DispatchMicroDecisions.Reward, 2)
+DispatchMicroDecisions.IsPriority = DispatchMicroDecisions.IsEligible and DispatchMicroDecisions.FillRateDelta > 0
+
+where IncludeInactive or Items.IsActive
+  show summary "Location supplier review" with
+    count(Items.*)
+    sum(Items.DispatchNeed) as "Dispatch units"
+    sum(Items.DispatchNeed * Items.BuyPrice) as "Dispatch value" { unit:#(currency) }
+
+///#region Item review
+show table "Item review" a1h12 with
+  Items.item_id as "Item"
+  Items.location_id as "Location"
+  Items.Reference
+  Items.Name
+  Items.Category
+  Items.Supplier
+  Items.StockOnHand
+  Items.StockOnOrder
+  Items.RecentSales as "RecentSales"
+  Items.ExpectedDemand as "ExpectedDemand"
+  Items.DispatchNeed as "DispatchNeed"
+  Items.DispatchBucket as "Bucket"
+  order by Items.DispatchNeed desc
+
+///#region Dispatch recommendations
+where DispatchRecommendations.DispatchQty > 0
+  show table "Dispatch recommendations" c1j12 with
+    DispatchRecommendations.item_id as "Item"
+    DispatchRecommendations.location_id as "Location"
+    DispatchRecommendations.DispatchQty as "Qty"
+    DispatchRecommendations.BuyPrice as "UnitCost" { unit:#(currency) }
+    DispatchRecommendations.CurrentFillRate as "CurrentFR"
+    DispatchRecommendations.NewFillRate as "NewFR"
+    DispatchRecommendations.PriorityScore as "Priority"
+    order by DispatchRecommendations.PriorityScore desc
+
+///#region Dispatch micro decisions
+show table "Dispatch micro decisions" k1q12 with
+  DispatchMicroDecisions.Rank
+  DispatchMicroDecisions.item_id as "Item"
+  DispatchMicroDecisions.location_id as "Location"
+  DispatchMicroDecisions.Supplier
+  DispatchMicroDecisions.StockOnHand
+  DispatchMicroDecisions.StockOnOrder
+  DispatchMicroDecisions.DispatchQty as "DispatchQty"
+  DispatchMicroDecisions.MinQty as "MinQty"
+  DispatchMicroDecisions.MaxQty as "MaxQty"
+  DispatchMicroDecisions.TransportationLeadTime as "TransportationLT"
+  DispatchMicroDecisions.DispatchLeadTime as "DispatchLT"
+  DispatchMicroDecisions.CurrentFillRate as "CurrentFR"
+  DispatchMicroDecisions.FillRateDelta as "FillRateDelta"
+  DispatchMicroDecisions.DisplayReward as "Reward"
+  DispatchMicroDecisions.DisplayScore as "Score"
+  DispatchMicroDecisions.IsPriority as "Priority?"
+  order by DispatchMicroDecisions.DisplayScore desc

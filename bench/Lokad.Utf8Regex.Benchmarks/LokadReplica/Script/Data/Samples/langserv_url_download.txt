@@ -1,0 +1,8 @@
+https://go.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=3FB38D57A124BE61548267CEEB25C501&path=%2FBackground%2FGraphics%2FItemImages&name=PlaceHolderItemGraphic.png
+https://go.testing.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=2AA38D57A124BE61548267CEEB25C500&path=%2FExports%2FReview&name=ForecastReview.csv
+~/DEMO/gateway/BigFiles/Browse/Download?hash=AABBCCDDEEFF00112233445566778899&path=%2FDispatch%2FBoards&name=DispatchBoard.xlsx
+Download: https://go.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=ABCDEF0123456789ABCDEF0123456789&name=SupplierReview.txt
+Attachment https://go.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=FFEEDDCCBBAA00998877665544332211&path=%2FExports%2FItems&name=ItemInspector.csv
+Mirror ~/DEMO/gateway/BigFiles/Browse/Download?hash=00112233445566778899AABBCCDDEEFF&path=%2FImages&name=placeholder.png
+Preview source https://go.testing.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=99998888777766665555444433332222&path=%2FBackground%2FTemplates&name=ColorPalette.svg
+Static asset https://go.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=1029384756ABCDEF1029384756ABCDEF&name=RegionMarkerGuide.pdf

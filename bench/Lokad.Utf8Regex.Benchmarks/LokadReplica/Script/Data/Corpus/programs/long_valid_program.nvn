@@ -1,0 +1,225 @@
+// 2025-10-02: Derived from anonymized historical examples
+// All client identifiers, dashboard ids, URLs, and project codes were removed.
+// The purpose of this file is to preserve realistic Lokad script lexer and language-service workload shapes.
+
+import "_GlobalParameters" as GP with
+  CurrencyUnit
+  ColorPrimary
+  ColorWarning
+  LinkLocationInspector
+  LinkPartnerInspector
+  LinkHomeDashboard
+
+///#region Inputs
+read "/clean/Items.ion" as Items[item_id unsafe] with
+  item_id = Items.ItemId
+  Location : text
+  Reference : text
+  Name : text
+  Category : text
+  ReorderCycle : number
+  TransferCycle : number
+  LeadTime : number
+  Brand : text
+  Partner : text
+  StockOnHand : number
+  StockOnOrder : number
+  BuyPrice : number
+  SellPrice : number
+  MOQ : number
+  LotMultiplier : number
+  Volume : number
+  IsActive : boolean
+  ImagePath : text
+  IsClean : boolean
+  LeadTimeDistribution : ranvar
+
+read "/clean/Orders.ion" as Orders expect [item_id, date] with
+  item_id = Orders.ItemId
+  "OrderDate" as date : date
+  Reference : text
+  Location : text
+  Quantity : number
+  NetAmount : number
+  OrderId : text
+  IsFirstOrder : boolean
+  HealthLog : text
+  IsClean : boolean
+
+read "/clean/PurchaseOrders.ion" as PurchaseOrders expect [item_id, date] with
+  item_id = PurchaseOrders.ItemId
+  "OrderDate" as date : date
+  Location : text
+  Reference : text
+  DeliveryDate : date
+  Quantity : number
+  Partner : text
+  PurchaseOrderNo : text
+  IsInCatalog : boolean
+  IsClean : boolean
+  InputDate : date
+  InputPath : text
+
+read "/clean/Forecast/Weekly.ion" as WeeklyForecast expect [item_id, date] with
+  item_id = WeeklyForecast.ItemId
+  "Monday" as date : date
+  DemandQty : number
+  IsPast : boolean
+  Baseline : number
+  Demand : ranvar
+  TransferDemand : ranvar
+  TotalDemand : ranvar
+
+read "/clean/Forecast/Items.ion" as ForecastItems expect [item_id] with
+  item_id = ForecastItems.ItemId
+  GapToTarget : number
+  CategoryGapToTarget : number
+  OverallGapToTarget : number
+  ForecastStatus : text
+  CategoryForecastStatus : text
+  OverallForecastStatus : text
+  LowerQuantile : number
+  UpperQuantile : number
+
+read "/clean/Stock.ion" as Stock expect [item_id, date] with
+  item_id = Stock.ItemId
+  StockOnHand : number
+  StockOnOrder : number
+  "StockDate" as date : date
+  IsInCatalog : boolean
+
+read "/clean/Results/PurchaseRecommendations.ion" as PurchaseRecommendations expect [item_id] with
+  item_id = PurchaseRecommendations.ItemId
+  Margin : number
+  BuyPrice : number
+  OrderQuantity : number
+  InvestmentRequired : number
+  CurrentFillRate : number
+  NewFillRate : number
+  LastYearSales : number
+  SalesWeight : number
+  OverallFillRateContribution : number
+
+read "/clean/Results/MicroDecisions.ion" as MicroDecisions expect [item_id] with
+  Rank : number
+  item_id = MicroDecisions.ItemId
+  Name : text
+  Partner : text
+  BuyPrice : number
+  SellPrice : number
+  Margin : number
+  StockOnHand : number
+  StockOnOrder : number
+  LotMultiplier : number
+  MinQty : number
+  MaxQty : number
+  ReplenishmentLeadTime : number
+  SalesWeight : number
+  CurrentFillRate : number
+  FillRateDelta : number
+  Reward : number
+  Score : number
+  Investment : number
+  IsEligible : boolean
+
+read "/clean/Results/Simulation.ion" as Simulation expect [item_id, date] with
+  item_id = Simulation.ItemId
+  date : date
+  StartWeekLow : number
+  StartWeekAverage : number
+  StartWeekHigh : number
+  EndWeekLow : number
+  EndWeekAverage : number
+  EndWeekHigh : number
+
+const horizon = 12
+const focus_days = 90
+const currency = "USD"
+const highlight_color = "#3a7bd5"
+const warning_color = "#d97706"
+
+today = today()
+start_date = max(date) - 365
+end_date = max(date)
+
+///#region Forecast sanity
+where date >= start_date
+  Orders.NetAmount = forex(Orders.NetAmount, "USD", currency, date)
+
+Items.HasHistory = any(Orders.Quantity > 0) by item_id at Items.item_id
+Items.RecentSales = sum(Orders.Quantity) when (date >= end_date - focus_days) by item_id at Items.item_id
+Items.AnnualSales = sum(Orders.Quantity) by item_id at Items.item_id
+Items.RecentNetAmount = sum(Orders.NetAmount) when (date >= end_date - focus_days) by item_id at Items.item_id
+Items.ExpectedDemand = sum(WeeklyForecast.DemandQty) when (date <= end_date + horizon * 7) by item_id at Items.item_id
+Items.SuggestedQty = max(0, round(Items.ExpectedDemand + same(ForecastItems.GapToTarget) by item_id at Items.item_id))
+Items.SuggestedInvestment = Items.SuggestedQty * Items.BuyPrice
+Items.HasAction = Items.IsActive and Items.SuggestedQty > 0
+Items.InvestmentBucket =
+  if Items.SuggestedInvestment > 10000 then "large"
+  else if Items.SuggestedInvestment > 2500 then "medium"
+  else "small"
+
+where Items.HasAction
+  show summary "Replenishment overview" with
+    count(Items.*)
+    sum(Items.SuggestedQty) as "Suggested units"
+    sum(Items.SuggestedInvestment) { unit:#(currency) }
+
+show table "Priority items" a1f12 with
+  Items.item_id as "Item"
+  Items.Reference
+  Items.Name
+  Items.Location
+  Items.Category
+  Items.Partner
+  Items.StockOnHand
+  Items.StockOnOrder
+  Items.RecentSales as "RecentSales"
+  Items.ExpectedDemand as "ExpectedDemand"
+  Items.SuggestedQty as "SuggestedQty"
+  Items.SuggestedInvestment as "SuggestedInvestment" { unit:#(currency) ; cellBackground: #(highlight_color) }
+  Items.InvestmentBucket as "Bucket"
+  order by Items.SuggestedInvestment desc
+
+///#region Purchase details
+PurchaseRecommendations.Actionable = PurchaseRecommendations.OrderQuantity > 0
+PurchaseRecommendations.ExpectedMargin = PurchaseRecommendations.OrderQuantity * PurchaseRecommendations.Margin
+PurchaseRecommendations.PriorityScore =
+  PurchaseRecommendations.SalesWeight
+  + PurchaseRecommendations.FillRateDelta * 100
+  - PurchaseRecommendations.InvestmentRequired / 50
+
+where PurchaseRecommendations.Actionable
+  show table "Purchase suggestions" c1g10 with
+    PurchaseRecommendations.item_id as "Item"
+    PurchaseRecommendations.OrderQuantity as "Qty"
+    PurchaseRecommendations.BuyPrice as "UnitCost" { unit:#(currency) }
+    PurchaseRecommendations.InvestmentRequired as "Investment" { unit:#(currency) }
+    PurchaseRecommendations.CurrentFillRate as "CurrentFR"
+    PurchaseRecommendations.NewFillRate as "NewFR"
+    PurchaseRecommendations.ExpectedMargin as "ExpectedMargin" { unit:#(currency) }
+    PurchaseRecommendations.PriorityScore as "PriorityScore"
+    order by PurchaseRecommendations.PriorityScore desc
+
+///#region Micro decisions
+MicroDecisions.DisplayScore = round(MicroDecisions.Score, 2)
+MicroDecisions.DisplayReward = round(MicroDecisions.Reward, 2)
+MicroDecisions.IsPriority = MicroDecisions.IsEligible and MicroDecisions.FillRateDelta > 0
+
+show table "Decision trail" h1m12 with
+  MicroDecisions.Rank
+  MicroDecisions.item_id as "Item"
+  MicroDecisions.Name
+  MicroDecisions.Partner
+  MicroDecisions.StockOnHand
+  MicroDecisions.StockOnOrder
+  MicroDecisions.MinQty
+  MicroDecisions.MaxQty
+  MicroDecisions.ReplenishmentLeadTime as "RLT"
+  MicroDecisions.CurrentFillRate as "CurrentFR"
+  MicroDecisions.FillRateDelta as "FillRateDelta"
+  MicroDecisions.DisplayReward as "Reward"
+  MicroDecisions.DisplayScore as "Score"
+  MicroDecisions.IsPriority as "Priority?"
+  order by MicroDecisions.DisplayScore desc
+

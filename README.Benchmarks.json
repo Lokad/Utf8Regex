@@ -1,0 +1,1445 @@
+{
+  "SchemaVersion": 1,
+  "Sections": {
+    "dotnet-performance": {
+      "Cases": {
+        "literal/sherlock-en": {
+          "Utf8Regex": 162,
+          "Utf8Compiled": 145.98,
+          "PredecodedRegex": 281.72,
+          "CompiledRegex": 151.8,
+          "DecodeThenRegex": 1221.98,
+          "DecodeThenCompiledRegex": 1323.18
+        },
+        "literal/sherlock-casei-en": {
+          "Utf8Regex": 374.16,
+          "Utf8Compiled": 373.96,
+          "PredecodedRegex": 254.62,
+          "CompiledRegex": 129.84,
+          "DecodeThenRegex": 1267.76,
+          "DecodeThenCompiledRegex": 1022.48
+        },
+        "literal/sherlock-ru": {
+          "Utf8Regex": 3259.84,
+          "Utf8Compiled": 2694.3,
+          "PredecodedRegex": 191.22,
+          "CompiledRegex": 162.3,
+          "DecodeThenRegex": 5908.32,
+          "DecodeThenCompiledRegex": 6870.98
+        },
+        "literal/sherlock-casei-ru": {
+          "Utf8Regex": 8359.842,
+          "Utf8Compiled": 8093.389,
+          "PredecodedRegex": 551.756,
+          "CompiledRegex": 242.02,
+          "DecodeThenRegex": 6187.667,
+          "DecodeThenCompiledRegex": 5845.795
+        },
+        "literal/sherlock-zh": {
+          "Utf8Regex": 1037.32,
+          "Utf8Compiled": 1050.88,
+          "PredecodedRegex": 50.88,
+          "CompiledRegex": 53.66,
+          "DecodeThenRegex": 2491.92,
+          "DecodeThenCompiledRegex": 2533.42
+        },
+        "literal-alternate/sherlock-en": {
+          "Utf8Regex": 1113.34,
+          "Utf8Compiled": 1116.78,
+          "PredecodedRegex": 2717.98,
+          "CompiledRegex": 1464.38,
+          "DecodeThenRegex": 3666.86,
+          "DecodeThenCompiledRegex": 2401.68
+        },
+        "literal-alternate/sherlock-en-nomatch": {
+          "Utf8Regex": 466.6,
+          "Utf8Compiled": 523.84,
+          "PredecodedRegex": 1157.86,
+          "CompiledRegex": 211.18,
+          "DecodeThenRegex": 2116.88,
+          "DecodeThenCompiledRegex": 1099.24
+        },
+        "literal-alternate/sherlock-en-mixed": {
+          "Utf8Regex": 725.82,
+          "Utf8Compiled": 716.6,
+          "PredecodedRegex": 1281.84,
+          "CompiledRegex": 250.82,
+          "DecodeThenRegex": 2128.2,
+          "DecodeThenCompiledRegex": 1169.36
+        },
+        "literal-alternate/sherlock-casei-en": {
+          "Utf8Regex": 9596.96,
+          "Utf8Compiled": 2694.3,
+          "PredecodedRegex": 18535.76,
+          "CompiledRegex": 1785,
+          "DecodeThenRegex": 17276.36,
+          "DecodeThenCompiledRegex": 3618.54
+        },
+        "literal-alternate/sherlock-ru": {
+          "Utf8Regex": 6795.86,
+          "Utf8Compiled": 6710.7,
+          "PredecodedRegex": 11419.82,
+          "CompiledRegex": 2538.16,
+          "DecodeThenRegex": 17284.88,
+          "DecodeThenCompiledRegex": 9656.26
+        },
+        "literal-alternate/sherlock-casei-ru": {
+          "Utf8Regex": 42489.568,
+          "Utf8Compiled": 9859.646,
+          "PredecodedRegex": 35158.292,
+          "CompiledRegex": 2144.873,
+          "DecodeThenRegex": 42175.43,
+          "DecodeThenCompiledRegex": 7669.957
+        },
+        "literal-alternate/sherlock-zh": {
+          "Utf8Regex": 1689.977,
+          "Utf8Compiled": 1689.711,
+          "PredecodedRegex": 159.924,
+          "CompiledRegex": 88.473,
+          "DecodeThenRegex": 2414.127,
+          "DecodeThenCompiledRegex": 2328
+        },
+        "bounded-repeat/letters-en": {
+          "Utf8Regex": 2524.18,
+          "Utf8Compiled": 2450.34,
+          "PredecodedRegex": 6091.92,
+          "CompiledRegex": 5793.96,
+          "DecodeThenRegex": 7033.34,
+          "DecodeThenCompiledRegex": 5728
+        },
+        "bounded-repeat/letters-ru": {
+          "Utf8Regex": 1134.04,
+          "Utf8Compiled": 1195.12,
+          "PredecodedRegex": 20393.3,
+          "CompiledRegex": 5868.6,
+          "DecodeThenRegex": 11527.8,
+          "DecodeThenCompiledRegex": 4000.72
+        },
+        "bounded-repeat/context": {
+          "Utf8Regex": 55630.06,
+          "Utf8Compiled": 55992.42,
+          "PredecodedRegex": 235888.3,
+          "CompiledRegex": 64908.74,
+          "DecodeThenRegex": 237327.3,
+          "DecodeThenCompiledRegex": 71976.16
+        },
+        "bounded-repeat/capitals": {
+          "Utf8Regex": 605.64,
+          "Utf8Compiled": 541.74,
+          "PredecodedRegex": 72003.46,
+          "CompiledRegex": 16112.14,
+          "DecodeThenRegex": 74098.02,
+          "DecodeThenCompiledRegex": 22794.86
+        },
+        "dictionary/single": {
+          "Utf8Regex": 15207.14,
+          "Utf8Compiled": 13914,
+          "PredecodedRegex": 47242.88,
+          "CompiledRegex": 84558.72,
+          "DecodeThenRegex": 45104.86,
+          "DecodeThenCompiledRegex": 83785
+        },
+        "aws-keys/full": {
+          "Utf8Regex": 3863.94,
+          "Utf8Compiled": 3708.62,
+          "PredecodedRegex": 136222.2,
+          "CompiledRegex": 20694.8,
+          "DecodeThenRegex": 163992.08,
+          "DecodeThenCompiledRegex": 54717.38
+        },
+        "aws-keys/quick": {
+          "Utf8Regex": 12111.66,
+          "Utf8Compiled": 8248.56,
+          "PredecodedRegex": 17081.72,
+          "CompiledRegex": 5852.62,
+          "DecodeThenRegex": 36628.6,
+          "DecodeThenCompiledRegex": 35412.98
+        },
+        "ruff-noqa/real": {
+          "Utf8Regex": 4218.78,
+          "Utf8Compiled": 3489.94,
+          "PredecodedRegex": 101483.08,
+          "CompiledRegex": 24348.72,
+          "DecodeThenRegex": 115395.84,
+          "DecodeThenCompiledRegex": 52859.98
+        },
+        "ruff-noqa/tweaked": {
+          "Utf8Regex": 8110.24,
+          "Utf8Compiled": 7804.34,
+          "PredecodedRegex": 14553.14,
+          "CompiledRegex": 6858.5,
+          "DecodeThenRegex": 26733.74,
+          "DecodeThenCompiledRegex": 28700.5
+        },
+        "common/email-match": {
+          "Utf8Regex": 0.62,
+          "Utf8Compiled": 0.612,
+          "PredecodedRegex": 0.415,
+          "CompiledRegex": 0.287,
+          "DecodeThenRegex": 0.445,
+          "DecodeThenCompiledRegex": 0.317
+        },
+        "common/email-miss": {
+          "Utf8Regex": 0.657,
+          "Utf8Compiled": 0.656,
+          "PredecodedRegex": 0.62,
+          "CompiledRegex": 0.284,
+          "DecodeThenRegex": 0.662,
+          "DecodeThenCompiledRegex": 0.33
+        },
+        "common/date-match": {
+          "Utf8Regex": 0.529,
+          "Utf8Compiled": 0.571,
+          "PredecodedRegex": 0.2,
+          "CompiledRegex": 0.131,
+          "DecodeThenRegex": 0.246,
+          "DecodeThenCompiledRegex": 0.171
+        },
+        "common/date-miss": {
+          "Utf8Regex": 1.781,
+          "Utf8Compiled": 1.85,
+          "PredecodedRegex": 1.388,
+          "CompiledRegex": 0.764,
+          "DecodeThenRegex": 1.299,
+          "DecodeThenCompiledRegex": 0.831
+        },
+        "common/ip-match": {
+          "Utf8Regex": 0.326,
+          "Utf8Compiled": 0.308,
+          "PredecodedRegex": 0.34,
+          "CompiledRegex": 0.097,
+          "DecodeThenRegex": 0.366,
+          "DecodeThenCompiledRegex": 0.118
+        },
+        "common/ip-miss": {
+          "Utf8Regex": 0.336,
+          "Utf8Compiled": 0.324,
+          "PredecodedRegex": 0.337,
+          "CompiledRegex": 0.091,
+          "DecodeThenRegex": 0.385,
+          "DecodeThenCompiledRegex": 0.121
+        },
+        "common/uri-match": {
+          "Utf8Regex": 0.948,
+          "Utf8Compiled": 0.666,
+          "PredecodedRegex": 0.393,
+          "CompiledRegex": 0.14,
+          "DecodeThenRegex": 0.455,
+          "DecodeThenCompiledRegex": 0.19
+        },
+        "common/uri-miss": {
+          "Utf8Regex": 0.548,
+          "Utf8Compiled": 0.596,
+          "PredecodedRegex": 0.346,
+          "CompiledRegex": 0.11,
+          "DecodeThenRegex": 0.402,
+          "DecodeThenCompiledRegex": 0.135
+        },
+        "common/matches-set": {
+          "Utf8Regex": 16.653,
+          "Utf8Compiled": 15.715,
+          "PredecodedRegex": 494.038,
+          "CompiledRegex": 294.958,
+          "DecodeThenRegex": 268.46,
+          "DecodeThenCompiledRegex": 119.752
+        },
+        "common/matches-boundary": {
+          "Utf8Regex": 17.605,
+          "Utf8Compiled": 16.472,
+          "PredecodedRegex": 503.021,
+          "CompiledRegex": 297.607,
+          "DecodeThenRegex": 274.597,
+          "DecodeThenCompiledRegex": 123.493
+        },
+        "common/matches-word": {
+          "Utf8Regex": 7.39,
+          "Utf8Compiled": 7.415,
+          "PredecodedRegex": 10.606,
+          "CompiledRegex": 4.385,
+          "DecodeThenRegex": 18.463,
+          "DecodeThenCompiledRegex": 7.814
+        },
+        "common/matches-words": {
+          "Utf8Regex": 32.593,
+          "Utf8Compiled": 32.534,
+          "PredecodedRegex": 140.441,
+          "CompiledRegex": 19.72,
+          "DecodeThenRegex": 146.19,
+          "DecodeThenCompiledRegex": 21.633
+        },
+        "common/match-word": {
+          "Utf8Regex": 0.802,
+          "Utf8Compiled": 0.693,
+          "PredecodedRegex": 0.339,
+          "CompiledRegex": 0.123,
+          "DecodeThenRegex": 2.028,
+          "DecodeThenCompiledRegex": 1.862
+        },
+        "common/replace-words": {
+          "Utf8Regex": 184.79,
+          "Utf8Compiled": 58.986,
+          "PredecodedRegex": 116.06,
+          "CompiledRegex": 25.537,
+          "DecodeThenRegex": 114.678,
+          "DecodeThenCompiledRegex": 32.592
+        },
+        "common/split-words": {
+          "Utf8Regex": 190.43,
+          "Utf8Compiled": 64.556,
+          "PredecodedRegex": 115.802,
+          "CompiledRegex": 31.854,
+          "DecodeThenRegex": 112.834,
+          "DecodeThenCompiledRegex": 26.201
+        },
+        "common/backtracking": {
+          "Utf8Regex": 0.197,
+          "Utf8Compiled": 0.203,
+          "PredecodedRegex": 1.528,
+          "CompiledRegex": 0.095,
+          "DecodeThenRegex": 1.655,
+          "DecodeThenCompiledRegex": 0.138
+        },
+        "common/one-node-backtracking": {
+          "Utf8Regex": 0.326,
+          "Utf8Compiled": 0.325,
+          "PredecodedRegex": 1.053,
+          "CompiledRegex": 0.106,
+          "DecodeThenRegex": 1.132,
+          "DecodeThenCompiledRegex": 0.164
+        },
+        "industry/mariomka-email-count": {
+          "Utf8Regex": 3220.956,
+          "Utf8Compiled": 2939.13,
+          "PredecodedRegex": 878.118,
+          "CompiledRegex": 861.381,
+          "DecodeThenRegex": 12584.236,
+          "DecodeThenCompiledRegex": 10830.425
+        },
+        "industry/mariomka-uri-count": {
+          "Utf8Regex": 3737.988,
+          "Utf8Compiled": 3516.625,
+          "PredecodedRegex": 2879.194,
+          "CompiledRegex": 1631.788,
+          "DecodeThenRegex": 12945.246,
+          "DecodeThenCompiledRegex": 11785.949
+        },
+        "industry/mariomka-ip-count": {
+          "Utf8Regex": 5741.404,
+          "Utf8Compiled": 5380.543,
+          "PredecodedRegex": 12295.925,
+          "CompiledRegex": 4492.087,
+          "DecodeThenRegex": 21910.386,
+          "DecodeThenCompiledRegex": 14594.433
+        },
+        "industry/rust-sherlock-letter-count": {
+          "Utf8Regex": 1953.93,
+          "Utf8Compiled": 1965.571,
+          "PredecodedRegex": 23881.804,
+          "CompiledRegex": 12441.578,
+          "DecodeThenRegex": 23956.355,
+          "DecodeThenCompiledRegex": 12702.795
+        },
+        "industry/rust-sherlock-holmes-window-count": {
+          "Utf8Regex": 326.159,
+          "Utf8Compiled": 307.646,
+          "PredecodedRegex": 520.624,
+          "CompiledRegex": 101.089,
+          "DecodeThenRegex": 977.209,
+          "DecodeThenCompiledRegex": 485.11
+        },
+        "industry/rust-sherlock-ing-count": {
+          "Utf8Regex": 511.784,
+          "Utf8Compiled": 389.942,
+          "PredecodedRegex": 14514.4,
+          "CompiledRegex": 4869.982,
+          "DecodeThenRegex": 14853.077,
+          "DecodeThenCompiledRegex": 5082.124
+        },
+        "industry/rust-sherlock-word-holmes-count": {
+          "Utf8Regex": 55.848,
+          "Utf8Compiled": 53.011,
+          "PredecodedRegex": 11246.374,
+          "CompiledRegex": 3828.805,
+          "DecodeThenRegex": 11153.037,
+          "DecodeThenCompiledRegex": 4132.014
+        },
+        "industry/rust-sherlock-nonnewline-count": {
+          "Utf8Regex": 187.978,
+          "Utf8Compiled": 185.722,
+          "PredecodedRegex": 1368.658,
+          "CompiledRegex": 927.156,
+          "DecodeThenRegex": 1825.452,
+          "DecodeThenCompiledRegex": 1297.008
+        },
+        "industry/leipzig-twain-count": {
+          "Utf8Regex": 2271.859,
+          "Utf8Compiled": 2198.567,
+          "PredecodedRegex": 2376.895,
+          "CompiledRegex": 2346.763,
+          "DecodeThenRegex": 9205.381,
+          "DecodeThenCompiledRegex": 9140.722
+        },
+        "industry/leipzig-name-family-count": {
+          "Utf8Regex": 4350.771,
+          "Utf8Compiled": 4377.971,
+          "PredecodedRegex": 13685.295,
+          "CompiledRegex": 3517.777,
+          "DecodeThenRegex": 20464.993,
+          "DecodeThenCompiledRegex": 10330.331
+        },
+        "industry/leipzig-river-window-count": {
+          "Utf8Regex": 11817.11,
+          "Utf8Compiled": 11698.772,
+          "PredecodedRegex": 51539.364,
+          "CompiledRegex": 9266.592,
+          "DecodeThenRegex": 56626.382,
+          "DecodeThenCompiledRegex": 15493.755
+        },
+        "industry/leipzig-symbol-count": {
+          "Utf8Regex": 3483.919,
+          "Utf8Compiled": 3382.146,
+          "PredecodedRegex": 22148.081,
+          "CompiledRegex": 2371.134,
+          "DecodeThenRegex": 29140.508,
+          "DecodeThenCompiledRegex": 9284.733
+        },
+        "industry/boostdocs-ftp-line-match": {
+          "Utf8Regex": 0.285,
+          "Utf8Compiled": 0.292,
+          "PredecodedRegex": 0.223,
+          "CompiledRegex": 0.115,
+          "DecodeThenRegex": 0.359,
+          "DecodeThenCompiledRegex": 0.134
+        },
+        "industry/boostdocs-credit-card-match": {
+          "Utf8Regex": 0.324,
+          "Utf8Compiled": 0.334,
+          "PredecodedRegex": 0.31,
+          "CompiledRegex": 0.135,
+          "DecodeThenRegex": 0.381,
+          "DecodeThenCompiledRegex": 0.131
+        },
+        "industry/boostdocs-postcode-match": {
+          "Utf8Regex": 0.794,
+          "Utf8Compiled": 0.655,
+          "PredecodedRegex": 0.137,
+          "CompiledRegex": 0.061,
+          "DecodeThenRegex": 0.169,
+          "DecodeThenCompiledRegex": 0.086
+        },
+        "industry/boostdocs-date-match": {
+          "Utf8Regex": 0.644,
+          "Utf8Compiled": 0.528,
+          "PredecodedRegex": 0.139,
+          "CompiledRegex": 0.067,
+          "DecodeThenRegex": 0.185,
+          "DecodeThenCompiledRegex": 0.089
+        },
+        "industry/boostdocs-float-match": {
+          "Utf8Regex": 0.251,
+          "Utf8Compiled": 0.222,
+          "PredecodedRegex": 0.135,
+          "CompiledRegex": 0.067,
+          "DecodeThenRegex": 0.163,
+          "DecodeThenCompiledRegex": 0.092
+        }
+      }
+    },
+    "dotnet-performance-compiled": {
+      "Cases": {
+        "literal/sherlock-en": {
+          "Utf8Regex": 147.64,
+          "Utf8Compiled": 145.94,
+          "PredecodedRegex": 176.36,
+          "CompiledRegex": 152.6,
+          "DecodeThenRegex": 1079.5,
+          "DecodeThenCompiledRegex": 1027.16
+        },
+        "literal/sherlock-casei-en": {
+          "Utf8Regex": 402.32,
+          "Utf8Compiled": 385,
+          "PredecodedRegex": 254.2,
+          "CompiledRegex": 124.32,
+          "DecodeThenRegex": 1152.06,
+          "DecodeThenCompiledRegex": 1030.2
+        },
+        "literal/sherlock-ru": {
+          "Utf8Regex": 2461.42,
+          "Utf8Compiled": 2478.06,
+          "PredecodedRegex": 192.04,
+          "CompiledRegex": 146.22,
+          "DecodeThenRegex": 6061.04,
+          "DecodeThenCompiledRegex": 5804.68
+        },
+        "literal/sherlock-casei-ru": {
+          "Utf8Regex": 9869.661,
+          "Utf8Compiled": 8326.845,
+          "PredecodedRegex": 562.885,
+          "CompiledRegex": 252.049,
+          "DecodeThenRegex": 6501.028,
+          "DecodeThenCompiledRegex": 6069.783
+        },
+        "literal/sherlock-zh": {
+          "Utf8Regex": 1034.34,
+          "Utf8Compiled": 1029.98,
+          "PredecodedRegex": 52.04,
+          "CompiledRegex": 52.6,
+          "DecodeThenRegex": 2430.16,
+          "DecodeThenCompiledRegex": 2420.44
+        },
+        "literal-alternate/sherlock-en": {
+          "Utf8Regex": 1102.62,
+          "Utf8Compiled": 1087.52,
+          "PredecodedRegex": 2559.58,
+          "CompiledRegex": 1368.78,
+          "DecodeThenRegex": 3404.98,
+          "DecodeThenCompiledRegex": 2282.9
+        },
+        "literal-alternate/sherlock-en-nomatch": {
+          "Utf8Regex": 485.62,
+          "Utf8Compiled": 439.92,
+          "PredecodedRegex": 1143.46,
+          "CompiledRegex": 215.52,
+          "DecodeThenRegex": 2037.34,
+          "DecodeThenCompiledRegex": 1044.36
+        },
+        "literal-alternate/sherlock-en-mixed": {
+          "Utf8Regex": 775.26,
+          "Utf8Compiled": 620.1,
+          "PredecodedRegex": 1088.3,
+          "CompiledRegex": 220.44,
+          "DecodeThenRegex": 1966.5,
+          "DecodeThenCompiledRegex": 1078.54
+        },
+        "literal-alternate/sherlock-casei-en": {
+          "Utf8Regex": 9137.2,
+          "Utf8Compiled": 2523.18,
+          "PredecodedRegex": 18424.78,
+          "CompiledRegex": 1722.62,
+          "DecodeThenRegex": 15739.74,
+          "DecodeThenCompiledRegex": 3152.36
+        },
+        "literal-alternate/sherlock-ru": {
+          "Utf8Regex": 6451.62,
+          "Utf8Compiled": 3753.62,
+          "PredecodedRegex": 10524.48,
+          "CompiledRegex": 2367.64,
+          "DecodeThenRegex": 13402.02,
+          "DecodeThenCompiledRegex": 8874.8
+        },
+        "literal-alternate/sherlock-casei-ru": {
+          "Utf8Regex": 42535.75,
+          "Utf8Compiled": 9868.287,
+          "PredecodedRegex": 35028.404,
+          "CompiledRegex": 1988.016,
+          "DecodeThenRegex": 40466.506,
+          "DecodeThenCompiledRegex": 7807.837
+        },
+        "literal-alternate/sherlock-zh": {
+          "Utf8Regex": 1695.115,
+          "Utf8Compiled": 1582.044,
+          "PredecodedRegex": 163.913,
+          "CompiledRegex": 90.16,
+          "DecodeThenRegex": 2370.113,
+          "DecodeThenCompiledRegex": 2285.439
+        },
+        "bounded-repeat/letters-en": {
+          "Utf8Regex": 2318.06,
+          "Utf8Compiled": 2381.88,
+          "PredecodedRegex": 6185.84,
+          "CompiledRegex": 5641.24,
+          "DecodeThenRegex": 5556.94,
+          "DecodeThenCompiledRegex": 5411.96
+        },
+        "bounded-repeat/letters-ru": {
+          "Utf8Regex": 1112.78,
+          "Utf8Compiled": 1121.04,
+          "PredecodedRegex": 18336.98,
+          "CompiledRegex": 5941.84,
+          "DecodeThenRegex": 9966.1,
+          "DecodeThenCompiledRegex": 7186.36
+        },
+        "bounded-repeat/context": {
+          "Utf8Regex": 44571.76,
+          "Utf8Compiled": 45701.66,
+          "PredecodedRegex": 209880.22,
+          "CompiledRegex": 59173.36,
+          "DecodeThenRegex": 206425.48,
+          "DecodeThenCompiledRegex": 63855.44
+        },
+        "bounded-repeat/capitals": {
+          "Utf8Regex": 538,
+          "Utf8Compiled": 517.38,
+          "PredecodedRegex": 61970.6,
+          "CompiledRegex": 13934.82,
+          "DecodeThenRegex": 64881.96,
+          "DecodeThenCompiledRegex": 20004.7
+        },
+        "dictionary/single": {
+          "Utf8Regex": 26138.62,
+          "Utf8Compiled": 11598.28,
+          "PredecodedRegex": 37240.66,
+          "CompiledRegex": 78731.4,
+          "DecodeThenRegex": 36531.62,
+          "DecodeThenCompiledRegex": 78549.66
+        },
+        "aws-keys/full": {
+          "Utf8Regex": 3083.88,
+          "Utf8Compiled": 3082.24,
+          "PredecodedRegex": 119113.5,
+          "CompiledRegex": 18038.64,
+          "DecodeThenRegex": 136009.78,
+          "DecodeThenCompiledRegex": 44193.8
+        },
+        "aws-keys/quick": {
+          "Utf8Regex": 8187.32,
+          "Utf8Compiled": 8204.82,
+          "PredecodedRegex": 13585.94,
+          "CompiledRegex": 5409.72,
+          "DecodeThenRegex": 27456.12,
+          "DecodeThenCompiledRegex": 31621.96
+        },
+        "ruff-noqa/real": {
+          "Utf8Regex": 3140.14,
+          "Utf8Compiled": 3152.64,
+          "PredecodedRegex": 99508.08,
+          "CompiledRegex": 23950.06,
+          "DecodeThenRegex": 113829.48,
+          "DecodeThenCompiledRegex": 50331.72
+        },
+        "ruff-noqa/tweaked": {
+          "Utf8Regex": 8018.3,
+          "Utf8Compiled": 7944.1,
+          "PredecodedRegex": 16354.06,
+          "CompiledRegex": 8105.04,
+          "DecodeThenRegex": 26132.02,
+          "DecodeThenCompiledRegex": 29929.52
+        },
+        "common/email-match": {
+          "Utf8Regex": 0.62,
+          "Utf8Compiled": 0.616,
+          "PredecodedRegex": 0.402,
+          "CompiledRegex": 0.264,
+          "DecodeThenRegex": 0.445,
+          "DecodeThenCompiledRegex": 0.326
+        },
+        "common/email-miss": {
+          "Utf8Regex": 0.653,
+          "Utf8Compiled": 0.646,
+          "PredecodedRegex": 0.614,
+          "CompiledRegex": 0.277,
+          "DecodeThenRegex": 0.69,
+          "DecodeThenCompiledRegex": 0.329
+        },
+        "common/date-match": {
+          "Utf8Regex": 0.54,
+          "Utf8Compiled": 0.572,
+          "PredecodedRegex": 0.202,
+          "CompiledRegex": 0.128,
+          "DecodeThenRegex": 0.297,
+          "DecodeThenCompiledRegex": 0.17
+        },
+        "common/date-miss": {
+          "Utf8Regex": 1.653,
+          "Utf8Compiled": 1.676,
+          "PredecodedRegex": 1.229,
+          "CompiledRegex": 0.75,
+          "DecodeThenRegex": 1.315,
+          "DecodeThenCompiledRegex": 0.818
+        },
+        "common/ip-match": {
+          "Utf8Regex": 0.333,
+          "Utf8Compiled": 0.328,
+          "PredecodedRegex": 0.355,
+          "CompiledRegex": 0.092,
+          "DecodeThenRegex": 0.398,
+          "DecodeThenCompiledRegex": 0.118
+        },
+        "common/ip-miss": {
+          "Utf8Regex": 0.335,
+          "Utf8Compiled": 0.333,
+          "PredecodedRegex": 0.356,
+          "CompiledRegex": 0.09,
+          "DecodeThenRegex": 0.403,
+          "DecodeThenCompiledRegex": 0.118
+        },
+        "common/uri-match": {
+          "Utf8Regex": 0.669,
+          "Utf8Compiled": 0.731,
+          "PredecodedRegex": 0.554,
+          "CompiledRegex": 0.14,
+          "DecodeThenRegex": 0.588,
+          "DecodeThenCompiledRegex": 0.187
+        },
+        "common/uri-miss": {
+          "Utf8Regex": 0.478,
+          "Utf8Compiled": 0.528,
+          "PredecodedRegex": 0.396,
+          "CompiledRegex": 0.11,
+          "DecodeThenRegex": 0.382,
+          "DecodeThenCompiledRegex": 0.139
+        },
+        "common/matches-set": {
+          "Utf8Regex": 16.767,
+          "Utf8Compiled": 15.496,
+          "PredecodedRegex": 426.308,
+          "CompiledRegex": 361.779,
+          "DecodeThenRegex": 270.26,
+          "DecodeThenCompiledRegex": 121.451
+        },
+        "common/matches-boundary": {
+          "Utf8Regex": 16.315,
+          "Utf8Compiled": 15.703,
+          "PredecodedRegex": 452.156,
+          "CompiledRegex": 319.512,
+          "DecodeThenRegex": 257.707,
+          "DecodeThenCompiledRegex": 111.79
+        },
+        "common/matches-word": {
+          "Utf8Regex": 7.46,
+          "Utf8Compiled": 7.095,
+          "PredecodedRegex": 9.611,
+          "CompiledRegex": 4.311,
+          "DecodeThenRegex": 11.187,
+          "DecodeThenCompiledRegex": 5.938
+        },
+        "common/matches-words": {
+          "Utf8Regex": 33.095,
+          "Utf8Compiled": 32.708,
+          "PredecodedRegex": 144.477,
+          "CompiledRegex": 18.595,
+          "DecodeThenRegex": 196.237,
+          "DecodeThenCompiledRegex": 31.954
+        },
+        "common/match-word": {
+          "Utf8Regex": 0.76,
+          "Utf8Compiled": 0.707,
+          "PredecodedRegex": 0.327,
+          "CompiledRegex": 0.128,
+          "DecodeThenRegex": 2.32,
+          "DecodeThenCompiledRegex": 2.005
+        },
+        "common/replace-words": {
+          "Utf8Regex": 175.813,
+          "Utf8Compiled": 54.89,
+          "PredecodedRegex": 110.608,
+          "CompiledRegex": 24.098,
+          "DecodeThenRegex": 111.201,
+          "DecodeThenCompiledRegex": 40.65
+        },
+        "common/split-words": {
+          "Utf8Regex": 171.913,
+          "Utf8Compiled": 56.5,
+          "PredecodedRegex": 105.309,
+          "CompiledRegex": 23.939,
+          "DecodeThenRegex": 109.9,
+          "DecodeThenCompiledRegex": 33.124
+        },
+        "common/backtracking": {
+          "Utf8Regex": 0.196,
+          "Utf8Compiled": 0.2,
+          "PredecodedRegex": 1.555,
+          "CompiledRegex": 0.092,
+          "DecodeThenRegex": 1.572,
+          "DecodeThenCompiledRegex": 0.134
+        },
+        "common/one-node-backtracking": {
+          "Utf8Regex": 0.318,
+          "Utf8Compiled": 0.317,
+          "PredecodedRegex": 1.032,
+          "CompiledRegex": 0.103,
+          "DecodeThenRegex": 1.072,
+          "DecodeThenCompiledRegex": 0.15
+        },
+        "industry/mariomka-email-count": {
+          "Utf8Regex": 2910.071,
+          "Utf8Compiled": 2914.005,
+          "PredecodedRegex": 705.036,
+          "CompiledRegex": 655.523,
+          "DecodeThenRegex": 11026.875,
+          "DecodeThenCompiledRegex": 10787.569
+        },
+        "industry/mariomka-uri-count": {
+          "Utf8Regex": 3797.043,
+          "Utf8Compiled": 3529.226,
+          "PredecodedRegex": 2520.109,
+          "CompiledRegex": 1525.893,
+          "DecodeThenRegex": 12734.786,
+          "DecodeThenCompiledRegex": 11755.138
+        },
+        "industry/mariomka-ip-count": {
+          "Utf8Regex": 5417.056,
+          "Utf8Compiled": 5249.826,
+          "PredecodedRegex": 11207.757,
+          "CompiledRegex": 4209.686,
+          "DecodeThenRegex": 21647.193,
+          "DecodeThenCompiledRegex": 14291.237
+        },
+        "industry/rust-sherlock-letter-count": {
+          "Utf8Regex": 1996.801,
+          "Utf8Compiled": 1990.654,
+          "PredecodedRegex": 24911.425,
+          "CompiledRegex": 12506.863,
+          "DecodeThenRegex": 25191.753,
+          "DecodeThenCompiledRegex": 12872.643
+        },
+        "industry/rust-sherlock-holmes-window-count": {
+          "Utf8Regex": 297.202,
+          "Utf8Compiled": 294.859,
+          "PredecodedRegex": 441.912,
+          "CompiledRegex": 99.642,
+          "DecodeThenRegex": 803.337,
+          "DecodeThenCompiledRegex": 550.776
+        },
+        "industry/rust-sherlock-ing-count": {
+          "Utf8Regex": 510.451,
+          "Utf8Compiled": 291.703,
+          "PredecodedRegex": 15105.593,
+          "CompiledRegex": 4849.998,
+          "DecodeThenRegex": 15310.059,
+          "DecodeThenCompiledRegex": 5154.971
+        },
+        "industry/rust-sherlock-word-holmes-count": {
+          "Utf8Regex": 53.895,
+          "Utf8Compiled": 55.373,
+          "PredecodedRegex": 10649.26,
+          "CompiledRegex": 3824.495,
+          "DecodeThenRegex": 11183.504,
+          "DecodeThenCompiledRegex": 4254.235
+        },
+        "industry/rust-sherlock-nonnewline-count": {
+          "Utf8Regex": 192,
+          "Utf8Compiled": 186.736,
+          "PredecodedRegex": 1422.755,
+          "CompiledRegex": 964.347,
+          "DecodeThenRegex": 1718.913,
+          "DecodeThenCompiledRegex": 1314.323
+        },
+        "industry/leipzig-twain-count": {
+          "Utf8Regex": 2469.968,
+          "Utf8Compiled": 2213.092,
+          "PredecodedRegex": 2411.699,
+          "CompiledRegex": 2373.659,
+          "DecodeThenRegex": 9617.169,
+          "DecodeThenCompiledRegex": 9415.944
+        },
+        "industry/leipzig-name-family-count": {
+          "Utf8Regex": 4232.032,
+          "Utf8Compiled": 4255.648,
+          "PredecodedRegex": 12181.596,
+          "CompiledRegex": 3486.898,
+          "DecodeThenRegex": 18919.146,
+          "DecodeThenCompiledRegex": 10260.238
+        },
+        "industry/leipzig-river-window-count": {
+          "Utf8Regex": 11713.206,
+          "Utf8Compiled": 11572.932,
+          "PredecodedRegex": 49896.326,
+          "CompiledRegex": 9022.458,
+          "DecodeThenRegex": 57344.139,
+          "DecodeThenCompiledRegex": 15682.683
+        },
+        "industry/leipzig-symbol-count": {
+          "Utf8Regex": 3902.233,
+          "Utf8Compiled": 3562.634,
+          "PredecodedRegex": 22421.692,
+          "CompiledRegex": 2450.014,
+          "DecodeThenRegex": 29956.568,
+          "DecodeThenCompiledRegex": 9586.975
+        },
+        "industry/boostdocs-ftp-line-match": {
+          "Utf8Regex": 0.283,
+          "Utf8Compiled": 0.281,
+          "PredecodedRegex": 0.219,
+          "CompiledRegex": 0.116,
+          "DecodeThenRegex": 0.322,
+          "DecodeThenCompiledRegex": 0.141
+        },
+        "industry/boostdocs-credit-card-match": {
+          "Utf8Regex": 0.32,
+          "Utf8Compiled": 0.347,
+          "PredecodedRegex": 0.306,
+          "CompiledRegex": 0.129,
+          "DecodeThenRegex": 0.384,
+          "DecodeThenCompiledRegex": 0.126
+        },
+        "industry/boostdocs-postcode-match": {
+          "Utf8Regex": 0.8,
+          "Utf8Compiled": 0.654,
+          "PredecodedRegex": 0.14,
+          "CompiledRegex": 0.064,
+          "DecodeThenRegex": 0.171,
+          "DecodeThenCompiledRegex": 0.098
+        },
+        "industry/boostdocs-date-match": {
+          "Utf8Regex": 0.655,
+          "Utf8Compiled": 0.551,
+          "PredecodedRegex": 0.139,
+          "CompiledRegex": 0.067,
+          "DecodeThenRegex": 0.181,
+          "DecodeThenCompiledRegex": 0.089
+        },
+        "industry/boostdocs-float-match": {
+          "Utf8Regex": 0.248,
+          "Utf8Compiled": 0.221,
+          "PredecodedRegex": 0.147,
+          "CompiledRegex": 0.072,
+          "DecodeThenRegex": 0.188,
+          "DecodeThenCompiledRegex": 0.091
+        }
+      }
+    },
+    "lokad": {
+      "Cases": {
+        "literal/identifier-token": {
+          "Utf8Regex": 14.38,
+          "Utf8Compiled": 16.28,
+          "PredecodedRegex": 10.96,
+          "CompiledRegex": 6.1,
+          "DecodeThenRegex": 20.36,
+          "DecodeThenCompiledRegex": 19.28
+        },
+        "literal/call-token": {
+          "Utf8Regex": 16.08,
+          "Utf8Compiled": 15.88,
+          "PredecodedRegex": 9.56,
+          "CompiledRegex": 8.54,
+          "DecodeThenRegex": 20.12,
+          "DecodeThenCompiledRegex": 18.2
+        },
+        "literal/identifier-token-casei": {
+          "Utf8Regex": 34.02,
+          "Utf8Compiled": 29.764,
+          "PredecodedRegex": 26.628,
+          "CompiledRegex": 10.604,
+          "DecodeThenRegex": 43.529,
+          "DecodeThenCompiledRegex": 27.409
+        },
+        "literal-family/type-token-family": {
+          "Utf8Regex": 27.965,
+          "Utf8Compiled": 26.983,
+          "PredecodedRegex": 45.567,
+          "CompiledRegex": 10.577,
+          "DecodeThenRegex": 75.83,
+          "DecodeThenCompiledRegex": 35.481
+        },
+        "literal-family/method-token-family": {
+          "Utf8Regex": 74.6,
+          "Utf8Compiled": 56.26,
+          "PredecodedRegex": 13.672,
+          "CompiledRegex": 6.222,
+          "DecodeThenRegex": 29.477,
+          "DecodeThenCompiledRegex": 27.426
+        },
+        "structural/keyword-to-generic-type": {
+          "Utf8Regex": 16.86,
+          "Utf8Compiled": 16.34,
+          "PredecodedRegex": 10.02,
+          "CompiledRegex": 5.94,
+          "DecodeThenRegex": 19.3,
+          "DecodeThenCompiledRegex": 15.98
+        },
+        "structural/keyword-family-to-capitalized-identifier": {
+          "Utf8Regex": 274.72,
+          "Utf8Compiled": 109.88,
+          "PredecodedRegex": 520.64,
+          "CompiledRegex": 81.08,
+          "DecodeThenRegex": 535.8,
+          "DecodeThenCompiledRegex": 92.5
+        },
+        "structural/method-family-call": {
+          "Utf8Regex": 11.016,
+          "Utf8Compiled": 5.103,
+          "PredecodedRegex": 19.065,
+          "CompiledRegex": 8.436,
+          "DecodeThenRegex": 28.132,
+          "DecodeThenCompiledRegex": 20.914
+        },
+        "structural/ordered-keyword-pair": {
+          "Utf8Regex": 21.48,
+          "Utf8Compiled": 22.94,
+          "PredecodedRegex": 12.26,
+          "CompiledRegex": 6.54,
+          "DecodeThenRegex": 22.02,
+          "DecodeThenCompiledRegex": 17.96
+        },
+        "structural/ordered-identifier-window": {
+          "Utf8Regex": 23.88,
+          "Utf8Compiled": 23.24,
+          "PredecodedRegex": 66.44,
+          "CompiledRegex": 23.48,
+          "DecodeThenRegex": 83.32,
+          "DecodeThenCompiledRegex": 32.36
+        },
+        "structural/modifier-family-to-type-window": {
+          "Utf8Regex": 128.86,
+          "Utf8Compiled": 120.32,
+          "PredecodedRegex": 638.74,
+          "CompiledRegex": 143.38,
+          "DecodeThenRegex": 648.7,
+          "DecodeThenCompiledRegex": 158.12
+        },
+        "structural/ordered-keyword-window": {
+          "Utf8Regex": 25.26,
+          "Utf8Compiled": 27.04,
+          "PredecodedRegex": 46.94,
+          "CompiledRegex": 16.22,
+          "DecodeThenRegex": 57.12,
+          "DecodeThenCompiledRegex": 25.2
+        },
+        "structural/method-family-generic-call": {
+          "Utf8Regex": 11.749,
+          "Utf8Compiled": 5.232,
+          "PredecodedRegex": 16.351,
+          "CompiledRegex": 9.427,
+          "DecodeThenRegex": 27.958,
+          "DecodeThenCompiledRegex": 23.399
+        },
+        "fallback/lookahead": {
+          "Utf8Regex": 17.28,
+          "Utf8Compiled": 17.46,
+          "PredecodedRegex": 13.56,
+          "CompiledRegex": 9.1,
+          "DecodeThenRegex": 24.4,
+          "DecodeThenCompiledRegex": 20.26
+        },
+        "balancing/begin-end-blocks": {
+          "Utf8Regex": 8159.76,
+          "Utf8Compiled": 692.44,
+          "PredecodedRegex": 8439.26,
+          "CompiledRegex": 691.3,
+          "DecodeThenRegex": 10338,
+          "DecodeThenCompiledRegex": 716.7
+        },
+        "structural/ordered-modifier-pair": {
+          "Utf8Regex": 17.2,
+          "Utf8Compiled": 17.2,
+          "PredecodedRegex": 36.42,
+          "CompiledRegex": 15.1,
+          "DecodeThenRegex": 47.02,
+          "DecodeThenCompiledRegex": 22.88
+        },
+        "structural/modifier-family-to-type-pair": {
+          "Utf8Regex": 111.02,
+          "Utf8Compiled": 105.8,
+          "PredecodedRegex": 317.84,
+          "CompiledRegex": 61.82,
+          "DecodeThenRegex": 328.24,
+          "DecodeThenCompiledRegex": 73.3
+        },
+        "lokad/imports/module-imports": {
+          "Utf8Regex": 14.17,
+          "Utf8Compiled": 13.568,
+          "PredecodedRegex": 6.003,
+          "CompiledRegex": 6.029,
+          "DecodeThenRegex": 34.81,
+          "DecodeThenCompiledRegex": 36.956
+        },
+        "lokad/folding/region-marker": {
+          "Utf8Regex": 27.88,
+          "Utf8Compiled": 29.02,
+          "PredecodedRegex": 171.88,
+          "CompiledRegex": 163.58,
+          "DecodeThenRegex": 167.72,
+          "DecodeThenCompiledRegex": 172.52
+        },
+        "lokad/lexer/identifier": {
+          "Utf8Regex": 45.311,
+          "Utf8Compiled": 45.41,
+          "PredecodedRegex": 40.03,
+          "CompiledRegex": 33.264,
+          "DecodeThenRegex": 42.649,
+          "DecodeThenCompiledRegex": 42.72
+        },
+        "lokad/lexer/number": {
+          "Utf8Regex": 14.595,
+          "Utf8Compiled": 15.47,
+          "PredecodedRegex": 11.611,
+          "CompiledRegex": 11.16,
+          "DecodeThenRegex": 15.575,
+          "DecodeThenCompiledRegex": 15.475
+        },
+        "lokad/lexer/string": {
+          "Utf8Regex": 34.658,
+          "Utf8Compiled": 33.313,
+          "PredecodedRegex": 61.009,
+          "CompiledRegex": 61.585,
+          "DecodeThenRegex": 70.96,
+          "DecodeThenCompiledRegex": 72.363
+        },
+        "lokad/lexer/operator-run": {
+          "Utf8Regex": 5.396,
+          "Utf8Compiled": 5.739,
+          "PredecodedRegex": 4.674,
+          "CompiledRegex": 4.616,
+          "DecodeThenRegex": 5.942,
+          "DecodeThenCompiledRegex": 5.71
+        },
+        "lokad/lexer/doc-line": {
+          "Utf8Regex": 5.768,
+          "Utf8Compiled": 5.6,
+          "PredecodedRegex": 4.141,
+          "CompiledRegex": 3.951,
+          "DecodeThenRegex": 5.78,
+          "DecodeThenCompiledRegex": 5.68
+        },
+        "lokad/docs/inline-doc-prefix": {
+          "Utf8Regex": 8.174,
+          "Utf8Compiled": 7.588,
+          "PredecodedRegex": 4.754,
+          "CompiledRegex": 4.632,
+          "DecodeThenRegex": 6.731,
+          "DecodeThenCompiledRegex": 6.47
+        },
+        "lokad/langserv/identifier-validator": {
+          "Utf8Regex": 18.225,
+          "Utf8Compiled": 18.145,
+          "PredecodedRegex": 18.153,
+          "CompiledRegex": 17.545,
+          "DecodeThenRegex": 22.058,
+          "DecodeThenCompiledRegex": 21.816
+        },
+        "lokad/langserv/helper-identifier": {
+          "Utf8Regex": 13.838,
+          "Utf8Compiled": 13.75,
+          "PredecodedRegex": 12.878,
+          "CompiledRegex": 12.436,
+          "DecodeThenRegex": 15.142,
+          "DecodeThenCompiledRegex": 14.78
+        },
+        "lokad/langserv/color-short-hex": {
+          "Utf8Regex": 3.432,
+          "Utf8Compiled": 3.088,
+          "PredecodedRegex": 1.781,
+          "CompiledRegex": 1.776,
+          "DecodeThenRegex": 2.366,
+          "DecodeThenCompiledRegex": 2.352
+        },
+        "lokad/langserv/color-rgb-hex": {
+          "Utf8Regex": 4.373,
+          "Utf8Compiled": 4.015,
+          "PredecodedRegex": 2.893,
+          "CompiledRegex": 2.86,
+          "DecodeThenRegex": 3.471,
+          "DecodeThenCompiledRegex": 3.516
+        },
+        "lokad/langserv/url-dashboard": {
+          "Utf8Regex": 12.582,
+          "Utf8Compiled": 10.507,
+          "PredecodedRegex": 9.881,
+          "CompiledRegex": 10.7,
+          "DecodeThenRegex": 10.751,
+          "DecodeThenCompiledRegex": 10.556
+        },
+        "lokad/langserv/url-download": {
+          "Utf8Regex": 16.239,
+          "Utf8Compiled": 15.66,
+          "PredecodedRegex": 19.22,
+          "CompiledRegex": 16.902,
+          "DecodeThenRegex": 18.238,
+          "DecodeThenCompiledRegex": 17.998
+        },
+        "lokad/style/hex-color": {
+          "Utf8Regex": 1.529,
+          "Utf8Compiled": 1.428,
+          "PredecodedRegex": 0.812,
+          "CompiledRegex": 0.8,
+          "DecodeThenRegex": 1.116,
+          "DecodeThenCompiledRegex": 1.075
+        },
+        "lokad/style/cell-ref": {
+          "Utf8Regex": 2.652,
+          "Utf8Compiled": 3.294,
+          "PredecodedRegex": 2.707,
+          "CompiledRegex": 3.05,
+          "DecodeThenRegex": 3.434,
+          "DecodeThenCompiledRegex": 4.006
+        },
+        "lokad/style/range-ref": {
+          "Utf8Regex": 1.874,
+          "Utf8Compiled": 1.939,
+          "PredecodedRegex": 2.067,
+          "CompiledRegex": 2.018,
+          "DecodeThenRegex": 2.291,
+          "DecodeThenCompiledRegex": 2.332
+        }
+      }
+    },
+    "lokad-compiled": {
+      "Cases": {
+        "literal/identifier-token": {
+          "Utf8Regex": 15.08,
+          "Utf8Compiled": 16.14,
+          "PredecodedRegex": 11.28,
+          "CompiledRegex": 6.44,
+          "DecodeThenRegex": 19.96,
+          "DecodeThenCompiledRegex": 15.7
+        },
+        "literal/call-token": {
+          "Utf8Regex": 17.3,
+          "Utf8Compiled": 16.4,
+          "PredecodedRegex": 10.46,
+          "CompiledRegex": 8.98,
+          "DecodeThenRegex": 20.84,
+          "DecodeThenCompiledRegex": 19.06
+        },
+        "literal/identifier-token-casei": {
+          "Utf8Regex": 31.043,
+          "Utf8Compiled": 31.256,
+          "PredecodedRegex": 26.718,
+          "CompiledRegex": 10.402,
+          "DecodeThenRegex": 42.403,
+          "DecodeThenCompiledRegex": 28.168
+        },
+        "literal-family/type-token-family": {
+          "Utf8Regex": 34.74,
+          "Utf8Compiled": 31.246,
+          "PredecodedRegex": 66.824,
+          "CompiledRegex": 10.568,
+          "DecodeThenRegex": 69.716,
+          "DecodeThenCompiledRegex": 28.621
+        },
+        "literal-family/method-token-family": {
+          "Utf8Regex": 63.245,
+          "Utf8Compiled": 61.354,
+          "PredecodedRegex": 14.841,
+          "CompiledRegex": 6.126,
+          "DecodeThenRegex": 29.841,
+          "DecodeThenCompiledRegex": 22.467
+        },
+        "structural/keyword-to-generic-type": {
+          "Utf8Regex": 16.56,
+          "Utf8Compiled": 18.5,
+          "PredecodedRegex": 10.08,
+          "CompiledRegex": 6.02,
+          "DecodeThenRegex": 20.56,
+          "DecodeThenCompiledRegex": 15.82
+        },
+        "structural/keyword-family-to-capitalized-identifier": {
+          "Utf8Regex": 272.68,
+          "Utf8Compiled": 110.72,
+          "PredecodedRegex": 535.7,
+          "CompiledRegex": 81.54,
+          "DecodeThenRegex": 535.56,
+          "DecodeThenCompiledRegex": 96.72
+        },
+        "structural/method-family-call": {
+          "Utf8Regex": 10.92,
+          "Utf8Compiled": 5.18,
+          "PredecodedRegex": 18.764,
+          "CompiledRegex": 8.527,
+          "DecodeThenRegex": 28.518,
+          "DecodeThenCompiledRegex": 20.634
+        },
+        "structural/ordered-keyword-pair": {
+          "Utf8Regex": 20.88,
+          "Utf8Compiled": 23,
+          "PredecodedRegex": 12.12,
+          "CompiledRegex": 6.64,
+          "DecodeThenRegex": 24.26,
+          "DecodeThenCompiledRegex": 20.26
+        },
+        "structural/ordered-identifier-window": {
+          "Utf8Regex": 25.26,
+          "Utf8Compiled": 22.68,
+          "PredecodedRegex": 70.06,
+          "CompiledRegex": 25,
+          "DecodeThenRegex": 83.92,
+          "DecodeThenCompiledRegex": 32.58
+        },
+        "structural/modifier-family-to-type-window": {
+          "Utf8Regex": 129.04,
+          "Utf8Compiled": 127.98,
+          "PredecodedRegex": 657.68,
+          "CompiledRegex": 144.06,
+          "DecodeThenRegex": 639.86,
+          "DecodeThenCompiledRegex": 155.42
+        },
+        "structural/ordered-keyword-window": {
+          "Utf8Regex": 27.54,
+          "Utf8Compiled": 28.64,
+          "PredecodedRegex": 47.44,
+          "CompiledRegex": 18.82,
+          "DecodeThenRegex": 56.84,
+          "DecodeThenCompiledRegex": 26.92
+        },
+        "structural/method-family-generic-call": {
+          "Utf8Regex": 11.019,
+          "Utf8Compiled": 10.81,
+          "PredecodedRegex": 20.68,
+          "CompiledRegex": 8.829,
+          "DecodeThenRegex": 28.928,
+          "DecodeThenCompiledRegex": 22.657
+        },
+        "fallback/lookahead": {
+          "Utf8Regex": 17.22,
+          "Utf8Compiled": 19.12,
+          "PredecodedRegex": 15.48,
+          "CompiledRegex": 9.58,
+          "DecodeThenRegex": 22.74,
+          "DecodeThenCompiledRegex": 19.66
+        },
+        "balancing/begin-end-blocks": {
+          "Utf8Regex": 7932.38,
+          "Utf8Compiled": 695.08,
+          "PredecodedRegex": 8790.38,
+          "CompiledRegex": 678.84,
+          "DecodeThenRegex": 10495.28,
+          "DecodeThenCompiledRegex": 735.78
+        },
+        "structural/ordered-modifier-pair": {
+          "Utf8Regex": 27.62,
+          "Utf8Compiled": 17.9,
+          "PredecodedRegex": 41.62,
+          "CompiledRegex": 12.04,
+          "DecodeThenRegex": 47.92,
+          "DecodeThenCompiledRegex": 21.74
+        },
+        "structural/modifier-family-to-type-pair": {
+          "Utf8Regex": 111.54,
+          "Utf8Compiled": 106.5,
+          "PredecodedRegex": 319.3,
+          "CompiledRegex": 61.2,
+          "DecodeThenRegex": 339,
+          "DecodeThenCompiledRegex": 71.84
+        },
+        "lokad/imports/module-imports": {
+          "Utf8Regex": 14.562,
+          "Utf8Compiled": 13.67,
+          "PredecodedRegex": 6.187,
+          "CompiledRegex": 6.131,
+          "DecodeThenRegex": 38.223,
+          "DecodeThenCompiledRegex": 36.711
+        },
+        "lokad/folding/region-marker": {
+          "Utf8Regex": 26.22,
+          "Utf8Compiled": 28.48,
+          "PredecodedRegex": 169.94,
+          "CompiledRegex": 162.4,
+          "DecodeThenRegex": 173.56,
+          "DecodeThenCompiledRegex": 171.22
+        },
+        "lokad/lexer/identifier": {
+          "Utf8Regex": 43.634,
+          "Utf8Compiled": 42.981,
+          "PredecodedRegex": 28.299,
+          "CompiledRegex": 30.069,
+          "DecodeThenRegex": 38.188,
+          "DecodeThenCompiledRegex": 42.675
+        },
+        "lokad/lexer/number": {
+          "Utf8Regex": 14.582,
+          "Utf8Compiled": 14.251,
+          "PredecodedRegex": 11.866,
+          "CompiledRegex": 11.342,
+          "DecodeThenRegex": 15.006,
+          "DecodeThenCompiledRegex": 15.28
+        },
+        "lokad/lexer/string": {
+          "Utf8Regex": 33.812,
+          "Utf8Compiled": 33.578,
+          "PredecodedRegex": 60.911,
+          "CompiledRegex": 60.945,
+          "DecodeThenRegex": 70.739,
+          "DecodeThenCompiledRegex": 70.007
+        },
+        "lokad/lexer/operator-run": {
+          "Utf8Regex": 5.64,
+          "Utf8Compiled": 5.622,
+          "PredecodedRegex": 4.838,
+          "CompiledRegex": 4.636,
+          "DecodeThenRegex": 5.845,
+          "DecodeThenCompiledRegex": 5.888
+        },
+        "lokad/lexer/doc-line": {
+          "Utf8Regex": 5.67,
+          "Utf8Compiled": 5.825,
+          "PredecodedRegex": 4.123,
+          "CompiledRegex": 3.917,
+          "DecodeThenRegex": 5.79,
+          "DecodeThenCompiledRegex": 5.638
+        },
+        "lokad/docs/inline-doc-prefix": {
+          "Utf8Regex": 8.122,
+          "Utf8Compiled": 7.646,
+          "PredecodedRegex": 4.702,
+          "CompiledRegex": 4.849,
+          "DecodeThenRegex": 6.787,
+          "DecodeThenCompiledRegex": 6.524
+        },
+        "lokad/langserv/identifier-validator": {
+          "Utf8Regex": 18.644,
+          "Utf8Compiled": 17.959,
+          "PredecodedRegex": 15.993,
+          "CompiledRegex": 15.912,
+          "DecodeThenRegex": 21.546,
+          "DecodeThenCompiledRegex": 21.072
+        },
+        "lokad/langserv/helper-identifier": {
+          "Utf8Regex": 13.386,
+          "Utf8Compiled": 13.072,
+          "PredecodedRegex": 12.897,
+          "CompiledRegex": 12.079,
+          "DecodeThenRegex": 14.777,
+          "DecodeThenCompiledRegex": 15.046
+        },
+        "lokad/langserv/color-short-hex": {
+          "Utf8Regex": 3.098,
+          "Utf8Compiled": 3.041,
+          "PredecodedRegex": 1.789,
+          "CompiledRegex": 1.781,
+          "DecodeThenRegex": 2.273,
+          "DecodeThenCompiledRegex": 2.192
+        },
+        "lokad/langserv/color-rgb-hex": {
+          "Utf8Regex": 4.328,
+          "Utf8Compiled": 4.004,
+          "PredecodedRegex": 2.914,
+          "CompiledRegex": 2.823,
+          "DecodeThenRegex": 3.504,
+          "DecodeThenCompiledRegex": 3.506
+        },
+        "lokad/langserv/url-dashboard": {
+          "Utf8Regex": 10.912,
+          "Utf8Compiled": 10.403,
+          "PredecodedRegex": 9.91,
+          "CompiledRegex": 9.601,
+          "DecodeThenRegex": 10.524,
+          "DecodeThenCompiledRegex": 10.633
+        },
+        "lokad/langserv/url-download": {
+          "Utf8Regex": 17.168,
+          "Utf8Compiled": 15.245,
+          "PredecodedRegex": 16.809,
+          "CompiledRegex": 16.673,
+          "DecodeThenRegex": 18.672,
+          "DecodeThenCompiledRegex": 17.429
+        },
+        "lokad/style/hex-color": {
+          "Utf8Regex": 1.481,
+          "Utf8Compiled": 1.449,
+          "PredecodedRegex": 0.857,
+          "CompiledRegex": 0.855,
+          "DecodeThenRegex": 1.015,
+          "DecodeThenCompiledRegex": 1.04
+        },
+        "lokad/style/cell-ref": {
+          "Utf8Regex": 2.503,
+          "Utf8Compiled": 2.629,
+          "PredecodedRegex": 2.601,
+          "CompiledRegex": 2.715,
+          "DecodeThenRegex": 3.272,
+          "DecodeThenCompiledRegex": 3.112
+        },
+        "lokad/style/range-ref": {
+          "Utf8Regex": 1.906,
+          "Utf8Compiled": 1.993,
+          "PredecodedRegex": 2.057,
+          "CompiledRegex": 2.091,
+          "DecodeThenRegex": 2.225,
+          "DecodeThenCompiledRegex": 2.236
+        }
+      }
+    }
+  }
+}

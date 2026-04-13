@@ -1,0 +1,24 @@
+/// #region Shared modules
+import "_Common" as Common
+import "_Formatting" as Formatting
+import shared "_Calendar" as Calendar
+import shared "_Navigation" as Navigation
+
+/// #region Input schemas
+read "/clean/Orders.ion" as Orders expect [date] with
+  "OrderDate" as date : date
+  ItemId : text
+  Quantity : number
+  NetAmount : number
+  Currency : text
+
+read "/clean/Partners.ion" as Partners[partner_id] with
+  partner_id = Partners.PartnerId
+  Name : text
+  Country : text
+  Area : text
+
+/// #region Dashboard shell
+show scalar "Imported module count" with 4
+show label "Home" { href:#(Navigation.HomeUrl) }
+

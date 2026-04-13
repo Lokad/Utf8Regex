@@ -1,0 +1,30 @@
+namespace Lokad.Utf8Regex.Internal.Execution;
+
+internal enum Utf8ExecutionNodeKind : byte
+{
+    Empty = 0,
+    One = 1,
+    Multi = 2,
+    Set = 3,
+    Concatenate = 4,
+    Alternate = 5,
+    Capture = 6,
+    Group = 7,
+    Loop = 8,
+    LazyLoop = 9,
+    Bol = 10,
+    Eol = 11,
+    Boundary = 12,
+    NonBoundary = 13,
+    ECMABoundary = 14,
+    NonECMABoundary = 15,
+    Beginning = 16,
+    Start = 17,
+    EndZ = 18,
+    End = 19,
+    PositiveLookaround = 20,
+    NegativeLookaround = 21,
+    Atomic = 22,
+    Backreference = 23,
+    Unsupported = 255,
+}

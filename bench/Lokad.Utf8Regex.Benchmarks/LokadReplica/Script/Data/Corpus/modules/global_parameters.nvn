@@ -1,0 +1,30 @@
+// 2025-12-03: Derived from anonymized historical examples
+// Links and client-specific ids were normalized.
+
+export const CurrencyUnit = "USD"
+export const DcUnit = "$"
+export const ConfirmButton = "[ OK ]"
+export const ColorPrimary = rgb(0.973, 0.459, 0.318)
+export const ColorLightPrimary = rgb(1, 0.624, 0.522)
+export const ColorLightWarning = rgb(1, 0.792, 0.792)
+export const ColorBackground = rgb(0.973, 0.973, 0.973)
+export const ColorAltText = rgb(1, 1, 1)
+export const ColorWarning = rgb(0.957, 0.565, 0.141)
+export const ColorOk = rgb(0.306, 0.776, 0.145)
+
+export const LinkLocationSupplierInspector = "dashboard/location-supplier-review"
+export const LinkLocationRegionInspector = "dashboard/location-region-review"
+export const LinkHomeDashboard = "dashboard/home"
+export const LinkHomeLongTerm = "dashboard/long-term"
+
+export const MinOrderLines = 1
+export const HealthObsHorizon = 1
+export const DefaultMinWarning = 1
+export const DefaultMinError = 1
+
+export table RegionUrl = with
+  [| as Region, as DashboardPath |]
+  [| "north", "dashboard/region-north" |]
+  [| "east", "dashboard/region-east" |]
+  [| "south", "dashboard/region-south" |]
+  [| "west", "dashboard/region-west" |]

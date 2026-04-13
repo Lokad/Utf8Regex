@@ -1,0 +1,67 @@
+{
+  "client": {
+    "enableHttpClientTracing": true,
+    "enableProjectionRefresh": true,
+    "enableProjectionHistory": true,
+    "enableStaleOrderBanner": false,
+    "enableSlowQueryPanel": true,
+    "enableReplicaHealthTile": true,
+    "defaultLogLevel": "Information",
+    "defaultCulture": "en-US",
+    "allowedCultures": [
+      "en-US",
+      "en-GB",
+      "fr-FR",
+      "de-DE"
+    ],
+    "navigation": {
+      "showOperations": true,
+      "showProjectionInspector": true,
+      "showGeneratedBindings": false
+    }
+  },
+  "network": {
+    "sendAsyncTimeoutSeconds": 30,
+    "healthProbeTimeoutSeconds": 5,
+    "projectionWarmupTimeoutSeconds": 20,
+    "maxRetryCount": 4,
+    "backoffMilliseconds": [
+      100,
+      250,
+      500,
+      1000
+    ]
+  },
+  "experiments": {
+    "useProjectionWarmup": true,
+    "preferGeneratedBindings": true,
+    "emitFetchTimingHeaders": true,
+    "captureHttpClientPayloadSamples": false,
+    "enableReplicaDiffPanel": true,
+    "enableCheckpointReplay": false
+  },
+  "diagnostics": {
+    "dashboardRefreshSeconds": 10,
+    "retainRecentRequests": 128,
+    "retainProjectionSnapshots": 24,
+    "retainFailedRequests": 64,
+    "retainProjectionLagSamples": 256
+  },
+  "searchSamples": {
+    "literalCases": [
+      "HttpClient",
+      "SendAsync",
+      "ConfigureAwait",
+      "projection-refresh",
+      "GeneratedServiceCatalog"
+    ],
+    "structuralCases": [
+      "public sealed class",
+      "logger.LogInformation",
+      "AddSingleton",
+      "AddScoped",
+      "await foreach"
+    ]
+  }
+}
+

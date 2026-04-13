@@ -1,0 +1,174 @@
+// 2025-12-01: Derived from anonymized historical examples
+// Customer identifiers, dashboard ids, and proprietary codes were removed.
+
+import "_PathSchemas" as PathSchemas
+import "_Functions" as Functions
+import "_Colors" as Colors
+import "_GeneralParameters" as GP
+import "_Lists" as Lists with
+  MappingMarketplace
+  MappingDigital
+  EntrySeasonMinStockDigital
+  DigitalLocations
+  OnlinePriorityCountry
+
+/// ---------------------------------------------------------------------------------------------------------------------------------
+///# 0) READ FILES
+/// ---------------------------------------------------------------------------------------------------------------------------------
+
+@{&.dashUnsaved {bannerMessage:"⚠️ Unsaved modifications detected ⚠️";bannerButton:"Save Changes"}}
+
+read form with
+  ScenarioId : number
+  UnitScope : text
+  IsBackup : boolean
+  IsTarget : boolean
+  CapacityHub : number
+
+const Path = if IsBackup then "BACKUP" else "PROD"
+const TenantInstance = ScenarioId
+const AlternateUnitScope = if UnitScope == "Region_Retail" then "Region_Digital" else "VOID"
+const LastMonth = month(today() - 10)
+const TargetHorizon = if IsBackup then "Backup" else "Dispatch"
+const EffectiveHorizon = if IsTarget then TargetHorizon else "Backup"
+
+read '/clean/EnumList/EnumList_SKU.ion' as EnumList_SKU small 1M with
+  SKU : table enum SKU
+read '/clean/EnumList/EnumList_RefColor.ion' as EnumList_RefColor small 1M with
+  RefColor : table enum RefColor
+read '/clean/EnumList/EnumList_Size.ion' as EnumList_Size small 1M with
+  Size : table enum Size
+read '/clean/EnumList/EnumList_Location.ion' as EnumList_Location small 1M with
+  Location : table enum Location
+read '/clean/EnumList/EnumList_Country.ion' as EnumList_Country small 1M with
+  Country : table enum Country
+read '/clean/EnumList/EnumList_Season.ion' as EnumList_Season small 1M with
+  Season : table enum Season
+read '/clean/EnumList/EnumList_Department.ion' as EnumList_Department small 1M with
+  Department : table enum Department
+read '/clean/EnumList/EnumList_Family.ion' as EnumList_Family small 1M with
+  Family : table enum Family
+
+read '/clean/DailyVariableParameter.ion' as DailyParameter
+
+read as Catalog small 1M with
+  SKU : enum SKU
+  MasterSKU : enum SKU
+  Ref : text
+  Color : text
+  RefColor : enum RefColor
+  MasterRefColor : enum RefColor
+  Barcode : text
+  RefName : text
+  ColorName : text
+  DepartmentName : text
+  FamilyName : text
+  Family : text
+  Size : text
+  ImageURL : text
+  Season : text
+  InitialSeason : text
+  SizesList : text
+  SubFamily : text
+  Theme : text
+  TargetWave : text
+  Cluster : text
+  IsCarryOver : boolean
+  LaunchDate : date
+  SizeGridCode : text
+  IsInShortageScope : boolean
+read '/clean/partitioned/Catalog_\{TenantInstance}.ion' as Catalog with
+  Theme = Catalog.Theme
+  TargetWave = Catalog.TargetWave
+
+read as SkuLoc max 7M with
+  SKU : enum SKU
+  MasterSKUForDigital : enum SKU
+  Location : enum Location
+  StoreType : text
+  StoreDimension : text
+  IsInDispatchOptim : boolean
+  RefColor : enum RefColor
+  Size : enum Size
+  Ref : text
+  Color : text
+  Country : enum Country
+  Season : enum Season
+  Department : enum Department
+  Family : enum Family
+  SubFamily : text
+  DispatchLocation : enum Location
+  AutomaticRLT : number
+  RLT : number
+  NextPickingDay : date
+  StockOnHand : number
+  StockUnavailable : number
+  StockTransit : number
+  StockPreparation : number
+  TargetStock : number
+  BookedIncoming : number
+  MinPicking : number
+  SoldRefColor : number
+  SoldTotalSKU : number
+  SoldSeason : number
+  SellPrice : number
+  BuyPrice : number
+  Continent : text
+read '/clean/partitioned/SkuLoc_\{TenantInstance}.ion' as SkuLoc
+
+read as Locations with
+  Location : enum Location
+  TenantInstance : number
+  BrandId : text
+  Area : text
+  Continent : text
+  Country : text
+  LocationName : text
+  StoreDimension : text
+  StoreType : text
+  IsOutlet : boolean
+read '/clean/Locations.ion' as Locations
+
+read as Sales small 20M with
+  SKU : enum SKU
+  Location : enum Location
+  RefColor : enum RefColor
+  Qty : number
+  SalesDate : date
+  Season : enum Season
+  IsOutfit : boolean
+read '/clean/Sales/partitioned/AllSales_\{TenantInstance}.ion' as Sales
+
+SkuLoc.SalesLast30Days = sum(Sales.Qty) when (SalesDate >= today() - 30) by [Sales.SKU, Sales.Location] at [SkuLoc.SKU, SkuLoc.Location]
+SkuLoc.SalesLast90Days = sum(Sales.Qty) when (SalesDate >= today() - 90) by [Sales.SKU, Sales.Location] at [SkuLoc.SKU, SkuLoc.Location]
+SkuLoc.AvailableStock = max(0, SkuLoc.StockOnHand - SkuLoc.StockUnavailable)
+SkuLoc.StockInDispatch = SkuLoc.StockPreparation + SkuLoc.StockTransit
+SkuLoc.DispatchQty = max(0, SkuLoc.TargetStock - (SkuLoc.AvailableStock + SkuLoc.BookedIncoming))
+SkuLoc.DispatchPriority =
+  SkuLoc.SalesLast30Days * 2
+  + SkuLoc.SalesLast90Days
+  - SkuLoc.DispatchQty
+
+where SkuLoc.DispatchQty > 0
+  show table "Dispatch review" a1i14 with
+    SkuLoc.Location
+    SkuLoc.SKU
+    SkuLoc.Ref
+    SkuLoc.Color
+    SkuLoc.Season
+    SkuLoc.StockOnHand
+    SkuLoc.StockUnavailable
+    SkuLoc.StockInDispatch as "Stock in Dispatch"
+    SkuLoc.BookedIncoming as "Booked Incoming"
+    SkuLoc.TargetStock as "Target Stock"
+    SkuLoc.DispatchQty as "Dispatch Qty"
+    SkuLoc.DispatchPriority as "Priority"
+    order by SkuLoc.DispatchPriority desc
+
+show table "Location view" j1o12 with
+  Locations.Location
+  Locations.LocationName
+  Locations.Country
+  Locations.Area
+  Locations.StoreDimension
+  Locations.IsOutlet

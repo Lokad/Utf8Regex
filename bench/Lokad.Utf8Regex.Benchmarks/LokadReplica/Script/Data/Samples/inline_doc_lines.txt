@@ -1,0 +1,32 @@
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/// ---------------------------------------------------------------------------------------------------------------------------------
+/// #region Dashboard shell
+/// #region Decision review
+/// #region Input review
+/// #region Input schemas
+/// #region Shared modules
+/// aligned with the old production scripts
+/// Build an anonymized replenishment score table.
+/// Display the replenishment score for the review board.
+/// Language-server workloads still scan these lines repeatedly.
+/// The board expects a concise ranked list with one textual status column.
+/// The comments intentionally mix short and long documentation lines.
+/// The next scalar is intentionally tiny.
+/// This file preserves the inline documentation style of larger Lokad scripts.
+/// trailing comment block
+///-------------------------------------------SETUP-------------------------------------------------
+///-----------------------------------------HEADLINE------------------------------------------------
+///# 0) READ FILES
+///#region Dispatch micro decisions
+///#region Dispatch recommendations
+///#region Forecast sanity
+///#region Gradient
+///#region Inputs
+///#region Item review
+///#region Micro decisions
+///#region Purchase details
+///#region Setup
+///Color palette for Lokad styling workloads
+///Colors
+///Inspectors
+

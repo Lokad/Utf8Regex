@@ -1,0 +1,136 @@
+// 2025-12-02: Derived from anonymized historical examples
+// Project-specific terms were normalized while preserving Lokad script structure.
+
+import "_PathSchemas" as PathSchemas
+import "_GlobalParameters" as GP
+import "_Tables" as Tables
+import "_Functions" as Functions
+import "_ForecastFunctions" as ForecastFunctions with
+  weeklyForecastBase
+  weeklyPromoForecastBase
+
+const CHANNEL_MAG = "MAG"
+
+read '/clean/MasterProducts.ion' as MasterProductsInit
+read '/clean/ProductsFull.ion' as ProductCatalog
+read '/clean/Products.ion' as ProductsLegacy
+read '/forecast/WeeklyFC_HighSellers.ion' as WeeklyFC expect [date] with
+  date = WeeklyFC.Monday
+read '/forecast/WeeklyFC_SlowSellers.ion' as WeeklyFC with
+  date = WeeklyFC.Monday
+read '/forecast/postprocess/WeeklyFCWithSmoothStoreDecrease.ion' as WeeklyFCPostProc expect [date] with
+  date = WeeklyFCPostProc.Monday
+read '/forecast/primitives/PrimitiveMasterProducts.ion' as PrimitiveMasterProducts
+read '/forecast/ForecastScope.ion' as ForecastScope
+read '/clean/PurchaseScope.ion' as PurchaseScope
+read '/clean/CatalogSeason.ion' as CatalogSeason
+read '/forecast/season/SeasonalityGroups.ion' as SeasonalityGroups[SeasonGroup] with
+  SeasonGroup : text
+  MainAffinity : text
+  Season1Selected : number
+  Season2Selected : number
+  SeasonProductSelected : number
+  SeasonFlatSelected : number
+
+read '/forecast/season/SeasonalityCoeffs.ion' as SeasonalityCoeffs expect [SeasonGroup]
+read '/forecast/ParametersProduct_FC_HighSellers.ion' as ParamsProductFC
+read '/forecast/ParametersProduct_FC_SlowSellers.ion' as ParamsProductFC
+read '/clean/WeekdayWeights.ion' as WeekdayWeights
+read "/input/SalesBudget.xlsx" as SalesBudget with
+  "Scope id" as ScopeId : text
+  "New scope" as NewScopeId : text
+  Season : text
+  Status : text
+  "Qty" as Qty : number
+  "NetAmount" as NetAmount : number
+  "GrossAmount" as GrossAmount : number
+
+read '/clean/Families.ion' as FamilyDescriptions
+read "/clean/aggTables/MasterWeekClientChannel.ion" as MasterWeekClientChannel max 200m with
+  master_product_id : text
+  master_group_id : text
+  "week" as week_tmp : week
+  AccountingSeason : text
+  QtySold : number
+  GrossAmount : number
+  NetAmount : number
+  AvgSellPriceGross : number
+  AvgStock_MAG : number
+  AvgStockAvailable_ENT : number
+  DispatchTarget : number
+  AssortmentCount : number
+  AssortmentActual : number
+  AvailabilityRate_MAG : number
+  AvailabilityRate_ENT : number
+  OrderabilityRate_ENT : number
+  IsEnhancementStart : boolean
+  IsCarryOver : boolean
+  ClientType : text
+  Channel : text
+  SeasonStatus : text
+  AvgDiscount : number
+  AnnouncedDiscount : number
+  Theme : text
+  Story : text
+  PriceCategory : text
+
+read "/forecast/Parameters.ion" as ForecastScalarParams max 1 with
+  firstDate : date
+
+read upload "manualadjustmentfc" unsafe as ManualAdjustmentFC min 0 with
+  "master_product_id" as master_product_id_tmp : text
+  family_id : text
+  subfamily_id : text
+  CarryOver : text
+  "% Forecast change" as ForecastChangePct : number
+  "Start change" as ChangeStartDate : date
+  "End change" as ChangeEndDate : date
+
+read upload "slicedform" as SlicedForm min 0 with
+  group_id : text
+  product_id : text
+  "Override season profile" as ManualSeasonProfile : text
+  "Last override" as OverrideDate : date
+  similar_product_id : text
+  "Use baseline forecast" as UseBaselineForecast : boolean
+
+read form with
+  InstanceNumber : number
+
+MasterWeekClientChannel.IsCurrentSeason = MasterWeekClientChannel.SeasonStatus == "current"
+MasterWeekClientChannel.SellThrough =
+  if MasterWeekClientChannel.AvgStock_MAG == 0 then 0
+  else MasterWeekClientChannel.QtySold / MasterWeekClientChannel.AvgStock_MAG
+
+MasterWeekClientChannel.AdjustedForecast =
+  if MasterWeekClientChannel.IsCurrentSeason
+  then MasterWeekClientChannel.QtySold * 1.1
+  else MasterWeekClientChannel.QtySold * 0.9
+
+MasterWeekClientChannel.AlertLevel =
+  if MasterWeekClientChannel.SellThrough > 1.5 then "high"
+  else if MasterWeekClientChannel.SellThrough > 0.8 then "medium"
+  else "low"
+
+show table "Forecast review" a1j14 with
+  MasterWeekClientChannel.master_product_id as "Product"
+  MasterWeekClientChannel.master_group_id as "Group"
+  MasterWeekClientChannel.AccountingSeason as "Season"
+  MasterWeekClientChannel.ClientType
+  MasterWeekClientChannel.Channel
+  MasterWeekClientChannel.QtySold as "QtySold"
+  MasterWeekClientChannel.NetAmount as "NetAmount"
+  MasterWeekClientChannel.AvgDiscount as "AvgDiscount"
+  MasterWeekClientChannel.SellThrough as "SellThrough"
+  MasterWeekClientChannel.AdjustedForecast as "AdjustedForecast"
+  MasterWeekClientChannel.AlertLevel as "Alert"
+  order by MasterWeekClientChannel.AdjustedForecast desc
+
+show table "Manual adjustments" k1p10 with
+  ManualAdjustmentFC.master_product_id_tmp as "Product"
+  ManualAdjustmentFC.family_id as "Family"
+  ManualAdjustmentFC.subfamily_id as "SubFamily"
+  ManualAdjustmentFC.ForecastChangePct as "ForecastChangePct"
+  ManualAdjustmentFC.ChangeStartDate as "ChangeStartDate"
+  ManualAdjustmentFC.ChangeEndDate as "ChangeEndDate"
+

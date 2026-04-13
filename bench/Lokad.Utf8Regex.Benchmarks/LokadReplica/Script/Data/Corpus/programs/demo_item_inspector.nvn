@@ -1,0 +1,339 @@
+// 2020-01-27: Created by Lokad
+// DEMO account example preserved as-is for Lokad script workload realism.
+
+import "_GlobalParameters" as GP with
+  DcUnit
+  ColorB
+  ColorBlight
+  ColorLightWarning
+  LinkLocationSupplierInspector
+  LinkLocationLocInspector
+  LinkHomeDashboard
+
+read "/Clean/Items.ion" as Items[Sku unsafe] with
+  Sku : text
+  Loc : text
+  Ref : text
+  Name : text
+  Category : text
+  ReorderCycle : number
+  ReDispatchCycle : number
+  LeadTime : number
+  Brand : text
+  Supplier : text
+  StockOnHand : number
+  StockOnOrder : number
+  BuyPrice : number
+  SellPrice : number
+  MOQ : number
+  LotMultiplier : number
+  Volume : number
+  IsActive : boolean
+  ImageUrl : text
+  ImagePath : text
+  IsClean : boolean
+  RanvarLeadTime : ranvar
+
+read "/Clean/Orders.ion" as Orders expect [Sku, date] with
+  Sku : text
+  "OrderDate" as date: date
+  Ref : text
+  Loc : text
+  Quantity : number
+  LokadNetAmount : number
+  OrderId : text
+  IsFirstOrder : boolean
+  HealthLog : text
+  IsClean : boolean
+
+read "/Clean/PO.ion" as PO expect [Sku, date] with
+  Sku : text
+  "OrderDate" as date: date
+  Loc : text
+  Ref : text
+  DeliveryDate : date
+  Quantity : number
+  Supplier : text
+  PONumber : text
+  IsInCatalog : boolean
+  IsClean : boolean
+  InputDate : date
+  InputPath : text
+
+read "/Clean/Forecast/Periodic/WeeklyFc.ion" as WeeklyFC expect[Sku, date] with
+  Sku : text
+  "Monday" as date: date
+  DemandQty : number
+  IsPast : boolean
+  IsSLT : boolean
+  IsWOO : boolean
+  IsWOODispatch : boolean
+  Baseline : number
+  Demand : ranvar
+  WOODemand : ranvar
+  WOODemandDispatch : ranvar
+  SLTDemand : ranvar
+  TotalDemand : ranvar
+
+read "/Clean/Forecast/Periodic/FcItems.ion" as FcItems expect[Sku] with
+  "Id" as Sku : text
+  GapToTarget : number
+  CategoryGapToTarget : number
+  overallGapToTarget : number
+  ForecastSanityLabel : text
+  CategoryForecastSanityLabel : text
+  overallForecastSanityLabel : text
+  sanityQTarget : number
+  quantileLow1 : number
+  quantileLow2 : number
+  quantileHigh1 : number
+  quantileHigh2 : number
+
+read "/Clean/Stock.ion" as Stock expect [Sku, date] with
+  Sku : text
+  StockOnHand : number
+  StockOnOrder : number
+  "StockDate" as date: date
+  IsInCatalog : boolean
+
+read "Clean/PurchaseResults/PORecommendations.ion" as PORecommendations expect[Sku] with
+  "Id" as Sku : text
+  Margin : number
+  BuyPrice : number
+  OrderQuantity : number
+  InvestmentRequired : number
+  FR : ranvar
+  CurrentFR : number
+  NewFR : number
+  LastYearSales : number
+  SalesWeight : number
+  OverallFRContrib : number
+  SatisfiedDemand : number
+  TotalDemandRLT : ranvar
+  TotalDemandRLTDisplay : ranvar
+
+read "Clean/PurchaseResults/MicroDecisions.ion" as MicroDecisions expect[Sku] with
+  Rank : number
+  Sku : text
+  Name : text
+  Supplier : text
+  BuyPrice : number
+  SellPrice : number
+  Margin : number
+  StockOnHand : number
+  StockOnOrder : number
+  LotMultiplier : number
+  Q : number
+  Min : number
+  Max : number
+  SLT : number
+  RLT : number
+  SalesWeight : number
+  CurrentFR : number
+  FillRateDelta : number
+  CumFillrateDelta : number
+  M : number
+  S : number
+  C : number
+  Reward : number
+  Score : number
+  Investment : number
+  CumInvest : number
+  IsEligible : boolean
+
+read "Clean/DispatchResults/DispatchRecommendations.ion" as DispatchRecommendations expect[Sku] with
+  Sku : text
+  Ref : text
+  Loc : text
+  M : number
+  StockOnHand : number
+  StockOnOrder : number
+  "Qty to Dispatch" as QtyToDispatch : number
+  "StockOnHand after Dispatch" as StockOnHandAfterDispatch : number
+  FR : ranvar
+  CurrentFR : number
+  NewFR : number
+  LastYearSales : number
+  SalesWeight : number
+  OverallFRContrib : number
+  AvgDemandOnRLT : number
+  SatisfiableDemand : ranvar
+  SatisfiedDemand : number
+  TotalDemandRLT : ranvar
+  StockAvailableForDispatch : number
+  DispatchQuantityWarehouse : number
+  NewStockWarehouse : number
+
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+///-------------------------------------------SETUP-------------------------------------------------
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+show tabs "" a3e3 with
+  "Info"
+  "Sales"
+  "Stock"
+  "PO"
+  "Forecast"
+  "PO Recommendations"
+  "Dispatch Recommendations"
+  "Rational"
+
+volUnit = "m³"
+pcsUnit = "Pcs"
+highlightColor = ColorB
+linechartBlight = ColorBlight
+linechartB = ColorB
+linkLocationSupplierInspector = LinkLocationSupplierInspector
+linkLocationLocInspector = LinkLocationLocInspector
+yes = "✅"
+no = "❌"
+linechartSOColor = ColorLightWarning
+pcsText = " Pcs"
+
+Orders.Monday = monday(Orders.date)
+Stock.Monday = monday(Stock.date)
+PO.Monday = monday(PO.date)
+
+timeGrpFormat = "dd/MM/yyyy"
+timeGrpName = "Week"
+oend = max(Orders.date)
+lookforwardDays = 26 * 7
+lookbackDays = 365 * 3
+
+PORecommendations.ForRanking =
+  if (PORecommendations.OrderQuantity < 100)
+  then -PORecommendations.OrderQuantity
+  else -PORecommendations.OrderQuantity / 100
+
+table Slices[slice] = slice by [same(PORecommendations.ForRanking) into Items, Sku, Items.Loc] title: Sku subtitle: Items.Loc
+Orders.slice = Items.slice
+Stock.slice = Items.slice
+PO.slice = Items.slice
+WeeklyFC.slice = Items.slice
+PORecommendations.slice = Items.slice
+MicroDecisions.slice = Items.slice
+DispatchRecommendations.slice = Items.slice
+
+Items.SupplierUrl = sliceSearchUrl(linkLocationSupplierInspector, Items.Supplier)
+Items.LocUrl = sliceSearchUrl(linkLocationLocInspector, Items.Loc)
+
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+///-----------------------------------------HEADLINE------------------------------------------------
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+show logo "" a1
+show markdown "Item Inspector" b1c1 with """
+  ### **Item Inspector**
+"""
+
+show label "To home" e1 {hrefAspect: white ; textAlign: center ; href: #("https://go.lokad.com/d/\{LinkHomeDashboard}/")}
+
+show markdown "" a2e2 with """
+ __This dashboard provides information on any item in the Catalog.__
+"""
+
+show markdown "Documentation Info" a8e12 {tileTab: "Info"} with
+  """
+  ### Documentation
+
+  __Information__: displays all general information on the reference
+
+  MOQ: minimal order quantity imposed by the supplier for every purchase
+  LotMultiplier: purchase batch imposed by the supplier for every purchase
+  Volume: volume of the reference in cubic metre
+
+  __Prices__:
+  BuyPrice: gross buy price in dollars
+  SellPrice: gross sell price in dollars
+
+  __Status__:
+  Active?: active item eligible for purchase
+  Clean?: item with data clean enough to proceed
+  """
+
+show markdown "Documentation Sales" a10e18 {tileTab: "Sales"} with
+  """
+  ### Documentation
+
+  __Summary__
+  NetAmount365: reference turnover last 365 days
+  NetAmount90: reference turnover last 90 days
+  Delivered Qty 365: quantity sold last 365 days
+  Delivered Qty 90: quantity sold last 90 days
+
+  __Weekly Orders__: quantities sold and turnover of the reference week by week
+  __All Order Records__: all orders of the reference
+  __Demand History__: weekly sales history
+  """
+
+show markdown "Documentation Stock" a10e17 {tileTab: "Stock"} with
+  """
+  ### Documentation
+
+  __Stock On Hand__: amount of stock physically on shelf
+  __Stock on Order__: amount of stock purchased but not received yet
+  __90d StockOut__: proportion of stock out on the last 90 days
+  __First Stockday__: date of first entry in stock
+  __Last Stockday__: date of last unit in stock
+  """
+
+show markdown "Documentation Forecast" a9e12 {tileTab: "Forecast"} with
+  """
+  ### Documentation
+
+  __Reorder cycle__: average reorder frequency
+  __Supplier Leadtime__: average supplier leadtime
+  __Demand to be covered (WOO)__: forecasted demand distribution over the responsibility window
+  __Demand Quantity__: past sales and future average demand with likely and plausible areas
+  """
+
+show table "Information" a20f28 {tileTab: "Info"} with
+  Items.Sku
+  Items.Ref
+  Items.Name
+  Items.Category
+  Items.Supplier {href: #[Items.SupplierUrl]}
+  Items.Loc {href: #[Items.LocUrl]}
+  Items.MOQ
+  Items.LotMultiplier
+  Items.Volume { unit:#(volUnit) }
+  Items.BuyPrice { unit:#(DcUnit) }
+  Items.SellPrice { unit:#(DcUnit) }
+  Items.IsActive as "Active?"
+  Items.IsClean as "Clean?"
+
+show table "Weekly Orders" a20f30 {tileTab: "Sales"} with
+  Orders.Monday as "Week"
+  sum(Orders.Quantity) as "Qty"
+  sum(Orders.LokadNetAmount) as "NetAmount" { unit:#(DcUnit) }
+  count(Orders.*) as "# Orders"
+  group by Orders.Monday
+  order by Orders.Monday
+
+show table "Weekly Stock Summary" g20l30 {tileTab: "Stock"} with
+  Stock.Monday as "Week"
+  sum(Stock.StockOnHand) as "StockOnHand"
+  sum(Stock.StockOnOrder) as "StockOnOrder"
+  group by Stock.Monday
+  order by Stock.Monday
+
+show table "Purchase Recommendations" m20r30 {tileTab: "PO Recommendations"} with
+  PORecommendations.Sku
+  PORecommendations.OrderQuantity as "SuggestedQty"
+  PORecommendations.InvestmentRequired as "Investment" { unit:#(DcUnit) }
+  PORecommendations.CurrentFR as "CurrentFR"
+  PORecommendations.NewFR as "NewFR"
+  PORecommendations.LastYearSales as "LastYearSales"
+  PORecommendations.SalesWeight as "SalesWeight"
+  order by PORecommendations.ForRanking
+
+show table "Dispatch Recommendations" s20x30 {tileTab: "Dispatch Recommendations"} with
+  DispatchRecommendations.Sku
+  DispatchRecommendations.Loc
+  DispatchRecommendations.QtyToDispatch as "QtyToDispatch"
+  DispatchRecommendations.StockOnHandAfterDispatch as "StockAfter"
+  DispatchRecommendations.CurrentFR as "CurrentFR"
+  DispatchRecommendations.NewFR as "NewFR"
+  DispatchRecommendations.DispatchQuantityWarehouse as "DispatchWarehouse"
+  order by DispatchRecommendations.QtyToDispatch desc
+

@@ -1,0 +1,65 @@
+// 2023-02-20: Created by Lokad
+// DEMO account helper module preserved as-is for Lokad script workload realism.
+
+///Colors
+
+export const onHandColor = rgb(0, 0.839, 0)
+export const backOrderColor = rgb(1, 0.667, 0.6)
+export const arrivingColor = "#1432a"
+export const newOrderColor = rgb(0.0235, 0.125, 0.439)
+export const onOrderColor = rgb(0.6, 0.698, 1)
+export const realDemand = rgb(0.733, 0, 0.0667)
+
+export const pcsUnit = " units"
+export const CompanyCurrency = "USD"
+export const DcUnit = "$"
+export const DefaultDispatchCycle = 2
+export const ConfirmButton = "[ OK ]"
+export const ColorA = rgb(0.992, 0.678, 0.192)
+export const ColorB = rgb(0.973, 0.459, 0.318)
+export const ColorC = rgb(0.655, 0.655, 0.655)
+export const ColorAlight = rgb(1, 0.8, 0.4)
+export const ColorBlight = rgb(1, 0.624, 0.522)
+export const ColorClight = rgb(0.933, 0.933, 0.933)
+export const ColorAdark = rgb(0.89, 0.529, 0.0275)
+export const ColorBdark = rgb(0.859, 0.173, 0.137)
+export const ColorCdark = rgb(0.29, 0.29, 0.29)
+export const ColorLightBg = rgb(0.973, 0.973, 0.973)
+export const ColorAltText = rgb(1, 1, 1)
+export const ColorWarning = rgb(0.957, 0.565, 0.141)
+export const ColorLightWarning = rgb(1, 0.792, 0.792)
+export const MinOrderLines = 1
+export const HealthObsHorizon = 1
+export const DefaultMinWarning = 1
+export const DefaultMinError = 1
+export const DefaultImageUrl = "https://go.lokad.com/DEMO/gateway/BigFiles/Browse/Download?hash=3FB38D57A124BE61548267CEEB25C501&path=%2FBackground%2FGraphics%2FItemImages&name=PlaceHolderItemGraphic.png"
+export const blue = rgb(0.243, 0.388, 0.565)
+export const colorSkyBlue = rgb(0.773, 0.918, 0.98)
+export const lgreen = rgb(0.875, 0.949, 0.796)
+export const yellowlight = rgb(0.961, 0.886, 0.565)
+export const ColorOk = rgb(0.306, 0.776, 0.145)
+
+export const formButton = "[ Ok ]"
+export const monthdispatchflux = month(2023, 04)
+
+export const EmoPos = "🡵"
+export const EmoNeg = "🡶"
+export const EmoEgal = "="
+
+///Inspectors
+
+export const LinkLocationItemInspector = 68009
+export const LinkLocationSupplierInspector = 68013
+export const LinkLocationLocInspector = 68012
+export const LinkHomeDashboard = 77929
+export const LinkHomeLongTerm = 82319
+
+export table CategoryURL = with
+  [| as Category, as ParamURL |]
+  [| 1, 82301 |]
+  [| 2, 82302 |]
+  [| 3, 82303 |]
+  [| 4, 82304 |]
+  [| 5, 82305 |]
+  [| 6, 82306 |]
+

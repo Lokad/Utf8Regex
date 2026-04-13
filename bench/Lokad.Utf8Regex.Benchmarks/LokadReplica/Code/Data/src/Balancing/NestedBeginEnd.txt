@@ -1,0 +1,131 @@
+// frozen synthetic document for balancing-group benchmarks
+// shape: mixed pseudo-config, workflow traces, templating fragments, and malformed leftovers
+
+document: orchestration-spec
+version: 7
+owner: search-perf
+
+BEGIN pipeline
+  id: checkout-order
+  stage: parse-request
+  notes: this block looks like the sort of DSL or macro language that appears in build tools
+  BEGIN task
+    name: validate-customer
+    retry: 2
+    BEGIN condition
+      if: customer.status == "active"
+      then: accept
+    END
+  END
+  BEGIN task
+    name: reserve-stock
+    BEGIN step
+      emit: stock.lookup
+      tags: [warehouse, sync]
+    END
+    BEGIN step
+      emit: stock.hold
+      timeout: 00:00:05
+    END
+  END
+END
+
+# malformed footer copied from a broken deploy artifact
+BEGIN deploy
+  region: eu-west-1
+  BEGIN step
+    command: restart
+  END
+END
+END
+
+template = """
+BEGIN email
+  subject: "shipment notice"
+  BEGIN body
+    Hello {{customer_name}},
+    your order has entered the BEGIN weird-text END zone.
+    BEGIN fragment
+      if tracking_number != null
+      render "Track package: {{tracking_number}}"
+    END
+  END
+END
+"""
+
+audit_log:
+  - 2026-01-03T10:15:11Z message="operator edited block markers by hand"
+  - 2026-01-03T10:16:18Z message="BEGIN maintenance END should be ignored when nested text is balanced"
+  - 2026-01-03T10:17:22Z message="broken sequence follows"
+
+BEGIN maintenance
+  actor: infra
+  BEGIN window
+    start: 2026-01-03T11:00:00Z
+    stop: 2026-01-03T11:05:00Z
+  END
+  BEGIN checklist
+    item: drain traffic
+    item: rotate workers
+  END
+END
+
+BEGIN malformed
+  actor: script-runner
+  BEGIN nested
+    item: partial
+END
+
+source_fragment.cs:
+public sealed class BlockRenderer
+{
+    public string Render()
+    {
+        return """
+BEGIN report
+  title: daily-summary
+  BEGIN section
+    name: revenue
+    BEGIN table
+      row: 2026-01-03, 112.40
+      row: 2026-01-04, 118.02
+    END
+  END
+  BEGIN section
+    name: incidents
+    none: true
+  END
+END
+""";
+    }
+}
+
+BEGIN workflow
+  id: reprice-batch
+  BEGIN job
+    worker: repricer
+    BEGIN payload
+      kind: snapshot
+      size: 4096
+    END
+  END
+  BEGIN job
+    worker: reconciler
+    BEGIN payload
+      kind: delta
+      size: 128
+      BEGIN attachments
+        file: shard-01.json
+        file: shard-02.json
+      END
+    END
+  END
+END
+
+tail_notes:
+  BEGIN comment
+    these trailing tokens force the benchmark to scan beyond the easy early matches
+  END
+  BEGIN comment
+    second comment with BEGIN inline token and END inline token in plain text
+  END

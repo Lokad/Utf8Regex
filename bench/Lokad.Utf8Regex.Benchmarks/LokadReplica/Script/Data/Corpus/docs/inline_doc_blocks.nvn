@@ -1,0 +1,17 @@
+/// Build an anonymized replenishment score table.
+/// This file preserves the inline documentation style of larger Lokad scripts.
+/// The comments intentionally mix short and long documentation lines.
+table Scores = with
+  [| as Item, as Reward, as Status |]
+  [| "item-1", 1.5, "watch" |]
+  [| "item-2", 2.5, "buy" |]
+  [| "item-3", 0.5, "hold" |]
+
+/// Display the replenishment score for the review board.
+/// The board expects a concise ranked list with one textual status column.
+show table "Scores" with
+  Scores.Item
+  Scores.Reward
+  Scores.Status
+
+

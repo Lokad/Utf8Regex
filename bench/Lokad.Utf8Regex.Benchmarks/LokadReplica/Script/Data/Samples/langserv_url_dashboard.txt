@@ -1,0 +1,12 @@
+https://go.lokad.com/DEMO/d/77929?t=overview
+https://go.lokad.com/DEMO/d/68009?t=item-inspector
+https://go.testing.lokad.com/DEMO/d/82319?t=review
+~/DEMO/d/82319?t=summary
+Dashboard link: https://go.lokad.com/DEMO/d/77929?t=home
+Open https://go.lokad.com/DEMO/d/68013?t=supplier-details
+Follow-up ~/DEMO/d/68012?t=location-drilldown
+Review at https://go.testing.lokad.com/DEMO/d/82301?t=category-a
+Navigate to https://go.lokad.com/DEMO/d/82302?t=category-b
+Tile href https://go.lokad.com/DEMO/d/82303?t=category-c
+Summary link https://go.lokad.com/DEMO/d/82304?t=category-d
+Chart href ~/DEMO/d/82305?t=category-e

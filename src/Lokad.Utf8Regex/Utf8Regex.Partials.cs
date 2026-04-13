@@ -1,0 +1,10 @@
+global using System.Collections.Generic;
+global using System.Text;
+global using System.Text.RegularExpressions;
+global using Lokad.Utf8Regex.Internal.Caching;
+global using Lokad.Utf8Regex.Internal.Execution;
+global using Lokad.Utf8Regex.Internal.FrontEnd;
+global using Lokad.Utf8Regex.Internal.Input;
+global using Lokad.Utf8Regex.Internal.Planning;
+global using Lokad.Utf8Regex.Internal.Replacement;
+global using Lokad.Utf8Regex.Internal.Utilities;

@@ -1,0 +1,153 @@
+// 2025-12-01: Derived from anonymized historical examples
+// Real client names, aircraft references, and URLs were removed.
+
+import "_PathSchemas" as PathSchemas
+import "_Constants" as Constants
+
+const read_scope = "ScopeA"
+const today = today()
+const thisyear = year(today)
+const lastyear = year(today) - 1
+
+read upload "partlist" as SelectedParts with
+  "PartNumber" as Id : text
+
+read "/clean/parts/PartCatalog.ion" as Items with
+  "PartNumber" as IdTmp : text
+  Key : text
+  MasterPart : text
+  PartName : text
+  InterchangeableCode : text
+  MeasureUnit : text
+  PartListPrice : number
+  MaterialGroup : text
+  ShelfLife : text
+  PurchaseType : text
+  BuyPrice : number
+  BuyPriceExplain : text
+  CreationDate : date
+  FinalPartner : text
+  PartnerCode : text
+  CategoryCode : text
+  StockOnHand : number
+  StockOnOrder : number
+  AllocatedQty : number
+  MasterPartStockOnHand : number
+  MasterPartStockOnOrder : number
+  MasterPartAllocatedQty : number
+  Frequency : number
+  CategoryBucket : text
+  MOQ : number
+  LotMultiplier : number
+
+read "/historical/Stocks/FullStocks_\{lastyear}-*.ion" as Stocks max 4b expect [date] with
+  Warehouse : text
+  WarehouseCompanyId : text
+  CustomerName : text
+  BatchSerial : text
+  "PartNumber" as IdTmp : text
+  MasterPart : text
+  ShelfLifeDueDate : date
+  StockOnHand : number
+  StockOnOrder : number
+  StockOnHandPrice : number
+  BatchSerialReceivedDate : date
+  AllocatedQty : number
+  "SnapshotDate" as date : date
+read "/historical/Stocks/FullStocks_\{thisyear}-*.ion" as Stocks with
+  Warehouse : text
+  WarehouseCompanyId : text
+  CustomerName : text
+  BatchSerial : text
+  "PartNumber" as IdTmp : text
+  MasterPart : text
+  ShelfLifeDueDate : date
+  StockOnHand : number
+  StockOnOrder : number
+  StockOnHandPrice : number
+  BatchSerialReceivedDate : date
+  AllocatedQty : number
+  "SnapshotDate" as date : date
+
+read max 180 "/historical/Stocks/StockOnOrder_*.ion" as StockOnOrderHistory max 4b expect [date] with
+  "PartNumber" as IdTmp : text
+  PartStockOnOrder : number
+  "SnapshotDate" as date : date
+  MasterPartStockOnOrder : number
+
+read "/input/Incremental/Requests/Requests_\{lastyear}-*.ion" as RequestHistory max 4b expect [date] with
+  RequestId : text
+  Status : text
+  Generator : text
+  "PartNumber" as IdTmp : text
+  PartName : text
+  QtyOrdered : number
+  MeasureUnit : text
+  Priority : text
+  VehicleNumber : text
+  QtyRequested : number
+  "SnapshotDate" as date : date
+read "/input/Incremental/Requests/Requests_\{thisyear}-*.ion" as RequestHistory with
+  RequestId : text
+  Status : text
+  Generator : text
+  "PartNumber" as IdTmp : text
+  PartName : text
+  QtyOrdered : number
+  MeasureUnit : text
+  Priority : text
+  VehicleNumber : text
+  QtyRequested : number
+  "SnapshotDate" as date : date
+
+keep where Stocks.IdTmp in SelectedParts.Id
+keep where Items.IdTmp in SelectedParts.Id
+keep where StockOnOrderHistory.IdTmp in SelectedParts.Id
+keep where RequestHistory.IdTmp in SelectedParts.Id
+
+table SelectedParts[Id] = by SelectedParts.Id
+expect Stocks.Id = Stocks.IdTmp
+expect Items.Id = Items.IdTmp
+expect StockOnOrderHistory.Id = StockOnOrderHistory.IdTmp
+expect RequestHistory.Id = RequestHistory.IdTmp
+
+read form with
+  startdate : date
+  enddate : date
+  IncludeThirdPartyStock : boolean
+
+show form "Choose Date Range" a4b6 {formButton: "Update"} with
+  startdate as "Start Date" form:"startdate"
+  enddate as "End Date" form:"enddate"
+  IncludeThirdPartyStock as "Include Third-Party Stock?" form:"IncludeThirdPartyStock"
+
+keep where date >= startdate
+keep where date <= enddate or enddate == date(2001, 01, 01)
+keep where Constants.RequestGenerators.Scope == read_scope
+keep where RequestHistory.Generator in Constants.RequestGenerators.Generator
+
+Stocks.ToKeep = if not IncludeThirdPartyStock then Stocks.WarehouseCompanyId != "THIRD" else true
+keep where Stocks.ToKeep
+
+table Slices[slice] = slice by Items.Id title: Items.Id
+table ItemsDay_ = cross(Items, Day)
+table ItemsDay = where ItemsDay_.*
+ItemsDay.Id = Items.Id
+ItemsDay.MasterPart = mode(Items.MasterPart) by Items.Id at ItemsDay.Id
+ItemsDay.StockOnHand = sum(Stocks.StockOnHand) by [Stocks.Id, Stocks.date] at [ItemsDay.Id, ItemsDay.date]
+ItemsDay.StockOnOrder = sum(StockOnOrderHistory.PartStockOnOrder) by [StockOnOrderHistory.Id, StockOnOrderHistory.date] at [ItemsDay.Id, ItemsDay.date]
+ItemsDay.AllocatedQty = sum(Stocks.AllocatedQty) by [Stocks.Id, Stocks.date] at [ItemsDay.Id, ItemsDay.date]
+ItemsDay.QtyRequested = sum(RequestHistory.QtyRequested) by [RequestHistory.Id, RequestHistory.date] at [ItemsDay.Id, ItemsDay.date]
+ItemsDay.slice = Items.slice
+
+where ItemsDay.StockOnHand + ItemsDay.StockOnOrder + ItemsDay.AllocatedQty + ItemsDay.QtyRequested > 0
+  show table "Part stock" c5h12 slices: ItemsDay.slice with
+    ItemsDay.date as "Date"
+    same(ItemsDay.Id) as "Part"
+    same(ItemsDay.MasterPart) as "MasterPart"
+    sum(ItemsDay.StockOnHand) as "StockOnHand"
+    sum(ItemsDay.StockOnOrder) as "StockOnOrder"
+    sum(ItemsDay.AllocatedQty) as "AllocatedQty"
+    sum(ItemsDay.QtyRequested) as "QtyRequested"
+    order by ItemsDay.date
+    group by ItemsDay.date

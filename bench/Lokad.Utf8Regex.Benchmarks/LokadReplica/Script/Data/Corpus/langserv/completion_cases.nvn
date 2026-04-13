@@ -1,0 +1,20 @@
+table Items[item_id] = with
+  [| as item_id, as Category, as LeadTime, as PartnerName |]
+  [| "item-1", "A", 2, "partner north" |]
+  [| "item-2", "B", 5, "partner east" |]
+  [| "item-3", "C", 7, "partner south" |]
+
+Items.SafeLeadTime = Items.LeadTime + 1
+Items.StatusColor = "#ff8800"
+Items.DisplayKey = concat(Items.item_id, "-", Items.Category)
+Items.NeedsReview = Items.SafeLeadTime > 5
+
+show table "Items" with
+  Items.item_id
+  Items.Category
+  Items.PartnerName
+  Items.SafeLeadTime
+  Items.StatusColor
+  Items.DisplayKey
+  Items.NeedsReview
+

@@ -1,0 +1,14 @@
+/// #region Input review
+show label "Imports loaded"
+
+/// The next scalar is intentionally tiny.
+/// Language-server workloads still scan these lines repeatedly.
+show scalar "n" with 1
+
+/// #region Decision review
+show scalar "m" with 2
+
+/// trailing comment block
+/// aligned with the old production scripts
+show scalar "k" with 3
+

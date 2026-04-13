@@ -1,0 +1,41 @@
+// 2025-12-03: Derived from anonymized historical examples
+// URLs, dashboard ids, and project identifiers were removed.
+
+///Color palette for Lokad styling workloads
+
+export const light_blue = rgb(0.839, 0.918, 0.973)
+export const accent_blue = rgb(0.541, 0.82, 0.969)
+export const primary_blue = rgb(0, 0.145, 0.318)
+export const light_red = rgb(1, 0.8, 0.8)
+export const alert_red = rgb(1, 0, 0)
+export const dark_red = rgb(0.588, 0.051, 0.051)
+export const light_green = rgb(0.875, 0.949, 0.796)
+export const success_green = rgb(0, 0.502, 0)
+export const light_orange = rgb(0.992, 0.835, 0.686)
+export const warning_orange = rgb(1, 0.647, 0)
+export const dark_orange = rgb(0.843, 0.439, 0.0549)
+export const light_gray = rgb(0.976, 0.976, 0.976)
+export const medium_gray = rgb(0.698, 0.698, 0.714)
+export const dark_gray = rgb(0.514, 0.502, 0.502)
+export const white = rgb(1, 1, 1)
+export const black = rgb(0, 0, 0)
+
+export const color_primary = "#3a7bd5"
+export const color_warning = "#d97706"
+export const color_ok = "#16a34a"
+export const color_background = "#f4f7fb"
+export const color_text = "#1f2937"
+
+///#region Gradient
+export const grad_blue0 = rgb(0.0118, 0.0157, 0.369)
+export const grad_blue1 = rgb(0.00784, 0.243, 0.541)
+export const grad_blue2 = rgb(0, 0.467, 0.714)
+export const grad_blue3 = rgb(0, 0.588, 0.78)
+export const grad_blue4 = rgb(0.282, 0.792, 0.894)
+
+export const grad_red0 = rgb(0.216, 0.0235, 0.0902)
+export const grad_red1 = rgb(0.416, 0.0157, 0.0588)
+export const grad_red2 = rgb(0.616, 0.00784, 0.0314)
+export const grad_red3 = rgb(0.816, 0, 0)
+export const grad_red4 = rgb(0.957, 0.549, 0.0235)
+
