@@ -61,6 +61,16 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 out matchedLength);
         }
 
+        if (CanUseTrailingLiteralIdentifierKernel(familyPlan))
+        {
+            return FindNextTrailingLiteralIdentifier(
+                input,
+                familyPlan,
+                startIndex,
+                budget,
+                out matchedLength);
+        }
+
         if (structuralSearchPlan.HasValue && structuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start)
         {
             var state = new Utf8StructuralSearchState(new PreparedSearchScanState(startIndex, default), default);
@@ -1012,6 +1022,52 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         return -1;
     }
 
+    private static int FindNextTrailingLiteralIdentifier(
+        ReadOnlySpan<byte> input,
+        in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        int startIndex,
+        Utf8ExecutionBudget? budget,
+        out int matchedLength)
+    {
+        matchedLength = 0;
+        if (!TryGetTrailingLiteralIdentifierKernel(familyPlan, out var trailingLiteral, out var trailingLiteralPartIndex))
+        {
+            return -1;
+        }
+
+        var searchFrom = Math.Max(startIndex, 0);
+        while (searchFrom <= input.Length - trailingLiteral.Length)
+        {
+            var relativeIndex = input[searchFrom..].IndexOf(trailingLiteral);
+            if (relativeIndex < 0)
+            {
+                return -1;
+            }
+
+            var trailingLiteralStart = searchFrom + relativeIndex;
+            budget?.Step(input);
+            Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+            Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
+            if (TryMatchTrailingLiteralIdentifierAt(
+                    input,
+                    familyPlan,
+                    trailingLiteralStart,
+                    trailingLiteral,
+                    trailingLiteralPartIndex,
+                    startIndex,
+                    out var matchIndex,
+                    out matchedLength))
+            {
+                Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
+                return matchIndex;
+            }
+
+            searchFrom = trailingLiteralStart + 1;
+        }
+
+        return -1;
+    }
+
     private static bool TryGetSimpleSuffixLiteralKernel(
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         out byte[] suffixLiteral,
@@ -1146,6 +1202,35 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         }
 
         return false;
+    }
+
+    private static bool TryGetTrailingLiteralIdentifierKernel(
+        in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        out byte[] trailingLiteral,
+        out int trailingLiteralPartIndex)
+    {
+        trailingLiteral = [];
+        trailingLiteralPartIndex = -1;
+
+        if (string.IsNullOrEmpty(familyPlan.IdentifierStartSet) ||
+            familyPlan.IdentifierStartCharClass is null ||
+            familyPlan.IdentifierTailCharClass is null ||
+            familyPlan.Prefixes.Length == 0 ||
+            familyPlan.CompiledSuffixParts.Length != 1 ||
+            !familyPlan.CompiledSuffixParts[^1].IsLiteral ||
+            familyPlan.CompiledSuffixParts[^1].LiteralUtf8 is not { Length: > 0 } literal)
+        {
+            return false;
+        }
+
+        trailingLiteral = literal;
+        trailingLiteralPartIndex = familyPlan.CompiledSuffixParts.Length - 1;
+        return true;
+    }
+
+    private static bool CanUseTrailingLiteralIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
+    {
+        return TryGetTrailingLiteralIdentifierKernel(familyPlan, out _, out _);
     }
 
     private static bool CanUseIdentifierTailOnlyCountKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
@@ -1449,6 +1534,38 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         return AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, matchIndex, prefixLength, familyPlan, out matchedLength);
     }
 
+    private static bool TryMatchTrailingLiteralIdentifierAt(
+        ReadOnlySpan<byte> input,
+        in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        int trailingLiteralStart,
+        ReadOnlySpan<byte> trailingLiteral,
+        int trailingLiteralPartIndex,
+        int minMatchIndex,
+        out int matchIndex,
+        out int matchedLength)
+    {
+        matchIndex = -1;
+        matchedLength = 0;
+
+        var trailingEnd = trailingLiteralStart + trailingLiteral.Length;
+        if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(familyPlan.TrailingBoundary, input, trailingEnd))
+        {
+            return false;
+        }
+
+        var index = trailingLiteralStart;
+        if (!TryReverseMatchSuffixParts(input, ref index, familyPlan.CompiledSuffixParts[..trailingLiteralPartIndex]) ||
+            !TryReverseMatchIdentifierAndPrefix(input, familyPlan, ref index, out matchIndex) ||
+            matchIndex < minMatchIndex)
+        {
+            matchIndex = -1;
+            return false;
+        }
+
+        matchedLength = trailingEnd - matchIndex;
+        return true;
+    }
+
     private static bool TryMatchUpperWordIdentifierAt(
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
@@ -1491,6 +1608,106 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
 
         matchedLength = index - matchIndex;
         return true;
+    }
+
+    private static bool TryReverseMatchSuffixParts(
+        ReadOnlySpan<byte> input,
+        ref int index,
+        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts)
+    {
+        for (var i = suffixParts.Length - 1; i >= 0; i--)
+        {
+            var part = suffixParts[i];
+            if (part.IsLiteral)
+            {
+                var literal = part.LiteralUtf8;
+                if (literal is null ||
+                    index < literal.Length ||
+                    !input.Slice(index - literal.Length, literal.Length).SequenceEqual(literal))
+                {
+                    return false;
+                }
+
+                index -= literal.Length;
+                continue;
+            }
+
+            if (!TryReverseConsumeFastSeparatorLoop(input, ref index, part.SeparatorCharClass, part.SeparatorMinCount))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryReverseMatchIdentifierAndPrefix(
+        ReadOnlySpan<byte> input,
+        in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        ref int index,
+        out int matchIndex)
+    {
+        matchIndex = -1;
+        var tailEnd = index;
+        var maxTailCount = 0;
+        while (index > 0 &&
+               familyPlan.IdentifierTailCharClass!.Contains(input[index - 1]) &&
+               maxTailCount < familyPlan.IdentifierTailMaxCount)
+        {
+            index--;
+            maxTailCount++;
+        }
+
+        if (maxTailCount < familyPlan.IdentifierTailMinCount)
+        {
+            return false;
+        }
+
+        var earliestTailStart = tailEnd - maxTailCount;
+        var latestTailStart = tailEnd - familyPlan.IdentifierTailMinCount;
+        for (var tailStart = latestTailStart; tailStart >= earliestTailStart; tailStart--)
+        {
+            if (tailStart <= 0 ||
+                !familyPlan.IdentifierStartCharClass!.Contains(input[tailStart - 1]))
+            {
+                continue;
+            }
+
+            var prefixEnd = tailStart - 1;
+            if (!TryReverseConsumeFastSeparatorLoop(input, ref prefixEnd, familyPlan.SeparatorCharClass, familyPlan.SeparatorMinCount) ||
+                !TryMatchPrefixEndingAt(input, familyPlan, prefixEnd, out matchIndex))
+            {
+                continue;
+            }
+
+            index = prefixEnd;
+            return true;
+        }
+
+        index = tailEnd;
+        return false;
+    }
+
+    private static bool TryReverseConsumeFastSeparatorLoop(
+        ReadOnlySpan<byte> input,
+        ref int index,
+        AsciiCharClass? separatorCharClass,
+        int separatorMinCount)
+    {
+        if (separatorCharClass is null)
+        {
+            return separatorMinCount == 0;
+        }
+
+        var count = 0;
+        while (index > 0 &&
+               separatorCharClass.Contains(input[index - 1]))
+        {
+            index--;
+            count++;
+        }
+
+        return count >= separatorMinCount;
     }
 
     private static bool TryGetUpperWordIdentifierPrefixAtAnchor(

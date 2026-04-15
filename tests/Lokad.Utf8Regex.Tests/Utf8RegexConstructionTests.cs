@@ -84,6 +84,24 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void StructuralIdentifierFamilyMatchesAsyncSuffixCase()
+    {
+        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
+        var input = Encoding.UTF8.GetBytes("prefix TryGetCustomerAsync suffix");
+
+        Assert.True(regex.IsMatch(input));
+    }
+
+    [Fact]
+    public void StructuralIdentifierFamilyMatchesIdentifierSuffixWindowCase()
+    {
+        var regex = new Utf8Regex(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
+        var input = Encoding.UTF8.GetBytes("await using var scope = await resource");
+
+        Assert.True(regex.IsMatch(input));
+    }
+
+    [Fact]
     public void ConstructorClassifiesAsciiDeclarationIdentifierFamilyAsNative()
     {
         var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);

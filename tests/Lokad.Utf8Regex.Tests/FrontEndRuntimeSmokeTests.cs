@@ -395,11 +395,21 @@ public sealed class FrontEndRuntimeSmokeTests
     {
         var analysis = Utf8FrontEnd.Analyze(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.AnalyzedRegex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, analysis.AnalyzedRegex.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactUtf8Literals, analysis.AnalyzedRegex.SearchInfo.Kind);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.AnalyzedRegex.SearchInfo.LeadingBoundary);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.AnalyzedRegex.SearchInfo.TrailingBoundary);
         Assert.Equal(["café", "niño"], analysis.AnalyzedRegex.SearchInfo.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
+    }
+
+    [Fact]
+    public void FrontEndAnalyzedIdentifierFamilyUsesStructuralExecution()
+    {
+        var analysis = Utf8FrontEnd.Analyze(@"\b(?:Get|TryGet|Create|Load)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
+
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, analysis.AnalyzedRegex.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, analysis.AnalyzedRegex.SearchInfo.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.AnalyzedRegex.SearchInfo.LeadingBoundary);
     }
 
     [Fact]
