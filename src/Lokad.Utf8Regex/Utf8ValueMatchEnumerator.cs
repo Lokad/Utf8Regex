@@ -34,6 +34,8 @@ public ref struct Utf8ValueMatchEnumerator
     private Utf8ValueMatch _current;
     private int _asciiFixedTokenCurrentIndex;
     private int _asciiFixedTokenMatchLength;
+    private int _baseByteOffset;
+    private int _baseUtf16Offset;
 
     internal Utf8ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionBudget? budget = null)
     {
@@ -64,6 +66,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = executionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral => EnumeratorMode.ExactAsciiLiteral,
@@ -101,6 +105,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.FallbackRegex;
     }
 
@@ -133,6 +139,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.FallbackRegex;
     }
 
@@ -165,6 +173,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.AsciiSimplePattern;
     }
 
@@ -197,6 +207,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.AsciiSimplePattern;
     }
 
@@ -205,11 +217,11 @@ public ref struct Utf8ValueMatchEnumerator
             ? new Utf8ValueMatch(
                 success: true,
                 isByteAligned: true,
-                indexInUtf16: _asciiFixedTokenCurrentIndex,
+                indexInUtf16: _baseUtf16Offset + _asciiFixedTokenCurrentIndex,
                 lengthInUtf16: _asciiFixedTokenMatchLength,
-                indexInBytes: _asciiFixedTokenCurrentIndex,
+                indexInBytes: _baseByteOffset + _asciiFixedTokenCurrentIndex,
                 lengthInBytes: _asciiFixedTokenMatchLength)
-            : _current;
+            : ApplyBaseOffsets(_current);
 
     public Utf8ValueMatchEnumerator GetEnumerator() => this;
 
@@ -305,6 +317,8 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             ? EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
             : EnumeratorMode.ExactUtf8Literals;
@@ -341,6 +355,8 @@ public ref struct Utf8ValueMatchEnumerator
         _asciiFixedTokenMatchLength = structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
             ? structuralLinearProgram.DeterministicProgram.FixedWidthLength
             : 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = structuralLinearProgram.DeterministicProgram.HasValue
             ? (structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
                 ? EnumeratorMode.AsciiFixedTokenPattern
@@ -377,7 +393,16 @@ public ref struct Utf8ValueMatchEnumerator
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
         _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
         _mode = EnumeratorMode.EmptyLiteral;
+    }
+
+    internal Utf8ValueMatchEnumerator WithBaseOffsets(int byteOffset, int utf16Offset)
+    {
+        _baseByteOffset = byteOffset;
+        _baseUtf16Offset = utf16Offset;
+        return this;
     }
 
     private bool MoveNextExactLiteral()
@@ -617,6 +642,22 @@ public ref struct Utf8ValueMatchEnumerator
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
         return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+    }
+
+    private Utf8ValueMatch ApplyBaseOffsets(Utf8ValueMatch match)
+    {
+        if (!match.Success || (_baseByteOffset | _baseUtf16Offset) == 0)
+        {
+            return match;
+        }
+
+        return new Utf8ValueMatch(
+            success: true,
+            isByteAligned: match.IsByteAligned,
+            indexInUtf16: _baseUtf16Offset + match.IndexInUtf16,
+            lengthInUtf16: match.LengthInUtf16,
+            indexInBytes: match.IsByteAligned ? _baseByteOffset + match.IndexInBytes : match.IndexInBytes,
+            lengthInBytes: match.LengthInBytes);
     }
 
     private enum EnumeratorMode : byte

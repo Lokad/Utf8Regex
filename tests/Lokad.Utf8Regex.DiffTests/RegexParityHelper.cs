@@ -76,8 +76,8 @@ internal sealed class RegexParityContext
 
         var expected = DotNet.Count(Case.Input, startAt);
         var expectedCompiled = DotNetCompiled.Count(Case.Input, startAt);
-        var actual = Utf8.Count(bytes, startAt);
-        var actualCompiled = Utf8Compiled.Count(bytes, startAt);
+        var actual = Utf8.CountFromUtf16Offset(bytes, startAt);
+        var actualCompiled = Utf8Compiled.CountFromUtf16Offset(bytes, startAt);
 
         Assert.Equal(expected, expectedCompiled);
         Assert.Equal(expected, actual);

@@ -733,12 +733,12 @@ public sealed partial class Utf8Regex
         return IsMatchViaCompiledEngine(input, validation, budget);
     }
 
-    public bool IsMatch(ReadOnlySpan<byte> input, int startat)
+    public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        ValidateStartAt(startat, analysis.Validation.Utf16Length);
+        ValidateStartAt(utf16Offset, analysis.Validation.Utf16Length);
         var decoded = Encoding.UTF8.GetString(input);
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(decoded.AsSpan(), startat);
+        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(decoded.AsSpan(), utf16Offset);
     }
 
     public int Count(ReadOnlySpan<byte> input)
@@ -842,12 +842,12 @@ public sealed partial class Utf8Regex
         return CountViaCompiledEngine(input, validation, budget);
     }
 
-    public int Count(ReadOnlySpan<byte> input, int startat)
+    public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        ValidateStartAt(startat, analysis.Validation.Utf16Length);
+        ValidateStartAt(utf16Offset, analysis.Validation.Utf16Length);
         var decoded = Encoding.UTF8.GetString(input);
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(decoded.AsSpan(), startat);
+        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(decoded.AsSpan(), utf16Offset);
     }
 
     public Utf8ValueMatch Match(ReadOnlySpan<byte> input)
@@ -913,12 +913,12 @@ public sealed partial class Utf8Regex
         return MatchViaCompiledEngine(input, validation, budget);
     }
 
-    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, int startat)
+    public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        ValidateStartAt(startat, analysis.Validation.Utf16Length);
+        ValidateStartAt(utf16Offset, analysis.Validation.Utf16Length);
         var decoded = Encoding.UTF8.GetString(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, startat);
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, utf16Offset);
         return CreateValueMatch(input, analysis.BoundaryMap, match);
     }
 
@@ -935,12 +935,12 @@ public sealed partial class Utf8Regex
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
-    public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startat)
+    public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        ValidateStartAt(startat, analysis.Validation.Utf16Length);
+        ValidateStartAt(utf16Offset, analysis.Validation.Utf16Length);
         var decoded = Encoding.UTF8.GetString(input);
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, startat);
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, utf16Offset);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
@@ -969,16 +969,37 @@ public sealed partial class Utf8Regex
         return CreateMatchEnumeratorViaCompiledEngine(input, validation, literal, budget);
     }
 
-    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startat)
+    public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        ValidateStartAt(startat, analysis.Validation.Utf16Length);
+        ValidateStartAt(utf16Offset, analysis.Validation.Utf16Length);
+        if (!UsesRightToLeft())
+        {
+            var startBoundary = analysis.BoundaryMap.Resolve(utf16Offset);
+            if (startBoundary.IsScalarBoundary)
+            {
+                var remaining = input[startBoundary.ByteOffset..];
+                var literal = _regexPlan.LiteralUtf8;
+                var budget = CreateExecutionBudget();
+                if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
+                {
+                    Utf8Validation.ThrowIfInvalidOnly(remaining);
+                    return CreateMatchEnumeratorViaCompiledEngine(remaining, default, literal, budget)
+                        .WithBaseOffsets(startBoundary.ByteOffset, utf16Offset);
+                }
+
+                var validation = Utf8Validation.Validate(remaining);
+                return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, literal, budget)
+                    .WithBaseOffsets(startBoundary.ByteOffset, utf16Offset);
+            }
+        }
+
         var decoded = Encoding.UTF8.GetString(input);
         return new Utf8ValueMatchEnumerator(
             input,
             _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
             decoded,
-            startat,
+            utf16Offset,
             analysis.BoundaryMap);
     }
 

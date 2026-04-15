@@ -254,7 +254,34 @@ Baseline API notes:
 * `TryReplace` returns `Done` or `DestinationTooSmall` only for destination sizing. On `DestinationTooSmall`, `bytesWritten == 0` and callers must treat `destination` as unchanged. Invalid UTF-8, invalid replacement text, invalid regex construction, timeout, and non-representable byte results still throw.
 * Evaluator-based replacement is currently the allocating replacement path; allocation control is provided only for fixed replacement-pattern overloads.
 
-## 4.2 Intentional API extensions beyond baseline .NET Regex
+## 4.2 UTF-16 offset compatibility APIs
+
+These APIs are explicit compatibility affordances for `.NET Regex`
+`startat` semantics. They take **UTF-16 code-unit offsets**, not byte
+offsets. They are not the preferred hot-path surface for native UTF-8
+callers; native callers should slice the input span instead.
+
+```csharp
+public sealed class Utf8Regex
+{
+    public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset);
+    public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset);
+    public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset);
+    public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset);
+    public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset);
+}
+```
+
+Rules for these compatibility APIs:
+
+* The `utf16Offset` parameter is measured in UTF-16 code units, exactly like
+  `.NET Regex`.
+* These methods exist to preserve `.NET` semantic compatibility across UTF-8
+  input, not to define the preferred native execution model.
+* Method names must keep the UTF-16 coordinate system explicit; do not expose
+  these as plain `startat` overloads on otherwise byte-native methods.
+
+## 4.3 Intentional API extensions beyond baseline .NET Regex
 
 ```csharp
 public sealed class Utf8Regex
