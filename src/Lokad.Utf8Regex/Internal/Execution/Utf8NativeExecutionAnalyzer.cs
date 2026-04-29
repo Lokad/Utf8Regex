@@ -128,16 +128,17 @@ internal static class Utf8NativeExecutionAnalyzer
         if ((executionOptions & RegexOptions.RightToLeft) == 0 &&
             TryExtractUtf8LiteralAlternationTree(semanticRegex, out var alternateLiterals, out var alternationLeadingBoundary, out var alternationTrailingBoundary))
         {
-            if (alternationLeadingBoundary != Utf8BoundaryRequirement.None ||
-                alternationTrailingBoundary != Utf8BoundaryRequirement.None)
+            var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
+            var hasNonAscii = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F));
+            if (ignoreCase && hasNonAscii)
             {
                 analyzedRegex = default;
                 return false;
             }
 
-            var ignoreCase = (executionOptions & RegexOptions.IgnoreCase) != 0;
-            var hasNonAscii = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F));
-            if (ignoreCase && hasNonAscii)
+            if (!hasNonAscii &&
+                (alternationLeadingBoundary != Utf8BoundaryRequirement.None ||
+                 alternationTrailingBoundary != Utf8BoundaryRequirement.None))
             {
                 analyzedRegex = default;
                 return false;
