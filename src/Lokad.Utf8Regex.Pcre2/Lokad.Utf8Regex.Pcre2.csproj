@@ -26,6 +26,7 @@
     <DebugType>portable</DebugType>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>..\..\artifacts\nuget\</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,9 +7,11 @@ It is intended for workloads where the input already exists as UTF-8 bytes and y
 ```powershell
 dotnet add package Lokad.Utf8Regex
 dotnet add package Lokad.Utf8Regex.Pcre2
+dotnet add package Lokad.Utf8Regex.PythonRe
 ```
 
 The [PCRE2 support](src/Lokad.Utf8Regex.Pcre2/README.md) is optional.
+The [Python `re` support](src/Lokad.Utf8Regex.PythonRe/README.md) is optional.
 
 ## Support Scope
 

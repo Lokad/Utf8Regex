@@ -3,12 +3,14 @@
     <Project Path="bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Lokad.Utf8Regex.PythonRe/Lokad.Utf8Regex.PythonRe.csproj" />
     <Project Path="src/Lokad.Utf8Regex.Pcre2/Lokad.Utf8Regex.Pcre2.csproj" />
     <Project Path="src/Lokad.Utf8Regex/Lokad.Utf8Regex.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Lokad.Utf8Regex.DiffTests/Lokad.Utf8Regex.DiffTests.csproj" />
     <Project Path="tests/Lokad.Utf8Regex.Pcre2.Tests/Lokad.Utf8Regex.Pcre2.Tests.csproj" />
+    <Project Path="tests/Lokad.Utf8Regex.PythonRe.Tests/Lokad.Utf8Regex.PythonRe.Tests.csproj" />
     <Project Path="tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj" />
   </Folder>
 </Solution>

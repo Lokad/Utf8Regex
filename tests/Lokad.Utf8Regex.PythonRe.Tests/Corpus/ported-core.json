@@ -1,0 +1,105 @@
+[
+  {
+    "Id": "pythonre.search.named-backref",
+    "Pattern": "(?P<word>foo)-(?P=word)",
+    "CompileOptions": [],
+    "InputText": "xx foo-foo yy",
+    "StartOffsetInBytes": 0,
+    "Operation": "Search",
+    "Expected": {
+      "Outcome": "Success",
+      "Success": true,
+      "ValueText": "foo-foo"
+    },
+    "Status": "Active",
+    "Source": "spec-pythonre:named-backreference"
+  },
+  {
+    "Id": "pythonre.match.prefix-only",
+    "Pattern": "foo",
+    "CompileOptions": [],
+    "InputText": "xxfoo",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "Success",
+      "Success": false
+    },
+    "Status": "Active",
+    "Source": "spec-pythonre:match-prefix-only"
+  },
+  {
+    "Id": "pythonre.fullmatch.atomic",
+    "Pattern": "(?>a+)b",
+    "CompileOptions": [],
+    "InputText": "aaab",
+    "StartOffsetInBytes": 0,
+    "Operation": "FullMatch",
+    "Expected": {
+      "Outcome": "Success",
+      "Success": true,
+      "ValueText": "aaab"
+    },
+    "Status": "Active",
+    "Source": "cpython:Lib/test/test_re.py:test_fullmatch_atomic_grouping"
+  },
+  {
+    "Id": "pythonre.replace.named-group",
+    "Pattern": "(?P<word>foo)",
+    "CompileOptions": [],
+    "InputText": "foo x foo",
+    "ReplacementPattern": "<\\g<word>>",
+    "StartOffsetInBytes": 0,
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "Success",
+      "ReplacementText": "<foo> x <foo>"
+    },
+    "Status": "Active",
+    "Source": "spec-pythonre:replacement-group-name"
+  },
+  {
+    "Id": "pythonre.compile.variable-lookbehind",
+    "Pattern": "(?<=a+)b",
+    "CompileOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "PatternError",
+      "ErrorContains": "fixed-width"
+    },
+    "Status": "Active",
+    "Source": "cpython:Lib/re/_compiler.py:look-behind-requires-fixed-width-pattern"
+  },
+  {
+    "Id": "pythonre.fullmatch.conditional-group-number",
+    "Pattern": "(foo)?(?(1)bar|baz)",
+    "CompileOptions": [],
+    "InputText": "foobar",
+    "StartOffsetInBytes": 0,
+    "Operation": "FullMatch",
+    "Expected": {
+      "Outcome": "Success",
+      "Success": true,
+      "ValueText": "foobar"
+    },
+    "Status": "Active",
+    "Source": "spec-pythonre:conditional-group-number"
+  },
+  {
+    "Id": "pythonre.search.verbose-comment",
+    "Pattern": "(?x) foo  # comment\n \\s+ bar",
+    "CompileOptions": [],
+    "InputText": "xxfoo   bar yy",
+    "StartOffsetInBytes": 0,
+    "Operation": "Search",
+    "Expected": {
+      "Outcome": "Success",
+      "Success": true,
+      "ValueText": "foo   bar"
+    },
+    "Status": "Active",
+    "Source": "cpython:Lib/test/test_re.py:test_ignore_spaces"
+  }
+]
