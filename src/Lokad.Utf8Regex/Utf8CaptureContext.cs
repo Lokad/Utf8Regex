@@ -6,9 +6,9 @@ public readonly ref struct Utf8CaptureContext
     private readonly ReadOnlySpan<byte> _input;
     private readonly string _decoded;
     private readonly Capture? _capture;
-    private readonly Utf8BoundaryMap? _boundaryMap;
+    private readonly Utf8BoundaryMap _boundaryMap;
 
-    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Capture? capture, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Capture? capture, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -85,6 +85,6 @@ public readonly ref struct Utf8CaptureContext
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
-        return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+        return _boundaryMap.Resolve(utf16Offset);
     }
 }

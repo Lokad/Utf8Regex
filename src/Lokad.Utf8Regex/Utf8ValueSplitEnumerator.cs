@@ -29,7 +29,7 @@ public ref struct Utf8ValueSplitEnumerator
     private PreparedMultiLiteralScanState _multiLiteralScanState;
     private Utf8AsciiDeterministicScanState _deterministicScanState;
 
-    internal Utf8ValueSplitEnumerator(ReadOnlySpan<byte> input, string decoded, Regex regex, int count, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8ValueSplitEnumerator(ReadOnlySpan<byte> input, string decoded, Regex regex, int count, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -264,7 +264,12 @@ public ref struct Utf8ValueSplitEnumerator
         var range = _fallbackEnumerator.Current;
         var start = range.Start.Value;
         var end = range.End.Value;
-        Current = new Utf8ValueSplit(_input, _decoded, start, end - start, _boundaryMap);
+        if (_boundaryMap is not { } boundaryMap)
+        {
+            throw new InvalidOperationException("Fallback split enumeration requires prepared UTF-16 projection.");
+        }
+
+        Current = new Utf8ValueSplit(_input, _decoded, start, end - start, boundaryMap);
         return true;
     }
 

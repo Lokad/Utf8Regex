@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -264,20 +265,20 @@ internal static class Pcre2Runner
 {
     internal static bool TryIsMatch(
         IPcre2DirectProgram program,
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
         out bool result)
     {
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
-            result = utf8Program.Regex.IsMatchFromUtf16Offset(input, Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]));
+            result = utf8Program.Regex.ByteOffsetExecution.IsMatch(input, start);
             return true;
         }
 
         if (program is Pcre2ManagedDirectProgram managedProgram)
         {
-            var subject = Encoding.UTF8.GetString(input);
-            result = managedProgram.Regex.IsMatch(subject, Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]));
+            var subject = input.GetDecodedString();
+            result = managedProgram.Regex.IsMatch(subject, input.Project(start).Value);
             return true;
         }
 
@@ -290,20 +291,20 @@ internal static class Pcre2GlobalOperationDriver
 {
     internal static bool TryCount(
         IPcre2DirectProgram program,
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
         out int result)
     {
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
-            result = utf8Program.Regex.CountFromUtf16Offset(input, Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]));
+            result = utf8Program.Regex.ByteOffsetExecution.Count(input, start);
             return true;
         }
 
         if (program is Pcre2ManagedDirectProgram managedProgram)
         {
-            var subject = Encoding.UTF8.GetString(input);
-            result = managedProgram.Regex.Count(subject, Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]));
+            var subject = input.GetDecodedString();
+            result = managedProgram.Regex.Count(subject, input.Project(start).Value);
             return true;
         }
 

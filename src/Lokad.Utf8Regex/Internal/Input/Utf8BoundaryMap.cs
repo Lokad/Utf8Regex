@@ -3,10 +3,10 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-internal sealed class Utf8BoundaryMap
+internal readonly struct Utf8BoundaryMap
 {
     private readonly int[]? _byteOffsets;
-    private readonly bool[]? _isScalarBoundary;
+    private readonly uint[]? _scalarBoundaryBits;
     private readonly bool _isAscii;
 
     private Utf8BoundaryMap(int byteLength, int utf16Length, bool isAscii)
@@ -17,7 +17,7 @@ internal sealed class Utf8BoundaryMap
         if (!isAscii)
         {
             _byteOffsets = new int[utf16Length + 1];
-            _isScalarBoundary = new bool[utf16Length + 1];
+            _scalarBoundaryBits = new uint[((utf16Length + 1) + 31) / 32];
         }
     }
 
@@ -57,7 +57,7 @@ internal sealed class Utf8BoundaryMap
             return Utf16Boundary.ScalarBoundary(utf16Offset, utf16Offset);
         }
 
-        return _isScalarBoundary![utf16Offset]
+        return IsScalarBoundary(utf16Offset)
             ? Utf16Boundary.ScalarBoundary(_byteOffsets![utf16Offset], utf16Offset)
             : Utf16Boundary.SurrogateSplitBoundary(_byteOffsets![utf16Offset], utf16Offset);
     }
@@ -95,7 +95,7 @@ internal sealed class Utf8BoundaryMap
 
         for (var candidate = index; candidate < offsets.Length && offsets[candidate] == byteOffset; candidate++)
         {
-            if (_isScalarBoundary![candidate])
+            if (IsScalarBoundary(candidate))
             {
                 return candidate;
             }
@@ -208,7 +208,7 @@ internal sealed class Utf8BoundaryMap
         var currentUtf16 = 0;
 
         _byteOffsets![0] = 0;
-        _isScalarBoundary![0] = true;
+        SetScalarBoundary(0);
 
         while (currentByte < input.Length)
         {
@@ -223,17 +223,21 @@ internal sealed class Utf8BoundaryMap
                 currentByte += bytesConsumed;
                 currentUtf16++;
                 _byteOffsets[currentUtf16] = currentByte;
-                _isScalarBoundary[currentUtf16] = true;
+                SetScalarBoundary(currentUtf16);
                 continue;
             }
 
             _byteOffsets[currentUtf16 + 1] = currentByte;
-            _isScalarBoundary[currentUtf16 + 1] = false;
-
             currentByte += bytesConsumed;
             currentUtf16 += 2;
             _byteOffsets[currentUtf16] = currentByte;
-            _isScalarBoundary[currentUtf16] = true;
+            SetScalarBoundary(currentUtf16);
         }
     }
+
+    private bool IsScalarBoundary(int utf16Offset)
+        => (_scalarBoundaryBits![utf16Offset >> 5] & (1u << (utf16Offset & 31))) != 0;
+
+    private void SetScalarBoundary(int utf16Offset)
+        => _scalarBoundaryBits![utf16Offset >> 5] |= 1u << (utf16Offset & 31);
 }

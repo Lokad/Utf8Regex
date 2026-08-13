@@ -6,9 +6,9 @@ public readonly ref struct Utf8GroupContext
     private readonly ReadOnlySpan<byte> _input;
     private readonly string _decoded;
     private readonly Group? _group;
-    private readonly Utf8BoundaryMap? _boundaryMap;
+    private readonly Utf8BoundaryMap _boundaryMap;
 
-    internal Utf8GroupContext(ReadOnlySpan<byte> input, string decoded, Group? group, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8GroupContext(ReadOnlySpan<byte> input, string decoded, Group? group, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -116,6 +116,6 @@ public readonly ref struct Utf8GroupContext
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
-        return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+        return _boundaryMap.Resolve(utf16Offset);
     }
 }

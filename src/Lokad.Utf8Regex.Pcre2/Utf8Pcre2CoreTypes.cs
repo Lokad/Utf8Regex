@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
@@ -1017,7 +1018,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Pcre2ValueData CreateManagedRegexBoundaryGroupData(ValueMatch match)
     {
-        if (_managedBoundaryMap is not null && _managedBoundaryMap.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
+        if (_managedBoundaryMap is { } map && map.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
         {
         }
         else

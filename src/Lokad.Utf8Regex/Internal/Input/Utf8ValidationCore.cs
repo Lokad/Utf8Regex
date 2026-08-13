@@ -27,6 +27,7 @@ internal static class Utf8ValidationCore
     {
         var utf16Length = 0;
         var containsSupplementaryScalars = false;
+        var isAscii = true;
         var offset = 0;
 
         while (offset < input.Length)
@@ -43,12 +44,13 @@ internal static class Utf8ValidationCore
                 validation = new Utf8ValidationResult(
                     input.Length,
                     computeUtf16Length ? utf16Length : 0,
-                    isAscii: asciiStart == 0,
+                    isAscii,
                     containsSupplementaryScalars);
                 errorOffset = -1;
                 return true;
             }
 
+            isAscii = false;
             var b0 = input[offset];
             if (b0 < 0xC2)
             {
@@ -166,7 +168,7 @@ internal static class Utf8ValidationCore
         validation = new Utf8ValidationResult(
             input.Length,
             computeUtf16Length ? utf16Length : 0,
-            isAscii: true,
+            isAscii,
             containsSupplementaryScalars);
         errorOffset = -1;
         return true;

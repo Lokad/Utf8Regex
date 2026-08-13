@@ -6,10 +6,10 @@ public readonly ref struct Utf8MatchContext
     private readonly ReadOnlySpan<byte> _input;
     private readonly string _decoded;
     private readonly Match? _match;
-    private readonly Utf8BoundaryMap? _boundaryMap;
+    private readonly Utf8BoundaryMap _boundaryMap;
     private readonly string[]? _groupNames;
 
-    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Match? match, Utf8BoundaryMap? boundaryMap = null, string[]? groupNames = null)
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Match? match, Utf8BoundaryMap boundaryMap, string[]? groupNames)
     {
         _input = input;
         _decoded = decoded;
@@ -128,6 +128,6 @@ public readonly ref struct Utf8MatchContext
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
-        return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+        return _boundaryMap.Resolve(utf16Offset);
     }
 }

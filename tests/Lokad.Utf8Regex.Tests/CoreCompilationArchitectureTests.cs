@@ -100,6 +100,24 @@ public sealed class CoreCompilationArchitectureTests
         Assert.Equal(pattern.Length, prepared.LiteralUtf8!.Length);
     }
 
+    [Fact]
+    public void ByteOffsetExecutionUsesNeutralInputOwnedInfrastructure()
+    {
+        var sourceRoot = FindCoreSourceDirectory();
+        var facadeSource = File.ReadAllText(Path.Combine(sourceRoot, "Utf8Regex.cs"));
+        var inputSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8ValidatedInput.cs"));
+        var mapSource = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "Input", "Utf8BoundaryMap.cs"));
+
+        Assert.DoesNotContain("Pcre2CountAtByteOffset", facadeSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("Pcre2EnumerateMatchesAtByteOffset", facadeSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("Utf8Utf16BoundaryResolver", facadeSource, StringComparison.Ordinal);
+        Assert.DoesNotContain("bool[]", mapSource, StringComparison.Ordinal);
+        Assert.Contains("Utf8ProjectionCursor", inputSource, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8PreparedValueMatchEnumerator.cs")));
+        Assert.False(File.Exists(Path.Combine(sourceRoot, "Utf8PreparedValueMatchEnumerator.cs")));
+        Assert.False(File.Exists(Path.Combine(sourceRoot, "Internal", "Input", "Utf8Utf16BoundaryResolver.cs")));
+    }
+
     private static string FindCoreSourceDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

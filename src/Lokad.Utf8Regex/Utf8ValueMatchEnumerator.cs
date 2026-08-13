@@ -78,7 +78,7 @@ public ref struct Utf8ValueMatchEnumerator
         };
     }
 
-    internal Utf8ValueMatchEnumerator(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8ValueMatchEnumerator(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap boundaryMap)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -95,7 +95,7 @@ public ref struct Utf8ValueMatchEnumerator
         _boundaryMap = boundaryMap;
         _budget = null;
         _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap?.Utf16Length ?? decoded.Length;
+        _totalUtf16Length = boundaryMap.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _fallbackEnumerator = regex.EnumerateMatches(decoded);
@@ -112,7 +112,7 @@ public ref struct Utf8ValueMatchEnumerator
         _mode = EnumeratorMode.FallbackRegex;
     }
 
-    internal Utf8ValueMatchEnumerator(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8ValueMatchEnumerator(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap boundaryMap)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -129,7 +129,7 @@ public ref struct Utf8ValueMatchEnumerator
         _boundaryMap = boundaryMap;
         _budget = null;
         _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap?.Utf16Length ?? decoded.Length;
+        _totalUtf16Length = boundaryMap.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _fallbackEnumerator = regex.EnumerateMatches(decoded.AsSpan(), startAt);
@@ -643,7 +643,17 @@ public ref struct Utf8ValueMatchEnumerator
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
-        return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+        if (_boundaryMap is { } map)
+        {
+            return map.Resolve(utf16Offset);
+        }
+
+        if (_totalUtf16Length == _input.Length)
+        {
+            return Utf16Boundary.ScalarBoundary(utf16Offset, utf16Offset);
+        }
+
+        throw new InvalidOperationException("UTF-16 projection was not prepared for this match enumeration.");
     }
 
     private Utf8ValueMatch ApplyBaseOffsets(Utf8ValueMatch match)

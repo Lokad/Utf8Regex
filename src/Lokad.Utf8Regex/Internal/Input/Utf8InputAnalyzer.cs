@@ -1,17 +1,13 @@
-using System.Text;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static class Utf8InputAnalyzer
 {
-    private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-
     internal enum ThrowIfInvalidOnlyMode : byte
     {
-        StrictUtf8GetCharCount = 0,
-        Utf8IsValid = 1,
-        ValidationCore = 2,
+        Utf8IsValid = 0,
+        ValidationCore = 1,
     }
 
     public static bool IsAscii(ReadOnlySpan<byte> input)
@@ -19,13 +15,8 @@ internal static class Utf8InputAnalyzer
         return input.IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F) < 0;
     }
 
-    public static Utf8InputAnalysis Analyze(ReadOnlySpan<byte> input)
-    {
-        var validation = ValidateOnly(input);
-        return new Utf8InputAnalysis(
-            validation,
-            Utf8BoundaryMap.Create(input, validation));
-    }
+    public static Utf8ValidatedInput Analyze(ReadOnlySpan<byte> input)
+        => Utf8ValidatedInput.Create(input);
 
     public static Utf8ValidationResult ValidateOnly(ReadOnlySpan<byte> input)
     {
@@ -37,11 +28,6 @@ internal static class Utf8InputAnalyzer
                 input.Length,
                 isAscii: true,
                 containsSupplementaryScalars: false);
-        }
-
-        if (TryGetUtf16LengthFast(input, firstNonAscii, out var fastValidation))
-        {
-            return fastValidation;
         }
 
         if (!Utf8ValidationCore.TryValidate(input, computeUtf16Length: true, out var validation, out var errorOffset))
@@ -56,14 +42,6 @@ internal static class Utf8InputAnalyzer
     {
         switch (SelectThrowIfInvalidOnlyMode(input))
         {
-            case ThrowIfInvalidOnlyMode.StrictUtf8GetCharCount:
-                if (TryThrowIfInvalidOnlyFast(input))
-                {
-                    return;
-                }
-
-                break;
-
             case ThrowIfInvalidOnlyMode.Utf8IsValid:
                 if (Utf8.IsValid(input))
                 {
@@ -130,28 +108,9 @@ internal static class Utf8InputAnalyzer
 
     public static ThrowIfInvalidOnlyMode SelectThrowIfInvalidOnlyMode(ReadOnlySpan<byte> input)
     {
-        if (!MightContainThreeOrFourByteSequence(input))
-        {
-            return ThrowIfInvalidOnlyMode.StrictUtf8GetCharCount;
-        }
-
         return ShouldUseUtf8IsValidFastPath(input)
             ? ThrowIfInvalidOnlyMode.Utf8IsValid
             : ThrowIfInvalidOnlyMode.ValidationCore;
-    }
-
-    private static bool MightContainThreeOrFourByteSequence(ReadOnlySpan<byte> input)
-    {
-        var length = Math.Min(input.Length, 256);
-        for (var i = 0; i < length; i++)
-        {
-            if (input[i] >= 0xE0)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static bool ShouldUseUtf8IsValidFastPath(ReadOnlySpan<byte> input)
@@ -177,35 +136,4 @@ internal static class Utf8InputAnalyzer
         return twoByteLeadCount == 0 && threeByteLeadCount >= 8;
     }
 
-    private static bool TryGetUtf16LengthFast(ReadOnlySpan<byte> input, int firstNonAscii, out Utf8ValidationResult validation)
-    {
-        try
-        {
-            var utf16Length = s_strictUtf8.GetCharCount(input);
-            validation = new Utf8ValidationResult(
-                input.Length,
-                utf16Length,
-                isAscii: false,
-                containsSupplementaryScalars: input[firstNonAscii..].IndexOfAnyInRange((byte)0xF0, (byte)0xF4) >= 0);
-            return true;
-        }
-        catch (DecoderFallbackException)
-        {
-            validation = default;
-            return false;
-        }
-    }
-
-    private static bool TryThrowIfInvalidOnlyFast(ReadOnlySpan<byte> input)
-    {
-        try
-        {
-            _ = s_strictUtf8.GetCharCount(input);
-            return true;
-        }
-        catch (DecoderFallbackException)
-        {
-            return false;
-        }
-    }
 }

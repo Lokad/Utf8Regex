@@ -1,9 +1,8 @@
-using Lokad.Utf8Regex.Internal.Execution;
 using System.Runtime.CompilerServices;
+using Lokad.Utf8Regex.Internal.Input;
 
-namespace Lokad.Utf8Regex;
+namespace Lokad.Utf8Regex.Internal.Execution;
 
-// PCRE2-INTEGRATION-POINT
 internal ref struct Utf8PreparedValueMatchEnumerator
 {
     private readonly ReadOnlySpan<byte> _input;
@@ -12,11 +11,14 @@ internal ref struct Utf8PreparedValueMatchEnumerator
     private int _startOffsetInBytes;
     private int _endOffsetInBytes;
 
-    public Utf8PreparedValueMatchEnumerator(ReadOnlySpan<byte> input, PreparedSearcher preparedSearcher, int startOffsetInBytes)
+    public Utf8PreparedValueMatchEnumerator(
+        ReadOnlySpan<byte> input,
+        PreparedSearcher preparedSearcher,
+        Utf8BytePosition start)
     {
         _input = input;
         _preparedSearcher = preparedSearcher;
-        _cursor = startOffsetInBytes;
+        _cursor = start.Value;
         _startOffsetInBytes = 0;
         _endOffsetInBytes = 0;
     }

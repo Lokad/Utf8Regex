@@ -134,22 +134,23 @@ internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidate
         out Utf8FallbackVerificationResult result)
     {
         result = default;
-        boundaryMap ??= Utf8BoundaryMap.Create(input, validation);
-        var candidateStart = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.StartIndex));
+        var map = boundaryMap ?? Utf8BoundaryMap.Create(input, validation);
+        boundaryMap = map;
+        var candidateStart = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
         decoded ??= Encoding.UTF8.GetString(input);
         var match = MatchCandidate(decoded, candidateStart.Utf16Offset);
         if (!IsVerifiedMatch(
                 match,
                 candidateStart.Utf16Offset,
                 candidate,
-                boundaryMap,
+                map,
                 Plan.RequiresCandidateEndCoverage,
                 Plan.RequiresTrailingAnchorCoverage))
         {
             return false;
         }
 
-        var end = boundaryMap.Resolve(match.Index + match.Length);
+        var end = map.Resolve(match.Index + match.Length);
         var isByteAligned = candidateStart.IsScalarBoundary && end.IsScalarBoundary;
         result = new Utf8FallbackVerificationResult(
             Success: true,
@@ -218,8 +219,9 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
         var matchedByteLength = sliceValidation.IsAscii
             ? match.Length
             : Utf8BoundaryMap.Create(slice, sliceValidation).Resolve(match.Length).ByteOffset;
-        boundaryMap ??= Utf8BoundaryMap.Create(input, validation);
-        var candidateStartBoundary = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.StartIndex));
+        var map = boundaryMap ?? Utf8BoundaryMap.Create(input, validation);
+        boundaryMap = map;
+        var candidateStartBoundary = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
         result = new Utf8FallbackVerificationResult(
             Success: true,
             IndexInUtf16: candidateStartBoundary.Utf16Offset,

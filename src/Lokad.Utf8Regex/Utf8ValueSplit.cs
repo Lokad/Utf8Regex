@@ -12,7 +12,7 @@ public readonly ref struct Utf8ValueSplit
     private readonly int _lengthInBytes;
     private readonly bool _hasDirectByteRange;
 
-    internal Utf8ValueSplit(ReadOnlySpan<byte> input, string? decoded, int indexInUtf16, int lengthInUtf16, Utf8BoundaryMap? boundaryMap = null)
+    internal Utf8ValueSplit(ReadOnlySpan<byte> input, string? decoded, int indexInUtf16, int lengthInUtf16, Utf8BoundaryMap boundaryMap)
     {
         _input = input;
         _decoded = decoded;
@@ -79,6 +79,8 @@ public readonly ref struct Utf8ValueSplit
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)
     {
-        return _boundaryMap?.Resolve(utf16Offset) ?? Utf8Utf16BoundaryResolver.ResolveBoundary(_input, utf16Offset);
+        return _boundaryMap is { } map
+            ? map.Resolve(utf16Offset)
+            : throw new InvalidOperationException("UTF-16 projection was not prepared for this split.");
     }
 }
