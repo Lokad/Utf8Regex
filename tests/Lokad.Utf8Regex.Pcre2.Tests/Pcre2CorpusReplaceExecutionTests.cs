@@ -13,7 +13,9 @@ public sealed class Pcre2CorpusReplaceExecutionTests
         var regex = new Utf8Pcre2Regex(
             corpusCase.Pattern,
             ParseCompileOptions(corpusCase.CompileOptions),
-            CreateSettings(corpusCase.CompileSettings));
+            CreateSettings(corpusCase.CompileSettings),
+            default,
+            default);
 
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);
         var replacementOptions = ParseSubstitutionOptions(corpusCase.SubstitutionOptions);

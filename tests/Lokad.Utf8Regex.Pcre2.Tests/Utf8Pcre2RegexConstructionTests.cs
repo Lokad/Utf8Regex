@@ -111,7 +111,9 @@ public sealed class Utf8Pcre2RegexConstructionTests
         var regex = new Utf8Pcre2Regex(
             @"(?:(?<n>foo)|(?<n>bar))\k<n>",
             Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true });
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            default);
 
         Assert.Equal(2, regex.NameEntryCount);
 
@@ -153,7 +155,9 @@ public sealed class Utf8Pcre2RegexConstructionTests
         var regex = new Utf8Pcre2Regex(
             @"(?:(?<n>foo)|(?<n>bar))\k<n>",
             Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true });
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            default);
 
         var analysis = regex.Analyze();
 
@@ -175,7 +179,9 @@ public sealed class Utf8Pcre2RegexConstructionTests
         var regex = new Utf8Pcre2Regex(
             "(?=ab\\K)",
             Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true });
+            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
+            default,
+            default);
 
         var analysis = regex.Analyze();
 

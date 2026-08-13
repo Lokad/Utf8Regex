@@ -12,7 +12,9 @@ public sealed class Pcre2CorpusCompileExecutionTests
         var action = () => _ = new Utf8Pcre2Regex(
             corpusCase.Pattern,
             ParseCompileOptions(corpusCase.CompileOptions),
-            CreateSettings(corpusCase.CompileSettings));
+            CreateSettings(corpusCase.CompileSettings),
+            default,
+            default);
 
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.CompileError)
         {

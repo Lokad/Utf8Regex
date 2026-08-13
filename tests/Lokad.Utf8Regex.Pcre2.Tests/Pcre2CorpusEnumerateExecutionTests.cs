@@ -13,7 +13,9 @@ public sealed class Pcre2CorpusEnumerateExecutionTests
         var regex = new Utf8Pcre2Regex(
             corpusCase.Pattern,
             ParseCompileOptions(corpusCase.CompileOptions),
-            CreateSettings(corpusCase.CompileSettings));
+            CreateSettings(corpusCase.CompileSettings),
+            default,
+            default);
 
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)

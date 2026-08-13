@@ -349,9 +349,15 @@ public readonly ref struct Utf8Pcre2MatchContext
     internal static Utf8Pcre2MatchContext Create(
         ReadOnlySpan<byte> input,
         Pcre2GroupData[] groups,
-        Pcre2NameEntry[]? nameEntries = null,
-        string? mark = null)
+        Pcre2NameEntry[]? nameEntries,
+        string? mark)
         => new(input, groups, nameEntries, mark);
+
+    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups)
+        => Create(input, groups, null, null);
+
+    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries)
+        => Create(input, groups, nameEntries, null);
 }
 
 public readonly ref struct Utf8Pcre2GroupContext
@@ -452,14 +458,26 @@ public readonly ref struct Utf8Pcre2ProbeResult
             ? Utf8Pcre2PartialMatchContext.Create(_input, _value, _mark)
             : throw new InvalidOperationException();
 
-    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries = null, string? mark = null)
+    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string? mark)
         => new(input, Utf8Pcre2ProbeKind.FullMatch, groups[0], groups, nameEntries, mark);
 
-    internal static Utf8Pcre2ProbeResult CreatePartial(ReadOnlySpan<byte> input, Pcre2GroupData value, string? mark = null)
+    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups)
+        => CreateFullMatch(input, groups, null, null);
+
+    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries)
+        => CreateFullMatch(input, groups, nameEntries, null);
+
+    internal static Utf8Pcre2ProbeResult CreatePartial(ReadOnlySpan<byte> input, Pcre2GroupData value, string? mark)
         => new(input, Utf8Pcre2ProbeKind.PartialMatch, value, null, null, mark);
 
-    internal static Utf8Pcre2ProbeResult CreateNoMatch(ReadOnlySpan<byte> input, string? mark = null)
+    internal static Utf8Pcre2ProbeResult CreatePartial(ReadOnlySpan<byte> input, Pcre2GroupData value)
+        => CreatePartial(input, value, null);
+
+    internal static Utf8Pcre2ProbeResult CreateNoMatch(ReadOnlySpan<byte> input, string? mark)
         => new(input, Utf8Pcre2ProbeKind.NoMatch, default, null, null, mark);
+
+    internal static Utf8Pcre2ProbeResult CreateNoMatch(ReadOnlySpan<byte> input)
+        => CreateNoMatch(input, null);
 }
 
 public readonly ref struct Utf8Pcre2PartialMatchContext
@@ -568,7 +586,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _index = -1;
     }
 
-    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches, int byteOffsetBase = 0, int utf16OffsetBase = 0)
+    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches, int byteOffsetBase, int utf16OffsetBase)
     {
         this = default;
         _mode = Pcre2ValueMatchEnumeratorMode.Utf8RegexEnumerator;
@@ -578,6 +596,16 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _utf8RegexUtf16OffsetBase = utf16OffsetBase;
         _index = -1;
         _exceptionIndex = int.MaxValue;
+    }
+
+    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches)
+        : this(input, utf8Matches, 0, 0)
+    {
+    }
+
+    internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValueMatchEnumerator utf8Matches, int byteOffsetBase)
+        : this(input, utf8Matches, byteOffsetBase, 0)
+    {
     }
 
     internal Utf8Pcre2ValueMatchEnumerator(

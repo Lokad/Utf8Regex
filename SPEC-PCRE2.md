@@ -129,8 +129,8 @@ public sealed class Utf8Pcre2Regex
         string pattern,
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default,
-        TimeSpan matchTimeout = default);
+        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
+        TimeSpan matchTimeout);
 
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8);
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options);
@@ -138,8 +138,8 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> patternUtf8,
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default,
-        TimeSpan matchTimeout = default);
+        Utf8Pcre2ExecutionLimits defaultExecutionLimits,
+        TimeSpan matchTimeout);
 
     public static TimeSpan DefaultMatchTimeout { get; set; }
 
@@ -149,81 +149,92 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
     public TimeSpan MatchTimeout { get; }
 
-    public bool IsMatch(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public bool IsMatch(ReadOnlySpan<byte> input);
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes);
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
-    public int Count(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public int Count(ReadOnlySpan<byte> input);
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes);
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
-    public Utf8Pcre2ValueMatch Match(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input);
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes);
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
-    public Utf8Pcre2MatchContext MatchDetailed(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input);
+    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes);
+    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
-    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input);
+    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes);
+    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
     // Partial matching is a separate probing API.
-    public Utf8Pcre2ProbeResult Probe(
-        ReadOnlySpan<byte> input,
-        Pcre2PartialMode partialMode,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode);
+    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes);
+    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions);
 
-    public byte[] Replace(
-        ReadOnlySpan<byte> input,
-        string replacement,
-        int startOffsetInBytes = 0,
-        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement);
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes);
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
 
-    public byte[] Replace(
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8);
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes);
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
+
+    public byte[] Replace<TState>(
         ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> replacementPatternUtf8,
-        int startOffsetInBytes = 0,
-        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        TState state,
+        Pcre2MatchEvaluator<TState> evaluator);
 
     public byte[] Replace<TState>(
         ReadOnlySpan<byte> input,
         TState state,
         Pcre2MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions);
 
-    public string ReplaceToString(
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement);
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes);
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions);
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions);
+
+    public string ReplaceToString<TState>(
         ReadOnlySpan<byte> input,
-        string replacement,
-        int startOffsetInBytes = 0,
-        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        TState state,
+        Pcre2Utf16MatchEvaluator<TState> evaluator);
 
     public string ReplaceToString<TState>(
         ReadOnlySpan<byte> input,
         TState state,
         Pcre2Utf16MatchEvaluator<TState> evaluator,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions);
+
+    public OperationStatus TryReplace(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> replacementPatternUtf8,
+        Span<byte> destination,
+        out int bytesWritten);
 
     public OperationStatus TryReplace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacementPatternUtf8,
         Span<byte> destination,
         out int bytesWritten,
-        int startOffsetInBytes = 0,
-        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        Pcre2SubstitutionOptions substitutionOptions);
+
+    public OperationStatus TryReplace(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> replacementPatternUtf8,
+        Span<byte> destination,
+        out int bytesWritten,
+        int startOffsetInBytes,
+        Pcre2SubstitutionOptions substitutionOptions,
+        Pcre2MatchOptions matchOptions);
 
     // Name-table-first metadata
     public int NameEntryCount { get; }
@@ -241,47 +252,40 @@ public sealed class Utf8Pcre2Regex
     public bool TryGetFirstSetGroup(
         ReadOnlySpan<byte> input,
         string name,
+        out Utf8Pcre2GroupContext group);
+
+    public bool TryGetFirstSetGroup(
+        ReadOnlySpan<byte> input,
+        string name,
         out Utf8Pcre2GroupContext group,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions);
+
+    public int MatchMany(
+        ReadOnlySpan<byte> input,
+        Span<Utf8Pcre2MatchData> destination,
+        out bool isMore);
 
     public int MatchMany(
         ReadOnlySpan<byte> input,
         Span<Utf8Pcre2MatchData> destination,
         out bool isMore,
-        int startOffsetInBytes = 0,
-        Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None);
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions);
 
     public Utf8Pcre2Analysis Analyze();
 
-    public static bool IsMatch(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        Pcre2CompileOptions options = Pcre2CompileOptions.None,
-        Utf8Pcre2CompileSettings compileSettings = default,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default,
-        TimeSpan matchTimeout = default,
-        int startOffsetInBytes = 0);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes);
 
-    public static Utf8Pcre2ValueMatch Match(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        Pcre2CompileOptions options = Pcre2CompileOptions.None,
-        Utf8Pcre2CompileSettings compileSettings = default,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default,
-        TimeSpan matchTimeout = default,
-        int startOffsetInBytes = 0);
+    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern);
+    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options);
+    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes);
 
-    public static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        string replacement,
-        Pcre2CompileOptions options = Pcre2CompileOptions.None,
-        Utf8Pcre2CompileSettings compileSettings = default,
-        Utf8Pcre2ExecutionLimits defaultExecutionLimits = default,
-        TimeSpan matchTimeout = default,
-        int startOffsetInBytes = 0,
-        Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None);
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement);
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options);
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions);
 }
 
 public readonly struct Pcre2NameEntry

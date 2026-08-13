@@ -14,7 +14,9 @@ internal sealed class Utf8Pcre2BenchmarkContext
         Utf8Pcre2Regex = new Utf8Pcre2Regex(
             benchmarkCase.Pattern,
             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
-            benchmarkCase.CompileSettings);
+            benchmarkCase.CompileSettings,
+            default,
+            default);
 
         if ((benchmarkCase.SupportedBackends & Utf8Pcre2BenchmarkBackend.Utf8Regex) != 0)
         {

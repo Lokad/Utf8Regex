@@ -323,7 +323,9 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
         var regex = new Utf8Pcre2Regex(
             "(?:(?<n>foo)|(?<n>bar))\\k<n>",
             Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true });
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            default);
 
         var actual = regex.ReplaceToString(
             "foofoo barbar"u8,
@@ -351,7 +353,9 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
         var regex = new Utf8Pcre2Regex(
             "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
             Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true });
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            default);
 
         var actual = regex.ReplaceToString(
             "aaaccccaaa bccccb"u8,

@@ -85,6 +85,10 @@ The package keeps the PCRE2 flavor separate from the base `Utf8Regex` type. `Utf
 
 ## Development Notes
 
+The public contract intentionally uses explicit overloads instead of default-valued parameters. One- and two-argument constructors cover the normal compile path; the five-argument constructors require every advanced setting. Operation overloads are limited to the call shapes exercised as stable repository operations, while their longest forms make offsets and option sets explicit. Public exception `ErrorKind` values remain strings for compatibility, but production code uses the closed internal `Pcre2ErrorKind` domain and converts only at the exception boundary.
+
+The L0 nullable-state audit classifies `MARK` values and deferred enumerator exceptions as genuine absence. Nullable backend payloads (`_utf8Regex`, `_utf8SearchEquivalentRegex`, and `_managedRegex`), mode-owned enumerator arrays, and nullable cached unsupported replacement plans are temporary invalid-state encodings owned by the compiler/runtime seam and replacement-cache work. They are not a precedent for new nullable unions. `Pcre2SourceGuardTests` freezes the remaining null-forgiving-expression counts until those owners remove them.
+
 - Project: [Lokad.Utf8Regex.Pcre2.csproj](./Lokad.Utf8Regex.Pcre2.csproj)
 - Main runtime: [Utf8Pcre2Regex.cs](./Utf8Pcre2Regex.cs)
 - Core match/result types: [Utf8Pcre2CoreTypes.cs](./Utf8Pcre2CoreTypes.cs)
