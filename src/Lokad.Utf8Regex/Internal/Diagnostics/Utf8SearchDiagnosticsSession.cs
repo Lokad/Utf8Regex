@@ -5,13 +5,16 @@ internal sealed class Utf8SearchDiagnosticsSession
     [ThreadStatic]
     private static Utf8SearchDiagnosticsSession? t_current;
 
-    private Utf8SearchDiagnosticsSession()
+    private readonly Utf8SearchDiagnosticsSession? _previous;
+
+    private Utf8SearchDiagnosticsSession(Utf8SearchDiagnosticsSession? previous)
     {
+        _previous = previous;
     }
 
     public static Utf8SearchDiagnosticsSession Start()
     {
-        var session = new Utf8SearchDiagnosticsSession();
+        var session = new Utf8SearchDiagnosticsSession(t_current);
         t_current = session;
         return session;
     }
@@ -89,7 +92,7 @@ internal sealed class Utf8SearchDiagnosticsSession
     {
         if (ReferenceEquals(t_current, this))
         {
-            t_current = null;
+            t_current = _previous;
         }
     }
 }

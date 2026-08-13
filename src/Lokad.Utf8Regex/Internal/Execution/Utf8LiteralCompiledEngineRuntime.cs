@@ -76,21 +76,27 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        var rightToLeft = _usesRightToLeft;
+        if (!_usesRightToLeft)
+        {
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _regexPlan,
+                verifierRuntime: null,
+                input,
+                validation,
+                budget);
+            return cursor.MoveNext();
+        }
+
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal
-                => rightToLeft
-                    ? FindLastLiteralViaSearch(input, budget) >= 0
-                    : FindFirstLiteralViaSearch(input, budget) >= 0,
+                => FindLastLiteralViaSearch(input, budget) >= 0,
             NativeExecutionKind.AsciiLiteralIgnoreCase
-                => rightToLeft
-                    ? FindLastIgnoreCaseLiteralViaSearch(input, budget) >= 0
-                    : FindFirstIgnoreCaseLiteralViaSearch(input, budget) >= 0,
+                => FindLastIgnoreCaseLiteralViaSearch(input, budget) >= 0,
             NativeExecutionKind.ExactUtf8Literals
-                => IsMatchLiteralFamily(input, budget, rightToLeft),
+                => IsMatchLiteralFamily(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => IsMatchLiteralFamily(input, budget, rightToLeft),
+                => IsMatchLiteralFamily(input, budget, rightToLeft: true),
             _ => throw UnexpectedExecutionKind(),
         };
     }
@@ -113,19 +119,31 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        var rightToLeft = _usesRightToLeft;
+        if (!_usesRightToLeft)
+        {
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _regexPlan,
+                verifierRuntime: null,
+                input,
+                validation,
+                budget);
+            return cursor.MoveNext()
+                ? cursor.Current.ToValueMatch()
+                : Utf8ValueMatch.NoMatch;
+        }
+
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral
-                => MatchExactAsciiLiteral(input, budget, rightToLeft),
+                => MatchExactAsciiLiteral(input, budget, rightToLeft: true),
             NativeExecutionKind.ExactUtf8Literal
-                => MatchExactUtf8Literal(input, budget, rightToLeft),
+                => MatchExactUtf8Literal(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCase
-                => MatchAsciiLiteralIgnoreCase(input, budget, rightToLeft),
+                => MatchAsciiLiteralIgnoreCase(input, budget, rightToLeft: true),
             NativeExecutionKind.ExactUtf8Literals
-                => MatchLiteralFamily(input, budget, rightToLeft),
+                => MatchLiteralFamily(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => MatchLiteralFamily(input, budget, rightToLeft),
+                => MatchLiteralFamily(input, budget, rightToLeft: true),
             _ => throw UnexpectedExecutionKind(),
         };
     }
@@ -324,49 +342,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return false;
     }
 
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        var literal = _regexPlan.LiteralUtf8;
-        var analysis = literal is { Length: 0 } ? Utf8InputAnalyzer.Analyze(input) : default;
-        return _regexPlan.ExecutionKind switch
-        {
-            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: 0 }
-                => new Utf8ValueMatchEnumerator(input, analysis.BoundaryMap, budget),
-            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
-                => new Utf8ValueMatchEnumerator(input, _regexPlan.SearchPlan, literal, _regexPlan.ExecutionKind, budget),
-            NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
-                => new Utf8ValueMatchEnumerator(input, _regexPlan.SearchPlan, literal, GetLiteralUtf16Length(literal), budget),
-            NativeExecutionKind.ExactUtf8Literals
-                => new Utf8ValueMatchEnumerator(input, _regexPlan.SearchPlan, budget),
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => new Utf8ValueMatchEnumerator(input, _regexPlan.SearchPlan, _regexPlan.ExecutionKind, budget),
-            _ => throw UnexpectedExecutionKind(),
-        };
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        var literal = _regexPlan.LiteralUtf8;
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            validation.IsAscii &&
-            _smallAsciiLiteralFamilyPrimitive is { } primitive &&
-            ShouldPreferSmallAsciiLiteralFamilyPrimitive(input, primitive))
-        {
-            return new Utf8ValueSplitEnumerator(input, primitive, count, budget);
-        }
-
-        return _regexPlan.ExecutionKind switch
-        {
-            NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
-                => new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, literal, _regexPlan.ExecutionKind, count, budget: budget),
-            NativeExecutionKind.ExactUtf8Literals
-                => new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, count, budget: budget),
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, count, _regexPlan.ExecutionKind, budget),
-            _ => throw UnexpectedExecutionKind(),
-        };
-    }
-
     public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget)
     {
         var literal = _regexPlan.LiteralUtf8;
@@ -407,6 +382,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
+        if (literal.Length == 0)
+        {
+            return Utf8Validation.Validate(input).Utf16Length + 1;
+        }
+
         if (budget is null &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             CanUseFusedValidatedBmpThreeByteLiteralCount(literal))

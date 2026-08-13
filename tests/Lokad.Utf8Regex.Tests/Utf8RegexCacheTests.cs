@@ -65,4 +65,32 @@ public sealed class Utf8RegexCacheTests
 
         Assert.Equal(0, Utf8RegexCache.EntryCount);
     }
+
+    [Fact]
+    public async Task ConcurrentSameKeyRequestsRetainOnePreparedInstance()
+    {
+        Utf8RegexCache.ResetForTests();
+        var requests = Enumerable.Range(0, 32)
+            .Select(_ => Task.Run(() => Utf8RegexCache.GetOrAdd(
+                "ab[0-9]{2}",
+                RegexOptions.CultureInvariant,
+                Regex.InfiniteMatchTimeout)))
+            .ToArray();
+
+        var instances = await Task.WhenAll(requests);
+
+        Assert.All(instances, instance => Assert.Same(instances[0], instance));
+        Assert.Equal(1, Utf8RegexCache.EntryCount);
+    }
+
+    [Fact]
+    public void CompileFailureIsNotRetained()
+    {
+        Utf8RegexCache.ResetForTests();
+
+        Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
+        Assert.Equal(0, Utf8RegexCache.EntryCount);
+        Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
+        Assert.Equal(0, Utf8RegexCache.EntryCount);
+    }
 }

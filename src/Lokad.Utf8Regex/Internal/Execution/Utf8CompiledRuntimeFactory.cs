@@ -13,7 +13,7 @@ internal static class Utf8CompiledRuntimeFactory
     {
         if ((compiledEngine.Kind == Utf8CompiledEngineKind.ByteSafeLinear ||
              compiledEngine.Kind == Utf8CompiledEngineKind.CompiledFallback) &&
-            ShouldPreferFallbackRegexRuntime(regexPlan))
+            ShouldPreferFallbackRegexRuntime(compiledEngine.Kind, regexPlan))
         {
             compiledEngine = new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex);
         }
@@ -46,7 +46,9 @@ internal static class Utf8CompiledRuntimeFactory
 
     public static RegexOptions NormalizeDirectRouteOptions(RegexOptions options) => options & ~RegexOptions.Compiled;
 
-    private static bool ShouldPreferFallbackRegexRuntime(Utf8PreparedRegex regexPlan)
+    private static bool ShouldPreferFallbackRegexRuntime(
+        Utf8CompiledEngineKind engineKind,
+        Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
             !string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal))
@@ -54,7 +56,9 @@ internal static class Utf8CompiledRuntimeFactory
             return false;
         }
 
-        return HasWeakFallbackPrefilter(regexPlan);
+        return HasWeakFallbackPrefilter(regexPlan) ||
+            engineKind == Utf8CompiledEngineKind.CompiledFallback &&
+            HasVariableWidthFixedDistanceCandidateOutsidePrefix(regexPlan);
     }
 
     private static bool HasWeakFallbackPrefilter(Utf8PreparedRegex regexPlan)
@@ -63,5 +67,43 @@ internal static class Utf8CompiledRuntimeFactory
             regexPlan.SearchPlan.FallbackCandidatePlans is { Length: 1 } &&
             !regexPlan.SearchPlan.HasWindowSearch &&
             regexPlan.SearchPlan.RequiredWindowPrefilterPlans is not { Length: > 0 };
+    }
+
+    private static bool HasVariableWidthFixedDistanceCandidateOutsidePrefix(Utf8PreparedRegex regexPlan)
+    {
+        var searchPlan = regexPlan.SearchPlan;
+        if (searchPlan.Kind is not (Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar) ||
+            searchPlan.ExactRequiredLength.HasValue ||
+            searchPlan.LiteralUtf8 is not { Length: > 0 } literal)
+        {
+            return false;
+        }
+
+        var prefixGuards = regexPlan.DeterministicGuards.PrefixGuards;
+        if (prefixGuards is not { Length: > 0 })
+        {
+            return true;
+        }
+
+        for (var i = 0; i < literal.Length; i++)
+        {
+            var offset = searchPlan.Distance + i;
+            var covered = false;
+            foreach (var guard in prefixGuards)
+            {
+                if (guard.Offset == offset && guard.Literal == literal[i])
+                {
+                    covered = true;
+                    break;
+                }
+            }
+
+            if (!covered)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

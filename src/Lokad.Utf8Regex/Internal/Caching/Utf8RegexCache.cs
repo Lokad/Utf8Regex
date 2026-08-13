@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 
 internal static class Utf8RegexCache
 {
-    private static readonly ConcurrentDictionary<Utf8RegexCacheKey, Utf8Regex> s_cache = new();
+    private static readonly ConcurrentDictionary<Utf8RegexCacheKey, Lazy<Utf8Regex>> s_cache = new();
     private static readonly ConcurrentQueue<Utf8RegexCacheKey> s_insertionOrder = new();
     private static int s_maxEntries = 15;
 
@@ -25,18 +25,20 @@ internal static class Utf8RegexCache
         var key = new Utf8RegexCacheKey(pattern, normalizedOptions, matchTimeout);
         if (s_cache.TryGetValue(key, out var cached))
         {
-            return cached;
+            return GetPreparedValue(key, cached);
         }
 
-        var created = new Utf8Regex(key.Pattern, key.Options, key.MatchTimeout);
+        var created = new Lazy<Utf8Regex>(
+            () => new Utf8Regex(key.Pattern, key.Options, key.MatchTimeout),
+            LazyThreadSafetyMode.ExecutionAndPublication);
         if (s_cache.TryAdd(key, created))
         {
             s_insertionOrder.Enqueue(key);
             TrimToCapacity();
-            return created;
+            return GetPreparedValue(key, created);
         }
 
-        return s_cache[key];
+        return GetPreparedValue(key, s_cache[key]);
     }
 
     public static int EntryCount => s_cache.Count;
@@ -67,6 +69,19 @@ internal static class Utf8RegexCache
         while (s_cache.Count > s_maxEntries && s_insertionOrder.TryDequeue(out var key))
         {
             s_cache.TryRemove(key, out _);
+        }
+    }
+
+    private static Utf8Regex GetPreparedValue(Utf8RegexCacheKey key, Lazy<Utf8Regex> preparation)
+    {
+        try
+        {
+            return preparation.Value;
+        }
+        catch
+        {
+            s_cache.TryRemove(new KeyValuePair<Utf8RegexCacheKey, Lazy<Utf8Regex>>(key, preparation));
+            throw;
         }
     }
 }

@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -23,8 +22,8 @@ internal static class Utf8SearchGuidedFallbackCompiledPolicy
         return verifierCount >= DirectFallbackVerifierThreshold;
     }
 
-    public static bool ShouldDemoteToFallbackCountByInvocations()
+    public static bool ShouldDemoteToFallbackCountByInvocations(int verifierInvocations)
     {
-        return (Utf8SearchDiagnosticsSession.Current?.VerifierInvocations ?? 0) >= DirectFallbackInvocationThreshold;
+        return verifierInvocations >= DirectFallbackInvocationThreshold;
     }
 }

@@ -7,6 +7,7 @@ using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
@@ -15,90 +16,31 @@ public sealed class Utf8Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
-    private readonly Utf8PreparedRegex _preparedRegex;
-    private readonly Utf8CompiledEngine _compiledEngine;
-    private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly Utf8CompiledEngineRuntime _compiledEngineRuntime;
+    private readonly Utf8RegexProgram _program;
     private readonly Utf8ByteOffsetExecution _byteOffsetExecution;
-    private readonly int[] _groupNumbers;
-    private readonly string[] _groupNames;
-    private readonly Utf8Regex? _asciiCultureInvariantTwin;
-    private readonly bool _hasDirectAnchoredHeadTailWithoutValidation;
-    private readonly bool _hasDirectAnchoredValidatorWithoutValidation;
-    private readonly bool _allowsTrailingNewlineBeforeEnd;
-    private readonly AsciiSimplePatternAnchoredHeadTailRunPlan _anchoredHeadTailRunPlan;
-    private readonly AsciiSimplePatternAnchoredValidatorPlan _anchoredValidatorPlan;
-    private readonly AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan;
-    private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
-    private readonly Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher;
-    private readonly bool _hasDirectFallbackTokenFamilyWithoutValidation;
-    private readonly bool _hasDirectFallbackAsciiFamilyWithoutValidation;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Utf8AnalyzedReplacement> _replacementCache = new(StringComparer.Ordinal);
 
     public Utf8Regex(string pattern)
-        : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout, allowAsciiCultureInvariantTwin: true)
+        : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout)
     {
     }
 
     public Utf8Regex(string pattern, RegexOptions options)
-        : this(pattern, options, DefaultMatchTimeout, allowAsciiCultureInvariantTwin: true)
+        : this(pattern, options, DefaultMatchTimeout)
     {
     }
 
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
-        : this(pattern, options, matchTimeout, allowAsciiCultureInvariantTwin: true)
-    {
-    }
-
-    private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool allowAsciiCultureInvariantTwin)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         _ = new Regex(string.Empty, RegexOptions.None, matchTimeout);
         ValidateOptions(options);
-        var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-
         Pattern = pattern;
         Options = options;
         MatchTimeout = matchTimeout;
 
-        var analysis = Utf8FrontEnd.Compile(pattern, effectiveOptions);
-        _preparedRegex = analysis;
-        _compiledEngine = Utf8CompiledEngineSelector.Select(_preparedRegex, (options & RegexOptions.Compiled) != 0);
-        _verifierRuntime = Utf8VerifierRuntime.Create(_preparedRegex, pattern, options, MatchTimeout);
-        _compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(_compiledEngine, _preparedRegex, _verifierRuntime, options);
+        _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
         _byteOffsetExecution = new Utf8ByteOffsetExecution(this);
-        _groupNumbers = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
-        _groupNames = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
-        var simplePatternPlan = _preparedRegex.SimplePatternPlan;
-        _allowsTrailingNewlineBeforeEnd = simplePatternPlan.AllowsTrailingNewlineBeforeEnd;
-        _anchoredHeadTailRunPlan = simplePatternPlan.AnchoredHeadTailRunPlan;
-        _anchoredValidatorPlan = simplePatternPlan.AnchoredValidatorPlan;
-        _anchoredBoundedDatePlan = simplePatternPlan.AnchoredBoundedDatePlan;
-        _fallbackDirectFamily = _preparedRegex.FallbackDirectFamily;
-        _directStructuralFamilyKernelMatcher =
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            Utf8EmittedKernelMatcher.TryCreate(_preparedRegex.StructuralIdentifierFamilyPlan, _preparedRegex.SearchPlan, out var structuralFamilyKernelMatcher)
-                ? structuralFamilyKernelMatcher
-                : null;
-        _hasDirectAnchoredHeadTailWithoutValidation =
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _anchoredHeadTailRunPlan.HasValue;
-        _hasDirectAnchoredValidatorWithoutValidation =
-            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _anchoredValidatorPlan.HasValue;
-        _hasDirectFallbackTokenFamilyWithoutValidation =
-            Utf8FallbackDirectFamilyCategories.IsTokenFindFamily(_fallbackDirectFamily.Kind);
-        _hasDirectFallbackAsciiFamilyWithoutValidation =
-            (_fallbackDirectFamily.SupportsAsciiDefinitiveIsMatch ||
-             _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole) &&
-            !_hasDirectFallbackTokenFamilyWithoutValidation;
-        if (allowAsciiCultureInvariantTwin &&
-            (effectiveOptions & RegexOptions.IgnoreCase) != 0 &&
-            (effectiveOptions & RegexOptions.CultureInvariant) == 0)
-        {
-            var twin = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, matchTimeout, allowAsciiCultureInvariantTwin: false);
-            _asciiCultureInvariantTwin = twin;
-        }
     }
 
     public static TimeSpan DefaultMatchTimeout
@@ -118,6 +60,55 @@ public sealed class Utf8Regex
     public RegexOptions Options { get; }
 
     public TimeSpan MatchTimeout { get; }
+
+    private Utf8PreparedRegex _preparedRegex => _program.PreparedRegex;
+
+    private Utf8CompiledEngine _compiledEngine => _program.CompiledEngine;
+
+    private Utf8VerifierRuntime _verifierRuntime => _program.VerifierRuntime;
+
+    private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime;
+
+    private Utf8AsciiCultureInvariantStrategy? _asciiCultureInvariantStrategy =>
+        _program.AsciiCultureInvariantStrategy;
+
+    private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
+        _program.DirectStructuralFamilyKernelMatcher;
+
+    private int[] _groupNumbers => _program.GroupNumbers;
+
+    private string[] _groupNames => _program.GroupNames;
+
+    private bool _allowsTrailingNewlineBeforeEnd =>
+        _preparedRegex.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
+
+    private AsciiSimplePatternAnchoredHeadTailRunPlan _anchoredHeadTailRunPlan =>
+        _preparedRegex.SimplePatternPlan.AnchoredHeadTailRunPlan;
+
+    private AsciiSimplePatternAnchoredValidatorPlan _anchoredValidatorPlan =>
+        _preparedRegex.SimplePatternPlan.AnchoredValidatorPlan;
+
+    private AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan =>
+        _preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan;
+
+    private Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
+        _preparedRegex.FallbackDirectFamily;
+
+    private bool _hasDirectAnchoredHeadTailWithoutValidation =>
+        _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        _anchoredHeadTailRunPlan.HasValue;
+
+    private bool _hasDirectAnchoredValidatorWithoutValidation =>
+        _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        _anchoredValidatorPlan.HasValue;
+
+    private bool _hasDirectFallbackTokenFamilyWithoutValidation =>
+        Utf8FallbackDirectFamilyCategories.IsTokenFindFamily(_fallbackDirectFamily.Kind);
+
+    private bool _hasDirectFallbackAsciiFamilyWithoutValidation =>
+        (_fallbackDirectFamily.SupportsAsciiDefinitiveIsMatch ||
+         _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole) &&
+        !_hasDirectFallbackTokenFamilyWithoutValidation;
 
     internal NativeExecutionKind ExecutionKind => _preparedRegex.ExecutionKind;
 
@@ -149,13 +140,13 @@ public sealed class Utf8Regex
 
     internal string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
 
-    internal bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantTwin is not null;
+    internal bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantStrategy is not null;
 
-    internal NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantTwin?._preparedRegex.ExecutionKind;
+    internal NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
 
-    internal Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantTwin?._compiledEngine.Kind;
+    internal Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantStrategy?.CompiledEngine.Kind;
 
-    internal string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantTwin?._preparedRegex.FallbackReason;
+    internal string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantStrategy?.PreparedRegex.FallbackReason;
 
     internal Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _preparedRegex.StructuralLinearProgram.Kind;
 
@@ -208,15 +199,16 @@ public sealed class Utf8Regex
         return false;
     }
 
-    internal bool DebugTryGetAsciiCultureInvariantTwin(out Utf8Regex twin)
+    internal bool DebugTryGetAsciiCultureInvariantTwin(
+        [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
     {
-        if (_asciiCultureInvariantTwin is not null)
+        if (_asciiCultureInvariantStrategy is not null)
         {
-            twin = _asciiCultureInvariantTwin;
+            strategy = _asciiCultureInvariantStrategy;
             return true;
         }
 
-        twin = null!;
+        strategy = null;
         return false;
     }
 
@@ -2936,16 +2928,18 @@ public sealed class Utf8Regex
         return Utf8InputAnalyzer.IsAscii(input);
     }
 
-    private bool TryGetAsciiCultureInvariantTwin(ReadOnlySpan<byte> input, out Utf8Regex twin)
+    private bool TryGetAsciiCultureInvariantTwin(
+        ReadOnlySpan<byte> input,
+        [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
     {
-        if (_asciiCultureInvariantTwin is not null &&
+        if (_asciiCultureInvariantStrategy is not null &&
             Utf8InputAnalyzer.IsAscii(input))
         {
-            twin = _asciiCultureInvariantTwin;
+            strategy = _asciiCultureInvariantStrategy;
             return true;
         }
 
-        twin = null!;
+        strategy = null;
         return false;
     }
 
@@ -3371,26 +3365,6 @@ public sealed class Utf8Regex
             lengthInBytes: matchLength);
     }
 
-    private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngineRuntime.CreateMatchEnumerator(input, default, budget);
-    }
-
-    private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngineRuntime.CreateMatchEnumerator(input, default, budget);
-    }
-
-    private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, byte[] literal, int count, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngineRuntime.CreateSplitEnumerator(input, default, count, budget);
-    }
-
-    private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, int count, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngineRuntime.CreateSplitEnumerator(input, default, count, budget);
-    }
-
     private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[]? literal, Utf8ExecutionBudget? budget)
     {
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
@@ -3399,14 +3373,12 @@ public sealed class Utf8Regex
             return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
         }
 
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.ExactLiteral when literal is { Length: > 0 }
-                => CreateMatchEnumeratorViaCompiledExactLiteralEngine(input, literal, budget),
-            Utf8CompiledEngineKind.LiteralFamily when _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 }
-                => CreateMatchEnumeratorViaCompiledLiteralFamilyEngine(input, budget),
-            _ => _compiledEngineRuntime.CreateMatchEnumerator(input, validation, budget),
-        };
+        return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(
+            _preparedRegex,
+            _verifierRuntime,
+            input,
+            validation,
+            budget);
     }
 
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
@@ -3417,16 +3389,13 @@ public sealed class Utf8Regex
             return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
         }
 
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.ExactLiteral when _preparedRegex.LiteralUtf8 is { Length: > 0 } literal
-                => CreateSplitEnumeratorViaCompiledExactLiteralEngine(input, literal, count, budget),
-            Utf8CompiledEngineKind.LiteralFamily
-                when _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 } &&
-                     !_preparedRegex.SearchPlan.HasBoundaryRequirements
-                => CreateSplitEnumeratorViaCompiledLiteralFamilyEngine(input, count, budget),
-            _ => _compiledEngineRuntime.CreateSplitEnumerator(input, validation, count, budget),
-        };
+        return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
+            _preparedRegex,
+            _verifierRuntime,
+            input,
+            validation,
+            count,
+            budget);
     }
 
     private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap = null)

@@ -81,10 +81,6 @@ internal abstract class Utf8CompiledEngineRuntime
         return false;
     }
 
-    public abstract Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget);
-
-    public abstract Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget);
-
     public virtual byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget)
     {
         throw new InvalidOperationException("Exact literal replacement bytes are only valid for compiled literal engines.");
@@ -134,8 +130,6 @@ internal sealed class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngine
     public override bool TryDebugCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralPreparedSearch(input, out count);
     public override bool TryDebugCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralAnchored(input, out count);
     public override bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength) => _inner.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedByteLength);
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.CreateMatchEnumerator(input, validation, budget);
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget) => _inner.CreateSplitEnumerator(input, validation, count, budget);
     public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
 }
 
@@ -158,8 +152,6 @@ internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngin
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.Match(input, validation, budget);
     public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
     public override bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength) => _inner.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedByteLength);
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.CreateMatchEnumerator(input, validation, budget);
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget) => _inner.CreateSplitEnumerator(input, validation, count, budget);
     public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
 }
 
@@ -225,16 +217,6 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
         }
 
         return new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-    }
-
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        throw new InvalidOperationException("Structural family engines do not expose a dedicated match enumerator runtime.");
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        throw new InvalidOperationException("Structural family engines do not expose a dedicated split enumerator runtime.");
     }
 
     private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input)
@@ -595,32 +577,6 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         return new Utf8ValueMatch(true, false, match.Index, match.Length);
     }
 
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
-        {
-            return new Utf8ValueMatchEnumerator(input, _regexPlan.StructuralLinearProgram, budget);
-        }
-
-        if (validation.IsAscii)
-        {
-            return new Utf8ValueMatchEnumerator(input, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, budget);
-        }
-
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        if (validation.IsAscii)
-        {
-            return new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, _regexPlan.ExecutionProgram, _regexPlan.SimplePatternPlan, count, budget);
-        }
-
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
-    }
 }
 
 internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8CompiledEngineRuntime
@@ -731,28 +687,6 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         }
 
         return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
-    }
-
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        if (_regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii)
-        {
-            return new Utf8ValueMatchEnumerator(input, _regexPlan.StructuralLinearProgram, budget);
-        }
-
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        if (_regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii)
-        {
-            return new Utf8ValueSplitEnumerator(input, _regexPlan.StructuralLinearProgram, count, budget);
-        }
-
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
     }
 
     public override byte[] ReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Utf8ExecutionBudget? budget)
@@ -893,18 +827,6 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
             : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
     }
 
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
-    }
-
 }
 
 internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8CompiledEngineRuntime
@@ -944,7 +866,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         var probe = GetProbeValidation(input, validation);
         Utf8BoundaryMap? boundaryMap = null;
         string? decoded = null;
-        return TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _);
+        return TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _, out _);
     }
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
@@ -963,19 +885,26 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         var verifierCount = 0;
         var verifierInvocations = 0;
         while ((uint)startIndex <= (uint)input.Length &&
-            TryFindNextVerifiedMatch(input, probe, startIndex, ref boundaryMap, ref decoded, out var verification))
+            TryFindNextVerifiedMatch(
+                input,
+                probe,
+                startIndex,
+                ref boundaryMap,
+                ref decoded,
+                out var currentVerifierInvocations,
+                out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
             verifierCount++;
-            verifierInvocations = Utf8SearchDiagnosticsSession.Current?.VerifierInvocations ?? 0;
+            verifierInvocations += currentVerifierInvocations;
             if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCount(verifierCount))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided_demoted");
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
             }
 
-            if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCountByInvocations())
+            if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCountByInvocations(verifierInvocations))
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided_demoted");
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
@@ -992,7 +921,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         var probe = GetProbeValidation(input, validation);
         Utf8BoundaryMap? boundaryMap = null;
         string? decoded = null;
-        if (!TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out var verification))
+        if (!TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _, out var verification))
         {
             return Utf8ValueMatch.NoMatch;
         }
@@ -1007,22 +936,13 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
             verification.LengthInBytes);
     }
 
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        return Utf8CompiledFallbackEnumeratorFactory.CreateMatchEnumerator(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        return Utf8CompiledFallbackEnumeratorFactory.CreateSplitEnumerator(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count);
-    }
-
     private bool TryFindNextVerifiedMatch(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult probe,
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
+        out int verifierInvocations,
         out Utf8FallbackVerificationResult verification)
     {
         return Utf8FallbackSearchExecutor.TryFindNextVerifiedMatch(
@@ -1033,6 +953,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
             startIndex,
             ref boundaryMap,
             ref decoded,
+            out verifierInvocations,
             out verification);
     }
 
@@ -1085,16 +1006,6 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
         return Utf8CompiledFallbackMatchProjection.Match(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
-    }
-
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        return Utf8CompiledFallbackEnumeratorFactory.CreateMatchEnumerator(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        return Utf8CompiledFallbackEnumeratorFactory.CreateSplitEnumerator(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count);
     }
 
     private bool TryFindNextMatch(
@@ -1243,18 +1154,6 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
             _delimitedTokenSearch,
             _literalStructuredTokenSearch,
             out match);
-    }
-
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
     }
 
     private bool TryMatchDirectAsciiFamily(ReadOnlySpan<byte> input, out int matchIndex, out int matchedLength)

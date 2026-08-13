@@ -15,8 +15,10 @@ internal static class Utf8FallbackSearchExecutor
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
+        out int verifierInvocations,
         out Utf8FallbackVerificationResult verification)
     {
+        verifierInvocations = 0;
         verification = default;
         if (searchPlan.FallbackSearch.CandidatePlans is not { Length: > 0 } candidatePlans)
         {
@@ -26,6 +28,7 @@ internal static class Utf8FallbackSearchExecutor
         using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, startIndex);
         while (cursor.TryGetNextScalarBoundary(out var candidate))
         {
+            verifierInvocations++;
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (verifierRuntime.FallbackCandidateVerifier.TryVerify(input, candidate, validation, ref boundaryMap, ref decoded, out verification))

@@ -62,26 +62,6 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         };
     }
 
-    public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii
-                => new Utf8ValueMatchEnumerator(input, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, budget),
-            _ => throw UnexpectedEngineKind(),
-        };
-    }
-
-    public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
-    {
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii
-                => new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, _regexPlan.ExecutionProgram, _regexPlan.SimplePatternPlan, count, budget),
-            _ => throw UnexpectedEngineKind(),
-        };
-    }
-
     private int CountSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         if (_compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral)

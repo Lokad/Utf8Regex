@@ -1233,10 +1233,13 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        var verifierRuntimeField = typeof(Utf8Regex).GetField("_verifierRuntime", BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.NotNull(verifierRuntimeField);
-
-        var verifierRuntime = verifierRuntimeField!.GetValue(compiled);
+        var programField = typeof(Utf8Regex).GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(programField);
+        var program = programField!.GetValue(compiled);
+        Assert.NotNull(program);
+        var verifierRuntimeProperty = program!.GetType().GetProperty("VerifierRuntime", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Assert.NotNull(verifierRuntimeProperty);
+        var verifierRuntime = verifierRuntimeProperty!.GetValue(program);
         Assert.NotNull(verifierRuntime);
 
         var fallbackVerifierProperty = verifierRuntime!.GetType().GetProperty("FallbackCandidateVerifier", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -1294,13 +1297,9 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "[\\w\\.+-]+@[\\w\\.-]+\\.[\\w\\.-]+";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
-        var runtimeField = typeof(Utf8Regex).GetField("_compiledEngineRuntime", BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.NotNull(runtimeField);
-        var runtime = runtimeField!.GetValue(compiled);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.NotNull(runtime);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", runtime!.GetType().Name);
+        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.DebugCompiledEngineRuntimeType);
     }
 
     [Fact]
@@ -1308,13 +1307,9 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "[\\w]+://[^/\\s?#]+[^\\s?#]+(?:\\?[^\\s#]*)?(?:#[^\\s]*)?";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
-        var runtimeField = typeof(Utf8Regex).GetField("_compiledEngineRuntime", BindingFlags.Instance | BindingFlags.NonPublic);
-        Assert.NotNull(runtimeField);
-        var runtime = runtimeField!.GetValue(compiled);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.NotNull(runtime);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", runtime!.GetType().Name);
+        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.DebugCompiledEngineRuntimeType);
     }
 
     [Fact]
