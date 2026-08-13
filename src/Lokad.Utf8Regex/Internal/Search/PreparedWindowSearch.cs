@@ -1,13 +1,19 @@
-using Lokad.Utf8Regex.Internal.Execution;
-namespace Lokad.Utf8Regex.Internal.Utilities;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly struct PreparedWindowSearch
 {
+    // Each leading source and trailing source advances monotonically. A failed
+    // trailing scan reaches end-of-input once, so the scan is O(n + candidates).
+    public PreparedWindowSearch(PreparedSearcher leadingSearcher, PreparedSearcher trailingSearcher)
+        : this(leadingSearcher, trailingSearcher, maxGap: null, sameLine: false)
+    {
+    }
+
     public PreparedWindowSearch(
         PreparedSearcher leadingSearcher,
         PreparedSearcher trailingSearcher,
-        int? maxGap = null,
-        bool sameLine = false)
+        int? maxGap,
+        bool sameLine)
     {
         LeadingSearcher = leadingSearcher;
         TrailingSearcher = trailingSearcher;
@@ -27,7 +33,7 @@ internal readonly struct PreparedWindowSearch
 
     public int FindFirstStart(ReadOnlySpan<byte> input, int startIndex)
     {
-        var state = new PreparedWindowScanState(startIndex, new PreparedSearchScanState(startIndex, default));
+        var state = PreparedWindowScanState.Create(startIndex);
         return TryFindNextWindow(input, ref state, out var window) ? window.Leading.Index : -1;
     }
 
@@ -35,7 +41,7 @@ internal readonly struct PreparedWindowSearch
     {
         window = default;
 
-        if (!HasValue || (uint)state.NextStart > (uint)input.Length)
+        if (!HasValue || state.TrailingExhausted || (uint)state.NextStart > (uint)input.Length)
         {
             return false;
         }
@@ -44,17 +50,37 @@ internal readonly struct PreparedWindowSearch
         var trailingState = state.TrailingState;
         var trailing = state.TrailingMatch;
         var hasTrailing = state.HasTrailingMatch;
-        while (LeadingSearcher.TryFindNextOverlappingMatch(input, ref leadingState, out var leading))
+        var trailingExhausted = state.TrailingExhausted;
+        while (!trailingExhausted &&
+               LeadingSearcher.TryFindNextOverlappingMatch(input, ref leadingState, out var leading))
         {
-            if (TryFindTrailingAnchor(input, leading, ref trailingState, ref trailing, ref hasTrailing))
+            if (TryFindTrailingAnchor(
+                    input,
+                    leading,
+                    ref trailingState,
+                    ref trailing,
+                    ref hasTrailing,
+                    ref trailingExhausted))
             {
-                state = new PreparedWindowScanState(leading.Index + 1, leadingState, trailingState, trailing, hasTrailing);
+                state = new PreparedWindowScanState(
+                    leading.Index + 1,
+                    leadingState,
+                    trailingState,
+                    trailing,
+                    hasTrailing,
+                    trailingExhausted);
                 window = new PreparedWindowMatch(leading, trailing);
                 return true;
             }
         }
 
-        state = new PreparedWindowScanState(input.Length, leadingState, trailingState, trailing, hasTrailing);
+        state = new PreparedWindowScanState(
+            input.Length,
+            leadingState,
+            trailingState,
+            trailing,
+            hasTrailing,
+            trailingExhausted);
         return false;
     }
 
@@ -63,7 +89,8 @@ internal readonly struct PreparedWindowSearch
         PreparedSearchMatch leading,
         ref PreparedSearchScanState trailingState,
         ref PreparedSearchMatch trailing,
-        ref bool hasTrailing)
+        ref bool hasTrailing,
+        ref bool trailingExhausted)
     {
         var trailingSearchStart = leading.Index + leading.Length;
         if ((uint)trailingSearchStart > (uint)input.Length)
@@ -86,6 +113,7 @@ internal readonly struct PreparedWindowSearch
             if (!TrailingSearcher.TryFindNextOverlappingMatch(input, ref trailingState, out trailing))
             {
                 hasTrailing = false;
+                trailingExhausted = true;
                 return false;
             }
 
@@ -98,6 +126,22 @@ internal readonly record struct PreparedWindowMatch(PreparedSearchMatch Leading,
 internal readonly record struct PreparedWindowScanState(
     int NextStart,
     PreparedSearchScanState LeadingState,
-    PreparedSearchScanState TrailingState = default,
-    PreparedSearchMatch TrailingMatch = default,
-    bool HasTrailingMatch = false);
+    PreparedSearchScanState TrailingState,
+    PreparedSearchMatch TrailingMatch,
+    bool HasTrailingMatch,
+    bool TrailingExhausted)
+{
+    public PreparedWindowScanState(int nextStart, PreparedSearchScanState leadingState)
+        : this(nextStart, leadingState, default, default, HasTrailingMatch: false, TrailingExhausted: false)
+    {
+    }
+
+    public static PreparedWindowScanState Create(int startIndex) =>
+        new(
+            startIndex,
+            new PreparedSearchScanState(startIndex, default),
+            default,
+            default,
+            HasTrailingMatch: false,
+            TrailingExhausted: false);
+}

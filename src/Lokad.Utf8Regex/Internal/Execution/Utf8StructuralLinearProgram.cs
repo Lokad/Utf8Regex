@@ -1,7 +1,7 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -1037,95 +1037,21 @@ internal static class Utf8AsciiInstructionLinearExecutor
         if (instructionProgram.Instructions.Length >= 2 &&
             instructionProgram.Instructions[0].Kind == Utf8StructuralLinearInstructionKind.OrderedLiteralWindow)
         {
-            var plan = program.OrderedLiteralWindowPlan;
-            var trailingLiteral = plan.TrailingLiteralUtf8.AsSpan();
-
-            // For literal-family leading, use multi-literal search via the search plan.
-            if (plan.IsLiteralFamily && program.SearchPlan.AlternateLiteralSearch is { } familySearch)
+            var result = AsciiOrderedLiteralWindowExecutor.FindNext(
+                input,
+                program.OrderedLiteralWindowPlan,
+                program.SearchPlan,
+                startIndex,
+                budget,
+                out matchedLength);
+            if (result >= 0)
             {
-                return plan.HasPairedTrailingLiterals
-                    ? FindNextPairedOrderedLiteralFamilyWindow(input, plan, familySearch, startIndex, budget, diagnostics, out matchedLength)
-                    : FindNextOrderedLiteralFamilyWindow(input, plan, familySearch, trailingLiteral, startIndex, budget, diagnostics, out matchedLength);
-            }
-
-            var leadingLiteral = plan.LeadingLiteralUtf8.AsSpan();
-            var searchFrom = startIndex;
-            while (searchFrom <= input.Length - leadingLiteral.Length)
-            {
-                budget?.Step(input);
-
-                var relative = input[searchFrom..].IndexOf(leadingLiteral);
-                if (relative < 0)
-                {
-                    return -1;
-                }
-
-                var leadingStart = searchFrom + relative;
-                if (!MatchesBoundaryRequirement(input, leadingStart, plan.LeadingLiteralLeadingBoundary) ||
-                    !MatchesBoundaryRequirement(input, leadingStart + leadingLiteral.Length, plan.LeadingLiteralTrailingBoundary))
-                {
-                    searchFrom = leadingStart + 1;
-                    continue;
-                }
-
-                var gapSearchStart = leadingStart + leadingLiteral.Length;
-
-                // Enforce leading separator (e.g., \s+ before the gap).
-                if (plan.GapLeadingSeparatorMinCount > 0)
-                {
-                    var sepCount = 0;
-                    while (gapSearchStart + sepCount < input.Length &&
-                           input[gapSearchStart + sepCount] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v')
-                    {
-                        sepCount++;
-                    }
-
-                    if (sepCount < plan.GapLeadingSeparatorMinCount)
-                    {
-                        searchFrom = leadingStart + 1;
-                        continue;
-                    }
-
-                    gapSearchStart += sepCount;
-                }
-
-                var gapSearchEnd = Math.Min(input.Length, gapSearchStart + plan.MaxGap + trailingLiteral.Length);
-
-                // When the gap excludes \n (dot without Singleline), clamp to same line.
-                if (plan.GapSameLine)
-                {
-                    var newlineOffset = input[gapSearchStart..gapSearchEnd].IndexOf((byte)'\n');
-                    if (newlineOffset >= 0)
-                    {
-                        gapSearchEnd = gapSearchStart + newlineOffset;
-                    }
-                }
-
-                var gapSlice = input[gapSearchStart..gapSearchEnd];
-                var trailingRelative = gapSlice.IndexOf(trailingLiteral);
-                if (trailingRelative < 0)
-                {
-                    searchFrom = leadingStart + 1;
-                    continue;
-                }
-
-                var trailingStart = gapSearchStart + trailingRelative;
                 diagnostics?.CountSearchCandidate();
-                if (MatchesBoundaryRequirement(input, trailingStart, plan.TrailingLiteralLeadingBoundary) &&
-                    MatchesBoundaryRequirement(input, trailingStart + trailingLiteral.Length, plan.TrailingLiteralTrailingBoundary))
-                {
-                    diagnostics?.CountVerifierInvocation();
-                    diagnostics?.CountVerifierMatch();
-                    matchedLength = plan.YieldLeadingLiteralOnly
-                        ? leadingLiteral.Length
-                        : trailingStart + trailingLiteral.Length - leadingStart;
-                    return leadingStart;
-                }
-
-                searchFrom = leadingStart + 1;
+                diagnostics?.CountVerifierInvocation();
+                diagnostics?.CountVerifierMatch();
             }
 
-            return -1;
+            return result;
         }
 
         for (var candidate = startIndex; candidate <= input.Length; candidate++)
@@ -2194,228 +2120,6 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return false;
     }
 
-    private static bool MatchesBoundaryRequirement(ReadOnlySpan<byte> input, int byteOffset, Utf8BoundaryRequirement requirement)
-    {
-        return requirement switch
-        {
-            Utf8BoundaryRequirement.None => true,
-            Utf8BoundaryRequirement.Boundary => IsWordBoundary(input, byteOffset),
-            Utf8BoundaryRequirement.NonBoundary => !IsWordBoundary(input, byteOffset),
-            _ => true,
-        };
-    }
-
-    private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        var previousIsWord = byteOffset > 0 &&
-            FrontEnd.Runtime.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset - 1]);
-        var nextIsWord = byteOffset < input.Length &&
-            FrontEnd.Runtime.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset]);
-        return previousIsWord != nextIsWord;
-    }
-
-    private static int FindNextOrderedLiteralFamilyWindow(
-        ReadOnlySpan<byte> input,
-        AsciiOrderedLiteralWindowPlan plan,
-        PreparedLiteralSetSearch familySearch,
-        ReadOnlySpan<byte> trailingLiteral,
-        int startIndex,
-        Utf8ExecutionBudget? budget,
-        Utf8SearchDiagnosticsSession? diagnostics,
-        out int matchedLength)
-    {
-        matchedLength = 0;
-        var searchFrom = startIndex;
-        while (searchFrom < input.Length)
-        {
-            budget?.Step(input);
-
-            if (!familySearch.TryFindFirstMatchWithLength(input[searchFrom..], out var relativeIndex, out var leadingMatchLength))
-            {
-                return -1;
-            }
-
-            var leadingStart = searchFrom + relativeIndex;
-            searchFrom = leadingStart + 1;
-
-            if (!MatchesBoundaryRequirement(input, leadingStart, plan.LeadingLiteralLeadingBoundary) ||
-                !MatchesBoundaryRequirement(input, leadingStart + leadingMatchLength, plan.LeadingLiteralTrailingBoundary))
-            {
-                continue;
-            }
-
-            var gapSearchStart = leadingStart + leadingMatchLength;
-
-            if (plan.GapLeadingSeparatorMinCount > 0)
-            {
-                var sepCount = 0;
-                while (gapSearchStart + sepCount < input.Length &&
-                       input[gapSearchStart + sepCount] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v')
-                {
-                    sepCount++;
-                }
-
-                if (sepCount < plan.GapLeadingSeparatorMinCount)
-                {
-                    continue;
-                }
-
-                gapSearchStart += sepCount;
-            }
-
-            var gapSearchEnd = Math.Min(input.Length, gapSearchStart + plan.MaxGap + trailingLiteral.Length);
-
-            if (plan.GapSameLine)
-            {
-                var newlineOffset = input[gapSearchStart..gapSearchEnd].IndexOf((byte)'\n');
-                if (newlineOffset >= 0)
-                {
-                    gapSearchEnd = gapSearchStart + newlineOffset;
-                }
-            }
-
-            var gapSlice = input[gapSearchStart..gapSearchEnd];
-            var trailingRelative = gapSlice.IndexOf(trailingLiteral);
-            if (trailingRelative < 0)
-            {
-                continue;
-            }
-
-            var trailingStart = gapSearchStart + trailingRelative;
-            diagnostics?.CountSearchCandidate();
-            if (MatchesBoundaryRequirement(input, trailingStart, plan.TrailingLiteralLeadingBoundary) &&
-                MatchesBoundaryRequirement(input, trailingStart + trailingLiteral.Length, plan.TrailingLiteralTrailingBoundary))
-            {
-                diagnostics?.CountVerifierInvocation();
-                diagnostics?.CountVerifierMatch();
-                matchedLength = plan.YieldLeadingLiteralOnly
-                    ? leadingMatchLength
-                    : trailingStart + trailingLiteral.Length - leadingStart;
-                return leadingStart;
-            }
-        }
-
-        return -1;
-    }
-
-    private static int FindNextPairedOrderedLiteralFamilyWindow(
-        ReadOnlySpan<byte> input,
-        AsciiOrderedLiteralWindowPlan plan,
-        PreparedLiteralSetSearch familySearch,
-        int startIndex,
-        Utf8ExecutionBudget? budget,
-        Utf8SearchDiagnosticsSession? diagnostics,
-        out int matchedLength)
-    {
-        matchedLength = 0;
-        var searchFrom = startIndex;
-        while (searchFrom < input.Length)
-        {
-            budget?.Step(input);
-
-            if (!familySearch.TryFindFirstMatchWithLength(input[searchFrom..], out var relativeIndex, out var leadingMatchLength))
-            {
-                return -1;
-            }
-
-            var leadingStart = searchFrom + relativeIndex;
-            searchFrom = leadingStart + 1;
-
-            if (!TryResolvePairedLeadingBranch(plan, input, leadingStart, leadingMatchLength, out var trailingLiteral))
-            {
-                continue;
-            }
-
-            if (!MatchesBoundaryRequirement(input, leadingStart, plan.LeadingLiteralLeadingBoundary) ||
-                !MatchesBoundaryRequirement(input, leadingStart + leadingMatchLength, plan.LeadingLiteralTrailingBoundary))
-            {
-                continue;
-            }
-
-            var gapSearchStart = leadingStart + leadingMatchLength;
-
-            if (plan.GapLeadingSeparatorMinCount > 0)
-            {
-                var sepCount = 0;
-                while (gapSearchStart + sepCount < input.Length &&
-                       input[gapSearchStart + sepCount] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v')
-                {
-                    sepCount++;
-                }
-
-                if (sepCount < plan.GapLeadingSeparatorMinCount)
-                {
-                    continue;
-                }
-
-                gapSearchStart += sepCount;
-            }
-
-            var gapSearchEnd = Math.Min(input.Length, gapSearchStart + plan.MaxGap + trailingLiteral.Length);
-            if (plan.GapSameLine)
-            {
-                var newlineOffset = input[gapSearchStart..gapSearchEnd].IndexOf((byte)'\n');
-                if (newlineOffset >= 0)
-                {
-                    gapSearchEnd = gapSearchStart + newlineOffset;
-                }
-            }
-
-            var trailingRelative = input[gapSearchStart..gapSearchEnd].IndexOf(trailingLiteral);
-            if (trailingRelative < 0)
-            {
-                continue;
-            }
-
-            var trailingStart = gapSearchStart + trailingRelative;
-            diagnostics?.CountSearchCandidate();
-            if (MatchesBoundaryRequirement(input, trailingStart, plan.TrailingLiteralLeadingBoundary) &&
-                MatchesBoundaryRequirement(input, trailingStart + trailingLiteral.Length, plan.TrailingLiteralTrailingBoundary))
-            {
-                diagnostics?.CountVerifierInvocation();
-                diagnostics?.CountVerifierMatch();
-                matchedLength = plan.YieldLeadingLiteralOnly
-                    ? leadingMatchLength
-                    : trailingStart + trailingLiteral.Length - leadingStart;
-                return leadingStart;
-            }
-        }
-
-        return -1;
-    }
-
-    private static bool TryResolvePairedLeadingBranch(
-        AsciiOrderedLiteralWindowPlan plan,
-        ReadOnlySpan<byte> input,
-        int leadingStart,
-        int leadingMatchLength,
-        out ReadOnlySpan<byte> trailingLiteral)
-    {
-        trailingLiteral = default;
-        if (!plan.HasPairedTrailingLiterals)
-        {
-            return false;
-        }
-
-        var leadingLiterals = plan.LeadingLiteralsUtf8!;
-        var trailingLiterals = plan.TrailingLiteralsUtf8!;
-        for (var i = 0; i < leadingLiterals.Length; i++)
-        {
-            var leadingLiteral = leadingLiterals[i];
-            if (leadingLiteral.Length != leadingMatchLength)
-            {
-                continue;
-            }
-
-            if (input[leadingStart..].StartsWith(leadingLiteral))
-            {
-                trailingLiteral = trailingLiterals[i];
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
 
 internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLinearRuntime

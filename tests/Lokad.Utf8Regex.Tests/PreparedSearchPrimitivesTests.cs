@@ -1,7 +1,7 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -551,7 +551,7 @@ public sealed class PreparedSearchPrimitivesTests
             ], ignoreCase: false)),
             new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false));
         var input = Encoding.UTF8.GetBytes("using var x = await;\nawait using var y = await;");
-        var state = new PreparedWindowScanState(0, new PreparedSearchScanState(0, default));
+        var state = PreparedWindowScanState.Create(0);
 
         Assert.True(window.TryFindNextWindow(input, ref state, out var first));
         Assert.Equal("using var", Encoding.UTF8.GetString(input[first.Leading.Index..(first.Leading.Index + first.Leading.Length)]));
@@ -580,7 +580,7 @@ public sealed class PreparedSearchPrimitivesTests
                 ], ignoreCase: false)),
                 new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false)));
         var input = Encoding.UTF8.GetBytes("using var x = await;");
-        var state = new PreparedFallbackCandidateState(default, new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
+        var state = new PreparedFallbackCandidateState(default, PreparedWindowScanState.Create(0));
 
         Assert.True(source.TryFindNextCandidate(input, ref state, out var candidate));
         Assert.Equal(0, candidate.StartIndex);
@@ -596,11 +596,34 @@ public sealed class PreparedSearchPrimitivesTests
             maxGap: 64,
             sameLine: true);
         var input = Encoding.UTF8.GetBytes("using var value =\nawait");
-        var state = new PreparedWindowScanState(0, new PreparedSearchScanState(0, default));
+        var state = PreparedWindowScanState.Create(0);
 
         Assert.True(window.TryFindNextWindow(input, ref state, out var match));
         Assert.Equal(0, match.Leading.Index);
         Assert.Equal(input.Length - "await".Length, match.Trailing.Index);
+    }
+
+    [Theory]
+    [InlineData(256)]
+    [InlineData(1024)]
+    [InlineData(4096)]
+    public void PreparedWindowSearchExhaustsAnAbsentTrailingAnchorOnce(int leadingCount)
+    {
+        var window = new PreparedWindowSearch(
+            new PreparedSearcher(new PreparedSubstringSearch("a"u8.ToArray(), ignoreCase: false), ignoreCase: false),
+            new PreparedSearcher(new PreparedSubstringSearch("z"u8.ToArray(), ignoreCase: false), ignoreCase: false));
+        var input = new byte[leadingCount];
+        input.AsSpan().Fill((byte)'a');
+        var state = PreparedWindowScanState.Create(0);
+
+        Assert.False(window.TryFindNextWindow(input, ref state, out _));
+        Assert.True(state.TrailingExhausted);
+        Assert.Equal(1, state.LeadingState.NextStart);
+        Assert.Equal(input.Length, state.TrailingState.NextStart);
+
+        var exhaustedState = state;
+        Assert.False(window.TryFindNextWindow(input, ref state, out _));
+        Assert.Equal(exhaustedState, state);
     }
 
     [Fact]
@@ -613,7 +636,7 @@ public sealed class PreparedSearchPrimitivesTests
                 maxGap: 64,
                 sameLine: true));
         var input = Encoding.UTF8.GetBytes("using var value =\nawait");
-        var state = new PreparedFallbackCandidateState(default, new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
+        var state = new PreparedFallbackCandidateState(default, PreparedWindowScanState.Create(0));
 
         Assert.False(source.TryFindNextCandidate(input, ref state, out _));
     }
@@ -621,7 +644,9 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PreparedQuotedAsciiRunSearchCanFindQuotedRun()
     {
-        var search = new PreparedQuotedAsciiRunSearch(Lokad.Utf8Regex.Internal.FrontEnd.Runtime.RegexCharClass.AsciiLetterOrDigitClass, 4);
+        var search = new PreparedQuotedAsciiRunSearch(
+            Utf8SearchAsciiSet.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"u8),
+            4);
         var input = Encoding.UTF8.GetBytes("xx \"ab12\" yy");
 
         Assert.Equal(3, search.IndexOf(input));
@@ -632,7 +657,9 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PreparedQuotedAsciiRunSearchCanFindLastQuotedRun()
     {
-        var search = new PreparedQuotedAsciiRunSearch(Lokad.Utf8Regex.Internal.FrontEnd.Runtime.RegexCharClass.AsciiLetterOrDigitClass, 4);
+        var search = new PreparedQuotedAsciiRunSearch(
+            Utf8SearchAsciiSet.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"u8),
+            4);
         var input = Encoding.UTF8.GetBytes("'ab12' xx \"xy99\"");
 
         Assert.Equal(10, search.LastIndexOf(input));

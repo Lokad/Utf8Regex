@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal enum Utf8CandidateSearchKind : byte

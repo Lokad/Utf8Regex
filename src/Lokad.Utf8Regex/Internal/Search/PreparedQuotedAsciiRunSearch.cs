@@ -1,18 +1,20 @@
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
-
-namespace Lokad.Utf8Regex.Internal.Utilities;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly struct PreparedQuotedAsciiRunSearch
 {
-    public PreparedQuotedAsciiRunSearch(string asciiSet, int runLength)
+    public PreparedQuotedAsciiRunSearch(Utf8SearchAsciiSet asciiSet, int runLength)
     {
-        ArgumentException.ThrowIfNullOrEmpty(asciiSet);
+        if (!asciiSet.HasValue)
+        {
+            throw new ArgumentException("The ASCII set must not be empty.", nameof(asciiSet));
+        }
+
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(runLength);
         AsciiSet = asciiSet;
         RunLength = runLength;
     }
 
-    public string AsciiSet { get; }
+    public Utf8SearchAsciiSet AsciiSet { get; }
 
     public int RunLength { get; }
 
@@ -60,7 +62,7 @@ internal readonly struct PreparedQuotedAsciiRunSearch
         for (var i = 0; i < RunLength; i++)
         {
             var value = input[index + 1 + i];
-            if (value >= 128 || !RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, AsciiSet))
+            if (!AsciiSet.Contains(value))
             {
                 return false;
             }

@@ -1,4 +1,4 @@
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
 using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -37,7 +37,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
             HasDeterministicLeadingAnchor(tree.Root, fixedLiteral, searchPlan.Distance))
         {
             return new Utf8DeterministicAnchorSearch(
-                new PreparedSearcher(new Internal.Utilities.PreparedSubstringSearch(fixedLiteral, ignoreCase: false), ignoreCase: false),
+                new PreparedSearcher(new Internal.Search.PreparedSubstringSearch(fixedLiteral, ignoreCase: false), ignoreCase: false),
                 searchPlan.Distance);
         }
 
@@ -46,7 +46,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
             if (TryCreateAsciiIgnoreCaseAnchorLiteral(leadingLiterals, out var ignoreCaseLiteral))
             {
                 return new Utf8DeterministicAnchorSearch(
-                    new PreparedSearcher(new Internal.Utilities.PreparedSubstringSearch(ignoreCaseLiteral, ignoreCase: true), ignoreCase: true),
+                    new PreparedSearcher(new Internal.Search.PreparedSubstringSearch(ignoreCaseLiteral, ignoreCase: true), ignoreCase: true),
                     0);
             }
 

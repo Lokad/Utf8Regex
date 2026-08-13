@@ -1,6 +1,6 @@
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 
@@ -357,10 +357,10 @@ internal readonly struct Utf8SearchPlan
     }
 
     private static PreparedSearcher CreateSecondaryRequiredPrefilter(
-        string? secondaryRequiredPrefilterQuotedAsciiSet,
+        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet,
         int secondaryRequiredPrefilterQuotedAsciiLength)
     {
-        return !string.IsNullOrEmpty(secondaryRequiredPrefilterQuotedAsciiSet) &&
+        return secondaryRequiredPrefilterQuotedAsciiSet.HasValue &&
                secondaryRequiredPrefilterQuotedAsciiLength > 0
             ? new PreparedSearcher(new PreparedQuotedAsciiRunSearch(
                 secondaryRequiredPrefilterQuotedAsciiSet,
@@ -423,11 +423,11 @@ internal readonly struct Utf8SearchPlan
 
     private static Utf8StructuralSearchPlan[]? CreateFallbackRequiredWindowPrefilterPlans(
         byte[][]? requiredPrefilterAlternateLiteralsUtf8,
-        string? secondaryRequiredPrefilterQuotedAsciiSet,
+        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet,
         int secondaryRequiredPrefilterQuotedAsciiLength)
     {
         if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literals ||
-            string.IsNullOrEmpty(secondaryRequiredPrefilterQuotedAsciiSet) ||
+            !secondaryRequiredPrefilterQuotedAsciiSet.HasValue ||
             secondaryRequiredPrefilterQuotedAsciiLength <= 0)
         {
             return null;
@@ -441,10 +441,12 @@ internal readonly struct Utf8SearchPlan
         return
         [
             Utf8StructuralSearchPlan.CreateWindowPlan(
-                new PreparedWindowSearch(family, quoted),
+                new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false),
                 maxLines: 5,
                 startTransform: new Utf8FallbackStartTransform(1)),
-            Utf8StructuralSearchPlan.CreateWindowPlan(new PreparedWindowSearch(quoted, family), maxLines: 5),
+            Utf8StructuralSearchPlan.CreateWindowPlan(
+                new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false),
+                maxLines: 5),
         ];
     }
 
@@ -454,7 +456,7 @@ internal readonly struct Utf8SearchPlan
         {
             Utf8PreparedSearcherInfoKind.LiteralFamily when searcherInfo.AlternateLiteralsUtf8 is { Length: > 0 } literals
                 => new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false)),
-            Utf8PreparedSearcherInfoKind.QuotedAsciiRun when !string.IsNullOrEmpty(searcherInfo.QuotedAsciiSet) && searcherInfo.QuotedAsciiLength > 0
+            Utf8PreparedSearcherInfoKind.QuotedAsciiRun when searcherInfo.QuotedAsciiSet.HasValue && searcherInfo.QuotedAsciiLength > 0
                 => new PreparedSearcher(new PreparedQuotedAsciiRunSearch(searcherInfo.QuotedAsciiSet, searcherInfo.QuotedAsciiLength)),
             _ => default,
         };

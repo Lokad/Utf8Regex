@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace Lokad.Utf8Regex.Internal.Utilities;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 {

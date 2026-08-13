@@ -1,4 +1,4 @@
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal static class Utf8SearchStrategySelector

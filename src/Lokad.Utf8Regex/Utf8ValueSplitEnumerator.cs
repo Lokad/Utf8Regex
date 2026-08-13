@@ -1,7 +1,7 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex;
 
 public ref struct Utf8ValueSplitEnumerator
@@ -17,7 +17,7 @@ public ref struct Utf8ValueSplitEnumerator
     private readonly NativeExecutionKind _executionKind;
     private readonly Utf8BoundaryMap? _boundaryMap;
     private readonly Utf8ExecutionBudget? _budget;
-    private readonly Lokad.Utf8Regex.Internal.Utilities.PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
+    private readonly Lokad.Utf8Regex.Internal.Search.PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
     private readonly int _literalUtf16Length;
     private readonly int _totalUtf16Length;
     private int _segmentStartBytes;
@@ -208,7 +208,7 @@ public ref struct Utf8ValueSplitEnumerator
             : EnumeratorMode.FallbackRegex;
     }
 
-    internal Utf8ValueSplitEnumerator(ReadOnlySpan<byte> input, Lokad.Utf8Regex.Internal.Utilities.PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch, int count, Utf8ExecutionBudget? budget = null)
+    internal Utf8ValueSplitEnumerator(ReadOnlySpan<byte> input, Lokad.Utf8Regex.Internal.Search.PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch, int count, Utf8ExecutionBudget? budget = null)
     {
         _input = input;
         _decoded = null;

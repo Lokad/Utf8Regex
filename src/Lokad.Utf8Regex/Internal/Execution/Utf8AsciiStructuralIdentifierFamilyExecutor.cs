@@ -1,6 +1,6 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Execution;

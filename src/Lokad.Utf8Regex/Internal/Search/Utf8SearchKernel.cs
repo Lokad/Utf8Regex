@@ -1,6 +1,4 @@
-using Lokad.Utf8Regex.Internal.Utilities;
-
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal static class Utf8SearchKernel
 {

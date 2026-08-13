@@ -232,7 +232,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
                 case AsciiSimplePatternTokenKind.Literal:
                     if (regexPlan.SimplePatternPlan.IgnoreCase)
                     {
-                        value = Internal.Utilities.AsciiSearch.FoldCase(value);
+                        value = Internal.Search.AsciiSearch.FoldCase(value);
                     }
 
                     if (value != token.Literal)
@@ -246,7 +246,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
                     break;
 
                 case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
-                    if (!token.CharClass.Contains(regexPlan.SimplePatternPlan.IgnoreCase ? Internal.Utilities.AsciiSearch.FoldCase(value) : value))
+                    if (!token.CharClass.Contains(regexPlan.SimplePatternPlan.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(value) : value))
                     {
                         return false;
                     }

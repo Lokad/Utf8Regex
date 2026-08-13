@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Search;
+
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal enum Utf8PreparedSearcherInfoKind : byte
@@ -12,7 +14,7 @@ internal readonly struct Utf8PreparedSearcherInfo
     private Utf8PreparedSearcherInfo(
         Utf8PreparedSearcherInfoKind kind,
         byte[][]? alternateLiteralsUtf8,
-        string? quotedAsciiSet,
+        Utf8SearchAsciiSet quotedAsciiSet,
         int quotedAsciiLength)
     {
         Kind = kind;
@@ -25,16 +27,16 @@ internal readonly struct Utf8PreparedSearcherInfo
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
 
-    public string? QuotedAsciiSet { get; }
+    public Utf8SearchAsciiSet QuotedAsciiSet { get; }
 
     public int QuotedAsciiLength { get; }
 
     public bool HasValue => Kind != Utf8PreparedSearcherInfoKind.None;
 
     public static Utf8PreparedSearcherInfo LiteralFamily(byte[][] alternateLiteralsUtf8) =>
-        new(Utf8PreparedSearcherInfoKind.LiteralFamily, alternateLiteralsUtf8, null, 0);
+        new(Utf8PreparedSearcherInfoKind.LiteralFamily, alternateLiteralsUtf8, default, 0);
 
-    public static Utf8PreparedSearcherInfo QuotedAsciiRun(string quotedAsciiSet, int quotedAsciiLength) =>
+    public static Utf8PreparedSearcherInfo QuotedAsciiRun(Utf8SearchAsciiSet quotedAsciiSet, int quotedAsciiLength) =>
         new(Utf8PreparedSearcherInfoKind.QuotedAsciiRun, null, quotedAsciiSet, quotedAsciiLength);
 }
 

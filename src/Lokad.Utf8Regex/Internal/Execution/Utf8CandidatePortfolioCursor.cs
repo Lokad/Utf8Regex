@@ -1,6 +1,6 @@
 using System.Buffers;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -217,7 +217,7 @@ internal ref struct Utf8CandidatePortfolioCursor
     private static Utf8StructuralSearchState CreateCandidateState(int startIndex)
         => new(
             new PreparedSearchScanState(startIndex, default),
-            new PreparedWindowScanState(startIndex, new PreparedSearchScanState(startIndex, default)));
+            PreparedWindowScanState.Create(startIndex));
 
     private static bool TryAdvanceCandidate(
         ReadOnlySpan<byte> input,

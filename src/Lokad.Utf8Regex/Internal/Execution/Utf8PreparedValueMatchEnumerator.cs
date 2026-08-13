@@ -3,6 +3,8 @@ using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
+using Lokad.Utf8Regex.Internal.Search;
+
 internal ref struct Utf8PreparedValueMatchEnumerator
 {
     private readonly ReadOnlySpan<byte> _input;

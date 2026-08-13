@@ -1,5 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
 using System.Buffers;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -138,7 +138,7 @@ internal static class Utf8SearchExecutor
         {
             var state = new Utf8StructuralSearchState(
                 new PreparedSearchScanState(startIndex, default),
-                new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
+                PreparedWindowScanState.Create(0));
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
             {
                 if (candidate.StartIndex >= startIndex)
@@ -197,7 +197,7 @@ internal static class Utf8SearchExecutor
         {
             var candidateState = new Utf8StructuralSearchState(
                 new PreparedSearchScanState(startIndex, default),
-                new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
+                PreparedWindowScanState.Create(0));
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
             {
                 if (candidate.StartIndex < startIndex)

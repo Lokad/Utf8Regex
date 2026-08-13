@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Search;
+
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchFacts
@@ -9,7 +11,7 @@ internal readonly struct Utf8SearchFacts
         bool canGuideFallbackStarts = false,
         byte[]? requiredPrefilterLiteralUtf8 = null,
         byte[][]? requiredPrefilterAlternateLiteralsUtf8 = null,
-        string? secondaryRequiredPrefilterQuotedAsciiSet = null,
+        Utf8SearchAsciiSet secondaryRequiredPrefilterQuotedAsciiSet = default,
         int secondaryRequiredPrefilterQuotedAsciiLength = 0,
         Utf8FixedDistanceSet[]? fixedDistanceSets = null,
         byte[]? trailingLiteralUtf8 = null,
@@ -62,7 +64,7 @@ internal readonly struct Utf8SearchFacts
 
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; }
 
-    public string? SecondaryRequiredPrefilterQuotedAsciiSet { get; }
+    public Utf8SearchAsciiSet SecondaryRequiredPrefilterQuotedAsciiSet { get; }
 
     public int SecondaryRequiredPrefilterQuotedAsciiLength { get; }
 

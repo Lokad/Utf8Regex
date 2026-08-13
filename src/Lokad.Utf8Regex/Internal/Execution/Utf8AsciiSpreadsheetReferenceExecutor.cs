@@ -78,7 +78,7 @@ internal static class Utf8AsciiSpreadsheetReferenceExecutor
 
     private static bool IsAsciiLetterIgnoreCase(byte value)
     {
-        value = Internal.Utilities.AsciiSearch.FoldCase(value);
+        value = Internal.Search.AsciiSearch.FoldCase(value);
         return value is >= (byte)'a' and <= (byte)'z';
     }
 

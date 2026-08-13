@@ -136,6 +136,34 @@ public sealed class CoreCompilationArchitectureTests
         Assert.DoesNotContain("Utf8SearchPlan", simpleLowerer, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ReusableSearchKernelsHaveOneOwnerAndNoFlavorFrontEndDependency()
+    {
+        var sourceRoot = FindCoreSourceDirectory();
+        var searchRoot = Path.Combine(sourceRoot, "Internal", "Search");
+        var utilitiesRoot = Path.Combine(sourceRoot, "Internal", "Utilities");
+        var structuralRuntime = File.ReadAllText(
+            Path.Combine(sourceRoot, "Internal", "Execution", "Utf8StructuralLinearProgram.cs"));
+
+        Assert.True(Directory.Exists(searchRoot));
+        Assert.Empty(Directory.EnumerateFiles(utilitiesRoot, "*.cs", SearchOption.AllDirectories));
+        Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedSearcher.cs")));
+        Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedWindowSearch.cs")));
+        Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8LiteralEquality.cs")));
+        Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8SearchKernel.cs")));
+
+        foreach (var searchSourcePath in Directory.EnumerateFiles(searchRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            var searchSource = File.ReadAllText(searchSourcePath);
+            Assert.DoesNotContain("Internal.FrontEnd", searchSource, StringComparison.Ordinal);
+            Assert.DoesNotContain("RegexCharClass", searchSource, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("AsciiOrderedLiteralWindowExecutor.FindNext", structuralRuntime, StringComparison.Ordinal);
+        Assert.DoesNotContain("FindNextOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
+        Assert.DoesNotContain("FindNextPairedOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
+    }
+
     private static string FindCoreSourceDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

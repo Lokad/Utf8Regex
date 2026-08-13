@@ -4,6 +4,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
+using Lokad.Utf8Regex.Internal.Search;
+
 internal static class Utf8ProjectionExecutor
 {
     public static Utf8ValueMatch ProjectByteAlignedMatch(int indexInBytes, int lengthInBytes)

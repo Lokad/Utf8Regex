@@ -1,10 +1,9 @@
 using Lokad.Utf8Regex.Internal.Replacement;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -1980,34 +1979,5 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool LiteralMatchesAt(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> literal)
-    {
-        return (uint)index <= (uint)(input.Length - literal.Length) &&
-            FastLiteralEquals(input.Slice(index, literal.Length), literal);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool FastLiteralEquals(ReadOnlySpan<byte> candidate, ReadOnlySpan<byte> literal)
-    {
-        ref var candidateRef = ref MemoryMarshal.GetReference(candidate);
-        ref var literalRef = ref MemoryMarshal.GetReference(literal);
-        switch (literal.Length)
-        {
-            case 5:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                       Unsafe.Add(ref candidateRef, 4) == Unsafe.Add(ref literalRef, 4);
-            case 6:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                       Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref candidateRef, 4)) ==
-                       Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref literalRef, 4));
-            case 7:
-                return Unsafe.ReadUnaligned<uint>(ref candidateRef) == Unsafe.ReadUnaligned<uint>(ref literalRef) &&
-                       Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref candidateRef, 4)) ==
-                       Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref literalRef, 4)) &&
-                       Unsafe.Add(ref candidateRef, 6) == Unsafe.Add(ref literalRef, 6);
-            case 8:
-                return Unsafe.ReadUnaligned<ulong>(ref candidateRef) == Unsafe.ReadUnaligned<ulong>(ref literalRef);
-            default:
-                return candidate.SequenceEqual(literal);
-        }
-    }
+        => Utf8LiteralEquality.EqualsAt(input, index, literal, Utf8LiteralComparisonKind.FastShort);
 }

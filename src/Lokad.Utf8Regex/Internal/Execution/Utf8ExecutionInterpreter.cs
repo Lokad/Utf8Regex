@@ -75,9 +75,9 @@ internal static class Utf8ExecutionInterpreter
 
                 var relative = plan.SearchLiterals.Length == 1
                     ? (plan.IgnoreCase
-                        ? Internal.Utilities.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], plan.SearchLiterals[0])
-                        : Internal.Utilities.AsciiSearch.IndexOfExact(input[searchFrom..], plan.SearchLiterals[0]))
-                    : Internal.Utilities.AsciiSearch.IndexOfAnyExact(input[searchFrom..], plan.SearchLiterals);
+                        ? Internal.Search.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], plan.SearchLiterals[0])
+                        : Internal.Search.AsciiSearch.IndexOfExact(input[searchFrom..], plan.SearchLiterals[0]))
+                    : Internal.Search.AsciiSearch.IndexOfAnyExact(input[searchFrom..], plan.SearchLiterals);
                 if (relative < 0)
                 {
                     matchedLength = 0;
@@ -161,8 +161,8 @@ internal static class Utf8ExecutionInterpreter
             budget?.Step(input);
 
             var relative = ignoreCase
-                ? Internal.Utilities.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], anchorLiteral)
-                : Internal.Utilities.AsciiSearch.IndexOfExact(input[searchFrom..], anchorLiteral);
+                ? Internal.Search.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], anchorLiteral)
+                : Internal.Search.AsciiSearch.IndexOfExact(input[searchFrom..], anchorLiteral);
             if (relative < 0)
             {
                 return false;
@@ -658,7 +658,7 @@ internal static class Utf8ExecutionInterpreter
                 case AsciiSimplePatternTokenKind.Literal:
                     if (plan.IgnoreCase)
                     {
-                        value = Internal.Utilities.AsciiSearch.FoldCase(value);
+                        value = Internal.Search.AsciiSearch.FoldCase(value);
                     }
 
                     if (value != token.Literal)
@@ -672,7 +672,7 @@ internal static class Utf8ExecutionInterpreter
                     break;
 
                 case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
-                    if (!token.CharClass.Contains(plan.IgnoreCase ? Internal.Utilities.AsciiSearch.FoldCase(value) : value))
+                    if (!token.CharClass.Contains(plan.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(value) : value))
                     {
                         return false;
                     }
@@ -729,8 +729,8 @@ internal static class Utf8ExecutionInterpreter
                     var expected = (byte)instruction.Ch;
                     if (ignoreCase)
                     {
-                        actual = Internal.Utilities.AsciiSearch.FoldCase(actual);
-                        expected = Internal.Utilities.AsciiSearch.FoldCase(expected);
+                        actual = Internal.Search.AsciiSearch.FoldCase(actual);
+                        expected = Internal.Search.AsciiSearch.FoldCase(expected);
                     }
 
                     if (actual != expected)
@@ -807,8 +807,8 @@ internal static class Utf8ExecutionInterpreter
             var expected = (byte)text[i];
             if (ignoreCase)
             {
-                actual = Internal.Utilities.AsciiSearch.FoldCase(actual);
-                expected = Internal.Utilities.AsciiSearch.FoldCase(expected);
+                actual = Internal.Search.AsciiSearch.FoldCase(actual);
+                expected = Internal.Search.AsciiSearch.FoldCase(expected);
             }
 
             if (actual != expected)
@@ -1181,8 +1181,8 @@ internal static class Utf8ExecutionInterpreter
         var expected = (byte)instruction.Ch;
         if ((instruction.Options & RegexOptions.IgnoreCase) != 0)
         {
-            actual = Internal.Utilities.AsciiSearch.FoldCase(actual);
-            expected = Internal.Utilities.AsciiSearch.FoldCase(expected);
+            actual = Internal.Search.AsciiSearch.FoldCase(actual);
+            expected = Internal.Search.AsciiSearch.FoldCase(expected);
         }
 
         if (actual != expected)
@@ -1230,7 +1230,7 @@ internal static class Utf8ExecutionInterpreter
                 return false;
             }
 
-            var folded = (char)Internal.Utilities.AsciiSearch.FoldCase(input[index]);
+            var folded = (char)Internal.Search.AsciiSearch.FoldCase(input[index]);
             if (!RuntimeFrontEnd.RegexCharClass.CharInClass(folded, instruction.Text))
             {
                 return false;

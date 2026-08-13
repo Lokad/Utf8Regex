@@ -102,10 +102,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        var folded = Internal.Utilities.AsciiSearch.FoldCase(values[0]);
+        var folded = Internal.Search.AsciiSearch.FoldCase(values[0]);
         for (var i = 1; i < values.Length; i++)
         {
-            if (Internal.Utilities.AsciiSearch.FoldCase(values[i]) != folded)
+            if (Internal.Search.AsciiSearch.FoldCase(values[i]) != folded)
             {
                 return false;
             }
@@ -138,7 +138,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var folded = new HashSet<byte>();
         for (var i = 0; i < values.Length; i++)
         {
-            folded.Add(Internal.Utilities.AsciiSearch.FoldCase(values[i]));
+            folded.Add(Internal.Search.AsciiSearch.FoldCase(values[i]));
             if (folded.Count > MaxLiteralCharClassExpansion)
             {
                 return false;
@@ -159,7 +159,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 switch (token.Kind)
                 {
                     case AsciiSimplePatternTokenKind.Literal:
-                        tokens[i] = new AsciiSimplePatternToken(Internal.Utilities.AsciiSearch.FoldCase(token.Literal));
+                        tokens[i] = new AsciiSimplePatternToken(Internal.Search.AsciiSearch.FoldCase(token.Literal));
                         break;
 
                     case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
@@ -178,7 +178,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             var normalized = new byte[literal.Length];
             for (var j = 0; j < literal.Length; j++)
             {
-                normalized[j] = Internal.Utilities.AsciiSearch.FoldCase(literal[j]);
+                normalized[j] = Internal.Search.AsciiSearch.FoldCase(literal[j]);
             }
 
             fixedChecks[i] = new AsciiFixedLiteralCheck(fixedChecks[i].Offset, normalized);

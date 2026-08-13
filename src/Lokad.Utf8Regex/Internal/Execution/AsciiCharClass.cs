@@ -89,7 +89,7 @@ internal sealed class AsciiCharClass
                 continue;
             }
 
-            clone[Internal.Utilities.AsciiSearch.FoldCase((byte)i)] = true;
+            clone[Internal.Search.AsciiSearch.FoldCase((byte)i)] = true;
             var upper = char.ToUpperInvariant((char)i);
             if (upper < clone.Length)
             {

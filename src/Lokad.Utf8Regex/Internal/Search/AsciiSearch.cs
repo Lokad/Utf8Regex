@@ -2,7 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Lokad.Utf8Regex.Internal.Utilities;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly record struct AsciiAnchorSelection(int Anchor2, int Anchor3)
 {

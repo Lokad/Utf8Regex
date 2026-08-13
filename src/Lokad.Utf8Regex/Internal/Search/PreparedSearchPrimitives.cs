@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 #endif
 
-namespace Lokad.Utf8Regex.Internal.Utilities;
+namespace Lokad.Utf8Regex.Internal.Search;
 
 internal enum PreparedIgnoreCaseSearchTier : byte
 {

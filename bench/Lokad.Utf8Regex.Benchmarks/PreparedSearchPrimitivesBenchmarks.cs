@@ -1,6 +1,6 @@
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -110,5 +110,49 @@ public class PreparedSearchPrimitivesBenchmarks
         }
 
         return sb.ToString();
+    }
+}
+
+[MemoryDiagnoser]
+public class PreparedWindowAdversarialBenchmarks
+{
+    private byte[] _input = [];
+    private PreparedWindowSearch _window;
+
+    [Params(256, 1024, 4096)]
+    public int DenseLeadingCount { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _input = new byte[DenseLeadingCount];
+        _input.AsSpan().Fill((byte)'a');
+        _window = new PreparedWindowSearch(
+            new PreparedSearcher(new PreparedSubstringSearch("a"u8.ToArray(), ignoreCase: false), ignoreCase: false),
+            new PreparedSearcher(new PreparedSubstringSearch("z"u8.ToArray(), ignoreCase: false), ignoreCase: false));
+    }
+
+    [Benchmark(Baseline = true)]
+    public int PersistentTrailingCursor()
+    {
+        var state = PreparedWindowScanState.Create(0);
+        _ = _window.TryFindNextWindow(_input, ref state, out _);
+        return state.LeadingState.NextStart + state.TrailingState.NextStart;
+    }
+
+    [Benchmark]
+    public int RestartingTrailingSearchReference()
+    {
+        var sourceAdvances = 0;
+        for (var leading = 0; leading < _input.Length; leading++)
+        {
+            var suffix = _input.AsSpan(leading + 1);
+            if (suffix.IndexOf((byte)'z') < 0)
+            {
+                sourceAdvances += suffix.Length;
+            }
+        }
+
+        return sourceAdvances;
     }
 }

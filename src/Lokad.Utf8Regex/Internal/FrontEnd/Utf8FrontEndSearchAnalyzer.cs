@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8FrontEndSearchAnalyzer
@@ -16,7 +17,8 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         TrySelectRequiredLiteralPrefilter(findOptimizations.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
-        TrySelectQuotedAsciiRunPrefilter(runtimeTree.Root, out var secondaryRequiredPrefilterQuotedAsciiSet, out var secondaryRequiredPrefilterQuotedAsciiLength);
+        TrySelectQuotedAsciiRunPrefilter(runtimeTree.Root, out var secondaryRequiredPrefilterQuotedAsciiClass, out var secondaryRequiredPrefilterQuotedAsciiLength);
+        var secondaryRequiredPrefilterQuotedAsciiSet = CreateAsciiByteSet(secondaryRequiredPrefilterQuotedAsciiClass);
         TrySelectRequiredWindowPrefilters(
             runtimeTree.Root,
             requiredPrefilterAlternateLiterals,
@@ -194,7 +196,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         if (requiredPrefilterLiteral is not null ||
             requiredPrefilterAlternateLiterals is not null ||
-            secondaryRequiredPrefilterQuotedAsciiSet is not null)
+            secondaryRequiredPrefilterQuotedAsciiSet.HasValue)
         {
             return new Utf8SearchFacts(
                 Utf8SearchKind.None,
@@ -240,14 +242,14 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static void TrySelectRequiredWindowPrefilters(
         Runtime.RegexNode root,
         byte[][]? requiredPrefilterAlternateLiteralsUtf8,
-        string? quotedAsciiSet,
+        Utf8SearchAsciiSet quotedAsciiSet,
         int quotedAsciiLength,
         out Utf8WindowSearchFacts[]? requiredWindowPrefilters)
     {
         requiredWindowPrefilters = null;
 
         if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literalFamily ||
-            string.IsNullOrEmpty(quotedAsciiSet) ||
+            !quotedAsciiSet.HasValue ||
             quotedAsciiLength <= 0)
         {
             return;
@@ -277,7 +279,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         if (TryFindQuotedAsciiRun(node, out var asciiSet, out var runLength))
         {
-            searcherInfo = Utf8PreparedSearcherInfo.QuotedAsciiRun(asciiSet!, runLength);
+            searcherInfo = Utf8PreparedSearcherInfo.QuotedAsciiRun(CreateAsciiByteSet(asciiSet), runLength);
             return true;
         }
 
@@ -324,6 +326,25 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         return false;
+    }
+
+    private static Utf8SearchAsciiSet CreateAsciiByteSet(string? regexCharClass)
+    {
+        if (string.IsNullOrEmpty(regexCharClass))
+        {
+            return default;
+        }
+
+        var result = default(Utf8SearchAsciiSet);
+        for (var value = 0; value < 128; value++)
+        {
+            if (Runtime.RegexCharClass.CharInClassBase((char)value, regexCharClass))
+            {
+                result = result.With((byte)value);
+            }
+        }
+
+        return result;
     }
 
     private static bool IsQuoteNode(Runtime.RegexNode node)

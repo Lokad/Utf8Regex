@@ -1,5 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -59,7 +59,7 @@ internal static class Utf8SearchEngineExecutor
 
         var state = new Utf8StructuralSearchState(
             default,
-            new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
+            PreparedWindowScanState.Create(0));
         return plan.TryFindNextCandidate(input, ref state, out _);
     }
 

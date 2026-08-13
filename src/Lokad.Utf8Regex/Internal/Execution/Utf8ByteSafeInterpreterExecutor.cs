@@ -1,5 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -193,7 +193,7 @@ internal static class Utf8ByteSafeLinearExecutor
     {
         return new Utf8StructuralSearchState(
             new PreparedSearchScanState(startIndex, default),
-            new PreparedWindowScanState(startIndex, new PreparedSearchScanState(startIndex, default)));
+            PreparedWindowScanState.Create(startIndex));
     }
 
     private static bool IsScalarBoundaryByteOffset(ReadOnlySpan<byte> input, int byteOffset)

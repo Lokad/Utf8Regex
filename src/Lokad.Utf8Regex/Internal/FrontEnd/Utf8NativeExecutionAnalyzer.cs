@@ -2780,7 +2780,7 @@ internal static class Utf8NativeExecutionAnalyzer
         switch (node.Kind)
         {
             case RuntimeFrontEnd.RegexNodeKind.One when node.Ch <= 0x7F:
-                literal = ((char)Internal.Utilities.AsciiSearch.FoldCase((byte)node.Ch)).ToString();
+                literal = ((char)Internal.Search.AsciiSearch.FoldCase((byte)node.Ch)).ToString();
                 return true;
 
             case RuntimeFrontEnd.RegexNodeKind.Multi when node.Str is { } text:
@@ -2793,7 +2793,7 @@ internal static class Utf8NativeExecutionAnalyzer
                         return false;
                     }
 
-                    chars[i] = (char)Internal.Utilities.AsciiSearch.FoldCase((byte)text[i]);
+                    chars[i] = (char)Internal.Search.AsciiSearch.FoldCase((byte)text[i]);
                 }
 
                 literal = new string(chars);
@@ -2847,7 +2847,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 continue;
             }
 
-            var candidate = Internal.Utilities.AsciiSearch.FoldCase((byte)value);
+            var candidate = Internal.Search.AsciiSearch.FoldCase((byte)value);
             if (!seen)
             {
                 seen = true;
