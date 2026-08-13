@@ -1,10 +1,11 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerBranches(RuntimeFrontEnd.RegexNode node, out LoweredBranch[] branches)
+    private static bool TryLowerBranches(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
     {
         switch (node.Kind)
         {
@@ -16,7 +17,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                return TryLowerBranches(node.Child(0), out branches);
+                return TryLowerBranches(node.Child(0), budget, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Empty:
                 branches = [new LoweredBranch([], [], false, false)];
@@ -65,13 +66,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return true;
 
             case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
-                return TryLowerPositiveLookaround(node, out branches);
+                return TryLowerPositiveLookaround(node, budget, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Concatenate:
-                return TryLowerConcatenation(node, out branches);
+                return TryLowerConcatenation(node, budget, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Alternate:
-                return TryLowerAlternation(node, out branches);
+                return TryLowerAlternation(node, budget, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Oneloop:
                 if (!TryLowerLiteral(node.Ch, out var repeatedLiteral))
@@ -84,6 +85,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     [new LoweredBranch([repeatedLiteral], [], false, false)],
                     node.M,
                     node.N,
+                    budget,
                     out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Setloop:
@@ -97,6 +99,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     [new LoweredBranch([repeatedSet], [], false, false)],
                     node.M,
                     node.N,
+                    budget,
                     out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Loop:
@@ -106,13 +109,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                if (!TryLowerBranches(node.Child(0), out var loopBranches))
+                if (!TryLowerBranches(node.Child(0), budget, out var loopBranches))
                 {
                     branches = [];
                     return false;
                 }
 
-                return TryExpandFiniteRepeat(loopBranches, node.M, node.N, out branches);
+                return TryExpandFiniteRepeat(loopBranches, node.M, node.N, budget, out branches);
 
             default:
                 branches = [];
@@ -156,19 +159,35 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static bool TryLowerConcatenation(RuntimeFrontEnd.RegexNode node, out LoweredBranch[] branches)
+    private static bool TryLowerConcatenation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
     {
         var accumulated = new List<LoweredBranch> { new([], [], false, false) };
 
         for (var i = 0; i < node.ChildCount; i++)
         {
-            if (!TryLowerBranches(node.Child(i), out var childBranches))
+            if (!TryLowerBranches(node.Child(i), budget, out var childBranches))
             {
                 branches = [];
                 return false;
             }
 
-            if (!TryConcatenate(accumulated, childBranches, out accumulated))
+            if (accumulated.Count == 1 &&
+                childBranches.Length == 1 &&
+                !accumulated[0].IsStartAnchored &&
+                !accumulated[0].IsEndAnchored &&
+                !childBranches[0].IsStartAnchored &&
+                !childBranches[0].IsEndAnchored)
+            {
+                if (!TryAppendBranch(accumulated[0], childBranches[0]))
+                {
+                    branches = [];
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (!TryConcatenate(accumulated, childBranches, budget, out accumulated))
             {
                 branches = [];
                 return false;
@@ -179,12 +198,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerAlternation(RuntimeFrontEnd.RegexNode node, out LoweredBranch[] branches)
+    private static bool TryLowerAlternation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
     {
         var alternates = new List<LoweredBranch>(node.ChildCount);
         for (var i = 0; i < node.ChildCount; i++)
         {
-            if (!TryLowerBranches(node.Child(i), out var childBranches))
+            if (!TryLowerBranches(node.Child(i), budget, out var childBranches) ||
+                !budget.TryReserve(childBranches.Length, childBranches.Length))
             {
                 branches = [];
                 return false;
@@ -205,6 +225,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     private static bool TryConcatenate(
         List<LoweredBranch> leftBranches,
         IReadOnlyList<LoweredBranch> rightBranches,
+        Utf8PreparationBudget budget,
         out List<LoweredBranch> combined)
     {
         if (leftBranches.Count == 0 || rightBranches.Count == 0)
@@ -213,13 +234,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        if (leftBranches.Count * rightBranches.Count > MaxExpandedBranches)
+        if (!budget.TryReserveProduct(leftBranches.Count, rightBranches.Count, MaxExpandedBranches, out var product))
         {
             combined = [];
             return false;
         }
 
-        combined = new List<LoweredBranch>(leftBranches.Count * rightBranches.Count);
+        combined = new List<LoweredBranch>(product);
         foreach (var left in leftBranches)
         {
             foreach (var right in rightBranches)
@@ -231,6 +252,18 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
                 combined.Add(branch);
             }
+        }
+
+        return true;
+    }
+
+    private static bool TryAppendBranch(LoweredBranch left, LoweredBranch right)
+    {
+        var leftLength = left.Tokens.Count;
+        left.Tokens.AddRange(right.Tokens);
+        foreach (var check in right.FixedChecks)
+        {
+            left.FixedChecks.Add(new AsciiFixedLiteralCheck(leftLength + check.Offset, check.Literal));
         }
 
         return true;
@@ -273,10 +306,18 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         IReadOnlyList<LoweredBranch> repeatedBranches,
         int minCount,
         int maxCount,
+        Utf8PreparationBudget budget,
         out LoweredBranch[] branches)
     {
         branches = [];
         if (minCount < 0 || maxCount < minCount || maxCount == int.MaxValue)
+        {
+            return false;
+        }
+
+        var variantCount = (long)maxCount - minCount + 1;
+        if (variantCount > MaxExpandedBranches ||
+            !budget.TryReserve((int)variantCount, (int)variantCount))
         {
             return false;
         }
@@ -287,7 +328,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             var expanded = new List<LoweredBranch> { new([], [], false, false) };
             for (var i = 0; i < count; i++)
             {
-                if (!TryConcatenate(expanded, repeatedBranches, out expanded))
+                if (!TryConcatenate(expanded, repeatedBranches, budget, out expanded))
                 {
                     return false;
                 }
@@ -304,11 +345,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, out LoweredBranch[] branches)
+    private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
     {
         branches = [];
         if (node.ChildCount != 1 ||
-            !TryLowerBranches(node.Child(0), out var childBranches) ||
+            !TryLowerBranches(node.Child(0), budget, out var childBranches) ||
             childBranches.Length != 1)
         {
             return false;

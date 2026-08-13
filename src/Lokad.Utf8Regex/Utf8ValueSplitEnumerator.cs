@@ -1,3 +1,7 @@
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Utilities;
 namespace Lokad.Utf8Regex;
 
 public ref struct Utf8ValueSplitEnumerator

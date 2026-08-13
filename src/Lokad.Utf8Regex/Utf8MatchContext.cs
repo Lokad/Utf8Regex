@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex;
 
 public readonly ref struct Utf8MatchContext

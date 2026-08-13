@@ -91,7 +91,7 @@ internal static class EnginePortfolioReporter
             }
 
             return regex.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
-                ? $"Verifier=CompiledByteSafeLinear, LazyDfaReject={Utf8ByteSafeLazyDfaVerifierProgram.GetCompileFailureKind(regex.StructuralVerifierPlan.ByteSafeLinearProgram)}"
+                ? $"Verifier=CompiledByteSafeLinear, LazyDfaReject={regex.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind}"
                 : "Verifier=CompatByteSafeLinear";
         }
 

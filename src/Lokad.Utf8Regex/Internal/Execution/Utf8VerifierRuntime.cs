@@ -1,5 +1,5 @@
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -21,11 +21,11 @@ internal sealed class Utf8VerifierRuntime
 
     public Utf8FallbackCandidateVerifier FallbackCandidateVerifier { get; }
 
-    public static Utf8VerifierRuntime Create(Utf8RegexPlan regexPlan, string pattern, RegexOptions options, TimeSpan matchTimeout)
+    public static Utf8VerifierRuntime Create(Utf8PreparedRegex regexPlan, string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
         return new Utf8VerifierRuntime(
             regexPlan.StructuralVerifier,
-            regexPlan.StructuralVerifier.CreateRuntime(),
-            regexPlan.FallbackVerifier.CreateRuntime(pattern, options, matchTimeout));
+            Utf8StructuralVerifierRuntimeFactory.Create(regexPlan.StructuralVerifier),
+            Utf8FallbackVerifierRuntimeFactory.Create(regexPlan.FallbackVerifier, pattern, options, matchTimeout));
     }
 }

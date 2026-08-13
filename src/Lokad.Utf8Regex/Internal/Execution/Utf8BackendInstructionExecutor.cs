@@ -1,5 +1,7 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Utilities;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -208,7 +210,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static bool IsMatchStructuralIdentifierFamily(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
@@ -225,7 +227,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static int CountStructuralIdentifierFamily(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
@@ -240,7 +242,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static Utf8ValueMatch MatchStructuralIdentifierFamily(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
@@ -260,7 +262,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static bool IsMatchOrderedLiteralWindow(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
     {
@@ -274,7 +276,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static int CountOrderedLiteralWindow(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
     {
@@ -286,7 +288,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static Utf8ValueMatch MatchOrderedLiteralWindow(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
     {

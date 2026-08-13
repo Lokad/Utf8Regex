@@ -25,7 +25,12 @@ internal enum Utf8CompiledExecutionBackend : byte
 
 internal readonly struct Utf8CompiledEngine
 {
-    public Utf8CompiledEngine(Utf8CompiledEngineKind kind, Utf8CompiledExecutionBackend backend = Utf8CompiledExecutionBackend.Legacy)
+    public Utf8CompiledEngine(Utf8CompiledEngineKind kind)
+        : this(kind, Utf8CompiledExecutionBackend.Legacy)
+    {
+    }
+
+    public Utf8CompiledEngine(Utf8CompiledEngineKind kind, Utf8CompiledExecutionBackend backend)
     {
         Kind = kind;
         Backend = backend;
@@ -40,9 +45,9 @@ internal readonly struct Utf8CompiledEngine
 
 internal static class Utf8CompiledEngineSelector
 {
-    public static Utf8CompiledEngine Select(Utf8RegexPlan regexPlan)
+    public static Utf8CompiledEngine Select(Utf8PreparedRegex regexPlan)
         => Select(regexPlan, preferCompiled: false);
 
-    public static Utf8CompiledEngine Select(Utf8RegexPlan regexPlan, bool preferCompiled)
+    public static Utf8CompiledEngine Select(Utf8PreparedRegex regexPlan, bool preferCompiled)
         => Utf8CompiledSearchAnalyzer.Analyze(regexPlan, preferCompiled).Engine;
 }

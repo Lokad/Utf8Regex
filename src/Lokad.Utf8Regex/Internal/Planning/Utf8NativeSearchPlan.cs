@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8NativeSearchPlan

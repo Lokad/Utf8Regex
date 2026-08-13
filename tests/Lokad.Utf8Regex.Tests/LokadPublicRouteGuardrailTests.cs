@@ -12,10 +12,10 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
 
-        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
     }
@@ -25,10 +25,10 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
 
-        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.FallbackDirectFamily.Kind);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
     }
@@ -51,7 +51,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.SimplePatternInterpreter, regex.CompiledEngineKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiLiteral, regex.SearchPlan.Kind);
-        Assert.True(regex.RegexPlan.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
+        Assert.True(regex.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
     [Fact]

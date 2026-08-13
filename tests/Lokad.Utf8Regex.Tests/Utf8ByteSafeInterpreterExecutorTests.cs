@@ -10,49 +10,49 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void CanExecuteAcceptsDeterministicLeadingAsciiPrefixFallbackPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.RegexPlan.ExecutionKind);
-        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis.RegexPlan));
-        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, analysis.RegexPlan.StructuralVerifier.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
+        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
+        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, analysis.StructuralVerifier.Kind);
     }
 
     [Fact]
     public void ByteSafeInterpreterCompilesDeterministicVerifierGuards()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
-        Assert.True(analysis.RegexPlan.DeterministicGuards.HasValue);
-        Assert.True(analysis.RegexPlan.DeterministicGuards.PrefixGuards is { Length: > 0 });
-        Assert.True(analysis.RegexPlan.DeterministicGuards.MinRequiredLength > 0);
-        Assert.Equal(analysis.RegexPlan.SearchPlan.Distance, analysis.RegexPlan.DeterministicGuards.FixedLiteralOffset);
-        Assert.Equal(analysis.RegexPlan.SearchPlan.LiteralUtf8, analysis.RegexPlan.DeterministicGuards.FixedLiteralUtf8);
+        Assert.True(analysis.DeterministicGuards.HasValue);
+        Assert.True(analysis.DeterministicGuards.PrefixGuards is { Length: > 0 });
+        Assert.True(analysis.DeterministicGuards.MinRequiredLength > 0);
+        Assert.Equal(analysis.SearchPlan.Distance, analysis.DeterministicGuards.FixedLiteralOffset);
+        Assert.Equal(analysis.SearchPlan.LiteralUtf8, analysis.DeterministicGuards.FixedLiteralUtf8);
     }
 
     [Fact]
     public void ByteSafeInterpreterCompilesDeterministicAnchorSearcher()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
-        Assert.True(analysis.RegexPlan.DeterministicAnchor.HasValue);
-        Assert.Equal(0, analysis.RegexPlan.DeterministicAnchor.Offset);
-        Assert.Equal(PreparedSearcherKind.IgnoreCaseLiteral, analysis.RegexPlan.DeterministicAnchor.Searcher.Kind);
-        Assert.Equal(0, analysis.RegexPlan.DeterministicAnchor.Searcher.FindFirst("# noqa: F401"u8));
+        Assert.True(analysis.DeterministicAnchor.HasValue);
+        Assert.Equal(0, analysis.DeterministicAnchor.Offset);
+        Assert.Equal(PreparedSearcherKind.IgnoreCaseLiteral, analysis.DeterministicAnchor.Searcher.Kind);
+        Assert.Equal(0, analysis.DeterministicAnchor.Searcher.FindFirst("# noqa: F401"u8));
     }
 
     [Fact]
     public void DeterministicVerifierGuardsRejectCandidatesThatMissCompiledChecks()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
-        var guards = analysis.RegexPlan.DeterministicGuards;
+        var guards = analysis.DeterministicGuards;
         var length = Math.Max(
             guards.MinRequiredLength,
             guards.FixedLiteralOffset + (guards.FixedLiteralUtf8?.Length ?? 1));
@@ -65,29 +65,29 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void CanExecuteAcceptsSelectiveStructuralStartFallbackPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
             RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.RegexPlan.ExecutionKind);
-        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis.RegexPlan));
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, analysis.RegexPlan.CompiledEngine.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
+        Assert.True(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
+        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, Utf8CompiledEngineSelector.Select(analysis).Kind);
     }
 
     [Fact]
     public void CanExecuteRejectsFallbackLoopPatternsWithoutDeterministicLeadingAnchor()
     {
-        var analysis = Utf8FrontEnd.Analyze("ab+", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("ab+", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.RegexPlan.ExecutionKind);
-        Assert.False(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis.RegexPlan));
+        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
+        Assert.False(Utf8ByteSafeInterpreterExecutor.CanExecute(analysis));
     }
 
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileDeterministicBoundedSubset()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab[0-9]{2,4}$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab[0-9]{2,4}$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ab123"u8, 0, out var matchedLength));
@@ -98,9 +98,9 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLazyDfaVerifierProgramCanCompileAnchoredDeterministicSubset()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab[0-9][0-9]$", RegexOptions.CultureInvariant);
-        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
-        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Create(linearProgram);
+        var analysis = Utf8FrontEnd.Compile("^ab[0-9][0-9]$", RegexOptions.CultureInvariant);
+        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
+        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram).Program;
 
         Assert.True(lazyDfaProgram.HasValue);
         Assert.True(lazyDfaProgram.TryMatch("ab12"u8, 0, out var matchedLength));
@@ -112,8 +112,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileOptionalDeterministicTail()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab(?:cd)?$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab(?:cd)?$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ab"u8, 0, out var shortLength));
@@ -125,8 +125,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileBoundaryChecks()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\bab[0-9]{2}\b", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile(@"\bab[0-9]{2}\b", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ab12 "u8, 0, out var matchedLength));
@@ -138,8 +138,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileTerminalAlternationTail()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab(?:cd|ef)$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab(?:cd|ef)$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("abcd"u8, 0, out var firstLength));
@@ -152,8 +152,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileOptionalTerminalAlternationTail()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab(?:cd|ef)?$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab(?:cd|ef)?$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ab"u8, 0, out var shortLength));
@@ -168,8 +168,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileDeterministicInlineAlternation()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab(?:cd|ef)gh$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab(?:cd|ef)gh$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("abcdgh"u8, 0, out var firstLength));
@@ -182,8 +182,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsAmbiguousInlineAlternation()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:a|ab)c$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:a|ab)c$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -191,8 +191,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileSafeOptionalInlineAlternation()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab(?:cd|ef)?gh$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^ab(?:cd|ef)?gh$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("abgh"u8, 0, out var shortLength));
@@ -206,8 +206,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsUnsafeOptionalInlineAlternation()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:e)?ef$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:e)?ef$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -215,8 +215,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileFixedCountAlternationLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:ab|cd){2}ef$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:ab|cd){2}ef$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ababef"u8, 0, out var firstLength));
@@ -231,8 +231,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsAmbiguousAlternationLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:a|ab){2}$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:a|ab){2}$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -240,8 +240,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileTerminalVariableAlternationLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:ab|cd){1,3}$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:ab|cd){1,3}$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("ab"u8, 0, out var firstLength));
@@ -257,8 +257,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileSafeNonTerminalVariableAlternationLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:ab|cd){1,3}ef$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:ab|cd){1,3}ef$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("abef"u8, 0, out var firstLength));
@@ -271,8 +271,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsUnsafeNonTerminalVariableAlternationLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:ab|cd){1,3}ab$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:ab|cd){1,3}ab$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -280,8 +280,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileSafeNonTerminalVariableByteLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^a{0,3}b$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^a{0,3}b$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("b"u8, 0, out var firstLength));
@@ -294,8 +294,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileSafeNonTerminalVariableSetLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[A-Z]{0,3}:$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^[A-Z]{0,3}:$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch(":"u8, 0, out var firstLength));
@@ -308,8 +308,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsUnsafeNonTerminalVariableByteLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^a{0,3}a$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^a{0,3}a$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -317,8 +317,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramRejectsLazyVariableLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^a+?b$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^a+?b$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.False(program.HasValue);
     }
@@ -326,8 +326,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileRepeatedDeterministicSegmentLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:[A-Z][a-z]+ *){2,4}$", RegexOptions.CultureInvariant);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^(?:[A-Z][a-z]+ *){2,4}$", RegexOptions.CultureInvariant);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("Alpha Beta"u8, 0, out var firstLength));
@@ -360,11 +360,12 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeVerifierPlanPrefersLazyDfaWhenAvailable()
     {
-        var analysis = Utf8FrontEnd.Analyze("^ab[0-9][0-9]$", RegexOptions.CultureInvariant);
-        var verifierPlan = Utf8StructuralVerifierPlan.CreateByteSafe(
-            analysis.RegexPlan.ExecutionTree,
-            analysis.RegexPlan.ExecutionProgram,
-            analysis.RegexPlan.DeterministicGuards);
+        var analysis = Utf8FrontEnd.Compile("^ab[0-9][0-9]$", RegexOptions.CultureInvariant);
+        var program = Assert.IsType<Utf8ExecutionProgram>(analysis.ExecutionProgram);
+        var verifierPlan = Utf8RegexPreparer.PrepareByteSafeStructuralVerifier(
+            analysis.ExecutionTree,
+            program,
+            analysis.DeterministicGuards);
 
         Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, verifierPlan.Kind);
         Assert.True(verifierPlan.ByteSafeLazyDfaProgram.HasValue);
@@ -373,20 +374,20 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileRuffNoqaShape()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
         Assert.Equal(
             Utf8ByteSafeLinearCompileFailureKind.None,
-            Utf8ByteSafeLinearVerifierProgram.GetCompileFailureKind(analysis.RegexPlan.ExecutionTree));
+            Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).FailureKind);
     }
 
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileProjectedAsciiWhitespaceSet()
     {
-        var analysis = Utf8FrontEnd.Analyze("^\\s+$", RegexOptions.None);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^\\s+$", RegexOptions.None);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch(" \t"u8, 0, out var matchedLength, out var requiresCompatibilityFallback));
@@ -398,11 +399,11 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileNoqaInnerSegment()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[A-Z]+[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile("^[A-Z]+[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
         Assert.Equal(
             Utf8ByteSafeLinearCompileFailureKind.None,
-            Utf8ByteSafeLinearVerifierProgram.GetCompileFailureKind(analysis.RegexPlan.ExecutionTree));
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+            Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).FailureKind);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("F401"u8, 0, out var firstLength, out var firstFallback));
@@ -416,14 +417,14 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLazyDfaVerifierProgramCanCompileNoqaInnerSegment()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[A-Z]+[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
-        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
-        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Create(linearProgram);
+        var analysis = Utf8FrontEnd.Compile("^[A-Z]+[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
+        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
+        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram).Program;
 
         Assert.True(lazyDfaProgram.HasValue);
         Assert.Equal(
             Utf8ByteSafeLazyDfaCompileFailureKind.None,
-            Utf8ByteSafeLazyDfaVerifierProgram.GetCompileFailureKind(linearProgram));
+            Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram).FailureKind);
         Assert.True(lazyDfaProgram.TryMatch("F401"u8, 0, out var firstLength));
         Assert.Equal(4, firstLength);
         Assert.True(lazyDfaProgram.TryMatch("F401, "u8, 0, out var secondLength));
@@ -434,28 +435,28 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileAsciiLettersThenDigits()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[A-Z]+[0-9]+$", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile("^[A-Z]+[0-9]+$", RegexOptions.None);
 
         Assert.Equal(
             Utf8ByteSafeLinearCompileFailureKind.None,
-            Utf8ByteSafeLinearVerifierProgram.GetCompileFailureKind(analysis.RegexPlan.ExecutionTree));
+            Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).FailureKind);
     }
 
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileDigitsWithOptionalSeparatorTail()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile("^[0-9]+(?:[,\\s]+)?$", RegexOptions.None);
 
         Assert.Equal(
             Utf8ByteSafeLinearCompileFailureKind.None,
-            Utf8ByteSafeLinearVerifierProgram.GetCompileFailureKind(analysis.RegexPlan.ExecutionTree));
+            Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).FailureKind);
     }
 
     [Fact]
     public void ByteSafeLinearVerifierProgramMatchesAsciiCommaWhitespaceSetLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^[,\\s]+$", RegexOptions.None);
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+        var analysis = Utf8FrontEnd.Compile("^[,\\s]+$", RegexOptions.None);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.Equal(Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet, program.Steps[1].Kind);
@@ -472,11 +473,11 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLinearVerifierProgramCanCompileNoqaRepeatedSegmentLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:[A-Z]+[0-9]+(?:[,\\s]+)?)+$", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile("^(?:[A-Z]+[0-9]+(?:[,\\s]+)?)+$", RegexOptions.None);
         Assert.Equal(
             Utf8ByteSafeLinearCompileFailureKind.None,
-            Utf8ByteSafeLinearVerifierProgram.GetCompileFailureKind(analysis.RegexPlan.ExecutionTree));
-        var program = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
+            Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).FailureKind);
+        var program = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
 
         Assert.True(program.HasValue);
         Assert.True(program.TryMatch("F401"u8, 0, out var firstLength, out var firstFallback));
@@ -490,14 +491,14 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeLazyDfaVerifierProgramCanCompileNoqaRepeatedSegmentLoop()
     {
-        var analysis = Utf8FrontEnd.Analyze("^(?:[A-Z]+[0-9]+(?:[,\\s]+)?)+$", RegexOptions.None);
-        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Create(analysis.RegexPlan.ExecutionTree);
-        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Create(linearProgram);
+        var analysis = Utf8FrontEnd.Compile("^(?:[A-Z]+[0-9]+(?:[,\\s]+)?)+$", RegexOptions.None);
+        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Compile(analysis.ExecutionTree).Program;
+        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram).Program;
 
         Assert.True(lazyDfaProgram.HasValue);
         Assert.Equal(
             Utf8ByteSafeLazyDfaCompileFailureKind.None,
-            Utf8ByteSafeLazyDfaVerifierProgram.GetCompileFailureKind(linearProgram));
+            Utf8ByteSafeLazyDfaVerifierProgram.Compile(linearProgram).FailureKind);
         Assert.True(lazyDfaProgram.TryMatch("F401"u8, 0, out var firstLength));
         Assert.Equal(4, firstLength);
         Assert.True(lazyDfaProgram.TryMatch("F401, E501"u8, 0, out var secondLength));
@@ -507,13 +508,10 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeVerifierPlanPrefersLazyDfaForRuffNoqaTweakedShape()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
-        var verifierPlan = Utf8StructuralVerifierPlan.CreateByteSafe(
-            analysis.RegexPlan.ExecutionTree,
-            analysis.RegexPlan.ExecutionProgram,
-            analysis.RegexPlan.DeterministicGuards);
+        var verifierPlan = analysis.StructuralVerifier;
 
         Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, verifierPlan.Kind);
         Assert.True(verifierPlan.ByteSafeLazyDfaProgram.HasValue);
@@ -522,13 +520,10 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
     [Fact]
     public void ByteSafeVerifierPlanKeepsLinearVerifierForRuffNoqaRealShape()
     {
-        var analysis = Utf8FrontEnd.Analyze(
+        var analysis = Utf8FrontEnd.Compile(
             "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
             RegexOptions.None);
-        var verifierPlan = Utf8StructuralVerifierPlan.CreateByteSafe(
-            analysis.RegexPlan.ExecutionTree,
-            analysis.RegexPlan.ExecutionProgram,
-            analysis.RegexPlan.DeterministicGuards);
+        var verifierPlan = analysis.StructuralVerifier;
 
         Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, verifierPlan.Kind);
         Assert.True(verifierPlan.ByteSafeLazyDfaProgram.HasValue);

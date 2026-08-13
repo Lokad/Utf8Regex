@@ -7,7 +7,6 @@ internal readonly struct Utf8SemanticRegex
     public Utf8SemanticRegex(
         string pattern,
         RegexOptions options,
-        Utf8SemanticSource source,
         string executionPattern,
         RegexOptions executionOptions,
         RuntimeFrontEnd.RegexTree? runtimeTree = null,
@@ -15,7 +14,6 @@ internal readonly struct Utf8SemanticRegex
     {
         Pattern = pattern;
         Options = options;
-        Source = source;
         ExecutionPattern = executionPattern;
         ExecutionOptions = executionOptions;
         RuntimeTree = runtimeTree;
@@ -25,8 +23,6 @@ internal readonly struct Utf8SemanticRegex
     public string Pattern { get; }
 
     public RegexOptions Options { get; }
-
-    public Utf8SemanticSource Source { get; }
 
     public string ExecutionPattern { get; }
 

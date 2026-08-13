@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Planning;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -6,7 +7,7 @@ internal static class Utf8CompiledRuntimeFactory
 {
     public static Utf8CompiledEngineRuntime Create(
         Utf8CompiledEngine compiledEngine,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         RegexOptions options)
     {
@@ -18,7 +19,7 @@ internal static class Utf8CompiledRuntimeFactory
         }
 
         var literalRuntime = new Utf8LiteralCompiledEngineRuntime(compiledEngine, regexPlan, (options & RegexOptions.RightToLeft) != 0);
-        var nonLiteralRuntime = new Utf8NonLiteralCompiledEngineRuntime(regexPlan, verifierRuntime);
+        var nonLiteralRuntime = new Utf8NonLiteralCompiledEngineRuntime(compiledEngine, regexPlan, verifierRuntime);
         return compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral
@@ -45,7 +46,7 @@ internal static class Utf8CompiledRuntimeFactory
 
     public static RegexOptions NormalizeDirectRouteOptions(RegexOptions options) => options & ~RegexOptions.Compiled;
 
-    private static bool ShouldPreferFallbackRegexRuntime(Utf8RegexPlan regexPlan)
+    private static bool ShouldPreferFallbackRegexRuntime(Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
             !string.Equals(regexPlan.FallbackReason, "unsupported_loop", StringComparison.Ordinal))
@@ -56,7 +57,7 @@ internal static class Utf8CompiledRuntimeFactory
         return HasWeakFallbackPrefilter(regexPlan);
     }
 
-    private static bool HasWeakFallbackPrefilter(Utf8RegexPlan regexPlan)
+    private static bool HasWeakFallbackPrefilter(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.SearchPlan.LiteralUtf8 is { Length: > 0 and <= 3 } &&
             regexPlan.SearchPlan.FallbackCandidatePlans is { Length: 1 } &&

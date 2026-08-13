@@ -1,5 +1,5 @@
-using System.Collections.Concurrent;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using System.Collections.Concurrent;
 
 namespace Lokad.Utf8Regex.Internal.Caching;
 

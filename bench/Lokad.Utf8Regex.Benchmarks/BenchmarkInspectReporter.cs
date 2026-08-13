@@ -283,18 +283,18 @@ internal static partial class BenchmarkInspectReporter
             }
 
             var context = new DotNetPerformanceReplicaBenchmarkContext(dotNetPerformanceCase);
-            var analysis = Utf8FrontEnd.Analyze(context.Pattern, dotNetPerformanceCase.Options);
-            if (analysis.RegexPlan.CompiledEngine.Kind == Utf8CompiledEngineKind.ByteSafeLinear)
+            var analysis = Utf8FrontEnd.Compile(context.Pattern, dotNetPerformanceCase.Options);
+            if (Utf8CompiledEngineSelector.Select(analysis).Kind == Utf8CompiledEngineKind.ByteSafeLinear)
             {
                 return RunMeasureByteSafeRebarCase(caseId, iterationsText);
             }
 
-            if (analysis.RegexPlan.StructuralLinearProgram.HasValue)
+            if (analysis.StructuralLinearProgram.HasValue)
             {
                 return RunMeasureStructuralLinearRebarCase(caseId, iterationsText);
             }
 
-            if (IsExactLiteralFamilyExecutionKind(analysis.RegexPlan.ExecutionKind))
+            if (IsExactLiteralFamilyExecutionKind(analysis.ExecutionKind))
             {
                 return RunMeasureExactLiteralFamilyReplicaCase(caseId, iterationsText);
             }
@@ -306,19 +306,19 @@ internal static partial class BenchmarkInspectReporter
         if (lokadCodeCase is not null)
         {
             var context = new LokadReplicaCodeBenchmarkContext(lokadCodeCase);
-            var analysis = Utf8FrontEnd.Analyze(context.CompiledPattern, lokadCodeCase.Options);
-            if (analysis.RegexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-                analysis.RegexPlan.SearchPlan.PreparedSearcher.HasValue)
+            var analysis = Utf8FrontEnd.Compile(context.CompiledPattern, lokadCodeCase.Options);
+            if (analysis.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+                analysis.SearchPlan.PreparedSearcher.HasValue)
             {
                 return RunMeasureIdentifierFamilyLokadCodeCase(caseId, iterationsText);
             }
 
-            if (analysis.RegexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiStructuralFamily)
+            if (analysis.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiStructuralFamily)
             {
                 return RunMeasureStructuralFamilyLokadCodeCase(caseId, iterationsText);
             }
 
-            if (IsExactLiteralFamilyExecutionKind(analysis.RegexPlan.ExecutionKind))
+            if (IsExactLiteralFamilyExecutionKind(analysis.ExecutionKind))
             {
                 return RunMeasureExactLiteralFamilyReplicaCase(caseId, iterationsText);
             }
@@ -1534,12 +1534,12 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var context = new LokadReplicaScriptBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, benchmarkCase.Utf8Options);
-        var regexPlan = analysis.RegexPlan;
-        if (regexPlan.CompiledEngine.Kind != Utf8CompiledEngineKind.ByteSafeLinear)
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Utf8Options);
+        var regexPlan = analysis;
+        if (Utf8CompiledEngineSelector.Select(regexPlan).Kind != Utf8CompiledEngineKind.ByteSafeLinear)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"CompiledEngine    : {regexPlan.CompiledEngine.Kind}");
+            Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(regexPlan).Kind}");
             Console.WriteLine("LokadScriptByteSafe  : not a byte-safe linear case");
             return 1;
         }
@@ -1917,7 +1917,7 @@ internal static partial class BenchmarkInspectReporter
         {
             var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
             var compiledDiagnostics = context.CompiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
-            var simplePatternPlan = context.Utf8Regex.RegexPlan.SimplePatternPlan;
+            var simplePatternPlan = context.Utf8Regex.PreparedRegex.SimplePatternPlan;
 
             WriteCountDiagnostics("Baseline", baselineDiagnostics);
             WriteCountDiagnostics("Compiled", compiledDiagnostics);
@@ -3036,12 +3036,12 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
         var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, benchmarkCase.Options);
-        var regexPlan = analysis.RegexPlan;
-        if (regexPlan.CompiledEngine.Kind != Utf8CompiledEngineKind.ByteSafeLinear)
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Options);
+        var regexPlan = analysis;
+        if (Utf8CompiledEngineSelector.Select(regexPlan).Kind != Utf8CompiledEngineKind.ByteSafeLinear)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"CompiledEngine    : {regexPlan.CompiledEngine.Kind}");
+            Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(regexPlan).Kind}");
             Console.WriteLine("ByteSafe          : not a byte-safe linear/lazy-DFA case");
             return 1;
         }
@@ -3106,8 +3106,8 @@ internal static partial class BenchmarkInspectReporter
     public static int RunMeasureStructuralLinearScanCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
-        var analysis = Utf8FrontEnd.Analyze(benchmarkCase.Pattern, benchmarkCase.Options);
-        if (!analysis.RegexPlan.StructuralLinearProgram.DeterministicProgram.HasValue)
+        var analysis = Utf8FrontEnd.Compile(benchmarkCase.Pattern, benchmarkCase.Options);
+        if (!analysis.StructuralLinearProgram.DeterministicProgram.HasValue)
         {
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine("StructuralLinear  : no deterministic structural-linear program");
@@ -3115,7 +3115,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        var program = analysis.RegexPlan.StructuralLinearProgram;
+        var program = analysis.StructuralLinearProgram;
         var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
         var iterations = ParseIterations(iterationsText);
 
@@ -3141,8 +3141,8 @@ internal static partial class BenchmarkInspectReporter
     public static int RunMeasureStructuralFamilyCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
-        var analysis = Utf8FrontEnd.Analyze(benchmarkCase.Pattern, benchmarkCase.Options);
-        var program = analysis.RegexPlan.StructuralLinearProgram;
+        var analysis = Utf8FrontEnd.Compile(benchmarkCase.Pattern, benchmarkCase.Options);
+        var program = analysis.StructuralLinearProgram;
         if (program.Kind != Utf8StructuralLinearProgramKind.AsciiStructuralFamily)
         {
             Console.WriteLine($"CaseId            : {caseId}");
@@ -3162,7 +3162,7 @@ internal static partial class BenchmarkInspectReporter
 
         var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
         var context = new Utf8RegexBenchmarkContext(benchmarkCase);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis.RegexPlan, benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         var iterations = ParseIterations(iterationsText);
@@ -3195,8 +3195,8 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = LokadReplicaCodeBenchmarkCatalog.Get(caseId);
         var context = new LokadReplicaCodeBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.CompiledPattern, benchmarkCase.Options);
-        var program = analysis.RegexPlan.StructuralLinearProgram;
+        var analysis = Utf8FrontEnd.Compile(context.CompiledPattern, benchmarkCase.Options);
+        var program = analysis.StructuralLinearProgram;
         if (program.Kind != Utf8StructuralLinearProgramKind.AsciiStructuralFamily)
         {
             Console.WriteLine($"CaseId            : {caseId}");
@@ -3213,7 +3213,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis.RegexPlan, context.CompiledPattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.CompiledPattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
         var iterations = ParseIterations(iterationsText);
@@ -3247,18 +3247,18 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = LokadReplicaCodeBenchmarkCatalog.Get(caseId);
         var context = new LokadReplicaCodeBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.CompiledPattern, benchmarkCase.Options);
-        if (analysis.RegexPlan.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily ||
-            !analysis.RegexPlan.SearchPlan.PreparedSearcher.HasValue)
+        var analysis = Utf8FrontEnd.Compile(context.CompiledPattern, benchmarkCase.Options);
+        if (analysis.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily ||
+            !analysis.SearchPlan.PreparedSearcher.HasValue)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+            Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
             Console.WriteLine("IdentifierFamily  : no prepared-search-backed ascii structural identifier family");
             return 1;
         }
 
-        var plan = analysis.RegexPlan.StructuralIdentifierFamilyPlan;
-        var searchPlan = analysis.RegexPlan.SearchPlan;
+        var plan = analysis.StructuralIdentifierFamilyPlan;
+        var searchPlan = analysis.SearchPlan;
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -3266,7 +3266,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledPattern   : {context.CompiledPattern}");
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"PreparedKind      : {searchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"LeadingBoundary   : {plan.LeadingBoundary}");
         Console.WriteLine($"SeparatorSet      : {plan.SeparatorSet ?? "<none>"}");
@@ -3291,12 +3291,12 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = LokadReplicaCodeBenchmarkCatalog.Get(caseId);
         var context = new LokadReplicaCodeBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.CompiledPattern, benchmarkCase.Options);
-        if (analysis.RegexPlan.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily ||
-            !analysis.RegexPlan.SearchPlan.PreparedSearcher.HasValue)
+        var analysis = Utf8FrontEnd.Compile(context.CompiledPattern, benchmarkCase.Options);
+        if (analysis.ExecutionKind != NativeExecutionKind.AsciiStructuralIdentifierFamily ||
+            !analysis.SearchPlan.PreparedSearcher.HasValue)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+            Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
             Console.WriteLine("CompiledStructural: no prepared-search-backed ascii structural identifier family");
             return 1;
         }
@@ -3304,8 +3304,8 @@ internal static partial class BenchmarkInspectReporter
         var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
         var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
         var compiledDiagnostics = compiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
-        var plan = analysis.RegexPlan.StructuralIdentifierFamilyPlan;
-        var searchPlan = analysis.RegexPlan.SearchPlan;
+        var plan = analysis.StructuralIdentifierFamilyPlan;
+        var searchPlan = analysis.SearchPlan;
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -3313,7 +3313,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledPattern   : {context.CompiledPattern}");
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"BaselineEngine    : {context.Utf8Regex.CompiledEngineKind}");
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.CompiledEngineKind}");
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
@@ -3339,16 +3339,16 @@ internal static partial class BenchmarkInspectReporter
         var benchmarkCase = LokadReplicaCodeBenchmarkCatalog.Get(caseId);
         var context = new LokadReplicaCodeBenchmarkContext(benchmarkCase);
         var compiledUtf8Regex = new Utf8Regex(context.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, benchmarkCase.Options);
-        if (analysis.RegexPlan.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Options);
+        if (analysis.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+            Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
             Console.WriteLine("OrderedWindow     : case is not on AsciiOrderedLiteralWindow");
             return 1;
         }
 
-        var plan = analysis.RegexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = analysis.StructuralLinearProgram.OrderedLiteralWindowPlan;
         if (!AsciiOrderedLiteralWindowExecutor.CanUseSeparatorOnlySingleLiteralFastPath(plan))
         {
             Console.WriteLine($"CaseId            : {caseId}");
@@ -3365,7 +3365,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledPattern   : {context.CompiledPattern}");
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"BaselineEngine    : {context.Utf8Regex.CompiledEngineKind}");
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.CompiledEngineKind}");
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
@@ -3388,16 +3388,16 @@ internal static partial class BenchmarkInspectReporter
         var benchmarkCase = LokadReplicaCodeBenchmarkCatalog.Get(caseId);
         var context = new LokadReplicaCodeBenchmarkContext(benchmarkCase);
         var compiledUtf8Regex = new Utf8Regex(context.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, benchmarkCase.Options);
-        if (analysis.RegexPlan.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Options);
+        if (analysis.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+            Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
             Console.WriteLine("OrderedWindow     : case is not on AsciiOrderedLiteralWindow");
             return 1;
         }
 
-        var plan = analysis.RegexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = analysis.StructuralLinearProgram.OrderedLiteralWindowPlan;
         if (plan.IsLiteralFamily)
         {
             Console.WriteLine($"CaseId            : {caseId}");
@@ -3414,7 +3414,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledPattern   : {context.CompiledPattern}");
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"BaselineEngine    : {context.Utf8Regex.CompiledEngineKind}");
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.CompiledEngineKind}");
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
@@ -3436,16 +3436,16 @@ internal static partial class BenchmarkInspectReporter
     {
         var context = new LokadPublicBenchmarkContext(caseId);
         var compiledUtf8Regex = context.CompiledUtf8Regex;
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, context.Options);
-        if (analysis.RegexPlan.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, context.Options);
+        if (analysis.ExecutionKind != NativeExecutionKind.AsciiOrderedLiteralWindow)
         {
             Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+            Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
             Console.WriteLine("OrderedWindow     : case is not on AsciiOrderedLiteralWindow");
             return 1;
         }
 
-        var plan = analysis.RegexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = analysis.StructuralLinearProgram.OrderedLiteralWindowPlan;
         var iterations = ParseIterations(iterationsText);
         var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
         var compiledDiagnostics = compiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
@@ -3454,7 +3454,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Pattern           : {context.Pattern}");
         Console.WriteLine($"Options           : {context.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
         Console.WriteLine($"BaselineEngine    : {context.Utf8Regex.CompiledEngineKind}");
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.CompiledEngineKind}");
         Console.WriteLine($"IsLiteralFamily   : {plan.IsLiteralFamily}");
@@ -3462,7 +3462,7 @@ internal static partial class BenchmarkInspectReporter
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
         WriteCountDiagnostics("Compiled", compiledDiagnostics);
 
-        if (plan.IsLiteralFamily && plan.HasPairedTrailingLiterals && analysis.RegexPlan.SearchPlan.AlternateLiteralSearch is { } familySearch)
+        if (plan.IsLiteralFamily && plan.HasPairedTrailingLiterals && analysis.SearchPlan.AlternateLiteralSearch is { } familySearch)
         {
             Measure("LeadingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyLeadingCandidates(context.InputBytes, plan, familySearch));
             Measure("GapQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyGapQualifiedCandidates(context.InputBytes, plan, familySearch));
@@ -3489,7 +3489,7 @@ internal static partial class BenchmarkInspectReporter
         var context = new LokadPublicBenchmarkContext(caseId);
         if (context.Operation != LokadPublicBenchmarkOperation.Count ||
             context.Utf8Regex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
-            !context.Utf8Regex.RegexPlan.SimplePatternPlan.SymmetricLiteralWindowPlan.HasValue)
+            !context.Utf8Regex.PreparedRegex.SimplePatternPlan.SymmetricLiteralWindowPlan.HasValue)
         {
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"Operation         : {context.Operation}");
@@ -3498,7 +3498,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        var plan = context.Utf8Regex.RegexPlan.SimplePatternPlan.SymmetricLiteralWindowPlan;
+        var plan = context.Utf8Regex.PreparedRegex.SimplePatternPlan.SymmetricLiteralWindowPlan;
         var iterations = ParseIterations(iterationsText);
         var baselineDiagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
         var compiledDiagnostics = context.CompiledUtf8Regex.CollectCountDiagnostics(context.InputBytes);
@@ -3535,8 +3535,8 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = DotNetPerformanceReplicaBenchmarkCatalog.Get(caseId);
         var context = new DotNetPerformanceReplicaBenchmarkContext(benchmarkCase);
-        var analysis = Utf8FrontEnd.Analyze(context.Pattern, benchmarkCase.Options);
-        var program = analysis.RegexPlan.StructuralLinearProgram;
+        var analysis = Utf8FrontEnd.Compile(context.Pattern, benchmarkCase.Options);
+        var program = analysis.StructuralLinearProgram;
         if (!program.HasValue)
         {
             Console.WriteLine($"CaseId            : {caseId}");
@@ -3545,7 +3545,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var validation = Utf8InputAnalyzer.ValidateOnly(context.InputBytes);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis.RegexPlan, context.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
+        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, context.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
         var iterations = ParseIterations(iterationsText);
 
@@ -3554,7 +3554,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"ProgramKind       : {program.Kind}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
 
         if (program.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun)
         {
@@ -3588,13 +3588,13 @@ internal static partial class BenchmarkInspectReporter
     public static int RunDumpRuntimeTreePattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
-        var analysis = Utf8FrontEnd.Analyze(pattern, options);
+        var analysis = Utf8FrontEnd.Compile(pattern, options);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"SemanticSource    : {analysis.SemanticRegex.Source}");
-        Console.WriteLine($"ExecutionKind     : {analysis.RegexPlan.ExecutionKind}");
-        Console.WriteLine($"CompiledEngine    : {analysis.RegexPlan.CompiledEngine.Kind}");
-        Console.WriteLine($"FallbackReason    : {analysis.RegexPlan.FallbackReason ?? "<native>"}");
+        Console.WriteLine($"ExecutionBackend  : {analysis.ExecutionBackend}");
+        Console.WriteLine($"ExecutionKind     : {analysis.ExecutionKind}");
+        Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(analysis).Kind}");
+        Console.WriteLine($"FallbackReason    : {analysis.FallbackReason ?? "<native>"}");
         Console.WriteLine("RuntimeTree       :");
         Console.WriteLine(DumpNode(analysis.SemanticRegex.RuntimeTree!.Root));
         return 0;
@@ -3756,16 +3756,16 @@ internal static partial class BenchmarkInspectReporter
     public static int RunDumpStructuralLinearPattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
-        var analysis = Utf8FrontEnd.Analyze(pattern, options);
-        WriteStructuralLinearDump(pattern, options, analysis.RegexPlan.StructuralLinearProgram);
+        var analysis = Utf8FrontEnd.Compile(pattern, options);
+        WriteStructuralLinearDump(pattern, options, analysis.StructuralLinearProgram);
         return 0;
     }
 
     public static int RunDumpStructuralLinearUtf8Case(string caseId)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
-        var analysis = Utf8FrontEnd.Analyze(benchmarkCase.Pattern, benchmarkCase.Options);
-        WriteStructuralLinearDump(benchmarkCase.Pattern, benchmarkCase.Options, analysis.RegexPlan.StructuralLinearProgram, caseId, $"{benchmarkCase.Operation}/{benchmarkCase.Family}");
+        var analysis = Utf8FrontEnd.Compile(benchmarkCase.Pattern, benchmarkCase.Options);
+        WriteStructuralLinearDump(benchmarkCase.Pattern, benchmarkCase.Options, analysis.StructuralLinearProgram, caseId, $"{benchmarkCase.Operation}/{benchmarkCase.Family}");
         return 0;
     }
 
@@ -3890,7 +3890,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {regex.CompiledEngineKind}");
         Console.WriteLine($"VerifierKind      : {regex.StructuralVerifierPlan.Kind}");
         Console.WriteLine($"LazyDfaHasValue   : {lazy.HasValue}");
-        Console.WriteLine($"LazyDfaReject     : {Utf8ByteSafeLazyDfaVerifierProgram.GetCompileFailureKind(linear)}");
+        Console.WriteLine($"LazyDfaReject     : {Utf8ByteSafeLazyDfaVerifierProgram.Compile(linear).FailureKind}");
         Console.WriteLine($"LazyDfaStates     : {lazy.StateCount}");
         Console.WriteLine($"LazyDfaTransitions: {lazy.TransitionCount}");
         Console.WriteLine($"LinearStepCount   : {linear.Steps.Length}");
@@ -4008,7 +4008,7 @@ internal static partial class BenchmarkInspectReporter
             }
 
             return regex.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
-                ? $"CompiledByteSafeLinear(reject={Utf8ByteSafeLazyDfaVerifierProgram.GetCompileFailureKind(regex.StructuralVerifierPlan.ByteSafeLinearProgram)})"
+                ? $"CompiledByteSafeLinear(reject={regex.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind})"
                 : "CompatByteSafeLinear";
         }
 
@@ -5993,7 +5993,7 @@ internal static partial class BenchmarkInspectReporter
         return total;
     }
 
-    private static int ExecuteByteSafeAnchorCandidateCount(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeAnchorCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.DeterministicAnchor.HasValue)
         {
@@ -6018,7 +6018,7 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteByteSafeAnchorCandidateIndexSum(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeAnchorCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.DeterministicAnchor.HasValue)
         {
@@ -6043,7 +6043,7 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteByteSafeVerifierCount(Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
+    private static int ExecuteByteSafeVerifierCount(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
     {
         var count = 0;
         var startIndex = 0;
@@ -6056,7 +6056,7 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteByteSafeVerifierIndexSum(Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
+    private static int ExecuteByteSafeVerifierIndexSum(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, byte[] input)
     {
         var sum = 0;
         var startIndex = 0;
@@ -6069,7 +6069,7 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteByteSafeStructuralCandidateCount(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeStructuralCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.StructuralSearchPlan.HasValue ||
             regexPlan.StructuralSearchPlan.YieldKind != Utf8StructuralSearchYieldKind.Start ||
@@ -6090,7 +6090,7 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteByteSafeStructuralCandidateIndexSum(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeStructuralCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.StructuralSearchPlan.HasValue ||
             regexPlan.StructuralSearchPlan.YieldKind != Utf8StructuralSearchYieldKind.Start ||
@@ -6111,7 +6111,7 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static bool CanMeasureByteSafeStructuralCandidates(Utf8RegexPlan regexPlan)
+    private static bool CanMeasureByteSafeStructuralCandidates(Utf8PreparedRegex regexPlan)
     {
         if (!regexPlan.StructuralSearchPlan.HasValue)
         {
@@ -6136,7 +6136,7 @@ internal static partial class BenchmarkInspectReporter
         return true;
     }
 
-    private static int ExecuteByteSafeStatefulAnchorCandidateCount(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeStatefulAnchorCandidateCount(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.DeterministicAnchor.HasValue)
         {
@@ -6158,7 +6158,7 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteByteSafeStatefulAnchorCandidateIndexSum(Utf8RegexPlan regexPlan, byte[] input)
+    private static int ExecuteByteSafeStatefulAnchorCandidateIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         if (!regexPlan.DeterministicAnchor.HasValue)
         {

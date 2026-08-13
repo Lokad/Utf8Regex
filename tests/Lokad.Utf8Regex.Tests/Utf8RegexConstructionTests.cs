@@ -676,7 +676,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.RegexPlan.FallbackDirectFamily, out var matcher));
+        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.PreparedRegex.FallbackDirectFamily, out var matcher));
         Assert.NotNull(matcher);
 
         Assert.True(matcher!.TryFindNext("Today is 11/18/2019 and tomorrow is 11/19/2019."u8, 0, out var matchIndex, out var matchedLength));
@@ -691,7 +691,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.RegexPlan.FallbackDirectFamily, out var matcher));
+        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.PreparedRegex.FallbackDirectFamily, out var matcher));
         Assert.NotNull(matcher);
 
         Assert.True(matcher!.TryFindNext("https://atlas.example.org/reports/export?id=42"u8, 0, out var matchIndex, out var matchedLength));
@@ -806,7 +806,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
-        var analysis = Utf8FrontEnd.Analyze(pattern, RegexOptions.Multiline);
+        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
 
         Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
@@ -816,17 +816,17 @@ public sealed class Utf8RegexConstructionTests
                 Utf8StructuralLinearInstructionKind.QuotedRelation,
                 Utf8StructuralLinearInstructionKind.Accept,
             ],
-            analysis.RegexPlan.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
+            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]
     public void AnalysisClassifiesRepeatedCapitalizedWordsLoopAsStructuralLinear()
     {
-        var analysis = Utf8FrontEnd.Analyze("(?:[A-Z][a-z]+\\s*){10,100}", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("(?:[A-Z][a-z]+\\s*){10,100}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, analysis.RegexPlan.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, analysis.RegexPlan.CompiledEngine.Kind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, analysis.RegexPlan.StructuralLinearProgram.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, analysis.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, Utf8CompiledEngineSelector.Select(analysis).Kind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, analysis.StructuralLinearProgram.Kind);
     }
 
     [Fact]
@@ -846,7 +846,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -855,7 +855,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Theory]
@@ -867,7 +867,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -898,21 +898,21 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorClassifiesBoundedAsciiCharClassRunAsStructuralLinearAutomaton()
     {
         var regex = new Utf8Regex(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Analyze(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
         Assert.Equal(Utf8StructuralLinearProgramKind.AsciiCharClassRun, regex.StructuralLinearProgramKind);
         Assert.Equal(
             [Utf8StructuralLinearInstructionKind.RunCharClass, Utf8StructuralLinearInstructionKind.Accept],
-            analysis.RegexPlan.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
+            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]
     public void AnalysisCompilesDeterministicProgramForFixedTokenStructuralLinearPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"ab[0-9]d", RegexOptions.CultureInvariant);
-        var deterministicProgram = analysis.RegexPlan.StructuralLinearProgram.DeterministicProgram;
+        var analysis = Utf8FrontEnd.Compile(@"ab[0-9]d", RegexOptions.CultureInvariant);
+        var deterministicProgram = analysis.StructuralLinearProgram.DeterministicProgram;
 
         Assert.True(deterministicProgram.HasValue);
         Assert.Equal(4, deterministicProgram.FixedWidthLength);
@@ -938,8 +938,8 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void AnalysisCompilesDeterministicProgramForAsciiRunStructuralLinearPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
-        var deterministicProgram = analysis.RegexPlan.StructuralLinearProgram.DeterministicProgram;
+        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
+        var deterministicProgram = analysis.StructuralLinearProgram.DeterministicProgram;
 
         Assert.True(deterministicProgram.HasValue);
         Assert.Equal(
@@ -953,17 +953,17 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void AnalysisCanCompileEmitMatcherForDeterministicFixedTokenPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"ab[0-9]d", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"ab[0-9]d", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.RegexPlan.StructuralLinearProgram));
+        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.StructuralLinearProgram));
     }
 
     [Fact]
     public void AnalysisCanCompileEmitMatcherForAnyByteFixedTokenPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"ab.[0-9]d", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"ab.[0-9]d", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.RegexPlan.StructuralLinearProgram));
+        Assert.True(Utf8EmittedDeterministicMatcher.CanCreate(analysis.StructuralLinearProgram));
     }
 
     [Fact]
@@ -998,7 +998,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorClassifiesAsciiStructuralTokenWindowAsStructuralLinearAutomaton()
     {
         var regex = new Utf8Regex(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Analyze(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
@@ -1009,14 +1009,14 @@ public sealed class Utf8RegexConstructionTests
                 Utf8StructuralLinearInstructionKind.TokenWindow,
                 Utf8StructuralLinearInstructionKind.Accept,
             ],
-            analysis.RegexPlan.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
+            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]
     public void ConstructorClassifiesAsciiStructuralRepeatedSegmentAsStructuralLinearAutomaton()
     {
         var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Analyze(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
@@ -1027,7 +1027,7 @@ public sealed class Utf8RegexConstructionTests
                 Utf8StructuralLinearInstructionKind.RepeatedSegment,
                 Utf8StructuralLinearInstructionKind.Accept,
             ],
-            analysis.RegexPlan.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
+            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]
@@ -1054,7 +1054,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1096,7 +1096,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1107,7 +1107,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
         Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1367,15 +1367,15 @@ public sealed class Utf8RegexConstructionTests
         var baseline = new Utf8Regex("\\s[a-zA-Z]{0,12}ing\\s", RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, baseline.ExecutionKind);
-        Assert.True(baseline.RegexPlan.SimplePatternPlan.IsUtf8ByteSafe);
-        Assert.True(baseline.RegexPlan.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
+        Assert.True(baseline.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.True(baseline.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
     [Fact]
     public void BaselineSymmetricLiteralWindowPlanRecognizesHolmesWatsonWindow()
     {
         var baseline = new Utf8Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None);
-        var plan = baseline.RegexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = baseline.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
 
         Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.ExecutionKind);
         Assert.True(plan.HasValue);
@@ -1391,7 +1391,7 @@ public sealed class Utf8RegexConstructionTests
     public void BaselineSymmetricLiteralWindowPlanRecognizesRiverWindow()
     {
         var baseline = new Utf8Regex("Tom.{10,25}river|river.{10,25}Tom", RegexOptions.None);
-        var plan = baseline.RegexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = baseline.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
 
         Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.ExecutionKind);
         Assert.True(plan.HasValue);
@@ -1894,7 +1894,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorBuildsFixedTokenLinearProgramForDeterministicAsciiSimplePattern()
     {
         var regex = new Utf8Regex("ab[0-9]d", RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Analyze("ab[0-9]d", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
@@ -1907,7 +1907,7 @@ public sealed class Utf8RegexConstructionTests
                 Utf8StructuralLinearInstructionKind.Literal,
                 Utf8StructuralLinearInstructionKind.Accept,
             ],
-            analysis.RegexPlan.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
+            analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
     }
 
     [Fact]

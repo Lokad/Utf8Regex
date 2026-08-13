@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8CompiledPatternBackendPolicy
 {
-    public static Utf8CompiledSearchAnalysis CreateLiteralAnalysis(Utf8RegexPlan regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static Utf8CompiledSearchAnalysis CreateLiteralAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
     {
         if (regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
         {
@@ -24,7 +24,7 @@ internal static class Utf8CompiledPatternBackendPolicy
             countPipeline.Strategy.CandidateEngine.Kind);
     }
 
-    public static Utf8CompiledSearchAnalysis CreateDeterministicLinearAnalysis(Utf8RegexPlan regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static Utf8CompiledSearchAnalysis CreateDeterministicLinearAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
     {
         var backend = Utf8CompiledBackendCapability.CanUseEmittedStructuralLinear(regexPlan)
             ? Utf8CompiledExecutionBackend.EmittedInstruction
@@ -48,7 +48,7 @@ internal static class Utf8CompiledPatternBackendPolicy
             CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
     }
 
-    public static bool SupportsLiteralCompiledAnalysis(Utf8RegexPlan regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static bool SupportsLiteralCompiledAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
     {
         return regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.Literal &&
             ((regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
@@ -57,12 +57,12 @@ internal static class Utf8CompiledPatternBackendPolicy
               Utf8CompiledSearchAnalysisPolicy.IsLiteralFamilyPipeline(countPipeline)));
     }
 
-    public static bool SupportsDeterministicLinearAnalysis(Utf8RegexPlan regexPlan)
+    public static bool SupportsDeterministicLinearAnalysis(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.DeterministicLinear;
     }
 
-    public static bool SupportsSimplePatternInterpreterAnalysis(Utf8RegexPlan regexPlan)
+    public static bool SupportsSimplePatternInterpreterAnalysis(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             regexPlan.CompiledPatternCategory is Utf8CompiledPatternCategory.AnchoredWhole or Utf8CompiledPatternCategory.SearchGuided or Utf8CompiledPatternCategory.None;

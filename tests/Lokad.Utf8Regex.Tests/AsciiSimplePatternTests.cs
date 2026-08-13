@@ -67,37 +67,37 @@ public sealed class AsciiSimplePatternTests
     [Fact]
     public void SupportAnalyzerBuildsRunPlanForRepeatedAsciiCharClass()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, analysis.RegexPlan.ExecutionKind);
-        Assert.True(analysis.RegexPlan.SimplePatternPlan.RunPlan.HasValue);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, analysis.ExecutionKind);
+        Assert.True(analysis.SimplePatternPlan.RunPlan.HasValue);
     }
 
     [Fact]
     public void SupportAnalyzerPromotesIgnoreCaseLiteralBranchesFromOptionalAsciiPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze("ab?c", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("ab?c", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
     }
 
     [Fact]
     public void SupportAnalyzerPromotesIgnoreCaseLiteralBranchesFromFiniteAsciiCharClassPattern()
     {
-        var analysis = Utf8FrontEnd.Analyze("a[bc]?d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("a[bc]?d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
     }
 
     [Fact]
     public void SupportAnalyzerPromotesIgnoreCaseLiteralBranchesFromFiniteAsciiCharClassPatternWithoutOptional()
     {
-        var analysis = Utf8FrontEnd.Analyze("a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.RegexPlan.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
     }
 
     [Theory]
@@ -148,13 +148,13 @@ public sealed class AsciiSimplePatternTests
     [Fact]
     public void StructuralLinearDeterministicRawScanMatchesDenseSimplePatternOffsets()
     {
-        var analysis = Utf8FrontEnd.Analyze("ab[0-9]d", RegexOptions.CultureInvariant);
+        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
         var input = System.Text.Encoding.UTF8.GetBytes("ab1d-ab2d-ab3d");
-        var state = new Utf8AsciiDeterministicScanState(0, analysis.RegexPlan.StructuralLinearProgram.DeterministicProgram.SearchLiteralOffset);
+        var state = new Utf8AsciiDeterministicScanState(0, analysis.StructuralLinearProgram.DeterministicProgram.SearchLiteralOffset);
         var offsets = new List<int>();
 
         while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-            analysis.RegexPlan.StructuralLinearProgram,
+            analysis.StructuralLinearProgram,
             input,
             ref state,
             budget: null,

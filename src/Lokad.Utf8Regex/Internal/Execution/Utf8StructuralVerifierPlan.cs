@@ -12,16 +12,16 @@ internal readonly struct Utf8StructuralVerifierPlan
 {
     public Utf8StructuralVerifierPlan(
         Utf8StructuralVerifierKind kind,
-        AsciiStructuralVerifierProgram asciiProgram = default,
-        Utf8ByteSafeLazyDfaVerifierProgram byteSafeLazyDfaProgram = default,
-        Utf8ByteSafeLinearVerifierProgram byteSafeLinearProgram = default,
-        Utf8ExecutionProgram? byteSafeProgram = null,
-        Utf8DeterministicVerifierGuards byteSafeGuards = default)
+        AsciiStructuralVerifierProgram asciiProgram,
+        Utf8ByteSafeLinearCompileOutcome linearCompileOutcome,
+        Utf8ByteSafeLazyDfaCompileOutcome lazyDfaCompileOutcome,
+        Utf8ExecutionProgram? byteSafeProgram,
+        Utf8DeterministicVerifierGuards byteSafeGuards)
     {
         Kind = kind;
         AsciiProgram = asciiProgram;
-        ByteSafeLazyDfaProgram = byteSafeLazyDfaProgram;
-        ByteSafeLinearProgram = byteSafeLinearProgram;
+        LinearCompileOutcome = linearCompileOutcome;
+        LazyDfaCompileOutcome = lazyDfaCompileOutcome;
         ByteSafeProgram = byteSafeProgram;
         ByteSafeGuards = byteSafeGuards;
     }
@@ -30,9 +30,13 @@ internal readonly struct Utf8StructuralVerifierPlan
 
     public AsciiStructuralVerifierProgram AsciiProgram { get; }
 
-    public Utf8ByteSafeLazyDfaVerifierProgram ByteSafeLazyDfaProgram { get; }
+    public Utf8ByteSafeLinearCompileOutcome LinearCompileOutcome { get; }
 
-    public Utf8ByteSafeLinearVerifierProgram ByteSafeLinearProgram { get; }
+    public Utf8ByteSafeLazyDfaCompileOutcome LazyDfaCompileOutcome { get; }
+
+    public Utf8ByteSafeLazyDfaVerifierProgram ByteSafeLazyDfaProgram => LazyDfaCompileOutcome.Program;
+
+    public Utf8ByteSafeLinearVerifierProgram ByteSafeLinearProgram => LinearCompileOutcome.Program;
 
     public Utf8ExecutionProgram? ByteSafeProgram { get; }
 
@@ -40,42 +44,18 @@ internal readonly struct Utf8StructuralVerifierPlan
 
     public bool HasValue => Kind != Utf8StructuralVerifierKind.None;
 
-    public static Utf8StructuralVerifierPlan Create(AsciiStructuralIdentifierFamilyPlan structuralFamilyPlan)
-    {
-        return structuralFamilyPlan.VerifierProgram.HasValue
-            ? new Utf8StructuralVerifierPlan(Utf8StructuralVerifierKind.AsciiStructuralProgram, structuralFamilyPlan.VerifierProgram)
-            : default;
-    }
+}
 
-    public static Utf8StructuralVerifierPlan CreateByteSafe(Utf8ExecutionTree? tree, Utf8ExecutionProgram? program, Utf8DeterministicVerifierGuards guards)
+internal static class Utf8StructuralVerifierRuntimeFactory
+{
+    public static Utf8StructuralVerifierRuntime Create(Utf8StructuralVerifierPlan plan)
     {
-        var linearProgram = Utf8ByteSafeLinearVerifierProgram.Create(tree);
-        var lazyDfaProgram = Utf8ByteSafeLazyDfaVerifierProgram.Create(linearProgram);
-        return program is null
-            ? default
-            : new Utf8StructuralVerifierPlan(
-                lazyDfaProgram.HasValue ? Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram : Utf8StructuralVerifierKind.ByteSafeLinearProgram,
-                byteSafeLazyDfaProgram: lazyDfaProgram,
-                byteSafeLinearProgram: linearProgram,
-                byteSafeProgram: program,
-                byteSafeGuards: guards);
-    }
-
-    public Utf8StructuralVerifierRuntime CreateRuntime()
-    {
-        switch (Kind)
+        return plan.Kind switch
         {
-            case Utf8StructuralVerifierKind.AsciiStructuralProgram:
-                return new Utf8AsciiStructuralVerifierRuntime(this);
-
-            case Utf8StructuralVerifierKind.ByteSafeLinearProgram:
-                return new Utf8ByteSafeLinearVerifierRuntime(this);
-
-            case Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram:
-                return new Utf8ByteSafeLazyDfaVerifierRuntime(this);
-
-            default:
-                return new Utf8NoStructuralVerifierRuntime(this);
-        }
+            Utf8StructuralVerifierKind.AsciiStructuralProgram => new Utf8AsciiStructuralVerifierRuntime(plan),
+            Utf8StructuralVerifierKind.ByteSafeLinearProgram => new Utf8ByteSafeLinearVerifierRuntime(plan),
+            Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram => new Utf8ByteSafeLazyDfaVerifierRuntime(plan),
+            _ => new Utf8NoStructuralVerifierRuntime(plan),
+        };
     }
 }

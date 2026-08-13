@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8EmittedKernelLowerer
 {
     public static bool TryLower(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         out Utf8EmittedKernelPlan kernelPlan)
     {
         return regexPlan.ExecutionKind switch

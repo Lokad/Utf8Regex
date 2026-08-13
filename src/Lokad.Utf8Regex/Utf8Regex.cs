@@ -1,16 +1,21 @@
-using System.Buffers;
-using System.Text.Unicode;
+using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Replacement;
+using System.Buffers;
+using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
-public sealed partial class Utf8Regex
+public sealed class Utf8Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _preparedRegex;
     private readonly Utf8CompiledEngine _compiledEngine;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8CompiledEngineRuntime _compiledEngineRuntime;
@@ -55,29 +60,29 @@ public sealed partial class Utf8Regex
         Options = options;
         MatchTimeout = matchTimeout;
 
-        var analysis = Utf8FrontEnd.Analyze(pattern, effectiveOptions);
-        _regexPlan = analysis.RegexPlan;
-        _compiledEngine = Utf8CompiledEngineSelector.Select(_regexPlan, (options & RegexOptions.Compiled) != 0);
-        _verifierRuntime = Utf8VerifierRuntime.Create(_regexPlan, pattern, options, MatchTimeout);
-        _compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(_compiledEngine, _regexPlan, _verifierRuntime, options);
+        var analysis = Utf8FrontEnd.Compile(pattern, effectiveOptions);
+        _preparedRegex = analysis;
+        _compiledEngine = Utf8CompiledEngineSelector.Select(_preparedRegex, (options & RegexOptions.Compiled) != 0);
+        _verifierRuntime = Utf8VerifierRuntime.Create(_preparedRegex, pattern, options, MatchTimeout);
+        _compiledEngineRuntime = Utf8CompiledEngineRuntime.Create(_compiledEngine, _preparedRegex, _verifierRuntime, options);
         _groupNumbers = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
         _groupNames = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
-        var simplePatternPlan = _regexPlan.SimplePatternPlan;
+        var simplePatternPlan = _preparedRegex.SimplePatternPlan;
         _allowsTrailingNewlineBeforeEnd = simplePatternPlan.AllowsTrailingNewlineBeforeEnd;
         _anchoredHeadTailRunPlan = simplePatternPlan.AnchoredHeadTailRunPlan;
         _anchoredValidatorPlan = simplePatternPlan.AnchoredValidatorPlan;
         _anchoredBoundedDatePlan = simplePatternPlan.AnchoredBoundedDatePlan;
-        _fallbackDirectFamily = _regexPlan.FallbackDirectFamily;
+        _fallbackDirectFamily = _preparedRegex.FallbackDirectFamily;
         _directStructuralFamilyKernelMatcher =
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            Utf8EmittedKernelMatcher.TryCreate(_regexPlan.StructuralIdentifierFamilyPlan, _regexPlan.SearchPlan, out var structuralFamilyKernelMatcher)
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+            Utf8EmittedKernelMatcher.TryCreate(_preparedRegex.StructuralIdentifierFamilyPlan, _preparedRegex.SearchPlan, out var structuralFamilyKernelMatcher)
                 ? structuralFamilyKernelMatcher
                 : null;
         _hasDirectAnchoredHeadTailWithoutValidation =
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _anchoredHeadTailRunPlan.HasValue;
         _hasDirectAnchoredValidatorWithoutValidation =
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _anchoredValidatorPlan.HasValue;
         _hasDirectFallbackTokenFamilyWithoutValidation =
             Utf8FallbackDirectFamilyCategories.IsTokenFindFamily(_fallbackDirectFamily.Kind);
@@ -112,15 +117,15 @@ public sealed partial class Utf8Regex
 
     public TimeSpan MatchTimeout { get; }
 
-    internal NativeExecutionKind ExecutionKind => _regexPlan.ExecutionKind;
+    internal NativeExecutionKind ExecutionKind => _preparedRegex.ExecutionKind;
 
-    internal Utf8RegexPlan RegexPlan => _regexPlan;
+    internal Utf8PreparedRegex PreparedRegex => _preparedRegex;
 
-    internal Utf8SearchPlan SearchPlan => _regexPlan.SearchPlan;
+    internal Utf8SearchPlan SearchPlan => _preparedRegex.SearchPlan;
 
-    internal Utf8StructuralSearchPlan StructuralSearchPlan => _regexPlan.StructuralSearchPlan;
+    internal Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.StructuralSearchPlan;
 
-    internal Utf8SearchPortfolioKind SearchPortfolioKind => _regexPlan.SearchPlan.PortfolioKind;
+    internal Utf8SearchPortfolioKind SearchPortfolioKind => _preparedRegex.SearchPlan.PortfolioKind;
 
     internal Utf8CompiledEngineKind CompiledEngineKind => _compiledEngine.Kind;
 
@@ -129,53 +134,53 @@ public sealed partial class Utf8Regex
     internal string DebugCompiledEngineRuntimeType => _compiledEngineRuntime.GetType().Name;
 
     internal bool DebugCanLowerEmittedKernel =>
-        Utf8EmittedKernelLowerer.TryLower(_regexPlan, out _);
+        Utf8EmittedKernelLowerer.TryLower(_preparedRegex, out _);
 
     internal string DebugLoweredEmittedKernelKind =>
-        Utf8EmittedKernelLowerer.TryLower(_regexPlan, out var kernelPlan)
+        Utf8EmittedKernelLowerer.TryLower(_preparedRegex, out var kernelPlan)
             ? kernelPlan.Kind.ToString()
             : "None";
 
     internal bool DebugUsesEmittedKernelMatcher => _compiledEngineRuntime.UsesEmittedKernelMatcher;
 
-    internal string DebugFallbackDirectFamilyKind => _regexPlan.FallbackDirectFamily.Kind.ToString();
+    internal string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
 
     internal bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantTwin is not null;
 
-    internal NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantTwin?._regexPlan.ExecutionKind;
+    internal NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantTwin?._preparedRegex.ExecutionKind;
 
     internal Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantTwin?._compiledEngine.Kind;
 
-    internal string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantTwin?._regexPlan.FallbackReason;
+    internal string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantTwin?._preparedRegex.FallbackReason;
 
-    internal Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _regexPlan.StructuralLinearProgram.Kind;
+    internal Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _preparedRegex.StructuralLinearProgram.Kind;
 
     internal Utf8StructuralVerifierPlan StructuralVerifierPlan => _verifierRuntime.StructuralVerifierPlan;
 
-    internal AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _regexPlan.StructuralIdentifierFamilyPlan;
+    internal AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
 
     internal Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
         DebugStructuralSharedPrefixSuffixKernelDiagnostics =>
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily
                 ? Utf8AsciiStructuralIdentifierFamilyExecutor.GetSharedPrefixSuffixKernelDiagnostics(
-                    _regexPlan.StructuralIdentifierFamilyPlan,
-                    _regexPlan.SearchPlan)
+                    _preparedRegex.StructuralIdentifierFamilyPlan,
+                    _preparedRegex.SearchPlan)
                 : default;
 
-    internal AsciiSimplePatternPlan SimplePatternPlan => _regexPlan.SimplePatternPlan;
+    internal AsciiSimplePatternPlan SimplePatternPlan => _preparedRegex.SimplePatternPlan;
 
     internal bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
-        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(_regexPlan);
+        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(_preparedRegex);
 
     internal bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
-        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(_regexPlan);
+        Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(_preparedRegex);
 
-    internal int DebugSimplePatternBranchCount => _regexPlan.SimplePatternPlan.Branches.Length;
+    internal int DebugSimplePatternBranchCount => _preparedRegex.SimplePatternPlan.Branches.Length;
 
     internal string DebugSimplePatternBranchLengths =>
-        string.Join(",", _regexPlan.SimplePatternPlan.Branches.Select(static branch => branch.Length));
+        string.Join(",", _preparedRegex.SimplePatternPlan.Branches.Select(static branch => branch.Length));
 
-    internal string? FallbackReason => _regexPlan.FallbackReason;
+    internal string? FallbackReason => _preparedRegex.FallbackReason;
 
     internal bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
@@ -326,17 +331,17 @@ public sealed partial class Utf8Regex
 
     internal bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
     {
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out matchedLength);
+        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_preparedRegex, input, out matchedLength);
     }
 
     internal bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
     {
-        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out matchedLength);
+        return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_preparedRegex, input, out matchedLength);
     }
 
     internal string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input)
     {
-        return Utf8SimplePatternCompiledWholeMatcher.GetDirectAnchoredFixedAlternationDebugSummary(_regexPlan, input);
+        return Utf8SimplePatternCompiledWholeMatcher.GetDirectAnchoredFixedAlternationDebugSummary(_preparedRegex, input);
     }
 
     private bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
@@ -478,7 +483,7 @@ public sealed partial class Utf8Regex
     internal bool DebugTryMatchRepeatedDigitGroupWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
-        var plan = _regexPlan.SimplePatternPlan.RepeatedDigitGroupPlan;
+        var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
         return plan.HasValue &&
             Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
                 input,
@@ -490,7 +495,7 @@ public sealed partial class Utf8Regex
     internal bool DebugTryFindRepeatedDigitGroup(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
-        var plan = _regexPlan.SimplePatternPlan.RepeatedDigitGroupPlan;
+        var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
         return plan.HasValue &&
             Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
                 input,
@@ -502,7 +507,7 @@ public sealed partial class Utf8Regex
     internal bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(ReadOnlySpan<byte> input, out int matchedLength)
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.SimplePatternInterpreter ||
-            _regexPlan.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
+            _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
             !_anchoredValidatorPlan.HasValue)
         {
             matchedLength = 0;
@@ -510,7 +515,7 @@ public sealed partial class Utf8Regex
         }
 
         var direct = Utf8SimplePatternCompiledWholeMatcher.TryMatchAnchoredValidatorWithoutValidation(
-            _regexPlan,
+            _preparedRegex,
             _allowsTrailingNewlineBeforeEnd,
             input,
             out matchedLength);
@@ -603,7 +608,7 @@ public sealed partial class Utf8Regex
     internal Utf8ValueMatchEnumerator Pcre2EnumerateMatchesAtByteOffset(ReadOnlySpan<byte> input, int startOffsetInBytes) // PCRE2-INTEGRATION-POINT
     {
         var remaining = input[startOffsetInBytes..];
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
         if (UsesRightToLeft())
         {
@@ -611,7 +616,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(remaining, Encoding.UTF8.GetString(remaining), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
         }
 
-        if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
+        if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
         {
             Utf8Validation.ThrowIfInvalidOnly(remaining);
             return CreateMatchEnumeratorViaCompiledEngine(remaining, default, literal, budget);
@@ -623,7 +628,7 @@ public sealed partial class Utf8Regex
 
     internal Utf8PreparedValueMatchEnumerator Pcre2EnumeratePreparedValueMatchesAtByteOffset(ReadOnlySpan<byte> input, int startOffsetInBytes) // PCRE2-INTEGRATION-POINT
     {
-        return new Utf8PreparedValueMatchEnumerator(input, _regexPlan.SearchPlan.PreparedSearcher, startOffsetInBytes);
+        return new Utf8PreparedValueMatchEnumerator(input, _preparedRegex.SearchPlan.PreparedSearcher, startOffsetInBytes);
     }
 
     private static void ValidateOptions(RegexOptions options)
@@ -951,7 +956,7 @@ public sealed partial class Utf8Regex
             return twin.EnumerateMatches(input);
         }
 
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
         if (UsesRightToLeft())
         {
@@ -959,7 +964,7 @@ public sealed partial class Utf8Regex
             return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
         }
 
-        if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
+        if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
             return CreateMatchEnumeratorViaCompiledEngine(input, default, literal, budget);
@@ -979,9 +984,9 @@ public sealed partial class Utf8Regex
             if (startBoundary.IsScalarBoundary)
             {
                 var remaining = input[startBoundary.ByteOffset..];
-                var literal = _regexPlan.LiteralUtf8;
+                var literal = _preparedRegex.LiteralUtf8;
                 var budget = CreateExecutionBudget();
-                if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
+                if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
                 {
                     Utf8Validation.ThrowIfInvalidOnly(remaining);
                     return CreateMatchEnumeratorViaCompiledEngine(remaining, default, literal, budget)
@@ -1064,7 +1069,7 @@ public sealed partial class Utf8Regex
             return ReplaceLiteralBytesCore(input, validation, replacementText: null, directReplacementBytes);
         }
 
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
         var budget = CreateExecutionBudget();
@@ -1260,11 +1265,11 @@ public sealed partial class Utf8Regex
             var result = IsMatch(input);
             return new Utf8IsMatchDiagnostics(
                 result,
-                _regexPlan.ExecutionKind.ToString(),
-                _regexPlan.SearchPlan.Kind.ToString(),
-                _regexPlan.FallbackVerifier.Mode.ToString(),
-                _regexPlan.FallbackVerifier.RequiresCandidateEndCoverage,
-                _regexPlan.FallbackVerifier.RequiresTrailingAnchorCoverage,
+                _preparedRegex.ExecutionKind.ToString(),
+                _preparedRegex.SearchPlan.Kind.ToString(),
+                _preparedRegex.FallbackVerifier.Mode.ToString(),
+                _preparedRegex.FallbackVerifier.RequiresCandidateEndCoverage,
+                _preparedRegex.FallbackVerifier.RequiresTrailingAnchorCoverage,
                 session.SearchCandidates,
                 session.FixedCheckRejects,
                 session.VerifierInvocations,
@@ -1290,11 +1295,11 @@ public sealed partial class Utf8Regex
             var result = Count(input);
             return new Utf8CountDiagnostics(
                 result,
-                _regexPlan.ExecutionKind.ToString(),
-                _regexPlan.SearchPlan.Kind.ToString(),
-                _regexPlan.FallbackVerifier.Mode.ToString(),
-                _regexPlan.FallbackVerifier.RequiresCandidateEndCoverage,
-                _regexPlan.FallbackVerifier.RequiresTrailingAnchorCoverage,
+                _preparedRegex.ExecutionKind.ToString(),
+                _preparedRegex.SearchPlan.Kind.ToString(),
+                _preparedRegex.FallbackVerifier.Mode.ToString(),
+                _preparedRegex.FallbackVerifier.RequiresCandidateEndCoverage,
+                _preparedRegex.FallbackVerifier.RequiresTrailingAnchorCoverage,
                 session.ExecutionRoute ?? "<none>",
                 session.SearchCandidates,
                 session.FixedCheckRejects,
@@ -1472,7 +1477,7 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             return nativeResult;
@@ -1483,22 +1488,22 @@ public sealed partial class Utf8Regex
             return Encoding.UTF8.GetBytes(ReplaceFallbackWithSharedPlan(input, replacement));
         }
 
-        return _regexPlan.ExecutionKind switch
+        return _preparedRegex.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }
                 => Utf8LiteralReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     literal.Length,
                     budget),
             NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
                 => Utf8LiteralReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     literal.Length,
                     budget),
             NativeExecutionKind.ExactUtf8Literals
@@ -1525,17 +1530,17 @@ public sealed partial class Utf8Regex
                 => Utf8LiteralReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     literal.Length,
                     budget),
-            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _regexPlan.SimplePatternPlan.IsFixedLength
+            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _preparedRegex.SimplePatternPlan.IsFixedLength
                 => Utf8LiteralReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, 0, captures: null, budget, out _),
-                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
-                    _regexPlan.SimplePatternPlan.MinLength,
+                    bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, 0, captures: null, budget, out _),
+                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
+                    _preparedRegex.SimplePatternPlan.MinLength,
                     budget),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii
                 => Utf8LiteralReplaceEngine.Replace(
@@ -1543,7 +1548,7 @@ public sealed partial class Utf8Regex
                     replacementBytes,
                     (ReadOnlySpan<byte> bytes, int start, out int matchIndex, out int matchLength) =>
                     {
-                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out matchLength);
+                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out matchLength);
                         return matchIndex >= 0;
                     },
                     budget),
@@ -1592,8 +1597,8 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         out byte[] replacementBytes)
     {
-        if (_regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase) ||
-            _regexPlan.LiteralUtf8 is not { Length: > 0 } literalUtf8)
+        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase) ||
+            _preparedRegex.LiteralUtf8 is not { Length: > 0 } literalUtf8)
         {
             replacementBytes = [];
             return false;
@@ -1738,15 +1743,15 @@ public sealed partial class Utf8Regex
 
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
-            var literal = _regexPlan.LiteralUtf8;
-            var exactLiteralSuccess = _regexPlan.ExecutionKind switch
+            var literal = _preparedRegex.LiteralUtf8;
+            var exactLiteralSuccess = _preparedRegex.ExecutionKind switch
             {
                 NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         exactLiteralReplacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
@@ -1755,8 +1760,8 @@ public sealed partial class Utf8Regex
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         exactLiteralReplacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
@@ -1789,8 +1794,8 @@ public sealed partial class Utf8Regex
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         exactLiteralReplacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
@@ -1803,15 +1808,15 @@ public sealed partial class Utf8Regex
 
         if (TryGetNativeReplacementBytes(replacement, out var replacementBytes))
         {
-            var literal = _regexPlan.LiteralUtf8;
-            var success = _regexPlan.ExecutionKind switch
+            var literal = _preparedRegex.LiteralUtf8;
+            var success = _preparedRegex.ExecutionKind switch
             {
                 NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         replacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
@@ -1820,8 +1825,8 @@ public sealed partial class Utf8Regex
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         replacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
@@ -1854,19 +1859,19 @@ public sealed partial class Utf8Regex
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         replacementBytes,
-                        bytes => Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, bytes),
-                        (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                        bytes => Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, bytes),
+                        (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                         literal.Length,
                         destination,
                         out bytesWritten,
                         budget),
-                NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _regexPlan.SimplePatternPlan.IsFixedLength
+                NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _preparedRegex.SimplePatternPlan.IsFixedLength
                     => Utf8LiteralReplaceEngine.TryReplace(
                         input,
                         replacementBytes,
-                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, 0, captures: null, budget, out _),
-                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
-                        _regexPlan.SimplePatternPlan.MinLength,
+                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, 0, captures: null, budget, out _),
+                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
+                        _preparedRegex.SimplePatternPlan.MinLength,
                         destination,
                         out bytesWritten,
                         budget),
@@ -1876,7 +1881,7 @@ public sealed partial class Utf8Regex
                         replacementBytes,
                         (ReadOnlySpan<byte> bytes, int start, out int matchIndex, out int matchLength) =>
                         {
-                            matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out matchLength);
+                            matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out matchLength);
                             return matchIndex >= 0;
                         },
                         destination,
@@ -1904,24 +1909,24 @@ public sealed partial class Utf8Regex
             return _compiledEngineRuntime.ReplaceLiteralBytes(input, validation, replacementBytes, CreateExecutionBudget());
         }
 
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
 
-        return _regexPlan.ExecutionKind switch
+        return _preparedRegex.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }
                 => Utf8FixedMatchReplaceEngine.Replace(
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     budget),
             NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
                 => Utf8FixedMatchReplaceEngine.Replace(
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     budget),
             NativeExecutionKind.ExactUtf8Literals
                 => Utf8LiteralReplaceEngine.Replace(
@@ -1938,21 +1943,21 @@ public sealed partial class Utf8Regex
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     budget),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii &&
-                _regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
+                _preparedRegex.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
                 => Utf8FixedMatchReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    _regexPlan.StructuralLinearProgram,
+                    _preparedRegex.StructuralLinearProgram,
                     budget),
-            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _regexPlan.SimplePatternPlan.IsFixedLength
+            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _preparedRegex.SimplePatternPlan.IsFixedLength
                 => Utf8FixedMatchReplaceEngine.Replace(
                     input,
                     replacementBytes,
-                    _regexPlan.SimplePatternPlan.MinLength,
-                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
+                    _preparedRegex.SimplePatternPlan.MinLength,
+                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
                     budget),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii
                 => Utf8LiteralReplaceEngine.Replace(
@@ -1960,7 +1965,7 @@ public sealed partial class Utf8Regex
                     replacementBytes,
                     (ReadOnlySpan<byte> bytes, int start, out int matchIndex, out int matchLength) =>
                     {
-                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out matchLength);
+                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out matchLength);
                         return matchIndex >= 0;
                     },
                     budget),
@@ -1985,17 +1990,17 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
 
-        var success = _regexPlan.ExecutionKind switch
+        var success = _preparedRegex.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }
                 => Utf8FixedMatchReplaceEngine.TryReplace(
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     destination,
                     out bytesWritten,
                     budget),
@@ -2004,7 +2009,7 @@ public sealed partial class Utf8Regex
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     destination,
                     out bytesWritten,
                     budget),
@@ -2025,25 +2030,25 @@ public sealed partial class Utf8Regex
                     input,
                     replacementBytes,
                     literal.Length,
-                    (bytes, start) => Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, bytes, start),
+                    (bytes, start) => Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, bytes, start),
                     destination,
                     out bytesWritten,
                     budget),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii &&
-                _regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
+                _preparedRegex.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
                 => Utf8FixedMatchReplaceEngine.TryReplace(
                     input,
                     replacementBytes,
-                    _regexPlan.StructuralLinearProgram,
+                    _preparedRegex.StructuralLinearProgram,
                     destination,
                     out bytesWritten,
                     budget),
-            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _regexPlan.SimplePatternPlan.IsFixedLength
+            NativeExecutionKind.AsciiSimplePattern when validation.IsAscii && _preparedRegex.SimplePatternPlan.IsFixedLength
                 => Utf8FixedMatchReplaceEngine.TryReplace(
                     input,
                     replacementBytes,
-                    _regexPlan.SimplePatternPlan.MinLength,
-                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
+                    _preparedRegex.SimplePatternPlan.MinLength,
+                    (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
                     destination,
                     out bytesWritten,
                     budget),
@@ -2053,7 +2058,7 @@ public sealed partial class Utf8Regex
                     replacementBytes,
                     (ReadOnlySpan<byte> bytes, int start, out int matchIndex, out int matchLength) =>
                     {
-                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out matchLength);
+                        matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out matchLength);
                         return matchIndex >= 0;
                     },
                     destination,
@@ -2089,15 +2094,15 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             replacement.ContainsGroupReferences)
         {
             replaced = [];
             return false;
         }
 
-        var literal = _regexPlan.LiteralUtf8;
-        switch (_regexPlan.ExecutionKind)
+        var literal = _preparedRegex.LiteralUtf8;
+        switch (_preparedRegex.ExecutionKind)
         {
             case NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }:
                 var exactAsciiReplacementPlan = RewriteWholeLiteralCapturePlan(replacement.Plan);
@@ -2169,14 +2174,14 @@ public sealed partial class Utf8Regex
                     return true;
                 }
 
-                if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-                    !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-                    !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+                if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                    !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
                 {
                     replaced = Utf8NativeReplacementExecutor.Replace(
                         input,
                         exactUtf8AlternationPlan,
-                        _regexPlan.SearchPlan.PreparedSearcher);
+                        _preparedRegex.SearchPlan.PreparedSearcher);
                     return true;
                 }
 
@@ -2185,7 +2190,7 @@ public sealed partial class Utf8Regex
                     exactUtf8AlternationPlan,
                     (ReadOnlySpan<byte> bytes, int start, out Utf8NativeReplacementMatch match) =>
                     {
-                        if (Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, bytes, start, out var preparedMatch))
+                        if (Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, bytes, start, out var preparedMatch))
                         {
                             match = new Utf8NativeReplacementMatch(preparedMatch.Index, preparedMatch.Length, LiteralId: preparedMatch.LiteralId);
                             return true;
@@ -2212,14 +2217,14 @@ public sealed partial class Utf8Regex
                     return true;
                 }
 
-                if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-                    !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-                    !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+                if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                    !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
                 {
                     replaced = Utf8NativeReplacementExecutor.Replace(
                         input,
                         ignoreCaseAlternationPlan,
-                        _regexPlan.SearchPlan.PreparedSearcher);
+                        _preparedRegex.SearchPlan.PreparedSearcher);
                     return true;
                 }
 
@@ -2228,7 +2233,7 @@ public sealed partial class Utf8Regex
                     ignoreCaseAlternationPlan,
                     (ReadOnlySpan<byte> bytes, int start, out Utf8NativeReplacementMatch match) =>
                     {
-                        if (Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, bytes, start, out var preparedMatch))
+                        if (Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, bytes, start, out var preparedMatch))
                         {
                             match = new Utf8NativeReplacementMatch(preparedMatch.Index, preparedMatch.Length, LiteralId: preparedMatch.LiteralId);
                             return true;
@@ -2269,12 +2274,12 @@ public sealed partial class Utf8Regex
             case NativeExecutionKind.AsciiSimplePattern when validation.IsAscii:
                 if (TryGetDeterministicSimplePatternReplacementTemplate(replacement, out var template))
                 {
-                    if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
+                    if (_preparedRegex.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
                     {
                         replaced = Utf8FixedTemplateReplaceEngine.Replace(
                             input,
                             template,
-                            _regexPlan.StructuralLinearProgram,
+                            _preparedRegex.StructuralLinearProgram,
                             budget);
                         return true;
                     }
@@ -2282,8 +2287,8 @@ public sealed partial class Utf8Regex
                     replaced = Utf8FixedTemplateReplaceEngine.Replace(
                         input,
                         template,
-                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, 0, captures: null, budget, out _),
-                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
+                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, 0, captures: null, budget, out _),
+                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
                         budget);
                     return true;
                 }
@@ -2296,9 +2301,9 @@ public sealed partial class Utf8Regex
                     {
                         var matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(
                             bytes,
-                            _regexPlan.ExecutionProgram,
-                            _regexPlan.SearchPlan,
-                            _regexPlan.SimplePatternPlan,
+                            _preparedRegex.ExecutionProgram,
+                            _preparedRegex.SearchPlan,
+                            _preparedRegex.SimplePatternPlan,
                             start,
                             captures,
                             budget,
@@ -2328,15 +2333,15 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             replacement.ContainsGroupReferences)
         {
             bytesWritten = 0;
             return false;
         }
 
-        var literal = _regexPlan.LiteralUtf8;
-        switch (_regexPlan.ExecutionKind)
+        var literal = _preparedRegex.LiteralUtf8;
+        switch (_preparedRegex.ExecutionKind)
         {
             case NativeExecutionKind.ExactAsciiLiteral when literal is { Length: > 0 }:
                 var exactAsciiReplacementPlan = RewriteWholeLiteralCapturePlan(replacement.Plan);
@@ -2413,14 +2418,14 @@ public sealed partial class Utf8Regex
                         budget);
                 }
 
-                if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-                    !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-                    !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+                if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                    !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
                 {
                     return Utf8NativeReplacementExecutor.TryReplace(
                         input,
                         exactUtf8LiteralAlternationPlan,
-                        _regexPlan.SearchPlan.PreparedSearcher,
+                        _preparedRegex.SearchPlan.PreparedSearcher,
                         destination,
                         out bytesWritten);
                 }
@@ -2430,7 +2435,7 @@ public sealed partial class Utf8Regex
                     exactUtf8LiteralAlternationPlan,
                     (ReadOnlySpan<byte> bytes, int start, out Utf8NativeReplacementMatch match) =>
                     {
-                        if (Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, bytes, start, out var preparedMatch))
+                        if (Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, bytes, start, out var preparedMatch))
                         {
                             match = new Utf8NativeReplacementMatch(preparedMatch.Index, preparedMatch.Length, LiteralId: preparedMatch.LiteralId);
                             return true;
@@ -2459,14 +2464,14 @@ public sealed partial class Utf8Regex
                         budget);
                 }
 
-                if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-                    !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-                    !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+                if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+                    !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                    !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
                 {
                     return Utf8NativeReplacementExecutor.TryReplace(
                         input,
                         ignoreCaseLiteralAlternationPlan,
-                        _regexPlan.SearchPlan.PreparedSearcher,
+                        _preparedRegex.SearchPlan.PreparedSearcher,
                         destination,
                         out bytesWritten);
                 }
@@ -2476,7 +2481,7 @@ public sealed partial class Utf8Regex
                     ignoreCaseLiteralAlternationPlan,
                     (ReadOnlySpan<byte> bytes, int start, out Utf8NativeReplacementMatch match) =>
                     {
-                        if (Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, bytes, start, out var preparedMatch))
+                        if (Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, bytes, start, out var preparedMatch))
                         {
                             match = new Utf8NativeReplacementMatch(preparedMatch.Index, preparedMatch.Length, LiteralId: preparedMatch.LiteralId);
                             return true;
@@ -2520,12 +2525,12 @@ public sealed partial class Utf8Regex
             case NativeExecutionKind.AsciiSimplePattern when validation.IsAscii:
                 if (TryGetDeterministicSimplePatternReplacementTemplate(replacement, out var template))
                 {
-                    if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
+                    if (_preparedRegex.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
                     {
                         return Utf8FixedTemplateReplaceEngine.TryReplace(
                             input,
                             template,
-                            _regexPlan.StructuralLinearProgram,
+                            _preparedRegex.StructuralLinearProgram,
                             destination,
                             out bytesWritten,
                             budget);
@@ -2534,8 +2539,8 @@ public sealed partial class Utf8Regex
                     return Utf8FixedTemplateReplaceEngine.TryReplace(
                         input,
                         template,
-                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, 0, captures: null, budget, out _),
-                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, start, captures: null, budget, out _),
+                        bytes => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, 0, captures: null, budget, out _),
+                        (bytes, start) => Utf8ExecutionInterpreter.FindNextSimplePattern(bytes, _preparedRegex.ExecutionProgram, _preparedRegex.SearchPlan, _preparedRegex.SimplePatternPlan, start, captures: null, budget, out _),
                         destination,
                         out bytesWritten,
                         budget);
@@ -2549,9 +2554,9 @@ public sealed partial class Utf8Regex
                     {
                         var matchIndex = Utf8ExecutionInterpreter.FindNextSimplePattern(
                             bytes,
-                            _regexPlan.ExecutionProgram,
-                            _regexPlan.SearchPlan,
-                            _regexPlan.SimplePatternPlan,
+                            _preparedRegex.ExecutionProgram,
+                            _preparedRegex.SearchPlan,
+                            _preparedRegex.SimplePatternPlan,
                             start,
                             captures,
                             budget,
@@ -2578,9 +2583,9 @@ public sealed partial class Utf8Regex
         out Utf8FixedTemplateReplacement template)
     {
         template = default;
-        if (_regexPlan.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
+        if (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
             !replacement.ContainsGroupReferences ||
-            !Utf8ExecutionInterpreter.TryGetDeterministicCaptureLayout(_regexPlan.ExecutionProgram, _regexPlan.SimplePatternPlan, out var captureLayout))
+            !Utf8ExecutionInterpreter.TryGetDeterministicCaptureLayout(_preparedRegex.ExecutionProgram, _preparedRegex.SimplePatternPlan, out var captureLayout))
         {
             return false;
         }
@@ -2658,7 +2663,7 @@ public sealed partial class Utf8Regex
             return 1;
         }
 
-        if (_regexPlan.ExecutionTree?.Root is not { } root ||
+        if (_preparedRegex.ExecutionTree?.Root is not { } root ||
             root.Kind != Utf8ExecutionNodeKind.Capture ||
             root.Children.Count != 1)
         {
@@ -2780,7 +2785,7 @@ public sealed partial class Utf8Regex
 
     private bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
-        if (_regexPlan.ExecutionPattern.IndexOf('(') >= 0)
+        if (_preparedRegex.ExecutionPattern.IndexOf('(') >= 0)
         {
             return false;
         }
@@ -2788,10 +2793,10 @@ public sealed partial class Utf8Regex
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
-            Utf8CompiledEngineKind.LiteralFamily => !_regexPlan.SearchPlan.HasBoundaryRequirements &&
+            Utf8CompiledEngineKind.LiteralFamily => !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
                 !ShouldPreferFallbackForCompiledLiteralFamilyTextOperations(),
             Utf8CompiledEngineKind.StructuralLinearAutomaton
-                => _regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
+                => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
             _ => false,
         };
     }
@@ -2800,9 +2805,9 @@ public sealed partial class Utf8Regex
     {
         return _compiledEngine.Kind == Utf8CompiledEngineKind.LiteralFamily &&
             !UsesRightToLeft() &&
-            _regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
-            !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-            !_regexPlan.SearchPlan.HasTrailingLiteralRequirement;
+            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement;
     }
 
     private bool UsesRightToLeft()
@@ -2850,7 +2855,7 @@ public sealed partial class Utf8Regex
 
     private bool CanUseWellFormedOnlyValidation()
     {
-        return _regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals
+        return _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals
                 or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 or NativeExecutionKind.AsciiOrderedLiteralWindow or NativeExecutionKind.AsciiStructuralIdentifierFamily ||
             (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex &&
@@ -2859,14 +2864,14 @@ public sealed partial class Utf8Regex
 
     private bool TryUseAsciiInputValidationShortcut(ReadOnlySpan<byte> input)
     {
-        if (_regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
+        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
                                              NativeExecutionKind.ExactUtf8Literal or
                                              NativeExecutionKind.ExactUtf8Literals or
                                              NativeExecutionKind.AsciiLiteralIgnoreCase or
                                              NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals or
                                              NativeExecutionKind.AsciiOrderedLiteralWindow or
                                              NativeExecutionKind.AsciiStructuralIdentifierFamily) &&
-            !_regexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch)
+            !_preparedRegex.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch)
         {
             return false;
         }
@@ -2890,11 +2895,11 @@ public sealed partial class Utf8Regex
     private bool CanUseFusedCompiledUtf8LiteralCount()
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.ExactLiteral ||
-            _regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literal ||
+            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literal ||
             UsesRightToLeft() ||
-            _regexPlan.SearchPlan.HasBoundaryRequirements ||
-            _regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
-            _regexPlan.LiteralUtf8 is not { Length: > 0 } literal)
+            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
+            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
+            _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
         {
             return false;
         }
@@ -2919,11 +2924,11 @@ public sealed partial class Utf8Regex
     private bool CanUseFusedCompiledUtf8LiteralFamilyCount()
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.LiteralFamily ||
-            _regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
+            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             UsesRightToLeft() ||
-            _regexPlan.SearchPlan.HasBoundaryRequirements ||
-            _regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
-            _regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
+            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
+            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
+            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
         {
             return false;
         }
@@ -2952,11 +2957,11 @@ public sealed partial class Utf8Regex
     private bool CanUseFusedCompiledAsciiLiteralFamilyCount()
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.LiteralFamily ||
-            _regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
+            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             UsesRightToLeft() ||
-            _regexPlan.SearchPlan.HasBoundaryRequirements ||
-            _regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
-            _regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
+            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
+            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
+            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
         {
             return false;
         }
@@ -2983,9 +2988,9 @@ public sealed partial class Utf8Regex
         {
             return Utf8ExecutionInterpreter.FindNextSimplePattern(
                 input,
-                _regexPlan.ExecutionProgram,
-                _regexPlan.SearchPlan,
-                _regexPlan.SimplePatternPlan,
+                _preparedRegex.ExecutionProgram,
+                _preparedRegex.SearchPlan,
+                _preparedRegex.SimplePatternPlan,
                 0,
                 captures: null,
                 budget,
@@ -3027,7 +3032,7 @@ public sealed partial class Utf8Regex
 
     private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (literal is null || literal.Length == 0)
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
@@ -3037,7 +3042,7 @@ public sealed partial class Utf8Regex
         var index = 0;
         while (index <= input.Length - literal.Length)
         {
-            var found = Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, input, index);
+            var found = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, index);
             if (found < 0)
             {
                 return count;
@@ -3052,7 +3057,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchExactAsciiLiteral(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (literal is null)
         {
             return Utf8ValueMatch.NoMatch;
@@ -3077,7 +3082,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (literal is null)
         {
             return Utf8ValueMatch.NoMatch;
@@ -3106,7 +3111,7 @@ public sealed partial class Utf8Regex
         if (UsesRightToLeft())
         {
             budget?.Step(input);
-            if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out match))
+            if (!Utf8SearchExecutor.TryFindLastMatch(_preparedRegex.SearchPlan, input, input.Length, out match))
             {
                 return Utf8ValueMatch.NoMatch;
             }
@@ -3114,7 +3119,7 @@ public sealed partial class Utf8Regex
         else
         {
             budget?.Step(input);
-            if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out match))
+            if (!Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, input, 0, out match))
             {
                 return Utf8ValueMatch.NoMatch;
             }
@@ -3122,7 +3127,7 @@ public sealed partial class Utf8Regex
 
         var index = match.Index;
         var matchedByteLength = match.Length;
-        var matchedUtf16Length = _regexPlan.SearchPlan.AlternateLiteralUtf16Lengths is { Length: > 0 } utf16Lengths &&
+        var matchedUtf16Length = _preparedRegex.SearchPlan.AlternateLiteralUtf16Lengths is { Length: > 0 } utf16Lengths &&
             (uint)match.LiteralId < (uint)utf16Lengths.Length
             ? utf16Lengths[match.LiteralId]
             : Utf8Validation.Validate(input.Slice(index, matchedByteLength)).Utf16Length;
@@ -3189,7 +3194,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (literal is null)
         {
             return false;
@@ -3209,8 +3214,8 @@ public sealed partial class Utf8Regex
 
     private int CountAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
-        if (literal is null || literal.Length == 0 || _regexPlan.SearchPlan.LiteralSearch is not { } literalSearch)
+        var literal = _preparedRegex.LiteralUtf8;
+        if (literal is null || literal.Length == 0 || _preparedRegex.SearchPlan.LiteralSearch is not { } literalSearch)
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }
@@ -3245,7 +3250,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        var literal = _regexPlan.LiteralUtf8;
+        var literal = _preparedRegex.LiteralUtf8;
         if (literal is null)
         {
             return Utf8ValueMatch.NoMatch;
@@ -3341,7 +3346,7 @@ public sealed partial class Utf8Regex
         {
             Utf8CompiledEngineKind.ExactLiteral when literal is { Length: > 0 }
                 => CreateMatchEnumeratorViaCompiledExactLiteralEngine(input, literal, budget),
-            Utf8CompiledEngineKind.LiteralFamily when _regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 }
+            Utf8CompiledEngineKind.LiteralFamily when _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 }
                 => CreateMatchEnumeratorViaCompiledLiteralFamilyEngine(input, budget),
             _ => _compiledEngineRuntime.CreateMatchEnumerator(input, validation, budget),
         };
@@ -3357,11 +3362,11 @@ public sealed partial class Utf8Regex
 
         return _compiledEngine.Kind switch
         {
-            Utf8CompiledEngineKind.ExactLiteral when _regexPlan.LiteralUtf8 is { Length: > 0 } literal
+            Utf8CompiledEngineKind.ExactLiteral when _preparedRegex.LiteralUtf8 is { Length: > 0 } literal
                 => CreateSplitEnumeratorViaCompiledExactLiteralEngine(input, literal, count, budget),
             Utf8CompiledEngineKind.LiteralFamily
-                when _regexPlan.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 } &&
-                     !_regexPlan.SearchPlan.HasBoundaryRequirements
+                when _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 1 } &&
+                     !_preparedRegex.SearchPlan.HasBoundaryRequirements
                 => CreateSplitEnumeratorViaCompiledLiteralFamilyEngine(input, count, budget),
             _ => _compiledEngineRuntime.CreateSplitEnumerator(input, validation, count, budget),
         };
@@ -3387,14 +3392,14 @@ public sealed partial class Utf8Regex
 
     private bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
-        return _regexPlan.SearchPlan.PrefilterPlan.Rejects(input);
+        return Utf8PrefilterExecutor.Rejects(_preparedRegex.SearchPlan.PrefilterPlan, input);
     }
 
     private bool ShouldUseFallbackForAnchoredSimplePattern()
     {
-        return _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            !_regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
-            (_regexPlan.SimplePatternPlan.IsStartAnchored || _regexPlan.SimplePatternPlan.IsEndAnchored);
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            !_preparedRegex.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
+            (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored);
     }
 
     private bool TryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
@@ -3448,7 +3453,7 @@ public sealed partial class Utf8Regex
     private bool TryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
-        var repeatedDigitGroupPlan = _regexPlan.SimplePatternPlan.RepeatedDigitGroupPlan;
+        var repeatedDigitGroupPlan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
         if (repeatedDigitGroupPlan.HasValue)
         {
             var matched = Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
@@ -3613,16 +3618,16 @@ public sealed partial class Utf8Regex
     private bool ShouldFallbackForTrailingNewlineAnchoredValidator(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         return validation.IsAscii &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _regexPlan.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
-            _regexPlan.SearchPlan.Kind == Utf8SearchKind.TrailingAnchorFixedLengthEndZ &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.SimplePatternPlan.AnchoredValidatorPlan.HasValue &&
+            _preparedRegex.SearchPlan.Kind == Utf8SearchKind.TrailingAnchorFixedLengthEndZ &&
             input.Length > 0 &&
             input[^1] == (byte)'\n';
     }
 
     private bool ShouldSkipRequiredPrefilterForCount()
     {
-        return _regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
             !CanGuideFallbackVerification() &&
             _compiledEngineRuntime.SkipRequiredPrefilterForCount;
     }
@@ -3652,39 +3657,39 @@ public sealed partial class Utf8Regex
 
     private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation, bool allowByteSafeStructuralLinear = false)
     {
-        if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
-            _regexPlan.SimplePatternPlan.IsUtf8ByteSafe)
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe)
         {
             return false;
         }
 
         if (allowByteSafeStructuralLinear &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _compiledEngine.Kind == Utf8CompiledEngineKind.StructuralLinearAutomaton &&
-            _regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
+            _preparedRegex.StructuralLinearProgram.AllowsUtf8ByteSafe)
         {
             return false;
         }
 
-        return _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern && !validation.IsAscii;
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern && !validation.IsAscii;
     }
 
     private bool ShouldUseInterpreterForTimeoutSensitiveSimplePattern()
     {
-        return _regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             MatchTimeout != Regex.InfiniteMatchTimeout;
     }
 
     private bool ShouldUseFallbackForSimplePatternReplacement(Utf8AnalyzedReplacement replacement)
     {
         return replacement.ContainsGroupReferences ||
-            (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
              ShouldUseFallbackForAnchoredSimplePattern());
     }
 
     private bool CanGuideFallbackVerification()
     {
-        return _regexPlan.SearchPlan.FallbackSearch.HasCandidates;
+        return _preparedRegex.SearchPlan.FallbackSearch.HasCandidates;
     }
 
     private bool IsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
@@ -3692,7 +3697,7 @@ public sealed partial class Utf8Regex
         var validation = Utf8InputAnalyzer.ValidateOnly(input);
         Utf8BoundaryMap? boundaryMap = null;
         string? decoded = null;
-        if (!Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_regexPlan.SearchPlan, _regexPlan.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out _))
+        if (!Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out _))
         {
             return false;
         }
@@ -3709,7 +3714,7 @@ public sealed partial class Utf8Regex
         var count = 0;
         var startIndex = 0;
         while ((uint)startIndex <= (uint)input.Length &&
-               Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_regexPlan.SearchPlan, _regexPlan.SearchPlan.CountProgram, _verifierRuntime, input, validation, startIndex, ref boundaryMap, ref decoded, out var verification))
+               Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.CountProgram, _verifierRuntime, input, validation, startIndex, ref boundaryMap, ref decoded, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
@@ -3721,7 +3726,7 @@ public sealed partial class Utf8Regex
 
     private int CountFallbackCandidates(ReadOnlySpan<byte> input, bool requireScalarBoundary)
     {
-        return Utf8SearchStrategyExecutor.CountFallbackCandidates(_regexPlan.SearchPlan, input, requireScalarBoundary);
+        return Utf8SearchStrategyExecutor.CountFallbackCandidates(_preparedRegex.SearchPlan, input, requireScalarBoundary);
     }
 
     private int CountExactLiteralWithRoute(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, string route)
@@ -3763,7 +3768,7 @@ public sealed partial class Utf8Regex
     private int CountByteSafeFallbackWithRoute(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_byte_safe_linear");
-        return Utf8ByteSafeLinearExecutor.Count(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
+        return Utf8ByteSafeLinearExecutor.Count(input, _preparedRegex, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 
     private int CountFallbackViaSearchStartsWithRoute(ReadOnlySpan<byte> input, string route)
@@ -3792,7 +3797,7 @@ public sealed partial class Utf8Regex
     {
         var validation = boundaryMap is null ? Utf8InputAnalyzer.ValidateOnly(input) : default;
         string? decoded = null;
-        if (Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_regexPlan.SearchPlan, _regexPlan.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out var verification))
+        if (Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             return Utf8ProjectionExecutor.ProjectFallbackVerification(verification);
@@ -3803,7 +3808,7 @@ public sealed partial class Utf8Regex
 
     private Utf8StructuralSearchPlan[] GetFallbackCandidatePlans()
     {
-        return _regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [];
+        return _preparedRegex.SearchPlan.FallbackSearch.CandidatePlans ?? [];
     }
 
     private int FindFirstLiteralViaInterpreter(ReadOnlySpan<byte> input, bool ignoreCase, Utf8ExecutionBudget? budget)
@@ -3819,32 +3824,32 @@ public sealed partial class Utf8Regex
     private int FindFirstLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         budget?.Step(input);
-        return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
+        return Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, input);
     }
 
     private int FindFirstIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         budget?.Step(input);
-        return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
+        return Utf8SearchExecutor.FindFirst(_preparedRegex.SearchPlan, input);
     }
 
     private int FindLastLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         budget?.Step(input);
-        return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
+        return Utf8SearchExecutor.FindLast(_preparedRegex.SearchPlan, input);
     }
 
     private int FindLastIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
         budget?.Step(input);
-        return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
+        return Utf8SearchExecutor.FindLast(_preparedRegex.SearchPlan, input);
     }
 
     private int FindNextUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
         budget?.Step(input);
-        if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, startIndex, out var match))
+        if (!Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, input, startIndex, out var match))
         {
             return -1;
         }
@@ -3857,7 +3862,7 @@ public sealed partial class Utf8Regex
     {
         matchedByteLength = 0;
         budget?.Step(input);
-        if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
+        if (!Utf8SearchExecutor.TryFindLastMatch(_preparedRegex.SearchPlan, input, input.Length, out var match))
         {
             return -1;
         }
@@ -3869,12 +3874,12 @@ public sealed partial class Utf8Regex
     private int FindNextLiteralViaInterpreter(ReadOnlySpan<byte> input, int startIndex, bool ignoreCase, Utf8ExecutionBudget? budget, out int matchedLength)
     {
         matchedLength = 0;
-        for (var index = Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, input, startIndex);
+        for (var index = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, startIndex);
              index >= 0;
-             index = Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, input, index + 1))
+             index = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, index + 1))
         {
             budget?.Step(input);
-            if (Utf8ExecutionInterpreter.TryMatchLiteralPrefix(input[index..], _regexPlan.ExecutionProgram, ignoreCase, budget, out matchedLength))
+            if (Utf8ExecutionInterpreter.TryMatchLiteralPrefix(input[index..], _preparedRegex.ExecutionProgram, ignoreCase, budget, out matchedLength))
             {
                 return index;
             }
@@ -3887,7 +3892,7 @@ public sealed partial class Utf8Regex
     private int FindNextExactLiteralViaSearch(ReadOnlySpan<byte> input, int startIndex, int literalLength, Utf8ExecutionBudget? budget, out int matchedLength)
     {
         matchedLength = 0;
-        var index = Utf8SearchExecutor.FindNext(_regexPlan.SearchPlan, input, startIndex);
+        var index = Utf8SearchExecutor.FindNext(_preparedRegex.SearchPlan, input, startIndex);
         if (index < 0)
         {
             return -1;
@@ -3921,21 +3926,21 @@ public sealed partial class Utf8Regex
     {
         return UsesRightToLeft()
             ? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input))
-            : Utf8AsciiStructuralIdentifierFamilyExecutor.Count(input, _regexPlan.StructuralIdentifierFamilyPlan, _regexPlan.SearchPlan, _regexPlan.StructuralSearchPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
+            : Utf8AsciiStructuralIdentifierFamilyExecutor.Count(input, _preparedRegex.StructuralIdentifierFamilyPlan, _preparedRegex.SearchPlan, _preparedRegex.StructuralSearchPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 
     private int CountExactUtf8Literals(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-            !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-            !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var fastCount = 0;
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
             {
                 budget?.Step(input);
-                if (!_regexPlan.SearchPlan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out _))
+                if (!_preparedRegex.SearchPlan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out _))
                 {
                     return fastCount;
                 }
@@ -3963,16 +3968,16 @@ public sealed partial class Utf8Regex
 
     private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        if (_regexPlan.SearchPlan.PreparedSearcher.HasValue &&
-            !_regexPlan.SearchPlan.HasBoundaryRequirements &&
-            !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        if (_preparedRegex.SearchPlan.PreparedSearcher.HasValue &&
+            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var fastCount = 0;
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
             {
                 budget?.Step(input);
-                if (!_regexPlan.SearchPlan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out _))
+                if (!_preparedRegex.SearchPlan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out _))
                 {
                     return fastCount;
                 }
@@ -4002,7 +4007,7 @@ public sealed partial class Utf8Regex
     {
         matchedByteLength = 0;
         budget?.Step(input);
-        if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, startIndex, out var match))
+        if (!Utf8SearchExecutor.TryFindNextMatch(_preparedRegex.SearchPlan, input, startIndex, out var match))
         {
             return -1;
         }
@@ -4015,7 +4020,7 @@ public sealed partial class Utf8Regex
     {
         matchedByteLength = 0;
         budget?.Step(input);
-        if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
+        if (!Utf8SearchExecutor.TryFindLastMatch(_preparedRegex.SearchPlan, input, input.Length, out var match))
         {
             return -1;
         }
@@ -4038,9 +4043,9 @@ public sealed partial class Utf8Regex
     {
         return Utf8ExecutionInterpreter.FindNextSimplePattern(
             input,
-            _regexPlan.ExecutionProgram,
-            _regexPlan.SearchPlan,
-            _regexPlan.SimplePatternPlan,
+            _preparedRegex.ExecutionProgram,
+            _preparedRegex.SearchPlan,
+            _preparedRegex.SimplePatternPlan,
             startIndex,
             captures: null,
             budget,
@@ -4051,9 +4056,9 @@ public sealed partial class Utf8Regex
     {
         return Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
             input,
-            _regexPlan.StructuralIdentifierFamilyPlan,
-            _regexPlan.SearchPlan,
-            _regexPlan.StructuralSearchPlan,
+            _preparedRegex.StructuralIdentifierFamilyPlan,
+            _preparedRegex.SearchPlan,
+            _preparedRegex.StructuralSearchPlan,
             _verifierRuntime.StructuralVerifierRuntime,
             startIndex,
             budget,

@@ -39,7 +39,7 @@ internal readonly record struct Utf8CompiledSearchAnalysis(
 
 internal static class Utf8CompiledSearchAnalyzer
 {
-    public static Utf8CompiledSearchAnalysis Analyze(Utf8RegexPlan regexPlan, bool preferCompiled)
+    public static Utf8CompiledSearchAnalysis Analyze(Utf8PreparedRegex regexPlan, bool preferCompiled)
     {
         var canPromoteFallbackExecution = Utf8CompiledSearchAnalysisPolicy.CanPromoteFallbackExecution(regexPlan);
         var countPipeline = regexPlan.SearchPlan.CountPipeline;
@@ -154,7 +154,7 @@ internal static class Utf8CompiledSearchAnalyzer
         _ => Utf8CompiledEmittedFamily.None,
     };
 
-    private static bool ShouldKeepFallbackRegexOnCompiledHint(Utf8RegexPlan regexPlan)
+    private static bool ShouldKeepFallbackRegexOnCompiledHint(Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.ExecutionKind != NativeExecutionKind.FallbackRegex ||
             !regexPlan.FallbackDirectFamily.SupportsNativeFallbackRoute)

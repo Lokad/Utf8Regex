@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;

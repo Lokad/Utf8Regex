@@ -1,6 +1,8 @@
+using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using System.Reflection;
 using System.Reflection.Emit;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -38,7 +40,7 @@ internal sealed class Utf8EmittedSearchGuidedFallback
         _count = count;
     }
 
-    internal static bool TryCreate(Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime, out Utf8EmittedSearchGuidedFallback? backend)
+    internal static bool TryCreate(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, out Utf8EmittedSearchGuidedFallback? backend)
     {
         backend = null;
         if (!Utf8CompiledBackendCapability.CanUseEmittedSearchGuidedFallback(regexPlan))
@@ -72,7 +74,7 @@ internal sealed class Utf8EmittedSearchGuidedFallback
 
     internal int Count(ReadOnlySpan<byte> input) => _count(this, input);
 
-    private static bool CanUseBoundaryLiteralFamilyBackend(Utf8RegexPlan regexPlan)
+    private static bool CanUseBoundaryLiteralFamilyBackend(Utf8PreparedRegex regexPlan)
     {
         var searchPlan = regexPlan.SearchPlan;
         return regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&

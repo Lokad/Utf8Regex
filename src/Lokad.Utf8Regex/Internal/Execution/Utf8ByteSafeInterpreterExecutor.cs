@@ -1,11 +1,12 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Utilities;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8ByteSafeLinearExecutor
 {
-    public static bool CanExecute(Utf8RegexPlan regexPlan)
+    public static bool CanExecute(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.ExecutionTree is not null &&
             HasCompiledByteSafeVerifier(regexPlan.StructuralVerifier) &&
@@ -17,7 +18,7 @@ internal static class Utf8ByteSafeLinearExecutor
         return plan.ByteSafeLazyDfaProgram.HasValue || plan.ByteSafeLinearProgram.HasValue;
     }
 
-    public static bool HasCandidateSource(Utf8RegexPlan regexPlan)
+    public static bool HasCandidateSource(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.DeterministicAnchor.HasValue ||
             HasSelectiveStructuralStartPlan(regexPlan.StructuralSearchPlan);
@@ -25,7 +26,7 @@ internal static class Utf8ByteSafeLinearExecutor
 
     public static int FindNext(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         int startIndex,
         Utf8ExecutionBudget? budget,
@@ -95,7 +96,7 @@ internal static class Utf8ByteSafeLinearExecutor
 
     public static bool IsMatch(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         Utf8ExecutionBudget? budget)
     {
@@ -104,7 +105,7 @@ internal static class Utf8ByteSafeLinearExecutor
 
     public static int Count(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         Utf8ExecutionBudget? budget)
     {
@@ -223,11 +224,11 @@ internal static class Utf8ByteSafeLinearExecutor
 
 internal static class Utf8ByteSafeInterpreterExecutor
 {
-    public static bool CanExecute(Utf8RegexPlan regexPlan) => Utf8ByteSafeLinearExecutor.CanExecute(regexPlan);
+    public static bool CanExecute(Utf8PreparedRegex regexPlan) => Utf8ByteSafeLinearExecutor.CanExecute(regexPlan);
 
     public static int FindNext(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         int startIndex,
         Utf8ExecutionBudget? budget,
@@ -238,7 +239,7 @@ internal static class Utf8ByteSafeInterpreterExecutor
 
     public static bool IsMatch(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         Utf8ExecutionBudget? budget)
     {
@@ -247,7 +248,7 @@ internal static class Utf8ByteSafeInterpreterExecutor
 
     public static int Count(
         ReadOnlySpan<byte> input,
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         Utf8ExecutionBudget? budget)
     {

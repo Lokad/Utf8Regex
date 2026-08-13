@@ -1,16 +1,18 @@
-using System.Buffers;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using Lokad.Utf8Regex.Internal.Replacement;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Utilities;
+using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
     private const int PreparedSearcherLiteralFamilyCountThresholdBytes = 4096;
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8CompiledEngine _compiledEngine;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly bool _usesRightToLeft;
     private readonly Utf8CompiledExecutionBackend _backend;
     private readonly Utf8BackendInstructionProgram _countProgram;
@@ -27,8 +29,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private const int SmallAsciiLiteralFamilyPrimitiveProbeBytes = 16 * 1024;
 
-    public Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngine compiledEngine, Utf8RegexPlan regexPlan, bool usesRightToLeft)
+    public Utf8LiteralCompiledEngineRuntime(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex regexPlan, bool usesRightToLeft)
     {
+        _compiledEngine = compiledEngine;
         _regexPlan = regexPlan;
         _usesRightToLeft = usesRightToLeft;
         _backend = compiledEngine.Backend;
@@ -844,7 +847,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
     private static bool TryCreateLeadingUtf8SegmentLiteralFamily(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool usesRightToLeft,
         out PreparedMultiLiteralCandidatePrefilter prefilter,
         out PreparedMultiLiteralAutomatonSearch automaton)
@@ -937,7 +940,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
     private static bool TryCreateBmpThreeByteLiteralFamilySearch(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool usesRightToLeft,
         out PreparedBmpThreeByteLiteralFamilySearch search)
     {
@@ -1380,7 +1383,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return byteCount == 0 ? 0 : Utf8Validation.Validate(input[..byteCount]).Utf16Length;
     }
 
-    private static bool TryCreateSmallAsciiLiteralFamily(Utf8RegexPlan regexPlan, bool usesRightToLeft, out byte[][]? literals, out byte[] firstBytes)
+    private static bool TryCreateSmallAsciiLiteralFamily(Utf8PreparedRegex regexPlan, bool usesRightToLeft, out byte[][]? literals, out byte[] firstBytes)
     {
         literals = null;
         firstBytes = [];
@@ -1422,7 +1425,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return true;
     }
 
-    private static bool TryCreateSmallAsciiLiteralFamilyPrimitive(Utf8RegexPlan regexPlan, bool usesRightToLeft, out PreparedSmallAsciiLiteralFamilySearch primitive)
+    private static bool TryCreateSmallAsciiLiteralFamilyPrimitive(Utf8PreparedRegex regexPlan, bool usesRightToLeft, out PreparedSmallAsciiLiteralFamilySearch primitive)
     {
         primitive = default;
 
@@ -1436,7 +1439,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
     private static bool TryCreateShortAsciiLiteralFamilyCounter(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool usesRightToLeft,
         out PreparedShortAsciiLiteralFamilyCounter counter)
     {
@@ -1527,7 +1530,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private InvalidOperationException UnexpectedExecutionKind()
     {
-        return new InvalidOperationException($"Unexpected execution kind '{_regexPlan.ExecutionKind}' for compiled engine '{_regexPlan.CompiledEngine.Kind}'.");
+        return new InvalidOperationException($"Unexpected execution kind '{_regexPlan.ExecutionKind}' for compiled engine '{_compiledEngine.Kind}'.");
     }
 }
 

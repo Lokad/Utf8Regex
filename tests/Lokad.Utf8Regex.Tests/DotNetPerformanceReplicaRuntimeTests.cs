@@ -10,9 +10,9 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
     [Fact]
     public void EmailPatternClassifiesAsAsciiDelimitedTokenCount()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -70,10 +70,10 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
     [Fact]
     public void UriPatternClassifiesAsAsciiUriToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
@@ -95,10 +95,10 @@ Keep mailto://ops?bad and ssh://edge-node/control?mode=full#tail in scope.
     [Fact]
     public void IpPatternClassifiesAsAsciiDottedDecimalQuadCount()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
@@ -120,46 +120,46 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     [Fact]
     public void DatePatternClassifiesAsAsciiBoundedDateToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
     public void DashDatePatternClassifiesAsAsciiBoundedDateToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\b\d{1,2}\-\d{1,2}\-\d{2,4}\b", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\-\d{1,2}\-\d{2,4}\b", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
     public void IsoDatePatternClassifiesAsAsciiBoundedDateToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\b\d{4}\-\d{1,2}\-\d{1,2}\b", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\b\d{4}\-\d{1,2}\-\d{1,2}\b", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
     public void DottedDatePatternClassifiesAsAsciiBoundedDateToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
     public void IsoDottedDatePatternClassifiesAsAsciiBoundedDateToken()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\b\d{4}\.\d{1,2}\.\d{1,2}\b", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\b\d{4}\.\d{1,2}\.\d{1,2}\b", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.True(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, analysis.FallbackDirectFamily.Kind);
+        Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     [Fact]
@@ -176,11 +176,11 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     [Fact]
     public void FloatPatternClassifiesAsAnchoredAsciiSignedDecimalWhole()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"^[-+]?\d*\.?\d*$", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"^[-+]?\d*\.?\d*$", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole, analysis.RegexPlan.FallbackDirectFamily.Kind);
-        Assert.False(analysis.RegexPlan.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
-        Assert.False(analysis.RegexPlan.FallbackDirectFamily.SupportsDefinitiveIsMatch);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole, analysis.FallbackDirectFamily.Kind);
+        Assert.False(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
+        Assert.False(analysis.FallbackDirectFamily.SupportsDefinitiveIsMatch);
     }
 
     [Fact]
@@ -326,9 +326,9 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     [Fact]
     public void UnicodeMathSymbolPatternClassifiesAsUnicodeCategoryCount()
     {
-        var analysis = Utf8FrontEnd.Analyze(@"\p{Sm}", RegexOptions.None);
+        var analysis = Utf8FrontEnd.Compile(@"\p{Sm}", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, analysis.RegexPlan.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, analysis.FallbackDirectFamily.Kind);
     }
 
     [Fact]

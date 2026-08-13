@@ -39,12 +39,12 @@ internal static class Utf8CompiledSearchAnalysisPolicy
                 Utf8SearchMetaStrategyKind.PrefilterThenConfirm;
     }
 
-    public static bool CanPromoteFallbackExecution(Utf8RegexPlan regexPlan)
+    public static bool CanPromoteFallbackExecution(Utf8PreparedRegex regexPlan)
     {
         return !string.Equals(regexPlan.FallbackReason, "unsupported_options", StringComparison.Ordinal);
     }
 
-    public static bool CanUseStructuralLinearSimplePattern(Utf8RegexPlan regexPlan)
+    public static bool CanUseStructuralLinearSimplePattern(Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.SimplePatternPlan.IsStartAnchored ||
             regexPlan.SimplePatternPlan.IsEndAnchored ||
@@ -58,7 +58,7 @@ internal static class Utf8CompiledSearchAnalysisPolicy
             regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun;
     }
 
-    public static bool CanUseCompiledFallback(Utf8RegexPlan regexPlan)
+    public static bool CanUseCompiledFallback(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.ExecutionProgram is not null &&
             regexPlan.SearchPlan.FallbackSearch.CandidatePlans is { Length: > 0 } &&
@@ -68,7 +68,7 @@ internal static class Utf8CompiledSearchAnalysisPolicy
             !HasBackreferenceInstructions(regexPlan);
     }
 
-    private static bool HasBackreferenceInstructions(Utf8RegexPlan regexPlan)
+    private static bool HasBackreferenceInstructions(Utf8PreparedRegex regexPlan)
     {
         var executionProgram = regexPlan.ExecutionProgram;
         if (executionProgram is null)

@@ -38,13 +38,13 @@ internal readonly struct PreparedMultiLiteralSearch
         {
             Literals = literals;
             var exactSearch = new PreparedLiteralSetSearch(literals);
-            if (ShouldUsePacked(exactSearch))
+            if (TryPreparePacked(exactSearch, literals, out var packedSearch))
             {
                 ExactSearch = default;
                 TrieSearch = default;
                 AutomatonSearch = default;
                 EarliestSearch = default;
-                PackedSearch = PreparedMultiLiteralPackedSearch.Create(literals);
+                PackedSearch = packedSearch;
                 Kind = PreparedMultiLiteralKind.ExactPacked;
             }
             else if (ShouldUseEarliestExact(exactSearch))
@@ -91,13 +91,13 @@ internal readonly struct PreparedMultiLiteralSearch
     public PreparedMultiLiteralSearch(PreparedLiteralSetSearch search)
     {
         Literals = search.SearchData.Buckets.SelectMany(static bucket => bucket.Literals).ToArray();
-        if (ShouldUsePacked(search))
+        if (TryPreparePacked(search, Literals, out var packedSearch))
         {
             ExactSearch = default;
             TrieSearch = default;
             AutomatonSearch = default;
             EarliestSearch = default;
-            PackedSearch = PreparedMultiLiteralPackedSearch.Create(Literals);
+            PackedSearch = packedSearch;
             Kind = PreparedMultiLiteralKind.ExactPacked;
         }
         else if (ShouldUseEarliestExact(search))
@@ -460,13 +460,21 @@ internal readonly struct PreparedMultiLiteralSearch
         }
     }
 
-    private static bool ShouldUsePacked(PreparedLiteralSetSearch search)
+    private static bool TryPreparePacked(
+        PreparedLiteralSetSearch search,
+        byte[][] literals,
+        out PreparedMultiLiteralPackedSearch packedSearch)
     {
-        return ContainsNonAsciiLiteral(search.SearchData.Buckets) &&
+        if (ContainsNonAsciiLiteral(search.SearchData.Buckets) &&
             LiteralCount(search.SearchData.Buckets) >= 3 &&
             LiteralCount(search.SearchData.Buckets) < TrieThreshold &&
-            search.SearchData.ShortestLength >= 4 &&
-            PreparedMultiLiteralPackedSearch.TryCreate(search.SearchData.Buckets.SelectMany(static bucket => bucket.Literals).ToArray(), out _);
+            search.SearchData.ShortestLength >= 4)
+        {
+            return PreparedMultiLiteralPackedSearch.TryCreate(literals, out packedSearch);
+        }
+
+        packedSearch = default;
+        return false;
     }
 
     private static bool ShouldUseAutomaton(PreparedLiteralSetSearch search)

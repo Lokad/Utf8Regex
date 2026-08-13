@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -46,7 +47,7 @@ internal static class Utf8SimplePatternCompiledRuntimePolicy
             input[^1] == (byte)'\n';
     }
 
-    public static bool CanUseDirectAnchoredFixedLengthSimplePattern(Utf8RegexPlan regexPlan)
+    public static bool CanUseDirectAnchoredFixedLengthSimplePattern(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             regexPlan.SimplePatternPlan.Branches.Length == 1 &&
@@ -56,7 +57,7 @@ internal static class Utf8SimplePatternCompiledRuntimePolicy
             regexPlan.SearchPlan.Kind is Utf8SearchKind.TrailingAnchorFixedLengthEnd or Utf8SearchKind.TrailingAnchorFixedLengthEndZ;
     }
 
-    public static bool CanUseDirectAnchoredFixedAlternationSimplePattern(Utf8RegexPlan regexPlan)
+    public static bool CanUseDirectAnchoredFixedAlternationSimplePattern(Utf8PreparedRegex regexPlan)
     {
         if (regexPlan.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
             !regexPlan.SimplePatternPlan.IsStartAnchored ||

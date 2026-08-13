@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal readonly struct Utf8AnalyzedSearchInfo

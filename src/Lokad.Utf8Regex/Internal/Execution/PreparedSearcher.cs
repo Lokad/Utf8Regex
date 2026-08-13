@@ -1,6 +1,6 @@
 using Lokad.Utf8Regex.Internal.Utilities;
 
-namespace Lokad.Utf8Regex.Internal.Planning;
+namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal enum PreparedSearcherKind : byte
 {

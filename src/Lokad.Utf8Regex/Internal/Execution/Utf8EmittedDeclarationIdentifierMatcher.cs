@@ -1,7 +1,8 @@
+using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Utilities;
 using System.Buffers;
 using System.Reflection;
 using System.Reflection.Emit;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -52,7 +53,7 @@ internal sealed class Utf8EmittedKernelMatcher
     internal Utf8EmittedKernelPlan Plan => _plan;
 
     internal static bool TryCreate(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         out Utf8EmittedKernelMatcher? matcher)
     {
         matcher = null;

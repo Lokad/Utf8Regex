@@ -1,7 +1,7 @@
+using Lokad.Utf8Regex.Internal.Utilities;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 using System.Buffers;
-using Lokad.Utf8Regex.Internal.Utilities;
 
 internal readonly struct AsciiSimplePatternPlan
 {

@@ -1,30 +1,32 @@
-using System.Text;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8CompiledEngine _compiledEngine;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8CompiledPatternFamilyPlan _compiledPatternFamily;
 
-    public Utf8NonLiteralCompiledEngineRuntime(Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime)
+    public Utf8NonLiteralCompiledEngineRuntime(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime)
     {
+        _compiledEngine = compiledEngine;
         _regexPlan = regexPlan;
         _verifierRuntime = verifierRuntime;
         _compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
     }
 
-    internal Utf8RegexPlan RegexPlan => _regexPlan;
+    internal Utf8PreparedRegex PreparedRegex => _regexPlan;
 
     internal Utf8VerifierRuntime VerifierRuntime => _verifierRuntime;
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        return _regexPlan.CompiledEngine.Kind switch
+        return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => IsMatchSimplePattern(input, budget),
@@ -36,7 +38,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        return _regexPlan.CompiledEngine.Kind switch
+        return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => CountSimplePattern(input, budget),
@@ -48,7 +50,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        return _regexPlan.CompiledEngine.Kind switch
+        return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.SimplePatternInterpreter
                 => validation.IsAscii || _regexPlan.SimplePatternPlan.IsUtf8ByteSafe
@@ -62,7 +64,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     public override Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
     {
-        return _regexPlan.CompiledEngine.Kind switch
+        return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii
                 => new Utf8ValueMatchEnumerator(input, _regexPlan.ExecutionProgram, _regexPlan.SearchPlan, _regexPlan.SimplePatternPlan, budget),
@@ -72,7 +74,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     public override Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionBudget? budget)
     {
-        return _regexPlan.CompiledEngine.Kind switch
+        return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.SimplePatternInterpreter when validation.IsAscii
                 => new Utf8ValueSplitEnumerator(input, _regexPlan.SearchPlan, _regexPlan.ExecutionProgram, _regexPlan.SimplePatternPlan, count, budget),
@@ -182,6 +184,6 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     private InvalidOperationException UnexpectedEngineKind()
     {
-        return new InvalidOperationException($"Unexpected compiled engine '{_regexPlan.CompiledEngine.Kind}' for non-literal runtime.");
+        return new InvalidOperationException($"Unexpected compiled engine '{_compiledEngine.Kind}' for non-literal runtime.");
     }
 }

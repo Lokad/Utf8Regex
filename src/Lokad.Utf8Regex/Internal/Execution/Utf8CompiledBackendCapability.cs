@@ -11,12 +11,12 @@ internal static class Utf8CompiledBackendCapability
             Utf8EmittedLiteralFamilyCounter.CanCreate(searchPlan, searchPlan.CountProgram, searchPlan.FirstMatchProgram);
     }
 
-    public static bool CanUseEmittedStructuralLinear(Utf8RegexPlan regexPlan)
+    public static bool CanUseEmittedStructuralLinear(Utf8PreparedRegex regexPlan)
     {
         return Utf8EmittedDeterministicMatcher.CanCreate(regexPlan.StructuralLinearProgram);
     }
 
-    public static bool CanUseEmittedSearchGuidedFallback(Utf8RegexPlan regexPlan)
+    public static bool CanUseEmittedSearchGuidedFallback(Utf8PreparedRegex regexPlan)
     {
         return IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.CountProgram) &&
             IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.FirstMatchProgram) &&
@@ -34,13 +34,13 @@ internal static class Utf8CompiledBackendCapability
             program.Projection.Kind == Utf8ProjectionKind.None;
     }
 
-    private static bool CanUseVerifierDrivenSearchGuidedFallback(Utf8RegexPlan regexPlan)
+    private static bool CanUseVerifierDrivenSearchGuidedFallback(Utf8PreparedRegex regexPlan)
     {
         return regexPlan.SearchPlan.CountProgram.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier &&
             regexPlan.SearchPlan.FirstMatchProgram.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier;
     }
 
-    private static bool CanUseBoundaryLiteralFamilySearchGuidedFallback(Utf8RegexPlan regexPlan)
+    private static bool CanUseBoundaryLiteralFamilySearchGuidedFallback(Utf8PreparedRegex regexPlan)
     {
         var searchPlan = regexPlan.SearchPlan;
         return regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&

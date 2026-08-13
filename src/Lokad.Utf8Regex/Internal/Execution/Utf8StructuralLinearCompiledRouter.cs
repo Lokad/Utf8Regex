@@ -1,24 +1,26 @@
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8StructuralLinearCompiledRouter
 {
-    public static bool CanUseDirectStructuralIdentifierFamilyRoute(Utf8RegexPlan regexPlan, Regex regex)
+    public static bool CanUseDirectStructuralIdentifierFamilyRoute(Utf8PreparedRegex regexPlan, Regex regex)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
             !UsesRightToLeft(regex);
     }
 
-    public static bool CanUseDirectOrderedLiteralWindowRoute(Utf8RegexPlan regexPlan, Regex regex)
+    public static bool CanUseDirectOrderedLiteralWindowRoute(Utf8PreparedRegex regexPlan, Regex regex)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
             !UsesRightToLeft(regex);
     }
 
     public static bool CanUseEmittedDeterministicMatcher(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         Utf8ValidationResult validation,
@@ -32,7 +34,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool CanUseEmittedKernelMatcher(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool emitEnabled,
         Utf8EmittedKernelMatcher? emittedKernelMatcher,
         Utf8ValidationResult validation,
@@ -45,7 +47,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryIsMatch(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
@@ -100,7 +102,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryCount(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
@@ -179,7 +181,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     }
 
     public static bool TryMatch(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,

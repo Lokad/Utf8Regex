@@ -1,7 +1,7 @@
-using System.Reflection;
-using System.Reflection.Emit;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Utilities;
+using System.Reflection;
+using System.Reflection.Emit;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;

@@ -1,4 +1,6 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Planning;
+namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
@@ -6,6 +8,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 {
     private const int MaxExpandedBranches = 64;
     private const int MaxLiteralCharClassExpansion = 4;
+    private const int MaxPreparationWork = 4096;
+    private const int MaxPreparationOutput = 4096;
 
     public static bool TryCreatePlan(
         Utf8SemanticRegex semanticRegex,
@@ -16,10 +20,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         simplePatternPlan = default;
         searchPlan = default;
 
+        var preparationBudget = new Utf8PreparationBudget(MaxPreparationWork, MaxPreparationOutput);
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != RuntimeFrontEnd.RegexNodeKind.Capture ||
             root.ChildCount != 1 ||
-            !TryLowerBranches(root.Child(0), out var loweredBranches))
+            !TryLowerBranches(root.Child(0), preparationBudget, out var loweredBranches))
         {
             return false;
         }

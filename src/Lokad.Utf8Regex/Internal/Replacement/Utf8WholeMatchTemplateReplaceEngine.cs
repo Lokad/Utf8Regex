@@ -1,5 +1,5 @@
-using System.Buffers;
 using Lokad.Utf8Regex.Internal.Execution;
+using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 

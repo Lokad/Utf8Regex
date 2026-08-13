@@ -52,7 +52,7 @@ internal static class Utf8CompiledPatternCategories
         };
     }
 
-    public static Utf8CompiledPatternCategory GetRegexPlanCategory(Utf8RegexPlan regexPlan)
+    public static Utf8CompiledPatternCategory GetRegexPlanCategory(Utf8PreparedRegex regexPlan)
     {
         var nativeCategory = GetNativeCategory(regexPlan.ExecutionKind);
         if (nativeCategory != Utf8CompiledPatternCategory.None)

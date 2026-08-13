@@ -135,11 +135,15 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
         new(Utf8ByteSafeLinearVerifierStepKind.Accept);
 }
 
+internal readonly record struct Utf8ByteSafeLinearCompileOutcome(
+    Utf8ByteSafeLinearVerifierProgram Program,
+    Utf8ByteSafeLinearCompileFailureKind FailureKind)
+{
+    public bool Succeeded => Program.HasValue;
+}
+
 internal readonly struct Utf8ByteSafeLinearVerifierProgram
 {
-    [ThreadStatic]
-    private static Utf8ByteSafeLinearCompileFailureKind s_lastFailureKind;
-
     public Utf8ByteSafeLinearVerifierProgram(Utf8ByteSafeLinearVerifierStep[]? steps)
     {
         Steps = steps is { Length: > 0 } ? steps : [];
@@ -149,30 +153,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
     public bool HasValue => Steps is { Length: > 0 };
 
-    public static Utf8ByteSafeLinearVerifierProgram Create(Utf8ExecutionTree? tree)
+    public static Utf8ByteSafeLinearCompileOutcome Compile(Utf8ExecutionTree? tree)
     {
-        s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.None;
-        if (tree?.Root is not { } root)
-        {
-            return default;
-        }
-
-        var steps = new List<Utf8ByteSafeLinearVerifierStep>();
-        return TryAppendNode(Unwrap(root), steps)
-            ? new Utf8ByteSafeLinearVerifierProgram([.. steps, Utf8ByteSafeLinearVerifierStep.Accept()])
-            : default;
-    }
-
-    public static Utf8ByteSafeLinearCompileFailureKind GetCompileFailureKind(Utf8ExecutionTree? tree)
-    {
-        s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.None;
-        if (tree?.Root is not { } root)
-        {
-            return Utf8ByteSafeLinearCompileFailureKind.EmptyTree;
-        }
-
-        _ = TryAppendNode(Unwrap(root), []);
-        return s_lastFailureKind;
+        return new Compiler().Compile(tree);
     }
 
     public bool TryMatch(ReadOnlySpan<byte> input, int startIndex, out int matchedLength)
@@ -204,7 +187,30 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static bool TryAppendNode(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
+    private sealed class Compiler
+    {
+        private Utf8ByteSafeLinearCompileFailureKind _failureKind;
+
+        public Utf8ByteSafeLinearCompileOutcome Compile(Utf8ExecutionTree? tree)
+        {
+            if (tree?.Root is not { } root)
+            {
+                return new Utf8ByteSafeLinearCompileOutcome(default, Utf8ByteSafeLinearCompileFailureKind.EmptyTree);
+            }
+
+            var steps = new List<Utf8ByteSafeLinearVerifierStep>();
+            var program = TryAppendNode(Unwrap(root), steps)
+                ? new Utf8ByteSafeLinearVerifierProgram([.. steps, Utf8ByteSafeLinearVerifierStep.Accept()])
+                : default;
+            if (!program.HasValue && _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+            {
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedNode;
+            }
+
+            return new Utf8ByteSafeLinearCompileOutcome(program, _failureKind);
+        }
+
+    private bool TryAppendNode(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
     {
         switch (node.Kind)
         {
@@ -299,30 +305,30 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return TryAppendLoop(node, steps, allowVariableLength: true);
 
             default:
-                if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
-                    s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedNode;
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedNode;
                 }
                 return false;
         }
     }
 
-    private static bool TryAppendLoop(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps, bool allowVariableLength)
+    private bool TryAppendLoop(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps, bool allowVariableLength)
     {
         if (node.Kind == Utf8ExecutionNodeKind.LazyLoop && node.Min != node.Max)
         {
-            if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+            if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
             }
             return false;
         }
 
         if (!allowVariableLength && node.Min != node.Max)
         {
-            if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+            if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
             }
             return false;
         }
@@ -384,9 +390,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 {
                     if (minConsumedLength == 0)
                     {
-                        if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                        if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                         {
-                            s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
+                            _failureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
                         }
                         return false;
                     }
@@ -404,15 +410,15 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return false;
 
             default:
-                if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
-                    s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedLoop;
                 }
                 return false;
         }
     }
 
-    private static bool TryCompileDeterministicSubProgram(
+    private bool TryCompileDeterministicSubProgram(
         Utf8ExecutionNode node,
         out Utf8ByteSafeLinearVerifierStep[] steps,
         out int minConsumedLength)
@@ -422,9 +428,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         {
             steps = [];
             minConsumedLength = 0;
-            if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+            if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.NestedSubProgram;
             }
             return false;
         }
@@ -434,7 +440,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return steps.Length > 0;
     }
 
-    private static bool TryCombineLoopSubProgram(
+    private bool TryCombineLoopSubProgram(
         Utf8ByteSafeLinearVerifierStep[] programSteps,
         int outerMin,
         int outerMax,
@@ -487,7 +493,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return combinedStep.Kind != Utf8ByteSafeLinearVerifierStepKind.MatchByte;
     }
 
-    private static int CombineLoopBounds(int outer, int inner)
+    private int CombineLoopBounds(int outer, int inner)
     {
         if (outer == 0 || inner == 0)
         {
@@ -503,7 +509,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return combined > int.MaxValue ? int.MinValue : (int)combined;
     }
 
-    private static bool TryAppendTerminalLoop(
+    private bool TryAppendTerminalLoop(
         IReadOnlyList<Utf8ExecutionNode> children,
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
@@ -527,7 +533,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool TryAppendSafeVariableLoop(
+    private bool TryAppendSafeVariableLoop(
         IReadOnlyList<Utf8ExecutionNode> children,
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
@@ -542,9 +548,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             !TryGetFollowingAsciiByteMask(children, index + 1, out var nextLowMask, out var nextHighMask) ||
             !MasksAreDisjoint(loopLowMask, loopHighMask, nextLowMask, nextHighMask))
         {
-            if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+            if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.NonDisjointVariableLoop;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.NonDisjointVariableLoop;
             }
             return false;
         }
@@ -552,7 +558,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return TryAppendLoop(node, steps, allowVariableLength: true);
     }
 
-    private static Utf8ExecutionNode Unwrap(Utf8ExecutionNode node)
+    private Utf8ExecutionNode Unwrap(Utf8ExecutionNode node)
     {
         while (node.Kind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group &&
                node.Children.Count == 1)
@@ -563,7 +569,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return node;
     }
 
-    private static bool TryGetAsciiBytes(string? text, out byte[] bytes)
+    private bool TryGetAsciiBytes(string? text, out byte[] bytes)
     {
         bytes = [];
         if (string.IsNullOrEmpty(text))
@@ -583,7 +589,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
+    private bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
     {
         if (TryCreateProjectedAsciiCharClass(runtimeSet, out var asciiCharClass))
         {
@@ -605,7 +611,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static bool TryCreateProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
+    private bool TryCreateProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
     {
         if (TryCreateKnownProjectedAsciiCharClass(runtimeSet, out asciiCharClass))
         {
@@ -630,7 +636,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool TryCreateKnownProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
+    private bool TryCreateKnownProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
     {
         switch (runtimeSet)
         {
@@ -650,7 +656,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
     }
 
-    private static bool CanProjectRuntimeSetToAscii(string runtimeSet)
+    private bool CanProjectRuntimeSetToAscii(string runtimeSet)
     {
         if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
         {
@@ -678,7 +684,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             categoryPayload == notWordPayload;
     }
 
-    private static bool TryPopulateProjectedAsciiMatches(string runtimeSet, bool[] matches)
+    private bool TryPopulateProjectedAsciiMatches(string runtimeSet, bool[] matches)
     {
         if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
         {
@@ -722,7 +728,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static string? GetCategoryPayload(string runtimeSet)
+    private string? GetCategoryPayload(string runtimeSet)
     {
         if (runtimeSet.Length < RuntimeFrontEnd.RegexCharClass.SetStartIndex)
         {
@@ -753,7 +759,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return runtimeSet.Substring(setEnd, categoryLength);
     }
 
-    private static bool MatchesKnownProjectedAsciiCategory(char ch, string categoryPayload)
+    private bool MatchesKnownProjectedAsciiCategory(char ch, string categoryPayload)
     {
         var digitPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.DigitClass);
         if (categoryPayload == digitPayload)
@@ -794,7 +800,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return RuntimeFrontEnd.RegexCharClass.CharInClassBase(ch, categoryPayload);
     }
 
-    private static AsciiCharClass CreateAsciiCharClass(Func<char, bool> predicate, bool negated)
+    private AsciiCharClass CreateAsciiCharClass(Func<char, bool> predicate, bool negated)
     {
         var matches = new bool[128];
         for (var i = 0; i < matches.Length; i++)
@@ -805,7 +811,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return new AsciiCharClass(matches, negated);
     }
 
-    private static bool TryAppendTerminalAlternation(
+    private bool TryAppendTerminalAlternation(
         IReadOnlyList<Utf8ExecutionNode> children,
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
@@ -814,9 +820,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         if (!CanTreatRemainingAsZeroWidth(children, index + 1))
         {
             if (node.Kind == Utf8ExecutionNodeKind.Alternate &&
-                s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
             }
             return false;
         }
@@ -841,7 +847,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static bool TryAppendDeterministicOptionalAlternation(
+    private bool TryAppendDeterministicOptionalAlternation(
         IReadOnlyList<Utf8ExecutionNode> children,
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
@@ -853,9 +859,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             !IsSafeOptionalAlternation(alternatives, followingPrefix))
         {
             if (node.Kind == Utf8ExecutionNodeKind.Alternate &&
-                s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
             }
             return false;
         }
@@ -864,16 +870,16 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool TryAppendDeterministicAlternation(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
+    private bool TryAppendDeterministicAlternation(Utf8ExecutionNode node, List<Utf8ByteSafeLinearVerifierStep> steps)
     {
         if (!TryExtractAlternationTexts(node, out var alternatives, out var optional) ||
             optional ||
             !AreAlternativesPrefixFree(alternatives))
         {
             if (node.Kind == Utf8ExecutionNodeKind.Alternate &&
-                s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
             {
-                s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
+                _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedAlternation;
             }
             return false;
         }
@@ -882,7 +888,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool CanTreatRemainingAsZeroWidth(IReadOnlyList<Utf8ExecutionNode> children, int startIndex)
+    private bool CanTreatRemainingAsZeroWidth(IReadOnlyList<Utf8ExecutionNode> children, int startIndex)
     {
         for (var i = startIndex; i < children.Count; i++)
         {
@@ -895,7 +901,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool IsZeroWidthNode(Utf8ExecutionNode node)
+    private bool IsZeroWidthNode(Utf8ExecutionNode node)
     {
         return node.Kind is Utf8ExecutionNodeKind.Empty
             or Utf8ExecutionNodeKind.Bol
@@ -908,7 +914,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             or Utf8ExecutionNodeKind.NonBoundary;
     }
 
-    private static bool TryExtractAlternationTexts(Utf8ExecutionNode node, out byte[][] alternatives, out bool optional)
+    private bool TryExtractAlternationTexts(Utf8ExecutionNode node, out byte[][] alternatives, out bool optional)
     {
         alternatives = [];
         optional = false;
@@ -935,9 +941,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         {
             if (!TryExtractFixedAsciiText(Unwrap(child), out var text))
             {
-                if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
-                    s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
                 }
                 return false;
             }
@@ -949,7 +955,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return alternatives.Length > 0;
     }
 
-    private static bool TryExtractFollowingAsciiPrefix(
+    private bool TryExtractFollowingAsciiPrefix(
         IReadOnlyList<Utf8ExecutionNode> children,
         int startIndex,
         out byte[] prefix)
@@ -965,9 +971,9 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
             if (!TryExtractFixedAsciiText(child, out prefix) || prefix.Length == 0)
             {
-                if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
-                    s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFollowingPrefix;
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFollowingPrefix;
                 }
                 return false;
             }
@@ -978,7 +984,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static bool TryGetFollowingAsciiByteMask(
+    private bool TryGetFollowingAsciiByteMask(
         IReadOnlyList<Utf8ExecutionNode> children,
         int startIndex,
         out ulong lowMask,
@@ -998,14 +1004,14 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             return TryGetLeadingAsciiByteMask(child, out lowMask, out highMask);
         }
 
-        if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+        if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
         {
-            s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFollowingMask;
+            _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFollowingMask;
         }
         return false;
     }
 
-    private static bool TryExtractFixedAsciiText(Utf8ExecutionNode node, out byte[] text)
+    private bool TryExtractFixedAsciiText(Utf8ExecutionNode node, out byte[] text)
     {
         text = [];
         switch (node.Kind)
@@ -1038,15 +1044,15 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return true;
 
             default:
-                if (s_lastFailureKind == Utf8ByteSafeLinearCompileFailureKind.None)
+                if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
-                    s_lastFailureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
+                    _failureKind = Utf8ByteSafeLinearCompileFailureKind.UnsupportedFixedText;
                 }
                 return false;
         }
     }
 
-    private static bool AreAlternativesPrefixFree(byte[][] alternatives)
+    private bool AreAlternativesPrefixFree(byte[][] alternatives)
     {
         for (var i = 0; i < alternatives.Length; i++)
         {
@@ -1070,7 +1076,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool IsSafeOptionalAlternation(byte[][] alternatives, byte[] followingPrefix)
+    private bool IsSafeOptionalAlternation(byte[][] alternatives, byte[] followingPrefix)
     {
         for (var i = 0; i < alternatives.Length; i++)
         {
@@ -1090,7 +1096,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return true;
     }
 
-    private static bool TryGetLeadingAsciiByteMask(Utf8ExecutionNode node, out ulong lowMask, out ulong highMask)
+    private bool TryGetLeadingAsciiByteMask(Utf8ExecutionNode node, out ulong lowMask, out ulong highMask)
     {
         lowMask = 0;
         highMask = 0;
@@ -1167,7 +1173,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
     }
 
-    private static bool TryBuildAsciiSetMask(string set, out ulong lowMask, out ulong highMask)
+    private bool TryBuildAsciiSetMask(string set, out ulong lowMask, out ulong highMask)
     {
         lowMask = 0;
         highMask = 0;
@@ -1183,7 +1189,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return (lowMask | highMask) != 0;
     }
 
-    private static bool TryBuildByteSafeLeadingMask(string set, out ulong lowMask, out ulong highMask)
+    private bool TryBuildByteSafeLeadingMask(string set, out ulong lowMask, out ulong highMask)
     {
         if (RuntimeFrontEnd.RegexCharClass.IsAscii(set))
         {
@@ -1207,7 +1213,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         return false;
     }
 
-    private static void AddByteToMask(byte value, ref ulong lowMask, ref ulong highMask)
+    private void AddByteToMask(byte value, ref ulong lowMask, ref ulong highMask)
     {
         if (value < 64)
         {
@@ -1219,7 +1225,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
     }
 
-    private static bool MasksAreDisjoint(
+    private bool MasksAreDisjoint(
         ulong firstLowMask,
         ulong firstHighMask,
         ulong secondLowMask,
@@ -1227,6 +1233,8 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     {
         return (firstLowMask & secondLowMask) == 0 &&
                (firstHighMask & secondHighMask) == 0;
+    }
+
     }
 
     private static bool TryConsumeByteLoop(ReadOnlySpan<byte> input, ref int index, byte value, int min, int max)

@@ -1,6 +1,7 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
-
 using Lokad.Utf8Regex.Internal.Utilities;
+using Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.FrontEnd;
+
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {

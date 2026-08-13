@@ -49,30 +49,4 @@ internal readonly struct Utf8PrefilterPlan
         SecondarySearcher.HasValue ||
         WindowPlans is { Length: > 0 };
 
-    public bool Rejects(ReadOnlySpan<byte> input)
-    {
-        if (!HasValue)
-        {
-            return false;
-        }
-
-        if (PrimaryEngine.HasValue &&
-            !Utf8SearchEngineExecutor.TryFindFirst(PrimaryEngine, input))
-        {
-            return true;
-        }
-
-        if (SecondaryEngine.HasValue &&
-            !Utf8SearchEngineExecutor.TryFindFirst(SecondaryEngine, input))
-        {
-            return true;
-        }
-
-        if (!WindowEngine.HasValue)
-        {
-            return false;
-        }
-
-        return !Utf8SearchEngineExecutor.TryFindFirst(WindowEngine, input);
-    }
 }

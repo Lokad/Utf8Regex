@@ -136,7 +136,7 @@ public class Utf8SearchKernelBenchmarks
             Encoding.UTF8.GetBytes("needle"),
         ], ignoreCase: false);
         _denseEnumerateInput = Encoding.UTF8.GetBytes(BuildRepeated("ab1d-", 4096));
-        _denseEnumerateProgram = Utf8FrontEnd.Analyze("ab[0-9]d", RegexOptions.CultureInvariant).RegexPlan.StructuralLinearProgram;
+        _denseEnumerateProgram = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant).StructuralLinearProgram;
         _validationAsciiLarge = Utf8ValidationBenchmarkProfiles.Create("ascii-large");
         _validationTwoByteLarge = Utf8ValidationBenchmarkProfiles.Create("two-byte-large");
         _validationThreeByteLarge = Utf8ValidationBenchmarkProfiles.Create("three-byte-large");

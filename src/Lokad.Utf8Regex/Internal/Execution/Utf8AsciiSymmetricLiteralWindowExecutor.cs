@@ -1,6 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-using Lokad.Utf8Regex.Internal.Utilities;
 
 internal static class Utf8AsciiSymmetricLiteralWindowExecutor
 {

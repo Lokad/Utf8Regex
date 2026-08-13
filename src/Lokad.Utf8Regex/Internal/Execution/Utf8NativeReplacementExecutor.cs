@@ -1,4 +1,4 @@
-using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Utilities;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 

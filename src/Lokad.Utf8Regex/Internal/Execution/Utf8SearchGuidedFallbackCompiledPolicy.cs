@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -7,7 +8,7 @@ internal static class Utf8SearchGuidedFallbackCompiledPolicy
     private const int DirectFallbackVerifierThreshold = 8;
     private const int DirectFallbackInvocationThreshold = 32;
 
-    public static bool ShouldBypassIsMatch(Utf8RegexPlan regexPlan)
+    public static bool ShouldBypassIsMatch(Utf8PreparedRegex regexPlan)
     {
         return string.Equals(regexPlan.FallbackReason, "unsupported_conditional", StringComparison.Ordinal);
     }

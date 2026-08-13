@@ -1,6 +1,6 @@
+using Lokad.Utf8Regex.Internal.Utilities;
 using System.Reflection;
 using System.Reflection.Emit;
-using Lokad.Utf8Regex.Internal.Utilities;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 

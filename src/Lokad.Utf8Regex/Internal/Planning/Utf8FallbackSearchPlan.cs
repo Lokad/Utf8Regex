@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8FallbackSearchPlan
@@ -32,8 +33,4 @@ internal readonly struct Utf8FallbackSearchPlan
 
     public bool HasCandidates => CandidatePlans is { Length: > 0 };
 
-    public bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
-    {
-        return PrefilterPlan.Rejects(input);
-    }
 }

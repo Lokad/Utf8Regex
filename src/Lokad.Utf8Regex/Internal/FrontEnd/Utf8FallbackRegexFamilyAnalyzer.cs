@@ -1,12 +1,12 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8FallbackRegexFamilyAnalyzer
 {
-    public static Utf8FallbackDirectFamilyPlan Classify(Utf8AnalyzedRegex analyzedRegex)
+    public static Utf8FallbackDirectFamilyPlan Classify(Utf8RegexAnalysis analyzedRegex)
         => ClassifyPattern(
             analyzedRegex.ExecutionPattern,
             analyzedRegex.SemanticRegex.Pattern,

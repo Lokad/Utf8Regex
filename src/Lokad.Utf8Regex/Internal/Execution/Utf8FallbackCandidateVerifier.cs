@@ -1,7 +1,7 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 

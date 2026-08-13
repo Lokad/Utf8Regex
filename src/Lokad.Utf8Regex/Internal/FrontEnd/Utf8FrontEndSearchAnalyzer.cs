@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static class Utf8FrontEndSearchAnalyzer

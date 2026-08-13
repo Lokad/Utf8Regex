@@ -1,8 +1,9 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Replacement;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -100,15 +101,14 @@ internal abstract class Utf8CompiledEngineRuntime
         throw new InvalidOperationException("Literal replacement bytes are not supported by this compiled engine.");
     }
 
-    public static Utf8CompiledEngineRuntime Create(Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
+    public static Utf8CompiledEngineRuntime Create(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
     {
-        return Create(regexPlan.CompiledEngine, regexPlan, verifierRuntime, options);
+        return Create(Utf8CompiledEngineSelector.Select(regexPlan), regexPlan, verifierRuntime, options);
     }
 
-    public static Utf8CompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine, Utf8RegexPlan regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
+    public static Utf8CompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine, Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, RegexOptions options)
         => Utf8CompiledRuntimeFactory.Create(compiledEngine, regexPlan, verifierRuntime, options);
 
-    protected static RegexOptions NormalizeDirectRouteOptions(RegexOptions options) => Utf8CompiledRuntimeFactory.NormalizeDirectRouteOptions(options);
 }
 
 internal sealed class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime
@@ -165,12 +165,12 @@ internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngin
 
 internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
 
     public Utf8StructuralFamilyCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _verifierRuntime = inner.VerifierRuntime;
     }
 
@@ -250,7 +250,7 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
 
 internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8CompiledPatternFamilyPlan _compiledPatternFamily;
@@ -265,7 +265,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
     public Utf8SimplePatternCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner, bool emitEnabled)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _linearRuntime = Utf8StructuralLinearRuntime.Create(_regexPlan.StructuralLinearProgram);
         _verifierRuntime = inner.VerifierRuntime;
         _compiledPatternFamily = _regexPlan.SimplePatternPlan.CompiledPatternFamily;
@@ -625,7 +625,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
 internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8StructuralLinearRuntime _linearRuntime;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly bool _emitEnabled;
@@ -635,8 +635,8 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
 
     public Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner, bool emitEnabled)
     {
-        _regexPlan = inner.RegexPlan;
-        _linearRuntime = Utf8StructuralLinearRuntime.Create(inner.RegexPlan.StructuralLinearProgram);
+        _regexPlan = inner.PreparedRegex;
+        _linearRuntime = Utf8StructuralLinearRuntime.Create(inner.PreparedRegex.StructuralLinearProgram);
         _verifierRuntime = inner.VerifierRuntime;
         _emitEnabled = emitEnabled;
         _emittedDeterministicMatcher = emitEnabled && Utf8EmittedDeterministicMatcher.TryCreate(_regexPlan.StructuralLinearProgram, out var matcher)
@@ -818,7 +818,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
 
 internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly bool _canUseDirectPrefixUntilByteMatch;
     private readonly byte[]? _prefixUntilByteLiteral;
@@ -826,9 +826,9 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
 
     public Utf8ByteSafeLinearCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _verifierRuntime = inner.VerifierRuntime;
-        var directFamily = inner.RegexPlan.FallbackDirectFamily;
+        var directFamily = inner.PreparedRegex.FallbackDirectFamily;
         _canUseDirectPrefixUntilByteMatch = directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte &&
             directFamily.LiteralUtf8 is { Length: > 0 };
         _prefixUntilByteLiteral = directFamily.LiteralUtf8;
@@ -909,7 +909,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
 
 internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8CompiledExecutionBackend _backend;
     private readonly Utf8StructuralSearchPlan[] _candidatePlans;
@@ -917,7 +917,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
 
     public Utf8SearchGuidedFallbackCompiledEngineRuntime(Utf8CompiledEngine compiledEngine, Utf8NonLiteralCompiledEngineRuntime inner)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _verifierRuntime = inner.VerifierRuntime;
         _backend = compiledEngine.Backend;
         _candidatePlans = _regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [];
@@ -1040,14 +1040,14 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
 
 internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8StructuralSearchPlan[] _candidatePlans;
     private readonly Utf8ExecutionProgram _program;
 
     public Utf8CompiledFallbackCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _verifierRuntime = inner.VerifierRuntime;
         _candidatePlans = _regexPlan.SearchPlan.FallbackSearch.CandidatePlans ?? [];
         _program = _regexPlan.ExecutionProgram
@@ -1122,7 +1122,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
 
 internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngineRuntime
 {
-    private readonly Utf8RegexPlan _regexPlan;
+    private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8FallbackDirectFamilyPlan _directFamily;
     private readonly Utf8AsciiLiteralFinder _linePrefixFinder;
@@ -1132,15 +1132,9 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
 
     public Utf8FallbackRegexCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner)
     {
-        _regexPlan = inner.RegexPlan;
+        _regexPlan = inner.PreparedRegex;
         _verifierRuntime = inner.VerifierRuntime;
-        _directFamily = inner.RegexPlan.FallbackDirectFamily.HasValue
-            ? inner.RegexPlan.FallbackDirectFamily
-            : Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
-                inner.VerifierRuntime.FallbackCandidateVerifier.FallbackRegex.ToString(),
-                inner.VerifierRuntime.FallbackCandidateVerifier.FallbackRegex.ToString(),
-                NormalizeDirectRouteOptions(inner.VerifierRuntime.FallbackCandidateVerifier.FallbackRegex.Options),
-                inner.RegexPlan.SearchPlan.RequiredPrefilterLiteralUtf8);
+        _directFamily = inner.PreparedRegex.FallbackDirectFamily;
         _linePrefixFinder = _directFamily.LiteralUtf8 is { Length: > 0 } literal
             ? new Utf8AsciiLiteralFinder(literal)
             : default;

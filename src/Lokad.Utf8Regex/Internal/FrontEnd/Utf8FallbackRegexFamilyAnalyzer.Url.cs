@@ -1,7 +1,8 @@
+using Lokad.Utf8Regex.Internal.Execution;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8FallbackRegexFamilyAnalyzer
 {

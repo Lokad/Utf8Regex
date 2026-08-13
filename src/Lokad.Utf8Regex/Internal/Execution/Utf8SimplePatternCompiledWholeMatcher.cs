@@ -1,8 +1,9 @@
+using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8SimplePatternCompiledWholeMatcher
 {
-    internal static string GetDirectAnchoredFixedAlternationDebugSummary(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input)
+    internal static string GetDirectAnchoredFixedAlternationDebugSummary(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input)
     {
         if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(regexPlan))
         {
@@ -21,7 +22,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         return string.Join(",", parts);
     }
 
-    public static bool TryMatchDirectAnchoredFixedLengthSimplePattern(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input, out int matchedLength)
+    public static bool TryMatchDirectAnchoredFixedLengthSimplePattern(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
         if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(regexPlan))
@@ -43,7 +44,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         return TryMatchDirectFixedBranch(regexPlan, input, branch, out matchedLength);
     }
 
-    public static bool TryMatchDirectAnchoredFixedAlternationSimplePattern(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input, out int matchedLength)
+    public static bool TryMatchDirectAnchoredFixedAlternationSimplePattern(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
         if (!Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(regexPlan))
@@ -68,7 +69,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
     }
 
     public static bool TryMatchAnchoredValidator(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         Utf8EmittedAnchoredValidatorMatcher? emittedAnchoredValidatorMatcher,
         bool allowTrailingNewline,
         ReadOnlySpan<byte> input,
@@ -108,7 +109,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
     }
 
     public static Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult TryMatchAnchoredValidatorWithoutValidation(
-        Utf8RegexPlan regexPlan,
+        Utf8PreparedRegex regexPlan,
         bool allowTrailingNewline,
         ReadOnlySpan<byte> input,
         out int matchedLength)
@@ -165,7 +166,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
             out matchedLength);
     }
 
-    private static bool MatchesDirectAnchoredFixedLengthCandidate(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input, int branchLength)
+    private static bool MatchesDirectAnchoredFixedLengthCandidate(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, int branchLength)
     {
         return regexPlan.SearchPlan.Kind switch
         {
@@ -177,7 +178,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         };
     }
 
-    private static bool MatchesDirectAnchoredFixedAlternationCandidate(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input, int branchLength)
+    private static bool MatchesDirectAnchoredFixedAlternationCandidate(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, int branchLength)
     {
         return regexPlan.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd
             ? input.Length == branchLength || (input.Length == branchLength + 1 && input[branchLength] == (byte)'\n')
@@ -214,7 +215,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
         return true;
     }
 
-    private static bool TryMatchDirectFixedBranch(Utf8RegexPlan regexPlan, ReadOnlySpan<byte> input, AsciiSimplePatternToken[] branch, out int matchedLength)
+    private static bool TryMatchDirectFixedBranch(Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, AsciiSimplePatternToken[] branch, out int matchedLength)
     {
         matchedLength = 0;
         if (TryMatchUniformPositiveCharClassBranch(input, branch, out matchedLength))

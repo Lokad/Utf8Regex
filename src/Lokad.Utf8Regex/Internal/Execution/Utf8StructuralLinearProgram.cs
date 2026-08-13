@@ -1,10 +1,9 @@
-using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Utilities;
-using Lokad.Utf8Regex.Internal.Utilities;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -527,58 +526,68 @@ internal readonly struct Utf8StructuralLinearProgram
 
     public bool HasValue => Kind != Utf8StructuralLinearProgramKind.None;
 
-    public static Utf8StructuralLinearProgram Create(Utf8ExecutionPlan executionPlan, Utf8SearchPlan searchPlan, Utf8StructuralSearchPlan structuralSearchPlan)
+    public static Utf8StructuralLinearProgram Create(
+        NativeExecutionKind executionKind,
+        AsciiSimplePatternPlan simplePatternPlan,
+        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
+        AsciiStructuralTokenWindowPlan structuralTokenWindowPlan,
+        AsciiStructuralRepeatedSegmentPlan structuralRepeatedSegmentPlan,
+        AsciiStructuralQuotedRelationPlan structuralQuotedRelationPlan,
+        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
+        Utf8StructuralVerifierPlan structuralVerifier,
+        Utf8SearchPlan searchPlan,
+        Utf8StructuralSearchPlan structuralSearchPlan)
     {
-        return executionPlan.NativeKind switch
+        return executionKind switch
         {
-            NativeExecutionKind.AsciiSimplePattern when executionPlan.SimplePatternPlan.RunPlan.HasValue
+            NativeExecutionKind.AsciiSimplePattern when simplePatternPlan.RunPlan.HasValue
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiCharClassRun,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.SimplePatternPlan.RunPlan),
-                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(executionPlan.SimplePatternPlan.RunPlan)),
-                    runPlan: executionPlan.SimplePatternPlan.RunPlan,
-                    allowsUtf8ByteSafe: executionPlan.SimplePatternPlan.IsUtf8ByteSafe),
-            NativeExecutionKind.AsciiSimplePattern when CanUseFixedTokenPattern(executionPlan.SimplePatternPlan)
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan),
+                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan)),
+                    runPlan: simplePatternPlan.RunPlan,
+                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+            NativeExecutionKind.AsciiSimplePattern when CanUseFixedTokenPattern(simplePatternPlan)
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.SimplePatternPlan),
-                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(executionPlan.SimplePatternPlan)),
-                    simplePatternPlan: executionPlan.SimplePatternPlan,
-                    allowsUtf8ByteSafe: executionPlan.SimplePatternPlan.IsUtf8ByteSafe),
-            NativeExecutionKind.AsciiSimplePattern when CanUseLiteralFamilyRunPattern(executionPlan.SimplePatternPlan)
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan),
+                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan)),
+                    simplePatternPlan: simplePatternPlan,
+                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+            NativeExecutionKind.AsciiSimplePattern when CanUseLiteralFamilyRunPattern(simplePatternPlan)
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.CreateLiteralFamilyRun(executionPlan.SimplePatternPlan),
-                    simplePatternPlan: executionPlan.SimplePatternPlan,
-                    allowsUtf8ByteSafe: executionPlan.SimplePatternPlan.IsUtf8ByteSafe),
-            NativeExecutionKind.AsciiStructuralIdentifierFamily when executionPlan.StructuralVerifier.Kind == Utf8StructuralVerifierKind.AsciiStructuralProgram
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.CreateLiteralFamilyRun(simplePatternPlan),
+                    simplePatternPlan: simplePatternPlan,
+                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+            NativeExecutionKind.AsciiStructuralIdentifierFamily when structuralVerifier.Kind == Utf8StructuralVerifierKind.AsciiStructuralProgram
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiStructuralFamily,
-                    structuralIdentifierFamilyPlan: executionPlan.StructuralIdentifierFamilyPlan,
+                    structuralIdentifierFamilyPlan: structuralIdentifierFamilyPlan,
                     searchPlan: searchPlan,
                     structuralSearchPlan: structuralSearchPlan,
-                    structuralVerifierPlan: executionPlan.StructuralVerifier),
-            NativeExecutionKind.AsciiStructuralTokenWindow when executionPlan.StructuralTokenWindowPlan.HasValue
+                    structuralVerifierPlan: structuralVerifier),
+            NativeExecutionKind.AsciiStructuralTokenWindow when structuralTokenWindowPlan.HasValue
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiTokenWindow,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.StructuralTokenWindowPlan),
-                    tokenWindowPlan: executionPlan.StructuralTokenWindowPlan,
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralTokenWindowPlan),
+                    tokenWindowPlan: structuralTokenWindowPlan,
                     allowsUtf8ByteSafe: true),
-            NativeExecutionKind.AsciiStructuralRepeatedSegment when executionPlan.StructuralRepeatedSegmentPlan.HasValue
+            NativeExecutionKind.AsciiStructuralRepeatedSegment when structuralRepeatedSegmentPlan.HasValue
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiRepeatedSegment,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.StructuralRepeatedSegmentPlan),
-                    repeatedSegmentPlan: executionPlan.StructuralRepeatedSegmentPlan),
-            NativeExecutionKind.AsciiStructuralQuotedRelation when executionPlan.StructuralQuotedRelationPlan.HasValue
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralRepeatedSegmentPlan),
+                    repeatedSegmentPlan: structuralRepeatedSegmentPlan),
+            NativeExecutionKind.AsciiStructuralQuotedRelation when structuralQuotedRelationPlan.HasValue
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiQuotedRelation,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.StructuralQuotedRelationPlan),
-                    quotedRelationPlan: executionPlan.StructuralQuotedRelationPlan),
-            NativeExecutionKind.AsciiOrderedLiteralWindow when executionPlan.OrderedLiteralWindowPlan.HasValue
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralQuotedRelationPlan),
+                    quotedRelationPlan: structuralQuotedRelationPlan),
+            NativeExecutionKind.AsciiOrderedLiteralWindow when orderedLiteralWindowPlan.HasValue
                 => new Utf8StructuralLinearProgram(
                     Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(executionPlan.OrderedLiteralWindowPlan),
-                    orderedLiteralWindowPlan: executionPlan.OrderedLiteralWindowPlan,
+                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(orderedLiteralWindowPlan),
+                    orderedLiteralWindowPlan: orderedLiteralWindowPlan,
                     allowsUtf8ByteSafe: true,
                     searchPlan: searchPlan),
             _ => default,

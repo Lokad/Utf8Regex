@@ -30,27 +30,4 @@ internal readonly struct Utf8FallbackStartTransform
         return new Utf8FallbackStartTransform(Offset + offset, Kind);
     }
 
-    public int Apply(ReadOnlySpan<byte> input, int matchIndex)
-    {
-        var start = matchIndex - Offset;
-        if ((uint)start > (uint)input.Length)
-        {
-            return -1;
-        }
-
-        if (Kind == Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace)
-        {
-            while (start > 0 && IsAsciiWhitespace(input[start - 1]))
-            {
-                start--;
-            }
-        }
-
-        return start;
-    }
-
-    private static bool IsAsciiWhitespace(byte value)
-    {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or 0x0B or 0x0C;
-    }
 }

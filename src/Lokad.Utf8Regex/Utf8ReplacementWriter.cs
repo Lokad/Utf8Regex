@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal.Input;
 using System.Buffers;
 using System.Text;
 
