@@ -20,29 +20,22 @@ internal readonly struct Utf8PrefilterPlan
 
     public Utf8StructuralSearchPlan[]? WindowPlans { get; }
 
-    public Utf8SearchEnginePlan PrimaryEngine =>
-        PrimarySearcher.HasValue
-            ? new Utf8SearchEnginePlan(
-                Utf8SearchEngineKind.PreparedSearcher,
-                Utf8SearchSemantics.FirstMatch,
-                preparedSearcher: PrimarySearcher)
-            : default;
+    public Utf8CandidateSearchPlan PrimarySource =>
+        Utf8CandidateSearchPlan.FromPreparedSearcher(
+            PrimarySearcher,
+            Utf8SearchSemantics.FirstMatch,
+            Utf8SearchPortfolioKind.None);
 
-    public Utf8SearchEnginePlan SecondaryEngine =>
-        SecondarySearcher.HasValue
-            ? new Utf8SearchEnginePlan(
-                Utf8SearchEngineKind.PreparedSearcher,
-                Utf8SearchSemantics.FirstMatch,
-                preparedSearcher: SecondarySearcher)
-            : default;
+    public Utf8CandidateSearchPlan SecondarySource =>
+        Utf8CandidateSearchPlan.FromPreparedSearcher(
+            SecondarySearcher,
+            Utf8SearchSemantics.FirstMatch,
+            Utf8SearchPortfolioKind.None);
 
-    public Utf8SearchEnginePlan WindowEngine =>
-        WindowPlans is { Length: > 0 } windowPlans
-            ? new Utf8SearchEnginePlan(
-                Utf8SearchEngineKind.StructuralSearchSet,
-                Utf8SearchSemantics.FirstMatch,
-                structuralSearchPlans: windowPlans)
-            : default;
+    public Utf8CandidateSearchPlan WindowSource =>
+        Utf8CandidateSearchPlan.FromStructuralSearchSet(
+            WindowPlans,
+            Utf8SearchSemantics.FirstMatch);
 
     public bool HasValue =>
         PrimarySearcher.HasValue ||

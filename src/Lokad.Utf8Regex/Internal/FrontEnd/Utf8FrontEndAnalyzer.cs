@@ -24,14 +24,14 @@ internal static class Utf8FrontEndAnalyzer
             return analyzedRegex;
         }
 
-        var searchInfo = Utf8FrontEndSearchAnalyzer.Analyze(semanticRegex);
+        var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(semanticRegex);
         var fallbackReason = Utf8FallbackReasonClassifier.Classify("unsupported_pattern", features) ?? "unsupported_pattern";
 
         return Utf8RegexAnalysis.CreateFallback(
             semanticRegex,
             executionPattern,
             features,
-            searchInfo,
+            searchFacts,
             fallbackReason);
     }
 }

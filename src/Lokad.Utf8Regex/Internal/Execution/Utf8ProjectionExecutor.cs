@@ -38,7 +38,7 @@ internal static class Utf8ProjectionExecutor
     }
 
     public static Utf8ValueMatch ProjectLiteralFamilyMatch(
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int[]? alternateLiteralUtf16Lengths,
         int consumedBytes,
@@ -87,7 +87,7 @@ internal static class Utf8ProjectionExecutor
     }
 
     public static Utf8ValueMatch ProjectMatch(
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int consumedBytes,
         int consumedUtf16,

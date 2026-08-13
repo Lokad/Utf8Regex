@@ -11,7 +11,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             analyzedRegex.ExecutionPattern,
             analyzedRegex.SemanticRegex.Pattern,
             analyzedRegex.SemanticRegex.Options,
-            analyzedRegex.SearchInfo.RequiredPrefilterLiteralUtf8);
+            analyzedRegex.SearchFacts.RequiredPrefilterLiteralUtf8);
 
     public static Utf8FallbackDirectFamilyPlan ClassifyPattern(
         string executionPattern,

@@ -26,7 +26,7 @@ public ref struct Utf8ValueMatchEnumerator
     private readonly int _literalUtf16Length;
     private readonly int _totalUtf16Length;
     private readonly Utf8ProjectionPlan _projectionPlan;
-    private readonly Utf8BackendInstructionProgram _program;
+    private readonly Utf8SearchOperationPlan _program;
     private Regex.ValueMatchEnumerator _fallbackEnumerator;
     private ReadOnlySpan<byte> _remaining;
     private int _consumed;
@@ -199,7 +199,7 @@ public ref struct Utf8ValueMatchEnumerator
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
         _projectionPlan = searchPlan.ProjectionPlan;
-        _program = searchPlan.EnumerationProgram;
+        _program = searchPlan.EnumerationOperation;
         _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
@@ -263,8 +263,8 @@ public ref struct Utf8ValueMatchEnumerator
         _budget = budget;
         _literalUtf16Length = literalUtf16Length;
         _totalUtf16Length = literalUtf16Length == literal.Length ? input.Length : Utf8Validation.Validate(input).Utf16Length;
-        _projectionPlan = searchPlan.EnumerationPipeline.Projection;
-        _program = searchPlan.EnumerationProgram;
+        _projectionPlan = searchPlan.EnumerationOperation.Projection;
+        _program = searchPlan.EnumerationOperation;
         _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
@@ -302,14 +302,11 @@ public ref struct Utf8ValueMatchEnumerator
         _totalUtf16Length = input.Length;
         _projectionPlan = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             ? new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly)
-            : searchPlan.EnumerationPipeline.Projection;
+            : searchPlan.EnumerationOperation.Projection;
         _program = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-            ? Utf8BackendInstructionProgramBuilder.Create(
-                new Utf8ExecutablePipelinePlan(
-                    searchPlan.EnumerationPipeline.Strategy,
-                    searchPlan.EnumerationPipeline.Confirmation,
-                    new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly)))
-            : searchPlan.EnumerationProgram;
+            ? searchPlan.EnumerationOperation.WithProjection(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly))
+            : searchPlan.EnumerationOperation;
         _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;

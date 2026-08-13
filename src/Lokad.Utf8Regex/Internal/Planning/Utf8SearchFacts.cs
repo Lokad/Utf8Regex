@@ -1,9 +1,8 @@
-using Lokad.Utf8Regex.Internal.Planning;
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal.Planning;
 
-internal readonly struct Utf8AnalyzedSearchInfo
+internal readonly struct Utf8SearchFacts
 {
-    public Utf8AnalyzedSearchInfo(
+    public Utf8SearchFacts(
         Utf8SearchKind kind,
         byte[]? literalUtf8 = null,
         byte[][]? alternateLiteralsUtf8 = null,
@@ -16,7 +15,7 @@ internal readonly struct Utf8AnalyzedSearchInfo
         byte[]? trailingLiteralUtf8 = null,
         byte[][]? orderedWindowLeadingLiteralsUtf8 = null,
         byte[]? orderedWindowTrailingLiteralUtf8 = null,
-        Utf8WindowSearchInfo[]? requiredWindowPrefilters = null,
+        Utf8WindowSearchFacts[]? requiredWindowPrefilters = null,
         int? orderedWindowMaxGap = null,
         bool orderedWindowSameLine = false,
         Utf8FallbackStartTransform fallbackStartTransform = default,
@@ -75,7 +74,7 @@ internal readonly struct Utf8AnalyzedSearchInfo
 
     public byte[]? OrderedWindowTrailingLiteralUtf8 { get; }
 
-    public Utf8WindowSearchInfo[]? RequiredWindowPrefilters { get; }
+    public Utf8WindowSearchFacts[]? RequiredWindowPrefilters { get; }
 
     public int? OrderedWindowMaxGap { get; }
 

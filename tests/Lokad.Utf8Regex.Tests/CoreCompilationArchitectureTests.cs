@@ -118,6 +118,24 @@ public sealed class CoreCompilationArchitectureTests
         Assert.False(File.Exists(Path.Combine(sourceRoot, "Internal", "Input", "Utf8Utf16BoundaryResolver.cs")));
     }
 
+    [Fact]
+    public void SearchPreparationUsesOneFactsModelAndOneOperationDisposition()
+    {
+        var sourceRoot = FindCoreSourceDirectory();
+        var planningRoot = Path.Combine(sourceRoot, "Internal", "Planning");
+        var simpleLowerer = File.ReadAllText(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8AsciiSimplePatternLowerer.cs"));
+
+        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8SearchFacts.cs")));
+        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8CandidateSearchPlan.cs")));
+        Assert.True(File.Exists(Path.Combine(planningRoot, "Utf8SearchOperationPlan.cs")));
+        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8NativeSearchPlan.cs")));
+        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8SearchEnginePlan.cs")));
+        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8SearchMetaStrategyPlan.cs")));
+        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8ExecutablePipelinePlan.cs")));
+        Assert.False(File.Exists(Path.Combine(planningRoot, "Utf8BackendInstructionProgram.cs")));
+        Assert.DoesNotContain("Utf8SearchPlan", simpleLowerer, StringComparison.Ordinal);
+    }
+
     private static string FindCoreSourceDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

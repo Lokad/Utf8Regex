@@ -12,7 +12,6 @@ internal sealed class Utf8PreparedRegex
     public Utf8PreparedRegex(
         Utf8SemanticRegex semanticRegex,
         Utf8RegexFeatures features,
-        Utf8AnalyzedSearchInfo searchInfo,
         string executionPattern,
         NativeExecutionKind executionKind,
         Utf8ExecutionBackend executionBackend,
@@ -38,7 +37,6 @@ internal sealed class Utf8PreparedRegex
     {
         SemanticRegex = semanticRegex;
         Features = features;
-        SearchInfo = searchInfo;
         ExecutionPattern = executionPattern;
         ExecutionKind = executionKind;
         ExecutionBackend = executionBackend;
@@ -66,8 +64,6 @@ internal sealed class Utf8PreparedRegex
     public Utf8SemanticRegex SemanticRegex { get; }
 
     public Utf8RegexFeatures Features { get; }
-
-    public Utf8AnalyzedSearchInfo SearchInfo { get; }
 
     public string ExecutionPattern { get; }
 

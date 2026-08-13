@@ -19,29 +19,7 @@ internal static class Utf8RegexPreparer
 
         var tree = Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
         var program = Utf8ExecutionProgramLowerer.Lower(tree);
-        var searchPlan = new Utf8SearchPlan(
-            analyzedRegex.SearchInfo.Kind,
-            analyzedRegex.SearchInfo.LiteralUtf8,
-            analyzedRegex.SearchInfo.AlternateLiteralsUtf8,
-            analyzedRegex.SearchInfo.CanGuideFallbackStarts,
-            analyzedRegex.SearchInfo.RequiredPrefilterLiteralUtf8,
-            analyzedRegex.SearchInfo.RequiredPrefilterAlternateLiteralsUtf8,
-            analyzedRegex.SearchInfo.SecondaryRequiredPrefilterQuotedAsciiSet,
-            analyzedRegex.SearchInfo.SecondaryRequiredPrefilterQuotedAsciiLength,
-            analyzedRegex.SearchInfo.FixedDistanceSets,
-            analyzedRegex.SearchInfo.TrailingLiteralUtf8,
-            analyzedRegex.SearchInfo.OrderedWindowLeadingLiteralsUtf8,
-            analyzedRegex.SearchInfo.OrderedWindowTrailingLiteralUtf8,
-            analyzedRegex.SearchInfo.RequiredWindowPrefilters,
-            analyzedRegex.SearchInfo.OrderedWindowMaxGap,
-            analyzedRegex.SearchInfo.OrderedWindowSameLine,
-            analyzedRegex.SearchInfo.FallbackStartTransform,
-            analyzedRegex.SearchInfo.Distance,
-            analyzedRegex.SearchInfo.MinRequiredLength,
-            analyzedRegex.SearchInfo.ExactRequiredLength,
-            analyzedRegex.SearchInfo.MaxPossibleLength,
-            analyzedRegex.SearchInfo.LeadingBoundary,
-            analyzedRegex.SearchInfo.TrailingBoundary);
+        var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
         var deterministicAnchor = Utf8DeterministicAnchorSearch.Create(tree, searchPlan);
         var deterministicGuards = Utf8DeterministicVerifierGuards.Create(tree, searchPlan);
         var structuralSearchPlan = searchPlan.StructuralSearchPlan
@@ -104,7 +82,6 @@ internal static class Utf8RegexPreparer
         return new Utf8PreparedRegex(
             analyzedRegex.SemanticRegex,
             analyzedRegex.Features,
-            analyzedRegex.SearchInfo,
             analyzedRegex.ExecutionPattern,
             analyzedRegex.ExecutionKind,
             executionBackend,

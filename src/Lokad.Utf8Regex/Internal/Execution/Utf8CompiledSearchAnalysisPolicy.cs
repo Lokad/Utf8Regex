@@ -4,16 +4,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8CompiledSearchAnalysisPolicy
 {
-    public static bool IsExactLiteralPipeline(Utf8ExecutablePipelinePlan pipeline)
+    public static bool IsExactLiteralPipeline(Utf8SearchOperationPlan pipeline)
     {
-        return pipeline.Strategy.CandidateEngine.Kind == Utf8SearchEngineKind.PreparedSearcher &&
-            pipeline.Strategy.CandidateEngine.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral;
+        return pipeline.CandidateSource.Kind == Utf8CandidateSearchKind.PreparedSearcher &&
+            pipeline.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral;
     }
 
-    public static bool IsLiteralFamilyPipeline(Utf8ExecutablePipelinePlan pipeline)
+    public static bool IsLiteralFamilyPipeline(Utf8SearchOperationPlan pipeline)
     {
-        return pipeline.Strategy.CandidateEngine.Kind == Utf8SearchEngineKind.PreparedSearcher &&
-            pipeline.Strategy.CandidateEngine.PortfolioKind is
+        return pipeline.CandidateSource.Kind == Utf8CandidateSearchKind.PreparedSearcher &&
+            pipeline.CandidateSource.PortfolioKind is
                 Utf8SearchPortfolioKind.ExactDirectFamily or
                 Utf8SearchPortfolioKind.ExactTrieFamily or
                 Utf8SearchPortfolioKind.ExactAutomatonFamily or
@@ -23,8 +23,8 @@ internal static class Utf8CompiledSearchAnalysisPolicy
     }
 
     public static bool IsSearchGuidedFallbackPipeline(
-        Utf8ExecutablePipelinePlan countPipeline,
-        Utf8ExecutablePipelinePlan firstMatchPipeline)
+        Utf8SearchOperationPlan countPipeline,
+        Utf8SearchOperationPlan firstMatchPipeline)
     {
         if (countPipeline.Confirmation.Kind != Utf8ConfirmationKind.FallbackVerifier ||
             firstMatchPipeline.Confirmation.Kind != Utf8ConfirmationKind.FallbackVerifier)
@@ -32,11 +32,11 @@ internal static class Utf8CompiledSearchAnalysisPolicy
             return false;
         }
 
-        return countPipeline.Strategy.CandidateEngine.Kind == Utf8SearchEngineKind.StructuralSearchSet &&
-            firstMatchPipeline.Strategy.CandidateEngine.Kind == Utf8SearchEngineKind.StructuralSearchSet &&
-            countPipeline.Strategy.Kind is
-                Utf8SearchMetaStrategyKind.SearchThenConfirm or
-                Utf8SearchMetaStrategyKind.PrefilterThenConfirm;
+        return countPipeline.CandidateSource.Kind == Utf8CandidateSearchKind.StructuralSearchSet &&
+            firstMatchPipeline.CandidateSource.Kind == Utf8CandidateSearchKind.StructuralSearchSet &&
+            countPipeline.Kind is
+                Utf8SearchOperationKind.SearchThenConfirm or
+                Utf8SearchOperationKind.PrefilterThenConfirm;
     }
 
     public static bool CanPromoteFallbackExecution(Utf8PreparedRegex regexPlan)

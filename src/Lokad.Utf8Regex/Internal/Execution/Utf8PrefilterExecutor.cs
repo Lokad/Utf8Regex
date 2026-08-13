@@ -11,19 +11,19 @@ internal static class Utf8PrefilterExecutor
             return false;
         }
 
-        if (plan.PrimaryEngine.HasValue &&
-            !Utf8SearchEngineExecutor.TryFindFirst(plan.PrimaryEngine, input))
+        if (plan.PrimarySource.HasValue &&
+            !Utf8SearchEngineExecutor.TryFindFirst(plan.PrimarySource, input))
         {
             return true;
         }
 
-        if (plan.SecondaryEngine.HasValue &&
-            !Utf8SearchEngineExecutor.TryFindFirst(plan.SecondaryEngine, input))
+        if (plan.SecondarySource.HasValue &&
+            !Utf8SearchEngineExecutor.TryFindFirst(plan.SecondarySource, input))
         {
             return true;
         }
 
-        return plan.WindowEngine.HasValue &&
-            !Utf8SearchEngineExecutor.TryFindFirst(plan.WindowEngine, input);
+        return plan.WindowSource.HasValue &&
+            !Utf8SearchEngineExecutor.TryFindFirst(plan.WindowSource, input);
     }
 }

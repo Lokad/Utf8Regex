@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8BackendInstructionExecutor
 {
     public static Utf8ValueMatch ProjectLiteralFamilyMatch(
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int[]? alternateLiteralUtf16Lengths,
         int consumedBytes,
@@ -29,7 +29,7 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static Utf8ValueMatch ProjectMatch(
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int consumedBytes,
         int consumedUtf16,
@@ -53,7 +53,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static bool TryFindNextLiteralFamilyMatch(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
         Utf8ExecutionBudget? budget,
@@ -70,7 +70,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static int CountLiteralFamily(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget)
     {
@@ -79,7 +79,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static bool IsMatchLiteralFamily(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         Utf8ExecutionBudget? budget,
         bool rightToLeft)
@@ -89,7 +89,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static Utf8ValueMatch MatchLiteralFamily(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int[]? alternateLiteralUtf16Lengths,
         Utf8ExecutionBudget? budget,
@@ -132,7 +132,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static bool TryFindNextFallbackVerifiedMatch(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
@@ -143,22 +143,22 @@ internal static class Utf8BackendInstructionExecutor
     {
         _ = program;
         verification = default;
-        while (Utf8FallbackSearchExecutor.TryFindNextCandidate(plan, input, startIndex, out var candidate))
+        if (plan.FallbackSearch.CandidatePlans is not { Length: > 0 } candidatePlans)
+        {
+            return false;
+        }
+
+        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, startIndex);
+        while (cursor.TryGetNextScalarBoundary(out var candidate))
         {
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            if (!IsScalarBoundaryByteOffset(input, candidate.StartIndex))
-            {
-                startIndex = candidate.StartIndex + 1;
-                continue;
-            }
-
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (verifierRuntime.FallbackCandidateVerifier.TryVerify(input, candidate, validation, ref boundaryMap, ref decoded, out verification))
             {
                 return true;
             }
 
-            startIndex = candidate.StartIndex + 1;
+            cursor.AdvancePast(candidate.StartIndex + 1);
         }
 
         return false;
@@ -166,7 +166,7 @@ internal static class Utf8BackendInstructionExecutor
 
     public static bool TryFindNextCompiledFallbackMatch(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram program,
+        Utf8SearchOperationPlan program,
         Utf8VerifierRuntime verifierRuntime,
         Utf8ExecutionProgram executionProgram,
         ReadOnlySpan<byte> input,
@@ -179,15 +179,15 @@ internal static class Utf8BackendInstructionExecutor
     {
         _ = program;
         match = Utf8ValueMatch.NoMatch;
-        while (Utf8FallbackSearchExecutor.TryFindNextCandidate(plan, input, startIndex, out var candidate))
+        if (plan.FallbackSearch.CandidatePlans is not { Length: > 0 } candidatePlans)
+        {
+            return false;
+        }
+
+        using var cursor = new Utf8CandidatePortfolioCursor(candidatePlans, input, startIndex);
+        while (cursor.TryGetNextScalarBoundary(out var candidate))
         {
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            if (!IsScalarBoundaryByteOffset(input, candidate.StartIndex))
-            {
-                startIndex = candidate.StartIndex + 1;
-                continue;
-            }
-
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (Utf8ExecutionInterpreter.TryMatchPrefix(input, executionProgram, candidate.StartIndex, captures: null, budget, out var matchedLength))
             {
@@ -203,7 +203,7 @@ internal static class Utf8BackendInstructionExecutor
                 return true;
             }
 
-            startIndex = candidate.StartIndex + 1;
+            cursor.AdvancePast(candidate.StartIndex + 1);
         }
 
         return false;
@@ -304,9 +304,4 @@ internal static class Utf8BackendInstructionExecutor
             : Utf8ProjectionExecutor.ProjectByteAlignedMatch(index, matchedLength);
     }
 
-    private static bool IsScalarBoundaryByteOffset(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return (uint)byteOffset <= (uint)input.Length &&
-            (byteOffset == 0 || byteOffset == input.Length || (input[byteOffset] & 0xC0) != 0x80);
-    }
 }

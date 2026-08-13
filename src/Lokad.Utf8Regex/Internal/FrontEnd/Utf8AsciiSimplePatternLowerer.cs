@@ -15,10 +15,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         Utf8SemanticRegex semanticRegex,
         RegexOptions options,
         out AsciiSimplePatternPlan simplePatternPlan,
-        out Utf8SearchPlan searchPlan)
+        out Utf8SearchFacts searchFacts)
     {
         simplePatternPlan = default;
-        searchPlan = default;
+        searchFacts = default;
 
         var preparationBudget = new Utf8PreparationBudget(MaxPreparationWork, MaxPreparationOutput);
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
@@ -99,11 +99,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
                 ? symmetricLiteralWindowPlan
                 : default);
-        searchPlan = searchLiterals.Length switch
+        searchFacts = searchLiterals.Length switch
         {
-            1 => new Utf8SearchPlan(ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral, searchLiterals[0]),
-            > 1 when !ignoreCase && searchLiteralOffset == 0 => new Utf8SearchPlan(Utf8SearchKind.ExactAsciiLiterals, null, alternateLiteralsUtf8: searchLiterals),
-            _ => new Utf8SearchPlan(Utf8SearchKind.None, null),
+            1 => new Utf8SearchFacts(ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral, searchLiterals[0]),
+            > 1 when !ignoreCase && searchLiteralOffset == 0 => new Utf8SearchFacts(Utf8SearchKind.ExactAsciiLiterals, alternateLiteralsUtf8: searchLiterals),
+            _ => new Utf8SearchFacts(Utf8SearchKind.None),
         };
 
         return true;

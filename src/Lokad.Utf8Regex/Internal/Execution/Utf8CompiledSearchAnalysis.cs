@@ -32,7 +32,7 @@ internal readonly record struct Utf8CompiledSearchAnalysis(
     Utf8CompiledSearchMode Mode,
     Utf8CompiledEngine Engine,
     Utf8CompiledEmittedFamily EmittedFamily = Utf8CompiledEmittedFamily.None,
-    Utf8SearchEngineKind CandidateEngineKind = Utf8SearchEngineKind.None)
+    Utf8CandidateSearchKind CandidateSourceKind = Utf8CandidateSearchKind.None)
 {
     public bool HasEmittedBackend => Engine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction || Engine.Kind == Utf8CompiledEngineKind.EmittedKernel;
 }
@@ -42,8 +42,8 @@ internal static class Utf8CompiledSearchAnalyzer
     public static Utf8CompiledSearchAnalysis Analyze(Utf8PreparedRegex regexPlan, bool preferCompiled)
     {
         var canPromoteFallbackExecution = Utf8CompiledSearchAnalysisPolicy.CanPromoteFallbackExecution(regexPlan);
-        var countPipeline = regexPlan.SearchPlan.CountPipeline;
-        var firstMatchPipeline = regexPlan.SearchPlan.FirstMatchPipeline;
+        var countPipeline = regexPlan.SearchPlan.CountOperation;
+        var firstMatchPipeline = regexPlan.SearchPlan.FirstMatchOperation;
         var shouldKeepFallbackRegexOnCompiledHint = preferCompiled && ShouldKeepFallbackRegexOnCompiledHint(regexPlan);
 
         if (Utf8CompiledPatternBackendPolicy.SupportsLiteralCompiledAnalysis(regexPlan, countPipeline))
@@ -63,7 +63,7 @@ internal static class Utf8CompiledSearchAnalyzer
                     : Utf8CompiledSearchMode.StructuralIdentifierFamily,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.EmittedKernel),
                 MapEmittedKernel(emittedKernelPlan.Kind),
-                regexPlan.SearchPlan.CountPipeline.Strategy.CandidateEngine.Kind);
+                regexPlan.SearchPlan.CountOperation.CandidateSource.Kind);
         }
 
         if (Utf8CompiledPatternBackendPolicy.SupportsDeterministicLinearAnalysis(regexPlan) &&
@@ -96,7 +96,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.FallbackRegex,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
-                CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+                CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
         if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
@@ -108,7 +108,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.ByteSafeLinear,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.ByteSafeLinear),
-                CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+                CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
         if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
@@ -118,7 +118,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.CompiledFallback,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.CompiledFallback),
-                CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+                CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
         if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
@@ -136,13 +136,13 @@ internal static class Utf8CompiledSearchAnalyzer
                 Utf8CompiledSearchMode.SearchGuidedFallback,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.SearchGuidedFallback, backend),
                 backend == Utf8CompiledExecutionBackend.EmittedInstruction ? Utf8CompiledEmittedFamily.SearchGuidedFallback : Utf8CompiledEmittedFamily.None,
-                countPipeline.Strategy.CandidateEngine.Kind);
+                countPipeline.CandidateSource.Kind);
         }
 
         return new Utf8CompiledSearchAnalysis(
             Utf8CompiledSearchMode.FallbackRegex,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
-            CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+            CandidateSourceKind: countPipeline.CandidateSource.Kind);
     }
 
     private static Utf8CompiledEmittedFamily MapEmittedKernel(Utf8EmittedKernelKind kind) => kind switch

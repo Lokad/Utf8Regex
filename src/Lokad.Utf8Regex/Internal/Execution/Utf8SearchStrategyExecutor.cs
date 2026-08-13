@@ -8,7 +8,7 @@ internal static class Utf8SearchStrategyExecutor
 {
     public static bool TryFindNextFallbackVerifiedMatch(
         Utf8SearchPlan plan,
-        Utf8ExecutablePipelinePlan pipeline,
+        Utf8SearchOperationPlan operation,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
@@ -19,7 +19,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(
             plan,
-            Utf8BackendInstructionProgramBuilder.Create(pipeline),
+            operation,
             verifierRuntime,
             input,
             validation,
@@ -31,7 +31,7 @@ internal static class Utf8SearchStrategyExecutor
 
     public static bool TryFindNextCompiledFallbackMatch(
         Utf8SearchPlan plan,
-        Utf8ExecutablePipelinePlan pipeline,
+        Utf8SearchOperationPlan operation,
         Utf8VerifierRuntime verifierRuntime,
         Utf8ExecutionProgram program,
         ReadOnlySpan<byte> input,
@@ -44,7 +44,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return Utf8BackendInstructionExecutor.TryFindNextCompiledFallbackMatch(
             plan,
-            Utf8BackendInstructionProgramBuilder.Create(pipeline),
+            operation,
             verifierRuntime,
             program,
             input,
@@ -73,7 +73,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return TryFindNextFallbackVerifiedMatch(
             plan,
-            plan.FirstMatchPipeline,
+            plan.FirstMatchOperation,
             verifierRuntime,
             input,
             validation,
@@ -97,7 +97,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return TryFindNextCompiledFallbackMatch(
             plan,
-            plan.FirstMatchPipeline,
+            plan.FirstMatchOperation,
             verifierRuntime,
             program,
             input,
@@ -118,7 +118,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
             plan,
-            plan.EnumerationProgram,
+            plan.EnumerationOperation,
             input,
             ref state,
             budget,
@@ -129,7 +129,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return Utf8BackendInstructionExecutor.CountLiteralFamily(
             plan,
-            plan.CountProgram,
+            plan.CountOperation,
             input,
             budget);
     }
@@ -138,7 +138,7 @@ internal static class Utf8SearchStrategyExecutor
     {
         return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
             plan,
-            plan.FirstMatchProgram,
+            plan.FirstMatchOperation,
             input,
             budget,
             rightToLeft);

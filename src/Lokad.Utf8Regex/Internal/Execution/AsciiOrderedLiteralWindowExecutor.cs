@@ -98,7 +98,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
                 : CountLiteralFamilyByTrailingAnchor(input, plan, familySearch, trailingFindPlan, budget);
         }
 
-        if (plan.IsLiteralFamily && searchPlan.NativeSearch.HasPreparedSearcher)
+        if (plan.IsLiteralFamily && searchPlan.HasPreparedSearcher)
         {
             return CountLiteralFamilyStateful(input, plan, searchPlan, trailingFindPlan, budget);
         }
@@ -560,7 +560,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         if (plan.GapLeadingSeparatorMinCount == 0)
         {
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
-            while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var leadingStart, out var leadingMatchLength))
+            while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var leadingStart, out var leadingMatchLength))
             {
                 if (leadingStart < minStartIndex)
                 {
@@ -596,7 +596,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         }
 
         var overlappingState = new PreparedSearchScanState(0, default);
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextOverlappingMatch(input, ref overlappingState, out var match))
+        while (searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref overlappingState, out var match))
         {
             if (match.Index < minStartIndex)
             {

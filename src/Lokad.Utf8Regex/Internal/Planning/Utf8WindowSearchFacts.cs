@@ -11,9 +11,9 @@ internal readonly struct Utf8PreparedSearcherInfo
 {
     private Utf8PreparedSearcherInfo(
         Utf8PreparedSearcherInfoKind kind,
-        byte[][]? alternateLiteralsUtf8 = null,
-        string? quotedAsciiSet = null,
-        int quotedAsciiLength = 0)
+        byte[][]? alternateLiteralsUtf8,
+        string? quotedAsciiSet,
+        int quotedAsciiLength)
     {
         Kind = kind;
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
@@ -32,19 +32,19 @@ internal readonly struct Utf8PreparedSearcherInfo
     public bool HasValue => Kind != Utf8PreparedSearcherInfoKind.None;
 
     public static Utf8PreparedSearcherInfo LiteralFamily(byte[][] alternateLiteralsUtf8) =>
-        new(Utf8PreparedSearcherInfoKind.LiteralFamily, alternateLiteralsUtf8: alternateLiteralsUtf8);
+        new(Utf8PreparedSearcherInfoKind.LiteralFamily, alternateLiteralsUtf8, null, 0);
 
     public static Utf8PreparedSearcherInfo QuotedAsciiRun(string quotedAsciiSet, int quotedAsciiLength) =>
-        new(Utf8PreparedSearcherInfoKind.QuotedAsciiRun, quotedAsciiSet: quotedAsciiSet, quotedAsciiLength: quotedAsciiLength);
+        new(Utf8PreparedSearcherInfoKind.QuotedAsciiRun, null, quotedAsciiSet, quotedAsciiLength);
 }
 
-internal readonly struct Utf8WindowSearchInfo
+internal readonly struct Utf8WindowSearchFacts
 {
-    public Utf8WindowSearchInfo(
+    private Utf8WindowSearchFacts(
         Utf8PreparedSearcherInfo leading,
         Utf8PreparedSearcherInfo trailing,
-        int? maxGap = null,
-        int? maxLines = null)
+        int? maxGap,
+        int? maxLines)
     {
         Leading = leading;
         Trailing = trailing;
@@ -61,4 +61,10 @@ internal readonly struct Utf8WindowSearchInfo
     public int? MaxLines { get; }
 
     public bool HasValue => Leading.HasValue && Trailing.HasValue;
+
+    public static Utf8WindowSearchFacts WithinLines(
+        Utf8PreparedSearcherInfo leading,
+        Utf8PreparedSearcherInfo trailing,
+        int maxLines)
+        => new(leading, trailing, null, maxLines);
 }

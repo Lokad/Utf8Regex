@@ -343,7 +343,7 @@ public sealed class FrontEndRuntimeSmokeTests
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, literal.ExecutionBackend);
         Assert.Equal(1, literal.Features.CaptureCount);
         Assert.False(literal.Features.HasAlternation);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchInfo.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchPlan.Kind);
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, literal.ExecutionKind);
 
         Assert.Equal(Utf8ExecutionBackend.NativeSimplePattern, simple.ExecutionBackend);
@@ -356,8 +356,8 @@ public sealed class FrontEndRuntimeSmokeTests
     {
         var analysis = Utf8FrontEnd.Compile(@"\bfoo.*bar\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchInfo.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchInfo.TrailingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchPlan.TrailingBoundary);
         Assert.True(analysis.StructuralSearchPlan.HasValue);
         Assert.Contains(
             analysis.StructuralSearchPlan.Stages!,
@@ -376,7 +376,7 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.NotNull(literal.SemanticRegex.RuntimeTree);
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, literal.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchInfo.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchPlan.Kind);
         Assert.Equal("abc", Encoding.UTF8.GetString(literal.LiteralUtf8!));
     }
 
@@ -386,7 +386,7 @@ public sealed class FrontEndRuntimeSmokeTests
         var literal = Utf8FrontEnd.Compile("café", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, literal.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchInfo.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literal.SearchPlan.Kind);
         Assert.Equal("café", Encoding.UTF8.GetString(literal.LiteralUtf8!));
     }
 
@@ -396,10 +396,10 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactUtf8Literals, analysis.SearchInfo.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchInfo.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchInfo.TrailingBoundary);
-        Assert.Equal(["café", "niño"], analysis.SearchInfo.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
+        Assert.Equal(Utf8SearchKind.ExactUtf8Literals, analysis.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchPlan.TrailingBoundary);
+        Assert.Equal(["café", "niño"], analysis.SearchPlan.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
     }
 
     [Fact]
@@ -408,8 +408,8 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile(@"\b(?:Get|TryGet|Create|Load)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, analysis.SearchInfo.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchInfo.LeadingBoundary);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, analysis.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, analysis.SearchPlan.LeadingBoundary);
     }
 
     [Fact]
@@ -418,9 +418,9 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile("café(?= noir)", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchInfo.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
         Assert.Equal("café", Encoding.UTF8.GetString(analysis.LiteralUtf8!));
-        Assert.Equal(" noir", Encoding.UTF8.GetString(analysis.SearchInfo.TrailingLiteralUtf8!));
+        Assert.Equal(" noir", Encoding.UTF8.GetString(analysis.SearchPlan.TrailingLiteralUtf8!));
     }
 
     [Fact]
@@ -439,8 +439,8 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.NotNull(simple.SemanticRegex.RuntimeTree);
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, simple.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.TrailingAnchorFixedLengthEndZ, simple.SearchInfo.Kind);
-        Assert.Equal(4, simple.SearchInfo.MinRequiredLength);
+        Assert.Equal(Utf8SearchKind.TrailingAnchorFixedLengthEndZ, simple.SearchPlan.Kind);
+        Assert.Equal(4, simple.SearchPlan.MinRequiredLength);
         Assert.True(simple.SimplePatternPlan.IsStartAnchored);
         Assert.True(simple.SimplePatternPlan.IsEndAnchored);
         Assert.False(simple.SimplePatternPlan.IsUtf8ByteSafe);
@@ -461,10 +461,10 @@ public sealed class FrontEndRuntimeSmokeTests
         var simple = Utf8FrontEnd.Compile("(?:ab|cd){2}", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, simple.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, simple.SearchInfo.Kind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, simple.SearchPlan.Kind);
         Assert.Equal(
             ["abab", "abcd", "cdab", "cdcd"],
-            simple.SearchInfo.AlternateLiteralsUtf8!
+            simple.SearchPlan.AlternateLiteralsUtf8!
                 .Select(Encoding.UTF8.GetString)
                 .OrderBy(static value => value, StringComparer.Ordinal));
     }
@@ -475,13 +475,13 @@ public sealed class FrontEndRuntimeSmokeTests
         var simple = Utf8FrontEnd.Compile("cat|horse", RegexOptions.CultureInvariant);
 
         Assert.NotNull(simple.SemanticRegex.RuntimeTree);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, simple.SearchInfo.Kind);
-        Assert.NotNull(simple.SearchInfo.AlternateLiteralsUtf8);
-        Assert.Equal(["cat", "horse"], simple.SearchInfo.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, simple.SearchPlan.Kind);
+        Assert.NotNull(simple.SearchPlan.AlternateLiteralsUtf8);
+        Assert.Equal(["cat", "horse"], simple.SearchPlan.AlternateLiteralsUtf8!.Select(Encoding.UTF8.GetString));
     }
 
     [Fact]
-    public void FrontEndSearchAnalyzerCanDeriveLiteralAndSimplePatternSearchInfo()
+    public void FrontEndSearchAnalyzerCanDeriveLiteralAndSimplePatternSearchFacts()
     {
         var literal = Utf8FrontEnd.Compile("abc", RegexOptions.None);
         var simple = Utf8FrontEnd.Compile("cat|horse", RegexOptions.CultureInvariant);
@@ -492,7 +492,7 @@ public sealed class FrontEndRuntimeSmokeTests
         var simpleSearch = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(
             simple.SemanticRegex,
             simple.SimplePatternPlan,
-            new Utf8SearchPlan(Utf8SearchKind.None, null));
+            new Utf8SearchFacts(Utf8SearchKind.None));
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literalSearch.Kind);
         Assert.Equal("abc", Encoding.UTF8.GetString(literalSearch.LiteralUtf8!));
@@ -1290,30 +1290,30 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile("(?=ab)ab", RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchInfo.Kind);
-        Assert.Equal("ab", Encoding.UTF8.GetString(analysis.SearchInfo.LiteralUtf8!));
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
+        Assert.Equal("ab", Encoding.UTF8.GetString(analysis.SearchPlan.LiteralUtf8!));
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
         Assert.Equal("ab", Encoding.UTF8.GetString(analysis.SearchPlan.LiteralUtf8!));
     }
 
     [Fact]
-    public void FrontEndCanDeriveFixedDistanceLiteralSearchInfo()
+    public void FrontEndCanDeriveFixedDistanceLiteralSearchFacts()
     {
         var analysis = Utf8FrontEnd.Compile("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, analysis.SearchInfo.Kind);
-        Assert.Equal("d", Encoding.UTF8.GetString(analysis.SearchInfo.LiteralUtf8!));
-        Assert.Equal(5, analysis.SearchInfo.Distance);
-        Assert.Equal(6, analysis.SearchInfo.MinRequiredLength);
+        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, analysis.SearchPlan.Kind);
+        Assert.Equal("d", Encoding.UTF8.GetString(analysis.SearchPlan.LiteralUtf8!));
+        Assert.Equal(5, analysis.SearchPlan.Distance);
+        Assert.Equal(6, analysis.SearchPlan.MinRequiredLength);
     }
 
     [Fact]
-    public void FrontEndCanDeriveTrailingFixedLengthAnchorSearchInfo()
+    public void FrontEndCanDeriveTrailingFixedLengthAnchorSearchFacts()
     {
         var analysis = Utf8FrontEnd.Compile(@"abc\z", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchKind.TrailingAnchorFixedLengthEnd, analysis.SearchInfo.Kind);
-        Assert.Equal(3, analysis.SearchInfo.MinRequiredLength);
+        Assert.Equal(Utf8SearchKind.TrailingAnchorFixedLengthEnd, analysis.SearchPlan.Kind);
+        Assert.Equal(3, analysis.SearchPlan.MinRequiredLength);
     }
 
     [Fact]

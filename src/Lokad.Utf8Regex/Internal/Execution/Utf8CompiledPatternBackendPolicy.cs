@@ -4,14 +4,14 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8CompiledPatternBackendPolicy
 {
-    public static Utf8CompiledSearchAnalysis CreateLiteralAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static Utf8CompiledSearchAnalysis CreateLiteralAnalysis(Utf8PreparedRegex regexPlan, Utf8SearchOperationPlan countPipeline)
     {
         if (regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
         {
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.ExactLiteral,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.ExactLiteral),
-                CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+                CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
         var backend = Utf8CompiledBackendCapability.CanUseEmittedLiteralFamily(regexPlan.SearchPlan)
@@ -21,10 +21,10 @@ internal static class Utf8CompiledPatternBackendPolicy
             Utf8CompiledSearchMode.LiteralFamily,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.LiteralFamily, backend),
             backend == Utf8CompiledExecutionBackend.EmittedInstruction ? Utf8CompiledEmittedFamily.LiteralFamily : Utf8CompiledEmittedFamily.None,
-            countPipeline.Strategy.CandidateEngine.Kind);
+            countPipeline.CandidateSource.Kind);
     }
 
-    public static Utf8CompiledSearchAnalysis CreateDeterministicLinearAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static Utf8CompiledSearchAnalysis CreateDeterministicLinearAnalysis(Utf8PreparedRegex regexPlan, Utf8SearchOperationPlan countPipeline)
     {
         var backend = Utf8CompiledBackendCapability.CanUseEmittedStructuralLinear(regexPlan)
             ? Utf8CompiledExecutionBackend.EmittedInstruction
@@ -37,18 +37,18 @@ internal static class Utf8CompiledPatternBackendPolicy
                     : Utf8CompiledSearchMode.StructuralLinearAutomaton,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.StructuralLinearAutomaton, backend),
             backend == Utf8CompiledExecutionBackend.EmittedInstruction ? Utf8CompiledEmittedFamily.StructuralDeterministic : Utf8CompiledEmittedFamily.None,
-            countPipeline.Strategy.CandidateEngine.Kind);
+            countPipeline.CandidateSource.Kind);
     }
 
-    public static Utf8CompiledSearchAnalysis CreateSimplePatternInterpreterAnalysis(Utf8ExecutablePipelinePlan countPipeline)
+    public static Utf8CompiledSearchAnalysis CreateSimplePatternInterpreterAnalysis(Utf8SearchOperationPlan countPipeline)
     {
         return new Utf8CompiledSearchAnalysis(
             Utf8CompiledSearchMode.SimplePattern,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.SimplePatternInterpreter),
-            CandidateEngineKind: countPipeline.Strategy.CandidateEngine.Kind);
+            CandidateSourceKind: countPipeline.CandidateSource.Kind);
     }
 
-    public static bool SupportsLiteralCompiledAnalysis(Utf8PreparedRegex regexPlan, Utf8ExecutablePipelinePlan countPipeline)
+    public static bool SupportsLiteralCompiledAnalysis(Utf8PreparedRegex regexPlan, Utf8SearchOperationPlan countPipeline)
     {
         return regexPlan.CompiledPatternCategory == Utf8CompiledPatternCategory.Literal &&
             ((regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&

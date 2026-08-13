@@ -102,7 +102,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 semanticRegex,
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                new Utf8AnalyzedSearchInfo(
+                new Utf8SearchFacts(
                     lookaheadAlternationSearchKind,
                     null,
                     lookaheadAlternates,
@@ -119,7 +119,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 semanticRegex,
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                new Utf8AnalyzedSearchInfo(
+                new Utf8SearchFacts(
                     Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals,
                     null,
                     ignoreCaseAlternateLiterals),
@@ -160,7 +160,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 semanticRegex,
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                new Utf8AnalyzedSearchInfo(
+                new Utf8SearchFacts(
                     searchKind,
                     null,
                     alternateLiterals,
@@ -234,7 +234,7 @@ internal static class Utf8NativeExecutionAnalyzer
             return false;
         }
 
-        if (!Utf8AsciiSimplePatternLowerer.TryCreatePlan(semanticRegex, executionOptions, out var simplePatternPlan, out var searchPlan))
+        if (!Utf8AsciiSimplePatternLowerer.TryCreatePlan(semanticRegex, executionOptions, out var simplePatternPlan, out var searchFacts))
         {
             analyzedRegex = default;
             return false;
@@ -256,7 +256,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 semanticRegex,
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-                new Utf8AnalyzedSearchInfo(
+                new Utf8SearchFacts(
                     ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals : Utf8SearchKind.ExactAsciiLiterals,
                     null,
                     literalBranches),
@@ -265,10 +265,10 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
-        var analyzedSearchInfo = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchPlan);
-        analyzedRegex = searchPlan.LiteralUtf8 is { } literalUtf8
-            ? Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchInfo, simplePatternPlan, literalUtf8)
-            : Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchInfo, simplePatternPlan);
+        var analyzedSearchFacts = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchFacts);
+        analyzedRegex = searchFacts.LiteralUtf8 is { } literalUtf8
+            ? Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan, literalUtf8)
+            : Utf8RegexAnalysis.CreateSimple(semanticRegex, executionPattern, features, analyzedSearchFacts, simplePatternPlan);
         return true;
     }
 
@@ -982,7 +982,7 @@ internal static class Utf8NativeExecutionAnalyzer
             semanticRegex,
             executionPattern,
             Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            new Utf8AnalyzedSearchInfo(
+            new Utf8SearchFacts(
                 Utf8SearchKind.ExactAsciiLiterals,
                 null,
                 prefixes,
@@ -1122,7 +1122,7 @@ internal static class Utf8NativeExecutionAnalyzer
             semanticRegex,
             executionPattern,
             Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            new Utf8AnalyzedSearchInfo(
+            new Utf8SearchFacts(
                 Utf8SearchKind.ExactAsciiLiteral,
                 literalUtf8: plan.AnchorLiteralUtf8,
                 minRequiredLength: plan.LeadingLength + plan.SeparatorMinCount + plan.AnchorLiteralUtf8.Length + plan.SeparatorMinCount + plan.TrailingLength),
@@ -1237,13 +1237,13 @@ internal static class Utf8NativeExecutionAnalyzer
             return false;
         }
 
-        var searchInfo = plan.IsLiteralFamily
-            ? new Utf8AnalyzedSearchInfo(
+        var searchFacts = plan.IsLiteralFamily
+            ? new Utf8SearchFacts(
                 Utf8SearchKind.ExactAsciiLiterals,
                 alternateLiteralsUtf8: plan.LeadingLiteralsUtf8,
                 canGuideFallbackStarts: true,
                 minRequiredLength: plan.LeadingLiteralUtf8.Length + plan.TrailingLiteralUtf8.Length)
-            : new Utf8AnalyzedSearchInfo(
+            : new Utf8SearchFacts(
                 Utf8SearchKind.ExactAsciiLiteral,
                 literalUtf8: plan.LeadingLiteralUtf8,
                 canGuideFallbackStarts: true,
@@ -1251,8 +1251,8 @@ internal static class Utf8NativeExecutionAnalyzer
 
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
         analyzedRegex = plan.IsLiteralFamily
-            ? Utf8RegexAnalysis.CreateOrderedLiteralWindow(semanticRegex, executionPattern, features, searchInfo, plan)
-            : Utf8RegexAnalysis.CreateOrderedLiteralWindow(semanticRegex, executionPattern, features, searchInfo, plan, plan.LeadingLiteralUtf8);
+            ? Utf8RegexAnalysis.CreateOrderedLiteralWindow(semanticRegex, executionPattern, features, searchFacts, plan)
+            : Utf8RegexAnalysis.CreateOrderedLiteralWindow(semanticRegex, executionPattern, features, searchFacts, plan, plan.LeadingLiteralUtf8);
         return true;
     }
 
@@ -1627,7 +1627,7 @@ internal static class Utf8NativeExecutionAnalyzer
             semanticRegex,
             executionPattern,
             Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            new Utf8AnalyzedSearchInfo(
+            new Utf8SearchFacts(
                 Utf8SearchKind.None,
                 minRequiredLength: plan.RepetitionMinCount * (1 + plan.TrailingMinCount + plan.SeparatorMinCount)),
             plan);
@@ -1655,7 +1655,7 @@ internal static class Utf8NativeExecutionAnalyzer
             semanticRegex,
             executionPattern,
             Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
-            new Utf8AnalyzedSearchInfo(Utf8SearchKind.None),
+            new Utf8SearchFacts(Utf8SearchKind.None),
             plan);
         return true;
     }

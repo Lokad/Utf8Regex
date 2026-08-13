@@ -19,9 +19,9 @@ internal static class Utf8SearchExecutor
 
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiterals when plan.NativeSearch.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.NativeSearch.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.ExactUtf8Literals when plan.NativeSearch.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
             _ => TryFindFallbackMatch(plan, input, startIndex, reverse: false, out match),
         };
     }
@@ -33,11 +33,11 @@ internal static class Utf8SearchExecutor
         {
             Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: false),
             Utf8SearchKind.AsciiLiteralIgnoreCase when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: true),
-            Utf8SearchKind.ExactAsciiLiterals when plan.NativeSearch.HasPreparedSearcher => plan.NativeSearch.PreparedSearcher.FindFirst(input),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.NativeSearch.HasPreparedSearcher => plan.HasBoundaryRequirements
+            Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindFirst(input),
+            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyIgnoreCaseLiteralWithBoundaries(plan, input, 0)
-                : plan.NativeSearch.PreparedSearcher.FindFirst(input),
-            Utf8SearchKind.ExactUtf8Literals when plan.NativeSearch.HasPreparedSearcher => plan.HasBoundaryRequirements
+                : plan.PreparedSearcher.FindFirst(input),
+            Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyLiteralWithBoundaries(plan, input, 0)
                 : FindAnyLiteralWithTrailingRequirement(plan, input, 0),
             Utf8SearchKind.FixedDistanceAsciiLiteral when literal is not null => FindFixedDistanceLiteral(plan, input, 0),
@@ -78,11 +78,11 @@ internal static class Utf8SearchExecutor
         {
             Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: false),
             Utf8SearchKind.AsciiLiteralIgnoreCase when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: true),
-            Utf8SearchKind.ExactAsciiLiterals when plan.NativeSearch.HasPreparedSearcher => plan.NativeSearch.PreparedSearcher.FindLast(input),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.NativeSearch.HasPreparedSearcher => plan.HasBoundaryRequirements
+            Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindLast(input),
+            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindLastAnyIgnoreCaseLiteralWithBoundaries(plan, input, input.Length)
-                : plan.NativeSearch.PreparedSearcher.FindLast(input),
-            Utf8SearchKind.ExactUtf8Literals when plan.NativeSearch.HasPreparedSearcher => plan.HasBoundaryRequirements
+                : plan.PreparedSearcher.FindLast(input),
+            Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindLastAnyLiteralWithBoundaries(plan, input, input.Length)
                 : FindLastAnyLiteralWithTrailingRequirement(plan, input, input.Length),
             _ => -1,
@@ -110,9 +110,9 @@ internal static class Utf8SearchExecutor
 
         return plan.Kind switch
         {
-            Utf8SearchKind.ExactAsciiLiterals when plan.NativeSearch.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.NativeSearch.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.ExactUtf8Literals when plan.NativeSearch.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
             _ => TryFindFallbackMatch(plan, input, startIndex, reverse: true, out match),
         };
     }
@@ -132,14 +132,14 @@ internal static class Utf8SearchExecutor
             return -1;
         }
 
-        if (plan.NativeSearch.HasStructuralCandidates &&
-            plan.NativeSearch.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
+        if (plan.HasStructuralCandidates &&
+            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             var state = new Utf8StructuralSearchState(
                 new PreparedSearchScanState(startIndex, default),
                 new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
-            while (plan.NativeSearch.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
+            while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
             {
                 if (candidate.StartIndex >= startIndex)
                 {
@@ -165,11 +165,11 @@ internal static class Utf8SearchExecutor
             return -1;
         }
 
-        if (plan.NativeSearch.HasStructuralCandidates &&
-            plan.NativeSearch.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
+        if (plan.HasStructuralCandidates &&
+            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            if (plan.NativeSearch.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
+            if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 return candidate.StartIndex;
@@ -185,20 +185,20 @@ internal static class Utf8SearchExecutor
 
     private static bool TryFindNextPreparedMatch(Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
     {
-        if (!plan.NativeSearch.HasPreparedSearcher)
+        if (!plan.HasPreparedSearcher)
         {
             match = default;
             return false;
         }
 
-        if (plan.NativeSearch.HasStructuralCandidates &&
-            plan.NativeSearch.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
+        if (plan.HasStructuralCandidates &&
+            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             var candidateState = new Utf8StructuralSearchState(
                 new PreparedSearchScanState(startIndex, default),
                 new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
-            while (plan.NativeSearch.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
+            while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
             {
                 if (candidate.StartIndex < startIndex)
                 {
@@ -218,7 +218,7 @@ internal static class Utf8SearchExecutor
         {
             if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
             {
-                if (plan.NativeSearch.PreparedSearcher.TryFindFirstMatch(input[startIndex..], out var relative) &&
+                if (plan.PreparedSearcher.TryFindFirstMatch(input[startIndex..], out var relative) &&
                     TryTranslateMatch(relative, startIndex, out match))
                 {
                     return true;
@@ -240,7 +240,7 @@ internal static class Utf8SearchExecutor
             var searchIndex = startIndex;
             while (searchIndex <= input.Length - shortestLength)
             {
-                if (!plan.NativeSearch.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var relative) ||
+                if (!plan.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var relative) ||
                     !TryTranslateMatch(relative, searchIndex, out match))
                 {
                     match = default;
@@ -264,17 +264,17 @@ internal static class Utf8SearchExecutor
 
     private static bool TryFindLastPreparedMatch(Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, out PreparedSearchMatch match)
     {
-        if (!plan.NativeSearch.HasPreparedSearcher)
+        if (!plan.HasPreparedSearcher)
         {
             match = default;
             return false;
         }
 
-        if (plan.NativeSearch.HasStructuralCandidates &&
-            plan.NativeSearch.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
+        if (plan.HasStructuralCandidates &&
+            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            if (plan.NativeSearch.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
+            if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
             {
                 match = new PreparedSearchMatch(candidate.StartIndex, candidate.MatchLength, candidate.LiteralId);
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
@@ -289,7 +289,7 @@ internal static class Utf8SearchExecutor
         {
             if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
             {
-                if (plan.NativeSearch.PreparedSearcher.TryFindLastMatch(input[..Math.Min(startIndex, input.Length)], out match))
+                if (plan.PreparedSearcher.TryFindLastMatch(input[..Math.Min(startIndex, input.Length)], out match))
                 {
                     return true;
                 }
@@ -310,7 +310,7 @@ internal static class Utf8SearchExecutor
             var searchLength = Math.Min(startIndex, input.Length);
             while (searchLength >= shortestLength)
             {
-                if (!plan.NativeSearch.PreparedSearcher.TryFindLastMatch(input[..searchLength], out match))
+                if (!plan.PreparedSearcher.TryFindLastMatch(input[..searchLength], out match))
                 {
                     match = default;
                     return false;
@@ -334,7 +334,7 @@ internal static class Utf8SearchExecutor
     private static bool TryFindFallbackMatch(Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool reverse, out PreparedSearchMatch match)
     {
         var index = reverse ? FindPrevious(plan, input, startIndex) : FindNext(plan, input, startIndex);
-        if (index >= 0 && plan.NativeSearch.PreparedSearcher.TryGetMatchedLength(input, index, out var matchedLength))
+        if (index >= 0 && plan.PreparedSearcher.TryGetMatchedLength(input, index, out var matchedLength))
         {
             match = new PreparedSearchMatch(index, matchedLength, 0);
             return true;
@@ -392,7 +392,7 @@ internal static class Utf8SearchExecutor
 
         if (!plan.HasTrailingLiteralRequirement)
         {
-            return plan.NativeSearch.PreparedSearcher.FindFirst(input[startIndex..]) is var relative && relative >= 0
+            return plan.PreparedSearcher.FindFirst(input[startIndex..]) is var relative && relative >= 0
                 ? startIndex + relative
                 : -1;
         }
@@ -400,7 +400,7 @@ internal static class Utf8SearchExecutor
         var searchIndex = startIndex;
         while (searchIndex <= input.Length - literal.Length)
         {
-            var relative = plan.NativeSearch.PreparedSearcher.FindFirst(input[searchIndex..]);
+            var relative = plan.PreparedSearcher.FindFirst(input[searchIndex..]);
             if (relative < 0)
             {
                 return -1;
@@ -459,13 +459,13 @@ internal static class Utf8SearchExecutor
 
         if (!plan.HasTrailingLiteralRequirement)
         {
-            return plan.NativeSearch.PreparedSearcher.FindLast(input[..Math.Min(startIndex, input.Length)]);
+            return plan.PreparedSearcher.FindLast(input[..Math.Min(startIndex, input.Length)]);
         }
 
         var searchLength = Math.Min(startIndex, input.Length);
         while (searchLength >= literal.Length)
         {
-            var candidate = plan.NativeSearch.PreparedSearcher.FindLast(input[..searchLength]);
+            var candidate = plan.PreparedSearcher.FindLast(input[..searchLength]);
             if (candidate < 0)
             {
                 return -1;
@@ -493,7 +493,7 @@ internal static class Utf8SearchExecutor
         var searchIndex = startIndex;
         while (searchIndex <= input.Length - literalSearch.Value.SearchData.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
+            if (!plan.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
             {
                 return -1;
             }
@@ -522,7 +522,7 @@ internal static class Utf8SearchExecutor
         var searchIndex = startIndex;
         while (searchIndex <= input.Length - literalSearch.Value.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
+            if (!plan.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
             {
                 return -1;
             }
@@ -550,14 +550,14 @@ internal static class Utf8SearchExecutor
 
         if (!plan.HasTrailingLiteralRequirement)
         {
-            var relative = plan.NativeSearch.PreparedSearcher.FindFirst(input[startIndex..]);
+            var relative = plan.PreparedSearcher.FindFirst(input[startIndex..]);
             return relative < 0 ? -1 : startIndex + relative;
         }
 
         var searchIndex = startIndex;
         while (searchIndex <= input.Length - literalSearch.Value.SearchData.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
+            if (!plan.PreparedSearcher.TryFindFirstMatch(input[searchIndex..], out var match))
             {
                 return -1;
             }
@@ -585,7 +585,7 @@ internal static class Utf8SearchExecutor
         var searchLength = Math.Min(startIndex, input.Length);
         while (searchLength >= literalSearch.Value.SearchData.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
+            if (!plan.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
             {
                 return -1;
             }
@@ -614,7 +614,7 @@ internal static class Utf8SearchExecutor
         var searchLength = Math.Min(startIndex, input.Length);
         while (searchLength >= literalSearch.Value.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
+            if (!plan.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
             {
                 return -1;
             }
@@ -642,13 +642,13 @@ internal static class Utf8SearchExecutor
 
         if (!plan.HasTrailingLiteralRequirement)
         {
-            return plan.NativeSearch.PreparedSearcher.FindLast(input[..Math.Min(startIndex, input.Length)]);
+            return plan.PreparedSearcher.FindLast(input[..Math.Min(startIndex, input.Length)]);
         }
 
         var searchLength = Math.Min(startIndex, input.Length);
         while (searchLength >= literalSearch.Value.SearchData.ShortestLength)
         {
-            if (!plan.NativeSearch.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
+            if (!plan.PreparedSearcher.TryFindLastMatch(input[..searchLength], out var match))
             {
                 return -1;
             }

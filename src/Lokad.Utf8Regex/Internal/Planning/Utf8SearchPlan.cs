@@ -6,30 +6,37 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
-    public Utf8SearchPlan(
-        Utf8SearchKind kind,
-        byte[]? literalUtf8,
-        byte[][]? alternateLiteralsUtf8 = null,
-        bool canGuideFallbackStarts = false,
-        byte[]? requiredPrefilterLiteralUtf8 = null,
-        byte[][]? requiredPrefilterAlternateLiteralsUtf8 = null,
-        string? secondaryRequiredPrefilterQuotedAsciiSet = null,
-        int secondaryRequiredPrefilterQuotedAsciiLength = 0,
-        Utf8FixedDistanceSet[]? fixedDistanceSets = null,
-        byte[]? trailingLiteralUtf8 = null,
-        byte[][]? orderedWindowLeadingLiteralsUtf8 = null,
-        byte[]? orderedWindowTrailingLiteralUtf8 = null,
-        Utf8WindowSearchInfo[]? requiredWindowPrefilters = null,
-        int? orderedWindowMaxGap = null,
-        bool orderedWindowSameLine = false,
-        Utf8FallbackStartTransform fallbackStartTransform = default,
-        int distance = 0,
-        int minRequiredLength = 0,
-        int? exactRequiredLength = null,
-        int? maxPossibleLength = null,
-        Utf8BoundaryRequirement leadingBoundary = Utf8BoundaryRequirement.None,
-        Utf8BoundaryRequirement trailingBoundary = Utf8BoundaryRequirement.None)
+    private Utf8SearchPlan(Utf8SearchFacts facts)
     {
+        var kind = facts.Kind;
+        var literalUtf8 = facts.LiteralUtf8;
+        var alternateLiteralsUtf8 = facts.AlternateLiteralsUtf8;
+        var canGuideFallbackStarts = facts.CanGuideFallbackStarts;
+        var requiredPrefilterLiteralUtf8 = facts.RequiredPrefilterLiteralUtf8;
+        var requiredPrefilterAlternateLiteralsUtf8 = facts.RequiredPrefilterAlternateLiteralsUtf8;
+        var secondaryRequiredPrefilterQuotedAsciiSet = facts.SecondaryRequiredPrefilterQuotedAsciiSet;
+        var secondaryRequiredPrefilterQuotedAsciiLength = facts.SecondaryRequiredPrefilterQuotedAsciiLength;
+        var fixedDistanceSets = facts.FixedDistanceSets;
+        var trailingLiteralUtf8 = facts.TrailingLiteralUtf8;
+        var orderedWindowLeadingLiteralsUtf8 = facts.OrderedWindowLeadingLiteralsUtf8;
+        var orderedWindowTrailingLiteralUtf8 = facts.OrderedWindowTrailingLiteralUtf8;
+        var requiredWindowPrefilters = facts.RequiredWindowPrefilters;
+        var orderedWindowMaxGap = facts.OrderedWindowMaxGap;
+        var orderedWindowSameLine = facts.OrderedWindowSameLine;
+        var fallbackStartTransform = facts.FallbackStartTransform;
+        var distance = facts.Distance;
+        var minRequiredLength = facts.MinRequiredLength;
+        var exactRequiredLength = facts.ExactRequiredLength;
+        var maxPossibleLength = facts.MaxPossibleLength;
+        var leadingBoundary = facts.LeadingBoundary;
+        var trailingBoundary = facts.TrailingBoundary;
+        NativeCandidateSource = default;
+        FallbackCandidateSource = default;
+        ConfirmationPlan = default;
+        ProjectionPlan = default;
+        CountOperation = default;
+        FirstMatchOperation = default;
+        EnumerationOperation = default;
         Kind = kind;
         LiteralUtf8 = literalUtf8;
         CanGuideFallbackStarts = canGuideFallbackStarts;
@@ -87,7 +94,6 @@ internal readonly struct Utf8SearchPlan
             .WithExactLength(exactRequiredLength)
             .WithMaxLength(maxPossibleLength);
         StructuralSearchPlan = structuralSearchPlan;
-        NativeSearch = new Utf8NativeSearchPlan(PreparedSearcher, structuralSearchPlan, PortfolioKind);
         PrefilterPlan = new Utf8PrefilterPlan(
             requiredPrefilterSearcher,
             secondaryRequiredPrefilterSearcher,
@@ -101,7 +107,36 @@ internal readonly struct Utf8SearchPlan
         MaxPossibleLength = maxPossibleLength;
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
+        NativeCandidateSource = HasPreparedSearcher
+            ? Utf8CandidateSearchPlan.FromPreparedSearcher(
+                PreparedSearcher,
+                Utf8SearchSemantics.CandidateScan,
+                PortfolioKind)
+            : Utf8CandidateSearchPlan.FromStructuralSearch(
+                StructuralSearchPlan,
+                Utf8SearchSemantics.CandidateScan,
+                PortfolioKind);
+        FallbackCandidateSource = FallbackSearch.CandidateSource;
+        ConfirmationPlan = CreateConfirmationPlan();
+        ProjectionPlan = CreateProjectionPlan(Kind);
+        CountOperation = Utf8SearchStrategySelector.Create(
+            this,
+            Utf8SearchSemantics.CountMatches,
+            ConfirmationPlan,
+            default);
+        FirstMatchOperation = Utf8SearchStrategySelector.Create(
+            this,
+            Utf8SearchSemantics.FirstMatch,
+            ConfirmationPlan,
+            default);
+        EnumerationOperation = Utf8SearchStrategySelector.Create(
+            this,
+            Utf8SearchSemantics.EnumerateMatches,
+            ConfirmationPlan,
+            ProjectionPlan);
     }
+
+    public static Utf8SearchPlan Prepare(Utf8SearchFacts facts) => new(facts);
 
     public Utf8SearchKind Kind { get; }
 
@@ -125,8 +160,6 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8SearchPortfolioKind PortfolioKind { get; }
 
-    public Utf8NativeSearchPlan NativeSearch { get; }
-
     public byte[]? RequiredPrefilterLiteralUtf8 { get; }
 
     public byte[][]? RequiredPrefilterAlternateLiteralsUtf8 { get; }
@@ -135,40 +168,19 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8PrefilterPlan PrefilterPlan { get; }
 
-    public Utf8SearchEnginePlan NativeCandidateEngine => NativeSearch.CandidateEngine;
+    public Utf8CandidateSearchPlan NativeCandidateSource { get; }
 
-    public Utf8SearchEnginePlan FallbackCandidateEngine => FallbackSearch.CandidateEngine;
+    public Utf8CandidateSearchPlan FallbackCandidateSource { get; }
 
-    public Utf8SearchMetaStrategyPlan CountStrategy =>
-        Utf8SearchStrategySelector.CreateCountStrategy(this);
+    public Utf8ConfirmationPlan ConfirmationPlan { get; }
 
-    public Utf8SearchMetaStrategyPlan FirstMatchStrategy =>
-        Utf8SearchStrategySelector.CreateFirstMatchStrategy(this);
+    public Utf8ProjectionPlan ProjectionPlan { get; }
 
-    public Utf8SearchMetaStrategyPlan EnumerationStrategy =>
-        Utf8SearchStrategySelector.CreateEnumerationStrategy(this);
+    public Utf8SearchOperationPlan CountOperation { get; }
 
-    public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
+    public Utf8SearchOperationPlan FirstMatchOperation { get; }
 
-    public Utf8ProjectionPlan ProjectionPlan => CreateProjectionPlan();
-
-    public Utf8ExecutablePipelinePlan CountPipeline =>
-        new(CountStrategy, ConfirmationPlan);
-
-    public Utf8ExecutablePipelinePlan FirstMatchPipeline =>
-        new(FirstMatchStrategy, ConfirmationPlan);
-
-    public Utf8ExecutablePipelinePlan EnumerationPipeline =>
-        new(EnumerationStrategy, ConfirmationPlan, ProjectionPlan);
-
-    public Utf8BackendInstructionProgram CountProgram =>
-        Utf8BackendInstructionProgramBuilder.Create(CountPipeline);
-
-    public Utf8BackendInstructionProgram FirstMatchProgram =>
-        Utf8BackendInstructionProgramBuilder.Create(FirstMatchPipeline);
-
-    public Utf8BackendInstructionProgram EnumerationProgram =>
-        Utf8BackendInstructionProgramBuilder.Create(EnumerationPipeline);
+    public Utf8SearchOperationPlan EnumerationOperation { get; }
 
     public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;
 
@@ -212,6 +224,10 @@ internal readonly struct Utf8SearchPlan
 
     public bool HasLiteral => LiteralUtf8 is { Length: > 0 };
 
+    public bool HasPreparedSearcher => PreparedSearcher.HasValue;
+
+    public bool HasStructuralCandidates => StructuralSearchPlan.HasValue;
+
     public bool HasAlternateLiterals => AlternateLiteralsUtf8 is { Length: > 0 };
 
     public bool HasFixedDistanceSets => FixedDistanceSets is { Length: > 0 };
@@ -230,7 +246,7 @@ internal readonly struct Utf8SearchPlan
 
     private Utf8ConfirmationPlan CreateConfirmationPlan()
     {
-        if (!NativeSearch.HasPreparedSearcher && FallbackCandidateEngine.HasValue)
+        if (!HasPreparedSearcher && FallbackCandidateSource.HasValue)
         {
             return new Utf8ConfirmationPlan(Utf8ConfirmationKind.FallbackVerifier);
         }
@@ -247,14 +263,9 @@ internal readonly struct Utf8SearchPlan
         return default;
     }
 
-    private Utf8ProjectionPlan CreateProjectionPlan()
+    private static Utf8ProjectionPlan CreateProjectionPlan(Utf8SearchKind kind)
     {
-        if (!EnumerationStrategy.Semantics.RequiresProjection)
-        {
-            return default;
-        }
-
-        return Kind switch
+        return kind switch
         {
             Utf8SearchKind.ExactUtf8Literals
                 => new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
@@ -376,7 +387,7 @@ internal readonly struct Utf8SearchPlan
             orderedWindowSameLine);
     }
 
-    private static Utf8StructuralSearchPlan[]? CreateRequiredWindowPrefilterPlans(Utf8WindowSearchInfo[]? requiredWindowPrefilters)
+    private static Utf8StructuralSearchPlan[]? CreateRequiredWindowPrefilterPlans(Utf8WindowSearchFacts[]? requiredWindowPrefilters)
     {
         if (requiredWindowPrefilters is not { Length: > 0 } windowInfos)
         {
@@ -466,14 +477,16 @@ internal readonly struct Utf8SearchPlan
 
 internal readonly struct Utf8FixedDistanceSet
 {
-    public Utf8FixedDistanceSet(int distance, byte[]? chars, bool negated, byte rangeLow = 0, byte rangeHigh = 0, bool hasRange = false)
+    private Utf8FixedDistanceSet(
+        int distance,
+        byte[]? chars,
+        bool negated,
+        Utf8InclusiveByteRange? range)
     {
         Distance = distance;
         Chars = chars;
         Negated = negated;
-        RangeLow = rangeLow;
-        RangeHigh = rangeHigh;
-        HasRange = hasRange;
+        Range = range;
     }
 
     public int Distance { get; }
@@ -482,9 +495,45 @@ internal readonly struct Utf8FixedDistanceSet
 
     public bool Negated { get; }
 
-    public byte RangeLow { get; }
+    public byte RangeLow => Range?.Low ?? 0;
 
-    public byte RangeHigh { get; }
+    public byte RangeHigh => Range?.High ?? 0;
 
-    public bool HasRange { get; }
+    public bool HasRange => Range.HasValue;
+
+    public Utf8InclusiveByteRange? Range { get; }
+
+    public static Utf8FixedDistanceSet FromBytes(int distance, byte[]? chars, bool negated)
+        => new(distance, chars, negated, null);
+
+    public static Utf8FixedDistanceSet FromBytesAndRange(
+        int distance,
+        byte[]? chars,
+        bool negated,
+        byte rangeLow,
+        byte rangeHigh)
+        => new(distance, chars, negated, Utf8InclusiveByteRange.Create(rangeLow, rangeHigh));
+}
+
+internal readonly struct Utf8InclusiveByteRange
+{
+    private Utf8InclusiveByteRange(byte low, byte high)
+    {
+        Low = low;
+        High = high;
+    }
+
+    public byte Low { get; }
+
+    public byte High { get; }
+
+    public static Utf8InclusiveByteRange Create(byte low, byte high)
+    {
+        if (low > high)
+        {
+            throw new ArgumentOutOfRangeException(nameof(low));
+        }
+
+        return new Utf8InclusiveByteRange(low, high);
+    }
 }

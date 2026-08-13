@@ -19,16 +19,16 @@ internal sealed class Utf8EmittedSearchGuidedFallback
 
     private readonly Utf8SearchPlan _searchPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
-    private readonly Utf8BackendInstructionProgram _firstMatchProgram;
-    private readonly Utf8BackendInstructionProgram _countProgram;
+    private readonly Utf8SearchOperationPlan _firstMatchProgram;
+    private readonly Utf8SearchOperationPlan _countProgram;
     private readonly IsMatchDelegate _isMatch;
     private readonly CountDelegate _count;
 
     private Utf8EmittedSearchGuidedFallback(
         Utf8SearchPlan searchPlan,
         Utf8VerifierRuntime verifierRuntime,
-        Utf8BackendInstructionProgram firstMatchProgram,
-        Utf8BackendInstructionProgram countProgram,
+        Utf8SearchOperationPlan firstMatchProgram,
+        Utf8SearchOperationPlan countProgram,
         IsMatchDelegate isMatch,
         CountDelegate count)
     {
@@ -53,8 +53,8 @@ internal sealed class Utf8EmittedSearchGuidedFallback
             backend = new Utf8EmittedSearchGuidedFallback(
                 regexPlan.SearchPlan,
                 verifierRuntime,
-                regexPlan.SearchPlan.FirstMatchProgram,
-                regexPlan.SearchPlan.CountProgram,
+                regexPlan.SearchPlan.FirstMatchOperation,
+                regexPlan.SearchPlan.CountOperation,
                 BoundaryLiteralFamilyIsMatch,
                 BoundaryLiteralFamilyCount);
             return true;
@@ -63,8 +63,8 @@ internal sealed class Utf8EmittedSearchGuidedFallback
         backend = new Utf8EmittedSearchGuidedFallback(
             regexPlan.SearchPlan,
             verifierRuntime,
-            regexPlan.SearchPlan.FirstMatchProgram,
-            regexPlan.SearchPlan.CountProgram,
+            regexPlan.SearchPlan.FirstMatchOperation,
+            regexPlan.SearchPlan.CountOperation,
             CompileIsMatch(),
             CompileCount());
         return true;
@@ -79,17 +79,17 @@ internal sealed class Utf8EmittedSearchGuidedFallback
         var searchPlan = regexPlan.SearchPlan;
         return regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
             searchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
-            searchPlan.NativeSearch.HasPreparedSearcher &&
+            searchPlan.HasPreparedSearcher &&
             searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             searchPlan.HasBoundaryRequirements &&
             !searchPlan.HasTrailingLiteralRequirement &&
-            searchPlan.FirstMatchProgram.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
-            searchPlan.CountProgram.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
+            searchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
+            searchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
     }
 
     private static bool TryFindNextVerifiedMatch(
         Utf8EmittedSearchGuidedFallback backend,
-        bool useCountProgram,
+        bool useCountOperation,
         ReadOnlySpan<byte> input,
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
@@ -99,7 +99,7 @@ internal sealed class Utf8EmittedSearchGuidedFallback
         var validation = Utf8InputAnalyzer.ValidateOnly(input);
         return Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(
             backend._searchPlan,
-            useCountProgram ? backend._countProgram : backend._firstMatchProgram,
+            useCountOperation ? backend._countProgram : backend._firstMatchProgram,
             backend._verifierRuntime,
             input,
             validation,

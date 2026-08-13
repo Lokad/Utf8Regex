@@ -3754,7 +3754,7 @@ public sealed class Utf8Regex
         var validation = Utf8InputAnalyzer.ValidateOnly(input);
         Utf8BoundaryMap? boundaryMap = null;
         string? decoded = null;
-        if (!Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out _))
+        if (!Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchOperation, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out _))
         {
             return false;
         }
@@ -3771,7 +3771,7 @@ public sealed class Utf8Regex
         var count = 0;
         var startIndex = 0;
         while ((uint)startIndex <= (uint)input.Length &&
-               Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.CountProgram, _verifierRuntime, input, validation, startIndex, ref boundaryMap, ref decoded, out var verification))
+               Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.CountOperation, _verifierRuntime, input, validation, startIndex, ref boundaryMap, ref decoded, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
@@ -3854,7 +3854,7 @@ public sealed class Utf8Regex
     {
         var validation = boundaryMap is null ? Utf8InputAnalyzer.ValidateOnly(input) : default;
         string? decoded = null;
-        if (Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchProgram, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out var verification))
+        if (Utf8BackendInstructionExecutor.TryFindNextFallbackVerifiedMatch(_preparedRegex.SearchPlan, _preparedRegex.SearchPlan.FirstMatchOperation, _verifierRuntime, input, validation, 0, ref boundaryMap, ref decoded, out var verification))
         {
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             return Utf8ProjectionExecutor.ProjectFallbackVerification(verification);

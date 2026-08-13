@@ -15,9 +15,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly bool _usesRightToLeft;
     private readonly Utf8CompiledExecutionBackend _backend;
-    private readonly Utf8BackendInstructionProgram _countProgram;
-    private readonly Utf8BackendInstructionProgram _firstMatchProgram;
-    private readonly Utf8BackendInstructionProgram _enumerationProgram;
+    private readonly Utf8SearchOperationPlan _countProgram;
+    private readonly Utf8SearchOperationPlan _firstMatchProgram;
+    private readonly Utf8SearchOperationPlan _enumerationProgram;
     private readonly Utf8EmittedLiteralFamilyCounter? _emittedLiteralFamilyCounter;
     private readonly byte[][]? _smallAsciiLiteralFamily;
     private readonly SearchValues<byte>? _smallAsciiLiteralFamilyFirstBytes;
@@ -35,9 +35,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         _regexPlan = regexPlan;
         _usesRightToLeft = usesRightToLeft;
         _backend = compiledEngine.Backend;
-        _countProgram = _regexPlan.SearchPlan.CountProgram;
-        _firstMatchProgram = _regexPlan.SearchPlan.FirstMatchProgram;
-        _enumerationProgram = _regexPlan.SearchPlan.EnumerationProgram;
+        _countProgram = _regexPlan.SearchPlan.CountOperation;
+        _firstMatchProgram = _regexPlan.SearchPlan.FirstMatchOperation;
+        _enumerationProgram = _regexPlan.SearchPlan.EnumerationOperation;
         _emittedLiteralFamilyCounter = _backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
                                        Utf8EmittedLiteralFamilyCounter.TryCreate(_regexPlan.SearchPlan, _countProgram, _firstMatchProgram, out var emitted)
             ? emitted
@@ -818,7 +818,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return CountExactUtf8LiteralFamilyValidated(input, _bmpThreeByteLiteralFamilySearch);
         }
 
-        if (_regexPlan.SearchPlan.NativeSearch.HasPreparedSearcher &&
+        if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             if (budget is null && _emittedLiteralFamilyCounter is not null)
@@ -1054,7 +1054,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
     {
-        if (_regexPlan.SearchPlan.NativeSearch.HasPreparedSearcher &&
+        if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             if (budget is null && _emittedLiteralFamilyCounter is not null)

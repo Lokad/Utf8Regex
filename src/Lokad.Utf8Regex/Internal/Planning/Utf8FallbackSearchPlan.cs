@@ -21,13 +21,10 @@ internal readonly struct Utf8FallbackSearchPlan
 
     public Utf8StructuralSearchPlan[]? CandidatePlans { get; }
 
-    public Utf8SearchEnginePlan CandidateEngine =>
-        CandidatePlans is { Length: > 0 } candidatePlans
-            ? new Utf8SearchEnginePlan(
-                Utf8SearchEngineKind.StructuralSearchSet,
-                Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true },
-                structuralSearchPlans: candidatePlans)
-            : default;
+    public Utf8CandidateSearchPlan CandidateSource =>
+        Utf8CandidateSearchPlan.FromStructuralSearchSet(
+            CandidatePlans,
+            Utf8SearchSemantics.CandidateScan with { RequiresConfirmation = true });
 
     public bool HasRequiredPrefilter => PrefilterPlan.HasValue;
 

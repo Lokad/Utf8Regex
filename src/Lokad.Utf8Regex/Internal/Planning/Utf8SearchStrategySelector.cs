@@ -3,58 +3,57 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal static class Utf8SearchStrategySelector
 {
-    public static Utf8SearchMetaStrategyPlan CreateCountStrategy(Utf8SearchPlan plan)
-        => Create(plan, Utf8SearchSemantics.CountMatches);
-
-    public static Utf8SearchMetaStrategyPlan CreateFirstMatchStrategy(Utf8SearchPlan plan)
-        => Create(plan, Utf8SearchSemantics.FirstMatch);
-
-    public static Utf8SearchMetaStrategyPlan CreateEnumerationStrategy(Utf8SearchPlan plan)
-        => Create(plan, Utf8SearchSemantics.EnumerateMatches);
-
-    private static Utf8SearchMetaStrategyPlan Create(Utf8SearchPlan plan, Utf8SearchSemantics semantics)
+    public static Utf8SearchOperationPlan Create(
+        Utf8SearchPlan plan,
+        Utf8SearchSemantics semantics,
+        Utf8ConfirmationPlan confirmation,
+        Utf8ProjectionPlan projection)
     {
-        var prefilterEngine = plan.PrefilterPlan.PrimaryEngine.HasValue
-            ? plan.PrefilterPlan.PrimaryEngine
-            : plan.PrefilterPlan.SecondaryEngine.HasValue
-                ? plan.PrefilterPlan.SecondaryEngine
-                : plan.PrefilterPlan.WindowEngine;
+        var prefilterEngine = plan.PrefilterPlan.PrimarySource.HasValue
+            ? plan.PrefilterPlan.PrimarySource
+            : plan.PrefilterPlan.SecondarySource.HasValue
+                ? plan.PrefilterPlan.SecondarySource
+                : plan.PrefilterPlan.WindowSource;
 
-        if (plan.NativeCandidateEngine.HasValue)
+        if (plan.NativeCandidateSource.HasValue)
         {
             var kind = plan.HasRequiredPrefilter
                 ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement
-                    ? Utf8SearchMetaStrategyKind.PrefilterThenConfirm
-                    : Utf8SearchMetaStrategyKind.PrefilterThenSearch
+                    ? Utf8SearchOperationKind.PrefilterThenConfirm
+                    : Utf8SearchOperationKind.PrefilterThenSearch
                 : plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement
-                    ? Utf8SearchMetaStrategyKind.SearchThenConfirm
+                    ? Utf8SearchOperationKind.SearchThenConfirm
                     : IsLargeAutomatonHybridCandidate(plan)
-                        ? Utf8SearchMetaStrategyKind.HybridSearch
-                        : Utf8SearchMetaStrategyKind.DirectSearch;
-            return new Utf8SearchMetaStrategyPlan(
+                        ? Utf8SearchOperationKind.HybridSearch
+                        : Utf8SearchOperationKind.DirectSearch;
+            return Utf8SearchOperationPlan.Create(
                 kind,
                 semantics with
                 {
                     RequiresConfirmation = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement,
                     RequiresProjection = semantics.RequiresProjection,
                 },
-                plan.NativeCandidateEngine,
+                plan.NativeCandidateSource,
                 prefilterEngine,
-                kind == Utf8SearchMetaStrategyKind.HybridSearch
+                confirmation,
+                projection,
+                kind == Utf8SearchOperationKind.HybridSearch
                     ? Utf8SearchObservabilityKind.Effectiveness
                     : Utf8SearchObservabilityKind.CandidateCounts);
         }
 
-        if (plan.FallbackCandidateEngine.HasValue)
+        if (plan.FallbackCandidateSource.HasValue)
         {
             var kind = plan.HasRequiredPrefilter
-                ? Utf8SearchMetaStrategyKind.PrefilterThenConfirm
-                : Utf8SearchMetaStrategyKind.SearchThenConfirm;
-            return new Utf8SearchMetaStrategyPlan(
+                ? Utf8SearchOperationKind.PrefilterThenConfirm
+                : Utf8SearchOperationKind.SearchThenConfirm;
+            return Utf8SearchOperationPlan.Create(
                 kind,
                 semantics with { RequiresConfirmation = true, RequiresProjection = semantics.RequiresProjection },
-                plan.FallbackCandidateEngine,
+                plan.FallbackCandidateSource,
                 prefilterEngine,
+                confirmation,
+                projection,
                 Utf8SearchObservabilityKind.CandidateCounts);
         }
 

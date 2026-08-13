@@ -50,14 +50,14 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private readonly IsMatchDelegate _isMatch;
     private readonly TryMatchDelegate _tryMatch;
     private readonly Utf8SearchPlan _plan;
-    private readonly Utf8BackendInstructionProgram _countProgram;
-    private readonly Utf8BackendInstructionProgram _firstMatchProgram;
+    private readonly Utf8SearchOperationPlan _countProgram;
+    private readonly Utf8SearchOperationPlan _firstMatchProgram;
     private readonly bool _canUseAsciiBoundaryOnlyFastConfirmation;
 
     private Utf8EmittedLiteralFamilyCounter(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram countProgram,
-        Utf8BackendInstructionProgram firstMatchProgram,
+        Utf8SearchOperationPlan countProgram,
+        Utf8SearchOperationPlan firstMatchProgram,
         bool canUseAsciiBoundaryOnlyFastConfirmation,
         CountDelegate count,
         IsMatchDelegate isMatch,
@@ -72,10 +72,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         _tryMatch = tryMatch;
     }
 
-    internal static bool CanCreate(Utf8SearchPlan plan, Utf8BackendInstructionProgram countProgram, Utf8BackendInstructionProgram firstMatchProgram)
+    internal static bool CanCreate(Utf8SearchPlan plan, Utf8SearchOperationPlan countProgram, Utf8SearchOperationPlan firstMatchProgram)
     {
-        return plan.NativeSearch.HasPreparedSearcher &&
-            plan.NativeSearch.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
+        return plan.HasPreparedSearcher &&
+            plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             !plan.HasTrailingLiteralRequirement &&
             countProgram.HasValue &&
             firstMatchProgram.HasValue;
@@ -83,8 +83,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     internal static bool TryCreate(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram countProgram,
-        Utf8BackendInstructionProgram firstMatchProgram,
+        Utf8SearchOperationPlan countProgram,
+        Utf8SearchOperationPlan firstMatchProgram,
         out Utf8EmittedLiteralFamilyCounter? counter)
     {
         counter = null;
@@ -122,7 +122,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         out int index,
         out int matchedLength)
     {
-        return counter._plan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out index, out matchedLength);
+        return counter._plan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out index, out matchedLength);
     }
 
     private static bool Confirm(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength)
@@ -247,8 +247,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static bool CanUseAsciiBoundaryOnlyFastConfirmation(
         Utf8SearchPlan plan,
-        Utf8BackendInstructionProgram countProgram,
-        Utf8BackendInstructionProgram firstMatchProgram)
+        Utf8SearchOperationPlan countProgram,
+        Utf8SearchOperationPlan firstMatchProgram)
     {
         return plan.HasBoundaryRequirements &&
             !plan.HasTrailingLiteralRequirement &&

@@ -50,7 +50,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 out matchedLength);
         }
 
-        if (searchPlan.NativeSearch.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
+        if (searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             CanUseIdentifierTailOnlyCountKernel(familyPlan))
         {
             return FindNextIdentifierTailOnlyViaPreparedSearcher(
@@ -189,7 +189,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8ExecutionBudget? budget)
     {
-        if (searchPlan.NativeSearch.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
+        if (searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
         {
             return CountStatefulViaPreparedSearcher(input, familyPlan, searchPlan, budget);
         }
@@ -258,7 +258,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedSearchScanState(0, default);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
+        while (searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
         {
             if (match.Index < minStartIndex ||
                 !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(familyPlan.LeadingBoundary, input, match.Index))
@@ -292,7 +292,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
+        while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
         {
             if (matchIndex < minStartIndex ||
                 !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(familyPlan.LeadingBoundary, input, matchIndex))
@@ -337,7 +337,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedSearchScanState(0, default);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
+        while (searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
         {
             if (match.Index < minStartIndex ||
                 !MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, match.Index))
@@ -413,7 +413,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedSearchScanState(0, default);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
+        while (searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
         {
             if (match.Index < minStartIndex ||
                 !MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, match.Index))
@@ -730,7 +730,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
+        while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
         {
             if (matchIndex < minStartIndex ||
                 !MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, matchIndex))
@@ -861,7 +861,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var minStartIndex = 0;
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
+        while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
         {
             if (matchIndex < minStartIndex ||
                 !MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, matchIndex))
@@ -968,7 +968,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         matchedLength = 0;
         var state = new PreparedMultiLiteralScanState(startIndex, startIndex, 0);
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
+        while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
         {
             if (!MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, matchIndex))
             {
@@ -1001,7 +1001,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         matchedLength = 0;
         var state = new PreparedSearchScanState(startIndex, default);
 
-        while (searchPlan.NativeSearch.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
+        while (searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
         {
             if (!MatchesLeadingBoundaryForWordPrefix(familyPlan.LeadingBoundary, input, match.Index))
             {
