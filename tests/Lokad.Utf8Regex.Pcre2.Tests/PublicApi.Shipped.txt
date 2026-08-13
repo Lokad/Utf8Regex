@@ -1,0 +1,188 @@
+enum Pcre2BackslashCPolicy { Forbid, Allow }
+enum Pcre2BsrConvention { Default, AnyCrlf, Unicode }
+class Pcre2CompileException
+  ctor Pcre2CompileException(String message, String errorKind)
+  property String ErrorKind { get; }
+enum Pcre2CompileOptions { None, Caseless, Multiline, DotAll, Extended, ExtendedMore, Anchored, EndAnchored, DollarEndOnly, Ungreedy, NoAutoCapture, Ucp, FirstLine }
+class Pcre2ErrorKinds
+  field String BackslashCDisabled
+  field String BackslashCInUtfLookbehind
+  field String CalloutUnsupported
+  field String ClassRangeOrder
+  field String DisallowedLookaroundBackslashK
+  field String EscapeInvalidInClass
+  field String InvalidAfterParensQuery
+  field String LookaroundBackslashKDisabled
+  field String MissingCharacterClassTerminator
+  field String MissingClosingParenthesis
+  field String MissingCommentClosing
+  field String QuantifierInvalid
+  field String QuantifierNumbersOutOfOrder
+  field String QuantifierTooBig
+  field String UnrecognizedEscape
+delegate Void Pcre2MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
+class Pcre2MatchException
+  ctor Pcre2MatchException(String message)
+  ctor Pcre2MatchException(String message, String errorKind)
+  property String ErrorKind { get; }
+enum Pcre2MatchOptions { None, Anchored, EndAnchored, NotBol, NotEol, NotEmpty, NotEmptyAtStart }
+struct Pcre2NameEntry
+  property Int32 Number { get; set; }
+  property String Name { get; set; }
+enum Pcre2NewlineConvention { Default, Cr, Lf, Crlf, Any, AnyCrlf, Nul }
+enum Pcre2PartialMode { None, Soft, Hard }
+class Pcre2SubstitutionException
+  ctor Pcre2SubstitutionException(String message)
+  ctor Pcre2SubstitutionException(String message, String errorKind)
+  property String ErrorKind { get; }
+enum Pcre2SubstitutionOptions { None, Extended, UnsetEmpty, UnknownUnset, SubstituteMatched, SubstituteLiteral, SubstituteOverflowLength, SubstituteReplacementOnly }
+delegate String Pcre2Utf16MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref TState state)
+struct Utf8Pcre2Analysis
+  property Boolean HasDuplicateNames { get; set; }
+  property Boolean IsExactLiteral { get; set; }
+  property Boolean IsFullyNative { get; set; }
+  property Boolean MayFailIterativeExecutionAtRuntime { get; set; }
+  property Boolean MayProduceNonUtf8Slices { get; set; }
+  property Boolean MayReportNonMonotoneMatchOffsets { get; set; }
+  property Boolean RejectsNonMonotoneIterativeMatches { get; set; }
+  property Boolean UsesBacktrackingControlVerbs { get; set; }
+  property Boolean UsesBranchReset { get; set; }
+  property Boolean UsesRecursion { get; set; }
+  property Int32 MinRequiredLengthInBytes { get; set; }
+struct Utf8Pcre2CompileSettings
+  property Boolean AllowDuplicateNames { get; set; }
+  property Boolean AllowLookaroundBackslashK { get; set; }
+  property Pcre2BackslashCPolicy BackslashC { get; set; }
+  property Pcre2BsrConvention Bsr { get; set; }
+  property Pcre2NewlineConvention Newline { get; set; }
+struct Utf8Pcre2ExecutionLimits
+  property UInt32 DepthLimit { get; set; }
+  property UInt32 MatchLimit { get; set; }
+  property UInt64 HeapLimitInBytes { get; set; }
+struct Utf8Pcre2GroupContext
+  property Boolean HasContiguousByteRange { get; }
+  property Boolean HasUtf16Projection { get; }
+  property Boolean IsUtf8SliceWellFormed { get; }
+  property Boolean Success { get; }
+  property Int32 EndOffsetInBytes { get; }
+  property Int32 EndOffsetInUtf16 { get; }
+  property Int32 Number { get; }
+  property Int32 StartOffsetInBytes { get; }
+  property Int32 StartOffsetInUtf16 { get; }
+  method ReadOnlySpan<Byte> GetValueBytes()
+  method String GetValueString()
+struct Utf8Pcre2MatchContext
+  property Boolean Success { get; }
+  property Int32 CaptureSlotCount { get; }
+  property Int32 NameEntryCount { get; }
+  property String Mark { get; }
+  property Utf8Pcre2ValueMatch Value { get; }
+  method Boolean TryGetFirstSetGroup(String name, out Utf8Pcre2GroupContext group)
+  method Boolean TryGetGroup(Int32 number, out Utf8Pcre2GroupContext group)
+  method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
+  method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
+  method String GetValueString()
+  method Utf8Pcre2GroupContext GetGroup(Int32 number)
+struct Utf8Pcre2MatchData
+  property Boolean HasContiguousByteRange { get; set; }
+  property Boolean HasUtf16Projection { get; set; }
+  property Boolean IsUtf8SliceWellFormed { get; set; }
+  property Boolean Success { get; set; }
+  property Int32 EndOffsetInBytes { get; set; }
+  property Int32 EndOffsetInUtf16 { get; set; }
+  property Int32 StartOffsetInBytes { get; set; }
+  property Int32 StartOffsetInUtf16 { get; set; }
+struct Utf8Pcre2PartialMatchContext
+  property String Mark { get; }
+  property Utf8Pcre2ValueMatch Value { get; }
+  method ReadOnlySpan<Byte> GetValueBytes()
+  method String GetValueString()
+enum Utf8Pcre2ProbeKind { NoMatch, FullMatch, PartialMatch }
+struct Utf8Pcre2ProbeResult
+  property String Mark { get; }
+  property Utf8Pcre2ProbeKind Kind { get; }
+  property Utf8Pcre2ValueMatch Value { get; }
+  method Utf8Pcre2MatchContext GetMatch()
+  method Utf8Pcre2PartialMatchContext GetPartial()
+class Utf8Pcre2Regex
+  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8)
+  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options)
+  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
+  ctor Utf8Pcre2Regex(String pattern)
+  ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options)
+  ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
+  property Int32 NameEntryCount { get; }
+  property Pcre2CompileOptions Options { get; }
+  property String Pattern { get; }
+  property TimeSpan DefaultMatchTimeout { get; set; }
+  property TimeSpan MatchTimeout { get; }
+  property Utf8Pcre2CompileSettings CompileSettings { get; }
+  property Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
+  method Boolean IsMatch(ReadOnlySpan<Byte> input)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group)
+  method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten)
+  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
+  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Pcre2SubstitutionOptions substitutionOptions)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Int32 startOffsetInBytes)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
+  method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
+  method Int32 Count(ReadOnlySpan<Byte> input)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore)
+  method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Pcre2SubstitutionOptions substitutionOptions)
+  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
+  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Utf8Pcre2Analysis Analyze()
+  method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input)
+  method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode)
+  method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes)
+  method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input)
+  method Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input)
+  method Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions)
+  method static Boolean IsMatch(ReadOnlySpan<Byte> input, String pattern)
+  method static Boolean IsMatch(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options)
+  method static Boolean IsMatch(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes)
+  method static Byte[] Replace(ReadOnlySpan<Byte> input, String pattern, String replacement)
+  method static Byte[] Replace(ReadOnlySpan<Byte> input, String pattern, String replacement, Pcre2CompileOptions options)
+  method static Byte[] Replace(ReadOnlySpan<Byte> input, String pattern, String replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
+  method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern)
+  method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options)
+  method static Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, Int32 startOffsetInBytes)
+struct Utf8Pcre2ValueMatch
+  property Boolean HasContiguousByteRange { get; }
+  property Boolean HasUtf16Projection { get; }
+  property Boolean IsUtf8SliceWellFormed { get; }
+  property Boolean Success { get; }
+  property Int32 EndOffsetInBytes { get; }
+  property Int32 EndOffsetInUtf16 { get; }
+  property Int32 StartOffsetInBytes { get; }
+  property Int32 StartOffsetInUtf16 { get; }
+  method ReadOnlySpan<Byte> GetValueBytes()
+  method String GetValueString()
+struct Utf8Pcre2ValueMatchEnumerator
+  property Utf8Pcre2ValueMatch Current { get; }
+  method Boolean MoveNext()

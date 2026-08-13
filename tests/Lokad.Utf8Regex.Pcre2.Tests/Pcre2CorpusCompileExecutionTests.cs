@@ -9,12 +9,21 @@ public sealed class Pcre2CorpusCompileExecutionTests
     [MemberData(nameof(Pcre2CorpusExecutionData.CompileCases), MemberType = typeof(Pcre2CorpusExecutionData))]
     public void ActiveCompileCorpusCasesMatchExpectedCompileOutcome(Pcre2CorpusCase corpusCase)
     {
-        var action = () => _ = new Utf8Pcre2Regex(
-            corpusCase.Pattern,
-            ParseCompileOptions(corpusCase.CompileOptions),
-            CreateSettings(corpusCase.CompileSettings),
-            default,
-            default);
+        void Compile()
+        {
+            var options = ParseCompileOptions(corpusCase.CompileOptions);
+            var settings = CreateSettings(corpusCase.CompileSettings);
+            if (corpusCase.PatternBytesBase64 is { } patternBytesBase64)
+            {
+                var patternBytes = Convert.FromBase64String(patternBytesBase64);
+                _ = new Utf8Pcre2Regex(patternBytes, options, settings, default, default);
+                return;
+            }
+
+            _ = new Utf8Pcre2Regex(corpusCase.Pattern, options, settings, default, default);
+        }
+
+        Action action = Compile;
 
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.CompileError)
         {

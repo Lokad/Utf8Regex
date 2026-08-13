@@ -5,7 +5,8 @@ public static class Pcre2CorpusExecutionFilter
     public static bool CanExecuteCompile(Pcre2CorpusCase corpusCase)
     {
         ArgumentNullException.ThrowIfNull(corpusCase);
-        return corpusCase.Operation == Pcre2CorpusOperationKind.Compile;
+        return corpusCase.Operation == Pcre2CorpusOperationKind.Compile &&
+               corpusCase.PatternBytesBase64 is null;
     }
 
     public static bool CanExecuteManagedMatchSubset(Pcre2CorpusCase corpusCase)

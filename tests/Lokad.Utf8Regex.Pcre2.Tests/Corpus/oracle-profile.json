@@ -1,0 +1,29 @@
+{
+  "SchemaVersion": 1,
+  "Oracle": {
+    "Project": "PCRE2",
+    "Release": "10.47",
+    "Tag": "pcre2-10.47",
+    "Commit": "f454e23",
+    "Source": "https://github.com/PCRE2Project/pcre2/tree/pcre2-10.47"
+  },
+  "Build": {
+    "CodeUnitWidth": 8,
+    "UnicodeSupport": true,
+    "UnicodeVersion": "16.0.0",
+    "DefaultNewline": "LF",
+    "DefaultBsr": "Unicode",
+    "Jit": false
+  },
+  "Invocation": {
+    "CompileOptions": [
+      "PCRE2_UTF",
+      "PCRE2_UCP"
+    ],
+    "MatchOptions": []
+  },
+  "CorpusGenerator": {
+    "Name": "Lokad.Utf8Regex.Pcre2 corpus normalizer",
+    "Version": 1
+  }
+}

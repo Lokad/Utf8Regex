@@ -8,6 +8,8 @@ public sealed class Pcre2CorpusCase
 
     public string? PatternRef { get; init; }
 
+    public string? PatternBytesBase64 { get; init; }
+
     public string PatternEncoding { get; init; } = "Utf16Text";
 
     public string[] CompileOptions { get; init; } = [];

@@ -1,0 +1,56 @@
+[
+  {
+    "Id": "pcre2.utf8-pattern.invalid-lone-continuation",
+    "PatternBytesBase64": "gA==",
+    "PatternEncoding": "Utf8BytesBase64",
+    "CompileOptions": [],
+    "CompileSettings": {},
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "InvalidUtf8Pattern"
+    },
+    "Status": "UnsupportedYet",
+    "Tags": ["Compile", "Utf8Validation"],
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-lone-continuation"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-overlong-sequence",
+    "PatternBytesBase64": "wK8=",
+    "PatternEncoding": "Utf8BytesBase64",
+    "CompileOptions": [],
+    "CompileSettings": {},
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "InvalidUtf8Pattern"
+    },
+    "Status": "UnsupportedYet",
+    "Tags": ["Compile", "Utf8Validation"],
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-overlong"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-truncated-sequence",
+    "PatternBytesBase64": "4oI=",
+    "PatternEncoding": "Utf8BytesBase64",
+    "CompileOptions": [],
+    "CompileSettings": {},
+    "MatchOptions": [],
+    "InputText": "",
+    "StartOffsetInBytes": 0,
+    "Operation": "Compile",
+    "Expected": {
+      "Outcome": "CompileError",
+      "ErrorKind": "InvalidUtf8Pattern"
+    },
+    "Status": "UnsupportedYet",
+    "Tags": ["Compile", "Utf8Validation"],
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-truncated"
+  }
+]

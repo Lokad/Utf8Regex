@@ -1,19 +1,20 @@
 # PCRE2 corpus porting guide
 
-The local PCRE2 semantic corpus is self-contained. Upstream PCRE2 sources under `external/pcre2/` are reference material only.
+The local PCRE2 semantic corpus is self-contained. It does not depend on an
+upstream checkout during build or test. `oracle-profile.json` pins the exact
+upstream release and normalization profile used when importing cases.
 
 ## Source of truth
 
-Use the official PCRE2 test corpus first:
+Use the official PCRE2 10.47 test corpus first:
 
-* `external/pcre2/testdata/testinput*`
-* `external/pcre2/testdata/testoutput*`
+* `https://github.com/PCRE2Project/pcre2/tree/pcre2-10.47/testdata`
 
 Supplement with upstream docs only when a case needs interpretation:
 
-* `external/pcre2/doc/`
-* `external/pcre2/README`
-* `external/pcre2/RunTest`
+* `https://github.com/PCRE2Project/pcre2/tree/pcre2-10.47/doc`
+* `https://github.com/PCRE2Project/pcre2/blob/pcre2-10.47/README`
+* `https://github.com/PCRE2Project/pcre2/blob/pcre2-10.47/RunTest`
 
 ## Porting rules
 
@@ -21,7 +22,11 @@ Supplement with upstream docs only when a case needs interpretation:
 * keep each local case small and normalized to the `Utf8Pcre2Regex` API surface
 * port cases into checked-in local JSON corpus files; do not execute upstream files directly from the test run
 * when one upstream scenario maps to multiple local API operations, split it into multiple local cases with distinct ids
-* keep `InputText` textual when possible; add a byte-oriented extension to the corpus model later if upstream cases require non-text payloads
+* keep `Pattern` textual when possible; use `PatternBytesBase64` with
+  `PatternEncoding` set to `Utf8BytesBase64` only when the pattern is not valid
+  UTF-8
+* malformed byte patterns are compiler inputs; they never enable matching an
+  invalid UTF-8 subject
 
 ## Provenance format
 

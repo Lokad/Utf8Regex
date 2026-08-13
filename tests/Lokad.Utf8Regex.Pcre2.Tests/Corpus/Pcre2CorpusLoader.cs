@@ -71,11 +71,38 @@ public static class Pcre2CorpusLoader
     private static Pcre2CorpusCase ResolveSharedPattern(Pcre2CorpusCase corpusCase, IReadOnlyDictionary<string, string> sharedPatterns)
     {
         var hasInlinePattern = !string.IsNullOrWhiteSpace(corpusCase.Pattern);
+        var hasPatternReference = !string.IsNullOrWhiteSpace(corpusCase.PatternRef);
+        var hasBytePattern = !string.IsNullOrWhiteSpace(corpusCase.PatternBytesBase64);
+        var payloadCount = (hasInlinePattern ? 1 : 0) + (hasPatternReference ? 1 : 0) + (hasBytePattern ? 1 : 0);
+        if (payloadCount != 1)
+        {
+            throw new InvalidOperationException($"Corpus case '{corpusCase.Id}' must declare exactly one of Pattern, PatternRef, or PatternBytesBase64.");
+        }
+
+        if (corpusCase.PatternBytesBase64 is { } patternBytesBase64 && hasBytePattern)
+        {
+            if (!string.Equals(corpusCase.PatternEncoding, "Utf8BytesBase64", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"Byte-pattern corpus case '{corpusCase.Id}' must use PatternEncoding 'Utf8BytesBase64'.");
+            }
+
+            try
+            {
+                _ = Convert.FromBase64String(patternBytesBase64);
+            }
+            catch (FormatException exception)
+            {
+                throw new InvalidOperationException($"Corpus case '{corpusCase.Id}' has an invalid base64 pattern payload.", exception);
+            }
+
+            return corpusCase;
+        }
+
         if (string.IsNullOrWhiteSpace(corpusCase.PatternRef))
         {
-            if (!hasInlinePattern)
+            if (!string.Equals(corpusCase.PatternEncoding, "Utf16Text", StringComparison.Ordinal))
             {
-                throw new InvalidOperationException($"Corpus case '{corpusCase.Id}' must declare either Pattern or PatternRef.");
+                throw new InvalidOperationException($"Text-pattern corpus case '{corpusCase.Id}' must use PatternEncoding 'Utf16Text'.");
             }
 
             return corpusCase;
@@ -96,6 +123,7 @@ public static class Pcre2CorpusLoader
             Id = corpusCase.Id,
             Pattern = resolvedPattern,
             PatternRef = corpusCase.PatternRef,
+            PatternBytesBase64 = corpusCase.PatternBytesBase64,
             PatternEncoding = corpusCase.PatternEncoding,
             CompileOptions = corpusCase.CompileOptions,
             CompileSettings = corpusCase.CompileSettings,
@@ -108,6 +136,7 @@ public static class Pcre2CorpusLoader
             Operation = corpusCase.Operation,
             Expected = corpusCase.Expected,
             Status = corpusCase.Status,
+            Tags = corpusCase.Tags,
             Source = corpusCase.Source,
             Notes = corpusCase.Notes,
         };

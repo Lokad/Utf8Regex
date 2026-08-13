@@ -14,7 +14,7 @@ public sealed class Pcre2CorpusBacklogLedgerTests
 
         Assert.Equal(3, manifests.Count);
 
-        Assert.Collection(
+        Assert.All(
             manifests["local-backlog-compile"].Entries,
             static entry => Assert.Equal(Pcre2CorpusOperationKind.Compile, entry.Operation));
 
@@ -68,10 +68,10 @@ public sealed class Pcre2CorpusBacklogLedgerTests
 
         Assert.Equal(
             """
-            Total=22
-            UnsupportedYet=0
+            Total=25
+            UnsupportedYet=3
             OutOfScopeBySpec=22
-            Compile=1
+            Compile=4
             MatchDetailed=4
             EnumerateMatches=1
             Replace=16

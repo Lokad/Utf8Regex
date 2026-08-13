@@ -3029,5 +3029,26 @@
     "SourceFile": "testdata/testinput6",
     "Operation": "Match",
     "Status": "Active"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-lone-continuation",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-lone-continuation",
+    "SourceFile": "testdata/testinput8",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-overlong-sequence",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-overlong",
+    "SourceFile": "testdata/testinput8",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-truncated-sequence",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-truncated",
+    "SourceFile": "testdata/testinput8",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet"
   }
 ]

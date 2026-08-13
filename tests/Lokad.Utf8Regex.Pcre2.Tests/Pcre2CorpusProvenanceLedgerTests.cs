@@ -56,15 +56,16 @@ public sealed class Pcre2CorpusProvenanceLedgerTests
             .AppendLine($"testinput21={provenance.Count(static entry => entry.SourceFile == "testdata/testinput21")}")
             .AppendLine($"testinput22={provenance.Count(static entry => entry.SourceFile == "testdata/testinput22")}")
             .AppendLine($"testinput5={provenance.Count(static entry => entry.SourceFile == "testdata/testinput5")}")
-            .AppendLine($"testinput6={provenance.Count(static entry => entry.SourceFile == "testdata/testinput6")}");
+            .AppendLine($"testinput6={provenance.Count(static entry => entry.SourceFile == "testdata/testinput6")}")
+            .AppendLine($"testinput8={provenance.Count(static entry => entry.SourceFile == "testdata/testinput8")}");
 
         Assert.Equal(
             """
-            Total=433
+            Total=436
             Active=413
-            UnsupportedYet=0
+            UnsupportedYet=3
             OutOfScopeBySpec=20
-            Compile=16
+            Compile=19
             Count=11
             EnumerateMatches=10
             Match=123
@@ -78,6 +79,7 @@ public sealed class Pcre2CorpusProvenanceLedgerTests
             testinput22=2
             testinput5=1
             testinput6=12
+            testinput8=3
 
             """.ReplaceLineEndings(Environment.NewLine),
             summary.ToString().ReplaceLineEndings(Environment.NewLine));

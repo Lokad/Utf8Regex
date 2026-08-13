@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 1,
+  "SchemaVersion": 2,
   "Sections": {
     "pcre2-managed-compatible-ismatch": {
       "Cases": {
@@ -22,10 +22,17 @@
           "DecodeThenRegex": 1.2065
         },
         "common/email-match": {
-          "Utf8Pcre2": 0.54568,
-          "Utf8Regex": 0.16819,
-          "PredecodedRegex": 0.6737,
-          "DecodeThenRegex": 0.5219699999999999
+          "PatternUtf8Bytes": 118,
+          "InputUtf8Bytes": 34,
+          "EffectiveIterations": 10000,
+          "ConstructionMicroseconds": 45.115625,
+          "ConstructionAllocatedBytes": 118136,
+          "FirstCallAllocatedBytes": 2616,
+          "WarmAllocatedBytes": 144,
+          "Utf8Pcre2": 0.36103,
+          "Utf8Regex": 0.24802,
+          "PredecodedRegex": 0.15550999999999998,
+          "DecodeThenRegex": 0.16379000000000002
         },
         "common/email-miss": {
           "Utf8Pcre2": 0.66318,
@@ -220,34 +227,19 @@
     "pcre2-managed-compatible-matchmany": {
       "Cases": {
         "simple/ab-plus": {
-          "Utf8Pcre2": 0.6822199999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.6822199999999999
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 1.34352,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 1.34352
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 0.81424,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.81424
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 1.4706,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 1.4706
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 4.60288,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 4.60288
         }
       }
     },
@@ -294,334 +286,512 @@
     "pcre2-special-ismatch": {
       "Cases": {
         "pcre2/backslash-c-literal": {
-          "Utf8Pcre2": 0.2286,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.2286
         },
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 0.23204,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.23204
         },
         "pcre2/conditional-accept-negative-lookahead": {
-          "Utf8Pcre2": 0.17656,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.17656
         },
         "pcre2/conditional-lookahead": {
-          "Utf8Pcre2": 0.21474000000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.21474000000000001
         },
         "pcre2/conditional-negative-lookahead": {
-          "Utf8Pcre2": 0.1621,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.1621
         },
         "pcre2/recursive-optional": {
-          "Utf8Pcre2": 0.20598000000000002,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.20598000000000002
         },
         "pcre2/recursive-palindrome": {
-          "Utf8Pcre2": 0.22391999999999998,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.22391999999999998
         },
         "pcre2/subroutine-prefix-digits": {
-          "Utf8Pcre2": 0.2092,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.2092
         }
       }
     },
     "pcre2-special-count": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 0.5043500000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.5043500000000001
         },
         "pcre2/branch-reset-basic": {
-          "Utf8Pcre2": 5.187399999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 17,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 47.18671875,
+          "ConstructionAllocatedBytes": 99976,
+          "FirstCallAllocatedBytes": 1112,
+          "WarmAllocatedBytes": 104,
+          "Utf8Pcre2": 0.33055
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 4.9811000000000005,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 4.9811000000000005
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 5.1306,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 5.1306
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 5.03275,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 5.03275
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 4.9338,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 4.9338
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 5.5825,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 5.5825
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 5.026800000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 5.026800000000001
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 5.185149999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 5.185149999999999
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 4.960850000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 4.960850000000001
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 4.948,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 4.948
         }
       }
     },
     "pcre2-special-enumerate": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.79805,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.79805
         },
         "pcre2/branch-reset-basic": {
-          "Utf8Pcre2": 7.363300000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 17,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 48.20546875,
+          "ConstructionAllocatedBytes": 99976,
+          "FirstCallAllocatedBytes": 48,
+          "WarmAllocatedBytes": 48,
+          "Utf8Pcre2": 18.284599999999998
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.7592,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.7592
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 6.7698,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.7698
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 6.78015,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.78015
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.729,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.729
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.98905,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.98905
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.8915,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.8915
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.83405,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.83405
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.7305,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.7305
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 6.8051,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.8051
         }
       }
     },
     "pcre2-special-matchmany": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.74575,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.74575
         },
         "pcre2/branch-reset-basic": {
-          "Utf8Pcre2": 6.773899999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 17,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 47.871484375,
+          "ConstructionAllocatedBytes": 99976,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 13.00715
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.8033,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.8033
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 7.0196499999999995,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 7.0196499999999995
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 6.7429499999999996,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.7429499999999996
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.77355,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.77355
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.79405,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.79405
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.8239,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.8239
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.686850000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.686850000000001
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.73275,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.73275
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 6.81925,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.81925
         }
       }
     },
     "pcre2-special-replace": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.866350000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.866350000000001
         },
         "pcre2/branch-reset-basic": {
-          "Utf8Pcre2": 6.638850000000001,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 17,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 49.218359375,
+          "ConstructionAllocatedBytes": 99976,
+          "FirstCallAllocatedBytes": 344,
+          "WarmAllocatedBytes": 240,
+          "Utf8Pcre2": 17.49785
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.5317,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.5317
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 6.978899999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.978899999999999
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 7.0808,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 7.0808
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.5325500000000005,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.5325500000000005
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.5862,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.5862
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.60025,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.60025
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.551699999999999,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.551699999999999
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.4996,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 6.4996
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 0.6554,
-          "Utf8Regex": null,
-          "PredecodedRegex": null,
-          "DecodeThenRegex": null
+          "Utf8Pcre2": 0.6554
         }
       }
+    }
+  },
+  "ScalingFamilies": {
+    "long-flat-patterns": {
+      "Operation": "IsMatch",
+      "Points": [
+        {
+          "Scale": "32",
+          "PatternUtf8Bytes": 32,
+          "InputUtf8Bytes": 32,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 28.36875,
+          "WarmMicroseconds": 0.23125,
+          "ConstructionAllocatedBytes": 123585,
+          "FirstCallAllocatedBytes": 944,
+          "WarmAllocatedBytes": 136
+        },
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 128,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 29.1625,
+          "WarmMicroseconds": 0.753125,
+          "ConstructionAllocatedBytes": 71017,
+          "FirstCallAllocatedBytes": 1136,
+          "WarmAllocatedBytes": 328
+        },
+        {
+          "Scale": "512",
+          "PatternUtf8Bytes": 512,
+          "InputUtf8Bytes": 512,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 68.90625,
+          "WarmMicroseconds": 0.290625,
+          "ConstructionAllocatedBytes": 76393,
+          "FirstCallAllocatedBytes": 1904,
+          "WarmAllocatedBytes": 1096
+        }
+      ]
+    },
+    "cartesian-literal-families": {
+      "Operation": "IsMatch",
+      "Points": [
+        {
+          "Scale": "2",
+          "PatternUtf8Bytes": 20,
+          "InputUtf8Bytes": 4,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 35.85,
+          "WarmMicroseconds": 0.05,
+          "ConstructionAllocatedBytes": 112569,
+          "FirstCallAllocatedBytes": 944,
+          "WarmAllocatedBytes": 80
+        },
+        {
+          "Scale": "4",
+          "PatternUtf8Bytes": 32,
+          "InputUtf8Bytes": 4,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 69.84375,
+          "WarmMicroseconds": 0.04375,
+          "ConstructionAllocatedBytes": 311201,
+          "FirstCallAllocatedBytes": 944,
+          "WarmAllocatedBytes": 80
+        },
+        {
+          "Scale": "8",
+          "PatternUtf8Bytes": 56,
+          "InputUtf8Bytes": 4,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 112.40625,
+          "WarmMicroseconds": 0.04375,
+          "ConstructionAllocatedBytes": 458761,
+          "FirstCallAllocatedBytes": 944,
+          "WarmAllocatedBytes": 80
+        }
+      ]
+    },
+    "dense-plus-sparse-candidate-portfolios": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 38.2375,
+          "WarmMicroseconds": 3.875,
+          "ConstructionAllocatedBytes": 95737,
+          "FirstCallAllocatedBytes": 1360,
+          "WarmAllocatedBytes": 328
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 63.2,
+          "WarmMicroseconds": 28.9,
+          "ConstructionAllocatedBytes": 95769,
+          "FirstCallAllocatedBytes": 3152,
+          "WarmAllocatedBytes": 2120
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 8,
+          "ConstructionMicroseconds": 38.1125,
+          "WarmMicroseconds": 120.6,
+          "ConstructionAllocatedBytes": 95771,
+          "FirstCallAllocatedBytes": 9296,
+          "WarmAllocatedBytes": 8267
+        }
+      ]
+    },
+    "candidate-heavy-misses": {
+      "Operation": "IsMatch",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 38.75625,
+          "WarmMicroseconds": 0.896875,
+          "ConstructionAllocatedBytes": 133889,
+          "FirstCallAllocatedBytes": 1192,
+          "WarmAllocatedBytes": 328
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 37.725,
+          "WarmMicroseconds": 5.534375,
+          "ConstructionAllocatedBytes": 133889,
+          "FirstCallAllocatedBytes": 2984,
+          "WarmAllocatedBytes": 2120
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 8,
+          "ConstructionMicroseconds": 36.525,
+          "WarmMicroseconds": 46.5,
+          "ConstructionAllocatedBytes": 133891,
+          "FirstCallAllocatedBytes": 9128,
+          "WarmAllocatedBytes": 8267
+        }
+      ]
+    },
+    "dense-non-ascii-coordinates": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 64.06875,
+          "WarmMicroseconds": 3.8625,
+          "ConstructionAllocatedBytes": 66297,
+          "FirstCallAllocatedBytes": 1392,
+          "WarmAllocatedBytes": 584
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 27.93125,
+          "WarmMicroseconds": 11.190625,
+          "ConstructionAllocatedBytes": 66297,
+          "FirstCallAllocatedBytes": 4528,
+          "WarmAllocatedBytes": 3720
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 8,
+          "ConstructionMicroseconds": 26.575,
+          "WarmMicroseconds": 43.8,
+          "ConstructionAllocatedBytes": 66299,
+          "FirstCallAllocatedBytes": 15280,
+          "WarmAllocatedBytes": 14475
+        }
+      ]
+    },
+    "zero-width-iteration": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 25.375,
+          "WarmMicroseconds": 3.55,
+          "ConstructionAllocatedBytes": 71777,
+          "FirstCallAllocatedBytes": 1360,
+          "WarmAllocatedBytes": 328
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 26.2625,
+          "WarmMicroseconds": 27.659375,
+          "ConstructionAllocatedBytes": 71777,
+          "FirstCallAllocatedBytes": 3152,
+          "WarmAllocatedBytes": 2120
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 8,
+          "ConstructionMicroseconds": 24.0875,
+          "WarmMicroseconds": 211.4625,
+          "ConstructionAllocatedBytes": 71779,
+          "FirstCallAllocatedBytes": 9296,
+          "WarmAllocatedBytes": 8267
+        }
+      ]
+    },
+    "capture-rollback": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "16",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 33,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 35.2625,
+          "WarmMicroseconds": 0.784375,
+          "ConstructionAllocatedBytes": 90513,
+          "FirstCallAllocatedBytes": 3064,
+          "WarmAllocatedBytes": 136
+        },
+        {
+          "Scale": "64",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 129,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 33.81875,
+          "WarmMicroseconds": 2.828125,
+          "ConstructionAllocatedBytes": 90513,
+          "FirstCallAllocatedBytes": 6680,
+          "WarmAllocatedBytes": 328
+        },
+        {
+          "Scale": "256",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 513,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 33.39375,
+          "WarmMicroseconds": 11.05,
+          "ConstructionAllocatedBytes": 90513,
+          "FirstCallAllocatedBytes": 24976,
+          "WarmAllocatedBytes": 1096
+        }
+      ]
+    },
+    "replacement-growth": {
+      "Operation": "Replace",
+      "Points": [
+        {
+          "Scale": "32",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 32,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 28.16875,
+          "WarmMicroseconds": 23.9125,
+          "ConstructionAllocatedBytes": 74017,
+          "FirstCallAllocatedBytes": 38576,
+          "WarmAllocatedBytes": 37816
+        },
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 33.30625,
+          "WarmMicroseconds": 71.234375,
+          "ConstructionAllocatedBytes": 74017,
+          "FirstCallAllocatedBytes": 175664,
+          "WarmAllocatedBytes": 174904
+        },
+        {
+          "Scale": "512",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 512,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 28.88125,
+          "WarmMicroseconds": 312.146875,
+          "ConstructionAllocatedBytes": 74017,
+          "FirstCallAllocatedBytes": 1092656,
+          "WarmAllocatedBytes": 1091896
+        }
+      ]
     }
   }
 }

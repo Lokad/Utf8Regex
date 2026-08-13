@@ -64,6 +64,15 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--refresh-pcre2-scaling-families", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunRefreshPcre2ScalingFamilies(
+                args.Length >= 2 ? args[1] : null,
+                args.Length >= 3 ? args[2] : null,
+                args.Length >= 4 ? args[3] : null);
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-priority-report", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunEmitPcre2PriorityReport();

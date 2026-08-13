@@ -289,6 +289,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.SchemaVersion = 2;
 
         foreach (var section in GetPcre2SectionsForCase(caseId))
         {
@@ -306,6 +307,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.SchemaVersion = 2;
         var sections = ParsePcre2Sections(sectionsText);
 
         foreach (var section in sections)
@@ -316,6 +318,151 @@ internal static partial class BenchmarkInspectReporter
         SavePcre2BenchmarkSnapshot(snapshot);
         Console.WriteLine($"Updated PCRE2 benchmark sections: {string.Join(", ", sections.Select(GetPcre2SectionToken))}");
         return 0;
+    }
+
+    public static int RunRefreshPcre2ScalingFamilies(string? iterationsText, string? samplesText, string? familyName)
+    {
+        var requestedIterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+        var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.SchemaVersion = 2;
+        if (string.IsNullOrWhiteSpace(familyName))
+        {
+            snapshot.ScalingFamilies.Clear();
+        }
+
+        var families = CreatePcre2ScalingFamilies()
+            .Where(family => string.IsNullOrWhiteSpace(familyName) || string.Equals(family.Name, familyName, StringComparison.Ordinal))
+            .ToArray();
+        if (families.Length == 0)
+        {
+            throw new InvalidOperationException($"Unknown PCRE2 scaling family '{familyName}'.");
+        }
+
+        foreach (var family in families)
+        {
+            var familySnapshot = new Pcre2ScalingFamilyJson { Operation = family.Operation.ToString() };
+            foreach (var benchmarkCase in family.Cases)
+            {
+                var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+                var effectiveIterations = Math.Max(
+                    context.InputBytes.Length <= 1024 ? 32 : context.InputBytes.Length <= 16 * 1024 ? 8 : 2,
+                    requestedIterations);
+                var constructionIterations = Math.Min(effectiveIterations, 16);
+                var allocationIterations = Math.Min(effectiveIterations, 32);
+                familySnapshot.Points.Add(new Pcre2ScalingPointJson
+                {
+                    Scale = benchmarkCase.Id[(benchmarkCase.Id.LastIndexOf('/') + 1)..],
+                    PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
+                    InputUtf8Bytes = context.InputBytes.Length,
+                    EffectiveIterations = effectiveIterations,
+                    ConstructionMicroseconds = MeasureMicroseconds(
+                        samples,
+                        constructionIterations,
+                        () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
+                    WarmMicroseconds = MeasureMicroseconds(
+                        samples,
+                        effectiveIterations,
+                        () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)),
+                    ConstructionAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                        constructionIterations,
+                        () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
+                    FirstCallAllocatedBytes = MeasurePcre2FirstCallAllocatedBytes(benchmarkCase, family.Operation),
+                    WarmAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                        allocationIterations,
+                        () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)),
+                });
+            }
+
+            snapshot.ScalingFamilies[family.Name] = familySnapshot;
+            SavePcre2BenchmarkSnapshot(snapshot);
+            Console.WriteLine($"Updated PCRE2 scaling family: {family.Name}");
+        }
+
+        Console.WriteLine($"Updated {snapshot.ScalingFamilies.Count} PCRE2 scaling families.");
+        return 0;
+    }
+
+    private static Pcre2ScalingFamily[] CreatePcre2ScalingFamilies()
+        =>
+        [
+            CreatePcre2ScalingFamily(
+                "long-flat-patterns",
+                Utf8Pcre2BenchmarkOperation.IsMatch,
+                [32, 128, 512],
+                static size => new string('a', size),
+                static size => new string('a', size)),
+            CreatePcre2ScalingFamily(
+                "cartesian-literal-families",
+                Utf8Pcre2BenchmarkOperation.IsMatch,
+                [2, 4, 8],
+                static size => $"^(?:{string.Join('|', Enumerable.Range(0, size).Select(static value => $"a{value}"))})(?:{string.Join('|', Enumerable.Range(0, size).Select(static value => $"b{value}"))})$",
+                static size => $"a{size - 1}b{size - 1}"),
+            CreatePcre2ScalingFamily(
+                "dense-plus-sparse-candidate-portfolios",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [128, 1024, 4096],
+                static size => $"(?:a|needle{size})",
+                static size => new string('a', size)),
+            CreatePcre2ScalingFamily(
+                "candidate-heavy-misses",
+                Utf8Pcre2BenchmarkOperation.IsMatch,
+                [128, 1024, 4096],
+                static _ => "ab[0-9]{2}",
+                static size => string.Concat(Enumerable.Repeat("abXX", size / 4))),
+            CreatePcre2ScalingFamily(
+                "dense-non-ascii-coordinates",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [128, 1024, 4096],
+                static _ => "é",
+                static size => new string('é', size / 2)),
+            CreatePcre2ScalingFamily(
+                "zero-width-iteration",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [128, 1024, 4096],
+                static _ => "(?=a)",
+                static size => new string('a', size)),
+            CreatePcre2ScalingFamily(
+                "capture-rollback",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [16, 64, 256],
+                static _ => "^(a|ab)+c$",
+                static size => string.Concat(Enumerable.Repeat("ab", size)) + "c"),
+            CreatePcre2ScalingFamily(
+                "replacement-growth",
+                Utf8Pcre2BenchmarkOperation.Replace,
+                [32, 128, 512],
+                static _ => "(a)",
+                static size => new string('a', size),
+                "$1$1"),
+        ];
+
+    private static Pcre2ScalingFamily CreatePcre2ScalingFamily(
+        string name,
+        Utf8Pcre2BenchmarkOperation operation,
+        int[] sizes,
+        Func<int, string> patternFactory,
+        Func<int, string> inputFactory)
+        => CreatePcre2ScalingFamily(name, operation, sizes, patternFactory, inputFactory, "bar");
+
+    private static Pcre2ScalingFamily CreatePcre2ScalingFamily(
+        string name,
+        Utf8Pcre2BenchmarkOperation operation,
+        int[] sizes,
+        Func<int, string> patternFactory,
+        Func<int, string> inputFactory,
+        string replacement)
+    {
+        var cases = sizes.Select(size => new Utf8Pcre2BenchmarkCase(
+            $"scale/{name}/{size}",
+            patternFactory(size),
+            inputFactory(size),
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+            default,
+            replacement,
+            operation,
+            Utf8Pcre2BenchmarkBackend.Pcre2Only)).ToArray();
+        return new Pcre2ScalingFamily(name, operation, cases);
     }
 
     public static int RunEmitPcre2PriorityReport()
@@ -717,6 +864,8 @@ internal static partial class BenchmarkInspectReporter
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
         var operation = GetPcre2SectionRequirements(section).Operation;
         var effectiveIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, iterations);
+        var allocationIterations = Math.Min(effectiveIterations, 4096);
+        var constructionIterations = Math.Min(effectiveIterations, 256);
 
         double utf8Pcre2 = operation switch
         {
@@ -770,11 +919,91 @@ internal static partial class BenchmarkInspectReporter
 
         return new Pcre2CaseMeasurementJson
         {
+            PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
+            InputUtf8Bytes = context.InputBytes.Length,
+            EffectiveIterations = effectiveIterations,
+            ConstructionMicroseconds = MeasureMicroseconds(
+                samples,
+                constructionIterations,
+                () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
+            ConstructionAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                constructionIterations,
+                () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
+            FirstCallAllocatedBytes = MeasurePcre2FirstCallAllocatedBytes(benchmarkCase, operation),
+            WarmAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                allocationIterations,
+                () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation)),
             Utf8Pcre2 = utf8Pcre2,
             Utf8Regex = utf8Regex,
             PredecodedRegex = predecodedRegex,
             DecodeThenRegex = decodeThenRegex,
         };
+    }
+
+    private static Utf8Pcre2Regex CreatePcre2BenchmarkRegex(Utf8Pcre2BenchmarkCase benchmarkCase)
+        => new(
+            benchmarkCase.Pattern,
+            Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
+            benchmarkCase.CompileSettings,
+            default,
+            default);
+
+    private static int ExecutePcre2SnapshotOperation(
+        Utf8Pcre2Regex regex,
+        Utf8Pcre2BenchmarkContext context,
+        Utf8Pcre2BenchmarkOperation operation)
+        => operation switch
+        {
+            Utf8Pcre2BenchmarkOperation.IsMatch => regex.IsMatch(context.InputBytes) ? 1 : 0,
+            Utf8Pcre2BenchmarkOperation.Count => regex.Count(context.InputBytes),
+            Utf8Pcre2BenchmarkOperation.EnumerateMatches => ExecutePcre2PublicEnumeratorIndexSum(regex, context.InputBytes),
+            Utf8Pcre2BenchmarkOperation.MatchMany => ExecutePcre2MatchManyIndexSum(regex, context.InputBytes),
+            Utf8Pcre2BenchmarkOperation.Replace => regex.Replace(context.InputBytes, context.Replacement).Length,
+            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+        };
+
+    private static long MeasurePcre2FirstCallAllocatedBytes(
+        Utf8Pcre2BenchmarkCase benchmarkCase,
+        Utf8Pcre2BenchmarkOperation operation)
+    {
+        const int instanceCount = 1;
+        var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+        var instances = new Utf8Pcre2Regex[instanceCount];
+        for (var i = 0; i < instances.Length; i++)
+        {
+            instances[i] = CreatePcre2BenchmarkRegex(benchmarkCase);
+        }
+
+        _ = ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < instances.Length; i++)
+        {
+            checksum ^= ExecutePcre2SnapshotOperation(instances[i], context, operation);
+        }
+
+        GC.KeepAlive(checksum);
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / instanceCount;
+    }
+
+    private static long MeasureAllocatedBytesPerInvocation(int iterations, Func<int> action)
+    {
+        _ = action();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < iterations; i++)
+        {
+            checksum ^= action();
+        }
+
+        GC.KeepAlive(checksum);
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / iterations;
     }
 
     private static int ParsePcre2SnapshotIterations(Utf8Pcre2BenchmarkCase benchmarkCase, Pcre2BenchmarkSection section, int requestedIterations)
@@ -919,6 +1148,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static readonly JsonSerializerOptions Pcre2BenchmarkSnapshotJsonOptions = new()
     {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
     };
 
@@ -941,6 +1171,36 @@ internal static partial class BenchmarkInspectReporter
         public int SchemaVersion { get; set; } = 1;
 
         public Dictionary<string, Pcre2BenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
+
+        public Dictionary<string, Pcre2ScalingFamilyJson> ScalingFamilies { get; set; } = new(StringComparer.Ordinal);
+    }
+
+    private sealed class Pcre2ScalingFamilyJson
+    {
+        public required string Operation { get; set; }
+
+        public List<Pcre2ScalingPointJson> Points { get; set; } = [];
+    }
+
+    private sealed class Pcre2ScalingPointJson
+    {
+        public required string Scale { get; set; }
+
+        public int PatternUtf8Bytes { get; set; }
+
+        public int InputUtf8Bytes { get; set; }
+
+        public int EffectiveIterations { get; set; }
+
+        public double ConstructionMicroseconds { get; set; }
+
+        public double WarmMicroseconds { get; set; }
+
+        public long ConstructionAllocatedBytes { get; set; }
+
+        public long FirstCallAllocatedBytes { get; set; }
+
+        public long WarmAllocatedBytes { get; set; }
     }
 
     private sealed class Pcre2BenchmarkSectionJson
@@ -950,6 +1210,20 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class Pcre2CaseMeasurementJson
     {
+        public int? PatternUtf8Bytes { get; set; }
+
+        public int? InputUtf8Bytes { get; set; }
+
+        public int? EffectiveIterations { get; set; }
+
+        public double? ConstructionMicroseconds { get; set; }
+
+        public long? ConstructionAllocatedBytes { get; set; }
+
+        public long? FirstCallAllocatedBytes { get; set; }
+
+        public long? WarmAllocatedBytes { get; set; }
+
         public double Utf8Pcre2 { get; set; }
 
         public double? Utf8Regex { get; set; }
@@ -977,4 +1251,9 @@ internal static partial class BenchmarkInspectReporter
         bool HasUtf8SearchEquivalentRegex,
         bool HasManagedRegex,
         string ExecutionPlan);
+
+    private readonly record struct Pcre2ScalingFamily(
+        string Name,
+        Utf8Pcre2BenchmarkOperation Operation,
+        Utf8Pcre2BenchmarkCase[] Cases);
 }

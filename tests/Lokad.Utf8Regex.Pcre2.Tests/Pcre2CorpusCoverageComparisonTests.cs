@@ -32,12 +32,12 @@ public sealed class Pcre2CorpusCoverageComparisonTests
     {
         var backlog = Pcre2CorpusBacklogLoader.LoadAll();
 
-        Assert.Equal(22, backlog.Count);
-        Assert.Equal(0, backlog.Count(static entry => entry.Status == Pcre2CorpusCaseStatus.UnsupportedYet));
+        Assert.Equal(25, backlog.Count);
+        Assert.Equal(3, backlog.Count(static entry => entry.Status == Pcre2CorpusCaseStatus.UnsupportedYet));
         Assert.Equal(22, backlog.Count(static entry => entry.Status == Pcre2CorpusCaseStatus.OutOfScopeBySpec));
         Assert.Equal(16, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.Replace));
         Assert.Equal(4, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.MatchDetailed));
         Assert.Equal(1, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.EnumerateMatches));
-        Assert.Equal(1, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.Compile));
+        Assert.Equal(4, backlog.Count(static entry => entry.Operation == Pcre2CorpusOperationKind.Compile));
     }
 }

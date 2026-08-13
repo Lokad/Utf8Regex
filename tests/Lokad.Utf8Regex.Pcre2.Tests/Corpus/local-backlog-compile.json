@@ -5,5 +5,26 @@
     "Status": "OutOfScopeBySpec",
     "Source": "ported/spec-pcre2/callout-non-goal",
     "Reason": "CalloutNonGoal"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-lone-continuation",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-lone-continuation",
+    "Reason": "L3StrictUtf8PatternDecoding"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-overlong-sequence",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-overlong",
+    "Reason": "L3StrictUtf8PatternDecoding"
+  },
+  {
+    "Id": "pcre2.utf8-pattern.invalid-truncated-sequence",
+    "Operation": "Compile",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput8:invalid-utf8-pattern-truncated",
+    "Reason": "L3StrictUtf8PatternDecoding"
   }
 ]

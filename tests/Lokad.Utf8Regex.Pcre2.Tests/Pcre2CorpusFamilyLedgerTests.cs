@@ -44,9 +44,9 @@ public sealed class Pcre2CorpusFamilyLedgerTests
 
         Assert.Equal(
             """
-            Total=622
+            Total=625
             Active=600
-            Compile.All=17
+            Compile.All=20
             Compile.Active=16
             Match.All=226
             Match.Active=222
