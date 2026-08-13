@@ -10,15 +10,8 @@ namespace Lokad.Utf8Regex.Pcre2;
 public sealed class Utf8Pcre2Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
-    private readonly Pcre2Utf8RegexTranslation _utf8Translation;
-    private readonly Utf8Regex? _utf8Regex;
-    private readonly Utf8Regex? _utf8SearchEquivalentRegex;
-    private readonly Regex? _managedRegex;
-    private readonly Pcre2ExecutionPlan _executionPlan;
-    private readonly string[] _groupNames;
-    private readonly Pcre2NameEntry[] _nameEntries;
-    private readonly Pcre2ExecutionKind _executionKind;
-    private readonly ConcurrentDictionary<SimpleReplacementCacheKey, SimpleReplacementPlan?> _simpleReplacementPlans = new();
+    private readonly Pcre2CompiledProgram _program;
+    private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     public Utf8Pcre2Regex(string pattern)
         : this(pattern, Pcre2CompileOptions.None)
@@ -38,67 +31,104 @@ public sealed class Utf8Pcre2Regex
         TimeSpan matchTimeout)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        Pcre2CompileValidator.Validate(pattern, compileSettings);
-        Pattern = pattern;
-        Options = options;
-        CompileSettings = compileSettings;
-        DefaultExecutionLimits = defaultExecutionLimits;
-        MatchTimeout = matchTimeout == default ? DefaultMatchTimeout : matchTimeout;
-        _executionKind = ClassifyExecutionKind(pattern);
-        if ((_executionKind == Pcre2ExecutionKind.Unimplemented ||
-             _executionKind == Pcre2ExecutionKind.ManagedRegex ||
-             CanAlsoUseUtf8RegexBackend(_executionKind)) &&
-            TryCreateUtf8Regex(pattern, options, MatchTimeout, out var utf8Regex))
+        var request = new Pcre2CompileRequest(
+            pattern,
+            options,
+            compileSettings,
+            defaultExecutionLimits,
+            matchTimeout == default ? DefaultMatchTimeout : matchTimeout);
+        _program = Pcre2Compiler.Compile(request, CreateLegacyProgram);
+    }
+
+    private static Pcre2CompiledProgram CreateLegacyProgram(Pcre2CompileRequest request)
+    {
+        var executionKind = ClassifyExecutionKind(request.Pattern);
+        Utf8Regex? utf8Regex = null;
+        var canCompilePrimaryUtf8 = executionKind == Pcre2ExecutionKind.Unimplemented ||
+            executionKind == Pcre2ExecutionKind.ManagedRegex ||
+            CanAlsoUseUtf8RegexBackend(executionKind);
+        if (canCompilePrimaryUtf8)
         {
-            _utf8Regex = utf8Regex;
+            _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out utf8Regex);
         }
 
-        if (TryCreateUtf8SearchEquivalentRegex(_executionKind, options, MatchTimeout, out var utf8SearchEquivalentRegex))
-        {
-            _utf8SearchEquivalentRegex = utf8SearchEquivalentRegex;
-        }
+        _ = TryCreateUtf8SearchEquivalentRegex(
+            executionKind,
+            request.Options,
+            request.MatchTimeout,
+            out var utf8SearchEquivalentRegex);
 
         Regex? managedRegexCandidate = null;
         string[] managedGroupNames = [];
         Pcre2NameEntry[] managedNameEntries = [];
-        var canUseSpecialUtf8Translation = _executionKind != Pcre2ExecutionKind.Unimplemented &&
-            _utf8Regex is not null &&
-            CanUseUtf8RegexTranslation(pattern, _executionKind, _utf8Regex);
+        var canUseSpecialUtf8Translation = executionKind != Pcre2ExecutionKind.Unimplemented &&
+            utf8Regex is not null &&
+            CanUseUtf8RegexTranslation(request.Pattern, executionKind, utf8Regex);
 
-        if ((_executionKind == Pcre2ExecutionKind.Unimplemented ||
-             (CanAlsoUseManagedRegexBackend(_executionKind) && !canUseSpecialUtf8Translation)) &&
-            TryCreateManagedRegex(pattern, options, MatchTimeout, out managedRegexCandidate))
+        if ((executionKind == Pcre2ExecutionKind.Unimplemented ||
+             (CanAlsoUseManagedRegexBackend(executionKind) && !canUseSpecialUtf8Translation)) &&
+            TryCreateManagedRegex(request.Pattern, request.Options, request.MatchTimeout, out managedRegexCandidate) &&
+            managedRegexCandidate is { } compiledManagedRegex)
         {
-            managedGroupNames = managedRegexCandidate!.GetGroupNames();
-            managedNameEntries = GetManagedNameEntries(managedRegexCandidate);
-            if (_executionKind == Pcre2ExecutionKind.Unimplemented)
+            managedGroupNames = compiledManagedRegex.GetGroupNames();
+            managedNameEntries = GetManagedNameEntries(compiledManagedRegex);
+            if (executionKind == Pcre2ExecutionKind.Unimplemented)
             {
-                _executionKind = Pcre2ExecutionKind.ManagedRegex;
+                executionKind = Pcre2ExecutionKind.ManagedRegex;
             }
         }
 
-        var canUseUtf8Translation = _utf8Regex is not null &&
-            CanUseUtf8RegexTranslation(pattern, _executionKind, _utf8Regex);
-        if (canUseUtf8Translation)
+        var canUseUtf8Translation = utf8Regex is not null &&
+            CanUseUtf8RegexTranslation(request.Pattern, executionKind, utf8Regex);
+        IPcre2TranslationProgram translation;
+        string[] groupNames;
+        Pcre2NameEntry[] nameEntries;
+        if (canUseUtf8Translation && utf8Regex is { } translatedUtf8Regex)
         {
-            var translatedUtf8Regex = _utf8Regex!;
-            _utf8Translation = new Pcre2Utf8RegexTranslation(true, pattern, ToRegexOptions(options), translatedUtf8Regex);
-            _groupNames = managedGroupNames.Length != 0 ? managedGroupNames : translatedUtf8Regex.GetGroupNames();
-            _nameEntries = managedNameEntries.Length != 0 ? managedNameEntries : GetUtf8RegexNameEntries(translatedUtf8Regex);
+            translation = new Pcre2Utf8TranslationProgram(request.Pattern, ToRegexOptions(request.Options), translatedUtf8Regex);
+            groupNames = managedGroupNames.Length != 0 ? managedGroupNames : translatedUtf8Regex.GetGroupNames();
+            nameEntries = managedNameEntries.Length != 0 ? managedNameEntries : GetUtf8RegexNameEntries(translatedUtf8Regex);
         }
         else if (managedRegexCandidate is not null)
         {
-            _managedRegex = managedRegexCandidate;
-            _groupNames = managedGroupNames;
-            _nameEntries = managedNameEntries;
+            translation = Pcre2NoTranslationProgram.Instance;
+            groupNames = managedGroupNames;
+            nameEntries = managedNameEntries;
         }
         else
         {
-            _groupNames = [];
-            _nameEntries = GetPatternNameEntries(pattern);
+            translation = Pcre2NoTranslationProgram.Instance;
+            groupNames = [];
+            nameEntries = GetPatternNameEntries(request.Pattern);
         }
 
-        _executionPlan = CreateExecutionPlan(Pattern, _executionKind, _utf8Translation.IsActive, _utf8SearchEquivalentRegex, _managedRegex);
+        IPcre2Utf8ProgramSlot primaryUtf8 = utf8Regex is null
+            ? Pcre2EmptyUtf8ProgramSlot.Instance
+            : new Pcre2Utf8ProgramSlot(utf8Regex);
+        IPcre2Utf8ProgramSlot searchEquivalentUtf8 = utf8SearchEquivalentRegex is null
+            ? Pcre2EmptyUtf8ProgramSlot.Instance
+            : new Pcre2Utf8ProgramSlot(utf8SearchEquivalentRegex);
+        IPcre2ManagedProgramSlot managed = canUseUtf8Translation || managedRegexCandidate is null
+            ? Pcre2EmptyManagedProgramSlot.Instance
+            : new Pcre2ManagedProgramSlot(managedRegexCandidate);
+        var operations = CreateExecutionPlan(
+            request.Pattern,
+            executionKind,
+            translation.IsActive,
+            primaryUtf8,
+            searchEquivalentUtf8,
+            managed);
+        return new Pcre2CompiledProgram(
+            request,
+            primaryUtf8,
+            searchEquivalentUtf8,
+            managed,
+            translation,
+            operations,
+            new Pcre2CandidateSearchProgram(operations.IsMatch),
+            new Pcre2FullVerificationProgram(executionKind),
+            groupNames,
+            nameEntries);
     }
 
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8)
@@ -127,15 +157,35 @@ public sealed class Utf8Pcre2Regex
         set => s_defaultMatchTimeout = value;
     }
 
-    public string Pattern { get; }
+    public string Pattern => _program.Request.Pattern;
 
-    public Pcre2CompileOptions Options { get; }
+    public Pcre2CompileOptions Options => _program.Request.Options;
 
-    public Utf8Pcre2CompileSettings CompileSettings { get; }
+    public Utf8Pcre2CompileSettings CompileSettings => _program.Request.Settings;
 
-    public Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
+    public Utf8Pcre2ExecutionLimits DefaultExecutionLimits => _program.Request.DefaultLimits;
 
-    public TimeSpan MatchTimeout { get; }
+    public TimeSpan MatchTimeout => _program.Request.MatchTimeout;
+
+    private Pcre2ExecutionKind ExecutionKind => _program.FullVerification.LegacyExecutionKind;
+
+    private bool HasPrimaryUtf8Regex => _program.PrimaryUtf8.IsPresent;
+
+    private Utf8Regex PrimaryUtf8Regex => ((Pcre2Utf8ProgramSlot)_program.PrimaryUtf8).Regex;
+
+    private bool HasSearchEquivalentUtf8Regex => _program.SearchEquivalentUtf8.IsPresent;
+
+    private Utf8Regex SearchEquivalentUtf8Regex => ((Pcre2Utf8ProgramSlot)_program.SearchEquivalentUtf8).Regex;
+
+    private bool HasManagedRegex => _program.Managed.IsPresent;
+
+    private Regex ManagedRegex => ((Pcre2ManagedProgramSlot)_program.Managed).Regex;
+
+    private bool UsesUtf8Translation => _program.Translation.IsActive;
+
+    private string[] GroupNames => _program.GroupNames;
+
+    private Pcre2NameEntry[] NameEntries => _program.NameEntries;
 
     public bool IsMatch(ReadOnlySpan<byte> input)
         => IsMatch(input, 0, Pcre2MatchOptions.None);
@@ -146,19 +196,9 @@ public sealed class Utf8Pcre2Regex
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.IsMatchBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (Pcre2Runner.TryIsMatch(_program.Operations.IsMatch, input, startOffsetInBytes, out var result))
         {
-            return _utf8Regex!.IsMatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-        }
-
-        if (_executionPlan.IsMatchBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
-        {
-            return _utf8SearchEquivalentRegex!.IsMatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-        }
-
-        if (_executionPlan.IsMatchBackend == Pcre2DirectBackendKind.ManagedRegex)
-        {
-            return IsMatchViaManagedRegex(input, startOffsetInBytes);
+            return result;
         }
 
         return IsMatchViaSlowPath(input, startOffsetInBytes, matchOptions);
@@ -173,24 +213,16 @@ public sealed class Utf8Pcre2Regex
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.ManagedRegex &&
+            startOffsetInBytes == 0 &&
+            CanUseUtf8RegexCompatiblePublicCount(input.Length))
         {
-            return _utf8Regex!.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            return PrimaryUtf8Regex.Count(input);
         }
 
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
+        if (Pcre2GlobalOperationDriver.TryCount(_program.Operations.Count, input, startOffsetInBytes, out var result))
         {
-            return _utf8SearchEquivalentRegex!.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-        }
-
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.ManagedRegex)
-        {
-            if (startOffsetInBytes == 0 && CanUseUtf8RegexCompatiblePublicCount(input.Length))
-            {
-                return _utf8Regex!.Count(input);
-            }
-
-            return CountViaManagedRegex(input, startOffsetInBytes);
+            return result;
         }
 
         return CountViaSlowPath(input, startOffsetInBytes, matchOptions);
@@ -201,7 +233,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        return _managedRegex!.IsMatch(subject, startOffsetInUtf16);
+        return ManagedRegex.IsMatch(subject, startOffsetInUtf16);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -215,12 +247,12 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        return _managedRegex!.Count(subject, startOffsetInUtf16);
+        return ManagedRegex.Count(subject, startOffsetInUtf16);
     }
 
     private bool CanUseUtf8RegexCompatiblePublicCount(int inputLength)
-        => _executionKind == Pcre2ExecutionKind.ManagedRegex &&
-           _utf8Regex is not null &&
+        => ExecutionKind == Pcre2ExecutionKind.ManagedRegex &&
+           HasPrimaryUtf8Regex &&
            inputLength <= 256;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -255,21 +287,21 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.MatchBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
             return CreateManagedProfileValueMatch(
                 input,
-                _utf8Regex!.MatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
+                PrimaryUtf8Regex.MatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
         }
 
-        if (_executionPlan.MatchBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
+        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
         {
             return CreateManagedProfileValueMatch(
                 input,
-                _utf8SearchEquivalentRegex!.MatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
+                SearchEquivalentUtf8Regex.MatchFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
         }
 
-        return _executionKind switch
+        return ExecutionKind switch
         {
             Pcre2ExecutionKind.ManagedRegex => MatchViaManagedRegex(input, startOffsetInBytes),
             Pcre2ExecutionKind.MailboxRfc2822 => MatchViaMailboxRfc2822(input, startOffsetInBytes),
@@ -344,12 +376,12 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return MatchDetailedViaUtf8RegexTranslation(input, startOffsetInBytes);
         }
 
-        return _executionKind switch
+        return ExecutionKind switch
         {
             Pcre2ExecutionKind.ManagedRegex => MatchDetailedViaManagedRegex(input, startOffsetInBytes),
             Pcre2ExecutionKind.MailboxRfc2822 => MatchDetailedViaMailboxRfc2822(input, startOffsetInBytes),
@@ -426,7 +458,7 @@ public sealed class Utf8Pcre2Regex
     {
         ValidateStartOffset(input, startOffsetInBytes);
 
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.None)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.None)
         {
             return EnumerateMatchesViaNativeGlobalEntry(input, startOffsetInBytes);
         }
@@ -437,7 +469,7 @@ public sealed class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaNativeGlobalEntry(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        if ((_executionKind is Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
+        if ((ExecutionKind is Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
                  Pcre2ExecutionKind.KResetSneakyLookbehindDefine or
                  Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine) &&
             TryCreateSpecialGlobalEnumerator(input, startOffsetInBytes, out var enumerator))
@@ -456,7 +488,7 @@ public sealed class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanEnumerateViaNativeValueGenerator()
         => Pattern == "(?<=abc)(|def)" ||
-           _executionKind is
+           ExecutionKind is
                Pcre2ExecutionKind.BranchResetBasic or
                Pcre2ExecutionKind.BranchResetBackref or
                Pcre2ExecutionKind.BranchResetNested or
@@ -473,7 +505,7 @@ public sealed class Utf8Pcre2Regex
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind GetNativeValueEnumeratorKind()
-        => _executionKind switch
+        => ExecutionKind switch
         {
             Pcre2ExecutionKind.BranchResetBasic => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetBasic,
             Pcre2ExecutionKind.BranchResetBackref => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetBackref,
@@ -495,11 +527,11 @@ public sealed class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaConfiguredBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        return _executionPlan.EnumerateBackend switch
+        return _program.Operations.Enumerate.Kind switch
         {
-            Pcre2DirectBackendKind.Utf8Regex => EnumerateMatchesViaUtf8RegexBackend(input, startOffsetInBytes),
-            Pcre2DirectBackendKind.Utf8RegexEquivalent => EnumerateMatchesViaUtf8RegexEquivalentBackend(input, startOffsetInBytes),
-            Pcre2DirectBackendKind.ManagedRegex => EnumerateMatchesViaManagedRegexBackend(input, startOffsetInBytes),
+            Pcre2DirectProgramKind.Utf8Regex => EnumerateMatchesViaUtf8RegexBackend(input, startOffsetInBytes),
+            Pcre2DirectProgramKind.Utf8RegexEquivalent => EnumerateMatchesViaUtf8RegexEquivalentBackend(input, startOffsetInBytes),
+            Pcre2DirectProgramKind.ManagedRegex => EnumerateMatchesViaManagedRegexBackend(input, startOffsetInBytes),
             _ => default,
         };
     }
@@ -507,24 +539,24 @@ public sealed class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaUtf8RegexBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return new Utf8Pcre2ValueMatchEnumerator(
                 input,
-                _utf8Regex!.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
+                PrimaryUtf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
         }
 
         if (CanUsePreparedAsciiUtf8RegexEnumerator(input, startOffsetInBytes))
         {
             return new Utf8Pcre2ValueMatchEnumerator(
                 input,
-                _utf8Regex!.Pcre2EnumeratePreparedValueMatchesAtByteOffset(input, startOffsetInBytes),
+                PrimaryUtf8Regex.Pcre2EnumeratePreparedValueMatchesAtByteOffset(input, startOffsetInBytes),
                 startOffsetInBytes);
         }
 
         return new Utf8Pcre2ValueMatchEnumerator(
             input,
-            _utf8Regex!.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes),
+            PrimaryUtf8Regex.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes),
             startOffsetInBytes,
             GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
     }
@@ -533,7 +565,7 @@ public sealed class Utf8Pcre2Regex
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaUtf8RegexEquivalentBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => new(
             input,
-            _utf8SearchEquivalentRegex!.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
+            SearchEquivalentUtf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes)));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaManagedRegexBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -542,7 +574,7 @@ public sealed class Utf8Pcre2Regex
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
         var isAscii = subject.Length == input.Length;
         var boundaryMap = isAscii ? null : Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        return new Utf8Pcre2ValueMatchEnumerator(input, _managedRegex!.EnumerateMatches(subject.AsSpan(), startOffsetInUtf16), boundaryMap, isAscii);
+        return new Utf8Pcre2ValueMatchEnumerator(input, ManagedRegex.EnumerateMatches(subject.AsSpan(), startOffsetInUtf16), boundaryMap, isAscii);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -552,13 +584,13 @@ public sealed class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CanUsePreparedAsciiUtf8RegexEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        if (_utf8Regex is null ||
+        if (!HasPrimaryUtf8Regex ||
             !Utf8Validation.Validate(input).IsAscii)
         {
             return false;
         }
 
-        return _utf8Regex.SearchPortfolioKind is
+        return PrimaryUtf8Regex.SearchPortfolioKind is
             Internal.Planning.Utf8SearchPortfolioKind.ExactLiteral or
             Internal.Planning.Utf8SearchPortfolioKind.IgnoreCaseLiteral;
     }
@@ -572,17 +604,17 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionKind == Pcre2ExecutionKind.PartialSoftDotAllLiteral)
+        if (ExecutionKind == Pcre2ExecutionKind.PartialSoftDotAllLiteral)
         {
             return ProbeViaPartialSoftDotAllLiteral(input, partialMode, startOffsetInBytes);
         }
 
-        if (_executionKind == Pcre2ExecutionKind.ReplaceFooLiteral)
+        if (ExecutionKind == Pcre2ExecutionKind.ReplaceFooLiteral)
         {
             return ProbeViaFooLiteral(input, partialMode, startOffsetInBytes);
         }
 
-        if (_executionKind == Pcre2ExecutionKind.ReplacePartialAbPlus)
+        if (ExecutionKind == Pcre2ExecutionKind.ReplacePartialAbPlus)
         {
             return ProbeViaAbPlus(input, partialMode, startOffsetInBytes);
         }
@@ -911,11 +943,11 @@ public sealed class Utf8Pcre2Regex
         {
             if (startOffsetInBytes == 0)
             {
-                return _utf8Regex!.TryReplace(input, replacementPatternUtf8, destination, out bytesWritten);
+                return PrimaryUtf8Regex.TryReplace(input, replacementPatternUtf8, destination, out bytesWritten);
             }
 
             input[..startOffsetInBytes].CopyTo(destination);
-            var status = _utf8Regex!.TryReplace(input[startOffsetInBytes..], replacementPatternUtf8, destination[startOffsetInBytes..], out var suffixBytesWritten);
+            var status = PrimaryUtf8Regex.TryReplace(input[startOffsetInBytes..], replacementPatternUtf8, destination[startOffsetInBytes..], out var suffixBytesWritten);
             bytesWritten = status == OperationStatus.Done ? startOffsetInBytes + suffixBytesWritten : 0;
             return status;
         }
@@ -934,20 +966,20 @@ public sealed class Utf8Pcre2Regex
         return OperationStatus.Done;
     }
 
-    public int NameEntryCount => _nameEntries.Length;
+    public int NameEntryCount => NameEntries.Length;
 
     public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore)
     {
-        var written = Math.Min(destination.Length, _nameEntries.Length);
-        _nameEntries.AsSpan(0, written).CopyTo(destination);
-        isMore = written < _nameEntries.Length;
+        var written = Math.Min(destination.Length, NameEntries.Length);
+        NameEntries.AsSpan(0, written).CopyTo(destination);
+        isMore = written < NameEntries.Length;
         return written;
     }
 
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var matchingEntries = _nameEntries.Where(static e => !string.IsNullOrEmpty(e.Name)).ToArray();
+        var matchingEntries = NameEntries.Where(static e => !string.IsNullOrEmpty(e.Name)).ToArray();
         var count = 0;
         foreach (var entry in matchingEntries)
         {
@@ -984,17 +1016,17 @@ public sealed class Utf8Pcre2Regex
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
             return MatchManyViaUtf8Regex(input, destination, out isMore, startOffsetInBytes);
         }
 
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
         {
             return MatchManyViaUtf8RegexEquivalent(input, destination, out isMore, startOffsetInBytes);
         }
 
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.ManagedRegex)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
             return MatchManyViaManagedRegex(input, destination, out isMore, startOffsetInBytes);
         }
@@ -1055,7 +1087,7 @@ public sealed class Utf8Pcre2Regex
         {
             var preparedEnumerator = new Utf8Pcre2ValueMatchEnumerator(
                 input,
-                _utf8Regex!.Pcre2EnumeratePreparedValueMatchesAtByteOffset(input, startOffsetInBytes),
+                PrimaryUtf8Regex.Pcre2EnumeratePreparedValueMatchesAtByteOffset(input, startOffsetInBytes),
                 startOffsetInBytes);
             if (destination.IsEmpty)
             {
@@ -1085,7 +1117,7 @@ public sealed class Utf8Pcre2Regex
             return preparedWritten;
         }
 
-        var enumerator = _utf8Regex!.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
+        var enumerator = PrimaryUtf8Regex.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
         var utf16OffsetBase = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (destination.IsEmpty)
         {
@@ -1112,7 +1144,7 @@ public sealed class Utf8Pcre2Regex
 
     private int MatchManyViaUtf8RegexEquivalent(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes)
     {
-        var enumerator = _utf8SearchEquivalentRegex!.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
+        var enumerator = SearchEquivalentUtf8Regex.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
         if (destination.IsEmpty)
         {
             isMore = enumerator.MoveNext();
@@ -1143,7 +1175,7 @@ public sealed class Utf8Pcre2Regex
         var isAscii = subject.Length == input.Length;
         var boundaryMap = isAscii ? null : Utf8InputAnalyzer.Analyze(input).BoundaryMap;
 
-        var match = _managedRegex!.Match(subject, startOffsetInUtf16);
+        var match = ManagedRegex.Match(subject, startOffsetInUtf16);
         if (destination.IsEmpty)
         {
             isMore = match.Success;
@@ -1185,17 +1217,17 @@ public sealed class Utf8Pcre2Regex
     {
         return new Utf8Pcre2Analysis
         {
-            IsFullyNative = _executionKind != Pcre2ExecutionKind.ManagedRegex,
+            IsFullyNative = ExecutionKind != Pcre2ExecutionKind.ManagedRegex,
             IsExactLiteral = Pattern is "foo",
             MinRequiredLengthInBytes = GetMinRequiredLengthInBytes(),
-            HasDuplicateNames = _nameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
-            UsesBranchReset = _executionKind == Pcre2ExecutionKind.BranchResetBasic,
-            UsesBacktrackingControlVerbs = _executionKind == Pcre2ExecutionKind.MarkSkip,
-            UsesRecursion = UsesRecursion(_executionKind),
-            MayProduceNonUtf8Slices = _executionKind == Pcre2ExecutionKind.BackslashCLiteral,
-            MayReportNonMonotoneMatchOffsets = MayReportNonMonotoneMatchOffsets(_executionKind),
-            RejectsNonMonotoneIterativeMatches = RejectsNonMonotoneIterativeMatches(_executionKind),
-            MayFailIterativeExecutionAtRuntime = MayFailIterativeExecutionAtRuntime(_executionKind),
+            HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
+            UsesBranchReset = ExecutionKind == Pcre2ExecutionKind.BranchResetBasic,
+            UsesBacktrackingControlVerbs = ExecutionKind == Pcre2ExecutionKind.MarkSkip,
+            UsesRecursion = UsesRecursion(ExecutionKind),
+            MayProduceNonUtf8Slices = ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
+            MayReportNonMonotoneMatchOffsets = MayReportNonMonotoneMatchOffsets(ExecutionKind),
+            RejectsNonMonotoneIterativeMatches = RejectsNonMonotoneIterativeMatches(ExecutionKind),
+            MayFailIterativeExecutionAtRuntime = MayFailIterativeExecutionAtRuntime(ExecutionKind),
         };
     }
 
@@ -1467,46 +1499,61 @@ public sealed class Utf8Pcre2Regex
             Pcre2ExecutionKind.ReplacePartialAbPlus;
     }
 
-    private static Pcre2ExecutionPlan CreateExecutionPlan(string pattern, Pcre2ExecutionKind executionKind, bool translatedToUtf8Regex, Utf8Regex? utf8SearchEquivalentRegex, Regex? managedRegex)
+    private static Pcre2OperationPrograms CreateExecutionPlan(
+        string pattern,
+        Pcre2ExecutionKind executionKind,
+        bool translatedToUtf8Regex,
+        IPcre2Utf8ProgramSlot primaryUtf8,
+        IPcre2Utf8ProgramSlot utf8SearchEquivalent,
+        IPcre2ManagedProgramSlot managed)
     {
         var isManagedCompatible = executionKind == Pcre2ExecutionKind.ManagedRegex || CanAlsoUseManagedRegexBackend(executionKind);
         var prefersNativeGlobalEntry = RequiresNativeGlobalEntryPath(pattern, executionKind) &&
-            !CanUseUtf8RegexEquivalentGlobalEntry(executionKind, utf8SearchEquivalentRegex);
+            !CanUseUtf8RegexEquivalentGlobalEntry(executionKind, utf8SearchEquivalent);
 
-        var directBackend = Pcre2DirectBackendKind.None;
+        IPcre2DirectProgram directProgram = Pcre2NoDirectProgram.Instance;
         if (translatedToUtf8Regex)
         {
-            directBackend = Pcre2DirectBackendKind.Utf8Regex;
+            directProgram = new Pcre2Utf8DirectProgram(
+                ((Pcre2Utf8ProgramSlot)primaryUtf8).Regex,
+                Pcre2DirectProgramKind.Utf8Regex);
         }
-        else if (utf8SearchEquivalentRegex is not null)
+        else if (utf8SearchEquivalent is Pcre2Utf8ProgramSlot equivalent)
         {
-            directBackend = Pcre2DirectBackendKind.Utf8RegexEquivalent;
+            directProgram = new Pcre2Utf8DirectProgram(equivalent.Regex, Pcre2DirectProgramKind.Utf8RegexEquivalent);
         }
-        else if (managedRegex is not null && isManagedCompatible)
+        else if (managed is Pcre2ManagedProgramSlot managedProgram && isManagedCompatible)
         {
-            directBackend = Pcre2DirectBackendKind.ManagedRegex;
+            directProgram = new Pcre2ManagedDirectProgram(managedProgram.Regex);
         }
 
-        return new Pcre2ExecutionPlan(
-            IsMatchBackend: directBackend,
-            CountBackend: prefersNativeGlobalEntry ? Pcre2DirectBackendKind.None : directBackend,
-            EnumerateBackend: prefersNativeGlobalEntry ? Pcre2DirectBackendKind.None :
-                translatedToUtf8Regex ? Pcre2DirectBackendKind.Utf8Regex :
-                utf8SearchEquivalentRegex is not null ? Pcre2DirectBackendKind.Utf8RegexEquivalent :
-                managedRegex is not null && isManagedCompatible ? Pcre2DirectBackendKind.ManagedRegex :
-                Pcre2DirectBackendKind.None,
-            MatchBackend: directBackend == Pcre2DirectBackendKind.Utf8Regex ? Pcre2DirectBackendKind.Utf8Regex :
-                directBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent ? Pcre2DirectBackendKind.Utf8RegexEquivalent :
-                Pcre2DirectBackendKind.None,
-            ReplaceBackend: prefersNativeGlobalEntry ? Pcre2DirectBackendKind.None :
-                directBackend == Pcre2DirectBackendKind.Utf8Regex ? Pcre2DirectBackendKind.Utf8Regex :
-                managedRegex is not null && isManagedCompatible ? Pcre2DirectBackendKind.ManagedRegex :
-                Pcre2DirectBackendKind.None);
+        var noProgram = Pcre2NoDirectProgram.Instance;
+        var countProgram = prefersNativeGlobalEntry ? noProgram : directProgram;
+        var enumerateProgram = prefersNativeGlobalEntry ? noProgram : directProgram;
+        var matchProgram = directProgram.Kind is Pcre2DirectProgramKind.Utf8Regex or Pcre2DirectProgramKind.Utf8RegexEquivalent
+            ? directProgram
+            : noProgram;
+        IPcre2DirectProgram replaceProgram = noProgram;
+        if (!prefersNativeGlobalEntry && directProgram.Kind == Pcre2DirectProgramKind.Utf8Regex)
+        {
+            replaceProgram = directProgram;
+        }
+        else if (!prefersNativeGlobalEntry && managed is Pcre2ManagedProgramSlot replacementManaged && isManagedCompatible)
+        {
+            replaceProgram = new Pcre2ManagedDirectProgram(replacementManaged.Regex);
+        }
+
+        return new Pcre2OperationPrograms(
+            directProgram,
+            countProgram,
+            enumerateProgram,
+            matchProgram,
+            replaceProgram);
     }
 
-    private static bool CanUseUtf8RegexEquivalentGlobalEntry(Pcre2ExecutionKind executionKind, Utf8Regex? utf8SearchEquivalentRegex)
+    private static bool CanUseUtf8RegexEquivalentGlobalEntry(Pcre2ExecutionKind executionKind, IPcre2Utf8ProgramSlot utf8SearchEquivalent)
     {
-        if (utf8SearchEquivalentRegex is null)
+        if (!utf8SearchEquivalent.IsPresent)
         {
             return false;
         }
@@ -1729,7 +1776,7 @@ public sealed class Utf8Pcre2Regex
     {
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var match = _managedRegex!.Match(decoded, utf16Start);
+        var match = ManagedRegex.Match(decoded, utf16Start);
         return Utf8Pcre2ValueMatch.Create(input, match);
     }
 
@@ -1743,14 +1790,14 @@ public sealed class Utf8Pcre2Regex
     {
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var match = _managedRegex!.Match(decoded, utf16Start);
-        return Utf8Pcre2MatchContext.Create(input, match, _groupNames);
+        var match = ManagedRegex.Match(decoded, utf16Start);
+        return Utf8Pcre2MatchContext.Create(input, match, GroupNames);
     }
 
     private Utf8Pcre2MatchContext MatchDetailedViaUtf8RegexTranslation(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        var context = _utf8Regex!.MatchDetailedFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
-        return CreateManagedProfileMatchContext(input, context, _groupNames);
+        var context = PrimaryUtf8Regex.MatchDetailedFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+        return CreateManagedProfileMatchContext(input, context, GroupNames);
     }
 
     private static Utf8Pcre2MatchContext MatchDetailedViaMailboxRfc2822(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -4150,13 +4197,13 @@ public sealed class Utf8Pcre2Regex
             "(?<=\\Ka)" or "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))" or "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))" or "(?=ab\\K)"
                 => throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches."),
             _ when CanEnumerateViaRepeatedDetailedMatching() => EnumerateViaRepeatedDetailedMatching(input, startOffsetInBytes),
-            _ when _managedRegex is not null => EnumerateViaManagedRegex(input, startOffsetInBytes),
+            _ when HasManagedRegex => EnumerateViaManagedRegex(input, startOffsetInBytes),
             _ => throw new NotSupportedException("SPEC-PCRE2 does not support global iteration for this pattern in the managed profile."),
         };
     }
 
     private bool CanEnumerateViaRepeatedDetailedMatching()
-        => CanEnumerateViaRepeatedDetailedMatching(_executionKind);
+        => CanEnumerateViaRepeatedDetailedMatching(ExecutionKind);
 
     private static bool CanEnumerateViaRepeatedDetailedMatching(Pcre2ExecutionKind executionKind)
     {
@@ -4250,7 +4297,7 @@ public sealed class Utf8Pcre2Regex
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
         var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
         var results = new Pcre2GroupData[matches.Count];
         for (var i = 0; i < matches.Count; i++)
         {
@@ -4640,7 +4687,7 @@ public sealed class Utf8Pcre2Regex
     private bool TryCreateSpecialGlobalEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8Pcre2ValueMatchEnumerator enumerator)
     {
         var remaining = input[startOffsetInBytes..];
-        switch (_executionKind)
+        switch (ExecutionKind)
         {
             case Pcre2ExecutionKind.KResetSneakyLookaheadDefine:
                 if (remaining.SequenceEqual("ab"u8))
@@ -4695,7 +4742,7 @@ public sealed class Utf8Pcre2Regex
     private bool UsesDeferredSpecialGlobalEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var remaining = input[startOffsetInBytes..];
-        return _executionKind switch
+        return ExecutionKind switch
         {
             Pcre2ExecutionKind.KResetSneakyLookaheadDefine => remaining.SequenceEqual("ab"u8),
             Pcre2ExecutionKind.KResetSneakyLookbehindDefine => remaining.SequenceEqual("ab"u8) && !CompileSettings.AllowLookaroundBackslashK,
@@ -4879,7 +4926,7 @@ public sealed class Utf8Pcre2Regex
             return ReplaceViaManagedRegexDirect(input, replacement, startOffsetInBytes);
         }
 
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return ReplaceViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
@@ -4906,14 +4953,14 @@ public sealed class Utf8Pcre2Regex
                 true),
             _ when UsesNativeGlobalIteration() => ReplaceViaNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes),
             _ when CanUseUtf8RegexLiteralReplacement(replacement, substitutionOptions, allowOverflowLengthShortcut: true) => ReplaceViaUtf8RegexLiteral(input, replacement, startOffsetInBytes),
-            _ when _managedRegex is not null => ReplaceViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes),
+            _ when HasManagedRegex => ReplaceViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes),
             _ => throw CreateUnsupportedReplacementException(),
         };
     }
 
     private bool CanUseUtf8RegexLiteralReplacement(string replacement, Pcre2SubstitutionOptions substitutionOptions, bool allowOverflowLengthShortcut)
     {
-        if (_utf8Regex is null || _executionPlan.ReplaceBackend != Pcre2DirectBackendKind.Utf8Regex)
+        if (!HasPrimaryUtf8Regex || _program.Operations.Replace.Kind != Pcre2DirectProgramKind.Utf8Regex)
         {
             return false;
         }
@@ -4940,7 +4987,7 @@ public sealed class Utf8Pcre2Regex
 
     private bool CanUseManagedRegexDirectReplacement(string replacement, Pcre2PartialMode partialMode, Pcre2SubstitutionOptions substitutionOptions)
     {
-        if (_managedRegex is null || partialMode != Pcre2PartialMode.None || _utf8Translation.IsActive)
+        if (!HasManagedRegex || partialMode != Pcre2PartialMode.None || UsesUtf8Translation)
         {
             return false;
         }
@@ -4953,10 +5000,10 @@ public sealed class Utf8Pcre2Regex
     {
         if (startOffsetInBytes == 0)
         {
-            return _utf8Regex!.Replace(input, replacement);
+            return PrimaryUtf8Regex.Replace(input, replacement);
         }
 
-        var replacedSuffix = _utf8Regex!.Replace(input[startOffsetInBytes..], replacement);
+        var replacedSuffix = PrimaryUtf8Regex.Replace(input[startOffsetInBytes..], replacement);
         var output = new byte[startOffsetInBytes + replacedSuffix.Length];
         input[..startOffsetInBytes].CopyTo(output);
         replacedSuffix.CopyTo(output.AsSpan(startOffsetInBytes));
@@ -4967,7 +5014,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var replaced = _managedRegex!.Replace(subject, replacement, int.MaxValue, startOffsetInUtf16);
+        var replaced = ManagedRegex.Replace(subject, replacement, int.MaxValue, startOffsetInUtf16);
         return Encoding.UTF8.GetBytes(replaced);
     }
 
@@ -5055,12 +5102,12 @@ public sealed class Utf8Pcre2Regex
             return ReplaceReplacementOnlyViaNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes);
         }
 
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return ReplaceReplacementOnlyViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
 
-        if (_managedRegex is not null)
+        if (HasManagedRegex)
         {
             return ReplaceReplacementOnlyViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes);
         }
@@ -5080,12 +5127,12 @@ public sealed class Utf8Pcre2Regex
             return ReplaceLiteralViaNativeIteration(input, replacement, startOffsetInBytes);
         }
 
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return ReplaceLiteralViaTranslatedEnumeration(input, replacement, startOffsetInBytes);
         }
 
-        if (_managedRegex is not null)
+        if (HasManagedRegex)
         {
             return ReplaceLiteralViaManagedRegex(input, replacement, startOffsetInBytes);
         }
@@ -5105,12 +5152,12 @@ public sealed class Utf8Pcre2Regex
             return ReplaceReplacementOnlyLiteralViaNativeIteration(input, replacement, startOffsetInBytes);
         }
 
-        if (_utf8Translation.IsActive)
+        if (UsesUtf8Translation)
         {
             return ReplaceReplacementOnlyLiteralViaTranslatedEnumeration(input, replacement, startOffsetInBytes);
         }
 
-        if (_managedRegex is not null)
+        if (HasManagedRegex)
         {
             return ReplaceReplacementOnlyLiteralViaManagedRegex(input, replacement, startOffsetInBytes);
         }
@@ -5135,7 +5182,7 @@ public sealed class Utf8Pcre2Regex
 
         if (!UsesNativeGlobalIteration())
         {
-            if (_utf8Translation.IsActive)
+            if (UsesUtf8Translation)
             {
                 var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
                 while (enumerator.MoveNext())
@@ -5152,11 +5199,11 @@ public sealed class Utf8Pcre2Regex
             else
             {
                 var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-                var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+                var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
                 foreach (Match match in matches)
                 {
                     builder.Append(subject, position, match.Index - position);
-                    var context = Utf8Pcre2MatchContext.Create(input, match, _groupNames);
+                    var context = Utf8Pcre2MatchContext.Create(input, match, GroupNames);
                     var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
                     evaluator(in context, ref writer, ref state);
                     builder.Append(writer.ToValidatedString());
@@ -5189,7 +5236,7 @@ public sealed class Utf8Pcre2Regex
 
         if (!UsesNativeGlobalIteration())
         {
-            if (_utf8Translation.IsActive)
+            if (UsesUtf8Translation)
             {
                 var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
                 while (enumerator.MoveNext())
@@ -5204,11 +5251,11 @@ public sealed class Utf8Pcre2Regex
             else
             {
                 var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-                var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+                var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
                 foreach (Match match in matches)
                 {
                     builder.Append(subject, position, match.Index - position);
-                    var context = Utf8Pcre2MatchContext.Create(input, match, _groupNames);
+                    var context = Utf8Pcre2MatchContext.Create(input, match, GroupNames);
                     builder.Append(evaluator(in context, ref state));
                     position = match.Index + match.Length;
                 }
@@ -5233,7 +5280,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
         if (matches.Count == 0)
         {
             return input.ToArray();
@@ -5257,8 +5304,8 @@ public sealed class Utf8Pcre2Regex
                     subject,
                     match.Index,
                     match.Length,
-                    number => ResolveNumberReference(_managedRegex, match, number),
-                    name => ResolveNamedReference(_managedRegex, match, name),
+                    number => ResolveNumberReference(ManagedRegex, match, number),
+                    name => ResolveNamedReference(ManagedRegex, match, name),
                     () => ResolveLastCapturedReference(match),
                     mark: null));
             }
@@ -5273,7 +5320,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
         if (matches.Count == 0)
         {
             return [];
@@ -5296,8 +5343,8 @@ public sealed class Utf8Pcre2Regex
                     subject,
                     match.Index,
                     match.Length,
-                    number => ResolveNumberReference(_managedRegex, match, number),
-                    name => ResolveNamedReference(_managedRegex, match, name),
+                    number => ResolveNumberReference(ManagedRegex, match, number),
+                    name => ResolveNamedReference(ManagedRegex, match, name),
                     () => ResolveLastCapturedReference(match),
                     mark: null));
             }
@@ -5310,7 +5357,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
         if (matches.Count == 0)
         {
             return input.ToArray();
@@ -5333,7 +5380,7 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = Encoding.UTF8.GetString(input);
         var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = _managedRegex!.Matches(subject, startOffsetInUtf16);
+        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
         if (matches.Count == 0)
         {
             return [];
@@ -5730,7 +5777,7 @@ public sealed class Utf8Pcre2Regex
                     value.StartOffsetInUtf16,
                     value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
                     number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, _nameEntries, name, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
                     () => ResolveNativeLastCapturedReference(groups, subject),
                     match.Mark));
             }
@@ -5785,7 +5832,7 @@ public sealed class Utf8Pcre2Regex
                     value.StartOffsetInUtf16,
                     value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
                     number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, _nameEntries, name, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
                     () => ResolveNativeLastCapturedReference(groups, subject),
                     mark: match.Mark));
             }
@@ -5844,7 +5891,7 @@ public sealed class Utf8Pcre2Regex
                     value.StartOffsetInUtf16,
                     value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
                     number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, _nameEntries, name, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
                     () => ResolveNativeLastCapturedReference(groups, subject),
                     match.Mark));
             }
@@ -5890,7 +5937,7 @@ public sealed class Utf8Pcre2Regex
                     value.StartOffsetInUtf16,
                     value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
                     number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, _nameEntries, name, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
                     () => ResolveNativeLastCapturedReference(groups, subject),
                     mark: match.Mark));
             }
@@ -5917,7 +5964,7 @@ public sealed class Utf8Pcre2Regex
 
     private bool RejectsReplacementIteration()
     {
-        return _executionKind is
+        return ExecutionKind is
             Pcre2ExecutionKind.KResetLookaheadAb or
             Pcre2ExecutionKind.KResetLookbehindA or
             Pcre2ExecutionKind.KResetConditionalGcOverlap or
@@ -5933,7 +5980,7 @@ public sealed class Utf8Pcre2Regex
     private bool CanUseDetailedNativeReplacement()
     {
         return CanEnumerateViaRepeatedDetailedMatching() ||
-            _executionKind is
+            ExecutionKind is
                 Pcre2ExecutionKind.SubroutinePrefixDigits or
                 Pcre2ExecutionKind.CommitSubroutine or
                 Pcre2ExecutionKind.DefineSubroutineB;
@@ -6073,7 +6120,7 @@ public sealed class Utf8Pcre2Regex
 
     private SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
     {
-        return _simpleReplacementPlans.GetOrAdd(
+        return _replacementComponent.Plans.GetOrAdd(
             new SimpleReplacementCacheKey(replacement, substitutionOptions),
             static key => TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var plan) ? plan : null);
     }
@@ -7024,26 +7071,26 @@ public sealed class Utf8Pcre2Regex
     internal int DebugCountRaw(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
-            return _utf8Regex!.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            return PrimaryUtf8Regex.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
         }
 
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
+        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
         {
-            return _utf8SearchEquivalentRegex!.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            return SearchEquivalentUtf8Regex.CountFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
         }
 
-        if (_executionPlan.CountBackend == Pcre2DirectBackendKind.ManagedRegex)
+        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
             if (startOffsetInBytes == 0 && CanUseUtf8RegexCompatiblePublicCount(input.Length))
             {
-                return _utf8Regex!.Count(input);
+                return PrimaryUtf8Regex.Count(input);
             }
 
             var subject = Encoding.UTF8.GetString(input);
             var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-            return _managedRegex!.Count(subject, startOffsetInUtf16);
+            return ManagedRegex.Count(subject, startOffsetInUtf16);
         }
 
         if (!UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
@@ -7062,10 +7109,10 @@ public sealed class Utf8Pcre2Regex
     internal int DebugEnumerateRawIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.Utf8Regex)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
             var sum = 0;
-            var enumerator = _utf8Regex!.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
+            var enumerator = PrimaryUtf8Regex.Pcre2EnumerateMatchesAtByteOffset(input, startOffsetInBytes);
             while (enumerator.MoveNext())
             {
                 if (!enumerator.Current.TryGetByteRange(out var indexInBytes, out _))
@@ -7079,10 +7126,10 @@ public sealed class Utf8Pcre2Regex
             return sum;
         }
 
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.Utf8RegexEquivalent)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
         {
             var sum = 0;
-            var enumerator = _utf8SearchEquivalentRegex!.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+            var enumerator = SearchEquivalentUtf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
             while (enumerator.MoveNext())
             {
                 if (!enumerator.Current.TryGetByteRange(out var indexInBytes, out _))
@@ -7096,14 +7143,14 @@ public sealed class Utf8Pcre2Regex
             return sum;
         }
 
-        if (_executionPlan.EnumerateBackend == Pcre2DirectBackendKind.ManagedRegex)
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
             var subject = Encoding.UTF8.GetString(input);
             var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
             var matchesAreAscii = subject.Length == input.Length;
             var boundaryMap = matchesAreAscii ? null : Utf8InputAnalyzer.Analyze(input).BoundaryMap;
             var sum = 0;
-            foreach (var match in _managedRegex!.EnumerateMatches(subject.AsSpan(), startOffsetInUtf16))
+            foreach (var match in ManagedRegex.EnumerateMatches(subject.AsSpan(), startOffsetInUtf16))
             {
                 if (matchesAreAscii)
                 {
@@ -7312,7 +7359,7 @@ public sealed class Utf8Pcre2Regex
             value.StartOffsetInUtf16,
             value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
             number => ResolveNativeNumberReference(groups, number, subject),
-            name => ResolveNativeNamedReference(groups, _nameEntries, name, subject),
+            name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
             () => ResolveNativeLastCapturedReference(groups, subject),
             match.Mark).Length;
     }
@@ -7397,6 +7444,11 @@ public sealed class Utf8Pcre2Regex
 
     private readonly record struct SimpleReplacementPlan(SimpleReplacementSegment[] Segments);
 
+    private sealed class Pcre2ReplacementComponent
+    {
+        internal ConcurrentDictionary<SimpleReplacementCacheKey, SimpleReplacementPlan?> Plans { get; } = new();
+    }
+
     private enum ReplacementCaseTransformMode
     {
         None = 0,
@@ -7406,7 +7458,7 @@ public sealed class Utf8Pcre2Regex
         LowerUntilEnd = 4,
     }
 
-    private enum Pcre2ExecutionKind
+    internal enum Pcre2ExecutionKind
     {
         Unimplemented = 0,
         ManagedRegex = 1,
@@ -7498,37 +7550,18 @@ public sealed class Utf8Pcre2Regex
         NonWordBoundary = 4,
     }
 
-    private readonly record struct Pcre2ExecutionPlan(
-        Pcre2DirectBackendKind IsMatchBackend,
-        Pcre2DirectBackendKind CountBackend,
-        Pcre2DirectBackendKind EnumerateBackend,
-        Pcre2DirectBackendKind MatchBackend,
-        Pcre2DirectBackendKind ReplaceBackend);
+    internal string DebugExecutionKindName => ExecutionKind.ToString();
 
-    private readonly record struct Pcre2Utf8RegexTranslation(
-        bool IsActive,
-        string Pattern,
-        RegexOptions Options,
-        Utf8Regex Regex);
+    internal Pcre2CompiledProgram DebugCompiledProgram => _program;
 
-    private enum Pcre2DirectBackendKind
-    {
-        None = 0,
-        Utf8Regex = 1,
-        ManagedRegex = 2,
-        Utf8RegexEquivalent = 3,
-    }
+    internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
 
-    internal string DebugExecutionKindName => _executionKind.ToString();
+    internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.ExecutionKind.ToString() : "<none>";
 
-    internal bool DebugUsesUtf8RegexTranslation => _utf8Translation.IsActive;
+    internal bool DebugHasUtf8SearchEquivalentRegex => HasSearchEquivalentUtf8Regex;
 
-    internal string DebugUtf8RegexExecutionKindName => _utf8Regex?.ExecutionKind.ToString() ?? "<none>";
-
-    internal bool DebugHasUtf8SearchEquivalentRegex => _utf8SearchEquivalentRegex is not null;
-
-    internal bool DebugHasManagedRegex => _managedRegex is not null;
+    internal bool DebugHasManagedRegex => HasManagedRegex;
 
     internal string DebugDescribeExecutionPlan()
-        => $"IsMatch={_executionPlan.IsMatchBackend}, Count={_executionPlan.CountBackend}, Enumerate={_executionPlan.EnumerateBackend}, Match={_executionPlan.MatchBackend}, Replace={_executionPlan.ReplaceBackend}";
+        => $"IsMatch={_program.Operations.IsMatch.Kind}, Count={_program.Operations.Count.Kind}, Enumerate={_program.Operations.Enumerate.Kind}, Match={_program.Operations.Match.Kind}, Replace={_program.Operations.Replace.Kind}";
 }

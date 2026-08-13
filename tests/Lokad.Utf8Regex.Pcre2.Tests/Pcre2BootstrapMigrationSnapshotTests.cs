@@ -16,14 +16,17 @@ public sealed class Pcre2BootstrapMigrationSnapshotTests
         var source = File.ReadAllText(FindRepositoryFile("src", "Lokad.Utf8Regex.Pcre2", "Utf8Pcre2Regex.cs"));
         var ledgerLines = File.ReadAllLines(FindRepositoryFile("tests", "Lokad.Utf8Regex.Pcre2.Tests", "BootstrapMigration.Shipped.txt"));
         var executionKinds = ParseExecutionKinds(source);
-        var ledgerKinds = ledgerLines
+        var executionKindLines = ledgerLines
+            .TakeWhile(static line => !line.StartsWith("# Complete-pattern", StringComparison.Ordinal))
             .Where(static line => line.Length != 0 && line[0] != '#' && line.Contains('|', StringComparison.Ordinal))
+            .ToArray();
+        var ledgerKinds = executionKindLines
             .Select(static line => line.Split('|', StringSplitOptions.TrimEntries)[0])
             .ToArray();
 
         Assert.Equal(executionKinds, ledgerKinds);
         Assert.All(
-            ledgerLines.Where(static line => line.Length != 0 && line[0] != '#' && line.Contains('|', StringComparison.Ordinal)),
+            executionKindLines,
             static line => Assert.Equal(3, line.Split('|', StringSplitOptions.TrimEntries).Length));
 
         var classifier = ExtractClassifier(source);
@@ -35,7 +38,7 @@ public sealed class Pcre2BootstrapMigrationSnapshotTests
 
     private static string[] ParseExecutionKinds(string source)
     {
-        const string enumStartToken = "    private enum Pcre2ExecutionKind";
+        const string enumStartToken = "    internal enum Pcre2ExecutionKind";
         const string enumEndToken = "    private enum TrailingAssertionKind";
         var start = source.IndexOf(enumStartToken, StringComparison.Ordinal);
         var end = source.IndexOf(enumEndToken, start, StringComparison.Ordinal);

@@ -40,11 +40,7 @@ public sealed class Pcre2SourceGuardTests
         var allowedNullForgivingCounts = new Dictionary<string, int>(StringComparer.Ordinal)
         {
             ["_groups"] = 1,
-            ["_managedRegex"] = 16,
             ["_matches"] = 1,
-            ["_utf8Regex"] = 18,
-            ["_utf8SearchEquivalentRegex"] = 7,
-            ["managedRegexCandidate"] = 1,
         };
         var actualNullForgivingCounts = s_nullForgivingExpression.Matches(source)
             .Select(static match => match.Groups["target"].Value)
@@ -66,6 +62,22 @@ public sealed class Pcre2SourceGuardTests
         {
             Assert.DoesNotContain("<InternalsVisibleTo", File.ReadAllText(projectFile), StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public void CorePcre2ReferencesRemainExplicitIntegrationPoints()
+    {
+        var pcre2SourceDirectory = FindPcre2SourceDirectory();
+        var coreSourceDirectory = Path.Combine(Directory.GetParent(pcre2SourceDirectory)?.FullName ?? throw new InvalidOperationException("PCRE2 source has no parent directory."), "Lokad.Utf8Regex");
+        var offenders = Directory.GetFiles(coreSourceDirectory, "*.cs", SearchOption.AllDirectories)
+            .SelectMany(path => File.ReadLines(path).Select((line, index) => (Path: path, Line: line, Number: index + 1)))
+            .Where(static item =>
+                (item.Line.Contains("Pcre2", StringComparison.Ordinal) || item.Line.Contains("PCRE2", StringComparison.Ordinal)) &&
+                !item.Line.Contains("PCRE2-INTEGRATION-POINT", StringComparison.Ordinal))
+            .Select(static item => $"{item.Path}:{item.Number}: {item.Line.Trim()}")
+            .ToArray();
+
+        Assert.Empty(offenders);
     }
 
     private static string FindPcre2SourceDirectory()

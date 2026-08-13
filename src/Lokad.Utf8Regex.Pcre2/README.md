@@ -1,5 +1,9 @@
 # Lokad.Utf8Regex.Pcre2
 
+The internal compiler/runtime ownership and migration boundaries are documented
+in [ARCHITECTURE.md](ARCHITECTURE.md). The public contract remains defined by
+`SPEC-PCRE2.md` at the repository root.
+
 `Lokad.Utf8Regex.Pcre2` is a `net10.0` side extension for `Lokad.Utf8Regex` that exposes a UTF-8-first PCRE2-flavored API through `Utf8Pcre2Regex`.
 
 It is intended for workloads where the input already exists as UTF-8 bytes and you need a managed PCRE2 profile on top of the base `Lokad.Utf8Regex` library.

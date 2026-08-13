@@ -1,11 +1,7 @@
 # Post-L0 mechanical C# debt, owned source only.
 # project | debt-kind | target | count | removal-owner
 Lokad.Utf8Regex.Pcre2 | null-forgiving | _groups | 1 | L4
-Lokad.Utf8Regex.Pcre2 | null-forgiving | _managedRegex | 16 | L2
 Lokad.Utf8Regex.Pcre2 | null-forgiving | _matches | 1 | L4
-Lokad.Utf8Regex.Pcre2 | null-forgiving | _utf8Regex | 18 | L2
-Lokad.Utf8Regex.Pcre2 | null-forgiving | _utf8SearchEquivalentRegex | 7 | L2
-Lokad.Utf8Regex.Pcre2 | null-forgiving | managedRegexCandidate | 1 | L2
 Lokad.Utf8Regex.Pcre2 | default-parameter | * | 0 | L0
 Lokad.Utf8Regex.Pcre2 | undocumented-abstract-or-virtual | * | 0 | L0
 Lokad.Utf8Regex.Pcre2 | project-internals-visible-to | * | 0 | L0

@@ -83,3 +83,20 @@ ProbeAnchoredRPlusX | L13 | partial-matching
 # ClassifyExecutionKind method so every literal/predicate arm is review-gated.
 classifier-arms = 78
 classifier-sha256 = 6DA7B50D30EE55E9CDF34D3731909EE60A72121F1D6C0B757FA61AD648255C64
+
+# compile-validator-check | removal-owner
+CalloutUnsupported | L3
+BackslashCDisabled | L14
+BackslashCInUtfLookbehind | L14
+LookaroundBackslashKDisabled | L12
+InvalidAfterParensQuery | L3
+UnrecognizedEscape | L3
+QuantifierNumbersOutOfOrder | L3
+QuantifierTooBig | L3
+MissingCharacterClassTerminator | L3
+EscapeInvalidInClass | L3
+ClassRangeOrder | L3
+QuantifierInvalid | L3
+MissingClosingParenthesis | L3
+MissingCommentClosing | L3
+validator-sha256 = 149AA15E459AA2988EBE3A1F34EEECD4E0AA8C2AA548CF472AB40CF8BC92385F
