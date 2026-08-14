@@ -45,21 +45,21 @@ public sealed class Pcre2CorpusFamilyLedgerTests
         Assert.Equal(
             """
             Total=635
-            Active=610
+            Active=597
             Compile.All=20
             Compile.Active=16
             Match.All=231
-            Match.Active=227
+            Match.Active=214
             BranchReset.All=75
             BranchReset.Active=71
             DuplicateNames.All=36
             DuplicateNames.Active=32
             LookaroundK.All=119
-            LookaroundK.Active=118
+            LookaroundK.Active=116
             BackslashC.All=9
             BackslashC.Active=9
             ControlVerb.All=36
-            ControlVerb.Active=36
+            ControlVerb.Active=34
             Mark.All=13
             Mark.Active=13
             Partial.All=135
@@ -71,9 +71,9 @@ public sealed class Pcre2CorpusFamilyLedgerTests
             GlobalIteration.All=77
             GlobalIteration.Active=76
             Recursion.All=116
-            Recursion.Active=116
+            Recursion.Active=103
             NamedCaptures.All=127
-            NamedCaptures.Active=123
+            NamedCaptures.Active=112
 
             """.ReplaceLineEndings(Environment.NewLine),
             summary.ToString().ReplaceLineEndings(Environment.NewLine));

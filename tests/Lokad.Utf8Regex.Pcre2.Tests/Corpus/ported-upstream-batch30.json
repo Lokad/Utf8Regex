@@ -46,7 +46,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "OutOfScopeBySpec",
     "Source": "pcre2:testdata/testinput2:lines-6436-6437"
   },
   {

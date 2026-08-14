@@ -62,9 +62,9 @@ public sealed class Pcre2CorpusProvenanceLedgerTests
         Assert.Equal(
             """
             Total=436
-            Active=413
-            UnsupportedYet=3
-            OutOfScopeBySpec=20
+            Active=400
+            UnsupportedYet=14
+            OutOfScopeBySpec=22
             Compile=19
             Count=11
             EnumerateMatches=10

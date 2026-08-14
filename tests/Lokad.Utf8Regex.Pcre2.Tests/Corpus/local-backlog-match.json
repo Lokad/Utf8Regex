@@ -33,5 +33,96 @@
     "Status": "OutOfScopeBySpec",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "Reason": "SpecRejectsDuplicateNameDetailedProjection"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.addr-spec",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.angle-only",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.display-name-angle",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal-quoted-brackets",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.empty-domain-literal",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.missing-angle-no-match",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.quick-brown-fox-no-match",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.quoted-display-name-comment",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.unquoted-display-name-comment",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput1.mailbox-rfc2822.x400-relay",
+    "Operation": "Match",
+    "Status": "UnsupportedYet",
+    "Source": "pcre2:testdata/testinput1:lines-6018-6059",
+    "Reason": "RequiresGenericRecursiveDefineCompilation"
+  },
+  {
+    "Id": "pcre2.testinput2.kreset-runtime-disallowed-lookaround2.match-error",
+    "Operation": "Match",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-6436-6437",
+    "Reason": "StartOfMatchControlSyntaxOutsideManagedProfile"
+  },
+  {
+    "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-2",
+    "Operation": "MatchDetailed",
+    "Status": "OutOfScopeBySpec",
+    "Source": "pcre2:testdata/testinput2:lines-6436-6437",
+    "Reason": "StartOfMatchControlSyntaxOutsideManagedProfile"
   }
 ]

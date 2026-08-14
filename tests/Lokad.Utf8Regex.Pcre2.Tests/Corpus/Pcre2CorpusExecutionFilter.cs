@@ -48,11 +48,6 @@ public static class Pcre2CorpusExecutionFilter
             return false;
         }
 
-        if (string.Equals(corpusCase.PatternRef, "pcre2.testinput1.mailbox-rfc2822", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
         return corpusCase.Pattern is "(?|(abc)|(xyz))"
             or @"^\C\C$"
             or @"(\C)"
@@ -92,7 +87,6 @@ public static class Pcre2CorpusExecutionFilter
             or @"(?(?=\Gc)(?<=\Kb)c|(?<=\Kab))"
             or @"(?(?=\Gc)(?<=\Kab)|(?<=\Kb))"
             or @"(?=.{10}(?1))x(\K){0}"
-            or @"(?=.{10}(.))(*scs:(1)(?2))x(\K){0}"
             or @"(?=.{5}(?1))\d*(\K){0}"
             or @"(?(DEFINE)(?<sneaky>b\K))a(?=(?&sneaky))"
             or @"a|(?(DEFINE)(?<sneaky>\Ka))(?<=(?&sneaky))b"

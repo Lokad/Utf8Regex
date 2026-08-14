@@ -1019,77 +1019,77 @@
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.angle-only",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.display-name-angle",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.domain-literal-quoted-brackets",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.empty-domain-literal",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.missing-angle-no-match",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.quick-brown-fox-no-match",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.quoted-display-name-comment",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.unquoted-display-name-comment",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.mailbox-rfc2822.x400-relay",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059",
     "SourceFile": "testdata/testinput1",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "UnsupportedYet"
   },
   {
     "Id": "pcre2.testinput1.negative-lookahead-alt.ab",
@@ -2083,7 +2083,7 @@
     "Source": "pcre2:testdata/testinput2:lines-6436-6437",
     "SourceFile": "testdata/testinput2",
     "Operation": "Match",
-    "Status": "Active"
+    "Status": "OutOfScopeBySpec"
   },
   {
     "Id": "pcre2.testinput2.kreset-sneaky-global-lookbehind-define.match",
@@ -2125,7 +2125,7 @@
     "Source": "pcre2:testdata/testinput2:lines-6436-6437",
     "SourceFile": "testdata/testinput2",
     "Operation": "MatchDetailed",
-    "Status": "Active"
+    "Status": "OutOfScopeBySpec"
   },
   {
     "Id": "pcre2.testinput2.match-error-lookaround-k-sneaky-lookahead-runtime",

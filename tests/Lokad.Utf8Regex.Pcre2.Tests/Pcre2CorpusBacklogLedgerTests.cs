@@ -68,19 +68,19 @@ public sealed class Pcre2CorpusBacklogLedgerTests
 
         Assert.Equal(
             """
-            Total=25
-            UnsupportedYet=3
-            OutOfScopeBySpec=22
+            Total=38
+            UnsupportedYet=14
+            OutOfScopeBySpec=24
             Compile=4
-            MatchDetailed=4
+            MatchDetailed=5
             EnumerateMatches=1
             Replace=16
             BranchReset=4
             DuplicateNames=4
-            LookaroundK=1
+            LookaroundK=3
             Partial=16
             GlobalIteration=1
-            NamedCaptures=4
+            NamedCaptures=15
 
             """.ReplaceLineEndings(Environment.NewLine),
             summary.ToString().ReplaceLineEndings(Environment.NewLine));

@@ -24,7 +24,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -52,7 +52,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -80,7 +80,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -108,7 +108,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -136,7 +136,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -164,7 +164,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -192,7 +192,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -220,7 +220,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -248,7 +248,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -272,7 +272,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   },
   {
@@ -296,7 +296,7 @@
       "Groups": [],
       "NameEntries": []
     },
-    "Status": "Active",
+    "Status": "UnsupportedYet",
     "Source": "pcre2:testdata/testinput1:lines-6018-6059"
   }
 ]
