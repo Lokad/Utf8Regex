@@ -27,6 +27,22 @@ internal static class Utf8Pcre2BenchmarkCatalog
             @"\Aneedle",
             "needle " + new string('x', 4096),
             supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
+            "literal/empty-unicode",
+            string.Empty,
+            string.Concat(Enumerable.Repeat("😀x", 64)),
+            replacement: "|",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count |
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches |
+                Utf8Pcre2BenchmarkOperation.MatchMany |
+                Utf8Pcre2BenchmarkOperation.Replace,
+            supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
+        new(
+            "literal/partial-probe",
+            "needle",
+            new string('x', 4096) + "need",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.None,
+            supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new("simple/foo-dense", "foo", "xxfoozz foo foo xx"),
         new("simple/foo-optional-bar", "foo(?<Bar>BAR)?", "foo fooBAR x fooBAR foo", replacement: "bar"),
         new("simple/ab-plus", "(a)b+", "ab abb abbb x ab", replacement: "bar"),

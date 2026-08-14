@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -44,12 +45,14 @@ internal sealed class Pcre2LiteralProgram
     internal Pcre2LiteralProgram(
         byte[] literalUtf8,
         Pcre2LiteralAnchor startAnchor,
-        bool endAnchored)
+        bool endAnchored,
+        bool hasExplicitEndAssertion)
     {
         _literalUtf8 = [.. literalUtf8];
         Search = new PreparedSubstringSearch(_literalUtf8, ignoreCase: false);
         StartAnchor = startAnchor;
         EndAnchored = endAnchored;
+        HasExplicitEndAssertion = hasExplicitEndAssertion;
     }
 
     internal ReadOnlySpan<byte> LiteralUtf8 => _literalUtf8;
@@ -59,14 +62,24 @@ internal sealed class Pcre2LiteralProgram
     internal Pcre2LiteralAnchor StartAnchor { get; }
 
     internal bool EndAnchored { get; }
+
+    internal bool HasExplicitEndAssertion { get; }
 }
 
-internal readonly record struct Pcre2LiteralMatch(bool Success, int StartOffsetInBytes, int EndOffsetInBytes)
+internal readonly record struct Pcre2LiteralMatch(
+    bool Success,
+    int StartOffsetInBytes,
+    int EndOffsetInBytes,
+    int ConsumedEndOffsetInBytes)
 {
     internal static Pcre2LiteralMatch NoMatch => default;
 
     internal static Pcre2LiteralMatch Create(int startOffsetInBytes, int lengthInBytes)
-        => new(true, startOffsetInBytes, startOffsetInBytes + lengthInBytes);
+        => new(
+            true,
+            startOffsetInBytes,
+            startOffsetInBytes + lengthInBytes,
+            startOffsetInBytes + lengthInBytes);
 }
 
 internal interface IPcre2LiteralCompileOutcome
@@ -116,6 +129,7 @@ internal static class Pcre2LiteralCompiler
             startAnchor = Pcre2LiteralAnchor.RequestedStart;
         }
 
+        var hasExplicitEndAssertion = endAnchored;
         endAnchored |= (request.Options & Pcre2CompileOptions.EndAnchored) != 0;
         var syntaxTree = new Pcre2LiteralSyntaxTree(atoms, startAnchor, endAnchored);
 
@@ -126,7 +140,11 @@ internal static class Pcre2LiteralCompiler
             written += atom.Scalar.EncodeToUtf8(literalUtf8.AsSpan(written));
         }
 
-        var program = new Pcre2LiteralProgram(literalUtf8, startAnchor, endAnchored);
+        var program = new Pcre2LiteralProgram(
+            literalUtf8,
+            startAnchor,
+            endAnchored,
+            hasExplicitEndAssertion);
         return new Pcre2CompiledLiteralOutcome(syntaxTree, program);
     }
 
@@ -330,4 +348,132 @@ internal static class Pcre2LiteralRunner
 
     private static bool RejectsEmptyAtRequestedStart(ReadOnlySpan<byte> literal, Pcre2MatchOptions matchOptions)
         => literal.Length == 0 && (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0;
+}
+
+internal static class Pcre2LiteralProbeRunner
+{
+    internal static Utf8Pcre2ProbeResult Probe(
+        ReadOnlySpan<byte> subject,
+        Pcre2LiteralProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition requestedStart,
+        Pcre2PartialMode partialMode,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+        Pcre2LiteralMatch fullMatch;
+        try
+        {
+            fullMatch = Pcre2LiteralRunner.Match(
+                program,
+                ref input,
+                requestedStart,
+                matchOptions,
+                ref budget);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+        }
+
+        if (fullMatch.Success)
+        {
+            var projected = Project(ref input, fullMatch.StartOffsetInBytes, fullMatch.EndOffsetInBytes);
+            if (partialMode == Pcre2PartialMode.Hard &&
+                program.HasExplicitEndAssertion &&
+                fullMatch.EndOffsetInBytes == input.ByteLength)
+            {
+                return Utf8Pcre2ProbeResult.CreatePartial(subject, projected);
+            }
+
+            return Utf8Pcre2ProbeResult.CreateFullMatch(
+                subject,
+                [projected]);
+        }
+
+        if (partialMode == Pcre2PartialMode.None || program.LiteralUtf8.IsEmpty)
+        {
+            return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
+        }
+
+        var literal = program.LiteralUtf8;
+        var candidate = GetFirstPartialCandidate(program, input.Bytes, requestedStart, matchOptions);
+        while (candidate >= 0 && candidate < input.ByteLength)
+        {
+            try
+            {
+                budget.ChargeCandidate();
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            }
+            var suffix = input.Bytes[candidate..];
+            if (suffix.Length < literal.Length && literal.StartsWith(suffix))
+            {
+                return Utf8Pcre2ProbeResult.CreatePartial(
+                    subject,
+                    Project(ref input, candidate, input.ByteLength));
+            }
+
+            if (IsEffectivelyAnchored(program, matchOptions) ||
+                !input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var next))
+            {
+                break;
+            }
+
+            candidate = next.Value;
+        }
+
+        return Utf8Pcre2ProbeResult.CreateNoMatch(subject);
+    }
+
+    private static int GetFirstPartialCandidate(
+        Pcre2LiteralProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BytePosition requestedStart,
+        Pcre2MatchOptions matchOptions)
+    {
+        if (program.StartAnchor == Pcre2LiteralAnchor.AbsoluteStart)
+        {
+            return requestedStart.Value == 0 ? 0 : -1;
+        }
+
+        if (IsEffectivelyAnchored(program, matchOptions))
+        {
+            return requestedStart.Value;
+        }
+
+        var earliestSuffix = Math.Max(requestedStart.Value, input.Length - program.LiteralUtf8.Length + 1);
+        while (earliestSuffix < input.Length && (input[earliestSuffix] & 0xC0) == 0x80)
+        {
+            earliestSuffix++;
+        }
+
+        return earliestSuffix;
+    }
+
+    private static bool IsEffectivelyAnchored(Pcre2LiteralProgram program, Pcre2MatchOptions matchOptions)
+        => program.StartAnchor != Pcre2LiteralAnchor.None ||
+            (matchOptions & Pcre2MatchOptions.Anchored) != 0;
+
+    private static Pcre2GroupData Project(
+        ref Utf8ValidatedInput input,
+        int startOffsetInBytes,
+        int endOffsetInBytes)
+    {
+        var projection = input.CreateProjectionCursor();
+        var startInUtf16 = projection.Project(new Utf8BytePosition(startOffsetInBytes));
+        var endInUtf16 = projection.Project(new Utf8BytePosition(endOffsetInBytes));
+        return new Pcre2GroupData
+        {
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = startOffsetInBytes,
+            EndOffsetInBytes = endOffsetInBytes,
+            StartOffsetInUtf16 = startInUtf16.Value,
+            EndOffsetInUtf16 = endInUtf16.Value,
+        };
+    }
 }

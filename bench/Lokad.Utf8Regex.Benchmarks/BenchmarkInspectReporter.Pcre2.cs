@@ -103,6 +103,17 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {context.Utf8Pcre2Regex.DebugExecutionKindName}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
 
+        if (string.Equals(caseId, "literal/partial-probe", StringComparison.Ordinal))
+        {
+            Measure(
+                "Pcre2PartialProbe",
+                samples,
+                iterations,
+                () => (int)context.Utf8Pcre2Regex.Probe(
+                    context.InputBytes,
+                    Pcre2PartialMode.Hard).Kind);
+        }
+
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);

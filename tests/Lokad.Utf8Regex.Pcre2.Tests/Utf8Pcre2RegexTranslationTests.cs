@@ -12,7 +12,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("foo");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Literal, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Pcre2Literal, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Literal, Count=Pcre2Literal, Enumerate=Pcre2Literal, Match=Pcre2Literal, Replace=Pcre2Literal", regex.DebugDescribeExecutionPlan());
 
         Assert.True(regex.IsMatch("xxfooyy"u8));
         Assert.Equal(2, regex.Count("foo xx foo"u8));
