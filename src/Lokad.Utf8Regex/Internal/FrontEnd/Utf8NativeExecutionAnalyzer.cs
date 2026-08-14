@@ -2498,21 +2498,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
     private static bool TryCreateAsciiCharClass(string runtimeSet, out AsciiCharClass charClass)
     {
-        if (!RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
-        {
-            charClass = null!;
-            return false;
-        }
-
-        var negated = RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet);
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)i, runtimeSet);
-        }
-
-        charClass = new AsciiCharClass(matches, negated);
-        return true;
+        return DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
     }
 
     private static RuntimeFrontEnd.RegexNode UnwrapRuntimeNode(RuntimeFrontEnd.RegexNode node)

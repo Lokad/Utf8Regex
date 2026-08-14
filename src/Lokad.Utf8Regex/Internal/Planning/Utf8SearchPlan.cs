@@ -1,3 +1,4 @@
+using System.Buffers;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
@@ -481,32 +482,23 @@ internal readonly struct Utf8FixedDistanceSet
 {
     private Utf8FixedDistanceSet(
         int distance,
-        byte[]? chars,
-        bool negated,
-        Utf8InclusiveByteRange? range)
+        AsciiCharClass byteSet)
     {
         Distance = distance;
-        Chars = chars;
-        Negated = negated;
-        Range = range;
+        ByteSet = byteSet;
+        SearchValues = System.Buffers.SearchValues.Create(byteSet.GetMatchBytes());
     }
 
     public int Distance { get; }
 
-    public byte[]? Chars { get; }
+    public AsciiCharClass ByteSet { get; }
 
-    public bool Negated { get; }
+    public SearchValues<byte> SearchValues { get; }
 
-    public byte RangeLow => Range?.Low ?? 0;
-
-    public byte RangeHigh => Range?.High ?? 0;
-
-    public bool HasRange => Range.HasValue;
-
-    public Utf8InclusiveByteRange? Range { get; }
+    public bool Contains(byte value) => ByteSet.Contains(value);
 
     public static Utf8FixedDistanceSet FromBytes(int distance, byte[]? chars, bool negated)
-        => new(distance, chars, negated, null);
+        => new(distance, AsciiCharClass.FromBytes(chars ?? [], negated));
 
     public static Utf8FixedDistanceSet FromBytesAndRange(
         int distance,
@@ -514,28 +506,9 @@ internal readonly struct Utf8FixedDistanceSet
         bool negated,
         byte rangeLow,
         byte rangeHigh)
-        => new(distance, chars, negated, Utf8InclusiveByteRange.Create(rangeLow, rangeHigh));
-}
-
-internal readonly struct Utf8InclusiveByteRange
-{
-    private Utf8InclusiveByteRange(byte low, byte high)
     {
-        Low = low;
-        High = high;
-    }
-
-    public byte Low { get; }
-
-    public byte High { get; }
-
-    public static Utf8InclusiveByteRange Create(byte low, byte high)
-    {
-        if (low > high)
-        {
-            throw new ArgumentOutOfRangeException(nameof(low));
-        }
-
-        return new Utf8InclusiveByteRange(low, high);
+        var bytes = AsciiCharClass.FromBytes(chars ?? []);
+        var range = AsciiCharClass.FromRange(Utf8InclusiveByteRange.Create(rangeLow, rangeHigh));
+        return new Utf8FixedDistanceSet(distance, AsciiCharClass.CombinePositive(bytes, range, negated));
     }
 }

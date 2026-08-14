@@ -147,5 +147,5 @@ internal static class Utf8AsciiEmailWholeExecutor
         return true;
     }
 
-    private static bool IsAsciiDigit(byte value) => (uint)(value - '0') <= 9;
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 }

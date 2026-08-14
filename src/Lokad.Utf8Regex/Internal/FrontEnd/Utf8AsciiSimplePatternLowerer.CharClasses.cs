@@ -31,82 +31,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
     private static bool TryCreateAsciiCharClass(string runtimeSet, out AsciiCharClass charClass)
     {
-        if (TryCreateKnownAsciiPredefinedCharClass(runtimeSet, out charClass))
-        {
-            return true;
-        }
-
-        if (!CanProjectRuntimeSetToAscii(runtimeSet))
-        {
-            charClass = null!;
-            return false;
-        }
-
-        var negated = RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet);
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)i, runtimeSet);
-        }
-
-        charClass = new AsciiCharClass(matches, negated);
-        return true;
-    }
-
-    private static bool TryCreateKnownAsciiPredefinedCharClass(string runtimeSet, out AsciiCharClass charClass)
-    {
-        switch (runtimeSet)
-        {
-            case RuntimeFrontEnd.RegexCharClass.SpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.ECMASpaceClass:
-                charClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: false);
-                return true;
-
-            case RuntimeFrontEnd.RegexCharClass.NotSpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass:
-                charClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: true);
-                return true;
-
-            default:
-                charClass = null!;
-                return false;
-        }
-    }
-
-    private static bool CanProjectRuntimeSetToAscii(string runtimeSet)
-    {
-        return RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet);
-    }
-
-    private static string? GetCategoryPayload(string runtimeSet)
-    {
-        if (runtimeSet.Length < RuntimeFrontEnd.RegexCharClass.SetStartIndex)
-        {
-            return null;
-        }
-
-        var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
-        var categoryLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.CategoryLengthIndex];
-        if (categoryLength == 0)
-        {
-            return string.Empty;
-        }
-
-        var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
-        if (runtimeSet.Length < setEnd + categoryLength)
-        {
-            return null;
-        }
-
-        for (var i = RuntimeFrontEnd.RegexCharClass.SetStartIndex; i < setEnd; i += 2)
-        {
-            if (runtimeSet[i + 1] > 0x80)
-            {
-                return null;
-            }
-        }
-
-        return runtimeSet.Substring(setEnd, categoryLength);
+        return DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
     }
 
     private static bool TryExtractCharClassRunPlan(
@@ -164,17 +89,4 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static AsciiCharClass CreateAsciiCharClass(Func<char, bool> predicate, bool negated)
-    {
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            if (predicate((char)i))
-            {
-                matches[i] = true;
-            }
-        }
-
-        return new AsciiCharClass(matches, negated);
-    }
 }

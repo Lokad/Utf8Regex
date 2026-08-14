@@ -17,14 +17,14 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private readonly int[] _transitionOffsets;
     private readonly int[] _transitionCounts;
-    private readonly Utf8AsciiByteSet[] _transitionSets;
+    private readonly AsciiCharClass[] _transitionSets;
     private readonly int[] _transitionTargets;
     private readonly bool[] _acceptingStates;
 
     private Utf8ByteSafeLazyDfaVerifierProgram(
         int[] transitionOffsets,
         int[] transitionCounts,
-        Utf8AsciiByteSet[] transitionSets,
+        AsciiCharClass[] transitionSets,
         int[] transitionTargets,
         bool[] acceptingStates,
         bool requiresBeginning,
@@ -200,7 +200,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             return false;
         }
 
-        var previousSet = default(Utf8AsciiByteSet);
+        var previousSet = AsciiCharClass.Empty;
         var hasPrevious = false;
         for (var i = 0; i < program.Length; i++)
         {
@@ -239,7 +239,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var accepting = new List<bool>();
         var transitionOffsets = new List<int>();
         var transitionCounts = new List<int>();
-        var transitionSets = new List<Utf8AsciiByteSet>();
+        var transitionSets = new List<AsciiCharClass>();
         var transitionTargets = new List<int>();
 
         var startSet = ComputeClosure([0], nfa);
@@ -354,7 +354,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         var requiresEnd = false;
         var transitionOffsets = new List<int>();
         var transitionCounts = new List<int>();
-        var transitionSets = new List<Utf8AsciiByteSet>();
+        var transitionSets = new List<AsciiCharClass>();
         var transitionTargets = new List<int>();
         var accepting = new List<bool>();
         var stateIndex = 0;
@@ -401,7 +401,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
                     stateIndex = AppendDeterministicTransition(
                         step,
-                        Utf8AsciiByteSet.ForByte(step.Value),
+                        AsciiCharClass.ForByte(step.Value),
                         stateIndex,
                         accepting,
                         transitionOffsets,
@@ -411,11 +411,11 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                    foreach (var value in step.Text!)
+                    foreach (var value in step.Text)
                     {
                         stateIndex = AppendDeterministicTransition(
                             step,
-                            Utf8AsciiByteSet.ForByte(value),
+                            AsciiCharClass.ForByte(value),
                             stateIndex,
                             accepting,
                             transitionOffsets,
@@ -426,7 +426,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-                    if (!Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set!, out var matchSet))
+                    if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var matchSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
                         program = default;
@@ -445,8 +445,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                    if (step.ProjectedAsciiCharClass is null ||
-                        !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedMatchSet))
+                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedMatchSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         program = default;
@@ -469,7 +468,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     {
                         stateIndex = AppendDeterministicTransition(
                             step,
-                            Utf8AsciiByteSet.ForByte(step.Value),
+                            AsciiCharClass.ForByte(step.Value),
                             stateIndex,
                             accepting,
                             transitionOffsets,
@@ -482,11 +481,11 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 case Utf8ByteSafeLinearVerifierStepKind.LoopText when step.Min == step.Max:
                     for (var repeat = 0; repeat < step.Min; repeat++)
                     {
-                        foreach (var value in step.Text!)
+                        foreach (var value in step.Text)
                         {
                             stateIndex = AppendDeterministicTransition(
                                 step,
-                                Utf8AsciiByteSet.ForByte(value),
+                                AsciiCharClass.ForByte(value),
                                 stateIndex,
                                 accepting,
                                 transitionOffsets,
@@ -498,7 +497,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Min == step.Max:
-                    if (!Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set!, out var loopSet))
+                    if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var loopSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
                         program = default;
@@ -520,8 +519,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet when step.Min == step.Max:
-                    if (step.ProjectedAsciiCharClass is null ||
-                        !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         program = default;
@@ -545,8 +543,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet when
                     step.Min == 0 &&
                     IsOpenEndedLoop(step.Max) &&
-                    step.ProjectedAsciiCharClass is not null &&
-                    Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var leadingProjectedLoopSet) &&
+                    AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var leadingProjectedLoopSet) &&
                     TryGetFirstDeterministicTransitionSet(steps, stepIndex + 1, out var followingSet) &&
                     leadingProjectedLoopSet.IsDisjoint(followingSet):
                     AddDeterministicTransition(
@@ -638,7 +635,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             coreSteps = payloadSteps;
         }
 
-        var loopSets = new Utf8AsciiByteSet[coreSteps.Length];
+        var loopSets = new AsciiCharClass[coreSteps.Length];
         for (var i = 0; i < coreSteps.Length; i++)
         {
             if (!TryGetDisjointLoopSet(coreSteps[i], out loopSets[i]))
@@ -664,7 +661,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
         var transitionOffsets = new List<int> { 0 };
         var transitionCounts = new List<int> { 0 };
-        var transitionSets = new List<Utf8AsciiByteSet>();
+        var transitionSets = new List<AsciiCharClass>();
         var transitionTargets = new List<int>();
         var accepting = new List<bool> { false };
 
@@ -716,20 +713,19 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         return true;
     }
 
-    private bool TryGetDisjointLoopSet(Utf8ByteSafeLinearVerifierStep step, out Utf8AsciiByteSet set)
+    private bool TryGetDisjointLoopSet(Utf8ByteSafeLinearVerifierStep step, out AsciiCharClass set)
     {
         switch (step.Kind)
         {
             case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                set = Utf8AsciiByteSet.ForByte(step.Value);
+                set = AsciiCharClass.ForByte(step.Value);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-                return Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set!, out set);
+                return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                if (step.ProjectedAsciiCharClass is not null &&
-                    Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out set))
+                if (AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set))
                 {
                     return true;
                 }
@@ -737,14 +733,14 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 break;
         }
 
-        set = default;
+        set = AsciiCharClass.Empty;
         return false;
     }
 
     private bool TryGetFirstDeterministicTransitionSet(
         IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps,
         int startIndex,
-        out Utf8AsciiByteSet set)
+        out AsciiCharClass set)
     {
         for (var i = startIndex; i < steps.Count; i++)
         {
@@ -757,28 +753,28 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     continue;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                    set = Utf8AsciiByteSet.ForByte(step.Value);
+                    set = AsciiCharClass.ForByte(step.Value);
                     return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchText when step.Text is { Length: > 0 } text:
-                    set = Utf8AsciiByteSet.ForByte(text[0]);
+                    set = AsciiCharClass.ForByte(text[0]);
                     return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchSet when step.Set is not null:
-                    return Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set, out set);
+                    return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet when step.ProjectedAsciiCharClass is not null:
-                    return Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out set);
+                case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
+                    return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                    set = Utf8AsciiByteSet.ForByte(step.Value);
+                    set = AsciiCharClass.ForByte(step.Value);
                     return true;
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopSet when step.Set is not null:
-                    return Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set, out set);
+                    return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out set);
 
-                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet when step.ProjectedAsciiCharClass is not null:
-                    return Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out set);
+                case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
+                    return AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out set);
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopProgram when
                     step.Min == 0 &&
@@ -787,12 +783,12 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     return TryGetFirstDeterministicTransitionSet(optionalProgram, 0, out set);
 
                 default:
-                    set = default;
+                    set = AsciiCharClass.Empty;
                     return false;
             }
         }
 
-        set = default;
+        set = AsciiCharClass.Empty;
         return false;
     }
 
@@ -802,7 +798,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         List<bool> accepting,
         List<int> transitionOffsets,
         List<int> transitionCounts,
-        List<Utf8AsciiByteSet> transitionSets,
+        List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
         accepting[stateIndex] = true;
@@ -822,7 +818,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         List<bool> accepting,
         List<int> transitionOffsets,
         List<int> transitionCounts,
-        List<Utf8AsciiByteSet> transitionSets,
+        List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
         for (var i = 0; i < steps.Count; i++)
@@ -833,7 +829,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
                     stateIndex = AppendDeterministicTransition(
                         step,
-                        Utf8AsciiByteSet.ForByte(step.Value),
+                        AsciiCharClass.ForByte(step.Value),
                         stateIndex,
                         accepting,
                         transitionOffsets,
@@ -843,11 +839,11 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                    foreach (var value in step.Text!)
+                    foreach (var value in step.Text)
                     {
                         stateIndex = AppendDeterministicTransition(
                             step,
-                            Utf8AsciiByteSet.ForByte(value),
+                            AsciiCharClass.ForByte(value),
                             stateIndex,
                             accepting,
                             transitionOffsets,
@@ -858,8 +854,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                    if (step.ProjectedAsciiCharClass is null ||
-                        !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedMatchSet))
+                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedMatchSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         return false;
@@ -877,8 +872,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                     break;
 
                 case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                    if (step.ProjectedAsciiCharClass is null ||
-                        !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+                    if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
                     {
                         _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                         return false;
@@ -967,10 +961,10 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                return step.ProjectedAsciiCharClass is not null;
+                return !step.ProjectedAsciiCharClass.IsEmpty;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                return step.ProjectedAsciiCharClass is not null &&
+                return !step.ProjectedAsciiCharClass.IsEmpty &&
                     ((step.Min == 0 && step.Max == 1) || IsOpenEndedLoop(step.Max));
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
@@ -986,7 +980,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private bool AreDisjointLoopSteps(IReadOnlyList<Utf8ByteSafeLinearVerifierStep> steps)
     {
-        var previousSet = default(Utf8AsciiByteSet);
+        var previousSet = AsciiCharClass.Empty;
         var hasPrevious = false;
         for (var i = 0; i < steps.Count; i++)
         {
@@ -1023,7 +1017,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         List<bool> accepting,
         List<int> transitionOffsets,
         List<int> transitionCounts,
-        List<Utf8AsciiByteSet> transitionSets,
+        List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
         if (steps.Count == 0)
@@ -1031,7 +1025,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             return false;
         }
 
-        var loopSets = new Utf8AsciiByteSet[steps.Count];
+        var loopSets = new AsciiCharClass[steps.Count];
         for (var i = 0; i < steps.Count; i++)
         {
             if (!TryGetDisjointLoopSet(steps[i], out loopSets[i]))
@@ -1100,12 +1094,12 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private int AppendDeterministicTransition(
         Utf8ByteSafeLinearVerifierStep step,
-        Utf8AsciiByteSet transitionSet,
+        AsciiCharClass transitionSet,
         int stateIndex,
         List<bool> accepting,
         List<int> transitionOffsets,
         List<int> transitionCounts,
-        List<Utf8AsciiByteSet> transitionSets,
+        List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
         while (transitionOffsets.Count <= stateIndex)
@@ -1138,11 +1132,11 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private void AddDeterministicTransition(
         int stateIndex,
-        Utf8AsciiByteSet transitionSet,
+        AsciiCharClass transitionSet,
         int targetState,
         List<int> transitionOffsets,
         List<int> transitionCounts,
-        List<Utf8AsciiByteSet> transitionSets,
+        List<AsciiCharClass> transitionSets,
         List<int> transitionTargets)
     {
         while (transitionOffsets.Count <= stateIndex)
@@ -1255,18 +1249,18 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return isTopLevel;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchByte:
-                current = AppendSet(states, current, Utf8AsciiByteSet.ForByte(step.Value));
+                current = AppendSet(states, current, AsciiCharClass.ForByte(step.Value));
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                foreach (var value in step.Text!)
+                foreach (var value in step.Text)
                 {
-                    current = AppendSet(states, current, Utf8AsciiByteSet.ForByte(value));
+                    current = AppendSet(states, current, AsciiCharClass.ForByte(value));
                 }
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-                if (!Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set!, out var matchSet))
+                if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var matchSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
                     return false;
@@ -1276,8 +1270,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet:
-                if (step.ProjectedAsciiCharClass is null ||
-                    !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedSet))
+                if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                     return false;
@@ -1287,15 +1280,15 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopByte:
-                current = AppendLoop(states, current, Utf8AsciiByteSet.ForByte(step.Value), 1, step.Min, step.Max);
+                current = AppendLoop(states, current, AsciiCharClass.ForByte(step.Value), 1, step.Min, step.Max);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopText:
-                current = AppendLoop(states, current, step.Text!.Select(static value => Utf8AsciiByteSet.ForByte(value)).ToArray(), step.Min, step.Max);
+                current = AppendLoop(states, current, step.Text.Select(static value => AsciiCharClass.ForByte(value)).ToArray(), step.Min, step.Max);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-                if (!Utf8AsciiByteSet.TryCreateFromRuntimeSet(step.Set!, out var loopSet))
+                if (!FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(step.Set, out var loopSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedRuntimeSet;
                     return false;
@@ -1305,8 +1298,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                if (step.ProjectedAsciiCharClass is null ||
-                    !Utf8AsciiByteSet.TryCreateFromAsciiCharClass(step.ProjectedAsciiCharClass, out var projectedLoopSet))
+                if (!AsciiCharClass.TryUseNonEmpty(step.ProjectedAsciiCharClass, out var projectedLoopSet))
                 {
                     _failureKind = Utf8ByteSafeLazyDfaCompileFailureKind.UnsupportedProjectedAsciiSet;
                     return false;
@@ -1316,19 +1308,19 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchAnyText:
-                current = AppendAlternatives(states, current, step.Alternatives!, optional: false);
+                current = AppendAlternatives(states, current, step.Alternatives, optional: false);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional:
-                current = AppendAlternatives(states, current, step.Alternatives!, optional: true);
+                current = AppendAlternatives(states, current, step.Alternatives, optional: true);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopAnyText:
-                current = AppendAlternativeLoop(states, current, step.Alternatives!, step.Min, step.Max);
+                current = AppendAlternativeLoop(states, current, step.Alternatives, step.Min, step.Max);
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                current = AppendProgramLoop(states, current, step.Program!, step.Min, step.Max);
+                current = AppendProgramLoop(states, current, step.Program, step.Min, step.Max);
                 return true;
 
             default:
@@ -1337,9 +1329,9 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         }
     }
 
-    private int AppendLoop(List<NfaState> states, int current, Utf8AsciiByteSet set, int width, int min, int max)
+    private int AppendLoop(List<NfaState> states, int current, AsciiCharClass set, int width, int min, int max)
     {
-        var units = new Utf8AsciiByteSet[width];
+        var units = new AsciiCharClass[width];
         for (var i = 0; i < width; i++)
         {
             units[i] = set;
@@ -1348,7 +1340,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         return AppendLoop(states, current, units, min, max);
     }
 
-    private int AppendLoop(List<NfaState> states, int current, Utf8AsciiByteSet[] units, int min, int max)
+    private int AppendLoop(List<NfaState> states, int current, AsciiCharClass[] units, int min, int max)
     {
         for (var i = 0; i < min; i++)
         {
@@ -1376,7 +1368,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         return exitState;
     }
 
-    private int AppendSequence(List<NfaState> states, int current, Utf8AsciiByteSet[] units)
+    private int AppendSequence(List<NfaState> states, int current, AsciiCharClass[] units)
     {
         for (var i = 0; i < units.Length; i++)
         {
@@ -1401,7 +1393,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
             var branchCurrent = branchState;
             foreach (var value in alternatives[i])
             {
-                branchCurrent = AppendSet(states, branchCurrent, Utf8AsciiByteSet.ForByte(value));
+                branchCurrent = AppendSet(states, branchCurrent, AsciiCharClass.ForByte(value));
             }
 
             states[branchCurrent].EpsilonTransitions.Add(exitState);
@@ -1485,7 +1477,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
         return current;
     }
 
-    private int AppendSet(List<NfaState> states, int current, Utf8AsciiByteSet set)
+    private int AppendSet(List<NfaState> states, int current, AsciiCharClass set)
     {
         var next = AddState(states);
         states[current].Transitions.Add(new NfaTransition(new TransitionKey(set), next));
@@ -1513,7 +1505,7 @@ internal readonly struct Utf8ByteSafeLazyDfaVerifierProgram
 
     private readonly record struct NfaTransition(TransitionKey Key, int TargetState);
 
-    private readonly record struct TransitionKey(Utf8AsciiByteSet Set)
+    private readonly record struct TransitionKey(AsciiCharClass Set)
     {
         public ulong SortKey => Set.LowMask ^ (Set.HighMask * 31UL);
     }
@@ -1590,108 +1582,4 @@ internal enum Utf8ByteSafeLazyDfaCompileFailureKind : byte
     UnsupportedProjectedAsciiSet = 9,
     UnsupportedAnchoring = 10,
     StateBudgetExceeded = 11,
-}
-
-internal readonly struct Utf8AsciiByteSet
-{
-    public Utf8AsciiByteSet(ulong lowMask, ulong highMask)
-    {
-        LowMask = lowMask;
-        HighMask = highMask;
-    }
-
-    public ulong LowMask { get; }
-
-    public ulong HighMask { get; }
-
-    public bool Contains(byte value)
-    {
-        if (value >= 128)
-        {
-            return false;
-        }
-
-        return value < 64
-            ? (LowMask & (1UL << value)) != 0
-            : (HighMask & (1UL << (value - 64))) != 0;
-    }
-
-    public bool IsDisjoint(Utf8AsciiByteSet other) =>
-        (LowMask & other.LowMask) == 0 &&
-        (HighMask & other.HighMask) == 0;
-
-    public static Utf8AsciiByteSet ForByte(byte value)
-    {
-        return value < 64
-            ? new Utf8AsciiByteSet(1UL << value, 0)
-            : new Utf8AsciiByteSet(0, 1UL << (value - 64));
-    }
-
-    public static bool TryCreateFromRuntimeSet(string runtimeSet, out Utf8AsciiByteSet set)
-    {
-        if (!RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
-        {
-            set = default;
-            return false;
-        }
-
-        ulong lowMask = 0;
-        ulong highMask = 0;
-        for (var i = 0; i < 128; i++)
-        {
-            if (!RuntimeFrontEnd.RegexCharClass.CharInClass((char)i, runtimeSet))
-            {
-                continue;
-            }
-
-            if (i < 64)
-            {
-                lowMask |= 1UL << i;
-            }
-            else
-            {
-                highMask |= 1UL << (i - 64);
-            }
-        }
-
-        if ((lowMask | highMask) == 0)
-        {
-            set = default;
-            return false;
-        }
-
-        set = new Utf8AsciiByteSet(lowMask, highMask);
-        return true;
-    }
-
-    public static bool TryCreateFromAsciiCharClass(AsciiCharClass asciiCharClass, out Utf8AsciiByteSet set)
-    {
-        ulong lowMask = 0;
-        ulong highMask = 0;
-        for (var i = 0; i < 128; i++)
-        {
-            if (!asciiCharClass.Contains((byte)i))
-            {
-                continue;
-            }
-
-            if (i < 64)
-            {
-                lowMask |= 1UL << i;
-            }
-            else
-            {
-                highMask |= 1UL << (i - 64);
-            }
-        }
-
-        if ((lowMask | highMask) == 0)
-        {
-            set = default;
-            return false;
-        }
-
-        set = new Utf8AsciiByteSet(lowMask, highMask);
-        return true;
-    }
 }

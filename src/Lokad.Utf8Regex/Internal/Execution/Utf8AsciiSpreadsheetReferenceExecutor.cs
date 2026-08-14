@@ -84,6 +84,6 @@ internal static class Utf8AsciiSpreadsheetReferenceExecutor
 
     private static bool IsAsciiDigit(byte value)
     {
-        return value is >= (byte)'0' and <= (byte)'9';
+        return Utf8AsciiBytePredicates.IsDigit(value);
     }
 }

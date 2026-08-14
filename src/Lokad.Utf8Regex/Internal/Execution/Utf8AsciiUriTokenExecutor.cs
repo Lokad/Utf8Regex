@@ -137,12 +137,12 @@ internal static class Utf8AsciiUriTokenExecutor
 
     private static bool IsAsciiWordChar(byte value)
     {
-        return value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z' or (byte)'_';
+        return Utf8AsciiBytePredicates.IsWord(value);
     }
 
     private static bool IsAsciiWhitespace(byte value)
     {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v';
+        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
     }
 
     private static bool IsAsciiUriBodyStart(byte value)

@@ -556,8 +556,8 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(analysis.SearchPlan.FixedDistanceSets);
         Assert.True(analysis.SearchPlan.FixedDistanceSets!.Length >= 6);
         Assert.True(analysis.SearchPlan.FixedDistanceSets[0].Distance >= 2);
-        Assert.NotNull(analysis.SearchPlan.FixedDistanceSets[0].Chars);
-        Assert.Contains(analysis.SearchPlan.FixedDistanceSets[0].Chars!, static value => value is (byte)'A' or (byte)'N' or (byte)'O' or (byte)'Q' or (byte)'a' or (byte)'n' or (byte)'o' or (byte)'q');
+        var primaryBytes = analysis.SearchPlan.FixedDistanceSets[0].ByteSet.GetPositiveMatchBytes();
+        Assert.Contains(primaryBytes, static value => value is (byte)'A' or (byte)'N' or (byte)'O' or (byte)'Q' or (byte)'a' or (byte)'n' or (byte)'o' or (byte)'q');
         Assert.True(analysis.DeterministicGuards.HasValue);
         Assert.NotNull(analysis.DeterministicGuards.PrefixGuards);
         Assert.NotEmpty(analysis.DeterministicGuards.PrefixGuards!);

@@ -435,51 +435,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
 
     private static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
     {
-        if (string.IsNullOrEmpty(runtimeSet))
-        {
-            charClass = null!;
-            return false;
-        }
-
-        switch (runtimeSet)
-        {
-            case RuntimeFrontEnd.RegexCharClass.SpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.ECMASpaceClass:
-                charClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: false);
-                return true;
-
-            case RuntimeFrontEnd.RegexCharClass.NotSpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass:
-                charClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: true);
-                return true;
-        }
-
-        if (!RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
-        {
-            charClass = null!;
-            return false;
-        }
-
-        var negated = RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet);
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)i, runtimeSet);
-        }
-
-        charClass = new AsciiCharClass(matches, negated);
-        return true;
-    }
-
-    private static AsciiCharClass CreateAsciiCharClass(Func<char, bool> predicate, bool negated)
-    {
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = predicate((char)i);
-        }
-
-        return new AsciiCharClass(matches, negated);
+        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
     }
 
     private static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset)
@@ -487,18 +443,9 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         return requirement switch
         {
             Utf8BoundaryRequirement.None => true,
-            Utf8BoundaryRequirement.Boundary => IsWordBoundary(input, byteOffset),
-            Utf8BoundaryRequirement.NonBoundary => !IsWordBoundary(input, byteOffset),
+            Utf8BoundaryRequirement.Boundary => DotNetUtf8WordBoundary.IsBoundary(input, byteOffset),
+            Utf8BoundaryRequirement.NonBoundary => !DotNetUtf8WordBoundary.IsBoundary(input, byteOffset),
             _ => false,
         };
-    }
-
-    private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        var previousIsWord = byteOffset > 0 &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset - 1]);
-        var nextIsWord = byteOffset < input.Length &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset]);
-        return previousIsWord != nextIsWord;
     }
 }

@@ -140,7 +140,7 @@ internal static class Utf8AsciiFindExecutor
 
         var primary = sets[0];
         var anchorStart = Math.Max(0, startIndex + primary.Distance);
-        var searchValues = GetSearchValues(primary);
+        var searchValues = primary.SearchValues;
         var position = anchorStart;
         while (position < input.Length)
         {
@@ -164,30 +164,12 @@ internal static class Utf8AsciiFindExecutor
         return false;
     }
 
-    private static SearchValues<byte> GetSearchValues(Utf8FixedDistanceSet set)
-    {
-        if (set.Chars is { Length: > 0 } chars)
-        {
-            return SearchValues.Create(chars);
-        }
-
-        if (set.HasRange)
-        {
-            var values = Enumerable.Range(set.RangeLow, set.RangeHigh - set.RangeLow + 1)
-                .Select(static value => (byte)value)
-                .ToArray();
-            return SearchValues.Create(values);
-        }
-
-        return SearchValues.Create(new byte[] { 0 });
-    }
-
     private static bool MatchesAllSets(ReadOnlySpan<byte> input, int startIndex, Utf8FixedDistanceSet[] sets)
     {
         foreach (var set in sets)
         {
             var index = startIndex + set.Distance;
-            if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], set))
+            if ((uint)index >= (uint)input.Length || !set.Contains(input[index]))
             {
                 return false;
             }
@@ -196,11 +178,4 @@ internal static class Utf8AsciiFindExecutor
         return true;
     }
 
-    private static bool MatchesSet(byte value, Utf8FixedDistanceSet set)
-    {
-        var inRange = set.HasRange && value >= set.RangeLow && value <= set.RangeHigh;
-        var inChars = set.Chars is { Length: > 0 } chars && chars.AsSpan().Contains(value);
-        var isMatch = inRange || inChars;
-        return set.Negated ? !isMatch : isMatch;
-    }
 }

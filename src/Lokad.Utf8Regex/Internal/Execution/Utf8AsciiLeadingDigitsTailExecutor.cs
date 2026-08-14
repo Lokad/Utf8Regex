@@ -58,5 +58,5 @@ internal static class Utf8AsciiLeadingDigitsTailExecutor
         return true;
     }
 
-    private static bool IsAsciiDigit(byte value) => (uint)(value - '0') <= 9;
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 }

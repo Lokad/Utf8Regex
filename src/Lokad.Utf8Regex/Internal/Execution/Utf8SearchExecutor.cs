@@ -818,23 +818,8 @@ internal static class Utf8SearchExecutor
         }
 
         var span = input[startIndex..];
-        if (set.Chars is { Length: > 0 } chars)
-        {
-            var relative = set.Negated
-                ? span.IndexOfAnyExcept(chars)
-                : span.IndexOfAny(chars);
-            return relative < 0 ? -1 : startIndex + relative;
-        }
-
-        if (set.HasRange)
-        {
-            var relative = set.Negated
-                ? span.IndexOfAnyExceptInRange(set.RangeLow, set.RangeHigh)
-                : span.IndexOfAnyInRange(set.RangeLow, set.RangeHigh);
-            return relative < 0 ? -1 : startIndex + relative;
-        }
-
-        return -1;
+        var relative = span.IndexOfAny(set.SearchValues);
+        return relative < 0 ? -1 : startIndex + relative;
     }
 
     private static bool MatchesRemainingSets(ReadOnlySpan<byte> input, Utf8FixedDistanceSet[] sets, int candidate)
@@ -843,28 +828,13 @@ internal static class Utf8SearchExecutor
         {
             var set = sets[i];
             var index = candidate + set.Distance;
-            if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], set))
+            if ((uint)index >= (uint)input.Length || !set.Contains(input[index]))
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    private static bool MatchesSet(byte value, Utf8FixedDistanceSet set)
-    {
-        var isMatch = false;
-        if (set.Chars is { Length: > 0 } chars)
-        {
-            isMatch = chars.Contains(value);
-        }
-        else if (set.HasRange)
-        {
-            isMatch = value >= set.RangeLow && value <= set.RangeHigh;
-        }
-
-        return set.Negated ? !isMatch : isMatch;
     }
 
     internal static bool MatchesBoundaryRequirements(Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)
@@ -893,51 +863,6 @@ internal static class Utf8SearchExecutor
 
     private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
     {
-        var previousIsWord = byteOffset > 0 && TryGetAdjacentBoundaryChar(input[..byteOffset], previous: true, out var previousChar) &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(previousChar);
-        var nextIsWord = byteOffset < input.Length && TryGetAdjacentBoundaryChar(input[byteOffset..], previous: false, out var nextChar) &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(nextChar);
-        return previousIsWord != nextIsWord;
-    }
-
-    private static bool TryGetAdjacentBoundaryChar(ReadOnlySpan<byte> input, bool previous, out char ch)
-    {
-        ch = '\0';
-        if (input.IsEmpty)
-        {
-            return false;
-        }
-
-        OperationStatus status;
-        if (previous)
-        {
-            status = Rune.DecodeLastFromUtf8(input, out var rune, out _);
-            if (status != OperationStatus.Done)
-            {
-                return false;
-            }
-
-            if (!rune.IsBmp)
-            {
-                return true;
-            }
-
-            ch = (char)rune.Value;
-            return true;
-        }
-
-        status = Rune.DecodeFromUtf8(input, out var nextRune, out _);
-        if (status != OperationStatus.Done)
-        {
-            return false;
-        }
-
-        if (!nextRune.IsBmp)
-        {
-            return true;
-        }
-
-        ch = (char)nextRune.Value;
-        return true;
+        return DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
     }
 }

@@ -128,5 +128,5 @@ internal static class Utf8AsciiIpv4TokenExecutor
         return true;
     }
 
-    private static bool IsAsciiDigit(byte value) => value is >= (byte)'0' and <= (byte)'9';
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 }

@@ -1718,39 +1718,16 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static int GetSetCardinality(Utf8FixedDistanceSet set)
     {
-        if (set.Chars is { Length: > 0 } chars)
-        {
-            return chars.Length;
-        }
-
-        if (set.HasRange)
-        {
-            return set.RangeHigh - set.RangeLow + 1;
-        }
-
-        return 0;
+        return set.ByteSet.Count;
     }
 
     private static bool ContainsAsciiWordChar(Utf8FixedDistanceSet set)
     {
-        if (set.Chars is { Length: > 0 } chars)
+        for (var value = 0; value < 128; value++)
         {
-            foreach (var ch in chars)
+            if (set.Contains((byte)value) && Utf8AsciiBytePredicates.IsWord((byte)value))
             {
-                if (IsAsciiWordByte(ch))
-                {
-                    return true;
-                }
-            }
-        }
-        else if (set.HasRange)
-        {
-            for (var value = set.RangeLow; value <= set.RangeHigh; value++)
-            {
-                if (IsAsciiWordByte(value))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
@@ -1759,42 +1736,32 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool ContainsOnlyAsciiWhitespace(Utf8FixedDistanceSet set)
     {
-        if (set.Chars is { Length: > 0 } chars)
+        var sawMatch = false;
+        for (var value = 0; value < 128; value++)
         {
-            return chars.All(IsAsciiWhitespaceByte);
-        }
-
-        if (set.HasRange)
-        {
-            for (var value = set.RangeLow; value <= set.RangeHigh; value++)
+            if (!set.Contains((byte)value))
             {
-                if (!IsAsciiWhitespaceByte(value))
-                {
-                    return false;
-                }
+                continue;
             }
 
-            return true;
+            sawMatch = true;
+            if (!Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value))
+            {
+                return false;
+            }
         }
 
-        return false;
+        return sawMatch;
     }
 
     private static int GetDeterministicAnchorRarityScore(Utf8FixedDistanceSet set)
     {
         var best = int.MinValue;
-        if (set.Chars is { Length: > 0 } chars)
+        for (var value = 0; value < 128; value++)
         {
-            foreach (var ch in chars)
+            if (set.Contains((byte)value))
             {
-                best = Math.Max(best, GetAsciiAnchorRarityScore(ch));
-            }
-        }
-        else if (set.HasRange)
-        {
-            for (var value = set.RangeLow; value <= set.RangeHigh; value++)
-            {
-                best = Math.Max(best, GetAsciiAnchorRarityScore(value));
+                best = Math.Max(best, GetAsciiAnchorRarityScore((byte)value));
             }
         }
 
@@ -1866,12 +1833,12 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool IsAsciiWordByte(byte value)
     {
-        return value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z' or (byte)'_';
+        return Utf8AsciiBytePredicates.IsWord(value);
     }
 
     private static bool IsAsciiWhitespaceByte(byte value)
     {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or 0x0B or 0x0C;
+        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
     }
 
     private static bool TryEncodeAlternates(string[] alternatePrefixes, out byte[][] alternateLiterals)

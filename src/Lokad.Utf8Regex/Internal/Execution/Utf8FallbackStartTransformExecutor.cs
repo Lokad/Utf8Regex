@@ -25,6 +25,6 @@ internal static class Utf8FallbackStartTransformExecutor
 
     private static bool IsAsciiWhitespace(byte value)
     {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or 0x0B or 0x0C;
+        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
     }
 }

@@ -152,13 +152,10 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
         return (uint)index >= (uint)input.Length || !IsAsciiWordByte(input[index]);
     }
 
-    private static bool IsAsciiDigit(byte value) => value is >= (byte)'0' and <= (byte)'9';
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 
     private static bool IsAsciiWordByte(byte value)
     {
-        return value is >= (byte)'0' and <= (byte)'9' or
-            >= (byte)'A' and <= (byte)'Z' or
-            >= (byte)'a' and <= (byte)'z' or
-            (byte)'_';
+        return Utf8AsciiBytePredicates.IsWord(value);
     }
 }

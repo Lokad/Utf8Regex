@@ -39,6 +39,12 @@ internal enum Utf8ByteSafeLinearCompileFailureKind : byte
 
 internal readonly struct Utf8ByteSafeLinearVerifierStep
 {
+    private readonly byte[]? _text;
+    private readonly byte[][]? _alternatives;
+    private readonly Utf8ByteSafeLinearVerifierStep[]? _program;
+    private readonly AsciiCharClass? _projectedAsciiCharClass;
+    private readonly string? _set;
+
     private Utf8ByteSafeLinearVerifierStep(
         Utf8ByteSafeLinearVerifierStepKind kind,
         byte value = 0,
@@ -53,11 +59,11 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
     {
         Kind = kind;
         Value = value;
-        Text = text;
-        Alternatives = alternatives;
-        Program = program;
-        ProjectedAsciiCharClass = projectedAsciiCharClass;
-        Set = set;
+        _text = text;
+        _alternatives = alternatives;
+        _program = program;
+        _projectedAsciiCharClass = projectedAsciiCharClass;
+        _set = set;
         Min = min;
         Max = max;
         Options = options;
@@ -67,15 +73,15 @@ internal readonly struct Utf8ByteSafeLinearVerifierStep
 
     public byte Value { get; }
 
-    public byte[]? Text { get; }
+    public byte[] Text => _text ?? [];
 
-    public byte[][]? Alternatives { get; }
+    public byte[][] Alternatives => _alternatives ?? [];
 
-    public Utf8ByteSafeLinearVerifierStep[]? Program { get; }
+    public Utf8ByteSafeLinearVerifierStep[] Program => _program ?? [];
 
-    public AsciiCharClass? ProjectedAsciiCharClass { get; }
+    public AsciiCharClass ProjectedAsciiCharClass => _projectedAsciiCharClass ?? AsciiCharClass.Empty;
 
-    public string? Set { get; }
+    public string Set => _set ?? string.Empty;
 
     public int Min { get; }
 
@@ -480,13 +486,13 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             Utf8ByteSafeLinearVerifierStepKind.LoopByte =>
                 Utf8ByteSafeLinearVerifierStep.LoopByte(step.Value, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopText =>
-                Utf8ByteSafeLinearVerifierStep.LoopText(step.Text!, combinedMin, combinedMax),
+                Utf8ByteSafeLinearVerifierStep.LoopText(step.Text, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopSet =>
-                Utf8ByteSafeLinearVerifierStep.LoopSet(step.Set!, combinedMin, combinedMax),
+                Utf8ByteSafeLinearVerifierStep.LoopSet(step.Set, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet =>
-                Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(step.Set!, step.ProjectedAsciiCharClass!, combinedMin, combinedMax),
+                Utf8ByteSafeLinearVerifierStep.LoopProjectedAsciiSet(step.Set, step.ProjectedAsciiCharClass, combinedMin, combinedMax),
             Utf8ByteSafeLinearVerifierStepKind.LoopAnyText =>
-                Utf8ByteSafeLinearVerifierStep.LoopAnyText(step.Alternatives!, combinedMin, combinedMax),
+                Utf8ByteSafeLinearVerifierStep.LoopAnyText(step.Alternatives, combinedMin, combinedMax),
             _ => default,
         };
 
@@ -613,202 +619,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
     private bool TryCreateProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
     {
-        if (TryCreateKnownProjectedAsciiCharClass(runtimeSet, out asciiCharClass))
-        {
-            return true;
-        }
-
-        if (!CanProjectRuntimeSetToAscii(runtimeSet))
-        {
-            asciiCharClass = null!;
-            return false;
-        }
-
-        var matches = new bool[128];
-        if (!TryPopulateProjectedAsciiMatches(runtimeSet, matches))
-        {
-            asciiCharClass = null!;
-            return false;
-        }
-
-        var negated = RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet);
-        asciiCharClass = new AsciiCharClass(matches, negated);
-        return true;
-    }
-
-    private bool TryCreateKnownProjectedAsciiCharClass(string runtimeSet, out AsciiCharClass asciiCharClass)
-    {
-        switch (runtimeSet)
-        {
-            case RuntimeFrontEnd.RegexCharClass.SpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.ECMASpaceClass:
-                asciiCharClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: false);
-                return true;
-
-            case RuntimeFrontEnd.RegexCharClass.NotSpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass:
-                asciiCharClass = CreateAsciiCharClass(static ch => ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v', negated: true);
-                return true;
-
-            default:
-                asciiCharClass = null!;
-                return false;
-        }
-    }
-
-    private bool CanProjectRuntimeSetToAscii(string runtimeSet)
-    {
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
-        {
-            return true;
-        }
-
-        var categoryPayload = GetCategoryPayload(runtimeSet);
-        if (categoryPayload is null)
-        {
-            return false;
-        }
-
-        var digitPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.DigitClass);
-        var notDigitPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotDigitClass);
-        var spacePayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.SpaceClass);
-        var notSpacePayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotSpaceClass);
-        var wordPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.WordClass);
-        var notWordPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotWordClass);
-
-        return categoryPayload == digitPayload ||
-            categoryPayload == notDigitPayload ||
-            categoryPayload == spacePayload ||
-            categoryPayload == notSpacePayload ||
-            categoryPayload == wordPayload ||
-            categoryPayload == notWordPayload;
-    }
-
-    private bool TryPopulateProjectedAsciiMatches(string runtimeSet, bool[] matches)
-    {
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
-        {
-            for (var i = 0; i < matches.Length; i++)
-            {
-                matches[i] = RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)i, runtimeSet);
-            }
-
-            return true;
-        }
-
-        var categoryPayload = GetCategoryPayload(runtimeSet);
-        if (categoryPayload is null)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = MatchesKnownProjectedAsciiCategory((char)i, categoryPayload);
-        }
-
-        var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
-        var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
-        for (var i = RuntimeFrontEnd.RegexCharClass.SetStartIndex; i < setEnd; i += 2)
-        {
-            var start = runtimeSet[i];
-            var endExclusive = runtimeSet[i + 1];
-            if (start >= 0x80)
-            {
-                continue;
-            }
-
-            var max = Math.Min(endExclusive, (char)0x80);
-            for (var ch = start; ch < max; ch++)
-            {
-                matches[ch] = true;
-            }
-        }
-
-        return true;
-    }
-
-    private string? GetCategoryPayload(string runtimeSet)
-    {
-        if (runtimeSet.Length < RuntimeFrontEnd.RegexCharClass.SetStartIndex)
-        {
-            return null;
-        }
-
-        var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
-        var categoryLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.CategoryLengthIndex];
-        if (categoryLength == 0)
-        {
-            return string.Empty;
-        }
-
-        var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
-        if (runtimeSet.Length < setEnd + categoryLength)
-        {
-            return null;
-        }
-
-        for (var i = RuntimeFrontEnd.RegexCharClass.SetStartIndex; i < setEnd; i += 2)
-        {
-            if (runtimeSet[i + 1] > 0x80)
-            {
-                return null;
-            }
-        }
-
-        return runtimeSet.Substring(setEnd, categoryLength);
-    }
-
-    private bool MatchesKnownProjectedAsciiCategory(char ch, string categoryPayload)
-    {
-        var digitPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.DigitClass);
-        if (categoryPayload == digitPayload)
-        {
-            return ch is >= '0' and <= '9';
-        }
-
-        var notDigitPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotDigitClass);
-        if (categoryPayload == notDigitPayload)
-        {
-            return ch is < '0' or > '9';
-        }
-
-        var spacePayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.SpaceClass);
-        if (categoryPayload == spacePayload)
-        {
-            return ch is ' ' or '\t' or '\r' or '\n' or '\f' or '\v';
-        }
-
-        var notSpacePayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotSpaceClass);
-        if (categoryPayload == notSpacePayload)
-        {
-            return ch is not (' ' or '\t' or '\r' or '\n' or '\f' or '\v');
-        }
-
-        var wordPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.WordClass);
-        if (categoryPayload == wordPayload)
-        {
-            return RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(ch);
-        }
-
-        var notWordPayload = GetCategoryPayload(RuntimeFrontEnd.RegexCharClass.NotWordClass);
-        if (categoryPayload == notWordPayload)
-        {
-            return !RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(ch);
-        }
-
-        return RuntimeFrontEnd.RegexCharClass.CharInClassBase(ch, categoryPayload);
-    }
-
-    private AsciiCharClass CreateAsciiCharClass(Func<char, bool> predicate, bool negated)
-    {
-        var matches = new bool[128];
-        for (var i = 0; i < matches.Length; i++)
-        {
-            matches[i] = predicate((char)i);
-        }
-
-        return new AsciiCharClass(matches, negated);
+        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(runtimeSet, out asciiCharClass);
     }
 
     private bool TryAppendTerminalAlternation(
@@ -1421,7 +1232,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchText:
-                var text = step.Text!;
+                var text = step.Text;
                 if (input.Length - index < text.Length || !input.Slice(index, text.Length).SequenceEqual(text))
                 {
                     return false;
@@ -1431,7 +1242,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return true;
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchSet:
-                if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], step.Set!))
+                if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], step.Set))
                 {
                     return false;
                 }
@@ -1451,7 +1262,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                     return false;
                 }
 
-                if (step.ProjectedAsciiCharClass is null || !step.ProjectedAsciiCharClass.Contains(input[index]))
+                if (step.ProjectedAsciiCharClass.IsEmpty || !step.ProjectedAsciiCharClass.Contains(input[index]))
                 {
                     return false;
                 }
@@ -1463,13 +1274,13 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return TryConsumeByteLoop(input, ref index, step.Value, step.Min, step.Max);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopText:
-                return TryConsumeTextLoop(input, ref index, step.Text!, step.Min, step.Max);
+                return TryConsumeTextLoop(input, ref index, step.Text, step.Min, step.Max);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopSet:
-                return TryConsumeSetLoop(input, ref index, step.Set!, step.Min, step.Max);
+                return TryConsumeSetLoop(input, ref index, step.Set, step.Min, step.Max);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet:
-                return TryConsumeProjectedAsciiSetLoop(input, ref index, step.ProjectedAsciiCharClass!, step.Min, step.Max, out requiresCompatibilityFallback);
+                return TryConsumeProjectedAsciiSetLoop(input, ref index, step.ProjectedAsciiCharClass, step.Min, step.Max, out requiresCompatibilityFallback);
 
             case Utf8ByteSafeLinearVerifierStepKind.RequireBeginning:
                 return IsBeginningOfLine(input, index, step.Options);
@@ -1478,22 +1289,22 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 return IsEndAnchorMatch(input, index, step.Options);
 
             case Utf8ByteSafeLinearVerifierStepKind.RequireBoundary:
-                return IsWordBoundary(input, index);
+                return DotNetUtf8WordBoundary.IsBoundary(input, index);
 
             case Utf8ByteSafeLinearVerifierStepKind.RequireNonBoundary:
-                return !IsWordBoundary(input, index);
+                return !DotNetUtf8WordBoundary.IsBoundary(input, index);
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchAnyText:
-                return TryMatchAnyText(input, ref index, step.Alternatives!, optional: false);
+                return TryMatchAnyText(input, ref index, step.Alternatives, optional: false);
 
             case Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional:
-                return TryMatchAnyText(input, ref index, step.Alternatives!, optional: true);
+                return TryMatchAnyText(input, ref index, step.Alternatives, optional: true);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopAnyText:
-                return TryConsumeAnyTextLoop(input, ref index, step.Alternatives!, step.Min, step.Max);
+                return TryConsumeAnyTextLoop(input, ref index, step.Alternatives, step.Min, step.Max);
 
             case Utf8ByteSafeLinearVerifierStepKind.LoopProgram:
-                return TryConsumeProgramLoop(input, ref index, step.Program!, step.Min, step.Max, out requiresCompatibilityFallback);
+                return TryConsumeProgramLoop(input, ref index, step.Program, step.Min, step.Max, out requiresCompatibilityFallback);
 
             case Utf8ByteSafeLinearVerifierStepKind.Accept:
                 matchedLength = index - startIndex;
@@ -1514,17 +1325,17 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 length += step.Kind switch
                 {
                     Utf8ByteSafeLinearVerifierStepKind.MatchByte => 1,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchText => step.Text!.Length,
+                    Utf8ByteSafeLinearVerifierStepKind.MatchText => step.Text.Length,
                     Utf8ByteSafeLinearVerifierStepKind.MatchSet => 1,
                     Utf8ByteSafeLinearVerifierStepKind.MatchProjectedAsciiSet => 1,
                     Utf8ByteSafeLinearVerifierStepKind.LoopByte => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopText => step.Min * step.Text!.Length,
+                    Utf8ByteSafeLinearVerifierStepKind.LoopText => step.Min * step.Text.Length,
                     Utf8ByteSafeLinearVerifierStepKind.LoopSet => step.Min,
                     Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet => step.Min,
-                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => step.Alternatives!.Min(static value => value.Length),
+                    Utf8ByteSafeLinearVerifierStepKind.MatchAnyText => step.Alternatives.Min(static value => value.Length),
                     Utf8ByteSafeLinearVerifierStepKind.MatchAnyTextOptional => 0,
-                    Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => step.Min * step.Alternatives!.Min(static value => value.Length),
-                    Utf8ByteSafeLinearVerifierStepKind.LoopProgram => step.Min * GetMinimumConsumedLength(step.Program!),
+                    Utf8ByteSafeLinearVerifierStepKind.LoopAnyText => step.Min * step.Alternatives.Min(static value => value.Length),
+                    Utf8ByteSafeLinearVerifierStepKind.LoopProgram => step.Min * GetMinimumConsumedLength(step.Program),
                     _ => 0,
                 };
             }
@@ -1555,12 +1366,4 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                (index == input.Length - 1 && input[index] == (byte)'\n');
     }
 
-    private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        var previousIsWord = byteOffset > 0 &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset - 1]);
-        var nextIsWord = byteOffset < input.Length &&
-            RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)input[byteOffset]);
-        return previousIsWord != nextIsWord;
-    }
 }

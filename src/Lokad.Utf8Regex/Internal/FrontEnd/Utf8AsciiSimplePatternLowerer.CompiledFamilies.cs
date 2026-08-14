@@ -225,13 +225,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         if (!ignoreCase && segment.Literal.Length == 1)
         {
-            var matches = new bool[128];
-            matches[segment.Literal[0]] = true;
-            charClass = new AsciiCharClass(matches, negated: false);
+            charClass = AsciiCharClass.ForByte(segment.Literal[0]);
             return true;
         }
 
-        charClass = default!;
+        charClass = AsciiCharClass.Empty;
         return false;
     }
 

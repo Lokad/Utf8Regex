@@ -308,19 +308,25 @@ internal readonly struct Utf8StructuralSearchPlan
         var enriched = stages;
         foreach (var set in fixedDistanceSets)
         {
-            if (set.Negated || set.HasRange || set.Chars is not { Length: > 0 } chars)
+            if (set.ByteSet.Negated || set.ByteSet.GetPositiveMatchBytes() is not { Length: > 0 } chars)
             {
                 continue;
             }
 
+            Utf8StructuralSearchPlan updated;
             if (chars.Length == 1)
             {
-                enriched = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireByteAtOffset(set.Distance, chars[0])).Stages!;
+                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireByteAtOffset(set.Distance, chars[0]));
             }
             else
             {
                 var setText = new string(chars.Select(static ch => (char)ch).ToArray());
-                enriched = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireSetAtOffset(set.Distance, setText)).Stages!;
+                updated = InsertBeforeYield(enriched, Utf8StructuralSearchStage.RequireSetAtOffset(set.Distance, setText));
+            }
+
+            if (updated.Stages is { } updatedStages)
+            {
+                enriched = updatedStages;
             }
         }
 
@@ -532,12 +538,12 @@ internal readonly struct Utf8StructuralSearchPlan
         }
 
         var primary = sets[0];
-        if (primary.Negated || primary.HasRange)
+        if (primary.ByteSet.Negated)
         {
             return false;
         }
 
-        if (primary.Chars is not { Length: > 0 } chars)
+        if (primary.ByteSet.GetPositiveMatchBytes() is not { Length: > 0 } chars)
         {
             return false;
         }

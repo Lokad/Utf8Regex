@@ -65,43 +65,6 @@ internal static class Utf8ConfirmationExecutor
 
     private static bool TryGetAsciiWordBoundary(ReadOnlySpan<byte> input, int byteOffset, out bool isBoundary)
     {
-        var lookup = RuntimeFrontEnd.RegexCharClass.WordCharAsciiLookup;
-
-        bool previousIsWord;
-        if (byteOffset <= 0)
-        {
-            previousIsWord = false;
-        }
-        else
-        {
-            var previous = input[byteOffset - 1];
-            if (previous >= 128)
-            {
-                isBoundary = false;
-                return false;
-            }
-
-            previousIsWord = lookup[previous] != 0;
-        }
-
-        bool nextIsWord;
-        if (byteOffset >= input.Length)
-        {
-            nextIsWord = false;
-        }
-        else
-        {
-            var next = input[byteOffset];
-            if (next >= 128)
-            {
-                isBoundary = false;
-                return false;
-            }
-
-            nextIsWord = lookup[next] != 0;
-        }
-
-        isBoundary = previousIsWord != nextIsWord;
-        return true;
+        return DotNetUtf8WordBoundary.TryGetAsciiBoundary(input, byteOffset, out isBoundary);
     }
 }

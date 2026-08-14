@@ -52,7 +52,9 @@ internal sealed class RegexFindOptimizations
 
     public bool IsFixedLength => MaxPossibleLength is int max && max == MinRequiredLength;
 
-    public readonly record struct FixedDistanceSet(string Set, int Distance, bool Negated, char[]? Chars, (char LowInclusive, char HighInclusive)? Range);
+    public readonly record struct FixedDistanceSet(string Set, int Distance, bool Negated, char[]? Chars, InclusiveCharRange? Range);
+
+    public readonly record struct InclusiveCharRange(char LowInclusive, char HighInclusive);
 
     private static string? TryExtractLeadingLiteral(RegexNode node)
     {
@@ -246,7 +248,7 @@ internal sealed class RegexFindOptimizations
             first <= 0x7F &&
             last <= 0x7F)
         {
-            projectedSet = new FixedDistanceSet(set, distance, negated, Chars: null, Range: (first, last));
+            projectedSet = new FixedDistanceSet(set, distance, negated, Chars: null, Range: new InclusiveCharRange(first, last));
             return true;
         }
 
@@ -274,9 +276,9 @@ internal sealed class RegexFindOptimizations
         projectedSet = set switch
         {
             RegexCharClass.DigitClass or RegexCharClass.ECMADigitClass =>
-                new FixedDistanceSet(set, distance, Negated: false, Chars: null, Range: ('0', '9')),
+                new FixedDistanceSet(set, distance, Negated: false, Chars: null, Range: new InclusiveCharRange('0', '9')),
             RegexCharClass.NotDigitClass or RegexCharClass.NotECMADigitClass =>
-                new FixedDistanceSet(set, distance, Negated: true, Chars: null, Range: ('0', '9')),
+                new FixedDistanceSet(set, distance, Negated: true, Chars: null, Range: new InclusiveCharRange('0', '9')),
             RegexCharClass.SpaceClass or RegexCharClass.ECMASpaceClass =>
                 new FixedDistanceSet(set, distance, Negated: false, Chars: [' ', '\t', '\r', '\n', '\f', '\v'], Range: null),
             RegexCharClass.NotSpaceClass or RegexCharClass.NotECMASpaceClass =>

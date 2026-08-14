@@ -340,7 +340,7 @@ internal static class Utf8AsciiPrefixTokenExecutor
         return stop < 0 ? input.Length : stop;
     }
 
-    private static bool IsAsciiDigit(byte value) => (uint)(value - '0') <= 9;
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 
     private static bool IsAsciiOperator(byte value) => s_asciiOperators.Contains(value);
 }

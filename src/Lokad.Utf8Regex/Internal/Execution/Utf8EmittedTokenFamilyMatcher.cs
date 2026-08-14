@@ -286,19 +286,16 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
         return (uint)index >= (uint)input.Length || !IsAsciiWordByte(input[index]);
     }
 
-    private static bool IsAsciiDigit(byte value) => value is >= (byte)'0' and <= (byte)'9';
+    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 
     private static bool IsAsciiWordByte(byte value)
     {
-        return value is >= (byte)'0' and <= (byte)'9' or
-            >= (byte)'A' and <= (byte)'Z' or
-            >= (byte)'a' and <= (byte)'z' or
-            (byte)'_';
+        return Utf8AsciiBytePredicates.IsWord(value);
     }
 
     private static bool IsAsciiWhitespace(byte value)
     {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v';
+        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
     }
 
     private static bool IsAsciiUriBodyStart(byte value)

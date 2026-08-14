@@ -121,7 +121,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
             foreach (var set in sets)
             {
                 var index = startIndex + set.Distance;
-                if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], set))
+                if ((uint)index >= (uint)input.Length || !set.Contains(input[index]))
                 {
                     return false;
                 }
@@ -269,7 +269,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
     private static bool IsAsciiWhitespace(byte value)
     {
-        return value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or 0x0B or 0x0C;
+        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
     }
 
     private static bool TryAddGuard(List<Utf8DeterministicByteGuard> guards, Utf8DeterministicByteGuard guard)
@@ -278,20 +278,6 @@ internal readonly struct Utf8DeterministicVerifierGuards
         return guards.Count <= MaxPrefixGuards;
     }
 
-    private static bool MatchesSet(byte value, Utf8FixedDistanceSet set)
-    {
-        var matched = false;
-        if (set.Chars is { Length: > 0 } chars)
-        {
-            matched = chars.AsSpan().IndexOf(value) >= 0;
-        }
-        else if (set.HasRange)
-        {
-            matched = value >= set.RangeLow && value <= set.RangeHigh;
-        }
-
-        return set.Negated ? !matched : matched;
-    }
 }
 
 internal readonly struct Utf8DeterministicByteGuard

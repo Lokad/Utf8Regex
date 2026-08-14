@@ -359,16 +359,12 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         };
     }
 
-    internal static bool IsAsciiWordByte(byte value) => RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)value);
+    internal static bool IsAsciiWordByte(byte value) => Utf8AsciiBytePredicates.IsWord(value);
 
     internal static bool IsAsciiUpper(byte value) => value is >= (byte)'A' and <= (byte)'Z';
 
     private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
     {
-        var previousIsWord = byteOffset > 0 &&
-            IsAsciiWordByte(input[byteOffset - 1]);
-        var nextIsWord = byteOffset < input.Length &&
-            IsAsciiWordByte(input[byteOffset]);
-        return previousIsWord != nextIsWord;
+        return DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
     }
 }

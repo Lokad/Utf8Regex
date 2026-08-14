@@ -473,53 +473,7 @@ internal static class Utf8StructuralSearchExecutor
 
     private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
     {
-        var previousIsWord = byteOffset > 0 &&
-            TryGetAdjacentBoundaryChar(input[..byteOffset], previous: true, out var previousChar) &&
-            FrontEnd.Runtime.RegexCharClass.IsBoundaryWordChar(previousChar);
-        var nextIsWord = byteOffset < input.Length &&
-            TryGetAdjacentBoundaryChar(input[byteOffset..], previous: false, out var nextChar) &&
-            FrontEnd.Runtime.RegexCharClass.IsBoundaryWordChar(nextChar);
-        return previousIsWord != nextIsWord;
-    }
-
-    private static bool TryGetAdjacentBoundaryChar(ReadOnlySpan<byte> input, bool previous, out char ch)
-    {
-        ch = '\0';
-        if (input.IsEmpty)
-        {
-            return false;
-        }
-
-        if (previous)
-        {
-            var status = Rune.DecodeLastFromUtf8(input, out var rune, out _);
-            if (status != OperationStatus.Done)
-            {
-                return false;
-            }
-
-            if (!rune.IsBmp)
-            {
-                return true;
-            }
-
-            ch = (char)rune.Value;
-            return true;
-        }
-
-        var nextStatus = Rune.DecodeFromUtf8(input, out var nextRune, out _);
-        if (nextStatus != OperationStatus.Done)
-        {
-            return false;
-        }
-
-        if (!nextRune.IsBmp)
-        {
-            return true;
-        }
-
-        ch = (char)nextRune.Value;
-        return true;
+        return DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
     }
 
     private static int GetRequirementBaseIndex(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackStartTransform startTransform)
