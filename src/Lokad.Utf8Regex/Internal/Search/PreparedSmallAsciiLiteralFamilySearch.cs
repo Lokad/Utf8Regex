@@ -15,6 +15,10 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
 
     private readonly record struct Filter(int Offset, byte[] Values, SearchValues<byte> SearchValues);
 
+    private readonly record struct AnchorCandidate(int Offset, byte[] Values, int Score);
+
+    private readonly record struct AnchorAndFilters(int AnchorOffset, byte[] AnchorValues, Filter[] Filters);
+
     private readonly record struct TripleDispatch(
         int PrimaryOffset,
         int SecondaryOffset,
@@ -88,15 +92,15 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
             return false;
         }
 
-        var (anchorOffset, anchorValues, filters) = CreateAnchorAndFilters(literals);
+        var anchor = CreateAnchorAndFilters(literals);
         search = new PreparedSmallAsciiLiteralFamilySearch(
             literals,
             searchData,
-            anchorOffset,
-            anchorValues,
-            filters,
-            CreateTripleDispatch(literals, anchorOffset),
-            CreatePairDispatch(literals, anchorOffset));
+            anchor.AnchorOffset,
+            anchor.AnchorValues,
+            anchor.Filters,
+            CreateTripleDispatch(literals, anchor.AnchorOffset),
+            CreatePairDispatch(literals, anchor.AnchorOffset));
         return true;
     }
 
@@ -267,7 +271,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
 
         if (bucket.PrefixDiscriminator.HasValue)
         {
-            var map = bucket.PrefixDiscriminator.LiteralsByByte!;
+            var map = bucket.PrefixDiscriminator.LiteralsByByte;
             var discriminatorIndex = index + bucket.PrefixDiscriminator.Offset;
             if ((uint)discriminatorIndex < (uint)input.Length &&
                 map[input[discriminatorIndex]] is { } literal &&
@@ -355,10 +359,10 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         return false;
     }
 
-    private static (int AnchorOffset, byte[] AnchorValues, Filter[] Filters) CreateAnchorAndFilters(byte[][] literals)
+    private static AnchorAndFilters CreateAnchorAndFilters(byte[][] literals)
     {
         var shortestLength = literals.Min(static literal => literal.Length);
-        var offsets = new List<(int Offset, byte[] Values, int Score)>(shortestLength);
+        var offsets = new List<AnchorCandidate>(shortestLength);
         var seenFlags = new bool[256];
         var valueBuffer = new byte[8];
         for (var offset = 0; offset < shortestLength; offset++)
@@ -395,12 +399,12 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
                 commonness += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(valueBuffer[i]);
             }
 
-            offsets.Add((offset, valueBuffer[..count].ToArray(), commonness * 8 + count));
+            offsets.Add(new AnchorCandidate(offset, valueBuffer[..count].ToArray(), commonness * 8 + count));
         }
 
         if (offsets.Count == 0)
         {
-            return (0, GetFallbackAnchorValues(literals), []);
+            return new AnchorAndFilters(0, GetFallbackAnchorValues(literals), []);
         }
 
         var ordered = offsets
@@ -415,7 +419,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
             .Select(static f => new Filter(f.Offset, f.Values, SearchValues.Create(f.Values)))
             .ToArray();
 
-        return (anchor.Offset, anchor.Values, filters);
+        return new AnchorAndFilters(anchor.Offset, anchor.Values, filters);
     }
 
     private static byte[] GetFallbackAnchorValues(byte[][] literals)

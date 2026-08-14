@@ -9,6 +9,12 @@ internal abstract class Utf8StructuralVerifierRuntime
 
     public Utf8StructuralVerifierPlan Plan { get; }
 
+    /// <summary>
+    /// Verifies a structural candidate beginning at <paramref name="matchIndex"/>
+    /// after <paramref name="prefixLength"/> bytes have already been admitted.
+    /// Both offsets must be within the supplied well-formed subject. All work
+    /// charges <paramref name="budget"/>; false definitively rejects this start.
+    /// </summary>
     public abstract bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength);
 }
 

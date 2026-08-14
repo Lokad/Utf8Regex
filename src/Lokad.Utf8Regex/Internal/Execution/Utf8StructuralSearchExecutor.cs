@@ -300,12 +300,12 @@ internal static class Utf8StructuralSearchExecutor
                         return false;
                     }
 
-                    if (stage.LiteralByte is { } literal && input[index] != literal)
+                    if (stage.HasLiteralByte && input[index] != stage.LiteralByte)
                     {
                         return false;
                     }
 
-                    if (stage.Set is { } set && !FrontEnd.Runtime.RegexCharClass.CharInClass((char)input[index], set))
+                    if (stage.HasSet && !FrontEnd.Runtime.RegexCharClass.CharInClass((char)input[index], stage.Set))
                     {
                         return false;
                     }

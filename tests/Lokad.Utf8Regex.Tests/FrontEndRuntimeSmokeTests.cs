@@ -493,7 +493,7 @@ public sealed class FrontEndRuntimeSmokeTests
         var simpleSearch = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(
             simple.SemanticRegex,
             simple.SimplePatternPlan,
-            new Utf8SearchFacts(Utf8SearchKind.None));
+            Utf8SearchFacts.Create(Utf8SearchKind.None));
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, literalSearch.Kind);
         Assert.Equal("abc", Encoding.UTF8.GetString(literalSearch.LiteralUtf8!));

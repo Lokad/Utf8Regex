@@ -1708,6 +1708,8 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
 {
     private const int MaxOffsets = 3;
 
+    private readonly record struct OffsetScore(int Offset, int Cardinality, int FrequencyScore);
+
     public PreparedMultiLiteralOffsetMaskPrefilter(byte[][] literals)
     {
         ArgumentNullException.ThrowIfNull(literals);
@@ -1721,7 +1723,7 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
             return;
         }
 
-        var scores = new List<(int Offset, int Cardinality, int FrequencyScore)>(ShortestLength);
+        var scores = new List<OffsetScore>(ShortestLength);
         var seenAtOffset = new bool[256];
         for (var offset = 0; offset < ShortestLength; offset++)
         {
@@ -1741,7 +1743,7 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
                 frequencyScore += PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(value);
             }
 
-            scores.Add((offset, cardinality, frequencyScore));
+            scores.Add(new OffsetScore(offset, cardinality, frequencyScore));
         }
 
         var selected = scores

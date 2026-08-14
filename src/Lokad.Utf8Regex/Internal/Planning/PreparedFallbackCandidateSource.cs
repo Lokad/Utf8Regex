@@ -12,7 +12,12 @@ internal enum PreparedFallbackCandidateKind : byte
 
 internal readonly struct PreparedFallbackCandidateSource
 {
-    public PreparedFallbackCandidateSource(PreparedSearcher searcher, Utf8FallbackStartTransform startTransform = default)
+    public PreparedFallbackCandidateSource(PreparedSearcher searcher)
+        : this(searcher, default)
+    {
+    }
+
+    public PreparedFallbackCandidateSource(PreparedSearcher searcher, Utf8FallbackStartTransform startTransform)
     {
         Searcher = searcher;
         StartTransform = startTransform;
@@ -40,6 +45,21 @@ internal readonly struct PreparedFallbackCandidateSource
 
 }
 
-internal readonly record struct PreparedFallbackCandidate(int StartIndex, int EndIndex = -1);
+internal readonly record struct PreparedFallbackCandidate
+{
+    private PreparedFallbackCandidate(int startIndex, int endIndex)
+    {
+        StartIndex = startIndex;
+        EndIndex = endIndex;
+    }
+
+    public int StartIndex { get; }
+
+    public int EndIndex { get; }
+
+    public static PreparedFallbackCandidate AtStart(int startIndex) => new(startIndex, -1);
+
+    public static PreparedFallbackCandidate ForWindow(int startIndex, int endIndex) => new(startIndex, endIndex);
+}
 
 internal readonly record struct PreparedFallbackCandidateState(PreparedSearchScanState SearchState, PreparedWindowScanState WindowState);

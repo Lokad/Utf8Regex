@@ -691,12 +691,30 @@ internal abstract class Utf8StructuralLinearRuntime
 
     protected Utf8StructuralLinearProgram Program { get; }
 
+    /// <summary>
+    /// Evaluates whether the validated complete subject contains a match. All
+    /// scanning and verification charges the supplied deadline; false is final.
+    /// </summary>
     public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
+    /// <summary>
+    /// Counts nonoverlapping matches in the validated complete subject using
+    /// .NET global progression and charging the supplied deadline.
+    /// </summary>
     public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
+    /// <summary>
+    /// Returns the first capture-zero match in the validated complete subject,
+    /// or <see cref="Utf8ValueMatch.NoMatch"/>, while charging the deadline.
+    /// </summary>
     public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
+    /// <summary>
+    /// Finds the first match whose byte start is at or after
+    /// <paramref name="startIndex"/> in a validated subject. The start must be
+    /// an admitted boundary. A false result definitively exhausts the suffix,
+    /// output values are then unspecified, and all work charges the deadline.
+    /// </summary>
     public abstract bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength);
 
     public static Utf8StructuralLinearRuntime Create(Utf8StructuralLinearProgram program)

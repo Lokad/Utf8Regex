@@ -101,9 +101,19 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 : default);
         searchFacts = searchLiterals.Length switch
         {
-            1 => new Utf8SearchFacts(ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral, searchLiterals[0]),
-            > 1 when !ignoreCase && searchLiteralOffset == 0 => new Utf8SearchFacts(Utf8SearchKind.ExactAsciiLiterals, alternateLiteralsUtf8: searchLiterals),
-            _ => new Utf8SearchFacts(Utf8SearchKind.None),
+            1 => Utf8SearchFacts.Create(
+                     ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                     new Utf8SearchFactData
+                     {
+                         LiteralUtf8 = searchLiterals[0],
+                     }),
+            > 1 when !ignoreCase && searchLiteralOffset == 0 => Utf8SearchFacts.Create(
+                                                                    Utf8SearchKind.ExactAsciiLiterals,
+                                                                    new Utf8SearchFactData
+                                                                    {
+                                                                        AlternateLiteralsUtf8 = searchLiterals,
+                                                                    }),
+            _ => Utf8SearchFacts.Create(Utf8SearchKind.None),
         };
 
         return true;

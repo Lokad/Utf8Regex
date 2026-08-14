@@ -13,7 +13,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         var findOptimizations = runtimeTree?.FindOptimizations;
         if (findOptimizations is null || runtimeTree is null)
         {
-            return new Utf8SearchFacts(Utf8SearchKind.None, null);
+            return Utf8SearchFacts.Create(Utf8SearchKind.None);
         }
 
         TrySelectRequiredLiteralPrefilter(findOptimizations.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
@@ -29,95 +29,110 @@ internal static class Utf8FrontEndSearchAnalyzer
         TrySelectOrderedWindowConstraints(runtimeTree.Root, out var orderedWindowMaxGap, out var orderedWindowSameLine);
         TrySelectFallbackStartTransform(runtimeTree.Root, out var fallbackStartTransform);
         TrySelectBoundaryRequirements(runtimeTree.Root, out var leadingBoundary, out var trailingBoundary);
+        requiredPrefilterLiteral ??= [];
+        requiredPrefilterAlternateLiterals ??= [];
+        requiredWindowPrefilters ??= [];
         int? exactRequiredLength = findOptimizations.IsFixedLength ? findOptimizations.MinRequiredLength : null;
         var maxPossibleLength = findOptimizations.IsFixedLength ? null : findOptimizations.MaxPossibleLength;
 
         if (TrySelectTrailingFixedLengthAnchor(findOptimizations, out var trailingKind, out var trailingLength))
         {
-            return new Utf8SearchFacts(
-                trailingKind,
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                minRequiredLength: trailingLength,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       trailingKind,
+                       new Utf8SearchFactData
+                       {
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           MinRequiredLength = trailingLength,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectFixedDistanceSets(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var fixedDistanceSets, out var fixedDistanceMinRequiredLength))
         {
-            return new Utf8SearchFacts(
-                Utf8SearchKind.FixedDistanceAsciiSets,
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                fixedDistanceSets: fixedDistanceSets,
-                minRequiredLength: fixedDistanceMinRequiredLength,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       Utf8SearchKind.FixedDistanceAsciiSets,
+                       new Utf8SearchFactData
+                       {
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           FixedDistanceSets = fixedDistanceSets,
+                           MinRequiredLength = fixedDistanceMinRequiredLength,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectDeterministicPrefixSets(runtimeTree.Root, findOptimizations.MinRequiredLength, fallbackStartTransform, out var deterministicPrefixSets, out var deterministicPrefixMinRequiredLength))
         {
-            return new Utf8SearchFacts(
-                Utf8SearchKind.FixedDistanceAsciiSets,
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                fixedDistanceSets: deterministicPrefixSets,
-                minRequiredLength: deterministicPrefixMinRequiredLength,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       Utf8SearchKind.FixedDistanceAsciiSets,
+                       new Utf8SearchFactData
+                       {
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           FixedDistanceSets = deterministicPrefixSets,
+                           MinRequiredLength = deterministicPrefixMinRequiredLength,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectFixedDistanceLiteral(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var fixedLiteral, out var distance, out var minRequiredLength))
         {
-            return new Utf8SearchFacts(
-                Utf8SearchKind.FixedDistanceAsciiLiteral,
-                literalUtf8: fixedLiteral,
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                distance: distance,
-                minRequiredLength: minRequiredLength,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       Utf8SearchKind.FixedDistanceAsciiLiteral,
+                       new Utf8SearchFactData
+                       {
+                           LiteralUtf8 = fixedLiteral,
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           Distance = distance,
+                           MinRequiredLength = minRequiredLength,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectAlternatePrefixes(findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var alternateLiterals))
@@ -125,24 +140,27 @@ internal static class Utf8FrontEndSearchAnalyzer
             var searchKind = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F))
                 ? Utf8SearchKind.ExactUtf8Literals
                 : Utf8SearchKind.ExactAsciiLiterals;
-            return new Utf8SearchFacts(
-                searchKind,
-                alternateLiteralsUtf8: alternateLiterals,
-                canGuideFallbackStarts: CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       searchKind,
+                       new Utf8SearchFactData
+                       {
+                           AlternateLiteralsUtf8 = alternateLiterals,
+                           CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectLeadingLiteral(findOptimizations, out var leadingLiteral) && IsAscii(leadingLiteral))
@@ -151,24 +169,27 @@ internal static class Utf8FrontEndSearchAnalyzer
                 ? Utf8SearchKind.AsciiLiteralIgnoreCase
                 : Utf8SearchKind.ExactAsciiLiteral;
 
-            return new Utf8SearchFacts(
-                searchKind,
-                literalUtf8: Encoding.UTF8.GetBytes(leadingLiteral),
-                canGuideFallbackStarts: CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       searchKind,
+                       new Utf8SearchFactData
+                       {
+                           LiteralUtf8 = Encoding.UTF8.GetBytes(leadingLiteral),
+                           CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (TrySelectCandidateLiteral(findOptimizations, out var candidate) && IsAscii(candidate))
@@ -177,59 +198,68 @@ internal static class Utf8FrontEndSearchAnalyzer
                 ? Utf8SearchKind.AsciiLiteralIgnoreCase
                 : Utf8SearchKind.ExactAsciiLiteral;
 
-            return new Utf8SearchFacts(
-                searchKind,
-                literalUtf8: Encoding.UTF8.GetBytes(candidate),
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       searchKind,
+                       new Utf8SearchFactData
+                       {
+                           LiteralUtf8 = Encoding.UTF8.GetBytes(candidate),
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
         if (requiredPrefilterLiteral is not null ||
             requiredPrefilterAlternateLiterals is not null ||
             secondaryRequiredPrefilterQuotedAsciiSet.HasValue)
         {
-            return new Utf8SearchFacts(
-                Utf8SearchKind.None,
-                requiredPrefilterLiteralUtf8: requiredPrefilterLiteral,
-                requiredPrefilterAlternateLiteralsUtf8: requiredPrefilterAlternateLiterals,
-                secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-                secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-                requiredWindowPrefilters: requiredWindowPrefilters,
-                orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-                orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-                orderedWindowMaxGap: orderedWindowMaxGap,
-                orderedWindowSameLine: orderedWindowSameLine,
-                fallbackStartTransform: fallbackStartTransform,
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength,
-                leadingBoundary: leadingBoundary,
-                trailingBoundary: trailingBoundary);
+            return Utf8SearchFacts.Create(
+                       Utf8SearchKind.None,
+                       new Utf8SearchFactData
+                       {
+                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
+                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
+                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                           OrderedWindowMaxGap = orderedWindowMaxGap,
+                           OrderedWindowSameLine = orderedWindowSameLine,
+                           FallbackStartTransform = fallbackStartTransform,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                           LeadingBoundary = leadingBoundary,
+                           TrailingBoundary = trailingBoundary,
+                       });
         }
 
-        return new Utf8SearchFacts(
-            Utf8SearchKind.None,
-            secondaryRequiredPrefilterQuotedAsciiSet: secondaryRequiredPrefilterQuotedAsciiSet,
-            secondaryRequiredPrefilterQuotedAsciiLength: secondaryRequiredPrefilterQuotedAsciiLength,
-            requiredWindowPrefilters: requiredWindowPrefilters,
-            orderedWindowLeadingLiteralsUtf8: orderedLeadingLiterals,
-            orderedWindowTrailingLiteralUtf8: orderedTrailingLiteral,
-            orderedWindowMaxGap: orderedWindowMaxGap,
-            orderedWindowSameLine: orderedWindowSameLine,
-            fallbackStartTransform: fallbackStartTransform,
-            exactRequiredLength: exactRequiredLength,
-            maxPossibleLength: maxPossibleLength,
-            leadingBoundary: leadingBoundary,
-            trailingBoundary: trailingBoundary);
+        return Utf8SearchFacts.Create(
+                   Utf8SearchKind.None,
+                   new Utf8SearchFactData
+                   {
+                       SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
+                       SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
+                       RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                       OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
+                       OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
+                       OrderedWindowMaxGap = orderedWindowMaxGap,
+                       OrderedWindowSameLine = orderedWindowSameLine,
+                       FallbackStartTransform = fallbackStartTransform,
+                       ExactRequiredLength = exactRequiredLength,
+                       MaxPossibleLength = maxPossibleLength,
+                       LeadingBoundary = leadingBoundary,
+                       TrailingBoundary = trailingBoundary,
+                   });
     }
 
     private static bool TrySelectQuotedAsciiRunPrefilter(Runtime.RegexNode root, out string? asciiSet, out int runLength)
@@ -409,21 +439,34 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     public static Utf8SearchFacts AnalyzeLiteral(
         byte[] literalUtf8,
+        NativeExecutionKind executionKind) =>
+        AnalyzeLiteral(
+            literalUtf8,
+            executionKind,
+            [],
+            Utf8BoundaryRequirement.None,
+            Utf8BoundaryRequirement.None);
+
+    public static Utf8SearchFacts AnalyzeLiteral(
+        byte[] literalUtf8,
         NativeExecutionKind executionKind,
-        byte[]? trailingLiteralUtf8 = null,
-        Utf8BoundaryRequirement leadingBoundary = Utf8BoundaryRequirement.None,
-        Utf8BoundaryRequirement trailingBoundary = Utf8BoundaryRequirement.None)
+        byte[] trailingLiteralUtf8,
+        Utf8BoundaryRequirement leadingBoundary,
+        Utf8BoundaryRequirement trailingBoundary)
     {
         var searchKind = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCase
             ? Utf8SearchKind.AsciiLiteralIgnoreCase
             : Utf8SearchKind.ExactAsciiLiteral;
 
-        return new Utf8SearchFacts(
-            searchKind,
-            literalUtf8,
-            trailingLiteralUtf8: trailingLiteralUtf8,
-            leadingBoundary: leadingBoundary,
-            trailingBoundary: trailingBoundary);
+        return Utf8SearchFacts.Create(
+                   searchKind,
+                   new Utf8SearchFactData
+                   {
+                       LiteralUtf8 = literalUtf8,
+                        TrailingLiteralUtf8 = trailingLiteralUtf8,
+                       LeadingBoundary = leadingBoundary,
+                       TrailingBoundary = trailingBoundary,
+                   });
     }
 
     public static Utf8SearchFacts AnalyzeSimplePattern(
@@ -442,43 +485,55 @@ internal static class Utf8FrontEndSearchAnalyzer
         {
             if (TrySelectTrailingFixedLengthAnchor(findOptimizations, out var trailingKind, out var trailingLength))
             {
-                return new Utf8SearchFacts(
-                    trailingKind,
-                    minRequiredLength: trailingLength,
-                    exactRequiredLength: exactRequiredLength,
-                    maxPossibleLength: maxPossibleLength);
+                return Utf8SearchFacts.Create(
+                           trailingKind,
+                           new Utf8SearchFactData
+                           {
+                               MinRequiredLength = trailingLength,
+                               ExactRequiredLength = exactRequiredLength,
+                               MaxPossibleLength = maxPossibleLength,
+                           });
             }
 
             if (TrySelectFixedDistanceLiteral(findOptimizations, simplePatternPlan.IgnoreCase, out var fixedLiteral, out var distance, out var minRequiredLength))
             {
                 if (fixedLiteral.Length == 2)
                 {
-                    return new Utf8SearchFacts(
-                        Utf8SearchKind.FixedDistanceAsciiChar,
-                        [fixedLiteral[1]],
-                        distance: distance + 1,
-                        minRequiredLength: minRequiredLength,
-                        exactRequiredLength: exactRequiredLength,
-                        maxPossibleLength: maxPossibleLength);
+                    return Utf8SearchFacts.Create(
+                               Utf8SearchKind.FixedDistanceAsciiChar,
+                               new Utf8SearchFactData
+                               {
+                                   LiteralUtf8 = [fixedLiteral[1]],
+                                   Distance = distance + 1,
+                                   MinRequiredLength = minRequiredLength,
+                                   ExactRequiredLength = exactRequiredLength,
+                                   MaxPossibleLength = maxPossibleLength,
+                               });
                 }
 
-                return new Utf8SearchFacts(
-                    Utf8SearchKind.FixedDistanceAsciiLiteral,
-                    fixedLiteral,
-                    distance: distance,
-                    minRequiredLength: minRequiredLength,
-                    exactRequiredLength: exactRequiredLength,
-                    maxPossibleLength: maxPossibleLength);
+                return Utf8SearchFacts.Create(
+                           Utf8SearchKind.FixedDistanceAsciiLiteral,
+                           new Utf8SearchFactData
+                           {
+                               LiteralUtf8 = fixedLiteral,
+                               Distance = distance,
+                               MinRequiredLength = minRequiredLength,
+                               ExactRequiredLength = exactRequiredLength,
+                               MaxPossibleLength = maxPossibleLength,
+                           });
             }
 
             if (TrySelectFixedDistanceSets(findOptimizations, simplePatternPlan.IgnoreCase, out var fixedDistanceSets, out var fixedDistanceMinRequiredLength))
             {
-                return new Utf8SearchFacts(
-                    Utf8SearchKind.FixedDistanceAsciiSets,
-                    fixedDistanceSets: fixedDistanceSets,
-                    minRequiredLength: fixedDistanceMinRequiredLength,
-                    exactRequiredLength: exactRequiredLength,
-                    maxPossibleLength: maxPossibleLength);
+                return Utf8SearchFacts.Create(
+                           Utf8SearchKind.FixedDistanceAsciiSets,
+                           new Utf8SearchFactData
+                           {
+                               FixedDistanceSets = fixedDistanceSets,
+                               MinRequiredLength = fixedDistanceMinRequiredLength,
+                               ExactRequiredLength = exactRequiredLength,
+                               MaxPossibleLength = maxPossibleLength,
+                           });
             }
         }
 
@@ -489,7 +544,14 @@ internal static class Utf8FrontEndSearchAnalyzer
             var searchKind = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F))
                 ? Utf8SearchKind.ExactUtf8Literals
                 : Utf8SearchKind.ExactAsciiLiterals;
-            return new Utf8SearchFacts(searchKind, null, alternateLiterals, exactRequiredLength: exactRequiredLength, maxPossibleLength: maxPossibleLength);
+            return Utf8SearchFacts.Create(
+                       searchKind,
+                       new Utf8SearchFactData
+                       {
+                           AlternateLiteralsUtf8 = alternateLiterals,
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                       });
         }
 
         if (semanticRegex.RuntimeTree?.FindOptimizations?.AlternatePrefixes is { Length: > 0 } alternatePrefixes)
@@ -505,35 +567,44 @@ internal static class Utf8FrontEndSearchAnalyzer
 
             if (longest.Length > 0)
             {
-                return new Utf8SearchFacts(
-                    simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
-                    Encoding.UTF8.GetBytes(longest),
-                    exactRequiredLength: exactRequiredLength,
-                    maxPossibleLength: maxPossibleLength);
+                return Utf8SearchFacts.Create(
+                           simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                           new Utf8SearchFactData
+                           {
+                               LiteralUtf8 = Encoding.UTF8.GetBytes(longest),
+                               ExactRequiredLength = exactRequiredLength,
+                               MaxPossibleLength = maxPossibleLength,
+                           });
             }
         }
 
         if (semanticRegex.RuntimeTree?.FindOptimizations?.LongestLiteral is { Length: > 0 } literal)
         {
-            return new Utf8SearchFacts(
-                simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
-                Encoding.UTF8.GetBytes(literal),
-                exactRequiredLength: exactRequiredLength,
-                maxPossibleLength: maxPossibleLength);
+            return Utf8SearchFacts.Create(
+                       simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                       new Utf8SearchFactData
+                       {
+                           LiteralUtf8 = Encoding.UTF8.GetBytes(literal),
+                           ExactRequiredLength = exactRequiredLength,
+                           MaxPossibleLength = maxPossibleLength,
+                       });
         }
 
-        return new Utf8SearchFacts(
-            fallbackSearchFacts.Kind,
-            literalUtf8: fallbackSearchFacts.LiteralUtf8,
-            alternateLiteralsUtf8: fallbackSearchFacts.AlternateLiteralsUtf8,
-            fixedDistanceSets: fallbackSearchFacts.FixedDistanceSets,
-            trailingLiteralUtf8: fallbackSearchFacts.TrailingLiteralUtf8,
-            distance: fallbackSearchFacts.Distance,
-            minRequiredLength: fallbackSearchFacts.MinRequiredLength,
-            exactRequiredLength: fallbackSearchFacts.ExactRequiredLength,
-            maxPossibleLength: fallbackSearchFacts.MaxPossibleLength,
-            leadingBoundary: fallbackSearchFacts.LeadingBoundary,
-            trailingBoundary: fallbackSearchFacts.TrailingBoundary);
+        return Utf8SearchFacts.Create(
+                   fallbackSearchFacts.Kind,
+                   new Utf8SearchFactData
+                   {
+                       LiteralUtf8 = fallbackSearchFacts.LiteralUtf8,
+                       AlternateLiteralsUtf8 = fallbackSearchFacts.AlternateLiteralsUtf8,
+                       FixedDistanceSets = fallbackSearchFacts.FixedDistanceSets,
+                       TrailingLiteralUtf8 = fallbackSearchFacts.TrailingLiteralUtf8,
+                       Distance = fallbackSearchFacts.Distance,
+                       MinRequiredLength = fallbackSearchFacts.MinRequiredLength,
+                       ExactRequiredLength = fallbackSearchFacts.ExactRequiredLength,
+                       MaxPossibleLength = fallbackSearchFacts.MaxPossibleLength,
+                       LeadingBoundary = fallbackSearchFacts.LeadingBoundary,
+                       TrailingBoundary = fallbackSearchFacts.TrailingBoundary,
+                   });
     }
 
     private static bool TrySelectCandidateLiteral(Runtime.RegexFindOptimizations findOptimizations, out string candidate)

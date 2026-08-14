@@ -60,7 +60,10 @@ internal static class Utf8InputAnalyzer
         }
     }
 
-    public static Utf8LeadByteSampleShape DescribeLeadByteSample(ReadOnlySpan<byte> input, int maxBytes = 4096)
+    public static Utf8LeadByteSampleShape DescribeLeadByteSample(ReadOnlySpan<byte> input)
+        => DescribeLeadByteSample(input, 4096);
+
+    public static Utf8LeadByteSampleShape DescribeLeadByteSample(ReadOnlySpan<byte> input, int maxBytes)
     {
         var sampleLength = Math.Min(input.Length, maxBytes);
         var asciiBytes = 0;

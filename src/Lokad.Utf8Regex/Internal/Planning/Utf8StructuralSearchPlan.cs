@@ -34,34 +34,41 @@ internal enum Utf8StructuralSearchStageKind : byte
 
 internal readonly struct Utf8StructuralSearchStage
 {
-    private Utf8StructuralSearchStage(
-        Utf8StructuralSearchStageKind kind,
-        PreparedSearcher searcher = default,
-        PreparedWindowSearch windowSearch = default,
-        Utf8FallbackStartTransform startTransform = default,
-        Execution.PreparedAsciiFindPlan asciiFindPlan = default,
-        int byteOffset = 0,
-        byte? literalByte = null,
-        string? set = null,
-        byte[]? literalUtf8 = null,
-        int minLength = 0,
-        int maxSpan = 0,
-        int maxLines = 0,
-        Utf8BoundaryRequirement boundaryRequirement = Utf8BoundaryRequirement.None)
+    private readonly record struct Data
+    {
+        public PreparedSearcher Searcher { get; init; }
+        public PreparedWindowSearch WindowSearch { get; init; }
+        public Utf8FallbackStartTransform StartTransform { get; init; }
+        public Execution.PreparedAsciiFindPlan AsciiFindPlan { get; init; }
+        public int ByteOffset { get; init; }
+        public bool HasLiteralByte { get; init; }
+        public byte LiteralByte { get; init; }
+        public bool HasSet { get; init; }
+        public string Set { get; init; }
+        public byte[] LiteralUtf8 { get; init; }
+        public int MinLength { get; init; }
+        public int MaxSpan { get; init; }
+        public int MaxLines { get; init; }
+        public Utf8BoundaryRequirement BoundaryRequirement { get; init; }
+    }
+
+    private Utf8StructuralSearchStage(Utf8StructuralSearchStageKind kind, Data data)
     {
         Kind = kind;
-        Searcher = searcher;
-        WindowSearch = windowSearch;
-        StartTransform = startTransform;
-        AsciiFindPlan = asciiFindPlan;
-        ByteOffset = byteOffset;
-        LiteralByte = literalByte;
-        Set = set;
-        LiteralUtf8 = literalUtf8;
-        MinLength = minLength;
-        MaxSpan = maxSpan;
-        MaxLines = maxLines;
-        BoundaryRequirement = boundaryRequirement;
+        Searcher = data.Searcher;
+        WindowSearch = data.WindowSearch;
+        StartTransform = data.StartTransform;
+        AsciiFindPlan = data.AsciiFindPlan;
+        ByteOffset = data.ByteOffset;
+        HasLiteralByte = data.HasLiteralByte;
+        LiteralByte = data.LiteralByte;
+        HasSet = data.HasSet;
+        Set = data.Set ?? string.Empty;
+        LiteralUtf8 = data.LiteralUtf8 ?? [];
+        MinLength = data.MinLength;
+        MaxSpan = data.MaxSpan;
+        MaxLines = data.MaxLines;
+        BoundaryRequirement = data.BoundaryRequirement;
     }
 
     public Utf8StructuralSearchStageKind Kind { get; }
@@ -76,11 +83,15 @@ internal readonly struct Utf8StructuralSearchStage
 
     public int ByteOffset { get; }
 
-    public byte? LiteralByte { get; }
+    public bool HasLiteralByte { get; }
 
-    public string? Set { get; }
+    public byte LiteralByte { get; }
 
-    public byte[]? LiteralUtf8 { get; }
+    public bool HasSet { get; }
+
+    public string Set { get; }
+
+    public byte[] LiteralUtf8 { get; }
 
     public int MinLength { get; }
 
@@ -91,68 +102,70 @@ internal readonly struct Utf8StructuralSearchStage
     public Utf8BoundaryRequirement BoundaryRequirement { get; }
 
     public static Utf8StructuralSearchStage FindLiteralFamily(PreparedSearcher searcher) =>
-        new(Utf8StructuralSearchStageKind.FindLiteralFamily, searcher: searcher);
+        new(Utf8StructuralSearchStageKind.FindLiteralFamily, new Data { Searcher = searcher });
 
     public static Utf8StructuralSearchStage FindWindow(PreparedWindowSearch windowSearch) =>
-        new(Utf8StructuralSearchStageKind.FindWindow, windowSearch: windowSearch);
+        new(Utf8StructuralSearchStageKind.FindWindow, new Data { WindowSearch = windowSearch });
 
     public static Utf8StructuralSearchStage FindAscii(Execution.PreparedAsciiFindPlan asciiFindPlan) =>
-        new(Utf8StructuralSearchStageKind.FindAscii, asciiFindPlan: asciiFindPlan);
+        new(Utf8StructuralSearchStageKind.FindAscii, new Data { AsciiFindPlan = asciiFindPlan });
 
     public static Utf8StructuralSearchStage TransformCandidateStart(Utf8FallbackStartTransform startTransform) =>
-        new(Utf8StructuralSearchStageKind.TransformCandidateStart, startTransform: startTransform);
+        new(Utf8StructuralSearchStageKind.TransformCandidateStart, new Data { StartTransform = startTransform });
 
     public static Utf8StructuralSearchStage RequireByteAtOffset(int byteOffset, byte literalByte) =>
-        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, byteOffset: byteOffset, literalByte: literalByte);
+        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasLiteralByte = true, LiteralByte = literalByte });
 
     public static Utf8StructuralSearchStage RequireSetAtOffset(int byteOffset, string set) =>
-        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, byteOffset: byteOffset, set: set);
+        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasSet = true, Set = set });
 
     public static Utf8StructuralSearchStage RequireLiteralAtOffset(int byteOffset, byte[] literalUtf8) =>
-        new(Utf8StructuralSearchStageKind.RequireLiteralAtOffset, byteOffset: byteOffset, literalUtf8: literalUtf8);
+        new(Utf8StructuralSearchStageKind.RequireLiteralAtOffset, new Data { ByteOffset = byteOffset, LiteralUtf8 = literalUtf8 });
 
     public static Utf8StructuralSearchStage RequireMinLength(int minLength) =>
-        new(Utf8StructuralSearchStageKind.RequireMinLength, minLength: minLength);
+        new(Utf8StructuralSearchStageKind.RequireMinLength, new Data { MinLength = minLength });
 
     public static Utf8StructuralSearchStage RequireWithinByteSpan(int maxSpan) =>
-        new(Utf8StructuralSearchStageKind.RequireWithinByteSpan, maxSpan: maxSpan);
+        new(Utf8StructuralSearchStageKind.RequireWithinByteSpan, new Data { MaxSpan = maxSpan });
 
     public static Utf8StructuralSearchStage RequireWithinLineSpan(int maxLines) =>
-        new(Utf8StructuralSearchStageKind.RequireWithinLineSpan, maxLines: maxLines);
+        new(Utf8StructuralSearchStageKind.RequireWithinLineSpan, new Data { MaxLines = maxLines });
 
     public static Utf8StructuralSearchStage RequireLeadingBoundary(Utf8BoundaryRequirement boundaryRequirement) =>
-        new(Utf8StructuralSearchStageKind.RequireLeadingBoundary, boundaryRequirement: boundaryRequirement);
+        new(Utf8StructuralSearchStageKind.RequireLeadingBoundary, new Data { BoundaryRequirement = boundaryRequirement });
 
     public static Utf8StructuralSearchStage RequireTrailingBoundary(Utf8BoundaryRequirement boundaryRequirement) =>
-        new(Utf8StructuralSearchStageKind.RequireTrailingBoundary, boundaryRequirement: boundaryRequirement);
+        new(Utf8StructuralSearchStageKind.RequireTrailingBoundary, new Data { BoundaryRequirement = boundaryRequirement });
 
     public static Utf8StructuralSearchStage RequireTrailingLiteral(byte[] literalUtf8) =>
-        new(Utf8StructuralSearchStageKind.RequireTrailingLiteral, literalUtf8: literalUtf8);
+        new(Utf8StructuralSearchStageKind.RequireTrailingLiteral, new Data { LiteralUtf8 = literalUtf8 });
 
     public static Utf8StructuralSearchStage RequireExactLength(int exactLength) =>
-        new(Utf8StructuralSearchStageKind.RequireExactLength, minLength: exactLength);
+        new(Utf8StructuralSearchStageKind.RequireExactLength, new Data { MinLength = exactLength });
 
     public static Utf8StructuralSearchStage BoundMaxLength(int maxLength) =>
-        new(Utf8StructuralSearchStageKind.BoundMaxLength, maxSpan: maxLength);
+        new(Utf8StructuralSearchStageKind.BoundMaxLength, new Data { MaxSpan = maxLength });
 
     public static Utf8StructuralSearchStage YieldStart() =>
-        new(Utf8StructuralSearchStageKind.YieldStart);
+        new(Utf8StructuralSearchStageKind.YieldStart, default);
 
     public static Utf8StructuralSearchStage YieldWindow() =>
-        new(Utf8StructuralSearchStageKind.YieldWindow);
+        new(Utf8StructuralSearchStageKind.YieldWindow, default);
 }
 
 internal readonly struct Utf8StructuralSearchPlan
 {
-    public Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind yieldKind, Utf8StructuralSearchStage[]? stages)
+    private readonly Utf8StructuralSearchStage[]? _stages;
+
+    public Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind yieldKind, Utf8StructuralSearchStage[] stages)
     {
         YieldKind = yieldKind;
-        Stages = stages;
+        _stages = stages;
     }
 
     public Utf8StructuralSearchYieldKind YieldKind { get; }
 
-    public Utf8StructuralSearchStage[]? Stages { get; }
+    public Utf8StructuralSearchStage[] Stages => _stages ?? [];
 
     public bool HasValue => Stages is { Length: > 0 };
 
@@ -275,9 +288,18 @@ internal readonly struct Utf8StructuralSearchPlan
         for (var i = 0; i < prefixGuards.Length; i++)
         {
             var guard = prefixGuards[i];
-            enriched[yieldIndex + i] = guard.Literal is { } literal
-                ? Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, literal)
-                : Utf8StructuralSearchStage.RequireSetAtOffset(guard.Offset, guard.Set!);
+            if (guard.Literal is { } literal)
+            {
+                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireByteAtOffset(guard.Offset, literal);
+            }
+            else if (guard.Set is { } set)
+            {
+                enriched[yieldIndex + i] = Utf8StructuralSearchStage.RequireSetAtOffset(guard.Offset, set);
+            }
+            else
+            {
+                throw new InvalidOperationException("A deterministic byte guard requires a literal or set.");
+            }
         }
 
         Array.Copy(stages, yieldIndex, enriched, yieldIndex + prefixGuards.Length, stages.Length - yieldIndex);
@@ -358,12 +380,22 @@ internal readonly struct Utf8StructuralSearchPlan
         var enriched = this;
         if (leadingBoundary != Utf8BoundaryRequirement.None)
         {
-            enriched = enriched.InsertBeforeYield(enriched.Stages!, Utf8StructuralSearchStage.RequireLeadingBoundary(leadingBoundary));
+            if (enriched.Stages is not { } leadingStages)
+            {
+                throw new InvalidOperationException("A boundary-enriched structural plan requires stages.");
+            }
+
+            enriched = enriched.InsertBeforeYield(leadingStages, Utf8StructuralSearchStage.RequireLeadingBoundary(leadingBoundary));
         }
 
         if (trailingBoundary != Utf8BoundaryRequirement.None)
         {
-            enriched = enriched.InsertBeforeYield(enriched.Stages!, Utf8StructuralSearchStage.RequireTrailingBoundary(trailingBoundary));
+            if (enriched.Stages is not { } trailingStages)
+            {
+                throw new InvalidOperationException("A boundary-enriched structural plan requires stages.");
+            }
+
+            enriched = enriched.InsertBeforeYield(trailingStages, Utf8StructuralSearchStage.RequireTrailingBoundary(trailingBoundary));
         }
 
         return enriched;

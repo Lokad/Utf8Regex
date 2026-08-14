@@ -55,7 +55,7 @@ internal readonly struct PreparedByteSearch
             1 => input.IndexOf(_values[0]),
             2 => input.IndexOfAny(_values[0], _values[1]),
             3 => input.IndexOfAny(_values[0], _values[1], _values[2]),
-            _ => input.IndexOfAny(SearchValues!),
+            _ => input.IndexOfAny(GetRequiredSearchValues()),
         };
     }
 
@@ -67,9 +67,12 @@ internal readonly struct PreparedByteSearch
             1 => input.LastIndexOf(_values[0]),
             2 => input.LastIndexOfAny(_values[0], _values[1]),
             3 => input.LastIndexOfAny(_values[0], _values[1], _values[2]),
-            _ => input.LastIndexOfAny(SearchValues!),
+            _ => input.LastIndexOfAny(GetRequiredSearchValues()),
         };
     }
+
+    private SearchValues<byte> GetRequiredSearchValues()
+        => SearchValues ?? throw new InvalidOperationException("A large byte search requires prepared search values.");
 }
 
 internal readonly struct PreparedSubstringSearch

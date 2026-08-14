@@ -26,7 +26,7 @@ internal static class PreparedFallbackCandidateExecutor
                     }
 
                     state = new PreparedFallbackCandidateState(searchState, default);
-                    candidate = new PreparedFallbackCandidate(startIndex);
+                    candidate = PreparedFallbackCandidate.AtStart(startIndex);
                     return true;
                 }
 
@@ -43,7 +43,9 @@ internal static class PreparedFallbackCandidateExecutor
                     }
 
                     state = new PreparedFallbackCandidateState(default, windowState);
-                    candidate = new PreparedFallbackCandidate(window.Leading.Index, window.Trailing.Index + window.Trailing.Length);
+                    candidate = PreparedFallbackCandidate.ForWindow(
+                        window.Leading.Index,
+                        window.Trailing.Index + window.Trailing.Length);
                     return true;
                 }
 

@@ -897,7 +897,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var hasLeadingBoundary = familyPlan.LeadingBoundary == Utf8BoundaryRequirement.Boundary;
         var commonPrefix = bucket.CommonPrefix;
         var discriminator = bucket.PrefixDiscriminator;
-        var literalsByByte = discriminator.LiteralsByByte!;
+        var literalsByByte = discriminator.LiteralsByByte;
 
         while (offset <= input.Length - commonPrefix.Length)
         {

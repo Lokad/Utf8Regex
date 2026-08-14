@@ -3,6 +3,8 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
+    private readonly record struct LiteralRun(int Offset, byte[] Literal);
+
     internal static bool TryExtractLiteralBranches(AsciiSimplePatternPlan simplePatternPlan, out byte[][] literals)
     {
         literals = [];
@@ -273,9 +275,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static List<(int Offset, byte[] Literal)> ExtractLiteralRuns(AsciiSimplePatternToken[] tokens)
+    private static List<LiteralRun> ExtractLiteralRuns(AsciiSimplePatternToken[] tokens)
     {
-        var runs = new List<(int Offset, byte[] Literal)>();
+        var runs = new List<LiteralRun>();
         var currentStart = -1;
 
         for (var i = 0; i <= tokens.Length; i++)
@@ -303,7 +305,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 bytes[j] = tokens[currentStart + j].Literal;
             }
 
-            runs.Add((currentStart, bytes));
+            runs.Add(new LiteralRun(currentStart, bytes));
             currentStart = -1;
         }
 

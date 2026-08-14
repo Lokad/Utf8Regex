@@ -3595,16 +3595,6 @@ public sealed class Utf8Regex
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
     }
 
-    private byte[] ReplaceViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, byte[] replacementBytes, byte[] literal, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.ReplaceExactLiteral(input, replacementBytes, budget);
-    }
-
-    private byte[] ReplaceViaCompiledLiteralFamilyEngine(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionDeadline budget)
-    {
-        return _compiledEngineRuntime.ReplaceExactLiteral(input, replacementBytes, budget);
-    }
-
     private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap = null)
     {
         var validation = boundaryMap is null ? Utf8InputAnalyzer.ValidateOnly(input) : default;

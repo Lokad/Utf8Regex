@@ -49,7 +49,7 @@ internal static class Utf8EmittedKernelLowerer
 
         if ((Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSharedPrefixSuffixKernelSpec(familyPlan, searchPlan, out var bucket, out var requiredSuffixByte) &&
              bucket.PrefixDiscriminator.HasValue &&
-             bucket.PrefixDiscriminator.LiteralsByByte is not null) ||
+             bucket.PrefixDiscriminator.HasValue) ||
             Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSharedPrefixSuffixLiteralFamilyKernelSpec(familyPlan, searchPlan, out bucket, out requiredSuffixByte))
         {
             kernelPlan = new Utf8EmittedKernelPlan(

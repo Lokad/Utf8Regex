@@ -5,8 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal readonly struct Utf8BoundaryMap
 {
-    private readonly int[]? _byteOffsets;
-    private readonly uint[]? _scalarBoundaryBits;
+    private readonly int[] _byteOffsets;
+    private readonly uint[] _scalarBoundaryBits;
     private readonly bool _isAscii;
 
     private Utf8BoundaryMap(int byteLength, int utf16Length, bool isAscii)
@@ -14,11 +14,8 @@ internal readonly struct Utf8BoundaryMap
         ByteLength = byteLength;
         Utf16Length = utf16Length;
         _isAscii = isAscii;
-        if (!isAscii)
-        {
-            _byteOffsets = new int[utf16Length + 1];
-            _scalarBoundaryBits = new uint[((utf16Length + 1) + 31) / 32];
-        }
+        _byteOffsets = isAscii ? [] : new int[utf16Length + 1];
+        _scalarBoundaryBits = isAscii ? [] : new uint[((utf16Length + 1) + 31) / 32];
     }
 
     public int ByteLength { get; }
@@ -58,8 +55,8 @@ internal readonly struct Utf8BoundaryMap
         }
 
         return IsScalarBoundary(utf16Offset)
-            ? Utf16Boundary.ScalarBoundary(_byteOffsets![utf16Offset], utf16Offset)
-            : Utf16Boundary.SurrogateSplitBoundary(_byteOffsets![utf16Offset], utf16Offset);
+            ? Utf16Boundary.ScalarBoundary(_byteOffsets[utf16Offset], utf16Offset)
+            : Utf16Boundary.SurrogateSplitBoundary(_byteOffsets[utf16Offset], utf16Offset);
     }
 
     public int GetUtf16OffsetForByteOffset(int byteOffset)
@@ -78,7 +75,7 @@ internal readonly struct Utf8BoundaryMap
             return byteOffset;
         }
 
-        var offsets = _byteOffsets!;
+        var offsets = _byteOffsets;
         var index = Array.BinarySearch(offsets, byteOffset);
         if (index < 0)
         {
@@ -207,7 +204,7 @@ internal readonly struct Utf8BoundaryMap
         var currentByte = 0;
         var currentUtf16 = 0;
 
-        _byteOffsets![0] = 0;
+        _byteOffsets[0] = 0;
         SetScalarBoundary(0);
 
         while (currentByte < input.Length)
@@ -236,8 +233,8 @@ internal readonly struct Utf8BoundaryMap
     }
 
     private bool IsScalarBoundary(int utf16Offset)
-        => (_scalarBoundaryBits![utf16Offset >> 5] & (1u << (utf16Offset & 31))) != 0;
+        => (_scalarBoundaryBits[utf16Offset >> 5] & (1u << (utf16Offset & 31))) != 0;
 
     private void SetScalarBoundary(int utf16Offset)
-        => _scalarBoundaryBits![utf16Offset >> 5] |= 1u << (utf16Offset & 31);
+        => _scalarBoundaryBits[utf16Offset >> 5] |= 1u << (utf16Offset & 31);
 }

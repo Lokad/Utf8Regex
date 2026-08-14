@@ -5,7 +5,12 @@ internal readonly ref struct Utf8Cursor
     private readonly ReadOnlySpan<byte> _input;
     private readonly Utf8BoundaryMap _boundaryMap;
 
-    public Utf8Cursor(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, int utf16Offset = 0)
+    public Utf8Cursor(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap)
+        : this(input, boundaryMap, 0)
+    {
+    }
+
+    public Utf8Cursor(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, int utf16Offset)
     {
         _input = input;
         _boundaryMap = boundaryMap;

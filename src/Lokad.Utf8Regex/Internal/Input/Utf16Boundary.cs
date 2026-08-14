@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal readonly struct Utf16Boundary
 {
-    public Utf16Boundary(int byteOffset, int utf16Offset, byte intraScalarCodeUnitOffset = 0)
+    public Utf16Boundary(int byteOffset, int utf16Offset, byte intraScalarCodeUnitOffset)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(byteOffset);
         ArgumentOutOfRangeException.ThrowIfNegative(utf16Offset);
@@ -29,7 +29,7 @@ internal readonly struct Utf16Boundary
     public bool IsScalarBoundary => IntraScalarCodeUnitOffset == 0;
 
     public static Utf16Boundary ScalarBoundary(int byteOffset, int utf16Offset)
-        => new(byteOffset, utf16Offset);
+        => new(byteOffset, utf16Offset, 0);
 
     public static Utf16Boundary SurrogateSplitBoundary(int byteOffset, int utf16Offset)
         => new(byteOffset, utf16Offset, 1);

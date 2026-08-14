@@ -10,18 +10,18 @@ internal readonly struct Utf8SearchPlan
     private Utf8SearchPlan(Utf8SearchFacts facts)
     {
         var kind = facts.Kind;
-        var literalUtf8 = facts.LiteralUtf8;
-        var alternateLiteralsUtf8 = facts.AlternateLiteralsUtf8;
+        var literalUtf8 = NullIfEmpty(facts.LiteralUtf8);
+        var alternateLiteralsUtf8 = NullIfEmpty(facts.AlternateLiteralsUtf8);
         var canGuideFallbackStarts = facts.CanGuideFallbackStarts;
-        var requiredPrefilterLiteralUtf8 = facts.RequiredPrefilterLiteralUtf8;
-        var requiredPrefilterAlternateLiteralsUtf8 = facts.RequiredPrefilterAlternateLiteralsUtf8;
+        var requiredPrefilterLiteralUtf8 = NullIfEmpty(facts.RequiredPrefilterLiteralUtf8);
+        var requiredPrefilterAlternateLiteralsUtf8 = NullIfEmpty(facts.RequiredPrefilterAlternateLiteralsUtf8);
         var secondaryRequiredPrefilterQuotedAsciiSet = facts.SecondaryRequiredPrefilterQuotedAsciiSet;
         var secondaryRequiredPrefilterQuotedAsciiLength = facts.SecondaryRequiredPrefilterQuotedAsciiLength;
-        var fixedDistanceSets = facts.FixedDistanceSets;
-        var trailingLiteralUtf8 = facts.TrailingLiteralUtf8;
-        var orderedWindowLeadingLiteralsUtf8 = facts.OrderedWindowLeadingLiteralsUtf8;
-        var orderedWindowTrailingLiteralUtf8 = facts.OrderedWindowTrailingLiteralUtf8;
-        var requiredWindowPrefilters = facts.RequiredWindowPrefilters;
+        var fixedDistanceSets = NullIfEmpty(facts.FixedDistanceSets);
+        var trailingLiteralUtf8 = NullIfEmpty(facts.TrailingLiteralUtf8);
+        var orderedWindowLeadingLiteralsUtf8 = NullIfEmpty(facts.OrderedWindowLeadingLiteralsUtf8);
+        var orderedWindowTrailingLiteralUtf8 = NullIfEmpty(facts.OrderedWindowTrailingLiteralUtf8);
+        var requiredWindowPrefilters = NullIfEmpty(facts.RequiredWindowPrefilters);
         var orderedWindowMaxGap = facts.OrderedWindowMaxGap;
         var orderedWindowSameLine = facts.OrderedWindowSameLine;
         var fallbackStartTransform = facts.FallbackStartTransform;
@@ -138,6 +138,8 @@ internal readonly struct Utf8SearchPlan
     }
 
     public static Utf8SearchPlan Prepare(Utf8SearchFacts facts) => new(facts);
+
+    private static T[]? NullIfEmpty<T>(T[] values) => values.Length == 0 ? null : values;
 
     public Utf8SearchKind Kind { get; }
 

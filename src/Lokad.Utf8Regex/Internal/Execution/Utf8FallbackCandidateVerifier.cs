@@ -20,6 +20,13 @@ internal abstract class Utf8FallbackCandidateVerifier
 
     public Regex? AnchoredFallbackRegex { get; }
 
+    /// <summary>
+    /// Verifies one conservative byte-range candidate against the authoritative
+    /// managed regex. The complete subject must already be valid UTF-8 and the
+    /// candidate must use admitted byte boundaries. The shared map and decoded
+    /// subject are created at most once and returned through their references.
+    /// A false result is definitive for this candidate, not for later ones.
+    /// </summary>
     public abstract bool TryVerify(
         ReadOnlySpan<byte> input,
         Utf8StructuralCandidate candidate,

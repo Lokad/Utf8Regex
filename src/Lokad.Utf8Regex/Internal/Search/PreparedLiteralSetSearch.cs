@@ -650,7 +650,7 @@ internal readonly struct PreparedLiteralSetSearch
                 return false;
             }
 
-            var literal = bucket.PrefixDiscriminator.LiteralsByByte![input[index + offset]];
+            var literal = bucket.PrefixDiscriminator.LiteralsByByte[input[index + offset]];
             if (literal is not null && LiteralMatchesAtKnownPrefix(input, index, literal, offset + 1))
             {
                 matchedLength = literal.Length;

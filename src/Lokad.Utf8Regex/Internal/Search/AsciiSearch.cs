@@ -731,15 +731,17 @@ internal readonly struct AsciiExactLiteralBucket
 
 internal readonly struct AsciiExactLiteralPrefixDiscriminator
 {
+    private readonly byte[][]? _literalsByByte;
+
     public AsciiExactLiteralPrefixDiscriminator(int offset, byte[][] literalsByByte)
     {
         Offset = offset;
-        LiteralsByByte = literalsByByte;
+        _literalsByByte = literalsByByte;
     }
 
     public int Offset { get; }
 
-    public byte[][]? LiteralsByByte { get; }
+    public ReadOnlySpan<byte[]> LiteralsByByte => _literalsByByte;
 
-    public bool HasValue => LiteralsByByte is not null;
+    public bool HasValue => _literalsByByte is not null;
 }
