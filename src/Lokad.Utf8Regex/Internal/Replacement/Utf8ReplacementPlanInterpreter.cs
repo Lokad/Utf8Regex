@@ -27,9 +27,9 @@ internal static class Utf8ReplacementPlanInterpreter
         switch (instruction.Kind)
         {
             case Utf8ReplacementInstructionKind.Literal:
-                if (instruction.LiteralUtf8 is { Length: > 0 } literalUtf8)
+                if (instruction.LiteralUtf8.Length > 0)
                 {
-                    builder.Append(Encoding.UTF8.GetString(literalUtf8));
+                    builder.Append(Encoding.UTF8.GetString(instruction.LiteralUtf8));
                 }
 
                 return;
@@ -65,15 +65,9 @@ internal static class Utf8ReplacementPlanInterpreter
 
     private static void AppendGroup(StringBuilder builder, Utf8ReplacementInstruction instruction, Match match)
     {
-        Group? group = null;
-        if (instruction.GroupName is not null)
-        {
-            group = match.Groups[instruction.GroupName];
-        }
-        else if ((uint)instruction.GroupNumber < (uint)match.Groups.Count)
-        {
-            group = match.Groups[instruction.GroupNumber];
-        }
+        Group? group = (uint)instruction.GroupNumber < (uint)match.Groups.Count
+            ? match.Groups[instruction.GroupNumber]
+            : null;
 
         if (group is { Success: true })
         {

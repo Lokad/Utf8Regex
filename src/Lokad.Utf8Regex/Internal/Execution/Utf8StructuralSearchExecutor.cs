@@ -134,7 +134,7 @@ internal static class Utf8StructuralSearchExecutor
 
             state = new Utf8StructuralSearchState(searchState, default);
             var endIndex = GetExactCandidateEnd(stages, startIndex, input.Length);
-            candidate = new Utf8StructuralCandidate(startIndex, endIndex, matchedLength, literalId);
+            candidate = Utf8StructuralCandidate.Start(startIndex, endIndex, matchedLength, literalId);
             return true;
         }
     }
@@ -183,7 +183,7 @@ internal static class Utf8StructuralSearchExecutor
             }
 
             state = new Utf8StructuralSearchState(default, windowState);
-            candidate = new Utf8StructuralCandidate(
+            candidate = Utf8StructuralCandidate.Window(
                 startIndex,
                 window.Trailing.Index + window.Trailing.Length,
                 window.Leading.Length,
@@ -247,7 +247,7 @@ internal static class Utf8StructuralSearchExecutor
                     if (SatisfiesStartRequirements(input, stages, requirementBaseIndex, match.Length))
                     {
                         var candidateEndIndex = GetExactCandidateEnd(stages, startIndex, input.Length);
-                        candidate = new Utf8StructuralCandidate(startIndex, candidateEndIndex, match.Length, match.LiteralId);
+                        candidate = Utf8StructuralCandidate.Start(startIndex, candidateEndIndex, match.Length, match.LiteralId);
                         return true;
                     }
                 }
@@ -280,7 +280,7 @@ internal static class Utf8StructuralSearchExecutor
         if (lastStart >= 0)
         {
             var candidateEndIndex = GetExactCandidateEnd(stages, lastStart, input.Length);
-            candidate = new Utf8StructuralCandidate(lastStart, candidateEndIndex, lastLength, 0);
+            candidate = Utf8StructuralCandidate.Start(lastStart, candidateEndIndex, lastLength, 0);
             return true;
         }
 

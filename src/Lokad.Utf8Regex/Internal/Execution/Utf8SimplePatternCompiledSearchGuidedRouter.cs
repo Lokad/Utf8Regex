@@ -102,14 +102,14 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
         {
             if (validation.IsAscii && Utf8AsciiRepeatedDigitGroupExecutor.TryFind(input, repeatedDigitGroupPlan, out _, out _))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_repeated_digit_group");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternRepeatedDigitGroup);
                 count = 1;
                 return true;
             }
 
             if (validation.IsAscii)
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_repeated_digit_group");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternRepeatedDigitGroup);
                 count = 0;
                 return true;
             }
@@ -125,12 +125,12 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
         {
             if (budget.IsInfinite && compiledSymmetricLiteralWindowCounter is not null)
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_symmetric_literal_window_compiled");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternSymmetricLiteralWindowCompiled);
                 count = compiledSymmetricLiteralWindowCounter.Count(input);
                 return true;
             }
 
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_symmetric_literal_window");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternSymmetricLiteralWindow);
             count = Utf8AsciiSymmetricLiteralWindowExecutor.Count(input, symmetricLiteralWindowPlan, budget);
             return true;
         }

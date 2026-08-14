@@ -12,8 +12,8 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex("ab.cd", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiChar, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -21,8 +21,8 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex("ab.cd", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.Inspection.SearchPlan.Kind);
     }
 
     [Theory]
@@ -36,7 +36,7 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
     }
 
     [Theory]
@@ -51,7 +51,7 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.NotEqual(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
+        Assert.NotEqual(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
     }
 
     [Theory]
@@ -61,7 +61,7 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Theory]
@@ -128,8 +128,8 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
         Assert.True(
-            regex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal,
-            $"Expected literal fast path for '{pattern}', got {regex.ExecutionKind}.");
+            regex.Inspection.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal,
+            $"Expected literal fast path for '{pattern}', got {regex.Inspection.ExecutionKind}.");
     }
 
     [Fact]
@@ -175,8 +175,8 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Theory]
@@ -190,6 +190,6 @@ public sealed class AsciiSimplePatternTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
 }

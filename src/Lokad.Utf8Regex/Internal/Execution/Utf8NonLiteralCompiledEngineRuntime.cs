@@ -71,11 +71,11 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
         if (_regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_char_class_run");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiCharClassRun);
             return Utf8AsciiCharClassRunExecutor.Count(input, _regexPlan.SimplePatternPlan.RunPlan, budget);
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
         var count = 0;
         var index = 0;
         while (index <= input.Length)
@@ -158,7 +158,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     private int CountByteSafeFallback(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_byte_safe_linear");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackByteSafeLinear);
         return Utf8ByteSafeLinearExecutor.Count(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 

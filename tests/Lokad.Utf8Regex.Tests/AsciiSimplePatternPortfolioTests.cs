@@ -9,9 +9,9 @@ public sealed class AsciiSimplePatternPortfolioTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.HasWholeInputCompiledSpecialization);
-        Assert.False(regex.SimplePatternPlan.HasSearchCompiledSpecialization);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.False(regex.Inspection.SimplePatternPlan.HasSearchCompiledSpecialization);
     }
 
     [Fact]
@@ -19,8 +19,8 @@ public sealed class AsciiSimplePatternPortfolioTests
     {
         var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
     }
 
     [Fact]
@@ -28,8 +28,8 @@ public sealed class AsciiSimplePatternPortfolioTests
     {
         var regex = new Utf8Regex(@"^([0-9]{4}[- ]){3}[0-9]{3,4}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
     }
 
     [Fact]
@@ -37,8 +37,8 @@ public sealed class AsciiSimplePatternPortfolioTests
     {
         var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.HasSearchCompiledSpecialization);
-        Assert.False(regex.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+        Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.HasSearchCompiledSpecialization);
+        Assert.False(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
     }
 }

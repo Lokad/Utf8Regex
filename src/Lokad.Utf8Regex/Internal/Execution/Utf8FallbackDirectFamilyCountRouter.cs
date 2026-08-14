@@ -19,7 +19,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
     {
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_anchored_quoted_line_segment");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredQuotedLineSegment);
             count = Utf8QuotedLineSegmentExecutor.CountOrFallback(input, directFamily, fallbackRegex);
             return true;
         }
@@ -27,7 +27,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.LinePrefixCount &&
             directFamily.LiteralUtf8 is { Length: > 0 })
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_line_prefix");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectLinePrefix);
             count = Utf8LinePrefixExecutor.CountMatchingLines(
                 input,
                 linePrefixFinder,
@@ -39,7 +39,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
 
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterBoundedCount)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_unicode_letter_bounded");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeLetterBounded);
             count = Utf8UnicodeLetterBoundedRepeatExecutor.CountLettersOrFallback(
                 input,
                 minCount: directFamily.MinCount,
@@ -50,14 +50,14 @@ internal static class Utf8FallbackDirectFamilyCountRouter
 
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeLetterCount)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_unicode_letter");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeLetter);
             count = Utf8UnicodeLetterBoundedRepeatExecutor.CountLetters(input, validation.ContainsSupplementaryScalars);
             return true;
         }
 
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeCategoryCount)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_unicode_category");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
             count = Utf8UnicodeLetterBoundedRepeatExecutor.CountCategory(input, directFamily.UnicodeCategory, validation.ContainsSupplementaryScalars);
             return true;
         }
@@ -73,7 +73,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
                 out count,
                 out var preparedDiagnosticsRoute))
         {
-            if (preparedDiagnosticsRoute is not null)
+            if (preparedDiagnosticsRoute != Utf8ExecutionRoute.None)
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(preparedDiagnosticsRoute);
             }
@@ -91,7 +91,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
             out count,
             out var diagnosticsRoute))
         {
-            if (diagnosticsRoute is not null)
+            if (diagnosticsRoute != Utf8ExecutionRoute.None)
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(diagnosticsRoute);
             }

@@ -23,8 +23,8 @@ internal static class DotNetPerformanceReplicaDiagnosticsReporter
         Console.WriteLine($"Utf8SearchKind    : {diagnostics.SearchKind}");
         Console.WriteLine($"Utf8VerifierMode  : {diagnostics.FallbackVerifierMode}");
         Console.WriteLine($"Utf8VerifierEnd   : {diagnostics.RequiresCandidateEndCoverage}");
-        Console.WriteLine($"Utf8PrefilterKind : {context.Utf8Regex.SearchPlan.RequiredPrefilterSearcher.Kind}");
-        Console.WriteLine($"Utf8Fallback      : {context.Utf8Regex.FallbackReason ?? "<native>"}");
+        Console.WriteLine($"Utf8PrefilterKind : {context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind}");
+        Console.WriteLine($"Utf8Fallback      : {context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
         Console.WriteLine($"Utf8CountRoute    : {diagnostics.ExecutionRoute}");
         Console.WriteLine($"SearchCandidates  : {diagnostics.SearchCandidates}");
         Console.WriteLine($"FixedCheckRejects : {diagnostics.FixedCheckRejects}");

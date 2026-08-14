@@ -115,7 +115,7 @@ internal static class Utf8StructuralLinearCompiledRouter
     {
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ordered_literal_window");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
             count = AsciiOrderedLiteralWindowExecutor.Count(
                 input,
                 regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -130,7 +130,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             var kernelMatcher = emittedKernelMatcher!;
             if (kernelMatcher.Plan.Kind == Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow)
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ordered_literal_window");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
                 count = AsciiOrderedLiteralWindowExecutor.Count(
                     input,
                     regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
@@ -139,7 +139,7 @@ internal static class Utf8StructuralLinearCompiledRouter
                 return true;
             }
 
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(kernelMatcher.Plan.RouteName);
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(kernelMatcher.Plan.Route);
             count = kernelMatcher.Count(input);
             return true;
         }
@@ -149,7 +149,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             if (regexPlan.SearchPlan.PreparedSearcher.HasValue &&
                 Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseSuffixOnlyCountKernel(regexPlan.StructuralIdentifierFamilyPlan))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_family_suffix");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilySuffix);
                 count = Utf8AsciiStructuralIdentifierFamilyExecutor.CountSuffixOnlyViaPreparedSearcher(
                     input,
                     regexPlan.StructuralIdentifierFamilyPlan,
@@ -158,7 +158,7 @@ internal static class Utf8StructuralLinearCompiledRouter
                 return true;
             }
 
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_family_linear");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilyLinear);
             count = Utf8AsciiStructuralIdentifierFamilyExecutor.Count(
                 input,
                 regexPlan.StructuralIdentifierFamilyPlan,
@@ -171,7 +171,7 @@ internal static class Utf8StructuralLinearCompiledRouter
 
         if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_emit");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearEmit);
             count = emittedDeterministicMatcher!.Count(input);
             return true;
         }

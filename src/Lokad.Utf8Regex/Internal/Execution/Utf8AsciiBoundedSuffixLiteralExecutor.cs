@@ -11,7 +11,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
 
     public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_bounded_suffix_literal");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiBoundedSuffixLiteral);
         var count = 0;
         var startIndex = 0;
         while (startIndex <= input.Length)

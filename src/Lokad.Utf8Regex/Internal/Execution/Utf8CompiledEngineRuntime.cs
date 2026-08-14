@@ -225,7 +225,7 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_family");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamily);
         return UsesRightToLeft()
             ? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input))
             : Utf8AsciiStructuralIdentifierFamilyExecutor.Count(
@@ -467,7 +467,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
                     input,
                     out _))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_anchored_validator");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiAnchoredValidator);
                 return 1;
             }
 
@@ -497,17 +497,17 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
         if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_regexPlan, input, out _))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_fixed_alternation");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternFixedAlternation);
             return 1;
         }
 
         if (Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_regexPlan, input, out _))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_fixed_length");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePatternFixedLength);
             return 1;
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
         var count = 0;
         var index = 0;
         while (index <= input.Length)
@@ -815,7 +815,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_byte_safe_linear");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackByteSafeLinear);
         return Utf8ByteSafeLinearExecutor.Count(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 
@@ -859,11 +859,11 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
     {
         if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldBypassIsMatch(_regexPlan))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_regex");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectRegex);
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
         if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget))
         {
             return _emittedBackend!.IsMatch(input);
@@ -877,7 +877,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
         if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget))
         {
             return _emittedBackend!.Count(input);
@@ -906,13 +906,13 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
             verifierInvocations += currentVerifierInvocations;
             if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCount(verifierCount))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided_demoted");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuidedDemoted);
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
             }
 
             if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldDemoteToFallbackCountByInvocations(verifierInvocations))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided_demoted");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuidedDemoted);
                 return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
             }
 
@@ -994,7 +994,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
         UsesEmittedKernelMatcher: false);
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_compiled");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackCompiled);
         Utf8BoundaryMap? boundaryMap = null;
         string? decoded = null;
         var probe = GetProbeValidation(input, validation);
@@ -1003,7 +1003,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_compiled");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackCompiled);
         var count = 0;
         var startIndex = 0;
         Utf8BoundaryMap? boundaryMap = null;
@@ -1143,7 +1143,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
             return directCount;
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_direct_regex");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectRegex);
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
     }
 

@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -171,7 +172,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (!Utf8Regex.DebugRejectsByRequiredPrefilter(sample))
+            if (!Utf8Regex.Inspection.DebugRejectsByRequiredPrefilter(sample))
             {
                 total++;
             }
@@ -187,7 +188,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         foreach (var sample in SampleBytes)
         {
             var validation = Utf8Validation.Validate(sample);
-            var match = CompiledUtf8Regex.DebugMatchViaCompiledEngine(sample, validation);
+            var match = CompiledUtf8Regex.Inspection.DebugMatchViaCompiledEngine(sample, validation);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -282,7 +283,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAnchoredValidatorNativeOnly()
     {
         EnsurePrefixMatchLoop();
-        var simplePatternPlan = Utf8Regex.SimplePatternPlan;
+        var simplePatternPlan = Utf8Regex.Inspection.SimplePatternPlan;
         if (!simplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
@@ -310,7 +311,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         foreach (var sample in SampleBytes)
         {
             var validation = Utf8Validation.Validate(sample);
-            if (CompiledUtf8Regex.DebugIsMatchViaCompiledEngine(sample, validation))
+            if (CompiledUtf8Regex.Inspection.DebugIsMatchViaCompiledEngine(sample, validation))
             {
                 total += sample.Length;
             }
@@ -325,7 +326,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            CompiledUtf8Regex.DebugTryMatchWithoutValidation(sample, out var match);
+            CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(sample, out var match);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -338,7 +339,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAnchoredHeadTailBoolOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
         {
             return 0;
         }
@@ -346,7 +347,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.DebugTryIsMatchAnchoredHeadTailWithoutValidation(sample, out var isMatch) && isMatch)
+            if (Utf8Regex.Inspection.DebugTryIsMatchAnchoredHeadTailWithoutValidation(sample, out var isMatch) && isMatch)
             {
                 total += sample.Length;
             }
@@ -358,7 +359,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAnchoredHeadTailMatchOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredHeadTailRunPlan.HasValue)
         {
             return 0;
         }
@@ -366,7 +367,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.DebugTryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
+            if (Utf8Regex.Inspection.DebugTryMatchAnchoredHeadTailWithoutValidation(sample, out var match) && match.Success)
             {
                 total += match.LengthInUtf16;
             }
@@ -378,7 +379,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAsciiSimplePatternDirectBoolOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
@@ -386,7 +387,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.DebugTryIsMatchAsciiSimplePatternWithoutValidation(sample, out var isMatch) && isMatch)
+            if (Utf8Regex.Inspection.DebugTryIsMatchAsciiSimplePatternWithoutValidation(sample, out var isMatch) && isMatch)
             {
                 total += sample.Length;
             }
@@ -398,7 +399,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAsciiSimplePatternDirectMatchOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
@@ -406,7 +407,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (Utf8Regex.DebugTryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
+            if (Utf8Regex.Inspection.DebugTryMatchAsciiSimplePatternWithoutValidation(sample, out var match) && match.Success)
             {
                 total += match.LengthInUtf16;
             }
@@ -418,7 +419,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteWholeMatchProjectionOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
@@ -426,7 +427,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            total += Utf8Regex.DebugProjectWholeMatchOnly(sample.Length);
+            total += Utf8MatchInspection.ProjectWholeMatchOnly(sample.Length);
         }
 
         return total;
@@ -435,7 +436,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteAnchoredValidatorEmittedOnly()
     {
         EnsurePrefixMatchLoop();
-        var plan = CompiledUtf8Regex.SimplePatternPlan.AnchoredValidatorPlan;
+        var plan = CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan;
         if (!plan.HasValue ||
             !Utf8EmittedAnchoredValidatorMatcher.TryCreate(
                 plan,
@@ -521,7 +522,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8CountPrefilterOnly()
     {
         EnsureCountModel();
-        return Utf8Regex.DebugRejectsByRequiredPrefilter(InputBytes) ? 1 : 0;
+        return Utf8Regex.Inspection.DebugRejectsByRequiredPrefilter(InputBytes) ? 1 : 0;
     }
 
     public int ExecuteUtf8CountCompiled()
@@ -533,31 +534,31 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8CountCompiledDirect()
     {
         EnsureCountModel();
-        return CompiledUtf8Regex.DebugCountViaCompiledEngine(InputBytes);
+        return CompiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(InputBytes);
     }
 
     public int ExecuteUtf8CountFallbackCandidates()
     {
         EnsureCountModel();
-        return Utf8Regex.DebugCountFallbackCandidates(InputBytes);
+        return Utf8Regex.Inspection.DebugCountFallbackCandidates(InputBytes);
     }
 
     public int ExecuteUtf8CountFallbackBoundaryCandidates()
     {
         EnsureCountModel();
-        return Utf8Regex.DebugCountFallbackBoundaryCandidates(InputBytes);
+        return Utf8Regex.Inspection.DebugCountFallbackBoundaryCandidates(InputBytes);
     }
 
     public int ExecuteUtf8CountFallbackVerified()
     {
         EnsureCountModel();
-        return Utf8Regex.DebugCountFallbackViaSearchStarts(InputBytes);
+        return Utf8Regex.Inspection.DebugCountFallbackViaSearchStarts(InputBytes);
     }
 
     public int ExecuteUtf8CountFallbackDirect()
     {
         EnsureCountModel();
-        return Utf8Regex.DebugCountFallbackDirect(InputBytes);
+        return Utf8Regex.Inspection.DebugCountFallbackDirect(InputBytes);
     }
 
     private int ExecuteUtf8PrefixMatchLoop()
@@ -592,7 +593,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            Utf8Regex.DebugTryMatchWithoutValidation(sample, out var match);
+            Utf8Regex.Inspection.DebugTryMatchWithoutValidation(sample, out var match);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -609,7 +610,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         foreach (var sample in SampleBytes)
         {
             var validation = Utf8Validation.Validate(sample);
-            var match = Utf8Regex.DebugMatchAfterValidation(sample, validation);
+            var match = Utf8Regex.Inspection.DebugMatchAfterValidation(sample, validation);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -622,7 +623,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8PrefixAsciiCultureInvariantTwinOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.DebugHasAsciiCultureInvariantTwin)
+        if (!Utf8Regex.Inspection.DebugHasAsciiCultureInvariantTwin)
         {
             return 0;
         }
@@ -630,7 +631,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            Utf8Regex.DebugTryMatchViaAsciiCultureInvariantTwin(sample, out var match);
+            Utf8Regex.Inspection.DebugTryMatchViaAsciiCultureInvariantTwin(sample, out var match);
             if (match.Success)
             {
                 total += match.IsByteAligned ? match.LengthInBytes : match.LengthInUtf16;
@@ -643,7 +644,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8PrefixAsciiCultureInvariantTwinDirectOnly()
     {
         EnsurePrefixMatchLoop();
-        if (!Utf8Regex.DebugHasAsciiCultureInvariantTwin || !Utf8Regex.DebugTryGetAsciiCultureInvariantTwin(out var twin))
+        if (!Utf8Regex.Inspection.DebugHasAsciiCultureInvariantTwin || !Utf8Regex.Inspection.DebugTryGetAsciiCultureInvariantTwin(out var twin))
         {
             return 0;
         }

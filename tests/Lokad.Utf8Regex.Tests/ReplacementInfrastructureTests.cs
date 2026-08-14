@@ -129,7 +129,7 @@ public sealed class ReplacementInfrastructureTests
             _ = regex.Replace("foo"u8, $"replacement-{i}");
         }
 
-        Assert.InRange(regex.DebugReplacementCacheEntryCount, 1, Utf8ReplacementPlanCache.Capacity);
+        Assert.InRange(regex.Inspection.DebugReplacementCacheEntryCount, 1, Utf8ReplacementPlanCache.Capacity);
     }
 
     [Fact]

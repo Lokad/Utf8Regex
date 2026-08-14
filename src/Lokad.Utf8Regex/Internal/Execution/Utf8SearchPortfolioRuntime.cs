@@ -104,13 +104,13 @@ internal static class Utf8SearchPortfolioRuntime
             program.Kind == Utf8SearchOperationKind.HybridSearch &&
             plan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_hybrid_earliest_automaton");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyHybridEarliestAutomaton);
             return CountLargeAutomatonFamilyViaEarliestHybrid(plan.MultiLiteralSearch, input, program.ObservabilityKind);
         }
 
         if (program.Confirmation.Kind == Utf8ConfirmationKind.None)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_prepared_non_overlapping");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedNonOverlapping);
             var count = 0;
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
@@ -127,13 +127,13 @@ internal static class Utf8SearchPortfolioRuntime
 
         if (plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_prepared_with_requirements_length_only");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsLengthOnly);
             return budget.IsInfinite
                 ? CountPreparedWithRequirementsLengthOnlyNoBudget(plan, program.Confirmation, input)
                 : CountPreparedWithRequirementsLengthOnly(input, plan, program.Confirmation, budget);
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_prepared_with_requirements_match");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsMatch);
         return budget.IsInfinite
             ? CountPreparedWithRequirementsNoBudget(plan, program.Confirmation, input)
             : CountPreparedWithRequirements(input, plan, program.Confirmation, budget);

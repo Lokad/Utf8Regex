@@ -332,7 +332,7 @@ public sealed class Utf8Pcre2Regex
             return false;
         }
 
-        return PrimaryUtf8Regex.SearchPortfolioKind is
+        return PrimaryUtf8Regex.ByteOffsetExecution.SearchPortfolioKind is
             Internal.Planning.Utf8SearchPortfolioKind.ExactLiteral or
             Internal.Planning.Utf8SearchPortfolioKind.IgnoreCaseLiteral;
     }
@@ -4300,7 +4300,7 @@ public sealed class Utf8Pcre2Regex
 
     internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
 
-    internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.ExecutionKind.ToString() : "<none>";
+    internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.Inspection.ExecutionKind.ToString() : "<none>";
 
     internal bool DebugHasManagedRegex => HasManagedRegex;
 

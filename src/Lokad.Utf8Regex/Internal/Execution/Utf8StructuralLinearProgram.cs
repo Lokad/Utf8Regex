@@ -785,7 +785,7 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
             return 0;
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_automaton");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
         if (Program.DeterministicProgram.HasValue)
         {
             return Utf8AsciiInstructionLinearExecutor.CountDeterministic(Program, input, budget);
@@ -2162,7 +2162,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_automaton");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
         return UsesRightToLeft(verifierRuntime)
             ? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input))
             : CountForward(input, verifierRuntime, budget);

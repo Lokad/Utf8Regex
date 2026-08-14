@@ -28,26 +28,26 @@ internal static class EnginePortfolioReporter
             {
                 var diagnostics = context.Utf8Regex.CollectIsMatchDiagnostics(context.InputBytes);
                 Console.WriteLine(
-                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.CompiledEngineKind} | " +
+                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
                     $"{DescribeVerifier(context.Utf8Regex)} | " +
-                    $"Fallback={context.Utf8Regex.FallbackReason ?? "<native>"}");
+                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Count)
             {
                 var diagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
                 Console.WriteLine(
-                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.CompiledEngineKind} | " +
+                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
                     $"{DescribeVerifier(context.Utf8Regex)} | " +
-                    $"Fallback={context.Utf8Regex.FallbackReason ?? "<native>"}");
+                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             else
             {
                 Console.WriteLine(
-                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.CompiledEngineKind} | " +
+                    $"{benchmarkCase.Id} | {benchmarkCase.Operation} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"{DescribeVerifier(context.Utf8Regex)} | " +
-                    $"Fallback={context.Utf8Regex.FallbackReason ?? "<native>"}");
+                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
         }
     }
@@ -68,11 +68,11 @@ internal static class EnginePortfolioReporter
                 var diagnostics = context.Utf8Regex.CollectCountDiagnostics(context.InputBytes);
 
                 Console.WriteLine(
-                    $"{benchmarkCase.Id} | Engine={context.Utf8Regex.CompiledEngineKind} | " +
+                    $"{benchmarkCase.Id} | Engine={context.Utf8Regex.Inspection.CompiledEngineKind} | " +
                     $"Exec={diagnostics.ExecutionKind} | Search={diagnostics.SearchKind} | " +
                     $"{DescribeVerifier(context.Utf8Regex)} | " +
-                    $"Prefilter={(context.Utf8Regex.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.SearchPlan.RequiredPrefilterSearcher.Kind : "None")} | " +
-                    $"Fallback={context.Utf8Regex.FallbackReason ?? "<native>"}");
+                    $"Prefilter={(context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? context.Utf8Regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")} | " +
+                    $"Fallback={context.Utf8Regex.Inspection.FallbackReason ?? "<native>"}");
             }
             catch (Exception ex)
             {
@@ -83,18 +83,18 @@ internal static class EnginePortfolioReporter
 
     private static string DescribeVerifier(Utf8Regex regex)
     {
-        if (regex.CompiledEngineKind == Utf8CompiledEngineKind.ByteSafeLinear)
+        if (regex.Inspection.CompiledEngineKind == Utf8CompiledEngineKind.ByteSafeLinear)
         {
-            if (regex.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue)
+            if (regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue)
             {
                 return "Verifier=CompiledByteSafeLazyDfa";
             }
 
-            return regex.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
-                ? $"Verifier=CompiledByteSafeLinear, LazyDfaReject={regex.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind}"
+            return regex.Inspection.StructuralVerifierPlan.ByteSafeLinearProgram.HasValue
+                ? $"Verifier=CompiledByteSafeLinear, LazyDfaReject={regex.Inspection.StructuralVerifierPlan.LazyDfaCompileOutcome.FailureKind}"
                 : "Verifier=CompatByteSafeLinear";
         }
 
-        return $"Verifier={regex.StructuralVerifierPlan.Kind}";
+        return $"Verifier={regex.Inspection.StructuralVerifierPlan.Kind}";
     }
 }

@@ -19,7 +19,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
 
     public int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_automaton");
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
         var count = 0;
         var startIndex = 0;
         while (startIndex <= input.Length)

@@ -1,12 +1,9 @@
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8NativeReplacementExecutor
 {
-    public delegate bool TryFindNextMatch(ReadOnlySpan<byte> input, int startIndex, out Utf8NativeReplacementMatch match);
-
     public static bool CanExecute(Utf8ReplacementPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
@@ -19,24 +16,6 @@ internal static class Utf8NativeReplacementExecutor
         }
 
         return true;
-    }
-
-    public static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        TryFindNextMatch tryFindNextMatch)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        var ledger = new Utf8ReplacementRangeLedger();
-        try
-        {
-            var outputLength = BuildRanges(input, plan, tryFindNextMatch, ref ledger);
-            return EmitAllocated(input, plan, outputLength, ref ledger);
-        }
-        finally
-        {
-            ledger.Dispose();
-        }
     }
 
     public static byte[] Replace(
@@ -60,26 +39,6 @@ internal static class Utf8NativeReplacementExecutor
     public static bool TryReplace(
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
-        TryFindNextMatch tryFindNextMatch,
-        Span<byte> destination,
-        out int bytesWritten)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        var ledger = new Utf8ReplacementRangeLedger();
-        try
-        {
-            var outputLength = BuildRanges(input, plan, tryFindNextMatch, ref ledger);
-            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten);
-        }
-        finally
-        {
-            ledger.Dispose();
-        }
-    }
-
-    public static bool TryReplace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
         ref Utf8OperationMatchCursor cursor,
         Span<byte> destination,
         out int bytesWritten)
@@ -97,74 +56,18 @@ internal static class Utf8NativeReplacementExecutor
         }
     }
 
-    public static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        PreparedSearcher searcher)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        var ledger = new Utf8ReplacementRangeLedger();
-        try
-        {
-            var outputLength = BuildRanges(input, plan, searcher, ref ledger);
-            return EmitAllocated(input, plan, outputLength, ref ledger);
-        }
-        finally
-        {
-            ledger.Dispose();
-        }
-    }
-
-    public static bool TryReplace(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        PreparedSearcher searcher,
-        Span<byte> destination,
-        out int bytesWritten)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        var ledger = new Utf8ReplacementRangeLedger();
-        try
-        {
-            var outputLength = BuildRanges(input, plan, searcher, ref ledger);
-            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten);
-        }
-        finally
-        {
-            ledger.Dispose();
-        }
-    }
-
     private static bool CanExecute(Utf8ReplacementInstruction instruction)
     {
         return instruction.Kind switch
         {
             Utf8ReplacementInstructionKind.Literal => true,
-            Utf8ReplacementInstructionKind.Group => instruction.GroupName is null && instruction.GroupNumber >= 0,
+            Utf8ReplacementInstructionKind.Group => instruction.GroupNumber >= 0,
             Utf8ReplacementInstructionKind.WholeMatch => true,
             Utf8ReplacementInstructionKind.LeftPortion => true,
             Utf8ReplacementInstructionKind.RightPortion => true,
             Utf8ReplacementInstructionKind.WholeString => true,
             _ => false,
         };
-    }
-
-    private static Utf8ReplacementOutputLength BuildRanges(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        TryFindNextMatch tryFindNextMatch,
-        ref Utf8ReplacementRangeLedger ledger)
-    {
-        var outputLength = new Utf8ReplacementOutputLength(input.Length);
-        var nextStart = 0;
-        while (nextStart <= input.Length && tryFindNextMatch(input, nextStart, out var match))
-        {
-            AddSnapshot(plan, match, ref ledger);
-            outputLength.ReplaceRange(match.Length, GetReplacementLength(input, plan, match));
-            nextStart = match.Index + Math.Max(match.Length, 1);
-        }
-
-        return outputLength;
     }
 
     private static Utf8ReplacementOutputLength BuildRanges(
@@ -177,34 +80,10 @@ internal static class Utf8NativeReplacementExecutor
         while (cursor.MoveNext())
         {
             var current = cursor.Current;
-            var match = new Utf8NativeReplacementMatch(
-                current.IndexInBytes,
+            AddSnapshot(plan, current, ref ledger);
+            outputLength.ReplaceRange(
                 current.LengthInBytes,
-                current.CaptureSlots,
-                current.BranchId);
-            AddSnapshot(plan, match, ref ledger);
-            outputLength.ReplaceRange(match.Length, GetReplacementLength(input, plan, match));
-        }
-
-        return outputLength;
-    }
-
-    private static Utf8ReplacementOutputLength BuildRanges(
-        ReadOnlySpan<byte> input,
-        Utf8ReplacementPlan plan,
-        PreparedSearcher searcher,
-        ref Utf8ReplacementRangeLedger ledger)
-    {
-        var outputLength = new Utf8ReplacementOutputLength(input.Length);
-        var scanState = new PreparedMultiLiteralScanState(0, 0, 0);
-        while (searcher.TryFindNextNonOverlappingMatch(input, ref scanState, out var preparedMatch))
-        {
-            var match = new Utf8NativeReplacementMatch(
-                preparedMatch.Index,
-                preparedMatch.Length,
-                LiteralId: preparedMatch.LiteralId);
-            AddSnapshot(plan, match, ref ledger);
-            outputLength.ReplaceRange(match.Length, GetReplacementLength(input, plan, match));
+                GetReplacementLength(input, plan, current));
         }
 
         return outputLength;
@@ -212,13 +91,13 @@ internal static class Utf8NativeReplacementExecutor
 
     private static void AddSnapshot(
         Utf8ReplacementPlan plan,
-        Utf8NativeReplacementMatch match,
+        Utf8OperationMatch match,
         ref Utf8ReplacementRangeLedger ledger)
     {
-        ledger.Add(new Utf8ReplacementRange(match.Index, match.Length, match.LiteralId));
+        ledger.Add(new Utf8ReplacementRange(match.IndexInBytes, match.LengthInBytes, match.BranchId));
         foreach (var groupNumber in plan.ReferencedCaptureGroups)
         {
-            if (match.Captures is not null && match.Captures.TryGet(groupNumber, out var start, out var length))
+            if (match.CaptureSlots is not null && match.CaptureSlots.TryGet(groupNumber, out var start, out var length))
             {
                 ledger.Add(new Utf8ReplacementRange(start, length, groupNumber));
             }
@@ -232,7 +111,7 @@ internal static class Utf8NativeReplacementExecutor
     private static int GetReplacementLength(
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
-        Utf8NativeReplacementMatch match)
+        Utf8OperationMatch match)
     {
         var length = 0;
         foreach (var instruction in plan.Instructions)
@@ -241,13 +120,13 @@ internal static class Utf8NativeReplacementExecutor
             {
                 length += instruction.Kind switch
                 {
-                    Utf8ReplacementInstructionKind.Literal => instruction.LiteralUtf8?.Length ?? 0,
-                    Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0 => match.Length,
-                    Utf8ReplacementInstructionKind.Group when match.Captures is not null &&
-                        match.Captures.TryGet(instruction.GroupNumber, out _, out var captureLength) => captureLength,
-                    Utf8ReplacementInstructionKind.WholeMatch => match.Length,
-                    Utf8ReplacementInstructionKind.LeftPortion => match.Index,
-                    Utf8ReplacementInstructionKind.RightPortion => input.Length - (match.Index + match.Length),
+                    Utf8ReplacementInstructionKind.Literal => instruction.LiteralUtf8.Length,
+                    Utf8ReplacementInstructionKind.Group when instruction.GroupNumber == 0 => match.LengthInBytes,
+                    Utf8ReplacementInstructionKind.Group when match.CaptureSlots is not null &&
+                        match.CaptureSlots.TryGet(instruction.GroupNumber, out _, out var captureLength) => captureLength,
+                    Utf8ReplacementInstructionKind.WholeMatch => match.LengthInBytes,
+                    Utf8ReplacementInstructionKind.LeftPortion => match.IndexInBytes,
+                    Utf8ReplacementInstructionKind.RightPortion => input.Length - (match.IndexInBytes + match.LengthInBytes),
                     Utf8ReplacementInstructionKind.WholeString => input.Length,
                     _ => 0,
                 };
@@ -330,9 +209,9 @@ internal static class Utf8NativeReplacementExecutor
             switch (instruction.Kind)
             {
                 case Utf8ReplacementInstructionKind.Literal:
-                    if (instruction.LiteralUtf8 is { Length: > 0 } literalUtf8)
+                    if (instruction.LiteralUtf8.Length > 0)
                     {
-                        sink.Append(literalUtf8);
+                        sink.Append(instruction.LiteralUtf8);
                     }
                     break;
 

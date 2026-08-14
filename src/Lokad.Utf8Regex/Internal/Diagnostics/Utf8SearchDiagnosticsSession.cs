@@ -41,7 +41,7 @@ internal sealed class Utf8SearchDiagnosticsSession
 
     public int EngineDemotions { get; private set; }
 
-    public string? ExecutionRoute { get; private set; }
+    public Utf8ExecutionRoute ExecutionRoute { get; private set; }
 
     public void CountSearchCandidate()
     {
@@ -83,9 +83,12 @@ internal sealed class Utf8SearchDiagnosticsSession
         EngineDemotions++;
     }
 
-    public void MarkExecutionRoute(string route)
+    public void MarkExecutionRoute(Utf8ExecutionRoute route)
     {
-        ExecutionRoute ??= route;
+        if (ExecutionRoute == Utf8ExecutionRoute.None)
+        {
+            ExecutionRoute = route;
+        }
     }
 
     public void Complete()

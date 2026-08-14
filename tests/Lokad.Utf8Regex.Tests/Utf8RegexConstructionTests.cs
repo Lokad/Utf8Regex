@@ -25,8 +25,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("abc");
 
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("café", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
     }
 
     [Fact]
@@ -42,9 +42,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("café|niño", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -52,10 +52,10 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
@@ -63,11 +63,11 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.StructuralIdentifierFamilyPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.StructuralIdentifierFamilyPlan.TrailingBoundary);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.StructuralIdentifierFamilyPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.StructuralIdentifierFamilyPlan.TrailingBoundary);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -75,12 +75,12 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.SearchPlan.TrailingBoundary);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, regex.StructuralLinearProgramKind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, regex.Inspection.StructuralLinearProgramKind);
     }
 
     [Fact]
@@ -106,20 +106,20 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
     public void ConstructorCompilesVerifierProgramForDeclarationIdentifierFamily()
     {
         var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var steps = regex.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
-        var linearInstructions = regex.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
+        var steps = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
+        var linearInstructions = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
 
-        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.StructuralVerifierPlan.Kind);
+        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.Inspection.StructuralVerifierPlan.Kind);
         Assert.Equal(
             [
                 AsciiStructuralVerifierStepKind.ConsumeSeparator,
@@ -144,8 +144,8 @@ public sealed class Utf8RegexConstructionTests
         var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
         var logging = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
 
-        Assert.True(declaration.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
-        Assert.False(logging.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
+        Assert.True(declaration.Inspection.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
+        Assert.False(logging.Inspection.StructuralIdentifierFamilyPlan.HasAsciiUpperWordTailKernel);
     }
 
     [Fact]
@@ -153,8 +153,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
 
-        Assert.NotNull(declaration.StructuralIdentifierFamilyPlan.SeparatorCharClass);
-        Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(declaration.StructuralIdentifierFamilyPlan));
+        Assert.NotNull(declaration.Inspection.StructuralIdentifierFamilyPlan.SeparatorCharClass);
+        Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(declaration.Inspection.StructuralIdentifierFamilyPlan));
     }
 
     [Fact]
@@ -168,8 +168,8 @@ public sealed class Utf8RegexConstructionTests
             2,
             Utf8AsciiStructuralIdentifierFamilyExecutor.CountUpperWordIdentifier(
                 bytes,
-                regex.StructuralIdentifierFamilyPlan,
-                regex.SearchPlan,
+                regex.Inspection.StructuralIdentifierFamilyPlan,
+                regex.Inspection.SearchPlan,
                 budget: Utf8ExecutionDeadline.Infinite));
     }
 
@@ -178,10 +178,10 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, regex.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.None, regex.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
@@ -189,19 +189,19 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, regex.StructuralLinearProgramKind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, regex.Inspection.StructuralLinearProgramKind);
     }
 
     [Fact]
     public void ConstructorCompilesVerifierProgramForLoggingInvocationFamily()
     {
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-        var steps = regex.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
-        var linearInstructions = regex.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
+        var steps = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.Steps;
+        var linearInstructions = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram.LinearProgram.Instructions;
 
-        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.StructuralVerifierPlan.Kind);
+        Assert.Equal(Utf8StructuralVerifierKind.AsciiStructuralProgram, regex.Inspection.StructuralVerifierPlan.Kind);
         Assert.Equal(
             [
                 AsciiStructuralVerifierStepKind.ConsumeSeparator,
@@ -222,7 +222,7 @@ public sealed class Utf8RegexConstructionTests
     public void StructuralVerifierProgramMatchesDeclarationIdentifierFamily()
     {
         var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
-        var program = regex.StructuralIdentifierFamilyPlan.VerifierProgram;
+        var program = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram;
         var input = System.Text.Encoding.UTF8.GetBytes("record CustomerExportJob");
 
         Assert.True(program.TryMatch(input, 0, "record".Length, out var matchedLength));
@@ -233,7 +233,7 @@ public sealed class Utf8RegexConstructionTests
     public void StructuralVerifierProgramMatchesLoggingInvocationFamily()
     {
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant);
-        var program = regex.StructuralIdentifierFamilyPlan.VerifierProgram;
+        var program = regex.Inspection.StructuralIdentifierFamilyPlan.VerifierProgram;
         var input = System.Text.Encoding.UTF8.GetBytes("LogInformation (");
 
         Assert.True(program.TryMatch(input, 0, "LogInformation".Length, out var matchedLength));
@@ -245,9 +245,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\bé\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.ExecutionKind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
@@ -255,9 +255,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\bword\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.ExecutionKind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
@@ -266,13 +266,13 @@ public sealed class Utf8RegexConstructionTests
         var leading = new Utf8Regex(@"\bé", RegexOptions.CultureInvariant);
         var trailing = new Utf8Regex(@"é\B", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, leading.ExecutionKind);
-        Assert.Equal(Utf8BoundaryRequirement.Boundary, leading.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.None, leading.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, leading.Inspection.ExecutionKind);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, leading.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.None, leading.Inspection.SearchPlan.TrailingBoundary);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, trailing.ExecutionKind);
-        Assert.Equal(Utf8BoundaryRequirement.None, trailing.SearchPlan.LeadingBoundary);
-        Assert.Equal(Utf8BoundaryRequirement.NonBoundary, trailing.SearchPlan.TrailingBoundary);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, trailing.Inspection.ExecutionKind);
+        Assert.Equal(Utf8BoundaryRequirement.None, trailing.Inspection.SearchPlan.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.NonBoundary, trailing.Inspection.SearchPlan.TrailingBoundary);
     }
 
     [Fact]
@@ -280,9 +280,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("a.*b");
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.FallbackReason);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -291,9 +291,9 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\\\"(?<path>(\\.|[^\\\\\\\"]*))\\\".*$";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.FallbackReason);
-        Assert.NotEqual(Utf8CompiledEngineKind.ByteSafeLinear, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
+        Assert.NotEqual(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -302,9 +302,9 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = @"^\s*///(?<title>#.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.NonBacktracking);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("unsupported_options", regex.FallbackReason);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -317,7 +317,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.IsByteAligned);
         Assert.Equal(8, match.LengthInBytes);
         Assert.Equal(8, match.LengthInUtf16);
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
     }
 
     [Fact]
@@ -384,9 +384,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.All(regex.SimplePatternPlan.AnchoredValidatorPlan.Segments.Where(static s => !s.IsLiteral), static segment =>
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.All(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Where(static s => !s.IsLiteral), static segment =>
             Assert.Equal(AsciiCharClassPredicateKind.AsciiHexDigit, segment.PredicateKind));
     }
 
@@ -424,7 +424,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(3, matcher!.MatchWhole("A0f"u8));
         Assert.Equal(3, matcher.MatchWhole("A0f\n"u8));
@@ -455,7 +455,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: false, out var matcher));
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: false, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(3, matcher!.MatchWhole("A0f"u8));
         Assert.Equal(-1, matcher.MatchWhole("A0f\n"u8));
@@ -467,7 +467,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("AB0F"u8.ToArray());
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(match.Success);
         Assert.Equal(4, match.LengthInBytes);
     }
@@ -477,7 +477,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("alpha_123"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("alpha_123"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -490,7 +490,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("1alpha"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("1alpha"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);
@@ -501,7 +501,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("alphé"u8, out _);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("alphé"u8, out _);
 
         Assert.False(handled);
     }
@@ -511,7 +511,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"([0-9]{4}[- ]){3}[0-9]{3,4}", RegexOptions.Compiled);
 
-        var handled = regex.DebugTryIsMatchAsciiSimplePatternWithoutValidation("1234-5678-1234-456"u8, out var isMatch);
+        var handled = regex.Inspection.DebugTryIsMatchAsciiSimplePatternWithoutValidation("1234-5678-1234-456"u8, out var isMatch);
 
         Assert.True(handled);
         Assert.True(isMatch);
@@ -522,8 +522,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.False(regex.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.False(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
     }
 
     [Fact]
@@ -531,16 +531,16 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.False(regex.DebugUsesEmittedAnchoredValidatorMatcher);
-        Assert.Equal(6, regex.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
-        Assert.Contains(regex.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.False(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.Equal(6, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
+        Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
         Assert.True(
-            regex.SimplePatternPlan.AnchoredValidatorPlan.Segments.Count(static segment =>
+            regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Count(static segment =>
                 !segment.IsLiteral &&
                 segment.MinLength == 0 &&
                 segment.MaxLength == 1) >= 2);
-        Assert.Contains(regex.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 2 && segment.MaxLength == 2);
+        Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 2 && segment.MaxLength == 2);
     }
 
     [Fact]
@@ -548,7 +548,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        Assert.True(compiled.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(compiled.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
 
         AssertCompiledFastPathMatchesBaseline(
             "^ab[0-9]{2}$",
@@ -570,7 +570,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-        Assert.True(compiled.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(compiled.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
 
         AssertCompiledFastPathMatchesBaseline(
             "^ab[a-f0-9]{2}$",
@@ -592,7 +592,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("123alpha9"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("123alpha9"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -606,7 +606,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("123__"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("123__"u8, out var match);
 
         Assert.True(handled);
         Assert.False(match.Success);
@@ -617,7 +617,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
 
-        var handled = regex.DebugTryMatchWithoutValidation("éalpha"u8, out _);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("éalpha"u8, out _);
 
         Assert.False(handled);
     }
@@ -667,8 +667,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
     }
 
     [Fact]
@@ -676,7 +676,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.PreparedRegex.FallbackDirectFamily, out var matcher));
+        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.Inspection.PreparedRegex.FallbackDirectFamily, out var matcher));
         Assert.NotNull(matcher);
 
         Assert.True(matcher!.TryFindNext("Today is 11/18/2019 and tomorrow is 11/19/2019."u8, 0, out var matchIndex, out var matchedLength));
@@ -691,7 +691,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.PreparedRegex.FallbackDirectFamily, out var matcher));
+        Assert.True(Utf8EmittedTokenFamilyMatcher.TryCreate(regex.Inspection.PreparedRegex.FallbackDirectFamily, out var matcher));
         Assert.NotNull(matcher);
 
         Assert.True(matcher!.TryFindNext("https://atlas.example.org/reports/export?id=42"u8, 0, out var matchIndex, out var matchedLength));
@@ -727,8 +727,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(4, matcher!.MatchWhole("ab01"u8));
         Assert.Equal(4, matcher.MatchWhole("ab01\n"u8));
@@ -740,9 +740,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.IgnoreCase);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.IgnoreCase);
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(4, matcher!.MatchWhole("ab0f"u8));
         Assert.Equal(4, matcher.MatchWhole("AB0F"u8));
@@ -755,7 +755,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out _));
+        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out _));
     }
 
     [Fact]
@@ -793,7 +793,7 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledDocLineDirectHookHandlesMatchWithoutValidation()
     {
         var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var handled = regex.DebugTryMatchWithoutValidation("/// doc line\n"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("/// doc line\n"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -808,9 +808,9 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, regex.StructuralLinearProgramKind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralQuotedRelation, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, regex.Inspection.StructuralLinearProgramKind);
         Assert.Equal(
             [
                 Utf8StructuralLinearInstructionKind.QuotedRelation,
@@ -834,9 +834,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\p{L}{8,13}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.FallbackReason);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -844,9 +844,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"\p{Sm}", RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.UnicodeCategoryCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -854,8 +854,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Theory]
@@ -865,9 +865,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -900,9 +900,9 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{8,13}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiCharClassRun, regex.StructuralLinearProgramKind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiCharClassRun, regex.Inspection.StructuralLinearProgramKind);
         Assert.Equal(
             [Utf8StructuralLinearInstructionKind.RunCharClass, Utf8StructuralLinearInstructionKind.Accept],
             analysis.StructuralLinearProgram.InstructionProgram.Instructions.Select(static instruction => instruction.Kind));
@@ -1000,10 +1000,10 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile(@"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiTokenWindow, regex.StructuralLinearProgramKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralTokenWindow, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiTokenWindow, regex.Inspection.StructuralLinearProgramKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(
             [
                 Utf8StructuralLinearInstructionKind.TokenWindow,
@@ -1018,10 +1018,10 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile(@"(?:[A-Z][a-z]+\s*){10,100}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, regex.StructuralLinearProgramKind);
-        Assert.Equal(Utf8SearchKind.None, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiStructuralRepeatedSegment, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, regex.Inspection.StructuralLinearProgramKind);
+        Assert.Equal(Utf8SearchKind.None, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(
             [
                 Utf8StructuralLinearInstructionKind.RepeatedSegment,
@@ -1035,7 +1035,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.Inspection.ExecutionKind);
     }
 
     [Fact]
@@ -1043,8 +1043,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.IgnoreCase);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.FallbackReason);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
     }
 
     [Fact]
@@ -1052,9 +1052,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Null(regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiCellReferenceWhole, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1062,9 +1062,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.FallbackReason);
-        Assert.True(regex.DebugHasAsciiCultureInvariantTwin);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
+        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
     }
 
     [Fact]
@@ -1073,9 +1073,9 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/d/(?<topicId>\\d+)/?\\?t=(?<tab>[^ ?]+)(?<rest>.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.FallbackReason);
-        Assert.True(regex.DebugHasAsciiCultureInvariantTwin);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
+        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
     }
 
     [Fact]
@@ -1084,9 +1084,9 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \\n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \\n]+)?(?<rest>.*)$";
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal("culture_sensitive_ignore_case", regex.FallbackReason);
-        Assert.True(regex.DebugHasAsciiCultureInvariantTwin);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
+        Assert.True(regex.Inspection.DebugHasAsciiCultureInvariantTwin);
     }
 
     [Fact]
@@ -1094,9 +1094,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$", RegexOptions.Multiline);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Null(regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1104,10 +1104,10 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$", RegexOptions.Multiline | RegexOptions.Compiled);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Null(regex.FallbackReason);
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.PreparedRegex.FallbackDirectFamily.Kind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.Null(regex.Inspection.FallbackReason);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount, regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
     }
 
     [Fact]
@@ -1115,8 +1115,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("abc", RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.ExecutionKind);
-        Assert.Null(regex.FallbackReason);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Null(regex.Inspection.FallbackReason);
     }
 
     [Fact]
@@ -1125,8 +1125,8 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("abc", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         Assert.Equal(RegexOptions.Compiled | RegexOptions.CultureInvariant, regex.Options);
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -1135,9 +1135,9 @@ public sealed class Utf8RegexConstructionTests
         var baseline = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
         var compiled = new Utf8Regex("a.*b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, baseline.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.CompiledFallback, compiled.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, baseline.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.CompiledFallback, compiled.Inspection.CompiledEngineKind);
         Assert.Equal(baseline.IsMatch("zz a123b xx"u8), compiled.IsMatch("zz a123b xx"u8));
         Assert.Equal(baseline.Count("a1b a22b"u8), compiled.Count("a1b a22b"u8));
     }
@@ -1150,9 +1150,9 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = "BEGIN x BEGIN y END z END BEGIN END"u8;
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, baseline.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, baseline.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.Inspection.CompiledEngineKind);
         Assert.Equal(baseline.IsMatch(input), compiled.IsMatch(input));
         Assert.Equal(baseline.Count(input), compiled.Count(input));
     }
@@ -1161,8 +1161,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue, pattern);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline, out var matcher), pattern);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue, pattern);
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline, out var matcher), pattern);
         Assert.NotNull(matcher);
 
         foreach (var input in inputs)
@@ -1170,7 +1170,7 @@ public sealed class Utf8RegexConstructionTests
             var emittedLength = matcher!.MatchWhole(input);
             var nativeMatch = Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(
                 input,
-                regex.SimplePatternPlan.AnchoredValidatorPlan,
+                regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan,
                 allowTrailingNewline,
                 out var nativeLength);
 
@@ -1204,7 +1204,7 @@ public sealed class Utf8RegexConstructionTests
             }
             Assert.Equal(baseline.IsMatch(input), compiled.IsMatch(input));
 
-            var handled = compiled.DebugTryMatchWithoutValidation(input, out var directMatch);
+            var handled = compiled.Inspection.DebugTryMatchWithoutValidation(input, out var directMatch);
             if (!Utf8InputAnalyzer.IsAscii(input) && !handled)
             {
                 continue;
@@ -1264,8 +1264,8 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.Inspection.CompiledEngineKind);
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
         Assert.Equal(baseline.Count(bytes), compiled.Count(bytes));
     }
@@ -1298,8 +1298,8 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "[\\w\\.+-]+@[\\w\\.-]+\\.[\\w\\.-]+";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.DebugCompiledEngineRuntimeType);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
+        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.Inspection.DebugCompiledEngineRuntimeType);
     }
 
     [Fact]
@@ -1308,8 +1308,8 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "[\\w]+://[^/\\s?#]+[^\\s?#]+(?:\\?[^\\s#]*)?(?:#[^\\s]*)?";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.ExecutionKind);
-        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.DebugCompiledEngineRuntimeType);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
+        Assert.Equal("Utf8FallbackRegexCompiledEngineRuntime", compiled.Inspection.DebugCompiledEngineRuntimeType);
     }
 
     [Fact]
@@ -1361,18 +1361,18 @@ public sealed class Utf8RegexConstructionTests
     {
         var baseline = new Utf8Regex("\\s[a-zA-Z]{0,12}ing\\s", RegexOptions.None);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, baseline.ExecutionKind);
-        Assert.True(baseline.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
-        Assert.True(baseline.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, baseline.Inspection.ExecutionKind);
+        Assert.True(baseline.Inspection.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.True(baseline.Inspection.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
     [Fact]
     public void BaselineSymmetricLiteralWindowPlanRecognizesHolmesWatsonWindow()
     {
         var baseline = new Utf8Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes", RegexOptions.None);
-        var plan = baseline.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = baseline.Inspection.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
 
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.Inspection.ExecutionKind);
         Assert.True(plan.HasValue);
         Assert.True(plan.HasPairedTrailingLiterals);
         Assert.Equal(25, plan.MaxGap);
@@ -1386,9 +1386,9 @@ public sealed class Utf8RegexConstructionTests
     public void BaselineSymmetricLiteralWindowPlanRecognizesRiverWindow()
     {
         var baseline = new Utf8Regex("Tom.{10,25}river|river.{10,25}Tom", RegexOptions.None);
-        var plan = baseline.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
+        var plan = baseline.Inspection.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
 
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, baseline.Inspection.ExecutionKind);
         Assert.True(plan.HasValue);
         Assert.True(plan.HasPairedTrailingLiterals);
         Assert.Equal(25, plan.MaxGap);
@@ -1566,8 +1566,8 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, compiled.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, compiled.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, compiled.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, compiled.Inspection.CompiledEngineKind);
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
 
@@ -1590,8 +1590,8 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, compiled.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, compiled.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, compiled.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, compiled.Inspection.CompiledEngineKind);
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
 
@@ -1676,7 +1676,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
 
-        var handled = regex.DebugTryMatchWithoutValidation("xxx magna yyy"u8, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx magna yyy"u8, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -1702,7 +1702,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes(builder.ToString());
 
-        var handled = regex.DebugTryMatchWithoutValidation(bytes, out var match);
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation(bytes, out var match);
 
         Assert.True(handled);
         Assert.True(match.Success);
@@ -1720,8 +1720,8 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.ExecutionKind);
-        Assert.Equal(expectedReason, regex.FallbackReason);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
     }
 
     [Fact]
@@ -1729,9 +1729,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("foo(?=bar)", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -1739,9 +1739,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("foo(?=bar)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -1749,9 +1749,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("(?:cat|dog)(?=house)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -1759,9 +1759,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("HttpClient(?=\\s+client)", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
     }
 
     [Fact]
@@ -1776,7 +1776,7 @@ public sealed class Utf8RegexConstructionTests
             class Third
             """u8;
 
-        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.ExecutionKind);
+        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
         Assert.Equal(2, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -1840,7 +1840,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "LogWarningx LogInformation ("u8;
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -1854,7 +1854,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "xpublic async public   asyncz public async"u8;
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -1877,7 +1877,7 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
         var expected = Regex.Match(input, pattern, RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.EmittedKernel, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), regex.Count(bytes));
         var match = regex.Match(bytes);
         Assert.True(match.Success);
@@ -1891,9 +1891,9 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("ab[0-9]d", RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, regex.StructuralLinearProgramKind);
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, regex.Inspection.StructuralLinearProgramKind);
         Assert.Equal(
             [
                 Utf8StructuralLinearInstructionKind.Literal,
@@ -1910,9 +1910,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("ab?c", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1920,9 +1920,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("(?:ab|cd){2}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1930,9 +1930,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("ab?c", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1940,9 +1940,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("a[bc]?d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1950,9 +1950,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1960,9 +1960,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("a[bc]?d", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1970,9 +1970,9 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("[ab]{2}", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.SearchPlan.Kind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1993,8 +1993,8 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant);
         var match = regex.Match("/// summary line\n"u8);
 
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
-        Assert.Null(regex.FallbackReason);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.Null(regex.Inspection.FallbackReason);
         Assert.True(match.Success);
         Assert.True(match.IsByteAligned);
         Assert.Equal(0, match.IndexInBytes);
@@ -2007,7 +2007,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", RegexOptions.CultureInvariant);
         var match = regex.Match("\"hello\\\"world\""u8);
 
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
         Assert.True(match.Success);
         Assert.True(match.IsByteAligned);
         Assert.Equal(0, match.IndexInBytes);

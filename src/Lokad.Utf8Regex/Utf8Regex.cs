@@ -17,7 +17,6 @@ public sealed class Utf8Regex
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
-    private readonly Utf8ByteOffsetExecution _byteOffsetExecution;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     public Utf8Regex(string pattern)
@@ -40,7 +39,6 @@ public sealed class Utf8Regex
         MatchTimeout = matchTimeout;
 
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
-        _byteOffsetExecution = new Utf8ByteOffsetExecution(this);
     }
 
     public static TimeSpan DefaultMatchTimeout
@@ -110,51 +108,53 @@ public sealed class Utf8Regex
          _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole) &&
         !_hasDirectFallbackTokenFamilyWithoutValidation;
 
-    internal NativeExecutionKind ExecutionKind => _preparedRegex.ExecutionKind;
+    private NativeExecutionKind ExecutionKind => _preparedRegex.ExecutionKind;
 
-    internal Utf8PreparedRegex PreparedRegex => _preparedRegex;
+    private Utf8PreparedRegex PreparedRegex => _preparedRegex;
 
-    internal Utf8ByteOffsetExecution ByteOffsetExecution => _byteOffsetExecution; // PCRE2-INTEGRATION-POINT
+    internal Utf8ByteOffsetExecution ByteOffsetExecution => new(this); // PCRE2-INTEGRATION-POINT
 
-    internal Utf8SearchPlan SearchPlan => _preparedRegex.SearchPlan;
+    internal Utf8RegexInspection Inspection => new(this);
 
-    internal Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.StructuralSearchPlan;
+    private Utf8SearchPlan SearchPlan => _preparedRegex.SearchPlan;
 
-    internal Utf8SearchPortfolioKind SearchPortfolioKind => _preparedRegex.SearchPlan.PortfolioKind;
+    private Utf8StructuralSearchPlan StructuralSearchPlan => _preparedRegex.StructuralSearchPlan;
 
-    internal Utf8CompiledEngineKind CompiledEngineKind => _compiledEngine.Kind;
+    private Utf8SearchPortfolioKind SearchPortfolioKind => _preparedRegex.SearchPlan.PortfolioKind;
 
-    internal Utf8CompiledExecutionBackend CompiledExecutionBackend => _compiledEngine.Backend;
+    private Utf8CompiledEngineKind CompiledEngineKind => _compiledEngine.Kind;
 
-    internal string DebugCompiledEngineRuntimeType => _compiledEngineRuntime.GetType().Name;
+    private Utf8CompiledExecutionBackend CompiledExecutionBackend => _compiledEngine.Backend;
 
-    internal bool DebugCanLowerEmittedKernel =>
+    private string DebugCompiledEngineRuntimeType => _compiledEngineRuntime.GetType().Name;
+
+    private bool DebugCanLowerEmittedKernel =>
         Utf8EmittedKernelLowerer.TryLower(_preparedRegex, out _);
 
-    internal string DebugLoweredEmittedKernelKind =>
+    private string DebugLoweredEmittedKernelKind =>
         Utf8EmittedKernelLowerer.TryLower(_preparedRegex, out var kernelPlan)
             ? kernelPlan.Kind.ToString()
             : "None";
 
-    internal bool DebugUsesEmittedKernelMatcher => _compiledEngineRuntime.UsesEmittedKernelMatcher;
+    private bool DebugUsesEmittedKernelMatcher => _compiledEngineRuntime.UsesEmittedKernelMatcher;
 
-    internal string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
+    private string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
 
-    internal bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantStrategy is not null;
+    private bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantStrategy is not null;
 
-    internal NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
+    private NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
 
-    internal Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantStrategy?.CompiledEngine.Kind;
+    private Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind => _asciiCultureInvariantStrategy?.CompiledEngine.Kind;
 
-    internal string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantStrategy?.PreparedRegex.FallbackReason;
+    private string? DebugAsciiCultureInvariantTwinFallbackReason => _asciiCultureInvariantStrategy?.PreparedRegex.FallbackReason;
 
-    internal Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _preparedRegex.StructuralLinearProgram.Kind;
+    private Utf8StructuralLinearProgramKind StructuralLinearProgramKind => _preparedRegex.StructuralLinearProgram.Kind;
 
-    internal Utf8StructuralVerifierPlan StructuralVerifierPlan => _verifierRuntime.StructuralVerifierPlan;
+    private Utf8StructuralVerifierPlan StructuralVerifierPlan => _verifierRuntime.StructuralVerifierPlan;
 
-    internal AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
+    private AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan => _preparedRegex.StructuralIdentifierFamilyPlan;
 
-    internal Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
+    private Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
         DebugStructuralSharedPrefixSuffixKernelDiagnostics =>
             _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily
                 ? Utf8AsciiStructuralIdentifierFamilyExecutor.GetSharedPrefixSuffixKernelDiagnostics(
@@ -162,27 +162,27 @@ public sealed class Utf8Regex
                     _preparedRegex.SearchPlan)
                 : default;
 
-    internal AsciiSimplePatternPlan SimplePatternPlan => _preparedRegex.SimplePatternPlan;
+    private AsciiSimplePatternPlan SimplePatternPlan => _preparedRegex.SimplePatternPlan;
 
-    internal bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
+    private bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
         Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedLengthSimplePattern(_preparedRegex);
 
-    internal bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
+    private bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
         Utf8SimplePatternCompiledRuntimePolicy.CanUseDirectAnchoredFixedAlternationSimplePattern(_preparedRegex);
 
-    internal int DebugSimplePatternBranchCount => _preparedRegex.SimplePatternPlan.Branches.Length;
+    private int DebugSimplePatternBranchCount => _preparedRegex.SimplePatternPlan.Branches.Length;
 
-    internal string DebugSimplePatternBranchLengths =>
+    private string DebugSimplePatternBranchLengths =>
         string.Join(",", _preparedRegex.SimplePatternPlan.Branches.Select(static branch => branch.Length));
 
-    internal string? FallbackReason => _preparedRegex.FallbackReason;
+    private string? FallbackReason => _preparedRegex.FallbackReason;
 
-    internal bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
+    private bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
         return RejectsByRequiredPrefilter(input);
     }
 
-    internal bool DebugTryMatchViaAsciiCultureInvariantTwin(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    private bool DebugTryMatchViaAsciiCultureInvariantTwin(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
@@ -199,7 +199,7 @@ public sealed class Utf8Regex
         return false;
     }
 
-    internal bool DebugTryGetAsciiCultureInvariantTwin(
+    private bool DebugTryGetAsciiCultureInvariantTwin(
         [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy)
     {
         if (_asciiCultureInvariantStrategy is not null)
@@ -212,52 +212,52 @@ public sealed class Utf8Regex
         return false;
     }
 
-    internal int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input)
+    private int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input)
     {
         return CountViaCompiledEngine(input, default, budget: Utf8ExecutionDeadline.Infinite);
     }
 
-    internal bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
+    private bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralValidatedThreeByte(input, out count);
     }
 
-    internal bool DebugTryCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
+    private bool DebugTryCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralLeadingScalarAnchored(input, out count);
     }
 
-    internal bool DebugTryCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count)
+    private bool DebugTryCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralPreparedSearch(input, out count);
     }
 
-    internal bool DebugTryCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count)
+    private bool DebugTryCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralAnchored(input, out count);
     }
 
-    internal int DebugCountFallbackCandidates(ReadOnlySpan<byte> input)
+    private int DebugCountFallbackCandidates(ReadOnlySpan<byte> input)
     {
         return CountFallbackCandidates(input, requireScalarBoundary: false);
     }
 
-    internal int DebugCountFallbackBoundaryCandidates(ReadOnlySpan<byte> input)
+    private int DebugCountFallbackBoundaryCandidates(ReadOnlySpan<byte> input)
     {
         return CountFallbackCandidates(input, requireScalarBoundary: true);
     }
 
-    internal int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input)
+    private int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input)
     {
         return CountFallbackViaSearchStarts(input);
     }
 
-    internal int DebugCountFallbackDirect(ReadOnlySpan<byte> input)
+    private int DebugCountFallbackDirect(ReadOnlySpan<byte> input)
     {
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
     }
 
-    internal Utf8ValueMatch DebugMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+    private Utf8ValueMatch DebugMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         if (RejectsByRequiredPrefilter(input))
         {
@@ -267,75 +267,63 @@ public sealed class Utf8Regex
         return MatchViaCompiledEngine(input, validation, budget: Utf8ExecutionDeadline.Infinite);
     }
 
-    internal bool DebugTryMatchWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    private bool DebugTryMatchWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         return TryMatchDirectWithoutValidation(input, out match);
     }
 
-    internal bool DebugTryIsMatchWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
+    private bool DebugTryIsMatchWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         return TryIsMatchDirectWithoutValidation(input, out isMatch);
     }
 
-    internal bool DebugTryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
+    private bool DebugTryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         return TryIsMatchAsciiSimplePatternWithoutValidation(input, out isMatch);
     }
 
-    internal bool DebugTryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
+    private bool DebugTryIsMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         return TryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch);
     }
 
-    internal bool DebugTryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    private bool DebugTryMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         return TryMatchAsciiSimplePatternWithoutValidation(input, out match);
     }
 
-    internal bool DebugTryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    private bool DebugTryMatchAnchoredHeadTailWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         return TryMatchAnchoredHeadTailWithoutValidation(input, out match);
     }
 
-    internal bool DebugCanUseFusedCompiledUtf8LiteralCount => CanUseFusedCompiledUtf8LiteralCount();
+    private bool DebugCanUseFusedCompiledUtf8LiteralCount => CanUseFusedCompiledUtf8LiteralCount();
 
-    internal bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount => CanUseFusedCompiledUtf8LiteralFamilyCount();
+    private bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount => CanUseFusedCompiledUtf8LiteralFamilyCount();
 
-    internal bool DebugCreatedExecutionBudgetIsNull => CreateExecutionBudget().IsInfinite;
+    private bool DebugCreatedExecutionBudgetIsNull => CreateExecutionBudget().IsInfinite;
 
-    internal int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input)
+    private int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input)
     {
         return CountViaCompiledEngine(input, default, CreateExecutionBudget());
     }
 
-    internal static int DebugProjectWholeMatchOnly(int matchedLength)
-    {
-        var match = new Utf8ValueMatch(true, true, 0, matchedLength, 0, matchedLength);
-        return match.IndexInUtf16 + match.LengthInUtf16;
-    }
-
-    internal static int DebugProjectByteAlignedMatchOnly(int index, int matchedLength)
-    {
-        var match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
-        return match.IndexInUtf16 + match.LengthInUtf16;
-    }
-
-    internal bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedLength)
+    private bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedLength)
     {
         return _compiledEngineRuntime.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedLength);
     }
 
-    internal bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedLengthSimplePattern(_preparedRegex, input, out matchedLength);
     }
 
-    internal bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8SimplePatternCompiledWholeMatcher.TryMatchDirectAnchoredFixedAlternationSimplePattern(_preparedRegex, input, out matchedLength);
     }
 
-    internal string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input)
+    private string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input)
     {
         return Utf8SimplePatternCompiledWholeMatcher.GetDirectAnchoredFixedAlternationDebugSummary(_preparedRegex, input);
     }
@@ -429,18 +417,18 @@ public sealed class Utf8Regex
         return true;
     }
 
-    internal bool DebugSupportsWellFormedOnlyMatch => _compiledEngineRuntime.SupportsWellFormedOnlyMatch;
+    private bool DebugSupportsWellFormedOnlyMatch => _compiledEngineRuntime.SupportsWellFormedOnlyMatch;
 
-    internal bool DebugWellFormedOnlyMatchMissIsDefinitive => _compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive;
+    private bool DebugWellFormedOnlyMatchMissIsDefinitive => _compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive;
 
-    internal bool DebugSupportsThrowIfInvalidOnlyCount => _compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount;
+    private bool DebugSupportsThrowIfInvalidOnlyCount => _compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount;
 
-    internal bool DebugUsesEmittedAnchoredValidatorMatcher => _compiledEngineRuntime.UsesEmittedAnchoredValidatorMatcher;
+    private bool DebugUsesEmittedAnchoredValidatorMatcher => _compiledEngineRuntime.UsesEmittedAnchoredValidatorMatcher;
 
-    internal string DebugAnchoredValidatorSegmentSummary =>
+    private string DebugAnchoredValidatorSegmentSummary =>
         Utf8AsciiAnchoredValidatorExecutor.GetSegmentSummary(_anchoredValidatorPlan);
 
-    internal bool DebugTryMatchAnchoredValidatorFixedPrefixOnly(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchAnchoredValidatorFixedPrefixOnly(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeFixedPrefixOnly(
             input,
@@ -449,7 +437,7 @@ public sealed class Utf8Regex
             out matchedLength);
     }
 
-    internal bool DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeFirstBoundedSegmentOnly(
             input,
@@ -458,7 +446,7 @@ public sealed class Utf8Regex
             out matchedLength);
     }
 
-    internal bool DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeSuffixAfterFirstBounded(
             input,
@@ -467,7 +455,7 @@ public sealed class Utf8Regex
             out matchedLength);
     }
 
-    internal bool DebugTryMatchAnchoredValidatorNativeWhole(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchAnchoredValidatorNativeWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         return Utf8AsciiAnchoredValidatorExecutor.TryMatchWhole(
             input,
@@ -476,7 +464,7 @@ public sealed class Utf8Regex
             out matchedLength);
     }
 
-    internal bool DebugTryMatchRepeatedDigitGroupWhole(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchRepeatedDigitGroupWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
         var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
@@ -488,7 +476,7 @@ public sealed class Utf8Regex
                 out _);
     }
 
-    internal bool DebugTryFindRepeatedDigitGroup(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryFindRepeatedDigitGroup(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
         var plan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
@@ -500,7 +488,7 @@ public sealed class Utf8Regex
                 out matchedLength);
     }
 
-    internal bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(ReadOnlySpan<byte> input, out int matchedLength)
+    private bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(ReadOnlySpan<byte> input, out int matchedLength)
     {
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.SimplePatternInterpreter ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.AsciiSimplePattern ||
@@ -518,7 +506,7 @@ public sealed class Utf8Regex
         return direct == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
     }
 
-    internal bool DebugTryFindDirectFallbackTokenWithoutValidation(ReadOnlySpan<byte> input, out int matchIndex, out int matchedLength)
+    private bool DebugTryFindDirectFallbackTokenWithoutValidation(ReadOnlySpan<byte> input, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
         matchedLength = 0;
@@ -536,7 +524,7 @@ public sealed class Utf8Regex
         return directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match && matchedLength > 0;
     }
 
-    internal bool DebugIsMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+    private bool DebugIsMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         if (RejectsByRequiredPrefilter(input))
         {
@@ -546,9 +534,9 @@ public sealed class Utf8Regex
         return IsMatchViaCompiledEngine(input, validation, budget: Utf8ExecutionDeadline.Infinite);
     }
 
-    internal bool DebugCanGuideFallbackVerification => CanGuideFallbackVerification();
+    private bool DebugCanGuideFallbackVerification => CanGuideFallbackVerification();
 
-    internal bool DebugIsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
+    private bool DebugIsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input)
     {
         if (RejectsByRequiredPrefilter(input) || !CanGuideFallbackVerification())
         {
@@ -558,7 +546,7 @@ public sealed class Utf8Regex
         return IsMatchFallbackViaSearchStarts(input);
     }
 
-    internal Utf8ValueMatch DebugMatchAfterValidation(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
+    private Utf8ValueMatch DebugMatchAfterValidation(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
     {
         if (ShouldFallbackForTrailingNewlineAnchoredValidator(input, validation))
         {
@@ -698,6 +686,9 @@ public sealed class Utf8Regex
             Utf8ValidatedInput input,
             Utf8BytePosition start)
             => _owner.EnumeratePreparedMatchesAtByteOffset(input, start);
+
+        public Utf8SearchPortfolioKind SearchPortfolioKind =>
+            _owner._preparedRegex.SearchPlan.PortfolioKind;
     }
 
     private static void ValidateOptions(RegexOptions options)
@@ -846,7 +837,7 @@ public sealed class Utf8Regex
                 Utf8Validation.ThrowIfInvalidOnly(input);
             }
 
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("compiled_fused_ascii_literal_family_count");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
             var fastBudget = CreateExecutionBudget();
             return CountViaCompiledEngine(input, default, fastBudget);
         }
@@ -855,8 +846,8 @@ public sealed class Utf8Regex
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(
                 CanUseFusedCompiledUtf8LiteralCount()
-                    ? "compiled_fused_utf8_literal_count"
-                    : "compiled_fused_utf8_literal_family_count");
+                    ? Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount
+                    : Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount);
             var fastBudget = CreateExecutionBudget();
             return CountViaCompiledEngine(input, default, fastBudget);
         }
@@ -884,7 +875,7 @@ public sealed class Utf8Regex
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("required_prefilter_reject");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
                 return 0;
             }
 
@@ -901,7 +892,7 @@ public sealed class Utf8Regex
 
             if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("required_prefilter_reject");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
                 return 0;
             }
 
@@ -909,7 +900,7 @@ public sealed class Utf8Regex
             if (fastBudget.IsInfinite &&
                 _directStructuralFamilyKernelMatcher is not null)
             {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_family_emit_shared_prefix_suffix");
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilyEmitSharedPrefixSuffix);
                 return _directStructuralFamilyKernelMatcher.Count(input);
             }
 
@@ -924,7 +915,7 @@ public sealed class Utf8Regex
 
         if (RejectsByRequiredPrefilter(input))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("required_prefilter_reject");
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
             return 0;
         }
 
@@ -1058,7 +1049,7 @@ public sealed class Utf8Regex
 
         var subject = Utf8ValidatedInput.Create(input);
         var start = subject.GetBytePosition(0, "startOffsetInBytes");
-        return _byteOffsetExecution.EnumerateMatches(subject, start)
+        return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
 
@@ -1072,7 +1063,7 @@ public sealed class Utf8Regex
             if (startBoundary.IsScalarBoundary)
             {
                 var startInBytes = analysis.GetBytePosition(startBoundary.ByteOffset, nameof(utf16Offset));
-                return _byteOffsetExecution.EnumerateMatches(analysis, startInBytes)
+                return new Utf8ByteOffsetExecution(this).EnumerateMatches(analysis, startInBytes)
                     .WithTimeoutMapping(input, Pattern, MatchTimeout);
             }
         }
@@ -1139,12 +1130,13 @@ public sealed class Utf8Regex
     {
         ArgumentNullException.ThrowIfNull(replacement);
 
+        var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.Replace(input, replacement);
+            return twin.Replace(input, analyzed);
         }
 
-        return ReplaceCore(input, replacement, GetParsedReplacement(replacement));
+        return ReplaceCore(input, replacement, analyzed);
     }
 
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
@@ -1252,13 +1244,14 @@ public sealed class Utf8Regex
     {
         ArgumentNullException.ThrowIfNull(replacement);
 
+        var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.ReplaceToString(input, replacement);
+            return twin.ReplaceToString(input, analyzed);
         }
 
         _ = Utf8Validation.Validate(input);
-        return ReplaceToStringCore(input, GetParsedReplacement(replacement));
+        return ReplaceToStringCore(input, analyzed);
     }
 
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
@@ -1301,12 +1294,13 @@ public sealed class Utf8Regex
         out int bytesWritten)
     {
         ArgumentNullException.ThrowIfNull(replacement);
+        var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.TryReplace(input, replacement, destination, out bytesWritten);
+            return twin.TryReplace(input, analyzed, destination, out bytesWritten);
         }
 
-        return TryReplaceCore(input, GetParsedReplacement(replacement), replacement, destination, out bytesWritten);
+        return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten);
     }
 
     public OperationStatus TryReplace(
@@ -1454,7 +1448,7 @@ public sealed class Utf8Regex
                 _preparedRegex.FallbackVerifier.Mode.ToString(),
                 _preparedRegex.FallbackVerifier.RequiresCandidateEndCoverage,
                 _preparedRegex.FallbackVerifier.RequiresTrailingAnchorCoverage,
-                session.ExecutionRoute ?? "<none>",
+                session.ExecutionRoute.Format(),
                 session.SearchCandidates,
                 session.FixedCheckRejects,
                 session.VerifierInvocations,
@@ -1472,13 +1466,13 @@ public sealed class Utf8Regex
         }
     }
 
-    internal bool DebugCanUseNativeSplit(ReadOnlySpan<byte> input)
+    private bool DebugCanUseNativeSplit(ReadOnlySpan<byte> input)
     {
         var validation = Utf8Validation.Validate(input);
         return CanUseNativeSplit(validation);
     }
 
-    internal int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count = int.MaxValue)
+    private int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count)
     {
         var validation = TryUseAsciiInputValidationShortcut(input)
             ? default
@@ -1494,7 +1488,7 @@ public sealed class Utf8Regex
         return splitCount;
     }
 
-    internal int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count = int.MaxValue)
+    private int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count)
     {
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
@@ -1508,12 +1502,12 @@ public sealed class Utf8Regex
         return splitCount;
     }
 
-    internal bool DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()
+    private bool DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()
     {
         return ShouldPreferFallbackForCompiledLiteralFamilyTextOperations();
     }
 
-    internal int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
+    private int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
     {
         return Encoding.UTF8.GetByteCount(
             _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -1521,7 +1515,7 @@ public sealed class Utf8Regex
                 replacement));
     }
 
-    internal int DebugReplaceViaNativeTextOperations(ReadOnlySpan<byte> input, string replacementText)
+    private int DebugReplaceViaNativeTextOperations(ReadOnlySpan<byte> input, string replacementText)
     {
         var validation = Utf8Validation.Validate(input);
         var replacement = GetParsedReplacement(replacementText);
@@ -1659,9 +1653,9 @@ public sealed class Utf8Regex
         Utf8AnalyzedReplacement replacement,
         out byte[] replacementBytes)
     {
-        if (replacement.LiteralUtf8 is { } literalUtf8)
+        if (replacement.IsLiteral)
         {
-            replacementBytes = literalUtf8;
+            replacementBytes = replacement.LiteralUtf8;
             return true;
         }
 
@@ -1694,9 +1688,9 @@ public sealed class Utf8Regex
             return false;
         }
 
-        if (replacement.LiteralUtf8 is { } literalReplacement)
+        if (replacement.IsLiteral)
         {
-            replacementBytes = literalReplacement;
+            replacementBytes = replacement.LiteralUtf8;
             return true;
         }
 
@@ -1707,7 +1701,7 @@ public sealed class Utf8Regex
             switch (instruction.Kind)
             {
                 case Utf8ReplacementInstructionKind.Literal:
-                    totalLength += instruction.LiteralUtf8?.Length ?? 0;
+                    totalLength += instruction.LiteralUtf8.Length;
                     break;
 
                 case Utf8ReplacementInstructionKind.WholeMatch:
@@ -1726,9 +1720,9 @@ public sealed class Utf8Regex
         {
             switch (instruction.Kind)
             {
-                case Utf8ReplacementInstructionKind.Literal when instruction.LiteralUtf8 is { Length: > 0 } bytes:
-                    bytes.CopyTo(replacementBytes.AsSpan(written));
-                    written += bytes.Length;
+                case Utf8ReplacementInstructionKind.Literal when instruction.LiteralUtf8.Length > 0:
+                    instruction.LiteralUtf8.CopyTo(replacementBytes.AsSpan(written));
+                    written += instruction.LiteralUtf8.Length;
                     break;
 
                 case Utf8ReplacementInstructionKind.WholeMatch:
@@ -1976,7 +1970,7 @@ public sealed class Utf8Regex
                 instruction.GroupNumber == captureNumber)
             {
                 rewritten ??= [.. plan.Instructions];
-                rewritten[i] = new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.WholeMatch);
+                rewritten[i] = Utf8ReplacementInstruction.WholeMatch();
             }
         }
 
@@ -2101,7 +2095,7 @@ public sealed class Utf8Regex
         return Utf8ExecutionDeadline.Start(MatchTimeout);
     }
 
-    internal int DebugReplacementCacheEntryCount => _replacementCache.Count;
+    private int DebugReplacementCacheEntryCount => _replacementCache.Count;
 
     private RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input) =>
         new(Encoding.UTF8.GetString(input), Pattern, MatchTimeout);
@@ -2817,6 +2811,285 @@ public sealed class Utf8Regex
             captures: null,
             budget,
             out matchedLength);
+    }
+
+    internal readonly struct Utf8RegexInspection
+    {
+        private readonly Utf8Regex _owner;
+
+        public Utf8RegexInspection(Utf8Regex owner)
+        {
+            _owner = owner;
+        }
+
+        public NativeExecutionKind ExecutionKind => _owner.ExecutionKind;
+
+        public Utf8PreparedRegex PreparedRegex => _owner.PreparedRegex;
+
+        public Utf8SearchPlan SearchPlan => _owner.SearchPlan;
+
+        public Utf8StructuralSearchPlan StructuralSearchPlan => _owner.StructuralSearchPlan;
+
+        public Utf8SearchPortfolioKind SearchPortfolioKind => _owner.SearchPortfolioKind;
+
+        public Utf8CompiledEngineKind CompiledEngineKind => _owner.CompiledEngineKind;
+
+        public Utf8CompiledExecutionBackend CompiledExecutionBackend => _owner.CompiledExecutionBackend;
+
+        public string DebugCompiledEngineRuntimeType => _owner.DebugCompiledEngineRuntimeType;
+
+        public bool DebugCanLowerEmittedKernel => _owner.DebugCanLowerEmittedKernel;
+
+        public string DebugLoweredEmittedKernelKind => _owner.DebugLoweredEmittedKernelKind;
+
+        public bool DebugUsesEmittedKernelMatcher => _owner.DebugUsesEmittedKernelMatcher;
+
+        public string DebugFallbackDirectFamilyKind => _owner.DebugFallbackDirectFamilyKind;
+
+        public bool DebugHasAsciiCultureInvariantTwin => _owner.DebugHasAsciiCultureInvariantTwin;
+
+        public NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind =>
+            _owner.DebugAsciiCultureInvariantTwinExecutionKind;
+
+        public Utf8CompiledEngineKind? DebugAsciiCultureInvariantTwinCompiledEngineKind =>
+            _owner.DebugAsciiCultureInvariantTwinCompiledEngineKind;
+
+        public string? DebugAsciiCultureInvariantTwinFallbackReason =>
+            _owner.DebugAsciiCultureInvariantTwinFallbackReason;
+
+        public Utf8StructuralLinearProgramKind StructuralLinearProgramKind =>
+            _owner.StructuralLinearProgramKind;
+
+        public Utf8StructuralVerifierPlan StructuralVerifierPlan => _owner.StructuralVerifierPlan;
+
+        public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan =>
+            _owner.StructuralIdentifierFamilyPlan;
+
+        public Utf8AsciiStructuralIdentifierFamilyExecutor.SharedPrefixSuffixKernelDiagnostics
+            DebugStructuralSharedPrefixSuffixKernelDiagnostics =>
+                _owner.DebugStructuralSharedPrefixSuffixKernelDiagnostics;
+
+        public AsciiSimplePatternPlan SimplePatternPlan => _owner.SimplePatternPlan;
+
+        public bool DebugSimplePatternCanUseDirectAnchoredFixedLength =>
+            _owner.DebugSimplePatternCanUseDirectAnchoredFixedLength;
+
+        public bool DebugSimplePatternCanUseDirectAnchoredFixedAlternation =>
+            _owner.DebugSimplePatternCanUseDirectAnchoredFixedAlternation;
+
+        public int DebugSimplePatternBranchCount => _owner.DebugSimplePatternBranchCount;
+
+        public string DebugSimplePatternBranchLengths => _owner.DebugSimplePatternBranchLengths;
+
+        public string? FallbackReason => _owner.FallbackReason;
+
+        public bool DebugRejectsByRequiredPrefilter(ReadOnlySpan<byte> input) =>
+            _owner.DebugRejectsByRequiredPrefilter(input);
+
+        public bool DebugTryMatchViaAsciiCultureInvariantTwin(
+            ReadOnlySpan<byte> input,
+            out Utf8ValueMatch match) =>
+            _owner.DebugTryMatchViaAsciiCultureInvariantTwin(input, out match);
+
+        public bool DebugTryGetAsciiCultureInvariantTwin(
+            [NotNullWhen(true)] out Utf8AsciiCultureInvariantStrategy? strategy) =>
+            _owner.DebugTryGetAsciiCultureInvariantTwin(out strategy);
+
+        public int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountViaCompiledEngine(input);
+
+        public bool DebugTryCountExactUtf8LiteralValidatedThreeByte(
+            ReadOnlySpan<byte> input,
+            out int count) =>
+            _owner.DebugTryCountExactUtf8LiteralValidatedThreeByte(input, out count);
+
+        public bool DebugTryCountExactUtf8LiteralLeadingScalarAnchored(
+            ReadOnlySpan<byte> input,
+            out int count) =>
+            _owner.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(input, out count);
+
+        public bool DebugTryCountExactUtf8LiteralPreparedSearch(
+            ReadOnlySpan<byte> input,
+            out int count) =>
+            _owner.DebugTryCountExactUtf8LiteralPreparedSearch(input, out count);
+
+        public bool DebugTryCountExactUtf8LiteralAnchored(
+            ReadOnlySpan<byte> input,
+            out int count) =>
+            _owner.DebugTryCountExactUtf8LiteralAnchored(input, out count);
+
+        public int DebugCountFallbackCandidates(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountFallbackCandidates(input);
+
+        public int DebugCountFallbackBoundaryCandidates(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountFallbackBoundaryCandidates(input);
+
+        public int DebugCountFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountFallbackViaSearchStarts(input);
+
+        public int DebugCountFallbackDirect(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountFallbackDirect(input);
+
+        public Utf8ValueMatch DebugMatchViaCompiledEngine(
+            ReadOnlySpan<byte> input,
+            Utf8ValidationResult validation) =>
+            _owner.DebugMatchViaCompiledEngine(input, validation);
+
+        public bool DebugTryMatchWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out Utf8ValueMatch match) =>
+            _owner.DebugTryMatchWithoutValidation(input, out match);
+
+        public bool DebugTryIsMatchWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch) =>
+            _owner.DebugTryIsMatchWithoutValidation(input, out isMatch);
+
+        public bool DebugTryIsMatchAsciiSimplePatternWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out bool isMatch) =>
+            _owner.DebugTryIsMatchAsciiSimplePatternWithoutValidation(input, out isMatch);
+
+        public bool DebugTryIsMatchAnchoredHeadTailWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out bool isMatch) =>
+            _owner.DebugTryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch);
+
+        public bool DebugTryMatchAsciiSimplePatternWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out Utf8ValueMatch match) =>
+            _owner.DebugTryMatchAsciiSimplePatternWithoutValidation(input, out match);
+
+        public bool DebugTryMatchAnchoredHeadTailWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out Utf8ValueMatch match) =>
+            _owner.DebugTryMatchAnchoredHeadTailWithoutValidation(input, out match);
+
+        public bool DebugCanUseFusedCompiledUtf8LiteralCount =>
+            _owner.DebugCanUseFusedCompiledUtf8LiteralCount;
+
+        public bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount =>
+            _owner.DebugCanUseFusedCompiledUtf8LiteralFamilyCount;
+
+        public bool DebugCreatedExecutionBudgetIsNull => _owner.DebugCreatedExecutionBudgetIsNull;
+
+        public int DebugCountViaCompiledEngineWithCreatedBudget(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountViaCompiledEngineWithCreatedBudget(input);
+
+        public bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
+            ReadOnlySpan<byte> input,
+            out int index,
+            out int matchedLength) =>
+            _owner.DebugTryMatchCompiledAsciiLiteralFamilyRaw(input, out index, out matchedLength);
+
+        public bool DebugTryMatchDirectAnchoredFixedLengthSimplePattern(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(input, out matchedLength);
+
+        public bool DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(input, out matchedLength);
+
+        public string DebugDirectAnchoredFixedAlternationSummary(ReadOnlySpan<byte> input) =>
+            _owner.DebugDirectAnchoredFixedAlternationSummary(input);
+
+        public bool DebugSupportsWellFormedOnlyMatch => _owner.DebugSupportsWellFormedOnlyMatch;
+
+        public bool DebugWellFormedOnlyMatchMissIsDefinitive =>
+            _owner.DebugWellFormedOnlyMatchMissIsDefinitive;
+
+        public bool DebugSupportsThrowIfInvalidOnlyCount =>
+            _owner.DebugSupportsThrowIfInvalidOnlyCount;
+
+        public bool DebugUsesEmittedAnchoredValidatorMatcher =>
+            _owner.DebugUsesEmittedAnchoredValidatorMatcher;
+
+        public string DebugAnchoredValidatorSegmentSummary =>
+            _owner.DebugAnchoredValidatorSegmentSummary;
+
+        public bool DebugTryMatchAnchoredValidatorFixedPrefixOnly(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchAnchoredValidatorFixedPrefixOnly(input, out matchedLength);
+
+        public bool DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(input, out matchedLength);
+
+        public bool DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(input, out matchedLength);
+
+        public bool DebugTryMatchAnchoredValidatorNativeWhole(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchAnchoredValidatorNativeWhole(input, out matchedLength);
+
+        public bool DebugTryMatchRepeatedDigitGroupWhole(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchRepeatedDigitGroupWhole(input, out matchedLength);
+
+        public bool DebugTryFindRepeatedDigitGroup(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryFindRepeatedDigitGroup(input, out matchedLength);
+
+        public bool DebugTryMatchCompiledAnchoredValidatorWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out int matchedLength) =>
+            _owner.DebugTryMatchCompiledAnchoredValidatorWithoutValidation(input, out matchedLength);
+
+        public bool DebugTryFindDirectFallbackTokenWithoutValidation(
+            ReadOnlySpan<byte> input,
+            out int matchIndex,
+            out int matchedLength) =>
+            _owner.DebugTryFindDirectFallbackTokenWithoutValidation(input, out matchIndex, out matchedLength);
+
+        public bool DebugIsMatchViaCompiledEngine(
+            ReadOnlySpan<byte> input,
+            Utf8ValidationResult validation) =>
+            _owner.DebugIsMatchViaCompiledEngine(input, validation);
+
+        public bool DebugCanGuideFallbackVerification => _owner.DebugCanGuideFallbackVerification;
+
+        public bool DebugIsMatchFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
+            _owner.DebugIsMatchFallbackViaSearchStarts(input);
+
+        public Utf8ValueMatch DebugMatchAfterValidation(
+            ReadOnlySpan<byte> input,
+            Utf8ValidationResult validation) =>
+            _owner.DebugMatchAfterValidation(input, validation);
+
+        public bool DebugCanUseNativeSplit(ReadOnlySpan<byte> input) =>
+            _owner.DebugCanUseNativeSplit(input);
+
+        public int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountSplitsViaCompiledEngine(input, int.MaxValue);
+
+        public int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count) =>
+            _owner.DebugCountSplitsViaCompiledEngine(input, count);
+
+        public int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input) =>
+            _owner.DebugCountSplitsViaFallback(input, int.MaxValue);
+
+        public int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count) =>
+            _owner.DebugCountSplitsViaFallback(input, count);
+
+        public bool DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations() =>
+            _owner.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations();
+
+        public int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement) =>
+            _owner.DebugReplaceViaFallback(input, replacement);
+
+        public int DebugReplaceViaNativeTextOperations(
+            ReadOnlySpan<byte> input,
+            string replacementText) =>
+            _owner.DebugReplaceViaNativeTextOperations(input, replacementText);
+
+        public int DebugReplacementCacheEntryCount => _owner.DebugReplacementCacheEntryCount;
     }
 
 }

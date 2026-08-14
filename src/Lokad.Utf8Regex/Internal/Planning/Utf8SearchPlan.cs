@@ -412,7 +412,7 @@ internal readonly struct Utf8SearchPlan
                 continue;
             }
 
-            var plan = Utf8StructuralSearchPlan.CreateWindowPlan(
+            var plan = Utf8StructuralSearchPlan.CreateWindowPlanWithOptionalLineSpan(
                 new PreparedWindowSearch(leading, trailing, windowInfo.MaxGap, sameLine: false),
                 windowInfo.MaxLines);
             if (plan.HasValue)
@@ -443,13 +443,13 @@ internal readonly struct Utf8SearchPlan
 
         return
         [
-            Utf8StructuralSearchPlan.CreateWindowPlan(
+            Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
                 new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false),
-                maxLines: 5,
-                startTransform: new Utf8FallbackStartTransform(1)),
-            Utf8StructuralSearchPlan.CreateWindowPlan(
+                5,
+                new Utf8FallbackStartTransform(1)),
+            Utf8StructuralSearchPlan.CreateWindowPlanWithLineSpan(
                 new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false),
-                maxLines: 5),
+                5),
         ];
     }
 

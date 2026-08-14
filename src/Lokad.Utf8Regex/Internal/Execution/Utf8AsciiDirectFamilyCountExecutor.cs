@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Diagnostics;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiDirectFamilyCountExecutor
@@ -10,12 +12,12 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
         out int count,
-        out string? diagnosticsRoute)
+        out Utf8ExecutionRoute diagnosticsRoute)
     {
         if (emittedTokenFamilyMatcher is not null)
         {
             count = emittedTokenFamilyMatcher.Count(input);
-            diagnosticsRoute = "fallback_direct_ascii_emitted_token_family";
+            diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiEmittedTokenFamily;
             return true;
         }
 
@@ -29,25 +31,25 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
         out int count,
-        out string? diagnosticsRoute)
+        out Utf8ExecutionRoute diagnosticsRoute)
     {
         count = 0;
-        diagnosticsRoute = null;
+        diagnosticsRoute = Utf8ExecutionRoute.None;
 
         switch (plan.Kind)
         {
             case Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount when isAscii && plan.MinCount > 0:
-                diagnosticsRoute = "fallback_direct_ascii_word_bounded";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiWordBounded;
                 count = CountAsciiWordRuns(input, plan.MinCount);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount:
-                diagnosticsRoute = "fallback_direct_ascii_dotted_decimal_quad";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad;
                 count = Utf8AsciiDottedDecimalQuadExecutor.Count(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount:
-                diagnosticsRoute = "fallback_direct_ascii_until_byte_star";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiUntilByteStar;
                 count = Utf8AsciiUntilByteStarExecutor.Count(input, plan.TerminatorByte);
                 return true;
         }
@@ -55,8 +57,8 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         if (Utf8FallbackDirectFamilyCategories.IsPreparedTokenCountFamily(plan.Kind))
         {
             diagnosticsRoute = plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount
-                ? "fallback_direct_ascii_delimited_token"
-                : "fallback_direct_ascii_literal_structured_token";
+                ? Utf8ExecutionRoute.FallbackDirectAsciiDelimitedToken
+                : Utf8ExecutionRoute.FallbackDirectAsciiLiteralStructuredToken;
             count = Utf8AsciiPreparedTokenFamilyExecutor.CountTokens(input, plan, delimitedTokenSearch, literalStructuredTokenSearch);
             return true;
         }
@@ -66,7 +68,7 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
             if (!Utf8AsciiTokenFamilyExecutor.TryCountTokens(input, isAscii, plan, out count, out diagnosticsRoute))
             {
                 count = 0;
-                diagnosticsRoute = null;
+                diagnosticsRoute = Utf8ExecutionRoute.None;
                 return false;
             }
 

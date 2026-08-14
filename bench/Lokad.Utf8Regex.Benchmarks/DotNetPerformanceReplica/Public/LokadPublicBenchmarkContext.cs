@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Unicode;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -71,7 +72,7 @@ internal sealed class LokadPublicBenchmarkContext
         CompiledUtf8Regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled);
         Regex = new Regex(Pattern, Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
-        HasCompiledLiteralFamilyRawMatch = CompiledUtf8Regex.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out _compiledLiteralFamilyRawIndex, out _compiledLiteralFamilyRawLength);
+        HasCompiledLiteralFamilyRawMatch = CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out _compiledLiteralFamilyRawIndex, out _compiledLiteralFamilyRawLength);
     }
 
     private readonly bool HasCompiledLiteralFamilyRawMatch;
@@ -139,17 +140,17 @@ internal sealed class LokadPublicBenchmarkContext
         return InputBytes.Length;
     }
 
-    public int ExecuteUtf8PrefilterOnly() => Utf8Regex.DebugRejectsByRequiredPrefilter(InputBytes) ? 0 : 1;
+    public int ExecuteUtf8PrefilterOnly() => Utf8Regex.Inspection.DebugRejectsByRequiredPrefilter(InputBytes) ? 0 : 1;
 
     public int ExecuteUtf8DirectHookOnly()
     {
-        Utf8Regex.DebugTryMatchWithoutValidation(InputBytes, out var match);
+        Utf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match);
         return MeasureMatch(match);
     }
 
     public int ExecuteUtf8DirectBoolOnly()
     {
-        return Utf8Regex.DebugTryIsMatchWithoutValidation(InputBytes, out var isMatch) && isMatch
+        return Utf8Regex.Inspection.DebugTryIsMatchWithoutValidation(InputBytes, out var isMatch) && isMatch
             ? 1
             : 0;
     }
@@ -159,20 +160,20 @@ internal sealed class LokadPublicBenchmarkContext
         var validation = Utf8Validation.Validate(InputBytes);
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch => Utf8Regex.DebugMatchAfterValidation(InputBytes, validation).Success ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(Utf8Regex.DebugMatchAfterValidation(InputBytes, validation)),
+            LokadPublicBenchmarkOperation.IsMatch => Utf8Regex.Inspection.DebugMatchAfterValidation(InputBytes, validation).Success ? 1 : 0,
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(Utf8Regex.Inspection.DebugMatchAfterValidation(InputBytes, validation)),
             _ => 0,
         };
     }
 
     public int ExecuteUtf8FallbackSearchStartsOnly()
     {
-        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.DebugCanGuideFallbackVerification)
+        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.DebugCanGuideFallbackVerification)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugIsMatchFallbackViaSearchStarts(InputBytes) ? 1 : 0;
+        return Utf8Regex.Inspection.DebugIsMatchFallbackViaSearchStarts(InputBytes) ? 1 : 0;
     }
 
     public int ExecuteUtf8CompiledAfterValidationOnly()
@@ -180,8 +181,8 @@ internal sealed class LokadPublicBenchmarkContext
         var validation = Utf8Validation.Validate(InputBytes);
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.DebugIsMatchViaCompiledEngine(InputBytes, validation) ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.DebugMatchViaCompiledEngine(InputBytes, validation)),
+            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.Inspection.DebugIsMatchViaCompiledEngine(InputBytes, validation) ? 1 : 0,
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.Inspection.DebugMatchViaCompiledEngine(InputBytes, validation)),
             _ => 0,
         };
     }
@@ -191,7 +192,7 @@ internal sealed class LokadPublicBenchmarkContext
         var validation = Utf8Validation.Validate(InputBytes);
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => CompiledUtf8Regex.DebugIsMatchViaCompiledEngine(InputBytes, validation) ? 1 : 0,
+            LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => CompiledUtf8Regex.Inspection.DebugIsMatchViaCompiledEngine(InputBytes, validation) ? 1 : 0,
             _ => 0,
         };
     }
@@ -200,8 +201,8 @@ internal sealed class LokadPublicBenchmarkContext
     {
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.DebugTryMatchWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.DebugTryMatchWithoutValidation(InputBytes, out var match) ? match : Utf8ValueMatch.NoMatch),
+            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(InputBytes, out var match) ? match : Utf8ValueMatch.NoMatch),
             _ => 0,
         };
     }
@@ -213,7 +214,7 @@ internal sealed class LokadPublicBenchmarkContext
             return 0;
         }
 
-        return CompiledUtf8Regex.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out var index, out var matchedLength)
+        return CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out var index, out var matchedLength)
             ? index + matchedLength
             : -1;
     }
@@ -225,79 +226,79 @@ internal sealed class LokadPublicBenchmarkContext
             return 0;
         }
 
-        return Utf8Regex.DebugProjectByteAlignedMatchOnly(_compiledLiteralFamilyRawIndex, _compiledLiteralFamilyRawLength);
+        return Utf8MatchInspection.ProjectByteAlignedMatchOnly(_compiledLiteralFamilyRawIndex, _compiledLiteralFamilyRawLength);
     }
 
     public int ExecuteUtf8CompiledDirectCountOnly()
     {
         return Operation == LokadPublicBenchmarkOperation.Count
-            ? CompiledUtf8Regex.DebugCountViaCompiledEngine(InputBytes)
+            ? CompiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(InputBytes)
             : 0;
     }
 
     public int ExecuteAnchoredValidatorFixedPrefixOnly()
     {
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchAnchoredValidatorFixedPrefixOnly(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorFixedPrefixOnly(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteAnchoredValidatorFirstBoundedSegmentOnly()
     {
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorFirstBoundedSegmentOnly(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteAnchoredValidatorSuffixAfterFirstBoundedOnly()
     {
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorSuffixAfterFirstBounded(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteAnchoredValidatorNativeWholeOnly()
     {
-        if (!Utf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!Utf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchAnchoredValidatorNativeWhole(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchAnchoredValidatorNativeWhole(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteCompiledAnchoredValidatorDirectOnly()
     {
-        if (!CompiledUtf8Regex.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
+        if (!CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue)
         {
             return 0;
         }
 
-        return CompiledUtf8Regex.DebugTryMatchCompiledAnchoredValidatorWithoutValidation(InputBytes, out var matchedLength)
+        return CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAnchoredValidatorWithoutValidation(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteDirectFallbackTokenRawOnly()
     {
-        return Utf8Regex.DebugTryFindDirectFallbackTokenWithoutValidation(InputBytes, out var matchIndex, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(InputBytes, out var matchIndex, out var matchedLength)
             ? matchIndex + matchedLength
             : 0;
     }
@@ -311,7 +312,7 @@ internal sealed class LokadPublicBenchmarkContext
 
         return Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
             InputBytes,
-            CompiledUtf8Regex.SimplePatternPlan.AnchoredBoundedDatePlan,
+            CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan,
             allowTrailingNewline: false,
             out var matchedLength,
             out _)
@@ -333,38 +334,38 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteRepeatedDigitGroupWholeOnly()
     {
-        return Utf8Regex.DebugTryMatchRepeatedDigitGroupWhole(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchRepeatedDigitGroupWhole(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteRepeatedDigitGroupFindOnly()
     {
-        return Utf8Regex.DebugTryFindRepeatedDigitGroup(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryFindRepeatedDigitGroup(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteUtf8DirectFixedLengthOnly()
     {
-        if (!Utf8Regex.DebugSimplePatternCanUseDirectAnchoredFixedLength)
+        if (!Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedLength)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedLengthSimplePattern(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }
 
     public int ExecuteUtf8DirectFixedAlternationOnly()
     {
-        if (!Utf8Regex.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
+        if (!Utf8Regex.Inspection.DebugSimplePatternCanUseDirectAnchoredFixedAlternation)
         {
             return 0;
         }
 
-        return Utf8Regex.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(InputBytes, out var matchedLength)
+        return Utf8Regex.Inspection.DebugTryMatchDirectAnchoredFixedAlternationSimplePattern(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }

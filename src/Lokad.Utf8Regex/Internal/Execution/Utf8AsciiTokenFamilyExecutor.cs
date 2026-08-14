@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Diagnostics;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiTokenFamilyExecutor
@@ -68,30 +70,30 @@ internal static class Utf8AsciiTokenFamilyExecutor
         bool isAscii,
         in Utf8FallbackDirectFamilyPlan plan,
         out int count,
-        out string? diagnosticsRoute)
+        out Utf8ExecutionRoute diagnosticsRoute)
     {
         count = 0;
-        diagnosticsRoute = null;
+        diagnosticsRoute = Utf8ExecutionRoute.None;
 
         switch (plan.Kind)
         {
             case Utf8FallbackDirectFamilyKind.AsciiIdentifierToken when isAscii:
-                diagnosticsRoute = "fallback_direct_ascii_identifier_token";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiIdentifierToken;
                 count = CountAsciiIdentifierTokens(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiIpv4Token when isAscii:
-                diagnosticsRoute = "fallback_direct_ascii_ipv4_token";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiIpv4Token;
                 count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiUriToken:
-                diagnosticsRoute = "fallback_direct_ascii_uri_token";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiUriToken;
                 count = Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken:
-                diagnosticsRoute = "fallback_direct_ascii_bounded_date_token";
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiBoundedDateToken;
                 count = Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens(input, plan);
                 return true;
 

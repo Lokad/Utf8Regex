@@ -249,10 +249,29 @@ internal readonly struct Utf8StructuralSearchPlan
             : default;
     }
 
-    public static Utf8StructuralSearchPlan CreateWindowPlan(
+    public static Utf8StructuralSearchPlan CreateWindowPlan(PreparedWindowSearch windowSearch) =>
+        CreateWindowPlan(windowSearch, maxLines: null, default);
+
+    public static Utf8StructuralSearchPlan CreateWindowPlanWithOptionalLineSpan(
         PreparedWindowSearch windowSearch,
-        int? maxLines = null,
-        Utf8FallbackStartTransform startTransform = default)
+        int? maxLines) =>
+        CreateWindowPlan(windowSearch, maxLines, default);
+
+    public static Utf8StructuralSearchPlan CreateWindowPlanWithLineSpan(
+        PreparedWindowSearch windowSearch,
+        int maxLines) =>
+        CreateWindowPlan(windowSearch, maxLines, default);
+
+    public static Utf8StructuralSearchPlan CreateTransformedWindowPlanWithLineSpan(
+        PreparedWindowSearch windowSearch,
+        int maxLines,
+        Utf8FallbackStartTransform startTransform) =>
+        CreateWindowPlan(windowSearch, maxLines, startTransform);
+
+    private static Utf8StructuralSearchPlan CreateWindowPlan(
+        PreparedWindowSearch windowSearch,
+        int? maxLines,
+        Utf8FallbackStartTransform startTransform)
     {
         if (!windowSearch.HasValue)
         {
@@ -608,11 +627,36 @@ internal readonly struct Utf8StructuralSearchPlan
 
 internal readonly record struct Utf8StructuralCandidate(
     int StartIndex,
-    int EndIndex = -1,
-    int MatchLength = -1,
-    int LiteralId = -1,
-    int TrailingIndex = -1,
-    int TrailingMatchLength = -1,
-    int TrailingLiteralId = -1);
+    int EndIndex,
+    int MatchLength,
+    int LiteralId,
+    int TrailingIndex,
+    int TrailingMatchLength,
+    int TrailingLiteralId)
+{
+    public static Utf8StructuralCandidate Start(
+        int startIndex,
+        int endIndex,
+        int matchLength,
+        int literalId) =>
+        new(startIndex, endIndex, matchLength, literalId, -1, -1, -1);
+
+    public static Utf8StructuralCandidate Window(
+        int startIndex,
+        int endIndex,
+        int matchLength,
+        int literalId,
+        int trailingIndex,
+        int trailingMatchLength,
+        int trailingLiteralId) =>
+        new(
+            startIndex,
+            endIndex,
+            matchLength,
+            literalId,
+            trailingIndex,
+            trailingMatchLength,
+            trailingLiteralId);
+}
 
 internal readonly record struct Utf8StructuralSearchState(PreparedSearchScanState SearchState, PreparedWindowScanState WindowState);

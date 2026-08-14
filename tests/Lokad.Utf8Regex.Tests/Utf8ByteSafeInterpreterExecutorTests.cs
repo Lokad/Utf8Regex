@@ -346,7 +346,7 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
             RegexOptions.None);
         var input = "# NOQA: F401"u8.ToArray();
 
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
 
         var match = regex.Match(input);
         Assert.True(match.Success);
@@ -537,9 +537,9 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
             "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
             RegexOptions.None);
 
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, regex.StructuralVerifierPlan.Kind);
-        Assert.True(regex.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue);
+        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, regex.Inspection.StructuralVerifierPlan.Kind);
+        Assert.True(regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue);
     }
 
     [Fact]
@@ -549,8 +549,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
             "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)",
             RegexOptions.None);
 
-        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.CompiledEngineKind);
-        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, regex.StructuralVerifierPlan.Kind);
-        Assert.True(regex.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue);
+        Assert.Equal(Utf8CompiledEngineKind.ByteSafeLinear, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8StructuralVerifierKind.ByteSafeLazyDfaProgram, regex.Inspection.StructuralVerifierPlan.Kind);
+        Assert.True(regex.Inspection.StructuralVerifierPlan.ByteSafeLazyDfaProgram.HasValue);
     }
 }

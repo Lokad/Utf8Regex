@@ -30,18 +30,16 @@ internal static class Utf8ReplacementPlanLowerer
     {
         return token.Kind switch
         {
-            RuntimeFrontEnd.RegexReplacementTokenKind.Literal => new Utf8ReplacementInstruction(
-                Utf8ReplacementInstructionKind.Literal,
+            RuntimeFrontEnd.RegexReplacementTokenKind.Literal => Utf8ReplacementInstruction.Literal(
                 token.Literal is null ? [] : Encoding.UTF8.GetBytes(token.Literal)),
-            RuntimeFrontEnd.RegexReplacementTokenKind.Group => new Utf8ReplacementInstruction(
-                Utf8ReplacementInstructionKind.Group,
-                GroupNumber: ResolveGroupNumber(token, validGroupNumbers, validGroupNames),
-                IsBraceEnclosed: token.IsBraceEnclosed),
-            RuntimeFrontEnd.RegexReplacementTokenKind.WholeMatch => new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.WholeMatch),
-            RuntimeFrontEnd.RegexReplacementTokenKind.LeftPortion => new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.LeftPortion),
-            RuntimeFrontEnd.RegexReplacementTokenKind.RightPortion => new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.RightPortion),
-            RuntimeFrontEnd.RegexReplacementTokenKind.LastGroup => new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.LastGroup),
-            RuntimeFrontEnd.RegexReplacementTokenKind.WholeString => new Utf8ReplacementInstruction(Utf8ReplacementInstructionKind.WholeString),
+            RuntimeFrontEnd.RegexReplacementTokenKind.Group => Utf8ReplacementInstruction.Group(
+                ResolveGroupNumber(token, validGroupNumbers, validGroupNames),
+                token.IsBraceEnclosed),
+            RuntimeFrontEnd.RegexReplacementTokenKind.WholeMatch => Utf8ReplacementInstruction.WholeMatch(),
+            RuntimeFrontEnd.RegexReplacementTokenKind.LeftPortion => Utf8ReplacementInstruction.LeftPortion(),
+            RuntimeFrontEnd.RegexReplacementTokenKind.RightPortion => Utf8ReplacementInstruction.RightPortion(),
+            RuntimeFrontEnd.RegexReplacementTokenKind.LastGroup => Utf8ReplacementInstruction.LastGroup(),
+            RuntimeFrontEnd.RegexReplacementTokenKind.WholeString => Utf8ReplacementInstruction.WholeString(),
             _ => throw new InvalidOperationException("Unsupported replacement token kind."),
         };
     }

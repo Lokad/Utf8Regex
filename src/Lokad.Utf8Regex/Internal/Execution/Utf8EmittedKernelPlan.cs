@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal enum Utf8EmittedKernelBlockKind : byte
@@ -96,14 +97,14 @@ internal readonly struct Utf8EmittedKernelPlan
 
     public bool HasValue => Kind != Utf8EmittedKernelKind.None;
 
-    public string RouteName => Kind switch
+    public Utf8ExecutionRoute Route => Kind switch
     {
-        Utf8EmittedKernelKind.UpperWordIdentifierFamily => "native_structural_family_emit_upper_word_identifier",
-        Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix => "native_structural_family_emit_shared_prefix_suffix",
+        Utf8EmittedKernelKind.UpperWordIdentifierFamily => Utf8ExecutionRoute.NativeStructuralFamilyEmitUpperWordIdentifier,
+        Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix => Utf8ExecutionRoute.NativeStructuralFamilyEmitSharedPrefixSuffix,
         Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => MaxGap > 0
-            ? "native_ordered_literal_window_emit_bounded_gap_literal"
-            : "native_ordered_literal_window_emit_separator_literal",
-        Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow => "native_ordered_literal_window_emit_paired_bounded_gap_literal",
-        _ => "native_structural_family_emit",
+            ? Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitBoundedGapLiteral
+            : Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitSeparatorLiteral,
+        Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow => Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitPairedBoundedGapLiteral,
+        _ => Utf8ExecutionRoute.NativeStructuralFamilyEmit,
     };
 }
