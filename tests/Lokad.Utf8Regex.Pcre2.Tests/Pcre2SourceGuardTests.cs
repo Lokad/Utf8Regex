@@ -80,6 +80,16 @@ public sealed class Pcre2SourceGuardTests
         Assert.Empty(offenders);
     }
 
+    [Fact]
+    public void Pcre2CharacterSemanticsDoNotDependOnDotNetRegexInternals()
+    {
+        var source = File.ReadAllText(Path.Combine(FindPcre2SourceDirectory(), "Pcre2CharacterCompiler.cs"));
+
+        Assert.DoesNotContain("System.Text.RegularExpressions", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegexCharClass", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("RegexOptions", source, StringComparison.Ordinal);
+    }
+
     private static string FindPcre2SourceDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

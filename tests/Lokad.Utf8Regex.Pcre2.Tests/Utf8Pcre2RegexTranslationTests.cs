@@ -31,12 +31,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void IgnoreCaseLiteralUsesUtf8RegexTranslation()
+    public void IgnoreCaseLiteralUsesPcre2CharacterProgram()
     {
         var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Character, Count=Pcre2Character, Enumerate=Pcre2Character, Match=Pcre2Character, Replace=Pcre2Character", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count("HttpClient x httpclient HTTPCLIENT"u8));
     }
 

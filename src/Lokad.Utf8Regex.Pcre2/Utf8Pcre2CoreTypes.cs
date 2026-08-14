@@ -574,7 +574,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private readonly ReadOnlySpan<byte> _input;
     private readonly Pcre2MaterializedMatchEnumeratorState _materializedMatches;
     private readonly Pcre2NativeValueEnumeratorKind _generatorExecutionKind;
-    private Pcre2LiteralGlobalMatchCursor _literalMatches;
+    private Pcre2GlobalMatchCursor _directMatches;
     private Utf8PreparedValueMatchEnumerator _utf8PreparedMatches;
     private Utf8ValueMatchEnumerator _utf8Matches;
     private Regex.ValueMatchEnumerator _managedMatches;
@@ -595,7 +595,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _input = input;
         _materializedMatches = new Pcre2MaterializedMatchEnumeratorState(matches);
         _generatorExecutionKind = default;
-        _literalMatches = default;
+        _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
         _managedMatches = default;
@@ -658,7 +658,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
             pendingException,
             exceptionIndex);
         _generatorExecutionKind = default;
-        _literalMatches = default;
+        _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
         _managedMatches = default;
@@ -680,7 +680,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _input = input;
         _materializedMatches = default;
         _generatorExecutionKind = generatorExecutionKind;
-        _literalMatches = default;
+        _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
         _managedMatches = default;
@@ -698,12 +698,12 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2LiteralGlobalMatchCursor literalMatches)
+        Pcre2GlobalMatchCursor directMatches)
     {
         this = default;
-        _mode = Pcre2ValueMatchEnumeratorMode.Pcre2LiteralGlobal;
+        _mode = Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal;
         _input = input;
-        _literalMatches = literalMatches;
+        _directMatches = directMatches;
         _index = -1;
     }
 
@@ -776,15 +776,15 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
             return TryMoveNextNativeValueGenerator();
         }
 
-        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2LiteralGlobal)
+        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
         {
-            if (!_literalMatches.MoveNext())
+            if (!_directMatches.MoveNext())
             {
                 _currentData = default;
                 return false;
             }
 
-            var match = _literalMatches.Current;
+            var match = _directMatches.Current;
             _currentData = new Pcre2ValueData
             {
                 Success = true,
@@ -1124,7 +1124,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         ManagedRegexAsciiEnumerator = 4,
         ManagedRegexBoundaryEnumerator = 5,
         NativeValueGenerator = 6,
-        Pcre2LiteralGlobal = 7,
+        Pcre2DirectGlobal = 7,
     }
 
     internal enum Pcre2NativeValueEnumeratorKind : byte

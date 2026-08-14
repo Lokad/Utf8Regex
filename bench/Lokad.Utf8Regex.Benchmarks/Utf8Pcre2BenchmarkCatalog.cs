@@ -53,6 +53,12 @@ internal static class Utf8Pcre2BenchmarkCatalog
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
             replacement: "client"),
         new(
+            "character/unicode-class-dense",
+            @"[\p{L}\p{N}_]",
+            string.Concat(Enumerable.Repeat("aé٣_-", 1024)),
+            replacement: "x",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count),
+        new(
             "simple/loglevel-multiline",
             "^ERROR: .+$",
             "INFO: boot\nERROR: first failure\nDEBUG: noisy\nERROR: second failure\n",

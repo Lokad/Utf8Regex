@@ -21,12 +21,32 @@ internal static class Pcre2Compiler
         ArgumentNullException.ThrowIfNull(request.Pattern);
         ArgumentNullException.ThrowIfNull(legacyProgramFactory);
         Pcre2CompileValidator.Validate(request.Pattern, request.Settings);
-        var program = legacyProgramFactory(request);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
-            program = Pcre2CompiledProgramOverlay.WithLiteralOneShot(program, literal.SyntaxTree, literal.Program);
+            var literalProgram = legacyProgramFactory(request);
+            literalProgram = Pcre2CompiledProgramOverlay.WithLiteralOneShot(literalProgram, literal.SyntaxTree, literal.Program);
+            Pcre2ProgramInvariant.Validate(literalProgram);
+            return literalProgram;
         }
 
+        if (Pcre2CharacterCompiler.Compile(request) is Pcre2CompiledCharacterOutcome character)
+        {
+            Pcre2CompiledProgram foundation;
+            try
+            {
+                foundation = legacyProgramFactory(request);
+            }
+            catch (RegexParseException)
+            {
+                foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
+            }
+
+            foundation = Pcre2CompiledProgramOverlay.WithCharacterOneShot(foundation, character.SyntaxTree, character.Program);
+            Pcre2ProgramInvariant.Validate(foundation);
+            return foundation;
+        }
+
+        var program = legacyProgramFactory(request);
         Pcre2ProgramInvariant.Validate(program);
         return program;
     }
@@ -146,6 +166,18 @@ internal sealed class Pcre2LiteralDirectProgram : IPcre2DirectProgram
     internal Pcre2LiteralProgram Program { get; }
 }
 
+internal sealed class Pcre2CharacterDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2CharacterDirectProgram(Pcre2CharacterProgram program)
+    {
+        Program = program;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Character;
+
+    internal Pcre2CharacterProgram Program { get; }
+}
+
 internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
@@ -153,6 +185,7 @@ internal enum Pcre2DirectProgramKind : byte
     ManagedRegex = 2,
     Utf8RegexEquivalent = 3,
     Pcre2Literal = 4,
+    Pcre2Character = 5,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -253,12 +286,57 @@ internal sealed class Pcre2CompiledProgram
 
 internal static class Pcre2CompiledProgramOverlay
 {
+    internal static Pcre2CompiledProgram CreateGenericFoundation(Pcre2CompileRequest request)
+    {
+        var none = Pcre2NoDirectProgram.Instance;
+        return new Pcre2CompiledProgram(
+            request,
+            Pcre2EmptyUtf8ProgramSlot.Instance,
+            Pcre2EmptyUtf8ProgramSlot.Instance,
+            Pcre2EmptyManagedProgramSlot.Instance,
+            Pcre2NoTranslationProgram.Instance,
+            new Pcre2OperationPrograms(none, none, none, none, none),
+            new Pcre2CandidateSearchProgram(none),
+            new Pcre2FullVerificationProgram(Utf8Pcre2Regex.Pcre2ExecutionKind.Unimplemented),
+            Pcre2LegacySyntaxTree.Instance,
+            ["0"],
+            []);
+    }
+
     internal static Pcre2CompiledProgram WithLiteralOneShot(
         Pcre2CompiledProgram legacy,
         Pcre2LiteralSyntaxTree syntaxTree,
         Pcre2LiteralProgram literalProgram)
     {
         var direct = new Pcre2LiteralDirectProgram(literalProgram);
+        var operations = legacy.Operations with
+        {
+            IsMatch = direct,
+            Count = direct,
+            Enumerate = direct,
+            Match = direct,
+            Replace = direct,
+        };
+        return new Pcre2CompiledProgram(
+            legacy.Request,
+            legacy.PrimaryUtf8,
+            legacy.SearchEquivalentUtf8,
+            legacy.Managed,
+            legacy.Translation,
+            operations,
+            new Pcre2CandidateSearchProgram(direct),
+            legacy.FullVerification,
+            syntaxTree,
+            legacy.GroupNames,
+            legacy.NameEntries);
+    }
+
+    internal static Pcre2CompiledProgram WithCharacterOneShot(
+        Pcre2CompiledProgram legacy,
+        Pcre2CharacterSyntaxTree syntaxTree,
+        Pcre2CharacterProgram characterProgram)
+    {
+        var direct = new Pcre2CharacterDirectProgram(characterProgram);
         var operations = legacy.Operations with
         {
             IsMatch = direct,
@@ -336,6 +414,17 @@ internal static class Pcre2Runner
             return true;
         }
 
+        if (program is Pcre2CharacterDirectProgram characterProgram)
+        {
+            result = ExecuteCharacter(
+                characterProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = utf8Program.Regex.ByteOffsetExecution.IsMatch(input, start);
@@ -360,34 +449,50 @@ internal static class Pcre2Runner
         Pcre2MatchOptions matchOptions,
         out Pcre2GroupData result)
     {
-        if (compiledProgram.Operations.Match is not Pcre2LiteralDirectProgram literalProgram)
+        Pcre2CharacterMatch directMatch;
+        if (compiledProgram.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
+        {
+            var literalMatch = ExecuteLiteral(
+                literalProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request);
+            directMatch = literalMatch.Success
+                ? Pcre2CharacterMatch.Create(literalMatch.StartOffsetInBytes, literalMatch.EndOffsetInBytes)
+                : Pcre2CharacterMatch.NoMatch;
+        }
+        else if (compiledProgram.Operations.Match is Pcre2CharacterDirectProgram characterProgram)
+        {
+            directMatch = ExecuteCharacter(
+                characterProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request);
+        }
+        else
         {
             result = default;
             return false;
         }
 
-        var literalMatch = ExecuteLiteral(
-            literalProgram.Program,
-            ref input,
-            start,
-            matchOptions,
-            compiledProgram.Request);
-        if (!literalMatch.Success)
+        if (!directMatch.Success)
         {
             result = default;
             return true;
         }
 
         var byteRange = new Utf8ByteRange(
-            new Utf8BytePosition(literalMatch.StartOffsetInBytes),
-            new Utf8BytePosition(literalMatch.EndOffsetInBytes));
+            new Utf8BytePosition(directMatch.StartOffsetInBytes),
+            new Utf8BytePosition(directMatch.EndOffsetInBytes));
         var utf16Range = input.ProjectRange(byteRange);
         result = new Pcre2GroupData
         {
             Number = 0,
             Success = true,
-            StartOffsetInBytes = literalMatch.StartOffsetInBytes,
-            EndOffsetInBytes = literalMatch.EndOffsetInBytes,
+            StartOffsetInBytes = directMatch.StartOffsetInBytes,
+            EndOffsetInBytes = directMatch.EndOffsetInBytes,
             StartOffsetInUtf16 = utf16Range.Start.Value,
             EndOffsetInUtf16 = utf16Range.End.Value,
         };
@@ -411,6 +516,24 @@ internal static class Pcre2Runner
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
         }
     }
+
+    private static Pcre2CharacterMatch ExecuteCharacter(
+        Pcre2CharacterProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        try
+        {
+            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+            return Pcre2CharacterRunner.Match(program, ref input, start, matchOptions, ref budget);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+        }
+    }
 }
 
 internal static class Pcre2GlobalOperationDriver
@@ -423,14 +546,8 @@ internal static class Pcre2GlobalOperationDriver
         out int result)
     {
         var program = compiledProgram.Operations.Count;
-        if (program is Pcre2LiteralDirectProgram literalProgram)
+        if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor))
         {
-            var cursor = new Pcre2LiteralGlobalMatchCursor(
-                literalProgram.Program,
-                input,
-                start,
-                matchOptions,
-                compiledProgram.Request);
             result = 0;
             while (cursor.MoveNext())
             {
@@ -457,25 +574,167 @@ internal static class Pcre2GlobalOperationDriver
         return false;
     }
 
-    internal static bool TryCreateLiteralCursor(
+    internal static bool TryCreateCursor(
         Pcre2CompiledProgram compiledProgram,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        out Pcre2LiteralGlobalMatchCursor cursor)
+        out Pcre2GlobalMatchCursor cursor)
     {
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralDirectProgram literalProgram)
         {
-            cursor = new Pcre2LiteralGlobalMatchCursor(
-                literalProgram.Program,
-                input,
-                start,
-                matchOptions,
-                compiledProgram.Request);
+            cursor = Pcre2GlobalMatchCursor.CreateLiteral(
+                literalProgram.Program, input, start, matchOptions, compiledProgram.Request);
+            return true;
+        }
+
+        if (compiledProgram.Operations.Enumerate is Pcre2CharacterDirectProgram characterProgram)
+        {
+            cursor = Pcre2GlobalMatchCursor.CreateCharacter(
+                characterProgram.Program, input, start, matchOptions, compiledProgram.Request);
             return true;
         }
 
         cursor = default;
+        return false;
+    }
+}
+
+internal ref struct Pcre2GlobalMatchCursor
+{
+    private readonly Pcre2GlobalCursorKind _kind;
+    private Pcre2LiteralGlobalMatchCursor _literal;
+    private Pcre2CharacterGlobalMatchCursor _character;
+
+    private Pcre2GlobalMatchCursor(Pcre2LiteralGlobalMatchCursor literal)
+    {
+        _kind = Pcre2GlobalCursorKind.Literal;
+        _literal = literal;
+        _character = default;
+    }
+
+    private Pcre2GlobalMatchCursor(Pcre2CharacterGlobalMatchCursor character)
+    {
+        _kind = Pcre2GlobalCursorKind.Character;
+        _literal = default;
+        _character = character;
+    }
+
+    internal Pcre2GroupData Current => _kind switch
+    {
+        Pcre2GlobalCursorKind.Literal => _literal.Current,
+        Pcre2GlobalCursorKind.Character => _character.Current,
+        _ => default,
+    };
+
+    internal static Pcre2GlobalMatchCursor CreateLiteral(
+        Pcre2LiteralProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(new Pcre2LiteralGlobalMatchCursor(program, input, start, matchOptions, request));
+
+    internal static Pcre2GlobalMatchCursor CreateCharacter(
+        Pcre2CharacterProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(new Pcre2CharacterGlobalMatchCursor(program, input, start, matchOptions, request));
+
+    internal bool MoveNext() => _kind switch
+    {
+        Pcre2GlobalCursorKind.Literal => _literal.MoveNext(),
+        Pcre2GlobalCursorKind.Character => _character.MoveNext(),
+        _ => false,
+    };
+
+    private enum Pcre2GlobalCursorKind : byte
+    {
+        None = 0,
+        Literal = 1,
+        Character = 2,
+    }
+}
+
+internal ref struct Pcre2CharacterGlobalMatchCursor
+{
+    private readonly Pcre2CharacterProgram _program;
+    private Utf8ValidatedInput _input;
+    private readonly Pcre2CompileRequest _request;
+    private readonly Pcre2MatchOptions _matchOptions;
+    private Pcre2ResourceBudget _budget;
+    private Utf8ProjectionCursor _projection;
+    private Utf8BytePosition _restartPosition;
+    private Pcre2GlobalRetryState _retryState;
+
+    internal Pcre2CharacterGlobalMatchCursor(
+        Pcre2CharacterProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        _program = program;
+        _input = input;
+        _request = request;
+        _matchOptions = matchOptions;
+        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+        _projection = input.CreateProjectionCursor();
+        _restartPosition = start;
+        _retryState = Pcre2GlobalRetryState.Search;
+        Current = default;
+    }
+
+    internal Pcre2GroupData Current { get; private set; }
+
+    internal bool MoveNext()
+    {
+        while (_retryState != Pcre2GlobalRetryState.Finished)
+        {
+            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
+            var options = retryingEmptyAtSamePosition
+                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
+                : _matchOptions;
+
+            Pcre2CharacterMatch match;
+            try
+            {
+                match = Pcre2CharacterRunner.Match(
+                    _program,
+                    ref _input,
+                    _restartPosition,
+                    options,
+                    ref _budget);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            }
+
+            if (match.Success)
+            {
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
+                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
+                _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
+                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
+                    : Pcre2GlobalRetryState.Search;
+                return true;
+            }
+
+            if (!retryingEmptyAtSamePosition ||
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
+            {
+                _retryState = Pcre2GlobalRetryState.Finished;
+                Current = default;
+                return false;
+            }
+
+            _retryState = Pcre2GlobalRetryState.Search;
+        }
+
+        Current = default;
         return false;
     }
 }
@@ -537,7 +796,7 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
 
             if (match.Success)
             {
-                Current = Project(match);
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
                     ? Pcre2GlobalRetryState.EmptyAtSamePosition
@@ -545,7 +804,8 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
                 return true;
             }
 
-            if (!retryingEmptyAtSamePosition || !TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
+            if (!retryingEmptyAtSamePosition ||
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
             {
                 _retryState = Pcre2GlobalRetryState.Finished;
                 Current = default;
@@ -559,12 +819,16 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
         return false;
     }
 
-    private Pcre2GroupData Project(Pcre2LiteralMatch match)
+}
+
+internal static class Pcre2GlobalCursorProjection
+{
+    internal static Pcre2GroupData Project(int startOffsetInBytes, int endOffsetInBytes, ref Utf8ProjectionCursor projection)
     {
-        var start = new Utf8BytePosition(match.StartOffsetInBytes);
-        var end = new Utf8BytePosition(match.EndOffsetInBytes);
-        var startInUtf16 = _projection.Project(start);
-        var endInUtf16 = _projection.Project(end);
+        var start = new Utf8BytePosition(startOffsetInBytes);
+        var end = new Utf8BytePosition(endOffsetInBytes);
+        var startInUtf16 = projection.Project(start);
+        var endInUtf16 = projection.Project(end);
         return new Pcre2GroupData
         {
             Number = 0,
@@ -575,8 +839,11 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
             EndOffsetInUtf16 = endInUtf16.Value,
         };
     }
+}
 
-    private static bool TryAdvanceAfterEmpty(
+internal static class Pcre2GlobalCursorMovement
+{
+    internal static bool TryAdvanceAfterEmpty(
         ref Utf8ValidatedInput input,
         Utf8Pcre2CompileSettings settings,
         Utf8BytePosition position,
@@ -599,13 +866,13 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
         => newline is Pcre2NewlineConvention.Crlf or
             Pcre2NewlineConvention.Any or
             Pcre2NewlineConvention.AnyCrlf;
+}
 
-    private enum Pcre2GlobalRetryState : byte
-    {
-        Search = 0,
-        EmptyAtSamePosition = 1,
-        Finished = 2,
-    }
+internal enum Pcre2GlobalRetryState : byte
+{
+    Search = 0,
+    EmptyAtSamePosition = 1,
+    Finished = 2,
 }
 
 internal sealed class Pcre2InvocationState
@@ -688,6 +955,7 @@ internal enum Pcre2SyntaxNodeKind : byte
 {
     LegacyPattern = 0,
     Literal = 1,
+    CharacterProgram = 2,
 }
 
 internal interface IPcre2SyntaxTree

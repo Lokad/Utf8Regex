@@ -465,14 +465,14 @@ public sealed class Utf8Pcre2Regex
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
 
-        if (Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
                 matchOptions,
-                out var literalCursor))
+                out var directCursor))
         {
-            return new Utf8Pcre2ValueMatchEnumerator(input, literalCursor);
+            return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.None)
@@ -1084,21 +1084,21 @@ public sealed class Utf8Pcre2Regex
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
                 matchOptions,
-                out var literalCursor))
+                out var directCursor))
         {
             var written = 0;
-            while (written < destination.Length && literalCursor.MoveNext())
+            while (written < destination.Length && directCursor.MoveNext())
             {
-                destination[written] = Utf8Pcre2MatchData.Create(literalCursor.Current);
+                destination[written] = Utf8Pcre2MatchData.Create(directCursor.Current);
                 written++;
             }
 
-            isMore = literalCursor.MoveNext();
+            isMore = directCursor.MoveNext();
             return written;
         }
 
@@ -5024,7 +5024,7 @@ public sealed class Utf8Pcre2Regex
         }
 
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
@@ -5082,7 +5082,7 @@ public sealed class Utf8Pcre2Regex
         }
 
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
@@ -5185,7 +5185,7 @@ public sealed class Utf8Pcre2Regex
         int inputLength,
         SimpleReplacementPlan plan,
         bool replacementOnly,
-        ref Pcre2LiteralGlobalMatchCursor cursor,
+        ref Pcre2GlobalMatchCursor cursor,
         ref Utf8ReplacementRangeLedger ledger)
     {
         var outputLength = new Utf8ReplacementOutputLength(replacementOnly ? 0 : inputLength);
@@ -5545,7 +5545,7 @@ public sealed class Utf8Pcre2Regex
         out byte[] result)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
@@ -5584,7 +5584,7 @@ public sealed class Utf8Pcre2Regex
         out string result)
     {
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (!Pcre2GlobalOperationDriver.TryCreateLiteralCursor(
+        if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 validated,
                 start,

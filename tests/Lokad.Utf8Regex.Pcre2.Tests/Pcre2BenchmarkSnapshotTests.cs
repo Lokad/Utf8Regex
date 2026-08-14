@@ -6,9 +6,10 @@ public sealed class Pcre2BenchmarkSnapshotTests
 {
     private static readonly string[] s_scalingFamilies =
     [
-        "candidate-heavy-misses",
-        "capture-rollback",
-        "cartesian-literal-families",
+            "candidate-heavy-misses",
+            "capture-rollback",
+            "cartesian-literal-families",
+            "character-class-dense",
         "dense-non-ascii-coordinates",
         "dense-plus-sparse-candidate-portfolios",
         "long-flat-patterns",
