@@ -62,6 +62,8 @@ internal enum Pcre2BacktrackingNodeKind : byte
     Assertion = 7,
     SubroutineCall = 8,
     Conditional = 9,
+    Atomic = 10,
+    ControlVerb = 11,
 }
 
 internal sealed class Pcre2EmptyBacktrackingNode : IPcre2BacktrackingNode
@@ -256,10 +258,49 @@ internal sealed class Pcre2ConditionalBacktrackingNode : IPcre2BacktrackingNode
     internal IPcre2BacktrackingNode NoBranch { get; }
 }
 
+internal sealed class Pcre2AtomicBacktrackingNode : IPcre2BacktrackingNode
+{
+    internal Pcre2AtomicBacktrackingNode(IPcre2BacktrackingNode body)
+    {
+        Body = body;
+    }
+
+    public Pcre2BacktrackingNodeKind Kind => Pcre2BacktrackingNodeKind.Atomic;
+
+    internal IPcre2BacktrackingNode Body { get; }
+}
+
+internal enum Pcre2ControlVerbKind : byte
+{
+    Accept = 0,
+    Fail = 1,
+    Mark = 2,
+    Commit = 3,
+    Prune = 4,
+    Skip = 5,
+    Then = 6,
+}
+
+internal sealed class Pcre2ControlVerbBacktrackingNode : IPcre2BacktrackingNode
+{
+    internal Pcre2ControlVerbBacktrackingNode(Pcre2ControlVerbKind verbKind, string name)
+    {
+        VerbKind = verbKind;
+        Name = name;
+    }
+
+    public Pcre2BacktrackingNodeKind Kind => Pcre2BacktrackingNodeKind.ControlVerb;
+
+    internal Pcre2ControlVerbKind VerbKind { get; }
+
+    internal string Name { get; }
+}
+
 internal enum Pcre2RepeatPreference : byte
 {
     Greedy = 0,
     Lazy = 1,
+    Possessive = 2,
 }
 
 internal sealed class Pcre2BackreferenceSlotSet
@@ -308,10 +349,13 @@ internal sealed class Pcre2BacktrackingProgram
         int captureSlotCount,
         bool requiresCaptureState,
         bool hasCaptureWrites,
+        bool usesBacktrackingControlVerbs,
         Pcre2BacktrackingProgram[] assertionPrograms,
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
         int[] subroutineTargets,
+        bool[] subroutinePreservesUnsetCaptures,
+        string[] markNames,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
@@ -325,10 +369,13 @@ internal sealed class Pcre2BacktrackingProgram
         CaptureSlotCount = captureSlotCount;
         RequiresCaptureState = requiresCaptureState;
         HasCaptureWrites = hasCaptureWrites;
+        UsesBacktrackingControlVerbs = usesBacktrackingControlVerbs;
         AssertionPrograms = assertionPrograms;
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
         SubroutineTargets = subroutineTargets;
+        SubroutinePreservesUnsetCaptures = subroutinePreservesUnsetCaptures;
+        MarkNames = markNames;
         GroupNames = groupNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
@@ -349,6 +396,8 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal bool HasCaptureWrites { get; }
 
+    internal bool UsesBacktrackingControlVerbs { get; }
+
     internal Pcre2BacktrackingProgram[] AssertionPrograms { get; }
 
     internal Pcre2BackreferenceSlotSet[] BackreferenceSlotSets { get; }
@@ -356,6 +405,10 @@ internal sealed class Pcre2BacktrackingProgram
     internal Pcre2BacktrackingCondition[] Conditions { get; }
 
     internal int[] SubroutineTargets { get; }
+
+    internal bool[] SubroutinePreservesUnsetCaptures { get; }
+
+    internal string[] MarkNames { get; }
 
     internal string[] GroupNames { get; }
 
@@ -387,6 +440,12 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     SubroutineCall = 12,
     SubroutineReturn = 13,
     Conditional = 14,
+    AtomicStart = 15,
+    AtomicEnd = 16,
+    ControlAccept = 17,
+    ControlFail = 18,
+    ControlMark = 19,
+    ControlDeferred = 20,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -436,6 +495,10 @@ internal readonly struct Pcre2BacktrackingInstruction
     internal int SubroutineSlot => RepeatId;
 
     internal int ConditionId => RepeatId;
+
+    internal Pcre2ControlVerbKind ControlVerb => (Pcre2ControlVerbKind)Minimum;
+
+    internal int ControlNameId => RepeatId;
 
     internal int Maximum { get; }
 
@@ -496,6 +559,27 @@ internal readonly struct Pcre2BacktrackingInstruction
         int yesTarget,
         int noTarget) =>
         new(Pcre2BacktrackingInstructionKind.Conditional, default, yesTarget, noTarget, conditionId, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateAtomicStart() =>
+        new(Pcre2BacktrackingInstructionKind.AtomicStart, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateAtomicEnd() =>
+        new(Pcre2BacktrackingInstructionKind.AtomicEnd, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateControlAccept(int nameId) =>
+        new(Pcre2BacktrackingInstructionKind.ControlAccept, default, 0, 0, nameId, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateControlFail(int nameId) =>
+        new(Pcre2BacktrackingInstructionKind.ControlFail, default, 0, 0, nameId, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateControlMark(int nameId) =>
+        new(Pcre2BacktrackingInstructionKind.ControlMark, default, 0, 0, nameId, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateControlDeferred(
+        Pcre2ControlVerbKind verb,
+        int nameId,
+        int thenTarget) =>
+        new(Pcre2BacktrackingInstructionKind.ControlDeferred, default, thenTarget, 0, nameId, (int)verb, 0, Pcre2RepeatPreference.Greedy);
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -662,6 +746,17 @@ internal sealed class Pcre2BacktrackingParser
 
         if (_pattern[_offset] == '(')
         {
+            if (_pattern.AsSpan(_offset).StartsWith("(?>", StringComparison.Ordinal) ||
+                _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase))
+            {
+                return TryParseAtomicGroup(out node);
+            }
+
+            if (TryParseControlVerb(out node))
+            {
+                return true;
+            }
+
             if (TryParseConditional(out node))
             {
                 return true;
@@ -1187,10 +1282,105 @@ internal sealed class Pcre2BacktrackingParser
         }
         else if (_offset < _pattern.Length && _pattern[_offset] == '+')
         {
-            return false;
+            preference = Pcre2RepeatPreference.Possessive;
+            _offset++;
         }
 
         node = new Pcre2RepeatBacktrackingNode(body, minimum, maximum, preference);
+        return true;
+    }
+
+    private bool TryParseAtomicGroup(out IPcre2BacktrackingNode node)
+    {
+        _sawControlFlow = true;
+        var longForm = _pattern.AsSpan(_offset).StartsWith("(*atomic:", StringComparison.OrdinalIgnoreCase);
+        _offset += longForm ? 9 : 3;
+        var outerOptions = _options;
+        var outerUngreedy = _ungreedy;
+        var outerNoAutoCapture = _noAutoCapture;
+        if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+        {
+            _options = outerOptions;
+            _ungreedy = outerUngreedy;
+            _noAutoCapture = outerNoAutoCapture;
+            node = Pcre2EmptyBacktrackingNode.Instance;
+            return false;
+        }
+
+        _offset++;
+        _options = outerOptions;
+        _ungreedy = outerUngreedy;
+        _noAutoCapture = outerNoAutoCapture;
+        node = new Pcre2AtomicBacktrackingNode(body);
+        return true;
+    }
+
+    private bool TryParseControlVerb(out IPcre2BacktrackingNode node)
+    {
+        node = Pcre2EmptyBacktrackingNode.Instance;
+        if (!_pattern.AsSpan(_offset).StartsWith("(*", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var end = _pattern.IndexOf(')', _offset + 2);
+        if (end < 0)
+        {
+            return false;
+        }
+
+        var content = _pattern.AsSpan(_offset + 2, end - _offset - 2);
+        var colon = content.IndexOf(':');
+        var verbText = colon < 0 ? content : content[..colon];
+        var name = colon < 0 ? ReadOnlySpan<char>.Empty : content[(colon + 1)..];
+        Pcre2ControlVerbKind verbKind;
+        if (verbText.IsEmpty)
+        {
+            verbKind = Pcre2ControlVerbKind.Mark;
+        }
+        else if (verbText.Equals("ACCEPT", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Accept;
+        }
+        else if (verbText.Equals("FAIL", StringComparison.OrdinalIgnoreCase) ||
+            verbText.Equals("F", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Fail;
+        }
+        else if (verbText.Equals("MARK", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Mark;
+        }
+        else if (verbText.Equals("COMMIT", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Commit;
+        }
+        else if (verbText.Equals("PRUNE", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Prune;
+        }
+        else if (verbText.Equals("SKIP", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Skip;
+        }
+        else if (verbText.Equals("THEN", StringComparison.OrdinalIgnoreCase))
+        {
+            verbKind = Pcre2ControlVerbKind.Then;
+        }
+        else
+        {
+            return false;
+        }
+
+        if ((verbKind == Pcre2ControlVerbKind.Mark && name.IsEmpty) ||
+            name.Length > 255)
+        {
+            return false;
+        }
+
+        _sawControlFlow = true;
+        _offset = end + 1;
+        node = new Pcre2ControlVerbBacktrackingNode(verbKind, name.ToString());
         return true;
     }
 
@@ -1837,6 +2027,8 @@ internal sealed class Pcre2BacktrackingLowerer
     private readonly List<Pcre2BacktrackingProgram> _assertionPrograms = [];
     private readonly List<Pcre2BackreferenceSlotSet> _backreferenceSlotSets = [];
     private readonly List<Pcre2BacktrackingCondition> _conditions = [];
+    private readonly List<string> _markNames = [];
+    private readonly Dictionary<string, int> _markNameIds = new(StringComparer.Ordinal);
     private readonly int _captureCount;
     private readonly Pcre2NameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> _captureDefinitions;
@@ -1846,7 +2038,9 @@ internal sealed class Pcre2BacktrackingLowerer
     private int _repeatCount;
     private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
+    private bool _usesBacktrackingControlVerbs;
     private bool _hasSubroutineCalls;
+    private List<int>? _thenPatches;
 
     internal Pcre2BacktrackingLowerer(
         int captureCount,
@@ -1873,16 +2067,20 @@ internal sealed class Pcre2BacktrackingLowerer
         EmitNode(root);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
         var subroutineTargets = Array.Empty<int>();
+        var subroutinePreservesUnsetCaptures = Array.Empty<bool>();
         if (_hasSubroutineCalls)
         {
             subroutineTargets = new int[_captureCount + 1];
+            subroutinePreservesUnsetCaptures = new bool[_captureCount + 1];
             subroutineTargets.AsSpan().Fill(-1);
             subroutineTargets[0] = _instructions.Count;
+            subroutinePreservesUnsetCaptures[0] = !ContainsDeferredControlVerb(root);
             EmitNode(root);
             _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             foreach (var definition in _captureDefinitions.OrderBy(static pair => pair.Key))
             {
                 subroutineTargets[definition.Key] = _instructions.Count;
+                subroutinePreservesUnsetCaptures[definition.Key] = !ContainsDeferredControlVerb(definition.Value);
                 EmitNode(definition.Value);
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             }
@@ -1895,10 +2093,13 @@ internal sealed class Pcre2BacktrackingLowerer
             _captureCount + 1,
             _requiresCaptureState,
             _hasCaptureWrites,
+            _usesBacktrackingControlVerbs,
             [.. _assertionPrograms],
             [.. _backreferenceSlotSets],
             [.. _conditions],
             subroutineTargets,
+            subroutinePreservesUnsetCaptures,
+            [.. _markNames],
             _groupNames,
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
@@ -1926,7 +2127,20 @@ internal sealed class Pcre2BacktrackingLowerer
                 EmitAlternation(alternation);
                 return;
             case Pcre2RepeatBacktrackingNode repeat:
-                EmitRepeat(repeat);
+                if (repeat.Preference == Pcre2RepeatPreference.Possessive)
+                {
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
+                    EmitRepeat(new Pcre2RepeatBacktrackingNode(
+                        repeat.Body,
+                        repeat.Minimum,
+                        repeat.Maximum,
+                        Pcre2RepeatPreference.Greedy));
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicEnd());
+                }
+                else
+                {
+                    EmitRepeat(repeat);
+                }
                 return;
             case Pcre2CaptureBacktrackingNode capture:
                 _hasCaptureWrites = true;
@@ -1950,6 +2164,11 @@ internal sealed class Pcre2BacktrackingLowerer
                 _assertionPrograms.Add(assertionProgram);
                 _requiresCaptureState |= assertionProgram.RequiresCaptureState;
                 _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
+                _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
+                foreach (var markName in assertionProgram.MarkNames)
+                {
+                    _ = GetMarkNameId(markName);
+                }
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateAssertion(
                     assertionProgramId,
                     assertion.AssertionKind));
@@ -1962,6 +2181,14 @@ internal sealed class Pcre2BacktrackingLowerer
             case Pcre2ConditionalBacktrackingNode conditional:
                 EmitConditional(conditional);
                 return;
+            case Pcre2AtomicBacktrackingNode atomic:
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
+                EmitNode(atomic.Body);
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicEnd());
+                return;
+            case Pcre2ControlVerbBacktrackingNode controlVerb:
+                EmitControlVerb(controlVerb);
+                return;
             default:
                 throw new InvalidOperationException("The PCRE2 backtracking syntax node is not lowerable.");
         }
@@ -1969,9 +2196,12 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitAlternation(Pcre2AlternationBacktrackingNode alternation)
     {
+        var parentThenPatches = _thenPatches;
         var exitJumps = new List<int>(alternation.Alternatives.Length - 1);
         for (var i = 0; i < alternation.Alternatives.Length - 1; i++)
         {
+            var branchThenPatches = new List<int>();
+            _thenPatches = branchThenPatches;
             var splitIndex = _instructions.Count;
             _instructions.Add(default);
             var primaryTarget = _instructions.Count;
@@ -1981,14 +2211,75 @@ internal sealed class Pcre2BacktrackingLowerer
             exitJumps.Add(jumpIndex);
             var secondaryTarget = _instructions.Count;
             _instructions[splitIndex] = Pcre2BacktrackingInstruction.CreateSplit(primaryTarget, secondaryTarget);
+            foreach (var thenPatch in branchThenPatches)
+            {
+                var instruction = _instructions[thenPatch];
+                _instructions[thenPatch] = Pcre2BacktrackingInstruction.CreateControlDeferred(
+                    Pcre2ControlVerbKind.Then,
+                    instruction.ControlNameId,
+                    secondaryTarget);
+            }
         }
 
+        _thenPatches = parentThenPatches;
         EmitNode(alternation.Alternatives[^1]);
         var exitTarget = _instructions.Count;
         foreach (var jumpIndex in exitJumps)
         {
             _instructions[jumpIndex] = Pcre2BacktrackingInstruction.CreateJump(exitTarget);
         }
+
+        _thenPatches = parentThenPatches;
+    }
+
+    private void EmitControlVerb(Pcre2ControlVerbBacktrackingNode controlVerb)
+    {
+        _usesBacktrackingControlVerbs = true;
+        var nameId = GetMarkNameId(controlVerb.Name);
+        switch (controlVerb.VerbKind)
+        {
+            case Pcre2ControlVerbKind.Accept:
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateControlAccept(nameId));
+                return;
+            case Pcre2ControlVerbKind.Fail:
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateControlFail(nameId));
+                return;
+            case Pcre2ControlVerbKind.Mark:
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateControlMark(nameId));
+                return;
+            case Pcre2ControlVerbKind.Then:
+                var instructionIndex = _instructions.Count;
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateControlDeferred(
+                    controlVerb.VerbKind,
+                    nameId,
+                    -1));
+                _thenPatches?.Add(instructionIndex);
+                return;
+            default:
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateControlDeferred(
+                    controlVerb.VerbKind,
+                    nameId,
+                    -1));
+                return;
+        }
+    }
+
+    private int GetMarkNameId(string name)
+    {
+        if (name.Length == 0)
+        {
+            return -1;
+        }
+
+        if (_markNameIds.TryGetValue(name, out var id))
+        {
+            return id;
+        }
+
+        id = _markNames.Count;
+        _markNames.Add(name);
+        _markNameIds.Add(name, id);
+        return id;
     }
 
     private void EmitRepeat(Pcre2RepeatBacktrackingNode repeat)
@@ -2047,6 +2338,11 @@ internal sealed class Pcre2BacktrackingLowerer
             _assertionPrograms.Add(assertionProgram);
             _requiresCaptureState |= assertionProgram.RequiresCaptureState;
             _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
+            _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
+            foreach (var markName in assertionProgram.MarkNames)
+            {
+                _ = GetMarkNameId(markName);
+            }
             return new Pcre2BacktrackingCondition(
                 conditional.ConditionKind,
                 [],
@@ -2169,6 +2465,26 @@ internal sealed class Pcre2BacktrackingLowerer
 
         return slot;
     }
+
+    private static bool ContainsDeferredControlVerb(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2ControlVerbBacktrackingNode control => control.VerbKind is
+            Pcre2ControlVerbKind.Commit or
+            Pcre2ControlVerbKind.Prune or
+            Pcre2ControlVerbKind.Skip or
+            Pcre2ControlVerbKind.Then,
+        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsDeferredControlVerb),
+        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsDeferredControlVerb),
+        Pcre2RepeatBacktrackingNode repeat => ContainsDeferredControlVerb(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => ContainsDeferredControlVerb(capture.Body),
+        Pcre2AssertionBacktrackingNode assertion => ContainsDeferredControlVerb(assertion.Body),
+        Pcre2ConditionalBacktrackingNode conditional =>
+            conditional.Assertion is not null && ContainsDeferredControlVerb(conditional.Assertion.Body) ||
+            ContainsDeferredControlVerb(conditional.YesBranch) ||
+            ContainsDeferredControlVerb(conditional.NoBranch),
+        Pcre2AtomicBacktrackingNode atomic => ContainsDeferredControlVerb(atomic.Body),
+        _ => false,
+    };
 }
 
 internal static class Pcre2BacktrackingAnalysis
@@ -2189,6 +2505,8 @@ internal static class Pcre2BacktrackingAnalysis
             Pcre2ConditionalBacktrackingNode conditional => Math.Min(
                 GetMinimumByteLength(conditional.YesBranch),
                 GetMinimumByteLength(conditional.NoBranch)),
+            Pcre2AtomicBacktrackingNode atomic => GetMinimumByteLength(atomic.Body),
+            Pcre2ControlVerbBacktrackingNode => 0,
             _ => 0,
         };
     }
@@ -2209,6 +2527,8 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2ConditionalBacktrackingNode conditional => Math.Min(
             GetMinimumScalarLength(conditional.YesBranch),
             GetMinimumScalarLength(conditional.NoBranch)),
+        Pcre2AtomicBacktrackingNode atomic => GetMinimumScalarLength(atomic.Body),
+        Pcre2ControlVerbBacktrackingNode => 0,
         _ => 0,
     };
 
@@ -2230,6 +2550,8 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2ConditionalBacktrackingNode conditional => Math.Max(
             GetMaximumScalarLength(conditional.YesBranch),
             GetMaximumScalarLength(conditional.NoBranch)),
+        Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
+        Pcre2ControlVerbBacktrackingNode => 0,
         _ => int.MaxValue,
     };
 
@@ -2313,6 +2635,8 @@ internal static class Pcre2BacktrackingAnalysis
                     return true;
                 }
                 break;
+            case Pcre2AtomicBacktrackingNode atomic:
+                return TryGetLeadingAsciiByte(atomic.Body, out leading);
         }
 
         leading = 0;
@@ -2339,6 +2663,8 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2SubroutineCallBacktrackingNode => true,
         Pcre2ConditionalBacktrackingNode conditional =>
             CanConsume(conditional.YesBranch) || CanConsume(conditional.NoBranch),
+        Pcre2AtomicBacktrackingNode atomic => CanConsume(atomic.Body),
+        Pcre2ControlVerbBacktrackingNode => false,
         _ => true,
     };
 
@@ -2355,6 +2681,7 @@ internal enum Pcre2BacktrackingResumeAction : byte
 {
     None = 0,
     EnterRepeat = 1,
+    ControlVerb = 2,
 }
 
 internal readonly record struct Pcre2BacktrackingFrame(
@@ -2363,10 +2690,17 @@ internal readonly record struct Pcre2BacktrackingFrame(
     int RepeatCheckpoint,
     int CaptureCheckpoint,
     int CallCheckpoint,
+    int AtomicCheckpoint,
+    int MarkMutationCheckpoint,
+    int MarkTrailCheckpoint,
     Pcre2BacktrackingResumeAction ResumeAction,
     int RepeatId,
     int RepeatCount,
-    int RepeatPosition);
+    int RepeatPosition,
+    Pcre2ControlVerbKind ControlVerb,
+    int ControlTarget,
+    int ControlPosition,
+    int ControlNameId);
 
 internal readonly record struct Pcre2RepeatMutation(
     int RepeatId,
@@ -2385,7 +2719,11 @@ internal readonly record struct Pcre2SubroutineCallFrame(
     int ReturnInstruction,
     int SubroutineSlot,
     int RepeatCheckpoint,
-    int CaptureCheckpoint);
+    int CaptureCheckpoint,
+    int BacktrackingCheckpoint,
+    int AtomicCheckpoint,
+    int MarkTrailCheckpoint,
+    bool PreserveUnsetCaptures);
 
 internal readonly record struct Pcre2SubroutineCaptureSnapshot(
     int Start,
@@ -2406,6 +2744,22 @@ internal readonly record struct Pcre2SubroutineCallMutation(
     Pcre2SubroutineCallMutationKind Kind,
     Pcre2SubroutineCallFrame Frame);
 
+internal readonly record struct Pcre2AtomicCheckpoint(int BacktrackingCheckpoint, int MarkTrailCheckpoint);
+
+internal readonly record struct Pcre2MarkMutation(int PreviousMarkId, int PreviousPosition);
+
+internal readonly record struct Pcre2MarkTrailEntry(int MarkId, int Position);
+
+internal enum Pcre2BacktrackingFailureKind : byte
+{
+    None = 0,
+    Commit = 1,
+    Prune = 2,
+    Skip = 3,
+}
+
+internal readonly record struct Pcre2BacktrackingFailure(Pcre2BacktrackingFailureKind Kind, int SkipPosition);
+
 internal readonly record struct Pcre2CaptureByteRange(bool Success, int StartOffsetInBytes, int EndOffsetInBytes);
 
 internal enum Pcre2CaptureMaterialization : byte
@@ -2419,10 +2773,11 @@ internal readonly record struct Pcre2BacktrackingMatch(
     int StartOffsetInBytes,
     int EndOffsetInBytes,
     int ConsumedEndOffsetInBytes,
-    Pcre2CaptureByteRange[] Captures)
+    Pcre2CaptureByteRange[] Captures,
+    string? Mark)
 {
     internal static Pcre2BacktrackingMatch NoMatch =>
-        new(false, 0, 0, 0, []);
+        new(false, 0, 0, 0, [], null);
 
     internal Pcre2CharacterMatch ToCharacterMatch() => Success
         ? new Pcre2CharacterMatch(true, StartOffsetInBytes, EndOffsetInBytes, ConsumedEndOffsetInBytes)
@@ -2471,6 +2826,7 @@ internal static class Pcre2BacktrackingRunner
         var anchored = (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
         var candidate = start.Value;
+        string? lastMark = null;
         var maximumCandidate = program.MinimumByteLength > bytes.Length
             ? -1
             : bytes.Length - program.MinimumByteLength;
@@ -2489,9 +2845,23 @@ internal static class Pcre2BacktrackingRunner
                     0,
                     false,
                     ref budget,
-                    out var match))
+                    out var match,
+                    out var failure))
             {
                 return match;
+            }
+
+            lastMark = match.Mark ?? lastMark;
+
+            if (failure.Kind == Pcre2BacktrackingFailureKind.Commit)
+            {
+                break;
+            }
+
+            if (failure.Kind == Pcre2BacktrackingFailureKind.Skip && failure.SkipPosition > candidate)
+            {
+                candidate = failure.SkipPosition;
+                continue;
             }
 
             if (anchored || !Pcre2CharacterRunner.TryAdvanceCandidate(
@@ -2506,7 +2876,7 @@ internal static class Pcre2BacktrackingRunner
             }
         }
 
-        return Pcre2BacktrackingMatch.NoMatch;
+        return new Pcre2BacktrackingMatch(false, 0, 0, 0, [], lastMark);
     }
 
     private static bool TryMatchAt(
@@ -2521,7 +2891,8 @@ internal static class Pcre2BacktrackingRunner
         int depthBase,
         bool isAssertion,
         ref Pcre2ResourceBudget budget,
-        out Pcre2BacktrackingMatch match)
+        out Pcre2BacktrackingMatch match,
+        out Pcre2BacktrackingFailure failure)
     {
         var configuredFrameLimit = budget.Limits.DepthLimit == 0
             ? int.MaxValue
@@ -2534,6 +2905,9 @@ internal static class Pcre2BacktrackingRunner
         var captureMutations = new Utf8PooledStateStack<Pcre2CaptureMutation>(int.MaxValue);
         var subroutineCalls = new Utf8PooledStateStack<Pcre2SubroutineCallFrame>(frameLimit);
         var subroutineCallMutations = new Utf8PooledStateStack<Pcre2SubroutineCallMutation>(int.MaxValue);
+        var atomicCheckpoints = new Utf8PooledStateStack<Pcre2AtomicCheckpoint>(frameLimit);
+        var markMutations = new Utf8PooledStateStack<Pcre2MarkMutation>(int.MaxValue);
+        var markTrail = new Utf8PooledStateStack<Pcre2MarkTrailEntry>(int.MaxValue);
         var rentedCounts = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
         var rentedPositions = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
         var needsCaptureState = program.RequiresCaptureState ||
@@ -2639,6 +3013,9 @@ internal static class Pcre2BacktrackingRunner
             var instructionIndex = 0;
             var inputIndex = candidate;
             var subroutineRestoreGeneration = 0;
+            var currentMarkId = -1;
+            var currentMarkPosition = -1;
+            var lastEncounteredMarkId = -1;
             while (true)
             {
                 budget.ChargeBacktracking();
@@ -2669,13 +3046,23 @@ internal static class Pcre2BacktrackingRunner
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 subroutineCallMutations.Count,
+                                atomicCheckpoints.Count,
+                                markMutations.Count,
+                                markTrail.Count,
                                 Pcre2BacktrackingResumeAction.None,
                                 0,
                                 0,
-                                0),
+                                0,
+                                default,
+                                -1,
+                                0,
+                                -1),
                             repeatMutations.Count,
                             captureMutations.Count,
                             subroutineCallMutations.Count,
+                            atomicCheckpoints.Count,
+                            markMutations.Count,
+                            markTrail.Count,
                             program.RepeatCount,
                             captureStarts.Length,
                             depthBase,
@@ -2712,13 +3099,23 @@ internal static class Pcre2BacktrackingRunner
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
+                                            atomicCheckpoints.Count,
+                                            markMutations.Count,
+                                            markTrail.Count,
                                             Pcre2BacktrackingResumeAction.None,
                                             0,
                                             0,
-                                            0),
+                                            0,
+                                            default,
+                                            -1,
+                                            0,
+                                            -1),
                                         repeatMutations.Count,
                                         captureMutations.Count,
                                         subroutineCallMutations.Count,
+                                        atomicCheckpoints.Count,
+                                        markMutations.Count,
+                                        markTrail.Count,
                                         program.RepeatCount,
                                         captureStarts.Length,
                                         depthBase,
@@ -2735,13 +3132,23 @@ internal static class Pcre2BacktrackingRunner
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
+                                            atomicCheckpoints.Count,
+                                            markMutations.Count,
+                                            markTrail.Count,
                                             Pcre2BacktrackingResumeAction.EnterRepeat,
                                             repeatId,
                                             count + 1,
-                                            inputIndex),
+                                            inputIndex,
+                                            default,
+                                            -1,
+                                            0,
+                                            -1),
                                         repeatMutations.Count,
                                         captureMutations.Count,
                                         subroutineCallMutations.Count,
+                                        atomicCheckpoints.Count,
+                                        markMutations.Count,
+                                        markTrail.Count,
                                         program.RepeatCount,
                                         captureStarts.Length,
                                         depthBase,
@@ -2886,7 +3293,8 @@ internal static class Pcre2BacktrackingRunner
                                 captureEnds,
                                 depthBase + frames.Count + subroutineCalls.Count + 1,
                                 ref budget,
-                                out var assertionCaptures))
+                                out var assertionCaptures,
+                                out var assertionMark))
                         {
                             MergeAssertionCaptures(
                                 assertionCaptures,
@@ -2897,6 +3305,16 @@ internal static class Pcre2BacktrackingRunner
                                 captureOwners,
                                 captureOpenOwners,
                                 ref captureMutations,
+                                ref budget);
+                            MergeAssertionMark(
+                                program,
+                                assertionMark,
+                                inputIndex,
+                                ref currentMarkId,
+                                ref currentMarkPosition,
+                                ref lastEncounteredMarkId,
+                                ref markMutations,
+                                ref markTrail,
                                 ref budget);
 
                             instructionIndex++;
@@ -2919,7 +3337,11 @@ internal static class Pcre2BacktrackingRunner
                                 instructionIndex + 1,
                                 subroutineSlot,
                                 repeatMutations.Count,
-                                captureMutations.Count),
+                                captureMutations.Count,
+                                frames.Count,
+                                atomicCheckpoints.Count,
+                                markTrail.Count,
+                                program.SubroutinePreservesUnsetCaptures[subroutineSlot]),
                             ref subroutineCalls,
                             ref subroutineCallMutations,
                             depthBase + frames.Count,
@@ -3001,7 +3423,18 @@ internal static class Pcre2BacktrackingRunner
                                 captureEnds,
                                 depthBase + frames.Count + subroutineCalls.Count + 1,
                                 ref budget,
-                                out conditionalCaptures);
+                                out conditionalCaptures,
+                                out var conditionalMark);
+                            MergeAssertionMark(
+                                program,
+                                conditionalMark,
+                                inputIndex,
+                                ref currentMarkId,
+                                ref currentMarkPosition,
+                                ref lastEncounteredMarkId,
+                                ref markMutations,
+                                ref markTrail,
+                                ref budget);
                         }
 
                         MergeAssertionCaptures(
@@ -3020,6 +3453,182 @@ internal static class Pcre2BacktrackingRunner
                             : instruction.SecondaryTarget;
                         continue;
 
+                    case Pcre2BacktrackingInstructionKind.AtomicStart:
+                        var nextAtomicDepth = checked(depthBase + subroutineCalls.Count + atomicCheckpoints.Count + 1);
+                        budget.ChargeFrame(
+                            (uint)nextAtomicDepth,
+                            checked((ulong)nextAtomicDepth * 32UL + (ulong)(atomicCheckpoints.Count + 1) * 8UL));
+                        if (!atomicCheckpoints.TryPush(new Pcre2AtomicCheckpoint(frames.Count, markTrail.Count)))
+                        {
+                            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+                        }
+                        instructionIndex++;
+                        continue;
+
+                    case Pcre2BacktrackingInstructionKind.AtomicEnd:
+                        if (atomicCheckpoints.Count == 0)
+                        {
+                            break;
+                        }
+
+                        var atomic = atomicCheckpoints.Pop();
+                        frames.Truncate(atomic.BacktrackingCheckpoint);
+                        markTrail.Truncate(atomic.MarkTrailCheckpoint);
+                        instructionIndex++;
+                        continue;
+
+                    case Pcre2BacktrackingInstructionKind.ControlMark:
+                        SetMark(
+                            instruction.ControlNameId,
+                            inputIndex,
+                            true,
+                            ref currentMarkId,
+                            ref currentMarkPosition,
+                            ref lastEncounteredMarkId,
+                            ref markMutations,
+                            ref markTrail,
+                            ref budget);
+                        instructionIndex++;
+                        continue;
+
+                    case Pcre2BacktrackingInstructionKind.ControlAccept:
+                        SetMark(
+                            instruction.ControlNameId,
+                            inputIndex,
+                            false,
+                            ref currentMarkId,
+                            ref currentMarkPosition,
+                            ref lastEncounteredMarkId,
+                            ref markMutations,
+                            ref markTrail,
+                            ref budget);
+                        CloseOpenCaptures(
+                            inputIndex,
+                            subroutineCalls.Count,
+                            captureStarts,
+                            captureEnds,
+                            captureOpenStarts,
+                            captureOwners,
+                            captureOpenOwners,
+                            ref captureMutations,
+                            ref budget);
+                        if (subroutineCalls.Count != 0)
+                        {
+                            var acceptedCall = subroutineCalls[subroutineCalls.Count - 1];
+                            frames.Truncate(acceptedCall.BacktrackingCheckpoint);
+                            atomicCheckpoints.Truncate(acceptedCall.AtomicCheckpoint);
+                            markTrail.Truncate(acceptedCall.MarkTrailCheckpoint);
+                            RestoreSubroutineState(
+                                acceptedCall,
+                                subroutineCalls.Count,
+                                counts,
+                                positions,
+                                captureStarts,
+                                captureEnds,
+                                captureOpenStarts,
+                                captureOwners,
+                                captureOpenOwners,
+                                repeatRestoreGenerations,
+                                repeatRestoreIds,
+                                repeatRestoreSnapshots,
+                                captureRestoreGenerations,
+                                captureRestoreSlots,
+                                captureRestoreSnapshots,
+                                ref subroutineRestoreGeneration,
+                                ref repeatMutations,
+                                ref captureMutations,
+                                ref budget);
+                            var completedAcceptedCall = subroutineCalls.Pop();
+                            RecordSubroutineCallMutation(
+                                Pcre2SubroutineCallMutationKind.Popped,
+                                completedAcceptedCall,
+                                ref subroutineCallMutations,
+                                ref budget);
+                            instructionIndex = completedAcceptedCall.ReturnInstruction;
+                            continue;
+                        }
+
+                        var acceptEmptyDisallowed =
+                            (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == candidate ||
+                            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 &&
+                            candidate == firstMatchingPosition && inputIndex == candidate;
+                        if (!acceptEmptyDisallowed)
+                        {
+                            var acceptedCaptures = captureMaterialization == Pcre2CaptureMaterialization.FinalSlots
+                                ? MaterializeCaptures(program.CaptureSlotCount, candidate, inputIndex, captureStarts, captureEnds)
+                                : [];
+                            failure = default;
+                            match = new Pcre2BacktrackingMatch(
+                                true,
+                                candidate,
+                                inputIndex,
+                                inputIndex,
+                                acceptedCaptures,
+                                GetMark(program, currentMarkId));
+                            return true;
+                        }
+                        break;
+
+                    case Pcre2BacktrackingInstructionKind.ControlFail:
+                        SetMark(
+                            instruction.ControlNameId,
+                            inputIndex,
+                            false,
+                            ref currentMarkId,
+                            ref currentMarkPosition,
+                            ref lastEncounteredMarkId,
+                            ref markMutations,
+                            ref markTrail,
+                            ref budget);
+                        break;
+
+                    case Pcre2BacktrackingInstructionKind.ControlDeferred:
+                        if (instruction.ControlVerb != Pcre2ControlVerbKind.Skip)
+                        {
+                            SetMark(
+                                instruction.ControlNameId,
+                                inputIndex,
+                                false,
+                                ref currentMarkId,
+                                ref currentMarkPosition,
+                                ref lastEncounteredMarkId,
+                                ref markMutations,
+                                ref markTrail,
+                                ref budget);
+                        }
+                        PushFrame(
+                            ref frames,
+                            new Pcre2BacktrackingFrame(
+                                instructionIndex,
+                                inputIndex,
+                                repeatMutations.Count,
+                                captureMutations.Count,
+                                subroutineCallMutations.Count,
+                                atomicCheckpoints.Count,
+                                markMutations.Count,
+                                markTrail.Count,
+                                Pcre2BacktrackingResumeAction.ControlVerb,
+                                0,
+                                0,
+                                0,
+                                instruction.ControlVerb,
+                                instruction.PrimaryTarget,
+                                inputIndex,
+                                instruction.ControlNameId),
+                            repeatMutations.Count,
+                            captureMutations.Count,
+                            subroutineCallMutations.Count,
+                            atomicCheckpoints.Count,
+                            markMutations.Count,
+                            markTrail.Count,
+                            program.RepeatCount,
+                            captureStarts.Length,
+                            depthBase,
+                            subroutineCalls.Count,
+                            ref budget);
+                        instructionIndex++;
+                        continue;
+
                     case Pcre2BacktrackingInstructionKind.Accept:
                         var endAnchored = !isAssertion && (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0 ||
                             (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
@@ -3035,7 +3644,9 @@ internal static class Pcre2BacktrackingRunner
                                 candidate,
                                 inputIndex,
                                 inputIndex,
-                                captures);
+                                captures,
+                                GetMark(program, currentMarkId));
+                            failure = default;
                             return true;
                         }
                         break;
@@ -3050,6 +3661,9 @@ internal static class Pcre2BacktrackingRunner
                         ref captureMutations,
                         ref subroutineCalls,
                         ref subroutineCallMutations,
+                        ref atomicCheckpoints,
+                        ref markMutations,
+                        ref markTrail,
                         counts,
                         positions,
                         captureStarts,
@@ -3057,17 +3671,29 @@ internal static class Pcre2BacktrackingRunner
                         captureOpenStarts,
                         captureOwners,
                         captureOpenOwners,
+                        ref currentMarkId,
+                        ref currentMarkPosition,
                         ref budget,
                         out instructionIndex,
-                        out inputIndex))
+                        out inputIndex,
+                        out failure))
                 {
-                    match = Pcre2BacktrackingMatch.NoMatch;
+                    match = new Pcre2BacktrackingMatch(
+                        false,
+                        0,
+                        0,
+                        0,
+                        [],
+                        GetMark(program, lastEncounteredMarkId));
                     return false;
                 }
             }
         }
         finally
         {
+            markTrail.Dispose();
+            markMutations.Dispose();
+            atomicCheckpoints.Dispose();
             subroutineCallMutations.Dispose();
             subroutineCalls.Dispose();
             captureMutations.Dispose();
@@ -3138,7 +3764,8 @@ internal static class Pcre2BacktrackingRunner
         ReadOnlySpan<int> captureEnds,
         int depth,
         ref Pcre2ResourceBudget budget,
-        out Pcre2CaptureByteRange[] captures)
+        out Pcre2CaptureByteRange[] captures,
+        out string? mark)
     {
         budget.ChargeFrame((uint)depth, checked((ulong)depth * 32UL + (ulong)captureStarts.Length * 12UL));
         var isNegative = assertionKind is Pcre2AssertionKind.NegativeLookahead or Pcre2AssertionKind.NegativeLookbehind;
@@ -3164,8 +3791,10 @@ internal static class Pcre2BacktrackingRunner
                 depth,
                 true,
                 ref budget,
-                out var assertionMatch);
+                out var assertionMatch,
+                out _);
             captures = matched ? assertionMatch.Captures : [];
+            mark = matched ? assertionMatch.Mark : null;
             return isNegative ? !matched : matched;
         }
 
@@ -3184,6 +3813,7 @@ internal static class Pcre2BacktrackingRunner
             if (!TryRetreatScalar(input, latest, out latest))
             {
                 captures = [];
+                mark = null;
                 return isNegative;
             }
         }
@@ -3204,9 +3834,11 @@ internal static class Pcre2BacktrackingRunner
                     depth,
                     true,
                     ref budget,
-                    out var assertionMatch))
+                    out var assertionMatch,
+                    out _))
             {
                 captures = assertionMatch.Captures;
+                mark = assertionMatch.Mark;
                 return !isNegative;
             }
 
@@ -3220,6 +3852,7 @@ internal static class Pcre2BacktrackingRunner
         }
 
         captures = [];
+        mark = null;
         return isNegative;
     }
 
@@ -3292,6 +3925,70 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
+    private static void MergeAssertionMark(
+        Pcre2BacktrackingProgram program,
+        string? assertionMark,
+        int inputIndex,
+        ref int currentMarkId,
+        ref int currentMarkPosition,
+        ref int lastEncounteredMarkId,
+        ref Utf8PooledStateStack<Pcre2MarkMutation> markMutations,
+        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> markTrail,
+        ref Pcre2ResourceBudget budget)
+    {
+        if (assertionMark is null)
+        {
+            return;
+        }
+
+        var markId = Array.IndexOf(program.MarkNames, assertionMark);
+        SetMark(
+            markId,
+            inputIndex,
+            false,
+            ref currentMarkId,
+            ref currentMarkPosition,
+            ref lastEncounteredMarkId,
+            ref markMutations,
+            ref markTrail,
+            ref budget);
+    }
+
+    private static void CloseOpenCaptures(
+        int inputIndex,
+        int callDepth,
+        Span<int> captureStarts,
+        Span<int> captureEnds,
+        Span<int> captureOpenStarts,
+        Span<int> captureOwners,
+        Span<int> captureOpenOwners,
+        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2ResourceBudget budget)
+    {
+        for (var slot = 1; slot < captureOpenStarts.Length; slot++)
+        {
+            if (captureOpenStarts[slot] < 0 || captureOpenOwners[slot] != callDepth)
+            {
+                continue;
+            }
+
+            SetCapture(
+                slot,
+                captureOpenStarts[slot],
+                inputIndex,
+                -1,
+                callDepth,
+                -1,
+                captureStarts,
+                captureEnds,
+                captureOpenStarts,
+                captureOwners,
+                captureOpenOwners,
+                ref captureMutations,
+                ref budget);
+        }
+    }
+
     private static bool TryRetreatScalar(ReadOnlySpan<byte> input, int position, out int previous)
     {
         if (position == 0 ||
@@ -3311,6 +4008,9 @@ internal static class Pcre2BacktrackingRunner
         int repeatMutationCount,
         int captureMutationCount,
         int callMutationCount,
+        int atomicCount,
+        int markMutationCount,
+        int markTrailCount,
         int repeatCount,
         int captureSlotCount,
         int depthBase,
@@ -3321,10 +4021,13 @@ internal static class Pcre2BacktrackingRunner
         var estimatedHeapBytes = checked(
             (ulong)nextDepth * 32UL +
             (ulong)repeatMutationCount * 12UL +
-            (ulong)captureMutationCount * 16UL +
-            (ulong)callMutationCount * 12UL +
+            (ulong)captureMutationCount * 24UL +
+            (ulong)callMutationCount * 24UL +
+            (ulong)atomicCount * 8UL +
+            (ulong)markMutationCount * 8UL +
+            (ulong)markTrailCount * 8UL +
             (ulong)repeatCount * 8UL +
-            (ulong)captureSlotCount * 12UL);
+            (ulong)captureSlotCount * 20UL);
         budget.ChargeFrame((uint)nextDepth, estimatedHeapBytes);
         if (!frames.TryPush(frame))
         {
@@ -3338,6 +4041,9 @@ internal static class Pcre2BacktrackingRunner
         ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
         ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
         ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> subroutineCallMutations,
+        ref Utf8PooledStateStack<Pcre2AtomicCheckpoint> atomicCheckpoints,
+        ref Utf8PooledStateStack<Pcre2MarkMutation> markMutations,
+        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> markTrail,
         Span<int> counts,
         Span<int> positions,
         Span<int> captureStarts,
@@ -3345,46 +4051,121 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureOpenStarts,
         Span<int> captureOwners,
         Span<int> captureOpenOwners,
+        ref int currentMarkId,
+        ref int currentMarkPosition,
         ref Pcre2ResourceBudget budget,
         out int instructionIndex,
-        out int inputIndex)
+        out int inputIndex,
+        out Pcre2BacktrackingFailure failure)
     {
-        if (frames.Count == 0)
+        while (frames.Count != 0)
         {
+            var frame = frames.Pop();
+            RollbackRepeats(frame.RepeatCheckpoint, ref repeatMutations, counts, positions);
+            RollbackCaptures(
+                frame.CaptureCheckpoint,
+                ref captureMutations,
+                captureStarts,
+                captureEnds,
+                captureOpenStarts,
+                captureOwners,
+                captureOpenOwners);
+            RollbackSubroutineCalls(
+                frame.CallCheckpoint,
+                ref subroutineCalls,
+                ref subroutineCallMutations);
+            atomicCheckpoints.Truncate(frame.AtomicCheckpoint);
+            RollbackMarks(
+                frame.MarkMutationCheckpoint,
+                frame.MarkTrailCheckpoint,
+                ref markMutations,
+                ref markTrail,
+                ref currentMarkId,
+                ref currentMarkPosition);
+            if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
+            {
+                SetRepeat(
+                    frame.RepeatId,
+                    frame.RepeatCount,
+                    frame.RepeatPosition,
+                    counts,
+                    positions,
+                    ref repeatMutations,
+                    ref budget);
+            }
+
+            if (frame.ResumeAction != Pcre2BacktrackingResumeAction.ControlVerb)
+            {
+                instructionIndex = frame.Instruction;
+                inputIndex = frame.InputOffsetInBytes;
+                failure = default;
+                return true;
+            }
+
+            if (subroutineCalls.Count != 0)
+            {
+                var call = subroutineCalls[subroutineCalls.Count - 1];
+                frames.Truncate(Math.Min(frames.Count, call.BacktrackingCheckpoint));
+                continue;
+            }
+
+            if (frame.ControlVerb == Pcre2ControlVerbKind.Then && frame.ControlTarget >= 0)
+            {
+                var targetFrame = -1;
+                for (var index = frames.Count - 1; index >= 0; index--)
+                {
+                    if (frames[index].Instruction == frame.ControlTarget &&
+                        frames[index].ResumeAction == Pcre2BacktrackingResumeAction.None)
+                    {
+                        targetFrame = index;
+                        break;
+                    }
+                }
+
+                if (targetFrame >= 0)
+                {
+                    frames.Truncate(targetFrame + 1);
+                    continue;
+                }
+            }
+
+            if (frame.ControlVerb == Pcre2ControlVerbKind.Skip && frame.ControlNameId >= 0)
+            {
+                var namedSkipPosition = FindMarkPosition(frame.ControlNameId, markTrail);
+                if (namedSkipPosition < 0)
+                {
+                    continue;
+                }
+
+                instructionIndex = 0;
+                inputIndex = 0;
+                failure = new Pcre2BacktrackingFailure(
+                    Pcre2BacktrackingFailureKind.Skip,
+                    namedSkipPosition);
+                return false;
+            }
+
             instructionIndex = 0;
             inputIndex = 0;
+            failure = frame.ControlVerb switch
+            {
+                Pcre2ControlVerbKind.Commit => new Pcre2BacktrackingFailure(
+                    Pcre2BacktrackingFailureKind.Commit,
+                    0),
+                Pcre2ControlVerbKind.Skip => new Pcre2BacktrackingFailure(
+                    Pcre2BacktrackingFailureKind.Skip,
+                    frame.ControlPosition),
+                _ => new Pcre2BacktrackingFailure(
+                    Pcre2BacktrackingFailureKind.Prune,
+                    0),
+            };
             return false;
         }
 
-        var frame = frames.Pop();
-        RollbackRepeats(frame.RepeatCheckpoint, ref repeatMutations, counts, positions);
-        RollbackCaptures(
-            frame.CaptureCheckpoint,
-            ref captureMutations,
-            captureStarts,
-            captureEnds,
-            captureOpenStarts,
-            captureOwners,
-            captureOpenOwners);
-        RollbackSubroutineCalls(
-            frame.CallCheckpoint,
-            ref subroutineCalls,
-            ref subroutineCallMutations);
-        if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
-        {
-            SetRepeat(
-                frame.RepeatId,
-                frame.RepeatCount,
-                frame.RepeatPosition,
-                counts,
-                positions,
-                ref repeatMutations,
-                ref budget);
-        }
-
-        instructionIndex = frame.Instruction;
-        inputIndex = frame.InputOffsetInBytes;
-        return true;
+        instructionIndex = 0;
+        inputIndex = 0;
+        failure = default;
+        return false;
     }
 
     private static void PushSubroutineCall(
@@ -3513,7 +4294,9 @@ internal static class Pcre2BacktrackingRunner
                 captureOpenOwners,
                 ref captureMutations,
                 ref budget);
-            if (snapshot.Start < 0 && snapshot.OpenStart < 0 && finalStart >= 0 && finalEnd >= finalStart)
+            if (call.PreserveUnsetCaptures &&
+                snapshot.Start < 0 && snapshot.OpenStart < 0 &&
+                finalStart >= 0 && finalEnd >= finalStart)
             {
                 SetCapture(
                     slot,
@@ -3564,6 +4347,77 @@ internal static class Pcre2BacktrackingRunner
             }
         }
     }
+
+    private static void SetMark(
+        int markId,
+        int position,
+        bool addToTrail,
+        ref int currentMarkId,
+        ref int currentMarkPosition,
+        ref int lastEncounteredMarkId,
+        ref Utf8PooledStateStack<Pcre2MarkMutation> mutations,
+        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> trail,
+        ref Pcre2ResourceBudget budget)
+    {
+        if (markId < 0)
+        {
+            return;
+        }
+
+        budget.ChargeHeap(checked(
+            (ulong)(mutations.Count + 1) * 8UL +
+            (ulong)(trail.Count + (addToTrail ? 1 : 0)) * 8UL));
+        if (!mutations.TryPush(new Pcre2MarkMutation(currentMarkId, currentMarkPosition)))
+        {
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+        }
+
+        if (addToTrail && !trail.TryPush(new Pcre2MarkTrailEntry(markId, position)))
+        {
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+        }
+
+        currentMarkId = markId;
+        currentMarkPosition = position;
+        lastEncounteredMarkId = markId;
+    }
+
+    private static void RollbackMarks(
+        int mutationCheckpoint,
+        int trailCheckpoint,
+        ref Utf8PooledStateStack<Pcre2MarkMutation> mutations,
+        ref Utf8PooledStateStack<Pcre2MarkTrailEntry> trail,
+        ref int currentMarkId,
+        ref int currentMarkPosition)
+    {
+        while (mutations.Count > mutationCheckpoint)
+        {
+            var mutation = mutations.Pop();
+            currentMarkId = mutation.PreviousMarkId;
+            currentMarkPosition = mutation.PreviousPosition;
+        }
+
+        trail.Truncate(trailCheckpoint);
+    }
+
+    private static int FindMarkPosition(
+        int markId,
+        Utf8PooledStateStack<Pcre2MarkTrailEntry> trail)
+    {
+        for (var index = trail.Count - 1; index >= 0; index--)
+        {
+            var mark = trail[index];
+            if (mark.MarkId == markId)
+            {
+                return mark.Position;
+            }
+        }
+
+        return -1;
+    }
+
+    private static string? GetMark(Pcre2BacktrackingProgram program, int markId) =>
+        (uint)markId < (uint)program.MarkNames.Length ? program.MarkNames[markId] : null;
 
     private static void SetRepeat(
         int repeatId,

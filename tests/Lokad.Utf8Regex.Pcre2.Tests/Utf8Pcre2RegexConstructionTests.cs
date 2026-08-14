@@ -218,31 +218,24 @@ public sealed class Utf8Pcre2RegexConstructionTests
     }
 
     [Fact]
-    public void Utf8Pcre2RegexProbeOutsideSupportedProfileIsExplicitlyRejected()
+    public void GenericBacktrackingProbeReturnsAvailableFullMatch()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
-        var exception = Assert.Throws<NotSupportedException>(() => regex.Probe("foo"u8, Pcre2PartialMode.Soft));
+        var probe = regex.Probe("foo"u8, Pcre2PartialMode.Soft);
 
-        Assert.Contains("does not support Probe", exception.Message);
+        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
+        Assert.Equal("foo", probe.GetMatch().GetValueString());
     }
 
     [Fact]
-    public void UnsupportedPatternThrowsNotSupportedInsteadOfNotImplemented()
+    public void FailVerbIsHandledByTheGenericOperations()
     {
         var regex = new Utf8Pcre2Regex("a(*FAIL)b");
 
-        var match = Assert.Throws<NotSupportedException>(() => regex.Match("abc"u8));
-        Assert.Contains("SPEC-PCRE2", match.Message, StringComparison.Ordinal);
-
-        var detailed = Assert.Throws<NotSupportedException>(() => regex.MatchDetailed("abc"u8));
-        Assert.Contains("SPEC-PCRE2", detailed.Message, StringComparison.Ordinal);
-
-        var enumerate = Assert.Throws<NotSupportedException>(() =>
-        {
-            var enumerator = regex.EnumerateMatches("abc"u8);
-            enumerator.MoveNext();
-        });
-        Assert.Contains("SPEC-PCRE2", enumerate.Message, StringComparison.Ordinal);
+        Assert.False(regex.Match("abc"u8).Success);
+        Assert.False(regex.MatchDetailed("abc"u8).Success);
+        var enumerator = regex.EnumerateMatches("abc"u8);
+        Assert.False(enumerator.MoveNext());
     }
 }

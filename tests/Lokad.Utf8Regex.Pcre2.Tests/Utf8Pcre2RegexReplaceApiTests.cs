@@ -373,7 +373,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             "C X"u8,
             "<${*MARK}:$1>");
 
-        Assert.Equal("<A:C> X", actual);
+        Assert.Equal("<A:C> <A:X>", actual);
     }
 
     [Fact]

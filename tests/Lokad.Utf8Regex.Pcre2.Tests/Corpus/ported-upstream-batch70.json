@@ -100,11 +100,11 @@
     "Operation": "Replace",
     "Expected": {
       "Outcome": "FullMatch",
-      "ReplacementText": "<A:C> X",
+      "ReplacementText": "<A:C> <A:X>",
       "Groups": [],
       "NameEntries": []
     },
     "Status": "Active",
-    "Source": "spec-pcre2:mark-skip replacement via native repeated detailed matching"
+    "Source": "spec-pcre2:mark-skip replacement via generic PCRE2 global matching"
   }
 ]

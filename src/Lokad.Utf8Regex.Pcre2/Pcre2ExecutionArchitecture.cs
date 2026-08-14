@@ -585,11 +585,13 @@ internal static class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        out Pcre2GroupData[] result)
+        out Pcre2GroupData[] result,
+        out string? mark)
     {
         if (compiledProgram.Operations.Match is not Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             result = [];
+            mark = null;
             return false;
         }
 
@@ -602,10 +604,12 @@ internal static class Pcre2Runner
         if (!match.Success)
         {
             result = [];
+            mark = match.Mark;
             return true;
         }
 
         result = ProjectCaptures(match.Captures, ref input);
+        mark = match.Mark;
         return true;
     }
 

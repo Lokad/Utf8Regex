@@ -376,10 +376,16 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions, out var directGroups))
+        if (Pcre2Runner.TryMatchDetailed(
+                _program,
+                ref subject,
+                start,
+                matchOptions,
+                out var directGroups,
+                out var directMark))
         {
-            return directGroups.Length != 0
-                ? Utf8Pcre2MatchContext.Create(input, directGroups, NameEntries)
+            return directGroups.Length != 0 || directMark is not null
+                ? Utf8Pcre2MatchContext.Create(input, directGroups, NameEntries, directMark)
                 : default;
         }
 
@@ -870,12 +876,24 @@ public sealed class Utf8Pcre2Regex
             return ProbeViaNonPartialMatch(input, startOffsetInBytes);
         }
 
-        if (_program.Operations.Match is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            backtrackingProgram.Program.AssertionPrograms.Length != 0 &&
-            Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions, out var directGroups) &&
-            directGroups.Length != 0)
+        if (_program.Operations.Match is Pcre2BacktrackingDirectProgram &&
+            Pcre2Runner.TryMatchDetailed(
+                _program,
+                ref subject,
+                start,
+                matchOptions,
+                out var directGroups,
+                out var directMark))
         {
-            return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries);
+            if (directGroups.Length != 0)
+            {
+                return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries, directMark);
+            }
+
+            if (directMark is not null)
+            {
+                return Utf8Pcre2ProbeResult.CreateNoMatch(input, directMark);
+            }
         }
 
         throw CreateUnsupportedProbeException();
@@ -1330,7 +1348,12 @@ public sealed class Utf8Pcre2Regex
             MinRequiredLengthInBytes = GetMinRequiredLengthInBytes(),
             HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
             UsesBranchReset = ExecutionKind == Pcre2ExecutionKind.BranchResetBasic,
-            UsesBacktrackingControlVerbs = ExecutionKind == Pcre2ExecutionKind.MarkSkip,
+            UsesBacktrackingControlVerbs =
+                _program.Operations.Match is Pcre2BacktrackingDirectProgram
+                {
+                    Program.UsesBacktrackingControlVerbs: true,
+                } ||
+                ExecutionKind == Pcre2ExecutionKind.MarkSkip,
             UsesRecursion = UsesRecursion(ExecutionKind),
             MayProduceNonUtf8Slices = ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
             MayReportNonMonotoneMatchOffsets = MayReportNonMonotoneMatchOffsets(ExecutionKind),
