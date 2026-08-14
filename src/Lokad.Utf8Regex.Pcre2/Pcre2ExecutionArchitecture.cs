@@ -416,8 +416,8 @@ internal static class Pcre2CompiledProgramOverlay
             new Pcre2CandidateSearchProgram(direct),
             legacy.FullVerification,
             syntaxTree,
-            legacy.GroupNames,
-            legacy.NameEntries);
+            backtrackingProgram.GroupNames,
+            backtrackingProgram.NameEntries);
     }
 }
 
@@ -580,6 +580,35 @@ internal static class Pcre2Runner
         return true;
     }
 
+    internal static bool TryMatchDetailed(
+        Pcre2CompiledProgram compiledProgram,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        out Pcre2GroupData[] result)
+    {
+        if (compiledProgram.Operations.Match is not Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            result = [];
+            return false;
+        }
+
+        var match = ExecuteBacktrackingDetailed(
+            backtrackingProgram.Program,
+            ref input,
+            start,
+            matchOptions,
+            compiledProgram.Request);
+        if (!match.Success)
+        {
+            result = [];
+            return true;
+        }
+
+        result = ProjectCaptures(match.Captures, ref input);
+        return true;
+    }
+
     private static Pcre2LiteralMatch ExecuteLiteral(
         Pcre2LiteralProgram program,
         ref Utf8ValidatedInput input,
@@ -632,6 +661,84 @@ internal static class Pcre2Runner
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
         }
+    }
+
+    private static Pcre2BacktrackingMatch ExecuteBacktrackingDetailed(
+        Pcre2BacktrackingProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        try
+        {
+            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+            return Pcre2BacktrackingRunner.MatchDetailed(program, ref input, start, matchOptions, ref budget);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+        }
+    }
+
+    private static Pcre2GroupData[] ProjectCaptures(
+        Pcre2CaptureByteRange[] captures,
+        ref Utf8ValidatedInput input)
+    {
+        var endpoints = new int[captures.Length * 2];
+        var endpointCount = 0;
+        foreach (var capture in captures)
+        {
+            if (!capture.Success)
+            {
+                continue;
+            }
+
+            endpoints[endpointCount++] = capture.StartOffsetInBytes;
+            endpoints[endpointCount++] = capture.EndOffsetInBytes;
+        }
+
+        Array.Sort(endpoints, 0, endpointCount);
+        var uniqueCount = 0;
+        for (var index = 0; index < endpointCount; index++)
+        {
+            if (uniqueCount == 0 || endpoints[index] != endpoints[uniqueCount - 1])
+            {
+                endpoints[uniqueCount++] = endpoints[index];
+            }
+        }
+
+        var utf16Endpoints = new int[uniqueCount];
+        var projection = input.CreateProjectionCursor();
+        for (var index = 0; index < uniqueCount; index++)
+        {
+            utf16Endpoints[index] = projection.Project(new Utf8BytePosition(endpoints[index])).Value;
+        }
+
+        var groups = new Pcre2GroupData[captures.Length];
+        for (var slot = 0; slot < captures.Length; slot++)
+        {
+            var capture = captures[slot];
+            if (!capture.Success)
+            {
+                groups[slot] = new Pcre2GroupData { Number = slot, Success = false };
+                continue;
+            }
+
+            var startIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.StartOffsetInBytes);
+            var endIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.EndOffsetInBytes);
+            groups[slot] = new Pcre2GroupData
+            {
+                Number = slot,
+                Success = true,
+                StartOffsetInBytes = capture.StartOffsetInBytes,
+                EndOffsetInBytes = capture.EndOffsetInBytes,
+                StartOffsetInUtf16 = utf16Endpoints[startIndex],
+                EndOffsetInUtf16 = utf16Endpoints[endIndex],
+            };
+        }
+
+        return groups;
     }
 }
 

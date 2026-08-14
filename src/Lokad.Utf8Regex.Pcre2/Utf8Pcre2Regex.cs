@@ -376,6 +376,13 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions, out var directGroups))
+        {
+            return directGroups.Length != 0
+                ? Utf8Pcre2MatchContext.Create(input, directGroups, NameEntries)
+                : default;
+        }
+
         if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, out var directMatch))
         {
             return directMatch.Success
@@ -5293,6 +5300,17 @@ public sealed class Utf8Pcre2Regex
             return ReplaceViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
 
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.CaptureSlotCount > 1)
+        {
+            return ReplaceViaTranslatedDetailedIteration(
+                input,
+                replacement,
+                substitutionOptions,
+                startOffsetInBytes,
+                Encoding.UTF8.GetString(input));
+        }
+
         return Pattern switch
         {
             "foo(?<Bar>BAR)?" when replacement == @"X${Bar:+\:\:text}Y" => ReplaceFooOptionalBar(input, replacement, substitutionOptions, startOffsetInBytes),
@@ -5469,6 +5487,17 @@ public sealed class Utf8Pcre2Regex
             return ReplaceReplacementOnlyViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
 
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.CaptureSlotCount > 1)
+        {
+            return ReplaceReplacementOnlyViaTranslatedDetailedIteration(
+                input,
+                replacement,
+                substitutionOptions,
+                startOffsetInBytes,
+                Encoding.UTF8.GetString(input));
+        }
+
         if (HasManagedRegex)
         {
             return ReplaceReplacementOnlyViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes);
@@ -5544,6 +5573,13 @@ public sealed class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         out byte[] result)
     {
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.CaptureSlotCount > 1)
+        {
+            result = [];
+            return false;
+        }
+
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
@@ -5583,6 +5619,13 @@ public sealed class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         out string result)
     {
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.CaptureSlotCount > 1)
+        {
+            result = string.Empty;
+            return false;
+        }
+
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (!Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,

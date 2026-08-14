@@ -65,6 +65,12 @@ internal static class Utf8Pcre2BenchmarkCatalog
             replacement: "x",
             supportedOperations: Utf8Pcre2BenchmarkOperation.Count),
         new(
+            "backtracking/capture-backreference",
+            "([0-9]+)-\\1",
+            string.Concat(Enumerable.Repeat("123-123 999-999 42-24 ", 1024)),
+            replacement: "$1",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
             "simple/loglevel-multiline",
             "^ERROR: .+$",
             "INFO: boot\nERROR: first failure\nDEBUG: noisy\nERROR: second failure\n",

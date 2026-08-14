@@ -56,13 +56,13 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void OptionalBarPatternUsesUtf8RegexTranslation()
+    public void OptionalBarPatternUsesGenericBacktrackingProgram()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
         Assert.False(regex.DebugHasManagedRegex);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
         var match = regex.Match("xxfooBARzz"u8);
         Assert.True(match.Success);
@@ -72,7 +72,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void OptionalBarTranslatedTemplateReplacementUsesNamedCaptureWithoutManagedRegex()
+    public void OptionalBarGenericTemplateReplacementUsesNamedCaptureWithoutManagedRegex()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
@@ -85,7 +85,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void OptionalBarTranslatedEvaluatorReplacementUsesDetailedCapturesWithoutManagedRegex()
+    public void OptionalBarGenericEvaluatorReplacementUsesDetailedCapturesWithoutManagedRegex()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
@@ -108,12 +108,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void AbPlusPatternUsesUtf8RegexTranslationForNonPartialSurface()
+    public void AbPlusPatternUsesGenericBacktrackingForNonPartialSurface()
     {
         var regex = new Utf8Pcre2Regex("(a)b+");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxabbbzz"u8));
         Assert.Equal(2, regex.Count("ab abb"u8));
 
