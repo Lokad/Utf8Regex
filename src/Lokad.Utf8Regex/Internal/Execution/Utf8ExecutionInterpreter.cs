@@ -845,17 +845,14 @@ internal static class Utf8ExecutionInterpreter
                 return true;
 
             case Utf8ExecutionNodeKind.Capture:
-                var captureSnapshot = captures?.CaptureSnapshot();
+                var captureCheckpoint = captures?.CreateCheckpoint() ?? default;
                 if (TryMatchProgramSequence(input, program, enterIndex + 1, instruction.PartnerIndex, index, captures, budget, out endIndex))
                 {
                     captures?.Set(instruction.CaptureNumber, index, endIndex - index);
                     return true;
                 }
 
-                if (captureSnapshot is { } failedCaptureSnapshot && captures is not null)
-                {
-                    captures.Restore(failedCaptureSnapshot);
-                }
+                captures?.Rollback(captureCheckpoint);
 
                 endIndex = 0;
                 return false;
@@ -867,16 +864,13 @@ internal static class Utf8ExecutionInterpreter
             case Utf8ExecutionNodeKind.Alternate:
                 for (var childIndex = enterIndex + 1; childIndex < instruction.PartnerIndex; childIndex = program.Instructions[childIndex].PartnerIndex + 1)
                 {
-                    var alternateSnapshot = captures?.CaptureSnapshot();
+                    var alternateCheckpoint = captures?.CreateCheckpoint() ?? default;
                     if (TryMatchProgramNode(input, program, childIndex, index, captures, budget, out endIndex))
                     {
                         return true;
                     }
 
-                    if (alternateSnapshot is { } failedAlternateSnapshot && captures is not null)
-                    {
-                        captures.Restore(failedAlternateSnapshot);
-                    }
+                    captures?.Rollback(alternateCheckpoint);
                 }
 
                 endIndex = 0;
@@ -937,17 +931,14 @@ internal static class Utf8ExecutionInterpreter
         {
             for (var branchIndex = currentIndex + 1; branchIndex < instruction.PartnerIndex; branchIndex = program.Instructions[branchIndex].PartnerIndex + 1)
             {
-                var branchSnapshot = captures?.CaptureSnapshot();
+                var branchCheckpoint = captures?.CreateCheckpoint() ?? default;
                 if (TryMatchProgramNode(input, program, branchIndex, index, captures, budget, out var branchEnd) &&
                     TryMatchProgramSequence(input, program, instruction.PartnerIndex + 1, exitIndex, branchEnd, captures, budget, out endIndex))
                 {
                     return true;
                 }
 
-                if (branchSnapshot is { } failedBranchSnapshot && captures is not null)
-                {
-                    captures.Restore(failedBranchSnapshot);
-                }
+                captures?.Rollback(branchCheckpoint);
             }
 
             endIndex = 0;
@@ -959,13 +950,10 @@ internal static class Utf8ExecutionInterpreter
             return TryMatchProgramLoopInSequence(input, program, currentIndex, exitIndex, index, captures, budget, out endIndex);
         }
 
-        var sequenceSnapshot = captures?.CaptureSnapshot();
+        var sequenceCheckpoint = captures?.CreateCheckpoint() ?? default;
         if (!TryMatchProgramNode(input, program, currentIndex, index, captures, budget, out var nextIndex))
         {
-            if (sequenceSnapshot is { } failedSequenceSnapshot && captures is not null)
-            {
-                captures.Restore(failedSequenceSnapshot);
-            }
+            captures?.Rollback(sequenceCheckpoint);
 
             endIndex = 0;
             return false;
@@ -976,10 +964,7 @@ internal static class Utf8ExecutionInterpreter
             return true;
         }
 
-        if (sequenceSnapshot is { } rolledBackSequenceSnapshot && captures is not null)
-        {
-            captures.Restore(rolledBackSequenceSnapshot);
-        }
+        captures?.Rollback(sequenceCheckpoint);
 
         endIndex = 0;
         return false;
@@ -996,82 +981,84 @@ internal static class Utf8ExecutionInterpreter
         out int endIndex)
     {
         var loop = program.Instructions[enterIndex];
-        if (loop.Max == int.MaxValue || loop.Max < loop.Min)
+        if (loop.Max < loop.Min)
         {
             endIndex = 0;
             return false;
         }
 
-        var positions = new int[loop.Max + 1];
-        Utf8CaptureSlots.Snapshot[]? captureSnapshots = captures is null ? null : new Utf8CaptureSlots.Snapshot[loop.Max + 1];
-        positions[0] = index;
-        if (captures is not null)
+        var maximumRepeats = Math.Min(loop.Max, input.Length - index);
+        if (loop.Min > maximumRepeats)
         {
-            captureSnapshots![0] = captures.CaptureSnapshot();
-        }
-
-        var count = 0;
-        while (count < loop.Max &&
-            TryMatchProgramLoopBody(input, program, enterIndex, loop, positions[count], captures, budget, out var nextIndex) &&
-            nextIndex > positions[count])
-        {
-            count++;
-            positions[count] = nextIndex;
-            if (captures is not null)
-            {
-                captureSnapshots![count] = captures.CaptureSnapshot();
-            }
-        }
-
-        if (count < loop.Min)
-        {
-            if (captures is not null)
-            {
-                captures.Restore(captureSnapshots![0]);
-            }
-
             endIndex = 0;
             return false;
         }
 
-        if (loop.NodeKind == Utf8ExecutionNodeKind.LazyLoop)
+        var stateCount = checked(maximumRepeats + 1);
+        var positions = new Utf8PooledStateStack<int>(stateCount);
+        var captureCheckpoints = new Utf8PooledStateStack<Utf8CaptureCheckpoint>(captures is null ? 0 : stateCount);
+        try
         {
-            for (var repeats = loop.Min; repeats <= count; repeats++)
+            PushState(ref positions, index);
+            if (captures is not null)
             {
+                PushState(ref captureCheckpoints, captures.CreateCheckpoint());
+            }
+
+            var count = 0;
+            while (count < maximumRepeats &&
+                TryMatchProgramLoopBody(input, program, enterIndex, loop, positions[count], captures, budget, out var nextIndex) &&
+                nextIndex > positions[count])
+            {
+                count++;
+                PushState(ref positions, nextIndex);
                 if (captures is not null)
                 {
-                    captures.Restore(captureSnapshots![repeats]);
-                }
-
-                if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
-                {
-                    return true;
+                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
                 }
             }
-        }
-        else
-        {
-            for (var repeats = count; repeats >= loop.Min; repeats--)
+
+            if (count < loop.Min)
             {
-                if (captures is not null)
-                {
-                    captures.Restore(captureSnapshots![repeats]);
-                }
+                RollbackCapture(captures, captureCheckpoints, 0);
+                endIndex = 0;
+                return false;
+            }
 
-                if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
+            if (loop.NodeKind == Utf8ExecutionNodeKind.LazyLoop)
+            {
+                for (var repeats = loop.Min; repeats <= count; repeats++)
                 {
-                    return true;
+                    RollbackCapture(captures, captureCheckpoints, repeats);
+
+                    if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
+                    {
+                        return true;
+                    }
                 }
             }
-        }
+            else
+            {
+                for (var repeats = count; repeats >= loop.Min; repeats--)
+                {
+                    RollbackCapture(captures, captureCheckpoints, repeats);
 
-        if (captures is not null)
+                    if (TryMatchProgramSequence(input, program, loop.PartnerIndex + 1, exitIndex, positions[repeats], captures, budget, out endIndex))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            RollbackCapture(captures, captureCheckpoints, 0);
+            endIndex = 0;
+            return false;
+        }
+        finally
         {
-            captures.Restore(captureSnapshots![0]);
+            captureCheckpoints.Dispose();
+            positions.Dispose();
         }
-
-        endIndex = 0;
-        return false;
     }
 
     private static bool TryMatchStandaloneProgramLoop(
@@ -1084,62 +1071,88 @@ internal static class Utf8ExecutionInterpreter
         Utf8ExecutionDeadline budget,
         out int endIndex)
     {
-        if (loop.Max == int.MaxValue || loop.Max < loop.Min)
+        if (loop.Max < loop.Min)
         {
             endIndex = 0;
             return false;
         }
 
-        var initialSnapshot = captures?.CaptureSnapshot();
-        Utf8CaptureSlots.Snapshot[]? captureSnapshots = captures is null ? null : new Utf8CaptureSlots.Snapshot[loop.Max + 1];
-        endIndex = index;
-        if (captures is not null)
+        var maximumRepeats = Math.Min(loop.Max, input.Length - index);
+        var initialCheckpoint = captures?.CreateCheckpoint() ?? default;
+        if (loop.Min > maximumRepeats)
         {
-            captureSnapshots![0] = captures.CaptureSnapshot();
+            endIndex = 0;
+            return false;
         }
 
-        for (var i = 0; i < loop.Min; i++)
+        var stateCount = checked(maximumRepeats + 1);
+        var captureCheckpoints = new Utf8PooledStateStack<Utf8CaptureCheckpoint>(captures is null ? 0 : stateCount);
+        try
         {
-            if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
+            endIndex = index;
+            if (captures is not null)
             {
-                if (initialSnapshot is { } failedLoopSnapshot && captures is not null)
+                PushState(ref captureCheckpoints, initialCheckpoint);
+            }
+
+            for (var i = 0; i < loop.Min; i++)
+            {
+                if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
                 {
-                    captures.Restore(failedLoopSnapshot);
+                    captures?.Rollback(initialCheckpoint);
+                    endIndex = 0;
+                    return false;
                 }
 
-                endIndex = 0;
-                return false;
+                endIndex = nextIndex;
+                if (captures is not null)
+                {
+                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
+                }
             }
 
-            endIndex = nextIndex;
-            if (captures is not null)
+            var repeats = loop.Min;
+            for (var i = loop.Min; i < maximumRepeats; i++)
             {
-                captureSnapshots![i + 1] = captures.CaptureSnapshot();
-            }
-        }
+                if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
+                {
+                    break;
+                }
 
-        var repeats = loop.Min;
-        for (var i = loop.Min; i < loop.Max; i++)
+                endIndex = nextIndex;
+                repeats++;
+                if (captures is not null)
+                {
+                    PushState(ref captureCheckpoints, captures.CreateCheckpoint());
+                }
+            }
+
+            RollbackCapture(captures, captureCheckpoints, repeats);
+            return true;
+        }
+        finally
         {
-            if (!TryMatchProgramLoopBody(input, program, enterIndex, loop, endIndex, captures, budget, out var nextIndex) || nextIndex <= endIndex)
-            {
-                break;
-            }
-
-            endIndex = nextIndex;
-            repeats++;
-            if (captures is not null)
-            {
-                captureSnapshots![repeats] = captures.CaptureSnapshot();
-            }
+            captureCheckpoints.Dispose();
         }
+    }
 
+    private static void PushState<T>(ref Utf8PooledStateStack<T> states, T value) where T : struct
+    {
+        if (!states.TryPush(value))
+        {
+            throw new InvalidOperationException("The bounded backtracking state stack is full.");
+        }
+    }
+
+    private static void RollbackCapture(
+        Utf8CaptureSlots? captures,
+        Utf8PooledStateStack<Utf8CaptureCheckpoint> checkpoints,
+        int index)
+    {
         if (captures is not null)
         {
-            captures.Restore(captureSnapshots![repeats]);
+            captures.Rollback(checkpoints[index]);
         }
-
-        return true;
     }
 
     private static bool TryMatchProgramLoopBody(

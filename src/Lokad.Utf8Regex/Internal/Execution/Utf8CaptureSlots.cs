@@ -1,9 +1,14 @@
+using System.Buffers;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8CaptureSlots
 {
     private readonly int[] _starts;
     private readonly int[] _lengths;
+    private Utf8CaptureMutation[]? _journal;
+    private int _journalCount;
+    private bool _journaling;
 
     public Utf8CaptureSlots(int slotCount)
     {
@@ -19,6 +24,11 @@ internal sealed class Utf8CaptureSlots
 
     public void Clear()
     {
+        if (_journaling)
+        {
+            throw new InvalidOperationException("Capture slots cannot be cleared while an invocation is active.");
+        }
+
         Array.Fill(_starts, -1);
         Array.Fill(_lengths, 0);
     }
@@ -28,6 +38,13 @@ internal sealed class Utf8CaptureSlots
         if ((uint)slot >= (uint)_starts.Length)
         {
             return;
+        }
+
+        if (_journaling)
+        {
+            EnsureJournalCapacity();
+            var journal = _journal ?? throw new InvalidOperationException("The capture journal could not be allocated.");
+            journal[_journalCount++] = new Utf8CaptureMutation(slot, _starts[slot], _lengths[slot]);
         }
 
         _starts[slot] = start;
@@ -48,9 +65,64 @@ internal sealed class Utf8CaptureSlots
         return false;
     }
 
-    public Snapshot CaptureSnapshot()
+    public void BeginInvocation()
     {
-        return new Snapshot((int[])_starts.Clone(), (int[])_lengths.Clone());
+        if (_journaling)
+        {
+            throw new InvalidOperationException("Capture journaling is already active.");
+        }
+
+        _journalCount = 0;
+        _journaling = true;
+    }
+
+    public Utf8CaptureCheckpoint CreateCheckpoint()
+    {
+        if (!_journaling)
+        {
+            throw new InvalidOperationException("Capture journaling is not active.");
+        }
+
+        return new Utf8CaptureCheckpoint(_journalCount);
+    }
+
+    public void Rollback(Utf8CaptureCheckpoint checkpoint)
+    {
+        if (!_journaling || (uint)checkpoint.JournalCount > (uint)_journalCount)
+        {
+            throw new InvalidOperationException("The capture checkpoint does not belong to the active invocation.");
+        }
+
+        var journal = _journal;
+
+        while (_journalCount > checkpoint.JournalCount)
+        {
+            if (journal is null)
+            {
+                throw new InvalidOperationException("The active capture journal is unavailable.");
+            }
+
+            var mutation = journal[--_journalCount];
+            _starts[mutation.Slot] = mutation.PreviousStart;
+            _lengths[mutation.Slot] = mutation.PreviousLength;
+        }
+    }
+
+    public void EndInvocation()
+    {
+        if (!_journaling)
+        {
+            return;
+        }
+
+        _journaling = false;
+        _journalCount = 0;
+        var journal = _journal;
+        _journal = null;
+        if (journal is not null)
+        {
+            ArrayPool<Utf8CaptureMutation>.Shared.Return(journal);
+        }
     }
 
     public Utf8CaptureSlots Clone()
@@ -61,11 +133,26 @@ internal sealed class Utf8CaptureSlots
         return clone;
     }
 
-    public void Restore(in Snapshot snapshot)
+    private void EnsureJournalCapacity()
     {
-        snapshot.Starts.CopyTo(_starts, 0);
-        snapshot.Lengths.CopyTo(_lengths, 0);
-    }
+        var journal = _journal;
+        if (journal is not null && _journalCount < journal.Length)
+        {
+            return;
+        }
 
-    internal readonly record struct Snapshot(int[] Starts, int[] Lengths);
+        var requestedLength = journal is null ? Math.Max(16, _starts.Length) : checked(journal.Length * 2);
+        var grown = ArrayPool<Utf8CaptureMutation>.Shared.Rent(requestedLength);
+        if (journal is not null)
+        {
+            journal.AsSpan(0, _journalCount).CopyTo(grown);
+            ArrayPool<Utf8CaptureMutation>.Shared.Return(journal);
+        }
+
+        _journal = grown;
+    }
 }
+
+internal readonly record struct Utf8CaptureCheckpoint(int JournalCount);
+
+internal readonly record struct Utf8CaptureMutation(int Slot, int PreviousStart, int PreviousLength);

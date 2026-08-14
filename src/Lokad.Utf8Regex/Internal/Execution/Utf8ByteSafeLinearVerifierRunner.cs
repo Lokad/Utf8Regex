@@ -14,15 +14,31 @@ internal static class Utf8ByteSafeLinearVerifierRunner
         captures?.Clear();
         budget.Step();
 
-        if (program is null ||
-            program.Instructions.Count == 0 ||
-            (uint)startIndex > (uint)input.Length ||
-            !Utf8ExecutionInterpreter.TryMatchProgramAt(input, program, 0, startIndex, captures, budget, out var endIndex))
+        if (program is null || program.Instructions.Count == 0 || (uint)startIndex > (uint)input.Length)
         {
             return false;
         }
 
-        matchedLength = endIndex - startIndex;
-        return true;
+        captures?.BeginInvocation();
+        var initialCheckpoint = captures?.CreateCheckpoint() ?? default;
+        try
+        {
+            if (!Utf8ExecutionInterpreter.TryMatchProgramAt(input, program, 0, startIndex, captures, budget, out var endIndex))
+            {
+                return false;
+            }
+
+            matchedLength = endIndex - startIndex;
+            return true;
+        }
+        catch
+        {
+            captures?.Rollback(initialCheckpoint);
+            throw;
+        }
+        finally
+        {
+            captures?.EndInvocation();
+        }
     }
 }
