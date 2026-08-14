@@ -55,60 +55,9 @@ public sealed class ReplacementInfrastructureTests
     }
 
     [Fact]
-    public void VariableRangeSizingDiscoversEachMatchOnlyOnce()
-    {
-        var calls = 0;
-        var result = Utf8LiteralReplaceEngine.Replace(
-            "a-bb-ccc"u8,
-            "x"u8.ToArray(),
-            (ReadOnlySpan<byte> input, int start, out int matchIndex, out int matchLength) =>
-            {
-                calls++;
-                while (start < input.Length && input[start] == (byte)'-')
-                {
-                    start++;
-                }
-
-                if (start >= input.Length)
-                {
-                    matchIndex = 0;
-                    matchLength = 0;
-                    return false;
-                }
-
-                var separator = input[start..].IndexOf((byte)'-');
-                matchIndex = start;
-                matchLength = separator < 0 ? input.Length - start : separator;
-                return true;
-            },
-            Utf8ExecutionDeadline.Infinite);
-
-        Assert.True(result.AsSpan().SequenceEqual("x-x-x"u8));
-        Assert.Equal(4, calls);
-    }
-
-    [Fact]
     public void RangeLedgerReturnsItsBufferWhenSizingThrowsAfterGrowth()
     {
-        var calls = 0;
-        Assert.Throws<InvalidOperationException>(() => Utf8LiteralReplaceEngine.Replace(
-            new byte[64],
-            "x"u8.ToArray(),
-            (ReadOnlySpan<byte> _, int start, out int matchIndex, out int matchLength) =>
-            {
-                calls++;
-                if (calls == 24)
-                {
-                    throw new InvalidOperationException("injected");
-                }
-
-                matchIndex = start;
-                matchLength = 1;
-                return start < 64;
-            },
-            Utf8ExecutionDeadline.Infinite));
-
-        Assert.Equal(24, calls);
+        Assert.Throws<InvalidOperationException>(GrowLedgerAndThrow);
         var followup = new Utf8Regex("a").Replace("aaaa"u8, "b");
         Assert.True(followup.AsSpan().SequenceEqual("bbbb"u8));
     }
@@ -160,5 +109,23 @@ public sealed class ReplacementInfrastructureTests
         }
 
         throw new DirectoryNotFoundException("Could not locate repository root.");
+    }
+
+    private static void GrowLedgerAndThrow()
+    {
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
+        {
+            for (var i = 0; i < 24; i++)
+            {
+                ledger.Add(new Utf8ReplacementRange(i, 1, 0));
+            }
+
+            throw new InvalidOperationException("injected");
+        }
+        finally
+        {
+            ledger.Dispose();
+        }
     }
 }

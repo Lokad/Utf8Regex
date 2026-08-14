@@ -31,9 +31,9 @@ internal static class Utf8FallbackPreparedTokenSearchFactory
                     structuredHeadCharSetUtf8,
                     structuredMiddleCharSetUtf8,
                     structuredTailCharSetUtf8,
-                    plan.SecondaryLiteralUtf8 ?? [],
+                    plan.SecondaryLiteralUtf8,
                     ReadOptionalTailCharSet(plan.ExtraCharSetUtf8, first: true),
-                    plan.TertiaryLiteralUtf8 ?? [],
+                    plan.TertiaryLiteralUtf8,
                     ReadOptionalTailCharSet(plan.ExtraCharSetUtf8, first: false))
                 : default;
     }

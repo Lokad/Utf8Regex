@@ -45,16 +45,49 @@ internal enum Utf8FallbackFindModeKind : byte
     CountLines = 3,
 }
 
-internal readonly record struct Utf8FallbackLiteralPayload(
-    byte[]? LiteralUtf8,
-    byte[]? SecondaryLiteralUtf8,
-    byte[]? TertiaryLiteralUtf8);
+internal readonly struct Utf8FallbackLiteralPayload
+{
+    private readonly byte[]? _literalUtf8;
+    private readonly byte[]? _secondaryLiteralUtf8;
+    private readonly byte[]? _tertiaryLiteralUtf8;
 
-internal readonly record struct Utf8FallbackCharSetPayload(
-    byte[]? HeadCharSetUtf8,
-    byte[]? MiddleCharSetUtf8,
-    byte[]? TailCharSetUtf8,
-    byte[]? ExtraCharSetUtf8);
+    public Utf8FallbackLiteralPayload(byte[]? literalUtf8, byte[]? secondaryLiteralUtf8, byte[]? tertiaryLiteralUtf8)
+    {
+        _literalUtf8 = literalUtf8;
+        _secondaryLiteralUtf8 = secondaryLiteralUtf8;
+        _tertiaryLiteralUtf8 = tertiaryLiteralUtf8;
+    }
+
+    public byte[] LiteralUtf8 => _literalUtf8 ?? [];
+
+    public byte[] SecondaryLiteralUtf8 => _secondaryLiteralUtf8 ?? [];
+
+    public byte[] TertiaryLiteralUtf8 => _tertiaryLiteralUtf8 ?? [];
+}
+
+internal readonly struct Utf8FallbackCharSetPayload
+{
+    private readonly byte[]? _headCharSetUtf8;
+    private readonly byte[]? _middleCharSetUtf8;
+    private readonly byte[]? _tailCharSetUtf8;
+    private readonly byte[]? _extraCharSetUtf8;
+
+    public Utf8FallbackCharSetPayload(byte[]? headCharSetUtf8, byte[]? middleCharSetUtf8, byte[]? tailCharSetUtf8, byte[]? extraCharSetUtf8)
+    {
+        _headCharSetUtf8 = headCharSetUtf8;
+        _middleCharSetUtf8 = middleCharSetUtf8;
+        _tailCharSetUtf8 = tailCharSetUtf8;
+        _extraCharSetUtf8 = extraCharSetUtf8;
+    }
+
+    public byte[] HeadCharSetUtf8 => _headCharSetUtf8 ?? [];
+
+    public byte[] MiddleCharSetUtf8 => _middleCharSetUtf8 ?? [];
+
+    public byte[] TailCharSetUtf8 => _tailCharSetUtf8 ?? [];
+
+    public byte[] ExtraCharSetUtf8 => _extraCharSetUtf8 ?? [];
+}
 
 internal readonly record struct Utf8FallbackCountBoundsPayload(
     int MinCount,
@@ -79,13 +112,43 @@ internal readonly record struct Utf8FallbackDateTokenPayload(
 internal readonly record struct Utf8FallbackUnicodePayload(
     UnicodeCategory UnicodeCategory);
 
-internal readonly record struct Utf8FallbackUrlPayload(
-    byte[]? PrimaryPrefixUtf8,
-    byte[]? SecondaryPrefixUtf8,
-    byte[]? RelativePrefixUtf8,
-    byte[]? RouteMarkerUtf8,
-    byte[]? RequiredParameterUtf8,
-    byte[]? OptionalParameterUtf8);
+internal readonly struct Utf8FallbackUrlPayload
+{
+    private readonly byte[]? _primaryPrefixUtf8;
+    private readonly byte[]? _secondaryPrefixUtf8;
+    private readonly byte[]? _relativePrefixUtf8;
+    private readonly byte[]? _routeMarkerUtf8;
+    private readonly byte[]? _requiredParameterUtf8;
+    private readonly byte[]? _optionalParameterUtf8;
+
+    public Utf8FallbackUrlPayload(
+        byte[] primaryPrefixUtf8,
+        byte[] secondaryPrefixUtf8,
+        byte[] relativePrefixUtf8,
+        byte[] routeMarkerUtf8,
+        byte[] requiredParameterUtf8,
+        byte[]? optionalParameterUtf8)
+    {
+        _primaryPrefixUtf8 = primaryPrefixUtf8;
+        _secondaryPrefixUtf8 = secondaryPrefixUtf8;
+        _relativePrefixUtf8 = relativePrefixUtf8;
+        _routeMarkerUtf8 = routeMarkerUtf8;
+        _requiredParameterUtf8 = requiredParameterUtf8;
+        _optionalParameterUtf8 = optionalParameterUtf8;
+    }
+
+    public byte[] PrimaryPrefixUtf8 => _primaryPrefixUtf8 ?? [];
+
+    public byte[] SecondaryPrefixUtf8 => _secondaryPrefixUtf8 ?? [];
+
+    public byte[] RelativePrefixUtf8 => _relativePrefixUtf8 ?? [];
+
+    public byte[] RouteMarkerUtf8 => _routeMarkerUtf8 ?? [];
+
+    public byte[] RequiredParameterUtf8 => _requiredParameterUtf8 ?? [];
+
+    public byte[] OptionalParameterUtf8 => _optionalParameterUtf8 ?? [];
+}
 
 internal readonly struct Utf8FallbackDirectFamilyPlan
 {
@@ -133,19 +196,19 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public int MaxCount => CountBounds.MaxCount;
 
-    public byte[]? LiteralUtf8 => Literals.LiteralUtf8;
+    public byte[] LiteralUtf8 => Literals.LiteralUtf8;
 
-    public byte[]? SecondaryLiteralUtf8 => Literals.SecondaryLiteralUtf8;
+    public byte[] SecondaryLiteralUtf8 => Literals.SecondaryLiteralUtf8;
 
-    public byte[]? TertiaryLiteralUtf8 => Literals.TertiaryLiteralUtf8;
+    public byte[] TertiaryLiteralUtf8 => Literals.TertiaryLiteralUtf8;
 
-    public byte[]? HeadCharSetUtf8 => CharSets.HeadCharSetUtf8;
+    public byte[] HeadCharSetUtf8 => CharSets.HeadCharSetUtf8;
 
-    public byte[]? MiddleCharSetUtf8 => CharSets.MiddleCharSetUtf8;
+    public byte[] MiddleCharSetUtf8 => CharSets.MiddleCharSetUtf8;
 
-    public byte[]? TailCharSetUtf8 => CharSets.TailCharSetUtf8;
+    public byte[] TailCharSetUtf8 => CharSets.TailCharSetUtf8;
 
-    public byte[]? ExtraCharSetUtf8 => CharSets.ExtraCharSetUtf8;
+    public byte[] ExtraCharSetUtf8 => CharSets.ExtraCharSetUtf8;
 
     public bool TrimLeadingAsciiWhitespace => Line.TrimLeadingAsciiWhitespace;
 
@@ -169,17 +232,17 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
 
     public UnicodeCategory UnicodeCategory => Unicode.UnicodeCategory;
 
-    public byte[]? PrimaryPrefixUtf8 => Url.PrimaryPrefixUtf8;
+    public byte[] PrimaryPrefixUtf8 => Url.PrimaryPrefixUtf8;
 
-    public byte[]? SecondaryPrefixUtf8 => Url.SecondaryPrefixUtf8;
+    public byte[] SecondaryPrefixUtf8 => Url.SecondaryPrefixUtf8;
 
-    public byte[]? RelativePrefixUtf8 => Url.RelativePrefixUtf8;
+    public byte[] RelativePrefixUtf8 => Url.RelativePrefixUtf8;
 
-    public byte[]? RouteMarkerUtf8 => Url.RouteMarkerUtf8;
+    public byte[] RouteMarkerUtf8 => Url.RouteMarkerUtf8;
 
-    public byte[]? RequiredParameterUtf8 => Url.RequiredParameterUtf8;
+    public byte[] RequiredParameterUtf8 => Url.RequiredParameterUtf8;
 
-    public byte[]? OptionalParameterUtf8 => Url.OptionalParameterUtf8;
+    public byte[] OptionalParameterUtf8 => Url.OptionalParameterUtf8;
 
     public bool RequireLeadingBoundary => DateToken.RequireLeadingBoundary;
 
@@ -266,7 +329,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
     public static Utf8FallbackDirectFamilyPlan ForLiteral(
         Utf8FallbackDirectFamilyKind kind,
         Utf8FallbackFindModeKind findMode,
-        byte[]? literalUtf8) =>
+        byte[] literalUtf8) =>
         CreateWithLiterals(kind, findMode, new Utf8FallbackLiteralPayload(literalUtf8, null, null));
 
     public static Utf8FallbackDirectFamilyPlan ForPrefixUntilByte(byte[] literalUtf8, byte terminatorByte)
@@ -283,7 +346,7 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
             new Utf8FallbackLiteralPayload(literalUtf8, secondaryLiteralUtf8, null),
             new Utf8FallbackLinePayload(true, 0));
 
-    public static Utf8FallbackDirectFamilyPlan ForLinePrefixCount(byte[]? literalUtf8, bool trimLeadingAsciiWhitespace)
+    public static Utf8FallbackDirectFamilyPlan ForLinePrefixCount(byte[] literalUtf8, bool trimLeadingAsciiWhitespace)
         => CreateWithLiteralsAndLine(
             Utf8FallbackDirectFamilyKind.LinePrefixCount,
             Utf8FallbackFindModeKind.CountLines,

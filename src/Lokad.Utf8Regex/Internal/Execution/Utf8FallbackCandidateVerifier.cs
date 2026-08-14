@@ -71,7 +71,7 @@ internal abstract class Utf8FallbackCandidateVerifier
             return true;
         }
 
-        var candidateEnd = boundaryMap.Resolve(candidate.EndIndex);
+        var candidateEnd = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.EndIndex));
         return candidateEnd.IsScalarBoundary && match.Index + match.Length >= candidateEnd.Utf16Offset;
     }
 
@@ -85,8 +85,8 @@ internal abstract class Utf8FallbackCandidateVerifier
             return false;
         }
 
-        var trailingStart = boundaryMap.Resolve(candidate.TrailingIndex);
-        var trailingEnd = boundaryMap.Resolve(candidate.TrailingIndex + candidate.TrailingMatchLength);
+        var trailingStart = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.TrailingIndex));
+        var trailingEnd = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.TrailingIndex + candidate.TrailingMatchLength));
         if (!trailingStart.IsScalarBoundary || !trailingEnd.IsScalarBoundary)
         {
             return false;
@@ -95,31 +95,6 @@ internal abstract class Utf8FallbackCandidateVerifier
         var matchEnd = match.Index + match.Length;
         return trailingStart.Utf16Offset >= match.Index &&
             trailingEnd.Utf16Offset <= matchEnd;
-    }
-
-    protected static bool MatchesTrailingAnchorCoverage(
-        int matchedUtf16Length,
-        Utf8StructuralCandidate candidate,
-        int baseByteOffset,
-        ReadOnlySpan<byte> slice,
-        Utf8ValidationResult validation)
-    {
-        if (candidate.TrailingIndex < 0 || candidate.TrailingMatchLength <= 0)
-        {
-            return false;
-        }
-
-        var trailingStartByte = candidate.TrailingIndex - baseByteOffset;
-        var trailingEndByte = trailingStartByte + candidate.TrailingMatchLength;
-        if (trailingStartByte < 0 || trailingEndByte > slice.Length)
-        {
-            return false;
-        }
-
-        var matchedEndByte = validation.IsAscii
-            ? matchedUtf16Length
-            : Utf8BoundaryMap.Create(slice, validation).Resolve(matchedUtf16Length).ByteOffset;
-        return trailingEndByte <= matchedEndByte;
     }
 
     protected readonly record struct FallbackVerifierMatch(bool Success, int Index, int Length);
@@ -185,7 +160,6 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
         ref string? decoded,
         out Utf8FallbackVerificationResult result)
     {
-        decoded = null;
         result = default;
         if (candidate.EndIndex <= candidate.StartIndex ||
             candidate.StartIndex < 0 ||
@@ -194,49 +168,49 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
             return false;
         }
 
-        if ((candidate.StartIndex > 0 && (input[candidate.StartIndex] & 0xC0) == 0x80) ||
-            (candidate.EndIndex < input.Length && (input[candidate.EndIndex] & 0xC0) == 0x80))
-        {
-            return false;
-        }
-
-        var slice = input[candidate.StartIndex..candidate.EndIndex];
-        var sliceValidation = validation.IsAscii && slice.Length == input.Length
-            ? validation
-            : Utf8Validation.Validate(slice);
-        var sliceDecoded = Encoding.UTF8.GetString(slice);
-        var anchoredRegex = AnchoredFallbackRegex ?? throw new InvalidOperationException("A bounded verifier requires an anchored fallback regex.");
-        var match = anchoredRegex.Match(sliceDecoded, 0);
-        if (!match.Success || match.Index != 0)
-        {
-            return false;
-        }
-
-        if (Plan.RequiresCandidateEndCoverage &&
-            match.Length < sliceDecoded.Length)
-        {
-            return false;
-        }
-
-        if (Plan.RequiresTrailingAnchorCoverage &&
-            !MatchesTrailingAnchorCoverage(match.Length, candidate, candidate.StartIndex, slice, sliceValidation))
-        {
-            return false;
-        }
-
-        var matchedByteLength = sliceValidation.IsAscii
-            ? match.Length
-            : Utf8BoundaryMap.Create(slice, sliceValidation).Resolve(match.Length).ByteOffset;
         var map = boundaryMap ?? Utf8BoundaryMap.Create(input, validation);
         boundaryMap = map;
-        var candidateStartBoundary = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
+        var candidateStart = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
+        var candidateEnd = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.EndIndex));
+        if (!candidateStart.IsScalarBoundary || !candidateEnd.IsScalarBoundary)
+        {
+            return false;
+        }
+
+        decoded ??= Encoding.UTF8.GetString(input);
+        var anchoredRegex = AnchoredFallbackRegex ?? throw new InvalidOperationException("A bounded verifier requires an anchored fallback regex.");
+        var matches = anchoredRegex.EnumerateMatches(decoded.AsSpan(
+            candidateStart.Utf16Offset,
+            candidateEnd.Utf16Offset - candidateStart.Utf16Offset));
+        if (!matches.MoveNext() || matches.Current.Index != 0)
+        {
+            return false;
+        }
+
+        var valueMatch = matches.Current;
+        var match = new FallbackVerifierMatch(
+            Success: true,
+            Index: candidateStart.Utf16Offset,
+            Length: valueMatch.Length);
+        if (!IsVerifiedMatch(
+                match,
+                candidateStart.Utf16Offset,
+                candidate,
+                map,
+                Plan.RequiresCandidateEndCoverage,
+                Plan.RequiresTrailingAnchorCoverage))
+        {
+            return false;
+        }
+
+        var matchEnd = map.Resolve(match.Index + match.Length);
         result = new Utf8FallbackVerificationResult(
             Success: true,
-            IndexInUtf16: candidateStartBoundary.Utf16Offset,
+            IndexInUtf16: candidateStart.Utf16Offset,
             LengthInUtf16: match.Length,
             IndexInBytes: candidate.StartIndex,
-            LengthInBytes: matchedByteLength,
-            IsByteAligned: true);
+            LengthInBytes: matchEnd.ByteOffset - candidate.StartIndex,
+            IsByteAligned: matchEnd.IsScalarBoundary);
         return true;
     }
 }

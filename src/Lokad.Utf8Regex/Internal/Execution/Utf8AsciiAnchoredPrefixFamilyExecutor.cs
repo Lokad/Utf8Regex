@@ -28,7 +28,7 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
                     Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredTrimmedOptionalLiteralPrefixTail(
                         input,
                         requiredPrefixUtf8,
-                        plan.SecondaryLiteralUtf8 ?? [],
+                        plan.SecondaryLiteralUtf8,
                         out matchedLength);
 
             default:

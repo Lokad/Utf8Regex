@@ -8,7 +8,7 @@ internal static class Utf8AsciiAnchoredWholeFamilyExecutor
         switch (plan.Kind)
         {
             case Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail:
-                return Utf8AsciiLeadingDigitsTailExecutor.TryMatchWhole(input, plan.LiteralUtf8 ?? [], out matchedLength);
+                return Utf8AsciiLeadingDigitsTailExecutor.TryMatchWhole(input, plan.LiteralUtf8, out matchedLength);
 
             case Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole:
                 return Utf8AsciiEmailWholeExecutor.TryMatchWhole(input, out matchedLength);

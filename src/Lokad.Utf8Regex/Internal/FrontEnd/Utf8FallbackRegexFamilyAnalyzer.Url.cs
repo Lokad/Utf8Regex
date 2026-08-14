@@ -33,11 +33,11 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         }
 
         payload = new Utf8FallbackUrlPayload(
-            primaryPrefixUtf8,
-            secondaryPrefixUtf8,
-            relativePrefixUtf8,
-            routeMarkerUtf8,
-            requiredParameterUtf8,
+            RequireBytes(primaryPrefixUtf8),
+            RequireBytes(secondaryPrefixUtf8),
+            RequireBytes(relativePrefixUtf8),
+            RequireBytes(routeMarkerUtf8),
+            RequireBytes(requiredParameterUtf8),
             null);
         return true;
     }
@@ -71,11 +71,11 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         }
 
         payload = new Utf8FallbackUrlPayload(
-            primaryPrefixUtf8,
-            secondaryPrefixUtf8,
-            relativePrefixUtf8,
-            routeMarkerUtf8,
-            requiredParameterUtf8,
+            RequireBytes(primaryPrefixUtf8),
+            RequireBytes(secondaryPrefixUtf8),
+            RequireBytes(relativePrefixUtf8),
+            RequireBytes(routeMarkerUtf8),
+            RequireBytes(requiredParameterUtf8),
             optionalParameterUtf8);
         return true;
     }

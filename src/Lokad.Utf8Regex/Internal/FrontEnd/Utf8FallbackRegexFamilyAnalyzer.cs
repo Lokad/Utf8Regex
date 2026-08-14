@@ -63,7 +63,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             return Utf8FallbackDirectFamilyPlan.ForLiteral(
                 Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral,
                 Utf8FallbackFindModeKind.MatchAtStart,
-                literalUtf8: trailingLiteralUtf8);
+                literalUtf8: RequireBytes(trailingLiteralUtf8));
         }
 
         if (TryParseAnchoredAsciiDigitsQueryWhole(executionPattern, options, out var urlPayload) ||
@@ -101,7 +101,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
 
         if (TryParseLinePrefixCountFamily(executionPattern, options, out var linePrefix, out var trimLeadingAsciiWhitespace))
         {
-            return Utf8FallbackDirectFamilyPlan.ForLinePrefixCount(linePrefix, trimLeadingAsciiWhitespace);
+            return Utf8FallbackDirectFamilyPlan.ForLinePrefixCount(RequireBytes(linePrefix), trimLeadingAsciiWhitespace);
         }
 
         if (IsAnchoredAsciiIdentifierPrefix(executionPattern, options) ||
@@ -127,7 +127,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             return Utf8FallbackDirectFamilyPlan.ForLiteral(
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail,
                 Utf8FallbackFindModeKind.MatchAtStart,
-                literalUtf8: separatorBytesUtf8);
+                literalUtf8: RequireBytes(separatorBytesUtf8));
         }
 
         if (IsAnchoredAsciiEmailWhole(executionPattern, options) ||

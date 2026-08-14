@@ -42,9 +42,9 @@ internal static class Utf8AsciiAnchoredUrlExecutor
 
     private static bool TryMatchAnyPrefix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, SuffixMatcher matcher)
     {
-        return TryMatchAnyPrefix(input, plan.PrimaryPrefixUtf8 ?? [], plan, matcher) ||
-               TryMatchAnyPrefix(input, plan.SecondaryPrefixUtf8 ?? [], plan, matcher) ||
-               TryMatchAnyPrefix(input, plan.RelativePrefixUtf8 ?? [], plan, matcher);
+        return TryMatchAnyPrefix(input, plan.PrimaryPrefixUtf8, plan, matcher) ||
+               TryMatchAnyPrefix(input, plan.SecondaryPrefixUtf8, plan, matcher) ||
+               TryMatchAnyPrefix(input, plan.RelativePrefixUtf8, plan, matcher);
     }
 
     private static bool TryMatchAnyPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> prefix, in Utf8FallbackDirectFamilyPlan plan, SuffixMatcher matcher)
@@ -87,14 +87,14 @@ internal static class Utf8AsciiAnchoredUrlExecutor
     private static bool TryMatchDigitsQuerySuffix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, ref int index)
     {
         if (!TryConsumeOptionalTrigram(input, ref index) ||
-            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8 ?? []) ||
+            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8) ||
             !ConsumeDigits(input, ref index))
         {
             return false;
         }
 
         ConsumeOptionalByte(input, ref index, (byte)'/');
-        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8 ?? [], ref index))
+        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8, ref index))
         {
             return false;
         }
@@ -105,19 +105,19 @@ internal static class Utf8AsciiAnchoredUrlExecutor
     private static bool TryMatchHexQuerySuffix(ReadOnlySpan<byte> input, in Utf8FallbackDirectFamilyPlan plan, ref int index)
     {
         if (!TryConsumeOptionalTrigram(input, ref index) ||
-            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8 ?? []))
+            !ConsumeIgnoreCase(input, ref index, plan.RouteMarkerUtf8))
         {
             return false;
         }
 
         ConsumeHexDigits(input, ref index);
-        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8 ?? [], ref index);
-        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8 ?? [], ref index))
+        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8, ref index);
+        if (!TryConsumeRequiredParameter(input, plan.RequiredParameterUtf8, ref index))
         {
             return false;
         }
 
-        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8 ?? [], ref index);
+        TryConsumeOptionalParameter(input, plan.OptionalParameterUtf8, ref index);
         return true;
     }
 

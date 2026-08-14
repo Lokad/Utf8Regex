@@ -71,9 +71,9 @@ internal static class Utf8AsciiPreparedTokenFamilyExecutor
                     structuredHeadCharSetUtf8,
                     structuredMiddleCharSetUtf8,
                     structuredTailCharSetUtf8,
-                    plan.SecondaryLiteralUtf8 ?? [],
+                    plan.SecondaryLiteralUtf8,
                     optionalTail1CharSetUtf8,
-                    plan.TertiaryLiteralUtf8 ?? [],
+                    plan.TertiaryLiteralUtf8,
                     optionalTail2CharSetUtf8,
                     out matchIndex,
                     out matchedLength);
@@ -136,9 +136,9 @@ internal static class Utf8AsciiPreparedTokenFamilyExecutor
                     structuredHeadCharSetUtf8,
                     structuredMiddleCharSetUtf8,
                     structuredTailCharSetUtf8,
-                    plan.SecondaryLiteralUtf8 ?? [],
+                    plan.SecondaryLiteralUtf8,
                     optionalTail1CharSetUtf8,
-                    plan.TertiaryLiteralUtf8 ?? [],
+                    plan.TertiaryLiteralUtf8,
                     optionalTail2CharSetUtf8);
 
             default:

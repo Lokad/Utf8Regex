@@ -764,7 +764,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
         var directFamily = inner.PreparedRegex.FallbackDirectFamily;
         _canUseDirectPrefixUntilByteMatch = directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte &&
             directFamily.LiteralUtf8 is { Length: > 0 };
-        _prefixUntilByteLiteral = directFamily.LiteralUtf8 ?? [];
+        _prefixUntilByteLiteral = directFamily.LiteralUtf8;
         _prefixUntilByteTerminator = directFamily.TerminatorByte;
     }
 

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -962,6 +963,44 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxfoofooyy")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxfooxxxyy")));
+    }
+
+    [Fact]
+    public void BoundedFallbackVerificationReusesOneDecodedUnicodeSubject()
+    {
+        var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
+        var validation = Utf8Validation.Validate(input);
+        var plan = new Utf8FallbackVerifierPlan(
+            Utf8FallbackVerifierMode.AnchoredSliceRegex,
+            requiresCandidateEndCoverage: true,
+            requiresTrailingAnchorCoverage: false);
+        var verifier = Utf8FallbackVerifierRuntimeFactory.Create(
+            plan,
+            "(foo)\\1",
+            RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout);
+        Utf8BoundaryMap? map = null;
+        string? decoded = null;
+
+        Assert.True(verifier.TryVerify(
+            input,
+            Utf8StructuralCandidate.Start(2, 8, 6, 0),
+            validation,
+            ref map,
+            ref decoded,
+            out var first));
+        var sharedDecoded = decoded;
+        Assert.True(verifier.TryVerify(
+            input,
+            Utf8StructuralCandidate.Start(10, 16, 6, 0),
+            validation,
+            ref map,
+            ref decoded,
+            out var second));
+
+        Assert.Same(sharedDecoded, decoded);
+        Assert.Equal(2, first.IndexInBytes);
+        Assert.Equal(10, second.IndexInBytes);
     }
 
     [Fact]
