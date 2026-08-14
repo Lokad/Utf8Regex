@@ -9,19 +9,24 @@ internal sealed class Utf8EmittedDeterministicMatcher
     internal delegate int FindNextDelegate(Utf8EmittedDeterministicMatcher matcher, ReadOnlySpan<byte> input, int startIndex, out int matchedLength);
 
     private static readonly MethodInfo s_findSearchLiteralMethod =
-        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(FindSearchLiteral), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(FindSearchLiteral), BindingFlags.Static | BindingFlags.NonPublic) ??
+        throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(FindSearchLiteral));
 
     private static readonly MethodInfo s_matchesCharClassMethod =
-        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(MatchesCharClass), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(MatchesCharClass), BindingFlags.Static | BindingFlags.NonPublic) ??
+        throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(MatchesCharClass));
 
     private static readonly MethodInfo s_getInputLengthMethod =
-        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(GetInputLength), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(GetInputLength), BindingFlags.Static | BindingFlags.NonPublic) ??
+        throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(GetInputLength));
 
     private static readonly MethodInfo s_getInputByteMethod =
-        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(GetInputByte), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(GetInputByte), BindingFlags.Static | BindingFlags.NonPublic) ??
+        throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(GetInputByte));
 
     private static readonly MethodInfo s_foldCaseMethod =
-        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(FoldCase), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedDeterministicMatcher).GetMethod(nameof(FoldCase), BindingFlags.Static | BindingFlags.NonPublic) ??
+        throw new MissingMethodException(typeof(Utf8EmittedDeterministicMatcher).FullName, nameof(FoldCase));
 
     private readonly FindNextDelegate _findNext;
     private readonly byte[] _searchLiteral;
@@ -87,7 +92,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
         var classes = new List<AsciiCharClass>();
         foreach (var check in program.FixedWidthChecks)
         {
-            if (check.CharClass is not null)
+            if (!check.CharClass.IsEmpty)
             {
                 classes.Add(check.CharClass);
             }
@@ -95,7 +100,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
 
         foreach (var step in program.Steps)
         {
-            if (step.CharClass is not null)
+            if (!step.CharClass.IsEmpty)
             {
                 classes.Add(step.CharClass);
             }
@@ -265,7 +270,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
                         il.MarkLabel(continueLabel);
                         break;
 
-                    case Utf8AsciiDeterministicFixedWidthCheckKind.CharClass when check.CharClass is not null:
+                    case Utf8AsciiDeterministicFixedWidthCheckKind.CharClass when !check.CharClass.IsEmpty:
                         il.Emit(OpCodes.Ldarg_0);
                         EmitLdcI4(il, charClassIndexes[check.CharClass]);
                         il.Emit(OpCodes.Ldloc, valueLocal);
@@ -319,7 +324,7 @@ internal sealed class Utf8EmittedDeterministicMatcher
 
         private static Dictionary<AsciiCharClass, int> CreateCharClassIndexMap(AsciiCharClass[] charClasses)
         {
-            var map = new Dictionary<AsciiCharClass, int>(ReferenceEqualityComparer.Instance);
+            var map = new Dictionary<AsciiCharClass, int>();
             for (var i = 0; i < charClasses.Length; i++)
             {
                 map[charClasses[i]] = i;

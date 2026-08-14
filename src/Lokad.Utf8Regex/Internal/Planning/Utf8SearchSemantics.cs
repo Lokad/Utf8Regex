@@ -18,18 +18,18 @@ internal enum Utf8SearchExitPolicy : byte
 internal readonly record struct Utf8SearchSemantics(
     Utf8SearchOverlapPolicy OverlapPolicy,
     Utf8SearchExitPolicy ExitPolicy,
-    bool RequiresConfirmation = false,
-    bool RequiresProjection = false)
+    bool RequiresConfirmation,
+    bool RequiresProjection)
 {
     public static Utf8SearchSemantics CandidateScan =>
-        new(Utf8SearchOverlapPolicy.Overlapping, Utf8SearchExitPolicy.None);
+        new(Utf8SearchOverlapPolicy.Overlapping, Utf8SearchExitPolicy.None, false, false);
 
     public static Utf8SearchSemantics FirstMatch =>
-        new(Utf8SearchOverlapPolicy.Overlapping, Utf8SearchExitPolicy.First);
+        new(Utf8SearchOverlapPolicy.Overlapping, Utf8SearchExitPolicy.First, false, false);
 
     public static Utf8SearchSemantics CountMatches =>
-        new(Utf8SearchOverlapPolicy.NonOverlapping, Utf8SearchExitPolicy.CountAll);
+        new(Utf8SearchOverlapPolicy.NonOverlapping, Utf8SearchExitPolicy.CountAll, false, false);
 
     public static Utf8SearchSemantics EnumerateMatches =>
-        new(Utf8SearchOverlapPolicy.NonOverlapping, Utf8SearchExitPolicy.EnumerateAll, RequiresProjection: true);
+        new(Utf8SearchOverlapPolicy.NonOverlapping, Utf8SearchExitPolicy.EnumerateAll, false, true);
 }

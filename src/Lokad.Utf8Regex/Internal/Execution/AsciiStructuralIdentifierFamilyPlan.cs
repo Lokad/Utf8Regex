@@ -36,18 +36,18 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
         VerifierProgram = AsciiStructuralVerifierProgram.Create(this);
         SeparatorCharClass = TryCreateAsciiCharClass(separatorSet, out var separatorCharClass)
             ? separatorCharClass
-            : null;
+            : default;
         IdentifierStartCharClass = TryCreateAsciiCharClass(identifierStartSet, out var identifierStartCharClass)
             ? identifierStartCharClass
-            : null;
+            : default;
         IdentifierTailCharClass = TryCreateAsciiCharClass(identifierTailSet, out var identifierTailCharClass)
             ? identifierTailCharClass
-            : null;
+            : default;
         CompiledSuffixParts = CreateCompiledSuffixParts(SuffixParts);
         HasAsciiUpperWordTailKernel =
             SuffixParts.Length == 0 &&
-            IdentifierStartCharClass is not null &&
-            IdentifierTailCharClass is not null &&
+            !IdentifierStartCharClass.IsEmpty &&
+            !IdentifierTailCharClass.IsEmpty &&
             HasSamePositiveDefinition(IdentifierStartCharClass, static b => b is >= (byte)'A' and <= (byte)'Z') &&
             HasSamePositiveDefinition(IdentifierTailCharClass, static b =>
                 b is >= (byte)'A' and <= (byte)'Z' ||
@@ -80,11 +80,11 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
 
     public AsciiStructuralVerifierProgram VerifierProgram { get; }
 
-    public AsciiCharClass? SeparatorCharClass { get; }
+    public AsciiCharClass SeparatorCharClass { get; }
 
-    public AsciiCharClass? IdentifierStartCharClass { get; }
+    public AsciiCharClass IdentifierStartCharClass { get; }
 
-    public AsciiCharClass? IdentifierTailCharClass { get; }
+    public AsciiCharClass IdentifierTailCharClass { get; }
 
     public AsciiStructuralCompiledSuffixPart[] CompiledSuffixParts { get; }
 
@@ -101,11 +101,12 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
         for (var i = 0; i < suffixParts.Length; i++)
         {
             var part = suffixParts[i];
-            compiled[i] = new AsciiStructuralCompiledSuffixPart(
-                part.LiteralUtf8,
-                part.SeparatorSet,
-                TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : null,
-                part.SeparatorMinCount);
+            compiled[i] = part.IsLiteral
+                ? AsciiStructuralCompiledSuffixPart.CreateLiteral(part.LiteralUtf8)
+                : AsciiStructuralCompiledSuffixPart.CreateSeparator(
+                    part.SeparatorSet,
+                    TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : default,
+                    part.SeparatorMinCount);
         }
 
         return compiled;
@@ -135,27 +136,46 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
     }
 }
 
+internal enum AsciiStructuralSuffixPartKind : byte
+{
+    None = 0,
+    Literal = 1,
+    Separator = 2,
+}
+
 internal readonly struct AsciiStructuralSuffixPart
 {
-    private AsciiStructuralSuffixPart(byte[]? literalUtf8, string? separatorSet, int separatorMinCount)
+    private readonly byte[]? _literalUtf8;
+    private readonly string? _separatorSet;
+
+    private AsciiStructuralSuffixPart(
+        AsciiStructuralSuffixPartKind kind,
+        byte[] literalUtf8,
+        string separatorSet,
+        int separatorMinCount)
     {
-        LiteralUtf8 = literalUtf8;
-        SeparatorSet = separatorSet;
+        Kind = kind;
+        _literalUtf8 = literalUtf8;
+        _separatorSet = separatorSet;
         SeparatorMinCount = separatorMinCount;
     }
 
-    public byte[]? LiteralUtf8 { get; }
+    public AsciiStructuralSuffixPartKind Kind { get; }
 
-    public string? SeparatorSet { get; }
+    public byte[] LiteralUtf8 => _literalUtf8 ?? [];
+
+    public string SeparatorSet => _separatorSet ?? string.Empty;
 
     public int SeparatorMinCount { get; }
 
-    public bool IsLiteral => LiteralUtf8 is { Length: > 0 };
+    public bool IsLiteral => Kind == AsciiStructuralSuffixPartKind.Literal;
 
-    public bool IsSeparator => !string.IsNullOrEmpty(SeparatorSet);
+    public bool IsSeparator => Kind == AsciiStructuralSuffixPartKind.Separator;
 
-    public static AsciiStructuralSuffixPart CreateLiteral(byte[] literalUtf8) => new(literalUtf8, null, 0);
+    public static AsciiStructuralSuffixPart CreateLiteral(byte[] literalUtf8) =>
+        new(AsciiStructuralSuffixPartKind.Literal, literalUtf8, string.Empty, 0);
 
-    public static AsciiStructuralSuffixPart CreateSeparator(string separatorSet, int separatorMinCount) => new(null, separatorSet, separatorMinCount);
+    public static AsciiStructuralSuffixPart CreateSeparator(string separatorSet, int separatorMinCount) =>
+        new(AsciiStructuralSuffixPartKind.Separator, [], separatorSet, separatorMinCount);
 }
 

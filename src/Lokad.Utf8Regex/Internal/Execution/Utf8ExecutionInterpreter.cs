@@ -671,7 +671,7 @@ internal static class Utf8ExecutionInterpreter
                 case AsciiSimplePatternTokenKind.Dot:
                     break;
 
-                case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
+                case AsciiSimplePatternTokenKind.CharClass when !token.CharClass.IsEmpty:
                     if (!token.CharClass.Contains(plan.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(value) : value))
                     {
                         return false;

@@ -20,15 +20,18 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var firstBranch = branches[0];
         if (firstBranch.Length < 3 ||
             firstBranch[0].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            firstBranch[0].CharClass is not { } prefixCharClass ||
+            firstBranch[0].CharClass.IsEmpty ||
             firstBranch[^1].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            firstBranch[^1].CharClass is not { } suffixCharClass ||
+            firstBranch[^1].CharClass.IsEmpty ||
             !TryExtractTrailingLiteral(firstBranch, out var literalStart, out var literalUtf8) ||
             literalStart < 1 ||
             !TryGetUniformRepeatedClass(firstBranch, 1, literalStart, out var repeatedCharClass))
         {
             return false;
         }
+
+        var prefixCharClass = firstBranch[0].CharClass;
+        var suffixCharClass = firstBranch[^1].CharClass;
 
         var minLength = literalStart - 1;
         var maxLength = minLength;
@@ -37,11 +40,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             var branch = branches[i];
             if (branch.Length < literalUtf8.Length + 2 ||
                 branch[0].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                branch[0].CharClass is not { } nextPrefix ||
-                !prefixCharClass.HasSameDefinition(nextPrefix) ||
+                branch[0].CharClass.IsEmpty ||
+                !prefixCharClass.HasSameDefinition(branch[0].CharClass) ||
                 branch[^1].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                branch[^1].CharClass is not { } nextSuffix ||
-                !suffixCharClass.HasSameDefinition(nextSuffix) ||
+                branch[^1].CharClass.IsEmpty ||
+                !suffixCharClass.HasSameDefinition(branch[^1].CharClass) ||
                 !TryExtractTrailingLiteral(branch, out var nextLiteralStart, out var nextLiteralUtf8) ||
                 !nextLiteralUtf8.AsSpan().SequenceEqual(literalUtf8))
             {
@@ -325,7 +328,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         byte[] literalB,
         int preferredOffset,
         int minOffset,
-        int excludedOffset = -1)
+        int excludedOffset)
     {
         var maxOffset = Math.Min(literalA.Length, literalB.Length) - 1;
         for (var delta = 0; delta <= maxOffset; delta++)

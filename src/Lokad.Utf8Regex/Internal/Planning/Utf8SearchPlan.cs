@@ -446,7 +446,7 @@ internal readonly struct Utf8SearchPlan
             Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
                 new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false),
                 5,
-                new Utf8FallbackStartTransform(1)),
+                new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None)),
             Utf8StructuralSearchPlan.CreateWindowPlanWithLineSpan(
                 new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false),
                 5),

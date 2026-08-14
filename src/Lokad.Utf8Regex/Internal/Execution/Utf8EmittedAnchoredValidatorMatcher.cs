@@ -10,10 +10,12 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
     internal delegate int MatchDelegate(ReadOnlySpan<byte> input);
 
     private static readonly MethodInfo s_getSpanLengthMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))?.GetMethod ??
+        throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Length");
 
     private static readonly MethodInfo s_getSpanItemMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty("Item")?.GetMethod ??
+        throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Item");
 
     private readonly MatchDelegate _match;
 
@@ -184,7 +186,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
                 }
                 else
                 {
-                    emitter.EmitSmallPositiveSetBranch(segment.CharClass!.GetPositiveMatchBytes(), valueLocal, nextRunLabel, failLabel);
+                    emitter.EmitSmallPositiveSetBranch(segment.CharClass.GetPositiveMatchBytes(), valueLocal, nextRunLabel, failLabel);
                 }
 
                 emitter.MarkLabel(nextRunLabel);

@@ -17,7 +17,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         string executionPattern,
         string semanticPattern,
         RegexOptions options,
-        byte[]? requiredPrefilterLiteralUtf8 = null)
+        byte[]? requiredPrefilterLiteralUtf8)
     {
         if (TryParseAnchoredQuotedLineSegmentCountFamily(
             executionPattern,
@@ -26,7 +26,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             out var linePrefixUtf8,
             out var optionalSegmentUtf8))
         {
-            return Utf8FallbackDirectFamilyPlan.ForQuotedLineSegmentCount(linePrefixUtf8!, optionalSegmentUtf8);
+            return Utf8FallbackDirectFamilyPlan.ForQuotedLineSegmentCount(RequireBytes(linePrefixUtf8), optionalSegmentUtf8);
         }
 
         if (TryParseAnchoredPrefixUntilBytePattern(
@@ -40,7 +40,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
                 out prefixUtf8,
                 out terminator))
         {
-            return Utf8FallbackDirectFamilyPlan.ForPrefixUntilByte(prefixUtf8!, terminator);
+            return Utf8FallbackDirectFamilyPlan.ForPrefixUntilByte(RequireBytes(prefixUtf8), terminator);
         }
 
         if (TryParseAnchoredTrimmedOptionalLiteralPrefixTailPattern(
@@ -54,7 +54,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
                 out prefixUtf8,
                 out optionalPrefixUtf8))
         {
-            return Utf8FallbackDirectFamilyPlan.ForTrimmedOptionalLiteralPrefixTail(prefixUtf8!, optionalPrefixUtf8);
+            return Utf8FallbackDirectFamilyPlan.ForTrimmedOptionalLiteralPrefixTail(RequireBytes(prefixUtf8), optionalPrefixUtf8);
         }
 
         if (TryParseLeadingAnyRunTrailingAsciiLiteral(executionPattern, options, out var trailingLiteralUtf8) ||
@@ -71,11 +71,11 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         {
             return Utf8FallbackDirectFamilyPlan.ForAnchoredAsciiQueryWhole(
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole,
-                urlPayload.PrimaryPrefixUtf8!,
-                urlPayload.SecondaryPrefixUtf8!,
-                urlPayload.RelativePrefixUtf8!,
-                urlPayload.RouteMarkerUtf8!,
-                urlPayload.RequiredParameterUtf8!);
+                RequireBytes(urlPayload.PrimaryPrefixUtf8),
+                RequireBytes(urlPayload.SecondaryPrefixUtf8),
+                RequireBytes(urlPayload.RelativePrefixUtf8),
+                RequireBytes(urlPayload.RouteMarkerUtf8),
+                RequireBytes(urlPayload.RequiredParameterUtf8));
         }
 
         if (TryParseAnchoredAsciiHexQueryWhole(executionPattern, options, out urlPayload) ||
@@ -83,11 +83,11 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         {
             return Utf8FallbackDirectFamilyPlan.ForAnchoredAsciiQueryWhole(
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole,
-                urlPayload.PrimaryPrefixUtf8!,
-                urlPayload.SecondaryPrefixUtf8!,
-                urlPayload.RelativePrefixUtf8!,
-                urlPayload.RouteMarkerUtf8!,
-                urlPayload.RequiredParameterUtf8!,
+                RequireBytes(urlPayload.PrimaryPrefixUtf8),
+                RequireBytes(urlPayload.SecondaryPrefixUtf8),
+                RequireBytes(urlPayload.RelativePrefixUtf8),
+                RequireBytes(urlPayload.RouteMarkerUtf8),
+                RequireBytes(urlPayload.RequiredParameterUtf8),
                 urlPayload.OptionalParameterUtf8);
         }
 
@@ -191,11 +191,11 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             out var tailCharSetUtf8))
         {
             return Utf8FallbackDirectFamilyPlan.ForDelimitedTokenCount(
-                delimiterUtf8!,
-                secondaryDelimiterUtf8!,
-                headCharSetUtf8!,
-                middleCharSetUtf8!,
-                tailCharSetUtf8!);
+                RequireBytes(delimiterUtf8),
+                RequireBytes(secondaryDelimiterUtf8),
+                RequireBytes(headCharSetUtf8),
+                RequireBytes(middleCharSetUtf8),
+                RequireBytes(tailCharSetUtf8));
         }
 
         if (TryParseAsciiLiteralBetweenNegatedRuns(
@@ -206,7 +206,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             out var excludedTailByte))
         {
             return Utf8FallbackDirectFamilyPlan.ForLiteralBetweenNegatedRuns(
-                infixLiteralUtf8!,
+                RequireBytes(infixLiteralUtf8),
                 excludedHeadByte,
                 excludedTailByte);
         }
@@ -230,12 +230,12 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             out var finalTailCharSetUtf8))
         {
             return Utf8FallbackDirectFamilyPlan.ForLiteralStructuredTokenCount(
-                literalUtf8!,
+                RequireBytes(literalUtf8),
                 optionalDelimiterUtf8,
                 finalDelimiterUtf8,
-                headCharSetUtf8!,
-                middleCharSetUtf8!,
-                tailCharSetUtf8!,
+                RequireBytes(headCharSetUtf8),
+                RequireBytes(middleCharSetUtf8),
+                RequireBytes(tailCharSetUtf8),
                 [.. (optionalTailCharSetUtf8 ?? []), 0, .. (finalTailCharSetUtf8 ?? [])]);
         }
 
@@ -308,4 +308,8 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         return default;
     }
 
+    private static byte[] RequireBytes(byte[]? bytes)
+    {
+        return bytes ?? throw new InvalidOperationException("A successful fallback-family parse must provide its required byte payload.");
+    }
 }

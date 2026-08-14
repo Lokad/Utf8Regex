@@ -77,8 +77,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             for (var j = 0; j < branch.Length; j++)
             {
                 if (branch[j].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                    branch[j].CharClass is not { } branchClass ||
-                    !firstClass.HasSameDefinition(branchClass))
+                    branch[j].CharClass.IsEmpty ||
+                    !firstClass.HasSameDefinition(branch[j].CharClass))
                 {
                     return false;
                 }

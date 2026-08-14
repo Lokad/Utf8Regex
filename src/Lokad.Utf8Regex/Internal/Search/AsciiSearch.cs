@@ -115,13 +115,15 @@ internal static class AsciiSearch
             }
 
             var firstByte = literal[0];
-            if (bucketLists[firstByte] is null)
+            var bucket = bucketLists[firstByte];
+            if (bucket is null)
             {
-                bucketLists[firstByte] = [];
+                bucket = [];
+                bucketLists[firstByte] = bucket;
                 distinctFirstBytes[distinctCount++] = firstByte;
             }
 
-            bucketLists[firstByte]!.Add(literal);
+            bucket.Add(literal);
         }
 
         var firstBytes = distinctFirstBytes[..distinctCount].ToArray();
@@ -129,7 +131,9 @@ internal static class AsciiSearch
         for (var i = 0; i < distinctCount; i++)
         {
             var firstByte = firstBytes[i];
-            buckets[i] = new AsciiExactLiteralBucket(firstByte, [.. bucketLists[firstByte]!]);
+            var bucket = bucketLists[firstByte] ??
+                throw new InvalidOperationException("A recorded literal bucket must have storage.");
+            buckets[i] = new AsciiExactLiteralBucket(firstByte, [.. bucket]);
         }
 
         return new AsciiExactLiteralSearchData(firstBytes, buckets, shortestLength);

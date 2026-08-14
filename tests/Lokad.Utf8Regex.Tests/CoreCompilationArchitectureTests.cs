@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Planning;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -162,6 +163,88 @@ public sealed class CoreCompilationArchitectureTests
         Assert.Contains("AsciiOrderedLiteralWindowExecutor.FindNext", structuralRuntime, StringComparison.Ordinal);
         Assert.DoesNotContain("FindNextOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
         Assert.DoesNotContain("FindNextPairedOrderedLiteralFamilyWindow", structuralRuntime, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OwnedInternalContractsUseMandatoryParametersAndNoNullSuppression()
+    {
+        var assembly = typeof(Utf8Regex).Assembly;
+        const BindingFlags declaredMembers = BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var optionalParameters = assembly.GetTypes()
+            .Where(static type =>
+                type.Namespace?.StartsWith("Lokad.Utf8Regex.Internal", StringComparison.Ordinal) == true &&
+                !type.Namespace.StartsWith("Lokad.Utf8Regex.Internal.FrontEnd.Runtime", StringComparison.Ordinal))
+            .SelectMany(type =>
+                type.GetMethods(declaredMembers).Cast<MethodBase>()
+                    .Concat(type.GetConstructors(declaredMembers)))
+            .SelectMany(method => method.GetParameters()
+                .Where(static parameter => parameter.IsOptional || parameter.HasDefaultValue)
+                .Select(parameter => $"{method.DeclaringType?.FullName}.{method.Name}({parameter.Name})"))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.True(optionalParameters.Length == 0, string.Join(Environment.NewLine, optionalParameters));
+
+        var sourceRoot = FindCoreSourceDirectory();
+        var copiedRuntimeRoot = Path.Combine(sourceRoot, "Internal", "FrontEnd", "Runtime") + Path.DirectorySeparatorChar;
+        var nullSuppression = new Regex(@"(?<=[A-Za-z0-9_\)\]])!(?=[\.,;\)\]\[])", RegexOptions.CultureInvariant);
+        var suppressions = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.StartsWith(copiedRuntimeRoot, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(path => File.ReadLines(path)
+                .Select((line, lineNumber) => (path, line, lineNumber))
+                .Where(item => nullSuppression.IsMatch(item.line)))
+            .Select(item => $"{item.path}:{item.lineNumber + 1}")
+            .ToArray();
+        Assert.Empty(suppressions);
+    }
+
+    [Fact]
+    public void SearchAndPlanningContractsDoNotExposeTupleDomains()
+    {
+        const BindingFlags declaredMembers = BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var offenders = typeof(Utf8Regex).Assembly.GetTypes()
+            .Where(static type =>
+                type.Namespace is "Lokad.Utf8Regex.Internal.Planning" or "Lokad.Utf8Regex.Internal.Search")
+            .SelectMany(type =>
+                type.GetFields(declaredMembers).Select(field => (Member: field.Name, Type: field.FieldType))
+                    .Concat(type.GetProperties(declaredMembers).Select(property => (Member: property.Name, Type: property.PropertyType)))
+                    .Concat(type.GetMethods(declaredMembers).Select(method => (Member: method.Name, Type: method.ReturnType)))
+                    .Concat(type.GetMethods(declaredMembers).SelectMany(method =>
+                        method.GetParameters().Select(parameter => (Member: $"{method.Name}({parameter.Name})", Type: parameter.ParameterType))))
+                    .Where(item => ContainsTuple(item.Type))
+                    .Select(item => $"{type.FullName}.{item.Member}: {item.Type}"))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void ReplacementDependsOnExecutionInOneDirectionOnly()
+    {
+        var sourceRoot = FindCoreSourceDirectory();
+        var executionRoot = Path.Combine(sourceRoot, "Internal", "Execution");
+        foreach (var path in Directory.EnumerateFiles(executionRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            Assert.DoesNotContain("Internal.Replacement", File.ReadAllText(path), StringComparison.Ordinal);
+        }
+
+        var replacementRoot = Path.Combine(sourceRoot, "Internal", "Replacement");
+        Assert.Contains(
+            Directory.EnumerateFiles(replacementRoot, "*.cs", SearchOption.AllDirectories),
+            path => File.ReadAllText(path).Contains("Internal.Execution", StringComparison.Ordinal));
+    }
+
+    private static bool ContainsTuple(Type type)
+    {
+        if (type.IsGenericType && type.GetGenericTypeDefinition().FullName?.StartsWith("System.ValueTuple`", StringComparison.Ordinal) == true)
+        {
+            return true;
+        }
+
+        return type.GetElementType() is { } elementType && ContainsTuple(elementType) ||
+            type.IsGenericType && type.GetGenericArguments().Any(ContainsTuple);
     }
 
     private static string FindCoreSourceDirectory()

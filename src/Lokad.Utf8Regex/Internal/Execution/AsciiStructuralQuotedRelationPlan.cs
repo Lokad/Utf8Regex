@@ -61,11 +61,11 @@ internal readonly struct AsciiStructuralQuotedRelationPlan
 
     public byte[][] PrefixesUtf8 { get; }
 
-    public AsciiCharClass? PrefixedTailClass { get; }
+    public AsciiCharClass PrefixedTailClass { get; }
 
     public int PrefixedTailLength { get; }
 
-    public AsciiCharClass? QuotedRunClass { get; }
+    public AsciiCharClass QuotedRunClass { get; }
 
     public int QuotedRunLength { get; }
 
@@ -75,9 +75,9 @@ internal readonly struct AsciiStructuralQuotedRelationPlan
 
     public bool HasValue =>
         PrefixesUtf8 is { Length: > 0 } &&
-        PrefixedTailClass is not null &&
+        !PrefixedTailClass.IsEmpty &&
         PrefixedTailLength > 0 &&
-        QuotedRunClass is not null &&
+        !QuotedRunClass.IsEmpty &&
         QuotedRunLength > 0 &&
         FirstBranch.HasValue &&
         SecondBranch.HasValue;

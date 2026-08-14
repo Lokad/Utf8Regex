@@ -20,21 +20,21 @@ public readonly ref struct Utf8MatchContext
 
     public bool Success => _match?.Success ?? false;
 
-    public int IndexInUtf16 => Success ? _match!.Index : 0;
+    public int IndexInUtf16 => _match is { Success: true } match ? match.Index : 0;
 
-    public int LengthInUtf16 => Success ? _match!.Length : 0;
+    public int LengthInUtf16 => _match is { Success: true } match ? match.Length : 0;
 
     public bool IsByteAligned
     {
         get
         {
-            if (!Success)
+            if (_match is not { Success: true } match)
             {
                 return true;
             }
 
-            var start = ResolveBoundary(_match!.Index);
-            var end = ResolveBoundary(_match.Index + _match.Length);
+            var start = ResolveBoundary(match.Index);
+            var end = ResolveBoundary(match.Index + match.Length);
             return start.IsScalarBoundary && end.IsScalarBoundary;
         }
     }
@@ -111,7 +111,7 @@ public readonly ref struct Utf8MatchContext
 
     public string GetValueString()
     {
-        return Success ? _match!.Value : string.Empty;
+        return _match is { Success: true } match ? match.Value : string.Empty;
     }
 
     public bool TryGetValueBytes(out ReadOnlySpan<byte> valueBytes)

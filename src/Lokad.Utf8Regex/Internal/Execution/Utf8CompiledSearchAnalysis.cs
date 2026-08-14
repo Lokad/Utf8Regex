@@ -31,8 +31,8 @@ internal enum Utf8CompiledEmittedFamily : byte
 internal readonly record struct Utf8CompiledSearchAnalysis(
     Utf8CompiledSearchMode Mode,
     Utf8CompiledEngine Engine,
-    Utf8CompiledEmittedFamily EmittedFamily = Utf8CompiledEmittedFamily.None,
-    Utf8CandidateSearchKind CandidateSourceKind = Utf8CandidateSearchKind.None)
+    Utf8CompiledEmittedFamily EmittedFamily,
+    Utf8CandidateSearchKind CandidateSourceKind)
 {
     public bool HasEmittedBackend => Engine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction || Engine.Kind == Utf8CompiledEngineKind.EmittedKernel;
 }
@@ -96,6 +96,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.FallbackRegex,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
+                Utf8CompiledEmittedFamily.None,
                 CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
@@ -108,6 +109,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.ByteSafeLinear,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.ByteSafeLinear),
+                Utf8CompiledEmittedFamily.None,
                 CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
@@ -118,6 +120,7 @@ internal static class Utf8CompiledSearchAnalyzer
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.CompiledFallback,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.CompiledFallback),
+                Utf8CompiledEmittedFamily.None,
                 CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
@@ -142,6 +145,7 @@ internal static class Utf8CompiledSearchAnalyzer
         return new Utf8CompiledSearchAnalysis(
             Utf8CompiledSearchMode.FallbackRegex,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.FallbackRegex),
+            Utf8CompiledEmittedFamily.None,
             CandidateSourceKind: countPipeline.CandidateSource.Kind);
     }
 
@@ -150,7 +154,6 @@ internal static class Utf8CompiledSearchAnalyzer
         Utf8EmittedKernelKind.UpperWordIdentifierFamily => Utf8CompiledEmittedFamily.UpperWordIdentifier,
         Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix => Utf8CompiledEmittedFamily.SharedPrefixSuffix,
         Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => Utf8CompiledEmittedFamily.OrderedLiteralWindow,
-        Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow => Utf8CompiledEmittedFamily.OrderedLiteralWindow,
         _ => Utf8CompiledEmittedFamily.None,
     };
 

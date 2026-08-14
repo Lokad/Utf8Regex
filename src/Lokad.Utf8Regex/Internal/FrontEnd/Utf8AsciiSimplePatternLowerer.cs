@@ -84,6 +84,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             ignoreCase,
             IsUtf8ByteSafe(branches),
             TryExtractCharClassRunPlan(branches, isStartAnchored, isEndAnchored, out var runPlan) ? runPlan : default,
+            anchoredHeadTailRunPlan: default,
             anchoredValidatorPlan: TryExtractAnchoredValidatorPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredValidatorPlan)
                 ? anchoredValidatorPlan
                 : default,
@@ -141,19 +142,21 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         int endExclusive,
         out AsciiCharClass charClass)
     {
-        charClass = null!;
+        charClass = default;
         if (endExclusive <= start ||
             tokens[start].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            tokens[start].CharClass is not { } firstCharClass)
+            tokens[start].CharClass.IsEmpty)
         {
             return false;
         }
 
+        var firstCharClass = tokens[start].CharClass;
+
         for (var i = start + 1; i < endExclusive; i++)
         {
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                tokens[i].CharClass is not { } nextCharClass ||
-                !firstCharClass.HasSameDefinition(nextCharClass))
+                tokens[i].CharClass.IsEmpty ||
+                !firstCharClass.HasSameDefinition(tokens[i].CharClass))
             {
                 return false;
             }

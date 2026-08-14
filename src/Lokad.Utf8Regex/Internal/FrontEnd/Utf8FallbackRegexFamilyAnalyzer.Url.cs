@@ -124,6 +124,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             if (pattern[index] == '(')
             {
                 if (!TryReadOptionalLiteralGroup(pattern, ref index, out var optionalUtf8) ||
+                    optionalUtf8 is not { } optional ||
                     !TryReadEscapedAsciiLiteral(pattern, ref index, out var suffixUtf8))
                 {
                     index = original;
@@ -132,7 +133,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
 
                 var prefixUtf8 = Encoding.ASCII.GetBytes(builder.ToString());
                 primaryUtf8 = [.. prefixUtf8, .. suffixUtf8];
-                secondaryUtf8 = [.. prefixUtf8, .. optionalUtf8!, .. suffixUtf8];
+                secondaryUtf8 = [.. prefixUtf8, .. optional, .. suffixUtf8];
                 return true;
             }
 

@@ -10,7 +10,12 @@ internal sealed class Utf8IlEmitter
     private readonly MethodInfo _getSpanItemMethod;
     private readonly byte _inputArgIndex;
 
-    public Utf8IlEmitter(ILGenerator il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod, byte inputArgIndex = 1)
+    public Utf8IlEmitter(ILGenerator il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod)
+        : this(il, getSpanLengthMethod, getSpanItemMethod, 1)
+    {
+    }
+
+    public Utf8IlEmitter(ILGenerator il, MethodInfo getSpanLengthMethod, MethodInfo getSpanItemMethod, byte inputArgIndex)
     {
         _il = il;
         _getSpanLengthMethod = getSpanLengthMethod;
@@ -72,7 +77,9 @@ internal sealed class Utf8IlEmitter
         Emit(OpCodes.Call, _getSpanLengthMethod);
     }
 
-    public void LoadInputByte(LocalBuilder indexLocal, int offset = 0)
+    public void LoadInputByte(LocalBuilder indexLocal) => LoadInputByte(indexLocal, 0);
+
+    public void LoadInputByte(LocalBuilder indexLocal, int offset)
     {
         LoadArgAddress(_inputArgIndex);
         LoadLocal(indexLocal);

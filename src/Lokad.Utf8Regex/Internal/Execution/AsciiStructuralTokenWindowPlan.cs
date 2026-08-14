@@ -27,7 +27,7 @@ internal readonly struct AsciiStructuralTokenWindowPlan
         LeadingRunPlan = new AsciiSimplePatternRunPlan(leadingCharClass, leadingLength, leadingLength);
     }
 
-    public AsciiCharClass? LeadingCharClass { get; }
+    public AsciiCharClass LeadingCharClass { get; }
 
     public int LeadingLength { get; }
 
@@ -41,15 +41,15 @@ internal readonly struct AsciiStructuralTokenWindowPlan
 
     public int TrailingGapMax { get; }
 
-    public AsciiCharClass? TrailingCharClass { get; }
+    public AsciiCharClass TrailingCharClass { get; }
 
     public int TrailingLength { get; }
 
     public AsciiSimplePatternRunPlan LeadingRunPlan { get; }
 
     public bool HasValue =>
-        LeadingCharClass is not null &&
-        TrailingCharClass is not null &&
+        !LeadingCharClass.IsEmpty &&
+        !TrailingCharClass.IsEmpty &&
         LeadingLength > 0 &&
         TrailingLength > 0 &&
         !string.IsNullOrEmpty(SeparatorSet) &&

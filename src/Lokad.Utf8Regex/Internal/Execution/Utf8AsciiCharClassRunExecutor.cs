@@ -9,10 +9,12 @@ internal static class Utf8AsciiCharClassRunExecutor
 
     public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionDeadline budget)
     {
-        if (!runPlan.HasValue || runPlan.CharClass is not { } charClass)
+        if (!runPlan.HasValue)
         {
             return 0;
         }
+
+        var charClass = runPlan.CharClass;
 
         if (runPlan.PredicateKind != AsciiCharClassPredicateKind.None)
         {
@@ -101,10 +103,12 @@ internal static class Utf8AsciiCharClassRunExecutor
     public static int FindNext(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, int startIndex, out int matchedLength, Utf8ExecutionDeadline budget)
     {
         matchedLength = 0;
-        if (!runPlan.HasValue || runPlan.CharClass is not { } charClass || startIndex >= input.Length)
+        if (!runPlan.HasValue || startIndex >= input.Length)
         {
             return -1;
         }
+
+        var charClass = runPlan.CharClass;
 
         if (runPlan.PredicateKind != AsciiCharClassPredicateKind.None)
         {

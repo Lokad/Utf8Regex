@@ -461,9 +461,8 @@ public sealed class Utf8ByteSafeInterpreterExecutorTests
 
         Assert.True(program.HasValue);
         Assert.Equal(Utf8ByteSafeLinearVerifierStepKind.LoopProjectedAsciiSet, program.Steps[1].Kind);
-        Assert.NotNull(program.Steps[1].ProjectedAsciiCharClass);
-        Assert.True(program.Steps[1].ProjectedAsciiCharClass!.Contains((byte)','));
-        Assert.True(program.Steps[1].ProjectedAsciiCharClass!.Contains((byte)' '));
+        Assert.True(program.Steps[1].ProjectedAsciiCharClass.Contains((byte)','));
+        Assert.True(program.Steps[1].ProjectedAsciiCharClass.Contains((byte)' '));
         Assert.Equal(1, program.Steps[1].Min);
         Assert.True(program.Steps[1].Max > 1 || program.Steps[1].Max < 0);
         Assert.True(program.TryMatch(", "u8, 0, out var matchedLength, out var requiresCompatibilityFallback));

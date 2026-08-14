@@ -15,7 +15,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
     public static bool CanUseForByteSafeLinear(
         Utf8ExecutionTree? tree,
         Utf8DeterministicAnchorSearch anchor,
-        Utf8StructuralSearchPlan structuralSearchPlan = default)
+        Utf8StructuralSearchPlan structuralSearchPlan)
     {
         return tree is not null &&
             IsByteSafeNode(tree.Root) &&

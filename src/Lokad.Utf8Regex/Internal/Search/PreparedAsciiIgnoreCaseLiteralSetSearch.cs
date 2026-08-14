@@ -43,13 +43,15 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
             shortestLength = Math.Min(shortestLength, normalized.Length);
             var firstByte = normalized[0];
-            if (bucketLists[firstByte] is null)
+            var bucket = bucketLists[firstByte];
+            if (bucket is null)
             {
-                bucketLists[firstByte] = [];
+                bucket = [];
+                bucketLists[firstByte] = bucket;
                 distinctFoldedFirstBytes[distinctCount++] = firstByte;
             }
 
-            bucketLists[firstByte]!.Add(normalized);
+            bucket.Add(normalized);
         }
 
         var searchBytes = BuildSearchBytes(distinctFoldedFirstBytes[..distinctCount]);
@@ -57,7 +59,9 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
         for (var i = 0; i < distinctCount; i++)
         {
             var firstByte = distinctFoldedFirstBytes[i];
-            buckets[i] = new AsciiIgnoreCaseLiteralBucket(firstByte, [.. bucketLists[firstByte]!]);
+            var bucket = bucketLists[firstByte] ??
+                throw new InvalidOperationException("A recorded literal bucket must have storage.");
+            buckets[i] = new AsciiIgnoreCaseLiteralBucket(firstByte, [.. bucket]);
         }
 
         FirstByteSearchValues = SearchValues.Create(searchBytes);

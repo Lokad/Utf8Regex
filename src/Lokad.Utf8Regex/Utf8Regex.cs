@@ -1133,7 +1133,7 @@ public sealed class Utf8Regex
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.Replace(input, analyzed);
+            return Utf8AsciiCultureInvariantReplacement.Replace(twin, input, analyzed);
         }
 
         return ReplaceCore(input, replacement, analyzed);
@@ -1247,7 +1247,7 @@ public sealed class Utf8Regex
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.ReplaceToString(input, analyzed);
+            return Utf8AsciiCultureInvariantReplacement.ReplaceToString(twin, input, analyzed);
         }
 
         _ = Utf8Validation.Validate(input);
@@ -1297,7 +1297,7 @@ public sealed class Utf8Regex
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
-            return twin.TryReplace(input, analyzed, destination, out bytesWritten);
+            return Utf8AsciiCultureInvariantReplacement.TryReplace(twin, input, analyzed, destination, out bytesWritten);
         }
 
         return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten);
@@ -2392,7 +2392,9 @@ public sealed class Utf8Regex
             budget);
     }
 
-    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap = null)
+    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input) => MatchFallback(input, null);
+
+    private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap)
     {
         if (RejectsByRequiredPrefilter(input))
         {
@@ -2675,7 +2677,10 @@ public sealed class Utf8Regex
         return default;
     }
 
-    private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation, bool allowByteSafeStructuralLinear = false)
+    private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation) =>
+        ShouldUseFallbackForNonAsciiSimplePattern(validation, false);
+
+    private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation, bool allowByteSafeStructuralLinear)
     {
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _preparedRegex.SimplePatternPlan.IsUtf8ByteSafe)
@@ -2749,7 +2754,10 @@ public sealed class Utf8Regex
         return Utf8SearchStrategyExecutor.CountFallbackCandidates(_preparedRegex.SearchPlan, input, requireScalarBoundary);
     }
 
-    private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap = null)
+    private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input) =>
+        MatchFallbackViaSearchStarts(input, null);
+
+    private Utf8ValueMatch MatchFallbackViaSearchStarts(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap)
     {
         var validation = boundaryMap is null ? Utf8InputAnalyzer.ValidateOnly(input) : default;
         string? decoded = null;

@@ -18,9 +18,9 @@ public readonly ref struct Utf8GroupContext
 
     public bool Success => _group?.Success ?? false;
 
-    public int IndexInUtf16 => Success ? _group!.Index : 0;
+    public int IndexInUtf16 => _group is { Success: true } group ? group.Index : 0;
 
-    public int LengthInUtf16 => Success ? _group!.Length : 0;
+    public int LengthInUtf16 => _group is { Success: true } group ? group.Length : 0;
 
     public int CaptureCount => _group?.Captures.Count ?? 0;
 

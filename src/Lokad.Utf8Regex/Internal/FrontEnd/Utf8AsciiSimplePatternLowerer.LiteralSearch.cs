@@ -40,7 +40,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
 
             if (token.Kind == AsciiSimplePatternTokenKind.CharClass &&
-                token.CharClass is not null &&
+                !token.CharClass.IsEmpty &&
                 TryExtractIgnoreCaseLiteral(token.CharClass, out var literal))
             {
                 AppendLiteralByte(current, literal);
@@ -48,7 +48,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             }
 
             if (token.Kind == AsciiSimplePatternTokenKind.CharClass &&
-                token.CharClass is not null &&
+                !token.CharClass.IsEmpty &&
                 TryExtractLiteralBytes(token.CharClass, ignoreCase, out var literalBytes))
             {
                 if (current.Count * literalBytes.Length > MaxExpandedBranches)
@@ -164,7 +164,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                         tokens[i] = new AsciiSimplePatternToken(Internal.Search.AsciiSearch.FoldCase(token.Literal));
                         break;
 
-                    case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
+                    case AsciiSimplePatternTokenKind.CharClass when !token.CharClass.IsEmpty:
                         tokens[i] = new AsciiSimplePatternToken(token.CharClass.ToIgnoreCaseInvariant());
                         break;
                 }

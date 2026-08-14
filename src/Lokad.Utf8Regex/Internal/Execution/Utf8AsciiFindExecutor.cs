@@ -24,7 +24,7 @@ internal static class Utf8AsciiFindExecutor
 
         return plan.Mode switch
         {
-            PreparedAsciiFindMode.Literal or PreparedAsciiFindMode.LiteralAfterLoop
+            PreparedAsciiFindMode.Literal
                 => TryFindNextLiteralAnchor(input, plan.LiteralSearch, startIndex, out anchorIndex, out matchedLength),
             PreparedAsciiFindMode.LiteralFamily
                 => TryFindNextLiteralFamilyAnchor(input, plan.LiteralFamilySearch, startIndex, out anchorIndex, out matchedLength),
@@ -133,7 +133,8 @@ internal static class Utf8AsciiFindExecutor
         candidateIndex = -1;
         matchedLength = 1;
 
-        if (plan.FixedDistanceSets is not { Length: > 0 } sets)
+        var sets = plan.FixedDistanceSets;
+        if (sets.Length == 0)
         {
             return false;
         }

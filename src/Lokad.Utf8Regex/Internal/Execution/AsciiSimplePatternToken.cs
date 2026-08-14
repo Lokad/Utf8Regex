@@ -6,7 +6,7 @@ internal readonly struct AsciiSimplePatternToken
     {
         Kind = AsciiSimplePatternTokenKind.Literal;
         Literal = literal;
-        CharClass = null;
+        CharClass = default;
     }
 
     public AsciiSimplePatternToken(AsciiCharClass charClass)
@@ -20,14 +20,14 @@ internal readonly struct AsciiSimplePatternToken
     {
         Kind = kind;
         Literal = 0;
-        CharClass = null;
+        CharClass = default;
     }
 
     public AsciiSimplePatternTokenKind Kind { get; }
 
     public byte Literal { get; }
 
-    public AsciiCharClass? CharClass { get; }
+    public AsciiCharClass CharClass { get; }
 
     public static AsciiSimplePatternToken Dot { get; } = new(AsciiSimplePatternTokenKind.Dot);
 }

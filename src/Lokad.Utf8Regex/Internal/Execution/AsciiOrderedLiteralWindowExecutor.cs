@@ -1034,7 +1034,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         }
 
         var max = 0;
-        foreach (var literal in plan.LeadingLiteralsUtf8!)
+        foreach (var literal in plan.LeadingLiteralsUtf8)
         {
             if (literal.Length > max)
             {
@@ -1053,7 +1053,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         }
 
         var min = int.MaxValue;
-        foreach (var literal in plan.LeadingLiteralsUtf8!)
+        foreach (var literal in plan.LeadingLiteralsUtf8)
         {
             if (literal.Length < min)
             {
@@ -1160,8 +1160,8 @@ internal static class AsciiOrderedLiteralWindowExecutor
             return false;
         }
 
-        var leadingLiterals = plan.LeadingLiteralsUtf8!;
-        var trailingLiterals = plan.TrailingLiteralsUtf8!;
+        var leadingLiterals = plan.LeadingLiteralsUtf8;
+        var trailingLiterals = plan.TrailingLiteralsUtf8;
         for (var i = 0; i < leadingLiterals.Length; i++)
         {
             var leadingLiteral = leadingLiterals[i];
@@ -1194,8 +1194,8 @@ internal static class AsciiOrderedLiteralWindowExecutor
             return false;
         }
 
-        var leadingLiterals = plan.LeadingLiteralsUtf8!;
-        var trailingLiterals = plan.TrailingLiteralsUtf8!;
+        var leadingLiterals = plan.LeadingLiteralsUtf8;
+        var trailingLiterals = plan.TrailingLiteralsUtf8;
         for (var i = 0; i < trailingLiterals.Length; i++)
         {
             var trailingLiteral = trailingLiterals[i];
@@ -1273,7 +1273,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         var minLeadingLength = GetMinLeadingLiteralLength(plan);
         var trailingFamilySearch = CanReuseFamilySearchForTrailing(plan)
             ? familySearch
-            : new PreparedLiteralSetSearch(plan.TrailingLiteralsUtf8!);
+            : new PreparedLiteralSetSearch(plan.TrailingLiteralsUtf8);
 
         while (true)
         {
@@ -1365,8 +1365,8 @@ internal static class AsciiOrderedLiteralWindowExecutor
             return false;
         }
 
-        var leadingLiterals = plan.LeadingLiteralsUtf8!;
-        var trailingLiterals = plan.TrailingLiteralsUtf8!;
+        var leadingLiterals = plan.LeadingLiteralsUtf8;
+        var trailingLiterals = plan.TrailingLiteralsUtf8;
         if (leadingLiterals.Length != trailingLiterals.Length)
         {
             return false;

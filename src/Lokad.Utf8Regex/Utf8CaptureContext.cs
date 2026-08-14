@@ -18,21 +18,21 @@ public readonly ref struct Utf8CaptureContext
 
     public bool Success => _capture is not null;
 
-    public int IndexInUtf16 => Success ? _capture!.Index : 0;
+    public int IndexInUtf16 => _capture?.Index ?? 0;
 
-    public int LengthInUtf16 => Success ? _capture!.Length : 0;
+    public int LengthInUtf16 => _capture?.Length ?? 0;
 
     public bool IsByteAligned
     {
         get
         {
-            if (!Success)
+            if (_capture is not { } capture)
             {
                 return true;
             }
 
-            var start = ResolveBoundary(_capture!.Index);
-            var end = ResolveBoundary(_capture.Index + _capture.Length);
+            var start = ResolveBoundary(capture.Index);
+            var end = ResolveBoundary(capture.Index + capture.Length);
             return start.IsScalarBoundary && end.IsScalarBoundary;
         }
     }
@@ -80,7 +80,7 @@ public readonly ref struct Utf8CaptureContext
 
     public string GetValueString()
     {
-        return Success ? _capture!.Value : string.Empty;
+        return _capture?.Value ?? string.Empty;
     }
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)

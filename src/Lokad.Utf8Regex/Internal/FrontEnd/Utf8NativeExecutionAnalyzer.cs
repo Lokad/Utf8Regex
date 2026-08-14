@@ -371,13 +371,18 @@ internal static class Utf8NativeExecutionAnalyzer
             allowsTrailingNewlineBeforeEnd: body.Child(3).Kind == RuntimeFrontEnd.RegexNodeKind.EndZ,
             ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0,
             isUtf8ByteSafe: true,
+            runPlan: default,
             anchoredHeadTailRunPlan: new AsciiSimplePatternAnchoredHeadTailRunPlan(headCharClass, tailCharClass, tailMin),
             anchoredValidatorPlan: new AsciiSimplePatternAnchoredValidatorPlan(
             [
                 new AsciiSimplePatternAnchoredValidatorSegment(headCharClass, 1, 1),
                 new AsciiSimplePatternAnchoredValidatorSegment(tailCharClass, tailMin, int.MaxValue),
             ],
-            ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0));
+            ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0),
+            anchoredBoundedDatePlan: default,
+            repeatedDigitGroupPlan: default,
+            boundedSuffixLiteralPlan: default,
+            symmetricLiteralWindowPlan: default);
 
         analyzedRegex = Utf8RegexAnalysis.CreateSimple(
             semanticRegex,
@@ -631,7 +636,7 @@ internal static class Utf8NativeExecutionAnalyzer
         out RuntimeFrontEnd.RegexNode substantiveNode,
         out string trailingLiteral)
     {
-        substantiveNode = default!;
+        substantiveNode = body;
         trailingLiteral = string.Empty;
 
         if (body.Kind != RuntimeFrontEnd.RegexNodeKind.Concatenate ||
@@ -1569,6 +1574,17 @@ internal static class Utf8NativeExecutionAnalyzer
             }
         }
 
+        if (maxGap is not { } selectedMaxGap ||
+            gapSameLine is not { } selectedGapSameLine ||
+            separatorMin is not { } selectedSeparatorMin ||
+            leadingBoundary1 is not { } selectedLeadingBoundary1 ||
+            trailingBoundary1 is not { } selectedTrailingBoundary1 ||
+            leadingBoundary2 is not { } selectedLeadingBoundary2 ||
+            trailingBoundary2 is not { } selectedTrailingBoundary2)
+        {
+            return false;
+        }
+
         var shortestLeading = leadingLiterals.OrderBy(static l => l.Length).First();
         var shortestTrailing = trailingLiterals.OrderBy(static l => l.Length).First();
         plan = new AsciiOrderedLiteralWindowPlan(
@@ -1576,14 +1592,14 @@ internal static class Utf8NativeExecutionAnalyzer
             leadingLiterals,
             shortestTrailing,
             trailingLiterals,
-            maxGap!.Value,
-            gapSameLine!.Value,
-            separatorMin!.Value,
+            selectedMaxGap,
+            selectedGapSameLine,
+            selectedSeparatorMin,
             yieldLeadingLiteralOnly: false,
-            leadingBoundary1!.Value,
-            trailingBoundary1!.Value,
-            leadingBoundary2!.Value,
-            trailingBoundary2!.Value);
+            selectedLeadingBoundary1,
+            selectedTrailingBoundary1,
+            selectedLeadingBoundary2,
+            selectedTrailingBoundary2);
         return true;
     }
 
@@ -1962,7 +1978,7 @@ internal static class Utf8NativeExecutionAnalyzer
         int count,
         out RuntimeFrontEnd.RegexNode slice)
     {
-        slice = default!;
+        slice = concatenateNode;
         concatenateNode = UnwrapRuntimeNode(concatenateNode);
         if (concatenateNode.Kind != RuntimeFrontEnd.RegexNodeKind.Concatenate ||
             count <= 0 ||

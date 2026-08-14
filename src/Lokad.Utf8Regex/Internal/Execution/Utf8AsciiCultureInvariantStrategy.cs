@@ -1,8 +1,6 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Replacement;
-using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -107,66 +105,18 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
             subject.BoundaryMap);
     }
 
-    public byte[] Replace(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
+    internal Utf8OperationMatchCursor CreateMatchCursor(ReadOnlySpan<byte> input)
     {
-        if (replacement.IsLiteral)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-                PreparedRegex,
-                _verifierRuntime,
-                input,
-                default,
-                CreateBudget());
-            return Utf8CursorReplaceEngine.Replace(input, replacement.LiteralUtf8, ref cursor);
-        }
-
-        return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-            Encoding.UTF8.GetString(input),
-            replacement.OriginalText));
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        return Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+            PreparedRegex,
+            _verifierRuntime,
+            input,
+            default,
+            CreateBudget());
     }
 
-    public string ReplaceToString(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement) =>
-        _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-            Encoding.UTF8.GetString(input),
-            replacement.OriginalText);
-
-    public OperationStatus TryReplace(
-        ReadOnlySpan<byte> input,
-        Utf8AnalyzedReplacement replacement,
-        Span<byte> destination,
-        out int bytesWritten)
-    {
-        if (replacement.IsLiteral)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-                PreparedRegex,
-                _verifierRuntime,
-                input,
-                default,
-                CreateBudget());
-            return Utf8CursorReplaceEngine.TryReplace(
-                input,
-                replacement.LiteralUtf8,
-                destination,
-                ref cursor,
-                out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
-
-        var result = Replace(input, replacement);
-        if (result.Length <= destination.Length)
-        {
-            result.CopyTo(destination);
-            bytesWritten = result.Length;
-            return OperationStatus.Done;
-        }
-
-        bytesWritten = 0;
-        return OperationStatus.DestinationTooSmall;
-    }
+    internal Regex FallbackRegex => _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
 
     private Utf8ExecutionDeadline CreateBudget() => Utf8ExecutionDeadline.Start(_matchTimeout);
 }

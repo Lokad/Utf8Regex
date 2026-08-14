@@ -137,7 +137,9 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         return true;
     }
 
-    private static bool IsAsciiLetterClass(string chars, bool allowLowercaseOnly = false)
+    private static bool IsAsciiLetterClass(string chars) => IsAsciiLetterClass(chars, false);
+
+    private static bool IsAsciiLetterClass(string chars, bool allowLowercaseOnly)
     {
         return HasExactChars(chars, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") ||
             (allowLowercaseOnly && HasExactChars(chars, "abcdefghijklmnopqrstuvwxyz"));

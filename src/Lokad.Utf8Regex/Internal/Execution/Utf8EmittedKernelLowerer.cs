@@ -31,11 +31,9 @@ internal static class Utf8EmittedKernelLowerer
                 anchorPrefixesByByte[prefix[anchorOffset]] = prefix;
             }
 
-            kernelPlan = new Utf8EmittedKernelPlan(
-                Utf8EmittedKernelKind.UpperWordIdentifierFamily,
+            kernelPlan = Utf8EmittedKernelPlan.CreateUpperWordIdentifierFamily(
                 new Utf8CompiledFindOptimization(anchorOffset, anchorBytes, anchorPrefixesByByte),
                 familyPlan.Prefixes,
-                blocks:
                 [
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.FindAnchorSet),
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.DispatchPrefixesAtAnchor),
@@ -52,12 +50,10 @@ internal static class Utf8EmittedKernelLowerer
              bucket.PrefixDiscriminator.HasValue) ||
             Utf8AsciiStructuralIdentifierFamilyExecutor.TryGetSharedPrefixSuffixLiteralFamilyKernelSpec(familyPlan, searchPlan, out bucket, out requiredSuffixByte))
         {
-            kernelPlan = new Utf8EmittedKernelPlan(
-                Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix,
+            kernelPlan = Utf8EmittedKernelPlan.CreateSharedPrefixAsciiWhitespaceSuffix(
                 new Utf8CompiledFindOptimization(bucket.CommonPrefix, bucket.PrefixDiscriminator),
                 bucket.Literals,
-                requiredSuffixByte: requiredSuffixByte,
-                blocks:
+                requiredSuffixByte,
                 [
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.FindCommonPrefix),
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.MatchSharedPrefixSuffix),
@@ -82,18 +78,16 @@ internal static class Utf8EmittedKernelLowerer
             plan.TrailingLiteralLeadingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary &&
             plan.TrailingLiteralTrailingBoundary is Utf8BoundaryRequirement.None or Utf8BoundaryRequirement.Boundary)
         {
-            kernelPlan = new Utf8EmittedKernelPlan(
-                Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow,
+            kernelPlan = Utf8EmittedKernelPlan.CreateOrderedAsciiWhitespaceLiteralWindow(
                 new Utf8CompiledFindOptimization(plan.TrailingLiteralUtf8, default),
                 [plan.LeadingLiteralUtf8],
-                requiredSeparatorCount: plan.GapLeadingSeparatorMinCount,
-                maxGap: plan.MaxGap,
-                gapSameLine: plan.GapSameLine,
-                leadingLeadingBoundary: plan.LeadingLiteralLeadingBoundary,
-                leadingTrailingBoundary: plan.LeadingLiteralTrailingBoundary,
-                trailingLeadingBoundary: plan.TrailingLiteralLeadingBoundary,
-                trailingTrailingBoundary: plan.TrailingLiteralTrailingBoundary,
-                blocks:
+                plan.GapLeadingSeparatorMinCount,
+                plan.MaxGap,
+                plan.GapSameLine,
+                plan.LeadingLiteralLeadingBoundary,
+                plan.LeadingLiteralTrailingBoundary,
+                plan.TrailingLiteralLeadingBoundary,
+                plan.TrailingLiteralTrailingBoundary,
                 [
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.FindTrailingLiteral),
                     new Utf8EmittedKernelBlock(Utf8EmittedKernelBlockKind.ConsumeReverseAsciiWhitespace),

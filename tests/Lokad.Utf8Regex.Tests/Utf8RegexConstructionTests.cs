@@ -153,7 +153,6 @@ public sealed class Utf8RegexConstructionTests
     {
         var declaration = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
 
-        Assert.NotNull(declaration.Inspection.StructuralIdentifierFamilyPlan.SeparatorCharClass);
         Assert.True(Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseUpperWordIdentifierKernel(declaration.Inspection.StructuralIdentifierFamilyPlan));
     }
 
@@ -1377,7 +1376,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(plan.HasPairedTrailingLiterals);
         Assert.Equal(25, plan.MaxGap);
         Assert.Equal("Holmes"u8.ToArray(), plan.LeadingLiteralsUtf8![0]);
-        Assert.Equal("Watson"u8.ToArray(), plan.TrailingLiteralsUtf8![0]);
+        Assert.Equal("Watson"u8.ToArray(), plan.TrailingLiteralsUtf8[0]);
         Assert.Equal("Watson"u8.ToArray(), plan.LeadingLiteralsUtf8[1]);
         Assert.Equal("Holmes"u8.ToArray(), plan.TrailingLiteralsUtf8[1]);
     }
@@ -1393,7 +1392,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(plan.HasPairedTrailingLiterals);
         Assert.Equal(25, plan.MaxGap);
         Assert.Equal("Tom"u8.ToArray(), plan.LeadingLiteralsUtf8![0]);
-        Assert.Equal("river"u8.ToArray(), plan.TrailingLiteralsUtf8![0]);
+        Assert.Equal("river"u8.ToArray(), plan.TrailingLiteralsUtf8[0]);
         Assert.Equal("river"u8.ToArray(), plan.LeadingLiteralsUtf8[1]);
         Assert.Equal("Tom"u8.ToArray(), plan.TrailingLiteralsUtf8[1]);
     }

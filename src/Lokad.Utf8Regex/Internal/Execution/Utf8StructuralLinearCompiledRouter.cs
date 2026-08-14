@@ -71,9 +71,10 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget))
+        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
+            emittedKernelMatcher is { } kernelMatcher)
         {
-            isMatch = emittedKernelMatcher!.FindNext(input, 0, out _) >= 0;
+            isMatch = kernelMatcher.FindNext(input, 0, out _) >= 0;
             return true;
         }
 
@@ -91,9 +92,10 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget))
+        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
+            emittedDeterministicMatcher is { } deterministicMatcher)
         {
-            isMatch = emittedDeterministicMatcher!.FindNext(input, 0, out _) >= 0;
+            isMatch = deterministicMatcher.FindNext(input, 0, out _) >= 0;
             return true;
         }
 
@@ -125,20 +127,9 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget))
+        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
+            emittedKernelMatcher is { } kernelMatcher)
         {
-            var kernelMatcher = emittedKernelMatcher!;
-            if (kernelMatcher.Plan.Kind == Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow)
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
-                count = AsciiOrderedLiteralWindowExecutor.Count(
-                    input,
-                    regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan,
-                    regexPlan.SearchPlan,
-                    budget);
-                return true;
-            }
-
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(kernelMatcher.Plan.Route);
             count = kernelMatcher.Count(input);
             return true;
@@ -169,10 +160,11 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget))
+        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
+            emittedDeterministicMatcher is { } deterministicMatcher)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearEmit);
-            count = emittedDeterministicMatcher!.Count(input);
+            count = deterministicMatcher.Count(input);
             return true;
         }
 
@@ -208,9 +200,10 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget))
+        if (CanUseEmittedKernelMatcher(regexPlan, emitEnabled, emittedKernelMatcher, validation, budget) &&
+            emittedKernelMatcher is { } kernelMatcher)
         {
-            var emittedIndex = emittedKernelMatcher!.FindNext(input, 0, out var emittedMatchedLength);
+            var emittedIndex = kernelMatcher.FindNext(input, 0, out var emittedMatchedLength);
             match = emittedIndex < 0
                 ? Utf8ValueMatch.NoMatch
                 : new Utf8ValueMatch(true, true, emittedIndex, emittedMatchedLength, emittedIndex, emittedMatchedLength);
@@ -234,9 +227,10 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget))
+        if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
+            emittedDeterministicMatcher is { } deterministicMatcher)
         {
-            var index = emittedDeterministicMatcher!.FindNext(input, 0, out var matchedLength);
+            var index = deterministicMatcher.FindNext(input, 0, out var matchedLength);
             match = index < 0
                 ? Utf8ValueMatch.NoMatch
                 : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);

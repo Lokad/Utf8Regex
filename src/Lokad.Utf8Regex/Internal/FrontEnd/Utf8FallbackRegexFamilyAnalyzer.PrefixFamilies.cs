@@ -268,7 +268,13 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             return false;
         }
 
-        return TryDecodeAsciiLiteral(pattern.Substring(literalStart, literalLength), out optionalSegmentUtf8!);
+        if (!TryDecodeAsciiLiteral(pattern.Substring(literalStart, literalLength), out var decodedSegment))
+        {
+            return false;
+        }
+
+        optionalSegmentUtf8 = decodedSegment;
+        return true;
     }
 
     private static bool TryReadSingleAsciiLiteralAlternationOrDollar(string pattern, ref int index, out byte[] separatorBytesUtf8)

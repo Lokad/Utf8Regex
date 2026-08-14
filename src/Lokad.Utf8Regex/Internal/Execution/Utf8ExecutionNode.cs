@@ -5,16 +5,16 @@ internal sealed class Utf8ExecutionNode
     public Utf8ExecutionNode(
         Utf8ExecutionNodeKind kind,
         RegexOptions options,
-        IReadOnlyList<Utf8ExecutionNode>? children = null,
-        string? text = null,
-        char ch = default,
-        int captureNumber = 0,
-        int min = 0,
-        int max = 0)
+        IReadOnlyList<Utf8ExecutionNode> children,
+        string text,
+        char ch,
+        int captureNumber,
+        int min,
+        int max)
     {
         Kind = kind;
         Options = options;
-        Children = children ?? [];
+        Children = children;
         Text = text;
         Ch = ch;
         CaptureNumber = captureNumber;
@@ -28,7 +28,7 @@ internal sealed class Utf8ExecutionNode
 
     public IReadOnlyList<Utf8ExecutionNode> Children { get; }
 
-    public string? Text { get; }
+    public string Text { get; }
 
     public char Ch { get; }
 

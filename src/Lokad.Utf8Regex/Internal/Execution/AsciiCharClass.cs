@@ -8,14 +8,19 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// The stored masks describe the positive definition; <see cref="Negated"/>
 /// complements that definition inside the ASCII domain only.
 /// </summary>
-internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
+internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
 {
     private readonly ulong _lowMask;
     private readonly ulong _highMask;
 
-    public static AsciiCharClass Empty { get; } = new(0, 0);
+    public static AsciiCharClass Empty => default;
 
-    public AsciiCharClass(ulong lowMask, ulong highMask, bool negated = false)
+    public AsciiCharClass(ulong lowMask, ulong highMask)
+        : this(lowMask, highMask, false)
+    {
+    }
+
+    public AsciiCharClass(ulong lowMask, ulong highMask, bool negated)
     {
         _lowMask = lowMask;
         _highMask = highMask;
@@ -63,8 +68,7 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
         (ActualLowMask & other.ActualLowMask) == 0 &&
         (ActualHighMask & other.ActualHighMask) == 0;
 
-    public bool Equals(AsciiCharClass? other) =>
-        other is not null &&
+    public bool Equals(AsciiCharClass other) =>
         _lowMask == other._lowMask &&
         _highMask == other._highMask &&
         Negated == other.Negated;
@@ -73,10 +77,9 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
 
     public override int GetHashCode() => HashCode.Combine(_lowMask, _highMask, Negated);
 
-    public static bool operator ==(AsciiCharClass? left, AsciiCharClass? right) =>
-        ReferenceEquals(left, right) || left is not null && left.Equals(right);
+    public static bool operator ==(AsciiCharClass left, AsciiCharClass right) => left.Equals(right);
 
-    public static bool operator !=(AsciiCharClass? left, AsciiCharClass? right) => !(left == right);
+    public static bool operator !=(AsciiCharClass left, AsciiCharClass right) => !(left == right);
 
     public static AsciiCharClass ForByte(byte value)
     {
@@ -93,10 +96,12 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
     public static bool TryUseNonEmpty(AsciiCharClass? value, out AsciiCharClass result)
     {
         result = value ?? Empty;
-        return value is { IsEmpty: false };
+        return value.HasValue && !value.Value.IsEmpty;
     }
 
-    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate, bool negated = false)
+    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate) => FromPredicate(predicate, false);
+
+    public static AsciiCharClass FromPredicate(Func<byte, bool> predicate, bool negated)
     {
         ArgumentNullException.ThrowIfNull(predicate);
 
@@ -122,7 +127,9 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public static AsciiCharClass FromBytes(ReadOnlySpan<byte> values, bool negated = false)
+    public static AsciiCharClass FromBytes(ReadOnlySpan<byte> values) => FromBytes(values, false);
+
+    public static AsciiCharClass FromBytes(ReadOnlySpan<byte> values, bool negated)
     {
         ulong low = 0;
         ulong high = 0;
@@ -146,7 +153,9 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public static AsciiCharClass FromRange(Utf8InclusiveByteRange range, bool negated = false)
+    public static AsciiCharClass FromRange(Utf8InclusiveByteRange range) => FromRange(range, false);
+
+    public static AsciiCharClass FromRange(Utf8InclusiveByteRange range, bool negated)
     {
         ulong low = 0;
         ulong high = 0;
@@ -170,10 +179,11 @@ internal sealed class AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, negated);
     }
 
-    public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right, bool negated = false)
+    public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right) =>
+        CombinePositive(left, right, false);
+
+    public static AsciiCharClass CombinePositive(AsciiCharClass left, AsciiCharClass right, bool negated)
     {
-        ArgumentNullException.ThrowIfNull(left);
-        ArgumentNullException.ThrowIfNull(right);
         if (left.Negated || right.Negated)
         {
             throw new ArgumentException("Only positive ASCII definitions can be combined.");

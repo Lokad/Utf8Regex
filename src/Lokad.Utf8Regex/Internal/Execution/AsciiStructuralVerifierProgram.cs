@@ -18,11 +18,11 @@ internal readonly struct AsciiStructuralVerifierStep
 {
     private AsciiStructuralVerifierStep(
         AsciiStructuralVerifierStepKind kind,
-        string? set = null,
-        int minCount = 0,
-        int maxCount = int.MaxValue,
-        AsciiStructuralSuffixPart[]? suffixParts = null,
-        Utf8BoundaryRequirement boundaryRequirement = Utf8BoundaryRequirement.None)
+        string set,
+        int minCount,
+        int maxCount,
+        AsciiStructuralSuffixPart[] suffixParts,
+        Utf8BoundaryRequirement boundaryRequirement)
     {
         Kind = kind;
         Set = set;
@@ -34,63 +34,79 @@ internal readonly struct AsciiStructuralVerifierStep
 
     public AsciiStructuralVerifierStepKind Kind { get; }
 
-    public string? Set { get; }
+    public string Set { get; }
 
     public int MinCount { get; }
 
     public int MaxCount { get; }
 
-    public AsciiStructuralSuffixPart[]? SuffixParts { get; }
+    public AsciiStructuralSuffixPart[] SuffixParts { get; }
 
     public Utf8BoundaryRequirement BoundaryRequirement { get; }
 
     public static AsciiStructuralVerifierStep ConsumeSeparator(string set, int minCount) =>
-        new(AsciiStructuralVerifierStepKind.ConsumeSeparator, set: set, minCount: minCount);
+        new(AsciiStructuralVerifierStepKind.ConsumeSeparator, set, minCount, int.MaxValue, [], Utf8BoundaryRequirement.None);
 
     public static AsciiStructuralVerifierStep RequireIdentifierStart(string set) =>
-        new(AsciiStructuralVerifierStepKind.RequireIdentifierStart, set: set);
+        new(AsciiStructuralVerifierStepKind.RequireIdentifierStart, set, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
 
     public static AsciiStructuralVerifierStep ConsumeIdentifierTail(string set, int minCount, int maxCount) =>
-        new(AsciiStructuralVerifierStepKind.ConsumeIdentifierTail, set: set, minCount: minCount, maxCount: maxCount);
+        new(AsciiStructuralVerifierStepKind.ConsumeIdentifierTail, set, minCount, maxCount, [], Utf8BoundaryRequirement.None);
 
     public static AsciiStructuralVerifierStep MatchSuffixAtCurrent(AsciiStructuralSuffixPart[] suffixParts) =>
-        new(AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent, suffixParts: suffixParts);
+        new(AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent, string.Empty, 0, int.MaxValue, suffixParts, Utf8BoundaryRequirement.None);
 
     public static AsciiStructuralVerifierStep MatchSuffixAfterTail(AsciiStructuralSuffixPart[] suffixParts, int minTailCount) =>
-        new(AsciiStructuralVerifierStepKind.MatchSuffixAfterTail, suffixParts: suffixParts, minCount: minTailCount);
+        new(AsciiStructuralVerifierStepKind.MatchSuffixAfterTail, string.Empty, minTailCount, int.MaxValue, suffixParts, Utf8BoundaryRequirement.None);
 
     public static AsciiStructuralVerifierStep RequireTrailingBoundary(Utf8BoundaryRequirement requirement) =>
-        new(AsciiStructuralVerifierStepKind.RequireTrailingBoundary, boundaryRequirement: requirement);
+        new(AsciiStructuralVerifierStepKind.RequireTrailingBoundary, string.Empty, 0, int.MaxValue, [], requirement);
 
     public static AsciiStructuralVerifierStep Accept() =>
-        new(AsciiStructuralVerifierStepKind.Accept);
+        new(AsciiStructuralVerifierStepKind.Accept, string.Empty, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
 }
 
 internal readonly struct AsciiStructuralCompiledSuffixPart
 {
-    public AsciiStructuralCompiledSuffixPart(
-        byte[]? literalUtf8,
-        string? separatorSet,
-        AsciiCharClass? separatorCharClass,
+    private readonly byte[]? _literalUtf8;
+    private readonly string? _separatorSet;
+
+    private AsciiStructuralCompiledSuffixPart(
+        AsciiStructuralSuffixPartKind kind,
+        byte[] literalUtf8,
+        string separatorSet,
+        AsciiCharClass separatorCharClass,
         int separatorMinCount)
     {
-        LiteralUtf8 = literalUtf8;
-        SeparatorSet = separatorSet;
+        Kind = kind;
+        _literalUtf8 = literalUtf8;
+        _separatorSet = separatorSet;
         SeparatorCharClass = separatorCharClass;
         SeparatorMinCount = separatorMinCount;
     }
 
-    public byte[]? LiteralUtf8 { get; }
+    public AsciiStructuralSuffixPartKind Kind { get; }
 
-    public string? SeparatorSet { get; }
+    public byte[] LiteralUtf8 => _literalUtf8 ?? [];
 
-    public AsciiCharClass? SeparatorCharClass { get; }
+    public string SeparatorSet => _separatorSet ?? string.Empty;
+
+    public AsciiCharClass SeparatorCharClass { get; }
 
     public int SeparatorMinCount { get; }
 
-    public bool IsLiteral => LiteralUtf8 is { Length: > 0 };
+    public bool IsLiteral => Kind == AsciiStructuralSuffixPartKind.Literal;
 
-    public bool IsSeparator => !string.IsNullOrEmpty(SeparatorSet);
+    public bool IsSeparator => Kind == AsciiStructuralSuffixPartKind.Separator;
+
+    public static AsciiStructuralCompiledSuffixPart CreateLiteral(byte[] literalUtf8) =>
+        new(AsciiStructuralSuffixPartKind.Literal, literalUtf8, string.Empty, default, 0);
+
+    public static AsciiStructuralCompiledSuffixPart CreateSeparator(
+        string separatorSet,
+        AsciiCharClass separatorCharClass,
+        int separatorMinCount) =>
+        new(AsciiStructuralSuffixPartKind.Separator, [], separatorSet, separatorCharClass, separatorMinCount);
 }
 
 internal readonly struct AsciiStructuralVerifierProgram
@@ -157,14 +173,14 @@ internal enum AsciiStructuralLinearVerifierInstructionKind : byte
 
 internal readonly struct AsciiStructuralLinearVerifierInstruction
 {
-    public AsciiStructuralLinearVerifierInstruction(
+    private AsciiStructuralLinearVerifierInstruction(
         AsciiStructuralLinearVerifierInstructionKind kind,
-        string? set = null,
-        AsciiCharClass? charClass = null,
-        int minCount = 0,
-        int maxCount = int.MaxValue,
-        AsciiStructuralCompiledSuffixPart[]? suffixParts = null,
-        Utf8BoundaryRequirement boundaryRequirement = Utf8BoundaryRequirement.None)
+        string set,
+        AsciiCharClass charClass,
+        int minCount,
+        int maxCount,
+        AsciiStructuralCompiledSuffixPart[] suffixParts,
+        Utf8BoundaryRequirement boundaryRequirement)
     {
         Kind = kind;
         Set = set;
@@ -177,17 +193,38 @@ internal readonly struct AsciiStructuralLinearVerifierInstruction
 
     public AsciiStructuralLinearVerifierInstructionKind Kind { get; }
 
-    public string? Set { get; }
+    public string Set { get; }
 
-    public AsciiCharClass? CharClass { get; }
+    public AsciiCharClass CharClass { get; }
 
     public int MinCount { get; }
 
     public int MaxCount { get; }
 
-    public AsciiStructuralCompiledSuffixPart[]? SuffixParts { get; }
+    public AsciiStructuralCompiledSuffixPart[] SuffixParts { get; }
 
     public Utf8BoundaryRequirement BoundaryRequirement { get; }
+
+    public static AsciiStructuralLinearVerifierInstruction ConsumeSetLoop(string set, AsciiCharClass charClass, int minCount) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop, set, charClass, minCount, int.MaxValue, [], Utf8BoundaryRequirement.None);
+
+    public static AsciiStructuralLinearVerifierInstruction RequireSetByte(string set, AsciiCharClass charClass) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.RequireSetByte, set, charClass, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
+
+    public static AsciiStructuralLinearVerifierInstruction ConsumeSetTail(string set, AsciiCharClass charClass, int minCount, int maxCount) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.ConsumeSetTail, set, charClass, minCount, maxCount, [], Utf8BoundaryRequirement.None);
+
+    public static AsciiStructuralLinearVerifierInstruction MatchSuffixAtCurrent(AsciiStructuralCompiledSuffixPart[] suffixParts) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAtCurrent, string.Empty, default, 0, int.MaxValue, suffixParts, Utf8BoundaryRequirement.None);
+
+    public static AsciiStructuralLinearVerifierInstruction MatchSuffixAfterTail(AsciiStructuralCompiledSuffixPart[] suffixParts, int minCount) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAfterTail, string.Empty, default, minCount, int.MaxValue, suffixParts, Utf8BoundaryRequirement.None);
+
+    public static AsciiStructuralLinearVerifierInstruction RequireBoundary(Utf8BoundaryRequirement boundaryRequirement) =>
+        new(AsciiStructuralLinearVerifierInstructionKind.RequireBoundary, string.Empty, default, 0, int.MaxValue, [], boundaryRequirement);
+
+    public static AsciiStructuralLinearVerifierInstruction Accept() =>
+        new(AsciiStructuralLinearVerifierInstructionKind.Accept, string.Empty, default, 0, int.MaxValue, [], Utf8BoundaryRequirement.None);
 }
 
 internal readonly struct AsciiStructuralLinearVerifierProgram
@@ -214,24 +251,24 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
             var step = steps[i];
             var charClass = TryCreateAsciiCharClass(step.Set, out var createdCharClass)
                 ? createdCharClass
-                : null;
+                : default;
             var compiledSuffixParts = CreateCompiledSuffixParts(step.SuffixParts);
             instructions[i] = step.Kind switch
             {
                 AsciiStructuralVerifierStepKind.ConsumeSeparator
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop, set: step.Set, charClass: charClass, minCount: step.MinCount),
+                    => AsciiStructuralLinearVerifierInstruction.ConsumeSetLoop(step.Set, charClass, step.MinCount),
                 AsciiStructuralVerifierStepKind.RequireIdentifierStart
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.RequireSetByte, set: step.Set, charClass: charClass),
+                    => AsciiStructuralLinearVerifierInstruction.RequireSetByte(step.Set, charClass),
                 AsciiStructuralVerifierStepKind.ConsumeIdentifierTail
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.ConsumeSetTail, set: step.Set, charClass: charClass, minCount: step.MinCount, maxCount: step.MaxCount),
+                    => AsciiStructuralLinearVerifierInstruction.ConsumeSetTail(step.Set, charClass, step.MinCount, step.MaxCount),
                 AsciiStructuralVerifierStepKind.MatchSuffixAtCurrent
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAtCurrent, suffixParts: compiledSuffixParts),
+                    => AsciiStructuralLinearVerifierInstruction.MatchSuffixAtCurrent(compiledSuffixParts),
                 AsciiStructuralVerifierStepKind.MatchSuffixAfterTail
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAfterTail, minCount: step.MinCount, suffixParts: compiledSuffixParts),
+                    => AsciiStructuralLinearVerifierInstruction.MatchSuffixAfterTail(compiledSuffixParts, step.MinCount),
                 AsciiStructuralVerifierStepKind.RequireTrailingBoundary
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.RequireBoundary, boundaryRequirement: step.BoundaryRequirement),
+                    => AsciiStructuralLinearVerifierInstruction.RequireBoundary(step.BoundaryRequirement),
                 AsciiStructuralVerifierStepKind.Accept
-                    => new AsciiStructuralLinearVerifierInstruction(AsciiStructuralLinearVerifierInstructionKind.Accept),
+                    => AsciiStructuralLinearVerifierInstruction.Accept(),
                 _ => default,
             };
         }
@@ -255,14 +292,14 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
             switch (instruction.Kind)
             {
                 case AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop:
-                    if (!TryConsumeSetLoop(input, ref index, instruction.Set!, instruction.CharClass, instruction.MinCount))
+                    if (!TryConsumeSetLoop(input, ref index, instruction.Set, instruction.CharClass, instruction.MinCount))
                     {
                         return false;
                     }
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.RequireSetByte:
-                    if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], instruction.Set!, instruction.CharClass))
+                    if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], instruction.Set, instruction.CharClass))
                     {
                         return false;
                     }
@@ -275,7 +312,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                 case AsciiStructuralLinearVerifierInstructionKind.ConsumeSetTail:
                     var consumed = 0;
                     while ((uint)index < (uint)input.Length &&
-                           MatchesSet(input[index], instruction.Set!, instruction.CharClass) &&
+                           MatchesSet(input[index], instruction.Set, instruction.CharClass) &&
                            consumed < instruction.MaxCount)
                     {
                         index++;
@@ -324,7 +361,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         return false;
     }
 
-    private static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index, string set, AsciiCharClass? charClass, int minCount)
+    private static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index, string set, AsciiCharClass charClass, int minCount)
     {
         var count = 0;
         while ((uint)index < (uint)input.Length && MatchesSet(input[index], set, charClass))
@@ -346,7 +383,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
             var part = suffixParts[i];
             if (part.IsSeparator)
             {
-                if (!TryConsumeSetLoop(input, ref index, part.SeparatorSet!, part.SeparatorCharClass, part.SeparatorMinCount))
+                if (!TryConsumeSetLoop(input, ref index, part.SeparatorSet, part.SeparatorCharClass, part.SeparatorMinCount))
                 {
                     return false;
                 }
@@ -355,8 +392,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
             }
 
             var literal = part.LiteralUtf8;
-            if (literal is null ||
-                literal.Length == 0 ||
+            if (literal.Length == 0 ||
                 input.Length - index < literal.Length ||
                 !input.Slice(index, literal.Length).SequenceEqual(literal))
             {
@@ -389,7 +425,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         }
 
         var firstLiteral = suffixParts[0].LiteralUtf8;
-        if (firstLiteral is null || firstLiteral.Length == 0)
+        if (firstLiteral.Length == 0)
         {
             return false;
         }
@@ -405,29 +441,25 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         return false;
     }
 
-    private static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass? charClass)
+    private static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass charClass)
     {
-        return charClass is not null
+        return !charClass.IsEmpty
             ? charClass.Contains(value)
             : value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet);
     }
 
-    private static AsciiStructuralCompiledSuffixPart[]? CreateCompiledSuffixParts(AsciiStructuralSuffixPart[]? suffixParts)
+    private static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
     {
-        if (suffixParts is null)
-        {
-            return null;
-        }
-
         var compiled = new AsciiStructuralCompiledSuffixPart[suffixParts.Length];
         for (var i = 0; i < suffixParts.Length; i++)
         {
             var part = suffixParts[i];
-            compiled[i] = new AsciiStructuralCompiledSuffixPart(
-                part.LiteralUtf8,
-                part.SeparatorSet,
-                TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : null,
-                part.SeparatorMinCount);
+            compiled[i] = part.IsLiteral
+                ? AsciiStructuralCompiledSuffixPart.CreateLiteral(part.LiteralUtf8)
+                : AsciiStructuralCompiledSuffixPart.CreateSeparator(
+                    part.SeparatorSet,
+                    TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : default,
+                    part.SeparatorMinCount);
         }
 
         return compiled;

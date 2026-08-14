@@ -22,9 +22,9 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
         RepetitionMaxCount = repetitionMaxCount;
     }
 
-    public AsciiCharClass? LeadingCharClass { get; }
+    public AsciiCharClass LeadingCharClass { get; }
 
-    public AsciiCharClass? TrailingCharClass { get; }
+    public AsciiCharClass TrailingCharClass { get; }
 
     public int TrailingMinCount { get; }
 
@@ -37,12 +37,12 @@ internal readonly struct AsciiStructuralRepeatedSegmentPlan
     public int RepetitionMaxCount { get; }
 
     public bool HasValue =>
-        LeadingCharClass is not null &&
-        TrailingCharClass is not null &&
+        !LeadingCharClass.IsEmpty &&
+        !TrailingCharClass.IsEmpty &&
         TrailingMinCount > 0 &&
         RepetitionMinCount > 0 &&
         RepetitionMaxCount >= RepetitionMinCount &&
-        SeparatorSet is not null;
+        !string.IsNullOrEmpty(SeparatorSet);
 
     public bool MatchesSeparator(byte value)
     {

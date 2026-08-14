@@ -255,7 +255,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         return true;
     }
 
-    private static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index, string? set, AsciiCharClass? charClass, int minCount)
+    private static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index, string? set, AsciiCharClass charClass, int minCount)
     {
         if (string.IsNullOrEmpty(set))
         {
@@ -291,8 +291,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
             }
 
             var literal = part.LiteralUtf8;
-            if (literal is null ||
-                literal.Length == 0 ||
+            if (literal.Length == 0 ||
                 input.Length - index < literal.Length ||
                 !input.Slice(index, literal.Length).SequenceEqual(literal))
             {
@@ -325,7 +324,7 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         }
 
         var firstLiteral = suffixParts[0].LiteralUtf8;
-        if (firstLiteral is null || firstLiteral.Length == 0)
+        if (firstLiteral.Length == 0)
         {
             return false;
         }
@@ -341,9 +340,9 @@ internal static class AsciiStructuralIdentifierFamilyMatcher
         return false;
     }
 
-    private static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass? charClass)
+    private static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass charClass)
     {
-        return charClass is not null
+        return !charClass.IsEmpty
             ? charClass.Contains(value)
             : value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet);
     }

@@ -9,8 +9,8 @@ internal readonly struct Utf8SemanticRegex
         RegexOptions options,
         string executionPattern,
         RegexOptions executionOptions,
-        RuntimeFrontEnd.RegexTree? runtimeTree = null,
-        RuntimeFrontEnd.AnalysisResults? runtimeAnalysis = null)
+        RuntimeFrontEnd.RegexTree? runtimeTree,
+        RuntimeFrontEnd.AnalysisResults? runtimeAnalysis)
     {
         Pattern = pattern;
         Options = options;

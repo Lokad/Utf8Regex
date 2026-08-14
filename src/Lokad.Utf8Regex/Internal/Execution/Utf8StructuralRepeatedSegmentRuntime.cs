@@ -57,7 +57,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
         var candidateStart = startIndex;
         while (candidateStart < input.Length)
         {
-            while (candidateStart < input.Length && !_plan.LeadingCharClass!.Contains(input[candidateStart]))
+            while (candidateStart < input.Length && !_plan.LeadingCharClass.Contains(input[candidateStart]))
             {
                 candidateStart++;
             }
@@ -103,7 +103,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
 
     private bool TryConsumeSegment(ReadOnlySpan<byte> input, ref int index)
     {
-        if ((uint)index >= (uint)input.Length || !_plan.LeadingCharClass!.Contains(input[index]))
+        if ((uint)index >= (uint)input.Length || !_plan.LeadingCharClass.Contains(input[index]))
         {
             return false;
         }
@@ -111,7 +111,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
         index++;
 
         var tailCount = 0;
-        while ((uint)index < (uint)input.Length && _plan.TrailingCharClass!.Contains(input[index]))
+        while ((uint)index < (uint)input.Length && _plan.TrailingCharClass.Contains(input[index]))
         {
             index++;
             tailCount++;

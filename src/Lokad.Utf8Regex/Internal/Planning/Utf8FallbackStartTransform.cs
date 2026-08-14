@@ -8,7 +8,7 @@ internal enum Utf8FallbackStartTransformKind : byte
 
 internal readonly struct Utf8FallbackStartTransform
 {
-    public Utf8FallbackStartTransform(int offset, Utf8FallbackStartTransformKind kind = Utf8FallbackStartTransformKind.None)
+    public Utf8FallbackStartTransform(int offset, Utf8FallbackStartTransformKind kind)
     {
         Offset = offset;
         Kind = kind;

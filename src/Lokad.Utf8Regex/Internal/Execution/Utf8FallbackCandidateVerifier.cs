@@ -205,7 +205,8 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
             ? validation
             : Utf8Validation.Validate(slice);
         var sliceDecoded = Encoding.UTF8.GetString(slice);
-        var match = AnchoredFallbackRegex!.Match(sliceDecoded, 0);
+        var anchoredRegex = AnchoredFallbackRegex ?? throw new InvalidOperationException("A bounded verifier requires an anchored fallback regex.");
+        var match = anchoredRegex.Match(sliceDecoded, 0);
         if (!match.Success || match.Index != 0)
         {
             return false;

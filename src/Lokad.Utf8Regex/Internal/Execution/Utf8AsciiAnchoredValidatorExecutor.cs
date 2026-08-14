@@ -278,10 +278,12 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                 continue;
             }
 
-            if (segment.CharClass is not { } charClass)
+            if (segment.CharClass.IsEmpty)
             {
                 return false;
             }
+
+            var charClass = segment.CharClass;
 
             if (segment.MaxLength == int.MaxValue)
             {
@@ -335,10 +337,12 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                 continue;
             }
 
-            if (segment.CharClass is not { } charClass)
+            if (segment.CharClass.IsEmpty)
             {
                 return false;
             }
+
+            var charClass = segment.CharClass;
 
             if (segment.MaxLength == int.MaxValue || segment.MinLength != segment.MaxLength)
             {
@@ -383,10 +387,12 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                 continue;
             }
 
-            if (segment.CharClass is not { } charClass)
+            if (segment.CharClass.IsEmpty)
             {
                 return false;
             }
+
+            var charClass = segment.CharClass;
 
             if (segment.MaxLength == int.MaxValue)
             {
@@ -441,10 +447,12 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                 continue;
             }
 
-            if (segment.CharClass is not { } charClass)
+            if (segment.CharClass.IsEmpty)
             {
                 return false;
             }
+
+            var charClass = segment.CharClass;
 
             if (segment.MaxLength == int.MaxValue)
             {
@@ -607,7 +615,7 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
 
     private static DirectMatchResult TryMatchHeadTailWithoutValidation(ReadOnlySpan<byte> input, AsciiSimplePatternAnchoredHeadTailRunPlan plan)
     {
-        if (!plan.HeadCharClass!.Contains(input[0]))
+        if (!plan.HeadCharClass.Contains(input[0]))
         {
             return input[0] >= 0x80
                 ? DirectMatchResult.NeedsValidation
@@ -620,7 +628,7 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
             return DirectMatchResult.NoMatch;
         }
 
-        if (!plan.TailCharClass!.Negated && plan.TailSearchValues is { } tailSearchValues)
+        if (!plan.TailCharClass.Negated && plan.TailSearchValues is { } tailSearchValues)
         {
             for (var i = 1; i < input.Length; i++)
             {

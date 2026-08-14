@@ -647,7 +647,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             var separatorEnd = trailingStart;
             var separatorStart = separatorEnd;
             while (separatorStart > 0 &&
-                   familyPlan.SeparatorCharClass!.Contains(input[separatorStart - 1]))
+                   familyPlan.SeparatorCharClass.Contains(input[separatorStart - 1]))
             {
                 separatorStart--;
             }
@@ -698,7 +698,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             var separatorEnd = trailingStart;
             var separatorStart = separatorEnd;
             while (separatorStart > 0 &&
-                   familyPlan.SeparatorCharClass!.Contains(input[separatorStart - 1]))
+                   familyPlan.SeparatorCharClass.Contains(input[separatorStart - 1]))
             {
                 separatorStart--;
             }
@@ -1081,7 +1081,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             familyPlan.CompiledSuffixParts.Length != 1 ||
             !familyPlan.CompiledSuffixParts[0].IsLiteral ||
             familyPlan.CompiledSuffixParts[0].LiteralUtf8 is not { Length: > 0 } literal ||
-            familyPlan.SeparatorCharClass is null)
+            familyPlan.SeparatorCharClass.IsEmpty)
         {
             return false;
         }
@@ -1100,7 +1100,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         separatorMinCount = 0;
 
         if (!TryGetSimpleSuffixLiteralKernel(familyPlan, out suffixLiteral, out separatorMinCount) ||
-            familyPlan.SeparatorCharClass is null ||
+            familyPlan.SeparatorCharClass.IsEmpty ||
             familyPlan.Prefixes is not { Length: > 0 } ||
             familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
             suffixLiteral.Length < 2)
@@ -1120,7 +1120,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         separatorMinCount = 0;
 
         if (!TryGetSimpleSuffixLiteralKernel(familyPlan, out var suffixLiteral, out separatorMinCount) ||
-            familyPlan.SeparatorCharClass is null ||
+            familyPlan.SeparatorCharClass.IsEmpty ||
             familyPlan.Prefixes is not { Length: > 0 } ||
             familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
             suffixLiteral.Length != 1)
@@ -1158,10 +1158,10 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
     private static bool TryConsumeFastSeparatorLoop(
         ReadOnlySpan<byte> input,
         ref int index,
-        AsciiCharClass? separatorCharClass,
+        AsciiCharClass separatorCharClass,
         int separatorMinCount)
     {
-        if (separatorCharClass is null)
+        if (separatorCharClass.IsEmpty)
         {
             return separatorMinCount == 0;
         }
@@ -1214,8 +1214,8 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         trailingLiteralPartIndex = -1;
 
         if (string.IsNullOrEmpty(familyPlan.IdentifierStartSet) ||
-            familyPlan.IdentifierStartCharClass is null ||
-            familyPlan.IdentifierTailCharClass is null ||
+            familyPlan.IdentifierStartCharClass.IsEmpty ||
+            familyPlan.IdentifierTailCharClass.IsEmpty ||
             familyPlan.Prefixes.Length == 0 ||
             familyPlan.CompiledSuffixParts.Length != 1 ||
             !familyPlan.CompiledSuffixParts[^1].IsLiteral ||
@@ -1243,7 +1243,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
     internal static bool CanUseUpperWordIdentifierKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
     {
         if (!familyPlan.HasAsciiUpperWordTailKernel ||
-            familyPlan.SeparatorCharClass is null ||
+            familyPlan.SeparatorCharClass.IsEmpty ||
             familyPlan.SeparatorMinCount != 1 ||
             familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
             familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None ||
@@ -1271,7 +1271,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         anchorBytes = [];
 
         if (!familyPlan.HasAsciiUpperWordTailKernel ||
-            familyPlan.SeparatorCharClass is null ||
+            familyPlan.SeparatorCharClass.IsEmpty ||
             familyPlan.SeparatorMinCount != 1 ||
             familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
             familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None ||
@@ -1411,7 +1411,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var suffixLiteralLength = 0;
         var separatorMinCount = 0;
         var hasAsciiWhitespaceSeparatorClass =
-            familyPlan.SeparatorCharClass is not null &&
+            !familyPlan.SeparatorCharClass.IsEmpty &&
             IsAsciiWhitespaceCharClass(familyPlan.SeparatorCharClass);
         var canUseSharedPrefixSuffixKernelSpec = false;
         var canUseSharedPrefixSuffixLiteralFamilyKernelSpec = false;
@@ -1466,7 +1466,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             familyPlan.LeadingBoundary != Utf8BoundaryRequirement.Boundary ||
             familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None ||
             suffixLiteral.Length != 1 ||
-            familyPlan.SeparatorCharClass is null ||
+            familyPlan.SeparatorCharClass.IsEmpty ||
             !IsAsciiWhitespaceCharClass(familyPlan.SeparatorCharClass))
         {
             return false;
@@ -1583,7 +1583,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
 
         var index = matchIndex + prefixLength;
         if ((uint)index >= (uint)input.Length ||
-            !familyPlan.SeparatorCharClass!.Contains(input[index]))
+            !familyPlan.SeparatorCharClass.Contains(input[index]))
         {
             return false;
         }
@@ -1652,7 +1652,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var tailEnd = index;
         var maxTailCount = 0;
         while (index > 0 &&
-               familyPlan.IdentifierTailCharClass!.Contains(input[index - 1]) &&
+               familyPlan.IdentifierTailCharClass.Contains(input[index - 1]) &&
                maxTailCount < familyPlan.IdentifierTailMaxCount)
         {
             index--;
@@ -1669,7 +1669,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         for (var tailStart = latestTailStart; tailStart >= earliestTailStart; tailStart--)
         {
             if (tailStart <= 0 ||
-                !familyPlan.IdentifierStartCharClass!.Contains(input[tailStart - 1]))
+                !familyPlan.IdentifierStartCharClass.Contains(input[tailStart - 1]))
             {
                 continue;
             }
@@ -1692,10 +1692,10 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
     private static bool TryReverseConsumeFastSeparatorLoop(
         ReadOnlySpan<byte> input,
         ref int index,
-        AsciiCharClass? separatorCharClass,
+        AsciiCharClass separatorCharClass,
         int separatorMinCount)
     {
-        if (separatorCharClass is null)
+        if (separatorCharClass.IsEmpty)
         {
             return separatorMinCount == 0;
         }

@@ -4,6 +4,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal readonly struct AsciiOrderedLiteralWindowPlan
 {
+    private readonly byte[][]? _leadingLiteralsUtf8;
+    private readonly byte[][]? _trailingLiteralsUtf8;
+
     public AsciiOrderedLiteralWindowPlan(
         byte[] leadingLiteralUtf8,
         byte[][]? leadingLiteralsUtf8,
@@ -19,9 +22,9 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         Utf8BoundaryRequirement trailingLiteralTrailingBoundary)
     {
         LeadingLiteralUtf8 = leadingLiteralUtf8;
-        LeadingLiteralsUtf8 = leadingLiteralsUtf8;
+        _leadingLiteralsUtf8 = leadingLiteralsUtf8;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
-        TrailingLiteralsUtf8 = trailingLiteralsUtf8;
+        _trailingLiteralsUtf8 = trailingLiteralsUtf8;
         MaxGap = maxGap;
         GapSameLine = gapSameLine;
         GapLeadingSeparatorMinCount = gapLeadingSeparatorMinCount;
@@ -35,13 +38,13 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
     /// <summary>Search anchor literal (shortest, or the only one for single-literal patterns).</summary>
     public byte[] LeadingLiteralUtf8 { get; }
 
-    /// <summary>All leading literal alternatives (null for single-literal patterns).</summary>
-    public byte[][]? LeadingLiteralsUtf8 { get; }
+    /// <summary>All leading literal alternatives; empty for single-literal patterns.</summary>
+    public byte[][] LeadingLiteralsUtf8 => _leadingLiteralsUtf8 ?? [];
 
     public byte[] TrailingLiteralUtf8 { get; }
 
-    /// <summary>Optional trailing literal alternatives aligned with <see cref="LeadingLiteralsUtf8"/>.</summary>
-    public byte[][]? TrailingLiteralsUtf8 { get; }
+    /// <summary>Trailing literal alternatives aligned with <see cref="LeadingLiteralsUtf8"/>; otherwise empty.</summary>
+    public byte[][] TrailingLiteralsUtf8 => _trailingLiteralsUtf8 ?? [];
 
     public int MaxGap { get; }
 
@@ -71,10 +74,10 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
 
     public bool HasValue => LeadingLiteralUtf8 is { Length: > 0 } && TrailingLiteralUtf8 is { Length: > 0 };
 
-    public bool IsLiteralFamily => LeadingLiteralsUtf8 is { Length: > 1 };
+    public bool IsLiteralFamily => LeadingLiteralsUtf8.Length > 1;
 
     public bool HasPairedTrailingLiterals =>
-        LeadingLiteralsUtf8 is { Length: > 1 } &&
-        TrailingLiteralsUtf8 is { Length: > 1 } &&
+        LeadingLiteralsUtf8.Length > 1 &&
+        TrailingLiteralsUtf8.Length > 1 &&
         LeadingLiteralsUtf8.Length == TrailingLiteralsUtf8.Length;
 }

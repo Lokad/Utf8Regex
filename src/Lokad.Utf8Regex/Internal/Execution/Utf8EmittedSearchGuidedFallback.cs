@@ -12,10 +12,12 @@ internal sealed class Utf8EmittedSearchGuidedFallback
     internal delegate int CountDelegate(Utf8EmittedSearchGuidedFallback backend, ReadOnlySpan<byte> input);
 
     private static readonly MethodInfo s_tryFindNextVerifiedMatchMethod =
-        typeof(Utf8EmittedSearchGuidedFallback).GetMethod(nameof(TryFindNextVerifiedMatch), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedSearchGuidedFallback).GetMethod(nameof(TryFindNextVerifiedMatch), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedSearchGuidedFallback).FullName, nameof(TryFindNextVerifiedMatch));
 
     private static readonly MethodInfo s_getNextSearchStartMethod =
-        typeof(Utf8EmittedSearchGuidedFallback).GetMethod(nameof(GetNextSearchStart), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedSearchGuidedFallback).GetMethod(nameof(GetNextSearchStart), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedSearchGuidedFallback).FullName, nameof(GetNextSearchStart));
 
     private readonly Utf8SearchPlan _searchPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;

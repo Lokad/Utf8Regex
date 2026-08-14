@@ -21,7 +21,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        List<AsciiSimplePatternAnchoredValidatorSegment>? aggregateSegments = null;
+        List<AsciiSimplePatternAnchoredValidatorSegment> aggregateSegments = [];
+        var isFirstBranch = true;
         foreach (var tokens in branches)
         {
             if (tokens.Length == 0)
@@ -57,17 +58,19 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     continue;
                 }
 
-                if (token.Kind != AsciiSimplePatternTokenKind.CharClass || token.CharClass is not { } charClass)
+                if (token.Kind != AsciiSimplePatternTokenKind.CharClass || token.CharClass.IsEmpty)
                 {
                     return false;
                 }
+
+                var charClass = token.CharClass;
 
                 var runLength = 1;
                 i++;
                 while (i < tokens.Length &&
                     tokens[i].Kind == AsciiSimplePatternTokenKind.CharClass &&
-                    tokens[i].CharClass is { } nextClass &&
-                    charClass.HasSameDefinition(nextClass))
+                    !tokens[i].CharClass.IsEmpty &&
+                    charClass.HasSameDefinition(tokens[i].CharClass))
                 {
                     runLength++;
                     i++;
@@ -76,9 +79,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 segments.Add(new AsciiSimplePatternAnchoredValidatorSegment(charClass, runLength, runLength));
             }
 
-            if (aggregateSegments is null)
+            if (isFirstBranch)
             {
                 aggregateSegments = segments;
+                isFirstBranch = false;
                 continue;
             }
 
@@ -90,7 +94,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             aggregateSegments = mergedSegments;
         }
 
-        validatorPlan = new AsciiSimplePatternAnchoredValidatorPlan([.. aggregateSegments!], ignoreCase);
+        validatorPlan = new AsciiSimplePatternAnchoredValidatorPlan([.. aggregateSegments], ignoreCase);
         return validatorPlan.HasValue;
     }
 
@@ -217,7 +221,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         bool ignoreCase,
         out AsciiCharClass charClass)
     {
-        if (segment.CharClass is not null)
+        if (!segment.CharClass.IsEmpty)
         {
             charClass = segment.CharClass;
             return true;
@@ -321,8 +325,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        AsciiCharClass? digitClass = null;
-        AsciiCharClass? separatorClass = null;
+        AsciiCharClass digitClass = default;
+        AsciiCharClass separatorClass = default;
+        var initializedClasses = false;
         var repeatedGroupCount = -1;
         var groupDigitCount = -1;
         var trailingMinDigits = int.MaxValue;
@@ -340,15 +345,15 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return false;
             }
 
-            if (digitClass is null)
+            if (!initializedClasses)
             {
                 digitClass = branchDigitClass;
                 separatorClass = branchSeparatorClass;
                 repeatedGroupCount = branchRepeatedGroupCount;
                 groupDigitCount = branchGroupDigitCount;
+                initializedClasses = true;
             }
             else if (!digitClass.HasSameDefinition(branchDigitClass) ||
-                separatorClass is null ||
                 !separatorClass.HasSameDefinition(branchSeparatorClass) ||
                 repeatedGroupCount != branchRepeatedGroupCount ||
                 groupDigitCount != branchGroupDigitCount)
@@ -360,8 +365,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             trailingMaxDigits = Math.Max(trailingMaxDigits, branchTrailingDigits);
         }
 
-        if (digitClass is null ||
-            separatorClass is null ||
+        if (!initializedClasses ||
             !digitClass.TryGetKnownPredicateKind(out var digitPredicate) ||
             digitPredicate != AsciiCharClassPredicateKind.Digit)
         {
@@ -391,23 +395,25 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         out int groupDigitCount,
         out int trailingDigits)
     {
-        digitClass = null!;
-        separatorClass = null!;
+        digitClass = default;
+        separatorClass = default;
         repeatedGroupCount = 0;
         groupDigitCount = 0;
         trailingDigits = 0;
         if (branch.Length < 6 ||
             branch[0].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            branch[0].CharClass is not { } firstDigitClass)
+            branch[0].CharClass.IsEmpty)
         {
             return false;
         }
 
+        var firstDigitClass = branch[0].CharClass;
+
         var separatorIndex = 0;
         while (separatorIndex < branch.Length &&
             branch[separatorIndex].Kind == AsciiSimplePatternTokenKind.CharClass &&
-            branch[separatorIndex].CharClass is { } sameDigitClass &&
-            firstDigitClass.HasSameDefinition(sameDigitClass))
+            !branch[separatorIndex].CharClass.IsEmpty &&
+            firstDigitClass.HasSameDefinition(branch[separatorIndex].CharClass))
         {
             separatorIndex++;
         }
@@ -415,21 +421,21 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         if (separatorIndex == 0 ||
             separatorIndex >= branch.Length ||
             branch[separatorIndex].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            branch[separatorIndex].CharClass is not { Negated: false } foundSeparatorClass)
+            (branch[separatorIndex].CharClass.IsEmpty || branch[separatorIndex].CharClass.Negated))
         {
             return false;
         }
 
         digitClass = firstDigitClass;
-        separatorClass = foundSeparatorClass;
+        separatorClass = branch[separatorIndex].CharClass;
         groupDigitCount = separatorIndex;
 
         var cursor = 0;
         while (cursor + groupDigitCount < branch.Length &&
             MatchesRepeatedDigitGroupDigitRun(branch, cursor, digitClass, groupDigitCount) &&
             branch[cursor + groupDigitCount].Kind == AsciiSimplePatternTokenKind.CharClass &&
-            branch[cursor + groupDigitCount].CharClass is { } nextSeparatorClass &&
-            separatorClass.HasSameDefinition(nextSeparatorClass))
+            !branch[cursor + groupDigitCount].CharClass.IsEmpty &&
+            separatorClass.HasSameDefinition(branch[cursor + groupDigitCount].CharClass))
         {
             repeatedGroupCount++;
             cursor += groupDigitCount + 1;
@@ -461,8 +467,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         for (var i = 0; i < length; i++)
         {
             if (branch[start + i].Kind != AsciiSimplePatternTokenKind.CharClass ||
-                branch[start + i].CharClass is not { } nextDigitClass ||
-                !digitClass.HasSameDefinition(nextDigitClass))
+                branch[start + i].CharClass.IsEmpty ||
+                !digitClass.HasSameDefinition(branch[start + i].CharClass))
             {
                 return false;
             }
@@ -503,8 +509,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         count = 0;
         while ((uint)index < (uint)tokens.Length &&
             tokens[index].Kind == AsciiSimplePatternTokenKind.CharClass &&
-            tokens[index].CharClass is { } charClass &&
-            charClass.TryGetKnownPredicateKind(out var predicateKind) &&
+            !tokens[index].CharClass.IsEmpty &&
+            tokens[index].CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
             predicateKind == AsciiCharClassPredicateKind.Digit)
         {
             count++;

@@ -17,34 +17,44 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         out int matchedLength);
 
     private static readonly ConstructorInfo s_scanStateCtor =
-        typeof(PreparedMultiLiteralScanState).GetConstructor([typeof(int), typeof(int), typeof(int)])!;
+        typeof(PreparedMultiLiteralScanState).GetConstructor([typeof(int), typeof(int), typeof(int)])
+        ?? throw new MissingMethodException(typeof(PreparedMultiLiteralScanState).FullName, ".ctor");
 
     private static readonly MethodInfo s_tryFindNextNonOverlappingLengthMethod =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(TryFindNextNonOverlappingLength), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(TryFindNextNonOverlappingLength), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(TryFindNextNonOverlappingLength));
 
     private static readonly MethodInfo s_confirmMethod =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(Confirm), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(Confirm), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(Confirm));
 
     private static readonly MethodInfo s_confirmFirstMatchMethod =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmFirstMatch), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmFirstMatch), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ConfirmFirstMatch));
 
     private static readonly MethodInfo s_confirmAsciiBoundaryOnlyMethod =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmAsciiBoundaryOnly), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmAsciiBoundaryOnly), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ConfirmAsciiBoundaryOnly));
 
     private static readonly MethodInfo s_findNextCandidate2Method =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate2), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate2), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(FindNextCandidate2));
 
     private static readonly MethodInfo s_findNextCandidate3Method =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate3), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate3), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(FindNextCandidate3));
 
     private static readonly MethodInfo s_findNextCandidate1Method =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate1), BindingFlags.Static | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate1), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(FindNextCandidate1));
 
     private static readonly MethodInfo s_spanLengthMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))?.GetMethod
+        ?? throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Length");
 
     private static readonly MethodInfo s_spanItemMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty("Item")?.GetMethod
+        ?? throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Item");
 
     private readonly CountDelegate _count;
     private readonly IsMatchDelegate _isMatch;
@@ -666,7 +676,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         if (countMatches)
         {
             e.LdcI4(0);
-            e.StoreLocal(countLocal!);
+            e.StoreLocal(RequireCountLocal(countLocal));
         }
 
         var loopLabel = e.DefineLabel();
@@ -748,7 +758,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         e.MarkLabel(returnLabel);
         if (countMatches)
         {
-            e.LoadLocal(countLocal!);
+            e.LoadLocal(RequireCountLocal(countLocal));
             e.Emit(OpCodes.Ret);
         }
 
@@ -805,10 +815,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             e.Emit(OpCodes.Brfalse, retryLabel);
             if (countMatches)
             {
-                e.LoadLocal(countLocal!);
+            e.LoadLocal(RequireCountLocal(countLocal));
                 e.LdcI4(1);
                 e.Emit(OpCodes.Add);
-                e.StoreLocal(countLocal!);
+            e.StoreLocal(RequireCountLocal(countLocal));
                 e.LoadLocal(candidateLocal);
                 e.LdcI4(literal.Length);
                 e.Emit(OpCodes.Add);
@@ -862,7 +872,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         if (countMatches)
         {
             e.LdcI4(0);
-            e.StoreLocal(countLocal!);
+            e.StoreLocal(RequireCountLocal(countLocal));
         }
 
         var loopLabel = e.DefineLabel();
@@ -917,10 +927,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
             if (countMatches)
             {
-                e.LoadLocal(countLocal!);
+                e.LoadLocal(RequireCountLocal(countLocal));
                 e.LdcI4(1);
                 e.Emit(OpCodes.Add);
-                e.StoreLocal(countLocal!);
+                e.StoreLocal(RequireCountLocal(countLocal));
                 e.LoadLocal(candidateLocal);
                 e.LdcI4(literal.Length);
                 e.Emit(OpCodes.Add);
@@ -968,7 +978,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         e.MarkLabel(returnLabel);
         if (countMatches)
         {
-            e.LoadLocal(countLocal!);
+            e.LoadLocal(RequireCountLocal(countLocal));
             e.Emit(OpCodes.Ret);
             return;
         }
@@ -991,6 +1001,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         }
 
         e.Emit(OpCodes.Br, failureReturnLabel);
+    }
+
+    private static LocalBuilder RequireCountLocal(LocalBuilder? countLocal)
+    {
+        return countLocal ?? throw new InvalidOperationException("A count program requires a count local.");
     }
 
     private static void EmitPrefixDiscriminatorDispatch(

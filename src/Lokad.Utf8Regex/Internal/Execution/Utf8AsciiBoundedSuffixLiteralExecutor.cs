@@ -73,7 +73,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
 
             var literalEndIndex = candidateSearchStart + relative;
             candidateSearchStart = literalEndIndex + 1;
-            if (!plan.SuffixCharClass!.Contains(input[literalEndIndex + 1]))
+            if (!plan.SuffixCharClass.Contains(input[literalEndIndex + 1]))
             {
                 continue;
             }
@@ -117,7 +117,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         var repeatedCount = 0;
         while (index >= minStartIndex &&
             repeatedCount < plan.RepeatedMaxLength &&
-            plan.RepeatedCharClass!.Contains(input[index]))
+            plan.RepeatedCharClass.Contains(input[index]))
         {
             repeatedCount++;
             index--;
@@ -125,7 +125,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
 
         if (repeatedCount < plan.RepeatedMinLength ||
             index < minStartIndex ||
-            !plan.PrefixCharClass!.Contains(input[index]))
+            !plan.PrefixCharClass.Contains(input[index]))
         {
             return false;
         }

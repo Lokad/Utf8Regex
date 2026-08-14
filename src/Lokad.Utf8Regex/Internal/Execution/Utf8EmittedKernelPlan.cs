@@ -34,30 +34,27 @@ internal enum Utf8EmittedKernelKind : byte
     UpperWordIdentifierFamily = 1,
     SharedPrefixAsciiWhitespaceSuffix = 2,
     OrderedAsciiWhitespaceLiteralWindow = 3,
-    PairedOrderedAsciiWhitespaceLiteralWindow = 4,
 }
 
 internal readonly struct Utf8EmittedKernelPlan
 {
-    public Utf8EmittedKernelPlan(
+    private Utf8EmittedKernelPlan(
         Utf8EmittedKernelKind kind,
         Utf8CompiledFindOptimization findOptimization,
         byte[][] prefixes,
-        byte[][]? trailingLiterals = null,
-        byte requiredSuffixByte = 0,
-        int requiredSeparatorCount = 0,
-        int maxGap = 0,
-        bool gapSameLine = false,
-        Utf8BoundaryRequirement leadingLeadingBoundary = Utf8BoundaryRequirement.None,
-        Utf8BoundaryRequirement leadingTrailingBoundary = Utf8BoundaryRequirement.None,
-        Utf8BoundaryRequirement trailingLeadingBoundary = Utf8BoundaryRequirement.None,
-        Utf8BoundaryRequirement trailingTrailingBoundary = Utf8BoundaryRequirement.None,
-        Utf8EmittedKernelBlock[]? blocks = null)
+        byte requiredSuffixByte,
+        int requiredSeparatorCount,
+        int maxGap,
+        bool gapSameLine,
+        Utf8BoundaryRequirement leadingLeadingBoundary,
+        Utf8BoundaryRequirement leadingTrailingBoundary,
+        Utf8BoundaryRequirement trailingLeadingBoundary,
+        Utf8BoundaryRequirement trailingTrailingBoundary,
+        Utf8EmittedKernelBlock[] blocks)
     {
         Kind = kind;
         FindOptimization = findOptimization;
         Prefixes = prefixes;
-        TrailingLiterals = trailingLiterals;
         RequiredSuffixByte = requiredSuffixByte;
         RequiredSeparatorCount = requiredSeparatorCount;
         MaxGap = maxGap;
@@ -66,7 +63,7 @@ internal readonly struct Utf8EmittedKernelPlan
         LeadingTrailingBoundary = leadingTrailingBoundary;
         TrailingLeadingBoundary = trailingLeadingBoundary;
         TrailingTrailingBoundary = trailingTrailingBoundary;
-        Blocks = blocks ?? [];
+        Blocks = blocks;
     }
 
     public Utf8EmittedKernelKind Kind { get; }
@@ -74,8 +71,6 @@ internal readonly struct Utf8EmittedKernelPlan
     public Utf8CompiledFindOptimization FindOptimization { get; }
 
     public byte[][] Prefixes { get; }
-
-    public byte[][]? TrailingLiterals { get; }
 
     public byte RequiredSuffixByte { get; }
 
@@ -97,6 +92,38 @@ internal readonly struct Utf8EmittedKernelPlan
 
     public bool HasValue => Kind != Utf8EmittedKernelKind.None;
 
+    public static Utf8EmittedKernelPlan CreateUpperWordIdentifierFamily(
+        Utf8CompiledFindOptimization findOptimization,
+        byte[][] prefixes,
+        Utf8EmittedKernelBlock[] blocks) =>
+        new(Utf8EmittedKernelKind.UpperWordIdentifierFamily, findOptimization, prefixes, 0, 0, 0, false,
+            Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None,
+            Utf8BoundaryRequirement.None, blocks);
+
+    public static Utf8EmittedKernelPlan CreateSharedPrefixAsciiWhitespaceSuffix(
+        Utf8CompiledFindOptimization findOptimization,
+        byte[][] prefixes,
+        byte requiredSuffixByte,
+        Utf8EmittedKernelBlock[] blocks) =>
+        new(Utf8EmittedKernelKind.SharedPrefixAsciiWhitespaceSuffix, findOptimization, prefixes, requiredSuffixByte,
+            0, 0, false, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None,
+            Utf8BoundaryRequirement.None, blocks);
+
+    public static Utf8EmittedKernelPlan CreateOrderedAsciiWhitespaceLiteralWindow(
+        Utf8CompiledFindOptimization findOptimization,
+        byte[][] prefixes,
+        int requiredSeparatorCount,
+        int maxGap,
+        bool gapSameLine,
+        Utf8BoundaryRequirement leadingLeadingBoundary,
+        Utf8BoundaryRequirement leadingTrailingBoundary,
+        Utf8BoundaryRequirement trailingLeadingBoundary,
+        Utf8BoundaryRequirement trailingTrailingBoundary,
+        Utf8EmittedKernelBlock[] blocks) =>
+        new(Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow, findOptimization, prefixes, 0,
+            requiredSeparatorCount, maxGap, gapSameLine, leadingLeadingBoundary, leadingTrailingBoundary,
+            trailingLeadingBoundary, trailingTrailingBoundary, blocks);
+
     public Utf8ExecutionRoute Route => Kind switch
     {
         Utf8EmittedKernelKind.UpperWordIdentifierFamily => Utf8ExecutionRoute.NativeStructuralFamilyEmitUpperWordIdentifier,
@@ -104,7 +131,6 @@ internal readonly struct Utf8EmittedKernelPlan
         Utf8EmittedKernelKind.OrderedAsciiWhitespaceLiteralWindow => MaxGap > 0
             ? Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitBoundedGapLiteral
             : Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitSeparatorLiteral,
-        Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow => Utf8ExecutionRoute.NativeOrderedLiteralWindowEmitPairedBoundedGapLiteral,
         _ => Utf8ExecutionRoute.NativeStructuralFamilyEmit,
     };
 }

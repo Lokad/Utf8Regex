@@ -12,40 +12,38 @@ internal sealed class Utf8EmittedKernelMatcher
     internal delegate int CountDelegate(Utf8EmittedKernelMatcher matcher, ReadOnlySpan<byte> input);
 
     private static readonly MethodInfo s_getSpanLengthMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty(nameof(ReadOnlySpan<byte>.Length))?.GetMethod
+        ?? throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Length");
 
     private static readonly MethodInfo s_getSpanItemMethod =
-        typeof(ReadOnlySpan<byte>).GetProperty("Item")!.GetMethod!;
+        typeof(ReadOnlySpan<byte>).GetProperty("Item")?.GetMethod
+        ?? throw new MissingMethodException(typeof(ReadOnlySpan<byte>).FullName, "get_Item");
 
     private static readonly MethodInfo s_findNextAnchorRelativeMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindNextAnchorRelative), BindingFlags.Instance | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindNextAnchorRelative), BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedKernelMatcher).FullName, nameof(FindNextAnchorRelative));
 
     private static readonly MethodInfo s_findNextCommonPrefixRelativeMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindNextCommonPrefixRelative), BindingFlags.Instance | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindNextCommonPrefixRelative), BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedKernelMatcher).FullName, nameof(FindNextCommonPrefixRelative));
 
     private static readonly MethodInfo s_findPreviousLeadingLiteralStartMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindPreviousLeadingLiteralStart), BindingFlags.Instance | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(FindPreviousLeadingLiteralStart), BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedKernelMatcher).FullName, nameof(FindPreviousLeadingLiteralStart));
 
     private static readonly MethodInfo s_tryMatchBoundedLeadingBeforeTrailingMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(TryMatchBoundedLeadingBeforeTrailing), BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    private static readonly MethodInfo s_tryFindNextPairedTrailingFamilyMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(TryFindNextPairedTrailingFamily), BindingFlags.Instance | BindingFlags.NonPublic)!;
-
-    private static readonly MethodInfo s_tryMatchPairedLeadingBeforeTrailingMethod =
-        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(TryMatchPairedLeadingBeforeTrailing), BindingFlags.Instance | BindingFlags.NonPublic)!;
+        typeof(Utf8EmittedKernelMatcher).GetMethod(nameof(TryMatchBoundedLeadingBeforeTrailing), BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedKernelMatcher).FullName, nameof(TryMatchBoundedLeadingBeforeTrailing));
 
     private readonly Utf8EmittedKernelPlan _plan;
     private readonly SearchValues<byte>? _anchorSearchValues;
-    private readonly PreparedLiteralSetSearch? _trailingFamilySearch;
     private readonly FindNextDelegate _findNext;
     private readonly CountDelegate _count;
 
-    private Utf8EmittedKernelMatcher(Utf8EmittedKernelPlan plan, SearchValues<byte>? anchorSearchValues, PreparedLiteralSetSearch? trailingFamilySearch, FindNextDelegate findNext, CountDelegate count)
+    private Utf8EmittedKernelMatcher(Utf8EmittedKernelPlan plan, SearchValues<byte>? anchorSearchValues, FindNextDelegate findNext, CountDelegate count)
     {
         _plan = plan;
         _anchorSearchValues = anchorSearchValues;
-        _trailingFamilySearch = trailingFamilySearch;
         _findNext = findNext;
         _count = count;
     }
@@ -66,9 +64,6 @@ internal sealed class Utf8EmittedKernelMatcher
             kernelPlan,
             kernelPlan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
                 ? SearchValues.Create(kernelPlan.FindOptimization.AnchorBytes)
-                : null,
-            kernelPlan.TrailingLiterals is { Length: > 0 } trailingLiterals
-                ? new PreparedLiteralSetSearch(trailingLiterals)
                 : null,
             CompileFindNext(kernelPlan),
             CompileCount(kernelPlan));
@@ -91,9 +86,6 @@ internal sealed class Utf8EmittedKernelMatcher
             kernelPlan.FindOptimization.Kind == Utf8CompiledFindOptimizationKind.AnchorByteSetAtOffset
                 ? SearchValues.Create(kernelPlan.FindOptimization.AnchorBytes)
                 : null,
-            kernelPlan.TrailingLiterals is { Length: > 0 } trailingLiterals
-                ? new PreparedLiteralSetSearch(trailingLiterals)
-                : null,
             CompileFindNext(kernelPlan),
             CompileCount(kernelPlan));
         return true;
@@ -103,7 +95,11 @@ internal sealed class Utf8EmittedKernelMatcher
 
     internal int Count(ReadOnlySpan<byte> input) => _count(this, input);
 
-    private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex) => input[startIndex..].IndexOfAny(_anchorSearchValues!);
+    private int FindNextAnchorRelative(ReadOnlySpan<byte> input, int startIndex)
+    {
+        var values = _anchorSearchValues ?? throw new InvalidOperationException("The emitted plan does not define anchor search values.");
+        return input[startIndex..].IndexOfAny(values);
+    }
 
     private int FindNextCommonPrefixRelative(ReadOnlySpan<byte> input, int startIndex) => input[startIndex..].IndexOf(_plan.FindOptimization.CommonPrefix);
 
@@ -152,141 +148,6 @@ internal sealed class Utf8EmittedKernelMatcher
         }
 
         return true;
-    }
-
-    private bool TryFindNextPairedTrailingFamily(ReadOnlySpan<byte> input, int searchFrom, out int trailingStart, out int trailingLength)
-    {
-        trailingStart = -1;
-        trailingLength = 0;
-        if (_trailingFamilySearch is null || searchFrom >= input.Length)
-        {
-            return false;
-        }
-
-        while (searchFrom < input.Length)
-        {
-            if (!_trailingFamilySearch.Value.TryFindFirstMatchWithLength(input[searchFrom..], out var relativeIndex, out var matchLength))
-            {
-                return false;
-            }
-
-            trailingStart = searchFrom + relativeIndex;
-            trailingLength = matchLength;
-            if (AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(_plan.TrailingLeadingBoundary, input, trailingStart) &&
-                AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(_plan.TrailingTrailingBoundary, input, trailingStart + matchLength))
-            {
-                return true;
-            }
-
-            searchFrom = trailingStart + 1;
-        }
-
-        trailingStart = -1;
-        trailingLength = 0;
-        return false;
-    }
-
-    private bool TryMatchPairedLeadingBeforeTrailing(ReadOnlySpan<byte> input, int trailingStart, int trailingLength, out int leadingStart)
-    {
-        leadingStart = -1;
-        if (_plan.TrailingLiterals is not { Length: > 0 } trailingLiterals)
-        {
-            return false;
-        }
-
-        ReadOnlySpan<byte> leadingLiteral = default;
-        var foundBranch = false;
-        for (var i = 0; i < trailingLiterals.Length; i++)
-        {
-            var trailingLiteral = trailingLiterals[i];
-            if (trailingLiteral.Length != trailingLength)
-            {
-                continue;
-            }
-
-            if (input[trailingStart..].StartsWith(trailingLiteral))
-            {
-                leadingLiteral = _plan.Prefixes[i];
-                foundBranch = true;
-                break;
-            }
-        }
-
-        if (!foundBranch)
-        {
-            return false;
-        }
-
-        var maxLeadingLength = 0;
-        var minLeadingLength = int.MaxValue;
-        foreach (var prefix in _plan.Prefixes)
-        {
-            if (prefix.Length > maxLeadingLength)
-            {
-                maxLeadingLength = prefix.Length;
-            }
-
-            if (prefix.Length < minLeadingLength)
-            {
-                minLeadingLength = prefix.Length;
-            }
-        }
-
-        var earliestStart = Math.Max(0, trailingStart - (_plan.MaxGap + _plan.RequiredSeparatorCount + maxLeadingLength));
-        var latestStart = trailingStart - (_plan.RequiredSeparatorCount + minLeadingLength);
-        if (latestStart < earliestStart)
-        {
-            return false;
-        }
-
-        var searchLength = latestStart - earliestStart + 1;
-        while (searchLength > 0)
-        {
-            var relative = AsciiSearch.LastIndexOfExact(input.Slice(earliestStart, searchLength), leadingLiteral);
-            if (relative < 0)
-            {
-                return false;
-            }
-
-            leadingStart = earliestStart + relative;
-            if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(_plan.LeadingLeadingBoundary, input, leadingStart) ||
-                !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(_plan.LeadingTrailingBoundary, input, leadingStart + leadingLiteral.Length))
-            {
-                searchLength = relative;
-                continue;
-            }
-
-            var gapSearchStart = leadingStart + leadingLiteral.Length;
-            var separatorCount = 0;
-            while (gapSearchStart + separatorCount < input.Length &&
-                   input[gapSearchStart + separatorCount] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v')
-            {
-                separatorCount++;
-            }
-
-            if (separatorCount < _plan.RequiredSeparatorCount)
-            {
-                searchLength = relative;
-                continue;
-            }
-
-            gapSearchStart += separatorCount;
-            if (trailingStart < gapSearchStart || trailingStart - gapSearchStart > _plan.MaxGap)
-            {
-                searchLength = relative;
-                continue;
-            }
-
-            if (_plan.GapSameLine && input[gapSearchStart..trailingStart].IndexOfAny((byte)'\r', (byte)'\n') >= 0)
-            {
-                searchLength = relative;
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
     }
 
     private bool TryGetPrefixMatchAtAnchor(ReadOnlySpan<byte> input, int anchorIndex, out int matchIndex, out int prefixLength)
@@ -361,10 +222,6 @@ internal sealed class Utf8EmittedKernelMatcher
                 EmitOrderedAsciiWhitespaceLiteralWindowCore(il, plan, forCount);
                 return;
 
-            case Utf8EmittedKernelKind.PairedOrderedAsciiWhitespaceLiteralWindow:
-                EmitPairedOrderedAsciiWhitespaceLiteralWindowCore(il, plan, forCount);
-                return;
-
             default:
                 throw new InvalidOperationException($"Unsupported emitted kernel kind '{plan.Kind}'.");
         }
@@ -411,7 +268,7 @@ internal sealed class Utf8EmittedKernelMatcher
         if (forCount)
         {
             emitter.LdcI4(0);
-            emitter.StoreLocal(countLocal!);
+            emitter.StoreLocal(RequireCountLocal(countLocal));
         }
 
         emitter.MarkLabel(searchLoopLabel);
@@ -492,7 +349,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(successLabel);
         if (forCount)
         {
-            emitter.AddToLocal(countLocal!, 1);
+            emitter.AddToLocal(RequireCountLocal(countLocal), 1);
             emitter.LoadLocal(indexLocal);
             emitter.StoreLocal(offsetLocal);
             emitter.Emit(OpCodes.Br, searchLoopLabel);
@@ -519,7 +376,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(notFoundLabel);
         if (forCount)
         {
-            emitter.LoadLocal(countLocal!);
+            emitter.LoadLocal(RequireCountLocal(countLocal));
             emitter.Emit(OpCodes.Ret);
         }
         else
@@ -635,7 +492,7 @@ internal sealed class Utf8EmittedKernelMatcher
             emitter.LdcI4(0);
             emitter.StoreLocal(offsetLocal);
             emitter.LdcI4(0);
-            emitter.StoreLocal(countLocal!);
+            emitter.StoreLocal(RequireCountLocal(countLocal));
         }
         else
         {
@@ -685,10 +542,10 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(successLabel);
         if (forCount)
         {
-            emitter.LoadLocal(countLocal!);
+            emitter.LoadLocal(RequireCountLocal(countLocal));
             emitter.LdcI4(1);
             emitter.Emit(OpCodes.Add);
-            emitter.StoreLocal(countLocal!);
+            emitter.StoreLocal(RequireCountLocal(countLocal));
             emitter.LoadLocal(matchIndexLocal);
             emitter.LoadLocal(matchedLengthLocal);
             emitter.Emit(OpCodes.Add);
@@ -707,7 +564,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(notFoundLabel);
         if (forCount)
         {
-            emitter.LoadLocal(countLocal!);
+            emitter.LoadLocal(RequireCountLocal(countLocal));
             emitter.Emit(OpCodes.Ret);
         }
         else
@@ -871,7 +728,7 @@ internal sealed class Utf8EmittedKernelMatcher
             emitter.LdcI4(plan.Prefixes[0].Length + plan.RequiredSeparatorCount);
             emitter.StoreLocal(searchFromLocal);
             emitter.LdcI4(0);
-            emitter.StoreLocal(countLocal!);
+            emitter.StoreLocal(RequireCountLocal(countLocal));
         }
         else
         {
@@ -983,7 +840,7 @@ internal sealed class Utf8EmittedKernelMatcher
 
         if (forCount)
         {
-            emitter.AddToLocal(countLocal!, 1);
+            emitter.AddToLocal(RequireCountLocal(countLocal), 1);
             emitter.LoadLocal(leadingStartLocal);
             emitter.LoadLocal(matchedLengthLocal);
             emitter.Emit(OpCodes.Add);
@@ -1009,7 +866,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(notFoundLabel);
         if (forCount)
         {
-            emitter.LoadLocal(countLocal!);
+            emitter.LoadLocal(RequireCountLocal(countLocal));
             emitter.Emit(OpCodes.Ret);
         }
         else
@@ -1052,7 +909,7 @@ internal sealed class Utf8EmittedKernelMatcher
             emitter.LdcI4(plan.Prefixes[0].Length + plan.RequiredSeparatorCount);
             emitter.StoreLocal(searchFromLocal);
             emitter.LdcI4(0);
-            emitter.StoreLocal(countLocal!);
+            emitter.StoreLocal(RequireCountLocal(countLocal));
         }
         else
         {
@@ -1152,7 +1009,7 @@ internal sealed class Utf8EmittedKernelMatcher
 
         if (forCount)
         {
-            emitter.AddToLocal(countLocal!, 1);
+            emitter.AddToLocal(RequireCountLocal(countLocal), 1);
             emitter.LoadLocal(candidateLeadingStartLocal);
             emitter.LoadLocal(matchedLengthLocal);
             emitter.Emit(OpCodes.Add);
@@ -1175,7 +1032,7 @@ internal sealed class Utf8EmittedKernelMatcher
         emitter.MarkLabel(notFoundLabel);
         if (forCount)
         {
-            emitter.LoadLocal(countLocal!);
+            emitter.LoadLocal(RequireCountLocal(countLocal));
             emitter.Emit(OpCodes.Ret);
         }
         else
@@ -1188,97 +1045,9 @@ internal sealed class Utf8EmittedKernelMatcher
         }
     }
 
-    private static void EmitPairedOrderedAsciiWhitespaceLiteralWindowCore(ILGenerator il, Utf8EmittedKernelPlan plan, bool forCount)
+    private static LocalBuilder RequireCountLocal(LocalBuilder? countLocal)
     {
-        var emitter = new Utf8IlEmitter(il, s_getSpanLengthMethod, s_getSpanItemMethod);
-        var searchFromLocal = emitter.DeclareLocal<int>();
-        var trailingStartLocal = emitter.DeclareLocal<int>();
-        var trailingLengthLocal = emitter.DeclareLocal<int>();
-        var leadingStartLocal = emitter.DeclareLocal<int>();
-        var matchedLengthLocal = emitter.DeclareLocal<int>();
-        var countLocal = forCount ? emitter.DeclareLocal<int>() : null;
-
-        var searchLoopLabel = emitter.DefineLabel();
-        var searchContinueLabel = emitter.DefineLabel();
-        var successLabel = emitter.DefineLabel();
-        var notFoundLabel = emitter.DefineLabel();
-
-        if (forCount)
-        {
-            emitter.LdcI4(plan.RequiredSeparatorCount + 1);
-            emitter.StoreLocal(searchFromLocal);
-            emitter.LdcI4(0);
-            emitter.StoreLocal(countLocal!);
-        }
-        else
-        {
-            emitter.LoadArg(2);
-            emitter.LdcI4(plan.RequiredSeparatorCount + 1);
-            emitter.Emit(OpCodes.Add);
-            emitter.StoreLocal(searchFromLocal);
-        }
-
-        emitter.MarkLabel(searchLoopLabel);
-        emitter.LoadArg(0);
-        emitter.LoadArg(1);
-        emitter.LoadLocal(searchFromLocal);
-        emitter.LoadLocalAddress(trailingStartLocal);
-        emitter.LoadLocalAddress(trailingLengthLocal);
-        emitter.Emit(OpCodes.Call, s_tryFindNextPairedTrailingFamilyMethod);
-        emitter.Emit(OpCodes.Brfalse, notFoundLabel);
-
-        emitter.LoadArg(0);
-        emitter.LoadArg(1);
-        emitter.LoadLocal(trailingStartLocal);
-        emitter.LoadLocal(trailingLengthLocal);
-        emitter.LoadLocalAddress(leadingStartLocal);
-        emitter.Emit(OpCodes.Call, s_tryMatchPairedLeadingBeforeTrailingMethod);
-        emitter.Emit(OpCodes.Brtrue, successLabel);
-
-        emitter.MarkLabel(searchContinueLabel);
-        emitter.EmitStoreSum(searchFromLocal, trailingStartLocal, 1);
-        emitter.Emit(OpCodes.Br, searchLoopLabel);
-
-        emitter.MarkLabel(successLabel);
-        emitter.LoadLocal(trailingStartLocal);
-        emitter.LoadLocal(trailingLengthLocal);
-        emitter.Emit(OpCodes.Add);
-        emitter.LoadLocal(leadingStartLocal);
-        emitter.Emit(OpCodes.Sub);
-        emitter.StoreLocal(matchedLengthLocal);
-
-        if (forCount)
-        {
-            emitter.AddToLocal(countLocal!, 1);
-            emitter.LoadLocal(leadingStartLocal);
-            emitter.LoadLocal(matchedLengthLocal);
-            emitter.Emit(OpCodes.Add);
-            emitter.StoreLocal(searchFromLocal);
-            emitter.Emit(OpCodes.Br, searchLoopLabel);
-        }
-        else
-        {
-            emitter.LoadArg(3);
-            emitter.LoadLocal(matchedLengthLocal);
-            emitter.Emit(OpCodes.Stind_I4);
-            emitter.LoadLocal(leadingStartLocal);
-            emitter.Emit(OpCodes.Ret);
-        }
-
-        emitter.MarkLabel(notFoundLabel);
-        if (forCount)
-        {
-            emitter.LoadLocal(countLocal!);
-            emitter.Emit(OpCodes.Ret);
-        }
-        else
-        {
-            emitter.LoadArg(3);
-            emitter.LdcI4(0);
-            emitter.Emit(OpCodes.Stind_I4);
-            emitter.LdcI4(-1);
-            emitter.Emit(OpCodes.Ret);
-        }
+        return countLocal ?? throw new InvalidOperationException("A count program requires a count local.");
     }
 
     private static bool IsAsciiWhitespace(byte value)

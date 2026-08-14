@@ -22,7 +22,7 @@ internal static class Utf8ExecutionTreeLowerer
             MapKind(node.Kind),
             node.Options,
             children,
-            node.Str,
+            node.Str ?? string.Empty,
             node.Ch,
             GetCaptureNumber(node),
             node.M,

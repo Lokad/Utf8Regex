@@ -12,7 +12,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
         int fixedLiteralOffset,
         Utf8FixedDistanceSet[]? fixedDistanceSets,
         int minRequiredLength,
-        bool skipLeadingAsciiWhitespace = false)
+        bool skipLeadingAsciiWhitespace)
     {
         PrefixGuards = prefixGuards;
         FixedLiteralUtf8 = fixedLiteralUtf8;
@@ -57,15 +57,15 @@ internal readonly struct Utf8DeterministicVerifierGuards
         return searchPlan.Kind switch
         {
             Utf8SearchKind.FixedDistanceAsciiLiteral when searchPlan.LiteralUtf8 is { Length: > 0 } literal
-                => new Utf8DeterministicVerifierGuards(prefixGuards, literal, searchPlan.Distance, null, searchPlan.MinRequiredLength),
+                => new Utf8DeterministicVerifierGuards(prefixGuards, literal, searchPlan.Distance, null, searchPlan.MinRequiredLength, false),
             Utf8SearchKind.FixedDistanceAsciiChar when searchPlan.LiteralUtf8 is { Length: 1 } literal
-                => new Utf8DeterministicVerifierGuards(prefixGuards, literal, searchPlan.Distance, null, searchPlan.MinRequiredLength),
+                => new Utf8DeterministicVerifierGuards(prefixGuards, literal, searchPlan.Distance, null, searchPlan.MinRequiredLength, false),
             Utf8SearchKind.FixedDistanceAsciiSets when searchPlan.FixedDistanceSets is { Length: > 0 } sets
-                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, sets, searchPlan.MinRequiredLength),
+                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, sets, searchPlan.MinRequiredLength, false),
             _ when searchPlan.MinRequiredLength > 0
-                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, null, searchPlan.MinRequiredLength),
+                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, null, searchPlan.MinRequiredLength, false),
             _ when prefixGuards is { Length: > 0 }
-                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, null, 0),
+                => new Utf8DeterministicVerifierGuards(prefixGuards, null, 0, null, 0, false),
             _ => default
         };
     }
@@ -185,7 +185,15 @@ internal readonly struct Utf8DeterministicVerifierGuards
             return node.Children[startIndex];
         }
 
-        return new Utf8ExecutionNode(Utf8ExecutionNodeKind.Concatenate, node.Options, node.Children.Skip(startIndex).ToArray());
+        return new Utf8ExecutionNode(
+            Utf8ExecutionNodeKind.Concatenate,
+            node.Options,
+            node.Children.Skip(startIndex).ToArray(),
+            string.Empty,
+            default,
+            0,
+            0,
+            0);
     }
 
     private static bool TryAppendPrefixGuards(Utf8ExecutionNode node, List<Utf8DeterministicByteGuard> guards, ref int offset)

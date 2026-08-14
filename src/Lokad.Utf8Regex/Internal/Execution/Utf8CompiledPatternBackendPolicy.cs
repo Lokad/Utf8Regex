@@ -11,6 +11,7 @@ internal static class Utf8CompiledPatternBackendPolicy
             return new Utf8CompiledSearchAnalysis(
                 Utf8CompiledSearchMode.ExactLiteral,
                 new Utf8CompiledEngine(Utf8CompiledEngineKind.ExactLiteral),
+                Utf8CompiledEmittedFamily.None,
                 CandidateSourceKind: countPipeline.CandidateSource.Kind);
         }
 
@@ -45,6 +46,7 @@ internal static class Utf8CompiledPatternBackendPolicy
         return new Utf8CompiledSearchAnalysis(
             Utf8CompiledSearchMode.SimplePattern,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.SimplePatternInterpreter),
+            Utf8CompiledEmittedFamily.None,
             CandidateSourceKind: countPipeline.CandidateSource.Kind);
     }
 

@@ -390,7 +390,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
-            return _linearRuntime.IsMatch(input, validation, default!, budget);
+            return _linearRuntime.IsMatch(input, validation, _verifierRuntime, budget);
         }
 
         if (_canUseDirectAnchoredValidatorMatch)
@@ -454,7 +454,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
-            return _linearRuntime.Count(input, validation, default!, budget);
+            return _linearRuntime.Count(input, validation, _verifierRuntime, budget);
         }
 
         if (_canUseDirectAnchoredValidatorMatch)
@@ -537,7 +537,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
-            return _linearRuntime.Match(input, validation, default!, budget);
+            return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
         }
 
         if (_canUseDirectAnchoredValidatorMatch)
@@ -754,7 +754,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly bool _canUseDirectPrefixUntilByteMatch;
-    private readonly byte[]? _prefixUntilByteLiteral;
+    private readonly byte[] _prefixUntilByteLiteral;
     private readonly byte _prefixUntilByteTerminator;
 
     public Utf8ByteSafeLinearCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner)
@@ -764,7 +764,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
         var directFamily = inner.PreparedRegex.FallbackDirectFamily;
         _canUseDirectPrefixUntilByteMatch = directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte &&
             directFamily.LiteralUtf8 is { Length: > 0 };
-        _prefixUntilByteLiteral = directFamily.LiteralUtf8;
+        _prefixUntilByteLiteral = directFamily.LiteralUtf8 ?? [];
         _prefixUntilByteTerminator = directFamily.TerminatorByte;
     }
 
@@ -783,7 +783,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
     public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         if (_canUseDirectPrefixUntilByteMatch &&
-            Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral!, _prefixUntilByteTerminator, out var docLineLength))
+            Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral, _prefixUntilByteTerminator, out var docLineLength))
         {
             match = new Utf8ValueMatch(true, true, 0, docLineLength, 0, docLineLength);
             return true;
@@ -798,7 +798,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
         if (_canUseDirectPrefixUntilByteMatch &&
             Utf8InputAnalyzer.IsAscii(input))
         {
-            match = Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral!, _prefixUntilByteTerminator, out var docLineLength)
+            match = Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral, _prefixUntilByteTerminator, out var docLineLength)
                 ? new Utf8ValueMatch(true, true, 0, docLineLength, 0, docLineLength)
                 : Utf8ValueMatch.NoMatch;
             return true;
@@ -822,7 +822,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_canUseDirectPrefixUntilByteMatch && validation.IsAscii &&
-            Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral!, _prefixUntilByteTerminator, out var docLineLength))
+            Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral, _prefixUntilByteTerminator, out var docLineLength))
         {
             return new Utf8ValueMatch(true, true, 0, docLineLength, 0, docLineLength);
         }
@@ -864,9 +864,10 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         }
 
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
-        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget))
+        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
+            _emittedBackend is { } emittedBackend)
         {
-            return _emittedBackend!.IsMatch(input);
+            return emittedBackend.IsMatch(input);
         }
 
         var probe = GetProbeValidation(input, validation);
@@ -878,9 +879,10 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackSearchGuided);
-        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget))
+        if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget) &&
+            _emittedBackend is { } emittedBackend)
         {
-            return _emittedBackend!.Count(input);
+            return emittedBackend.Count(input);
         }
 
         var probe = GetProbeValidation(input, validation);

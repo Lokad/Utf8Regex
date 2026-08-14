@@ -245,7 +245,7 @@ internal static class Utf8SimplePatternCompiledWholeMatcher
                 case AsciiSimplePatternTokenKind.Dot:
                     break;
 
-                case AsciiSimplePatternTokenKind.CharClass when token.CharClass is not null:
+                case AsciiSimplePatternTokenKind.CharClass when !token.CharClass.IsEmpty:
                     if (!token.CharClass.Contains(regexPlan.SimplePatternPlan.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(value) : value))
                     {
                         return false;

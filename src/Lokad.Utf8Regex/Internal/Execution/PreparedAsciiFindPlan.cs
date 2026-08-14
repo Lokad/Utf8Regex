@@ -10,25 +10,24 @@ internal enum PreparedAsciiFindMode : byte
     LiteralFamily = 2,
     FixedDistanceLiteral = 3,
     FixedDistanceSet = 4,
-    LiteralAfterLoop = 5,
 }
 
 internal readonly struct PreparedAsciiFindPlan
 {
+    private readonly Utf8FixedDistanceSet[]? _fixedDistanceSets;
+
     private PreparedAsciiFindPlan(
         PreparedAsciiFindMode mode,
-        PreparedSubstringSearch literalSearch = default,
-        PreparedLiteralSetSearch literalFamilySearch = default,
-        Utf8FixedDistanceSet[]? fixedDistanceSets = null,
-        int distance = 0,
-        int minLoopLength = 0)
+        PreparedSubstringSearch literalSearch,
+        PreparedLiteralSetSearch literalFamilySearch,
+        Utf8FixedDistanceSet[] fixedDistanceSets,
+        int distance)
     {
         Mode = mode;
         LiteralSearch = literalSearch;
         LiteralFamilySearch = literalFamilySearch;
-        FixedDistanceSets = fixedDistanceSets;
+        _fixedDistanceSets = fixedDistanceSets;
         Distance = distance;
-        MinLoopLength = minLoopLength;
     }
 
     public PreparedAsciiFindMode Mode { get; }
@@ -37,31 +36,26 @@ internal readonly struct PreparedAsciiFindPlan
 
     public PreparedLiteralSetSearch LiteralFamilySearch { get; }
 
-    public Utf8FixedDistanceSet[]? FixedDistanceSets { get; }
+    public Utf8FixedDistanceSet[] FixedDistanceSets => _fixedDistanceSets ?? [];
 
     public int Distance { get; }
-
-    public int MinLoopLength { get; }
 
     public bool HasValue => Mode != PreparedAsciiFindMode.None;
 
     public static PreparedAsciiFindPlan CreateLiteral(byte[] literalUtf8) =>
-        new(PreparedAsciiFindMode.Literal, literalSearch: new PreparedSubstringSearch(literalUtf8, ignoreCase: false));
+        new(PreparedAsciiFindMode.Literal, new PreparedSubstringSearch(literalUtf8, ignoreCase: false), default, [], 0);
 
     public static PreparedAsciiFindPlan CreateLiteralFamily(byte[][] literalsUtf8) =>
-        new(PreparedAsciiFindMode.LiteralFamily, literalFamilySearch: new PreparedLiteralSetSearch(literalsUtf8));
+        new(PreparedAsciiFindMode.LiteralFamily, default, new PreparedLiteralSetSearch(literalsUtf8), [], 0);
 
     public static PreparedAsciiFindPlan CreateLiteralFamily(PreparedLiteralSetSearch literalFamilySearch) =>
-        new(PreparedAsciiFindMode.LiteralFamily, literalFamilySearch: literalFamilySearch);
+        new(PreparedAsciiFindMode.LiteralFamily, default, literalFamilySearch, [], 0);
 
     public static PreparedAsciiFindPlan CreateFixedDistanceLiteral(byte[] literalUtf8, int distance) =>
-        new(PreparedAsciiFindMode.FixedDistanceLiteral, literalSearch: new PreparedSubstringSearch(literalUtf8, ignoreCase: false), distance: distance);
+        new(PreparedAsciiFindMode.FixedDistanceLiteral, new PreparedSubstringSearch(literalUtf8, ignoreCase: false), default, [], distance);
 
     public static PreparedAsciiFindPlan CreateFixedDistanceSet(Utf8FixedDistanceSet[] fixedDistanceSets) =>
-        new(PreparedAsciiFindMode.FixedDistanceSet, fixedDistanceSets: fixedDistanceSets);
-
-    public static PreparedAsciiFindPlan CreateLiteralAfterLoop(byte[] literalUtf8, int minLoopLength = 0) =>
-        new(PreparedAsciiFindMode.LiteralAfterLoop, literalSearch: new PreparedSubstringSearch(literalUtf8, ignoreCase: false), minLoopLength: minLoopLength);
+        new(PreparedAsciiFindMode.FixedDistanceSet, default, default, fixedDistanceSets, 0);
 
     public static PreparedAsciiFindPlan CreateForOrderedWindow(AsciiOrderedLiteralWindowPlan plan)
     {

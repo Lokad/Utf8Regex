@@ -25,7 +25,8 @@ internal static class Utf8ExecutionProgramLowerer
             node.Ch,
             node.CaptureNumber,
             node.Min,
-            node.Max));
+            node.Max,
+            -1));
 
         foreach (var child in node.Children)
         {
@@ -41,7 +42,8 @@ internal static class Utf8ExecutionProgramLowerer
             node.Ch,
             node.CaptureNumber,
             node.Min,
-            node.Max));
+            node.Max,
+            -1));
 
         instructions[enterIndex] = instructions[enterIndex] with { PartnerIndex = exitIndex };
         instructions[exitIndex] = instructions[exitIndex] with { PartnerIndex = enterIndex };

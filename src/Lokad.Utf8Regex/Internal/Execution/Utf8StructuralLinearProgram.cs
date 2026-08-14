@@ -54,12 +54,12 @@ internal enum Utf8AsciiDeterministicFixedWidthCheckKind : byte
 
 internal readonly struct Utf8AsciiDeterministicStep
 {
-    public Utf8AsciiDeterministicStep(
+    private Utf8AsciiDeterministicStep(
         Utf8AsciiDeterministicStepKind kind,
-        byte literal = 0,
-        AsciiCharClass? charClass = null,
-        int minCount = 0,
-        int maxCount = 0)
+        byte literal,
+        AsciiCharClass charClass,
+        int minCount,
+        int maxCount)
     {
         Kind = kind;
         Literal = literal;
@@ -72,19 +72,34 @@ internal readonly struct Utf8AsciiDeterministicStep
 
     public byte Literal { get; }
 
-    public AsciiCharClass? CharClass { get; }
+    public AsciiCharClass CharClass { get; }
 
     public int MinCount { get; }
 
     public int MaxCount { get; }
+
+    public static Utf8AsciiDeterministicStep CreateLiteral(byte literal) =>
+        new(Utf8AsciiDeterministicStepKind.Literal, literal, default, 0, 0);
+
+    public static Utf8AsciiDeterministicStep CreateAnyByte() =>
+        new(Utf8AsciiDeterministicStepKind.AnyByte, 0, default, 0, 0);
+
+    public static Utf8AsciiDeterministicStep CreateCharClass(AsciiCharClass charClass) =>
+        new(Utf8AsciiDeterministicStepKind.CharClass, 0, charClass, 0, 0);
+
+    public static Utf8AsciiDeterministicStep CreateRunCharClass(AsciiCharClass charClass, int minCount, int maxCount) =>
+        new(Utf8AsciiDeterministicStepKind.RunCharClass, 0, charClass, minCount, maxCount);
+
+    public static Utf8AsciiDeterministicStep CreateAccept() =>
+        new(Utf8AsciiDeterministicStepKind.Accept, 0, default, 0, 0);
 }
 
 internal readonly struct Utf8AsciiDeterministicFixedWidthCheck
 {
-    public Utf8AsciiDeterministicFixedWidthCheck(
+    private Utf8AsciiDeterministicFixedWidthCheck(
         Utf8AsciiDeterministicFixedWidthCheckKind kind,
-        byte literal = 0,
-        AsciiCharClass? charClass = null)
+        byte literal,
+        AsciiCharClass charClass)
     {
         Kind = kind;
         Literal = literal;
@@ -95,7 +110,16 @@ internal readonly struct Utf8AsciiDeterministicFixedWidthCheck
 
     public byte Literal { get; }
 
-    public AsciiCharClass? CharClass { get; }
+    public AsciiCharClass CharClass { get; }
+
+    public static Utf8AsciiDeterministicFixedWidthCheck CreateLiteral(byte literal) =>
+        new(Utf8AsciiDeterministicFixedWidthCheckKind.Literal, literal, default);
+
+    public static Utf8AsciiDeterministicFixedWidthCheck CreateAnyByte() =>
+        new(Utf8AsciiDeterministicFixedWidthCheckKind.AnyByte, 0, default);
+
+    public static Utf8AsciiDeterministicFixedWidthCheck CreateCharClass(AsciiCharClass charClass) =>
+        new(Utf8AsciiDeterministicFixedWidthCheckKind.CharClass, 0, charClass);
 }
 
 internal readonly struct Utf8AsciiDeterministicProgram
@@ -107,8 +131,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
         byte[][] searchLiterals,
         bool isEndAnchored,
         bool ignoreCase,
-        Utf8AsciiDeterministicFixedWidthCheck[]? fixedWidthChecks = null,
-        int fixedWidthLength = 0)
+        Utf8AsciiDeterministicFixedWidthCheck[] fixedWidthChecks,
+        int fixedWidthLength)
     {
         Steps = steps;
         FixedLiteralChecks = fixedLiteralChecks;
@@ -116,7 +140,7 @@ internal readonly struct Utf8AsciiDeterministicProgram
         SearchLiterals = searchLiterals;
         IsEndAnchored = isEndAnchored;
         IgnoreCase = ignoreCase;
-        FixedWidthChecks = fixedWidthChecks ?? [];
+        FixedWidthChecks = fixedWidthChecks;
         FixedWidthLength = fixedWidthLength;
     }
 
@@ -152,15 +176,15 @@ internal readonly struct Utf8AsciiDeterministicProgram
             steps[i] = instruction.Kind switch
             {
                 Utf8StructuralLinearInstructionKind.Literal
-                    => new Utf8AsciiDeterministicStep(Utf8AsciiDeterministicStepKind.Literal, literal: instruction.Literal),
+                    => Utf8AsciiDeterministicStep.CreateLiteral(instruction.Literal),
                 Utf8StructuralLinearInstructionKind.AnyByte
-                    => new Utf8AsciiDeterministicStep(Utf8AsciiDeterministicStepKind.AnyByte),
-                Utf8StructuralLinearInstructionKind.CharClass when instruction.CharClass is not null
-                    => new Utf8AsciiDeterministicStep(Utf8AsciiDeterministicStepKind.CharClass, charClass: instruction.CharClass),
-                Utf8StructuralLinearInstructionKind.RunCharClass when instruction.CharClass is not null
-                    => new Utf8AsciiDeterministicStep(Utf8AsciiDeterministicStepKind.RunCharClass, charClass: instruction.CharClass, minCount: instruction.MinCount, maxCount: instruction.MaxCount),
+                    => Utf8AsciiDeterministicStep.CreateAnyByte(),
+                Utf8StructuralLinearInstructionKind.CharClass when !instruction.CharClass.IsEmpty
+                    => Utf8AsciiDeterministicStep.CreateCharClass(instruction.CharClass),
+                Utf8StructuralLinearInstructionKind.RunCharClass when !instruction.CharClass.IsEmpty
+                    => Utf8AsciiDeterministicStep.CreateRunCharClass(instruction.CharClass, instruction.MinCount, instruction.MaxCount),
                 Utf8StructuralLinearInstructionKind.Accept
-                    => new Utf8AsciiDeterministicStep(Utf8AsciiDeterministicStepKind.Accept),
+                    => Utf8AsciiDeterministicStep.CreateAccept(),
                 _ => default,
             };
 
@@ -197,11 +221,11 @@ internal readonly struct Utf8AsciiDeterministicProgram
             checks[i] = step.Kind switch
             {
                 Utf8AsciiDeterministicStepKind.Literal
-                    => new Utf8AsciiDeterministicFixedWidthCheck(Utf8AsciiDeterministicFixedWidthCheckKind.Literal, literal: step.Literal),
+                    => Utf8AsciiDeterministicFixedWidthCheck.CreateLiteral(step.Literal),
                 Utf8AsciiDeterministicStepKind.AnyByte
-                    => new Utf8AsciiDeterministicFixedWidthCheck(Utf8AsciiDeterministicFixedWidthCheckKind.AnyByte),
-                Utf8AsciiDeterministicStepKind.CharClass when step.CharClass is not null
-                    => new Utf8AsciiDeterministicFixedWidthCheck(Utf8AsciiDeterministicFixedWidthCheckKind.CharClass, charClass: step.CharClass),
+                    => Utf8AsciiDeterministicFixedWidthCheck.CreateAnyByte(),
+                Utf8AsciiDeterministicStepKind.CharClass when !step.CharClass.IsEmpty
+                    => Utf8AsciiDeterministicFixedWidthCheck.CreateCharClass(step.CharClass),
                 _ => default,
             };
 
@@ -243,16 +267,16 @@ internal readonly struct Utf8AsciiDeterministicMatch
 
 internal readonly struct Utf8StructuralLinearInstruction
 {
-    public Utf8StructuralLinearInstruction(
+    private Utf8StructuralLinearInstruction(
         Utf8StructuralLinearInstructionKind kind,
-        byte literal = 0,
-        AsciiCharClass? charClass = null,
-        int minCount = 0,
-        int maxCount = 0,
-        AsciiCharClass? secondaryCharClass = null,
-        int secondaryMinCount = 0,
-        int auxiliaryMinCount = 0,
-        string? set = null)
+        byte literal,
+        AsciiCharClass charClass,
+        int minCount,
+        int maxCount,
+        AsciiCharClass secondaryCharClass,
+        int secondaryMinCount,
+        int auxiliaryMinCount,
+        string set)
     {
         Kind = kind;
         Literal = literal;
@@ -269,19 +293,68 @@ internal readonly struct Utf8StructuralLinearInstruction
 
     public byte Literal { get; }
 
-    public AsciiCharClass? CharClass { get; }
+    public AsciiCharClass CharClass { get; }
 
     public int MinCount { get; }
 
     public int MaxCount { get; }
 
-    public AsciiCharClass? SecondaryCharClass { get; }
+    public AsciiCharClass SecondaryCharClass { get; }
 
     public int SecondaryMinCount { get; }
 
     public int AuxiliaryMinCount { get; }
 
-    public string? Set { get; }
+    public string Set { get; }
+
+    public static Utf8StructuralLinearInstruction CreateLiteral(byte literal) =>
+        new(Utf8StructuralLinearInstructionKind.Literal, literal, default, 0, 0, default, 0, 0, string.Empty);
+
+    public static Utf8StructuralLinearInstruction CreateAnyByte() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.AnyByte);
+
+    public static Utf8StructuralLinearInstruction CreateCharClass(AsciiCharClass charClass) =>
+        new(Utf8StructuralLinearInstructionKind.CharClass, 0, charClass, 0, 0, default, 0, 0, string.Empty);
+
+    public static Utf8StructuralLinearInstruction CreateRunCharClass(AsciiCharClass charClass, int minCount, int maxCount) =>
+        new(Utf8StructuralLinearInstructionKind.RunCharClass, 0, charClass, minCount, maxCount, default, 0, 0, string.Empty);
+
+    public static Utf8StructuralLinearInstruction CreateRepeatedSegment(
+        AsciiCharClass charClass,
+        int minCount,
+        int maxCount,
+        AsciiCharClass secondaryCharClass,
+        int secondaryMinCount,
+        int auxiliaryMinCount,
+        string set) =>
+        new(
+            Utf8StructuralLinearInstructionKind.RepeatedSegment,
+            0,
+            charClass,
+            minCount,
+            maxCount,
+            secondaryCharClass,
+            secondaryMinCount,
+            auxiliaryMinCount,
+            set);
+
+    public static Utf8StructuralLinearInstruction CreateTokenWindow() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.TokenWindow);
+
+    public static Utf8StructuralLinearInstruction CreateQuotedRelation() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.QuotedRelation);
+
+    public static Utf8StructuralLinearInstruction CreateLiteralFamilyRun() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.LiteralFamilyRun);
+
+    public static Utf8StructuralLinearInstruction CreateOrderedLiteralWindow() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.OrderedLiteralWindow);
+
+    public static Utf8StructuralLinearInstruction CreateAccept() =>
+        CreateMarker(Utf8StructuralLinearInstructionKind.Accept);
+
+    private static Utf8StructuralLinearInstruction CreateMarker(Utf8StructuralLinearInstructionKind kind) =>
+        new(kind, 0, default, 0, 0, default, 0, 0, string.Empty);
 }
 
 internal readonly struct Utf8StructuralLinearInstructionProgram
@@ -333,8 +406,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.RunCharClass, charClass: runPlan.CharClass, minCount: runPlan.MinLength, maxCount: runPlan.MaxLength),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateRunCharClass(runPlan.CharClass, runPlan.MinLength, runPlan.MaxLength),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             runPlan.Search,
             searchLiteralOffset: 0,
@@ -354,14 +427,14 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             var token = branch[i];
             instructions[i] = token.Kind switch
             {
-                AsciiSimplePatternTokenKind.Literal => new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Literal, literal: token.Literal),
-                AsciiSimplePatternTokenKind.Dot => new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.AnyByte),
-                AsciiSimplePatternTokenKind.CharClass => new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.CharClass, charClass: token.CharClass),
+                AsciiSimplePatternTokenKind.Literal => Utf8StructuralLinearInstruction.CreateLiteral(token.Literal),
+                AsciiSimplePatternTokenKind.Dot => Utf8StructuralLinearInstruction.CreateAnyByte(),
+                AsciiSimplePatternTokenKind.CharClass => Utf8StructuralLinearInstruction.CreateCharClass(token.CharClass),
                 _ => default,
             };
         }
 
-        instructions[^1] = new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept);
+        instructions[^1] = Utf8StructuralLinearInstruction.CreateAccept();
         return new Utf8StructuralLinearInstructionProgram(
             instructions,
             default,
@@ -377,8 +450,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.LiteralFamilyRun),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateLiteralFamilyRun(),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             default,
             simplePatternPlan.SearchLiteralOffset,
@@ -393,16 +466,15 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(
-                    Utf8StructuralLinearInstructionKind.RepeatedSegment,
-                    charClass: repeatedSegmentPlan.LeadingCharClass,
-                    minCount: repeatedSegmentPlan.RepetitionMinCount,
-                    maxCount: repeatedSegmentPlan.RepetitionMaxCount,
-                    secondaryCharClass: repeatedSegmentPlan.TrailingCharClass,
-                    secondaryMinCount: repeatedSegmentPlan.TrailingMinCount,
-                    auxiliaryMinCount: repeatedSegmentPlan.SeparatorMinCount,
-                    set: repeatedSegmentPlan.SeparatorSet),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateRepeatedSegment(
+                    repeatedSegmentPlan.LeadingCharClass,
+                    repeatedSegmentPlan.RepetitionMinCount,
+                    repeatedSegmentPlan.RepetitionMaxCount,
+                    repeatedSegmentPlan.TrailingCharClass,
+                    repeatedSegmentPlan.TrailingMinCount,
+                    repeatedSegmentPlan.SeparatorMinCount,
+                    repeatedSegmentPlan.SeparatorSet),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             default,
             searchLiteralOffset: 0,
@@ -417,8 +489,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.TokenWindow),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateTokenWindow(),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             tokenWindowPlan.LeadingRunPlan.Search,
             searchLiteralOffset: 0,
@@ -433,8 +505,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.QuotedRelation),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateQuotedRelation(),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             default,
             searchLiteralOffset: 0,
@@ -449,8 +521,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
     {
         return new Utf8StructuralLinearInstructionProgram(
             [
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.OrderedLiteralWindow),
-                new Utf8StructuralLinearInstruction(Utf8StructuralLinearInstructionKind.Accept),
+                Utf8StructuralLinearInstruction.CreateOrderedLiteralWindow(),
+                Utf8StructuralLinearInstruction.CreateAccept(),
             ],
             default,
             searchLiteralOffset: 0,
@@ -464,21 +536,21 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
 
 internal readonly struct Utf8StructuralLinearProgram
 {
-    public Utf8StructuralLinearProgram(
+    private Utf8StructuralLinearProgram(
         Utf8StructuralLinearProgramKind kind,
-        Utf8StructuralLinearInstructionProgram instructionProgram = default,
-        Utf8AsciiDeterministicProgram deterministicProgram = default,
-        AsciiSimplePatternRunPlan runPlan = default,
-        AsciiSimplePatternPlan simplePatternPlan = default,
-        bool allowsUtf8ByteSafe = false,
-        AsciiStructuralTokenWindowPlan tokenWindowPlan = default,
-        AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan = default,
-        AsciiStructuralQuotedRelationPlan quotedRelationPlan = default,
-        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan = default,
-        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan = default,
-        Utf8SearchPlan searchPlan = default,
-        Utf8StructuralSearchPlan structuralSearchPlan = default,
-        Utf8StructuralVerifierPlan structuralVerifierPlan = default)
+        Utf8StructuralLinearInstructionProgram instructionProgram,
+        Utf8AsciiDeterministicProgram deterministicProgram,
+        AsciiSimplePatternRunPlan runPlan,
+        AsciiSimplePatternPlan simplePatternPlan,
+        bool allowsUtf8ByteSafe,
+        AsciiStructuralTokenWindowPlan tokenWindowPlan,
+        AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan,
+        AsciiStructuralQuotedRelationPlan quotedRelationPlan,
+        AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan,
+        AsciiStructuralIdentifierFamilyPlan structuralIdentifierFamilyPlan,
+        Utf8SearchPlan searchPlan,
+        Utf8StructuralSearchPlan structuralSearchPlan,
+        Utf8StructuralVerifierPlan structuralVerifierPlan)
     {
         Kind = kind;
         InstructionProgram = instructionProgram;
@@ -526,6 +598,60 @@ internal readonly struct Utf8StructuralLinearProgram
 
     public bool HasValue => Kind != Utf8StructuralLinearProgramKind.None;
 
+    private static Utf8StructuralLinearProgram ForCharClassRun(
+        Utf8StructuralLinearInstructionProgram instructions,
+        Utf8AsciiDeterministicProgram deterministic,
+        AsciiSimplePatternRunPlan runPlan,
+        bool allowsUtf8ByteSafe) =>
+        new(Utf8StructuralLinearProgramKind.AsciiCharClassRun, instructions, deterministic, runPlan, default,
+            allowsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForFixedTokenPattern(
+        Utf8StructuralLinearInstructionProgram instructions,
+        Utf8AsciiDeterministicProgram deterministic,
+        AsciiSimplePatternPlan simplePatternPlan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern, instructions, deterministic, default, simplePatternPlan,
+            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForLiteralFamilyRun(
+        Utf8StructuralLinearInstructionProgram instructions,
+        AsciiSimplePatternPlan simplePatternPlan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun, instructions, default, default, simplePatternPlan,
+            simplePatternPlan.IsUtf8ByteSafe, default, default, default, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForStructuralFamily(
+        AsciiStructuralIdentifierFamilyPlan familyPlan,
+        Utf8SearchPlan searchPlan,
+        Utf8StructuralSearchPlan structuralSearchPlan,
+        Utf8StructuralVerifierPlan verifierPlan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiStructuralFamily, default, default, default, default,
+            false, default, default, default, default, familyPlan, searchPlan, structuralSearchPlan, verifierPlan);
+
+    private static Utf8StructuralLinearProgram ForTokenWindow(
+        Utf8StructuralLinearInstructionProgram instructions,
+        AsciiStructuralTokenWindowPlan plan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiTokenWindow, instructions, default, default, default,
+            true, plan, default, default, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForRepeatedSegment(
+        Utf8StructuralLinearInstructionProgram instructions,
+        AsciiStructuralRepeatedSegmentPlan plan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiRepeatedSegment, instructions, default, default, default,
+            false, default, plan, default, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForQuotedRelation(
+        Utf8StructuralLinearInstructionProgram instructions,
+        AsciiStructuralQuotedRelationPlan plan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiQuotedRelation, instructions, default, default, default,
+            false, default, default, plan, default, default, default, default, default);
+
+    private static Utf8StructuralLinearProgram ForOrderedLiteralWindow(
+        Utf8StructuralLinearInstructionProgram instructions,
+        AsciiOrderedLiteralWindowPlan plan,
+        Utf8SearchPlan searchPlan) =>
+        new(Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow, instructions, default, default, default,
+            true, default, default, default, plan, default, searchPlan, default, default);
+
     public static Utf8StructuralLinearProgram Create(
         NativeExecutionKind executionKind,
         AsciiSimplePatternPlan simplePatternPlan,
@@ -541,55 +667,33 @@ internal readonly struct Utf8StructuralLinearProgram
         return executionKind switch
         {
             NativeExecutionKind.AsciiSimplePattern when simplePatternPlan.RunPlan.HasValue
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiCharClassRun,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan),
-                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan)),
-                    runPlan: simplePatternPlan.RunPlan,
-                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+                => ForCharClassRun(
+                    Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan),
+                    Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan.RunPlan)),
+                    simplePatternPlan.RunPlan,
+                    simplePatternPlan.IsUtf8ByteSafe),
             NativeExecutionKind.AsciiSimplePattern when CanUseFixedTokenPattern(simplePatternPlan)
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan),
-                    deterministicProgram: Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan)),
-                    simplePatternPlan: simplePatternPlan,
-                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+                => ForFixedTokenPattern(
+                    Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan),
+                    Utf8AsciiDeterministicProgram.Create(Utf8StructuralLinearInstructionProgram.Create(simplePatternPlan)),
+                    simplePatternPlan),
             NativeExecutionKind.AsciiSimplePattern when CanUseLiteralFamilyRunPattern(simplePatternPlan)
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiLiteralFamilyRun,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.CreateLiteralFamilyRun(simplePatternPlan),
-                    simplePatternPlan: simplePatternPlan,
-                    allowsUtf8ByteSafe: simplePatternPlan.IsUtf8ByteSafe),
+                => ForLiteralFamilyRun(
+                    Utf8StructuralLinearInstructionProgram.CreateLiteralFamilyRun(simplePatternPlan),
+                    simplePatternPlan),
             NativeExecutionKind.AsciiStructuralIdentifierFamily when structuralVerifier.Kind == Utf8StructuralVerifierKind.AsciiStructuralProgram
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiStructuralFamily,
-                    structuralIdentifierFamilyPlan: structuralIdentifierFamilyPlan,
-                    searchPlan: searchPlan,
-                    structuralSearchPlan: structuralSearchPlan,
-                    structuralVerifierPlan: structuralVerifier),
+                => ForStructuralFamily(structuralIdentifierFamilyPlan, searchPlan, structuralSearchPlan, structuralVerifier),
             NativeExecutionKind.AsciiStructuralTokenWindow when structuralTokenWindowPlan.HasValue
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiTokenWindow,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralTokenWindowPlan),
-                    tokenWindowPlan: structuralTokenWindowPlan,
-                    allowsUtf8ByteSafe: true),
+                => ForTokenWindow(Utf8StructuralLinearInstructionProgram.Create(structuralTokenWindowPlan), structuralTokenWindowPlan),
             NativeExecutionKind.AsciiStructuralRepeatedSegment when structuralRepeatedSegmentPlan.HasValue
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiRepeatedSegment,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralRepeatedSegmentPlan),
-                    repeatedSegmentPlan: structuralRepeatedSegmentPlan),
+                => ForRepeatedSegment(Utf8StructuralLinearInstructionProgram.Create(structuralRepeatedSegmentPlan), structuralRepeatedSegmentPlan),
             NativeExecutionKind.AsciiStructuralQuotedRelation when structuralQuotedRelationPlan.HasValue
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiQuotedRelation,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(structuralQuotedRelationPlan),
-                    quotedRelationPlan: structuralQuotedRelationPlan),
+                => ForQuotedRelation(Utf8StructuralLinearInstructionProgram.Create(structuralQuotedRelationPlan), structuralQuotedRelationPlan),
             NativeExecutionKind.AsciiOrderedLiteralWindow when orderedLiteralWindowPlan.HasValue
-                => new Utf8StructuralLinearProgram(
-                    Utf8StructuralLinearProgramKind.AsciiOrderedLiteralWindow,
-                    instructionProgram: Utf8StructuralLinearInstructionProgram.Create(orderedLiteralWindowPlan),
-                    orderedLiteralWindowPlan: orderedLiteralWindowPlan,
-                    allowsUtf8ByteSafe: true,
-                    searchPlan: searchPlan),
+                => ForOrderedLiteralWindow(
+                    Utf8StructuralLinearInstructionProgram.Create(orderedLiteralWindowPlan),
+                    orderedLiteralWindowPlan,
+                    searchPlan),
             _ => default,
         };
     }
@@ -639,10 +743,12 @@ internal readonly struct Utf8StructuralLinearProgram
         }
 
         if (firstBranch[runStart].Kind != AsciiSimplePatternTokenKind.CharClass ||
-            firstBranch[runStart].CharClass is not { } runClass)
+            firstBranch[runStart].CharClass.IsEmpty)
         {
             return false;
         }
+
+        var runClass = firstBranch[runStart].CharClass;
 
         for (var i = runStart; i < firstBranch.Length; i++)
         {
@@ -942,8 +1048,9 @@ internal static class Utf8AsciiInstructionLinearExecutor
         if (instructionProgram.Instructions.Length >= 2 &&
             instructionProgram.Instructions[0].Kind == Utf8StructuralLinearInstructionKind.RunCharClass &&
             instructionProgram.Instructions[1].Kind == Utf8StructuralLinearInstructionKind.Accept &&
-            instructionProgram.Instructions[0].CharClass is { } runCharClass)
+            !instructionProgram.Instructions[0].CharClass.IsEmpty)
         {
+            var runCharClass = instructionProgram.Instructions[0].CharClass;
             var matchIndex = Utf8AsciiCharClassRunExecutor.FindNext(
                 input,
                 new AsciiSimplePatternRunPlan(runCharClass, instructionProgram.Instructions[0].MinCount, instructionProgram.Instructions[0].MaxCount),
@@ -963,8 +1070,9 @@ internal static class Utf8AsciiInstructionLinearExecutor
         if (instructionProgram.Instructions.Length >= 2 &&
             instructionProgram.Instructions[0].Kind == Utf8StructuralLinearInstructionKind.RepeatedSegment &&
             instructionProgram.Instructions[1].Kind == Utf8StructuralLinearInstructionKind.Accept &&
-            instructionProgram.Instructions[0].CharClass is { } segmentLeading)
+            !instructionProgram.Instructions[0].CharClass.IsEmpty)
         {
+            var segmentLeading = instructionProgram.Instructions[0].CharClass;
             var candidateStart = startIndex;
             while (candidateStart < input.Length)
             {
@@ -1543,7 +1651,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                     index++;
                     break;
 
-                case Utf8StructuralLinearInstructionKind.CharClass when instruction.CharClass is not null:
+                case Utf8StructuralLinearInstructionKind.CharClass when !instruction.CharClass.IsEmpty:
                     if ((uint)index >= (uint)input.Length)
                     {
                         return false;
@@ -1558,7 +1666,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                     index++;
                     break;
 
-                case Utf8StructuralLinearInstructionKind.RunCharClass when instruction.CharClass is not null:
+                case Utf8StructuralLinearInstructionKind.RunCharClass when !instruction.CharClass.IsEmpty:
                 {
                     var count = 0;
                     while ((uint)index < (uint)input.Length &&
@@ -1578,8 +1686,8 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 }
 
                 case Utf8StructuralLinearInstructionKind.RepeatedSegment when
-                    instruction.CharClass is not null &&
-                    instruction.SecondaryCharClass is not null &&
+                    !instruction.CharClass.IsEmpty &&
+                    !instruction.SecondaryCharClass.IsEmpty &&
                     !string.IsNullOrEmpty(instruction.Set):
                 {
                     var segments = 0;
@@ -1676,7 +1784,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                     index++;
                     break;
 
-                case Utf8AsciiDeterministicStepKind.CharClass when step.CharClass is not null:
+                case Utf8AsciiDeterministicStepKind.CharClass when !step.CharClass.IsEmpty:
                     if ((uint)index >= (uint)input.Length)
                     {
                         return false;
@@ -1691,7 +1799,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                     index++;
                     break;
 
-                case Utf8AsciiDeterministicStepKind.RunCharClass when step.CharClass is not null:
+                case Utf8AsciiDeterministicStepKind.RunCharClass when !step.CharClass.IsEmpty:
                 {
                     var count = 0;
                     while ((uint)index < (uint)input.Length &&
@@ -1758,7 +1866,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 case Utf8AsciiDeterministicFixedWidthCheckKind.AnyByte:
                     break;
 
-                case Utf8AsciiDeterministicFixedWidthCheckKind.CharClass when check.CharClass is not null:
+                case Utf8AsciiDeterministicFixedWidthCheckKind.CharClass when !check.CharClass.IsEmpty:
                     if (!check.CharClass.Contains(program.IgnoreCase ? AsciiSearch.FoldCase(value) : value))
                     {
                         return false;
@@ -1828,7 +1936,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
     {
         matchedLength = 0;
         var index = startIndex;
-        if (!TryConsumeExactRun(input, ref index, plan.LeadingCharClass!, plan.LeadingLength))
+        if (!TryConsumeExactRun(input, ref index, plan.LeadingCharClass, plan.LeadingLength))
         {
             return false;
         }
@@ -1877,7 +1985,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 switch (token.Kind)
                 {
                     case AsciiSimplePatternTokenKind.Literal when value != token.Literal:
-                    case AsciiSimplePatternTokenKind.CharClass when token.CharClass is null || !token.CharClass.Contains(value):
+                    case AsciiSimplePatternTokenKind.CharClass when token.CharClass.IsEmpty || !token.CharClass.Contains(value):
                     case AsciiSimplePatternTokenKind.Dot:
                         matched = false;
                         break;
@@ -1912,7 +2020,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 continue;
             }
 
-            if (!TryConsumeExactRun(input, ref index, plan.TrailingCharClass!, plan.TrailingLength))
+            if (!TryConsumeExactRun(input, ref index, plan.TrailingCharClass, plan.TrailingLength))
             {
                 continue;
             }
@@ -2067,10 +2175,12 @@ internal static class Utf8AsciiInstructionLinearExecutor
         endIndex = 0;
         if ((uint)startIndex >= (uint)input.Length ||
             input[startIndex] is not ((byte)'"' or (byte)'\'') ||
-            plan.QuotedRunClass is not { } runClass)
+            plan.QuotedRunClass.IsEmpty)
         {
             return false;
         }
+
+        var runClass = plan.QuotedRunClass;
 
         var afterBody = startIndex + 1 + plan.QuotedRunLength;
         if (afterBody >= input.Length)
@@ -2101,10 +2211,12 @@ internal static class Utf8AsciiInstructionLinearExecutor
         endIndex = 0;
         if ((uint)startIndex >= (uint)input.Length ||
             input[startIndex] is not ((byte)'"' or (byte)'\'') ||
-            plan.PrefixedTailClass is not { } tailClass)
+            plan.PrefixedTailClass.IsEmpty)
         {
             return false;
         }
+
+        var tailClass = plan.PrefixedTailClass;
 
         var bodyStart = startIndex + 1;
         foreach (var prefix in plan.PrefixesUtf8)
