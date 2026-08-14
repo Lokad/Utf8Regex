@@ -6,8 +6,8 @@ not a claim of complete upstream PCRE2 compatibility.
 
 ## Qualified baseline
 
-- Implementation baseline: `fd705c7` (`Close PCRE2 source qualification debt`).
-- Qualified package source: `85a3df4d2954d7ece805bb2b233d2c06cc1f631a`.
+- Core ownership baseline: `686fd07` (`Finish core replacement and verifier cleanup`).
+- Qualified package source: `686fd072cce78501898a64a28d17e9326a77ff23`.
 - Target: `net10.0`.
 - Public API snapshot: 188 lines, SHA-256
   `DA79944F41BC2B47A0A67FFD79C83D224116B20B600A00A4C40CFE9059CE4AEB`.
@@ -48,11 +48,11 @@ promise that every normally matchable pattern supports partial probing.
 
 ## Repository and package verification
 
-The standard repository run passed 2,853 tests:
+The standard repository run passed 2,856 tests:
 
 | Project | Passed |
 |---|---:|
-| `Lokad.Utf8Regex.Tests` | 752 |
+| `Lokad.Utf8Regex.Tests` | 755 |
 | `Lokad.Utf8Regex.DiffTests` | 375 |
 | `Lokad.Utf8Regex.Pcre2.Tests` | 1,562 |
 | `Lokad.Utf8Regex.PythonRe.Tests` | 164 |
@@ -68,12 +68,13 @@ metadata, license/readme/icon assets, and
 `lib/net10.0/Lokad.Utf8Regex.Pcre2.dll`. Its nuspec has one implementation
 dependency: `Lokad.Utf8Regex` 0.2.0. There are no RID folders, native assets,
 external executables, or sibling project references in the consumer graph.
-PE metadata inspection reports zero P/Invoke methods. An isolated local-NuGet
-consumer, using an isolated package cache, built and executed compatible
-matching, branch reset, and repeated-`\K` substitution successfully. Packages
-with the same prerelease version must be consumed as a version-coherent pair;
-a stale global cache can otherwise combine assemblies from different source
-commits.
+PE metadata inspection reports zero P/Invoke methods. The reproducible
+`test-packaged-pcre2.ps1` qualification replaces both sibling project
+references in a copied PCRE2 test project with package references, restores
+through a fresh isolated package cache, and passes all 1,562 PCRE2 tests
+against the packed binaries. Packages with the same prerelease version must
+be consumed as a version-coherent pair; a stale global cache can otherwise
+combine assemblies from different source commits.
 
 ## Reviewed core integration points
 
@@ -125,6 +126,13 @@ Retained parallel code has a dialect or measured-algorithm reason:
 No flavor-local byte-prefix coordinate scanner, duplicate candidate merger,
 replacement byte writer, or full-pattern execution router remains in migrated
 PCRE2 operations.
+
+The final core rerun also removed an unreachable paired-window emitted backend
+and the last two obsolete delegate/fixed-match replacement engines. Bounded
+managed candidate verification now reuses one decoded subject and boundary map
+and matches candidate spans without allocating overlapping slice strings.
+The surviving literal, structural, and fallback kernels are the measured
+strategies listed in `Internal/Search/COMPLEXITY.md`, not accidental copies.
 
 ## C# guideline review
 
