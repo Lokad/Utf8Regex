@@ -3,513 +3,1481 @@
   "Sections": {
     "pcre2-managed-compatible-ismatch": {
       "Cases": {
+        "backtracking/assertion-capture": {
+          "PatternUtf8Bytes": 36,
+          "InputUtf8Bytes": 4103,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 89.725,
+          "ConstructionAllocatedBytes": 79305,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 3.63,
+          "Utf8Regex": 2.7399999999999998,
+          "PredecodedRegex": 0.29500000000000004,
+          "DecodeThenRegex": 0.805
+        },
+        "backtracking/capture-backreference": {
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 22528,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 71.99,
+          "ConstructionAllocatedBytes": 54137,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 2.55,
+          "Utf8Regex": 5.970000000000001,
+          "PredecodedRegex": 0.1,
+          "DecodeThenRegex": 3.4
+        },
         "common/backtracking": {
-          "Utf8Pcre2": 1.63842,
-          "Utf8Regex": 0.18925,
-          "PredecodedRegex": 1.3841,
-          "DecodeThenRegex": 1.7099799999999998
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 49,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 212.01171875,
+          "ConstructionAllocatedBytes": 63504,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 14.6614,
+          "Utf8Regex": 0.2147,
+          "PredecodedRegex": 0.8966000000000001,
+          "DecodeThenRegex": 0.9408
         },
         "common/date-match": {
-          "Utf8Pcre2": 0.24641,
-          "Utf8Regex": 0.19138,
-          "PredecodedRegex": 0.18575999999999998,
-          "DecodeThenRegex": 0.23187
+          "PatternUtf8Bytes": 29,
+          "InputUtf8Bytes": 47,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 81.423046875,
+          "ConstructionAllocatedBytes": 70072,
+          "FirstCallAllocatedBytes": 1040,
+          "WarmAllocatedBytes": 120,
+          "Utf8Pcre2": 0.3648,
+          "Utf8Regex": 0.36510000000000004,
+          "PredecodedRegex": 0.1389,
+          "DecodeThenRegex": 0.1275
         },
         "common/date-miss": {
-          "Utf8Pcre2": 1.22813,
-          "Utf8Regex": 0.37085999999999997,
-          "PredecodedRegex": 1.08484,
-          "DecodeThenRegex": 1.2065
+          "PatternUtf8Bytes": 29,
+          "InputUtf8Bytes": 47,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 80.237890625,
+          "ConstructionAllocatedBytes": 70072,
+          "FirstCallAllocatedBytes": 1040,
+          "WarmAllocatedBytes": 120,
+          "Utf8Pcre2": 0.9731000000000001,
+          "Utf8Regex": 0.9206,
+          "PredecodedRegex": 0.7333999999999999,
+          "DecodeThenRegex": 0.7335
         },
         "common/email-match": {
           "PatternUtf8Bytes": 118,
           "InputUtf8Bytes": 34,
-          "EffectiveIterations": 10000,
-          "ConstructionMicroseconds": 45.115625,
-          "ConstructionAllocatedBytes": 118136,
-          "FirstCallAllocatedBytes": 2616,
-          "WarmAllocatedBytes": 144,
-          "Utf8Pcre2": 0.36103,
-          "Utf8Regex": 0.24802,
-          "PredecodedRegex": 0.15550999999999998,
-          "DecodeThenRegex": 0.16379000000000002
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 238.06796875,
+          "ConstructionAllocatedBytes": 107104,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 7.7526,
+          "Utf8Regex": 0.3413,
+          "PredecodedRegex": 0.2034,
+          "DecodeThenRegex": 0.2333
         },
         "common/email-miss": {
-          "Utf8Pcre2": 0.66318,
-          "Utf8Regex": 0.1509,
-          "PredecodedRegex": 0.78364,
-          "DecodeThenRegex": 0.6634899999999999
+          "PatternUtf8Bytes": 118,
+          "InputUtf8Bytes": 35,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 237.362890625,
+          "ConstructionAllocatedBytes": 106208,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 25.902900000000002,
+          "Utf8Regex": 0.38389999999999996,
+          "PredecodedRegex": 0.289,
+          "DecodeThenRegex": 0.3175
         },
         "common/ip-match": {
-          "Utf8Pcre2": 0.41166,
-          "Utf8Regex": 0.20362,
-          "PredecodedRegex": 0.33752,
-          "DecodeThenRegex": 0.45226000000000005
+          "PatternUtf8Bytes": 87,
+          "InputUtf8Bytes": 15,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 397.010546875,
+          "ConstructionAllocatedBytes": 147868,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 8.9831,
+          "Utf8Regex": 0.6844,
+          "PredecodedRegex": 0.7118,
+          "DecodeThenRegex": 0.749
         },
         "common/ip-miss": {
-          "Utf8Pcre2": 0.40185,
-          "Utf8Regex": 0.12,
-          "PredecodedRegex": 0.3319,
-          "DecodeThenRegex": 0.50358
+          "PatternUtf8Bytes": 87,
+          "InputUtf8Bytes": 15,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 165.912890625,
+          "ConstructionAllocatedBytes": 147000,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 8.9078,
+          "Utf8Regex": 0.5611,
+          "PredecodedRegex": 0.696,
+          "DecodeThenRegex": 0.706
         },
         "common/one-node-backtracking": {
-          "Utf8Pcre2": 1.15867,
-          "Utf8Regex": 0.15455,
-          "PredecodedRegex": 1.15278,
-          "DecodeThenRegex": 1.29366
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 52,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 46.3953125,
+          "ConstructionAllocatedBytes": 52048,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 54.902,
+          "Utf8Regex": 0.5364,
+          "PredecodedRegex": 2.1908000000000003,
+          "DecodeThenRegex": 2.2075
         },
         "common/uri-match": {
-          "Utf8Pcre2": 0.5815899999999999,
-          "Utf8Regex": 0.17267000000000002,
-          "PredecodedRegex": 0.42623999999999995,
-          "DecodeThenRegex": 0.5962
+          "PatternUtf8Bytes": 51,
+          "InputUtf8Bytes": 46,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 133.975390625,
+          "ConstructionAllocatedBytes": 128720,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.3828,
+          "Utf8Regex": 0.6942999999999999,
+          "PredecodedRegex": 0.2622,
+          "DecodeThenRegex": 0.3912
         },
         "common/uri-miss": {
-          "Utf8Pcre2": 0.47721,
-          "Utf8Regex": 0.17325,
-          "PredecodedRegex": 0.35334,
-          "DecodeThenRegex": 0.37906999999999996
+          "PatternUtf8Bytes": 51,
+          "InputUtf8Bytes": 19,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 96.86796875,
+          "ConstructionAllocatedBytes": 128432,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 6.5839,
+          "Utf8Regex": 0.4452,
+          "PredecodedRegex": 0.24109999999999998,
+          "DecodeThenRegex": 0.2818
         },
         "industry/boostdocs-credit-card-match": {
-          "Utf8Pcre2": 0.54947,
-          "Utf8Regex": 0.22043000000000001,
-          "PredecodedRegex": 0.45393,
-          "DecodeThenRegex": 0.31183
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 56.8078125,
+          "ConstructionAllocatedBytes": 53088,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.8776,
+          "Utf8Regex": 1.5237,
+          "PredecodedRegex": 0.19019999999999998,
+          "DecodeThenRegex": 0.2089
         },
         "industry/boostdocs-date-match": {
-          "Utf8Pcre2": 0.18294000000000002,
-          "Utf8Regex": 0.20431,
-          "PredecodedRegex": 0.13619,
-          "DecodeThenRegex": 0.17385
+          "PatternUtf8Bytes": 23,
+          "InputUtf8Bytes": 10,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 51.616015625,
+          "ConstructionAllocatedBytes": 63904,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.5505,
+          "Utf8Regex": 1.7355,
+          "PredecodedRegex": 0.095,
+          "DecodeThenRegex": 0.12869999999999998
         },
         "industry/boostdocs-float-match": {
-          "Utf8Pcre2": 0.1538,
-          "Utf8Regex": 0.16798,
-          "PredecodedRegex": 0.1304,
-          "DecodeThenRegex": 0.23093000000000002
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 8,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 47.72578125,
+          "ConstructionAllocatedBytes": 53408,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.7605,
+          "Utf8Regex": 0.1305,
+          "PredecodedRegex": 0.0932,
+          "DecodeThenRegex": 0.1183
         },
         "industry/boostdocs-ftp-line-match": {
-          "Utf8Pcre2": 0.23933000000000001,
-          "Utf8Regex": 0.16391,
-          "PredecodedRegex": 0.23588,
-          "DecodeThenRegex": 0.36980999999999997
+          "PatternUtf8Bytes": 22,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 51.67265625,
+          "ConstructionAllocatedBytes": 63728,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 3.617,
+          "Utf8Regex": 0.15780000000000002,
+          "PredecodedRegex": 0.1306,
+          "DecodeThenRegex": 0.18259999999999998
         },
         "industry/boostdocs-postcode-match": {
-          "Utf8Pcre2": 0.16610999999999998,
-          "Utf8Regex": 0.14889000000000002,
-          "PredecodedRegex": 0.14887999999999998,
-          "DecodeThenRegex": 0.22895
+          "PatternUtf8Bytes": 58,
+          "InputUtf8Bytes": 7,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 105.914453125,
+          "ConstructionAllocatedBytes": 94544,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.5542,
+          "Utf8Regex": 0.7734,
+          "PredecodedRegex": 0.1001,
+          "DecodeThenRegex": 0.1182
+        },
+        "literal/absolute-anchored": {
+          "PatternUtf8Bytes": 8,
+          "InputUtf8Bytes": 4103,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 47.875,
+          "ConstructionAllocatedBytes": 99849,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 0.2,
+          "Utf8Regex": 2.035,
+          "PredecodedRegex": 0.12,
+          "DecodeThenRegex": 1.1400000000000001
+        },
+        "literal/early": {
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 4103,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 35.44,
+          "ConstructionAllocatedBytes": 54745,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 0.29,
+          "Utf8Regex": 5.82,
+          "PredecodedRegex": 0.13,
+          "DecodeThenRegex": 0.705
+        },
+        "literal/late": {
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 4103,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 34.005,
+          "ConstructionAllocatedBytes": 54745,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 0.355,
+          "Utf8Regex": 5.82,
+          "PredecodedRegex": 0.375,
+          "DecodeThenRegex": 1.1800000000000002
+        },
+        "literal/missing": {
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 48.225,
+          "ConstructionAllocatedBytes": 54744,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.327,
+          "Utf8Regex": 5.922000000000001,
+          "PredecodedRegex": 0.29100000000000004,
+          "DecodeThenRegex": 0.871
         },
         "simple/ab-plus": {
-          "Utf8Pcre2": 0.89331,
-          "Utf8Regex": 0.86556,
-          "PredecodedRegex": 0.15222,
-          "DecodeThenRegex": 0.12015999999999999
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 51.91484375,
+          "ConstructionAllocatedBytes": 54664,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.3049,
+          "Utf8Regex": 2.678,
+          "PredecodedRegex": 0.087,
+          "DecodeThenRegex": 0.1379
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 1.05467,
-          "Utf8Regex": 0.9425100000000001,
-          "PredecodedRegex": 0.06955,
-          "DecodeThenRegex": 0.10814000000000001
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 38.48671875,
+          "ConstructionAllocatedBytes": 49544,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.15630000000000002,
+          "Utf8Regex": 5.6406,
+          "PredecodedRegex": 0.0911,
+          "DecodeThenRegex": 0.1447
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 1.3847200000000002,
-          "Utf8Regex": 1.26787,
-          "PredecodedRegex": 0.15292999999999998,
-          "DecodeThenRegex": 0.15834
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 128.68984375,
+          "ConstructionAllocatedBytes": 89416,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.2843,
+          "Utf8Regex": 2.1336,
+          "PredecodedRegex": 0.12940000000000002,
+          "DecodeThenRegex": 0.1494
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 1.86907,
-          "Utf8Regex": 1.60169,
-          "PredecodedRegex": 0.18797,
-          "DecodeThenRegex": 0.25625
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 45,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 63.898046875,
+          "ConstructionAllocatedBytes": 87312,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.2297,
+          "Utf8Regex": 5.655,
+          "PredecodedRegex": 0.1414,
+          "DecodeThenRegex": 0.177
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 0.1914,
-          "Utf8Regex": 0.75572,
-          "PredecodedRegex": 0.18009,
-          "DecodeThenRegex": 0.17572000000000002
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 1000,
+          "ConstructionMicroseconds": 96.078125,
+          "ConstructionAllocatedBytes": 246728,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 1.0527,
+          "Utf8Regex": 0.6981,
+          "PredecodedRegex": 0.0809,
+          "DecodeThenRegex": 0.1242
         }
       }
     },
     "pcre2-managed-compatible-count": {
       "Cases": {
         "simple/ab-plus": {
-          "Utf8Pcre2": 1.00892,
-          "Utf8Regex": 0.9682200000000001,
-          "PredecodedRegex": 0.31448000000000004,
-          "DecodeThenRegex": 0.36748000000000003
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 54.611999999999995,
+          "ConstructionAllocatedBytes": 54664,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 1.806,
+          "Utf8Regex": 1.057,
+          "PredecodedRegex": 0.304,
+          "DecodeThenRegex": 0.34299999999999997
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 0.75568,
-          "Utf8Regex": 0.7554,
-          "PredecodedRegex": 0.2014,
-          "DecodeThenRegex": 0.23964000000000002
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 35.418,
+          "ConstructionAllocatedBytes": 49480,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.22899999999999998,
+          "Utf8Regex": 0.9620000000000001,
+          "PredecodedRegex": 0.184,
+          "DecodeThenRegex": 0.204
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 2.2302,
-          "Utf8Regex": 2.25006,
-          "PredecodedRegex": 0.5054,
-          "DecodeThenRegex": 0.56616
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 78.247,
+          "ConstructionAllocatedBytes": 89248,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 1.6569999999999998,
+          "Utf8Regex": 3.86,
+          "PredecodedRegex": 0.39299999999999996,
+          "DecodeThenRegex": 0.41100000000000003
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 0.7518199999999999,
-          "Utf8Regex": 0.8446799999999999,
-          "PredecodedRegex": 0.79548,
-          "DecodeThenRegex": 0.8162
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 45,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 59.155,
+          "ConstructionAllocatedBytes": 87312,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.595,
+          "Utf8Regex": 1.189,
+          "PredecodedRegex": 0.523,
+          "DecodeThenRegex": 0.563
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 0.29498,
-          "Utf8Regex": 0.9126799999999999,
-          "PredecodedRegex": 0.23435999999999998,
-          "DecodeThenRegex": 0.2616
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 98.867,
+          "ConstructionAllocatedBytes": 246696,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.505,
+          "Utf8Regex": 0.9490000000000001,
+          "PredecodedRegex": 0.165,
+          "DecodeThenRegex": 0.201
         },
         "common/matches-set": {
-          "Utf8Pcre2": 257.98,
-          "Utf8Regex": 9.145,
-          "PredecodedRegex": 253.455,
-          "DecodeThenRegex": 255.85
+          "PatternUtf8Bytes": 7,
+          "InputUtf8Bytes": 8208,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 30.985000000000003,
+          "ConstructionAllocatedBytes": 42569,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 2245.305,
+          "Utf8Regex": 15.4,
+          "PredecodedRegex": 239.205,
+          "DecodeThenRegex": 239.315
         },
         "common/matches-boundary": {
-          "Utf8Pcre2": 248.64499999999998,
-          "Utf8Regex": 9.379999999999999,
-          "PredecodedRegex": 242.075,
-          "DecodeThenRegex": 243.945
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 8208,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 41.464999999999996,
+          "ConstructionAllocatedBytes": 46193,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 1734.42,
+          "Utf8Regex": 18.544999999999998,
+          "PredecodedRegex": 244.26,
+          "DecodeThenRegex": 242.59
         },
         "common/matches-word": {
-          "Utf8Pcre2": 3.3600000000000003,
-          "Utf8Regex": 3.255,
-          "PredecodedRegex": 5.945,
-          "DecodeThenRegex": 7.305
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 8208,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 28.82,
+          "ConstructionAllocatedBytes": 54713,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 13.580000000000002,
+          "Utf8Regex": 5.845000000000001,
+          "PredecodedRegex": 5.175,
+          "DecodeThenRegex": 6.235
         },
         "common/matches-words": {
-          "Utf8Pcre2": 8.209999999999999,
-          "Utf8Regex": 6.935,
-          "PredecodedRegex": 102.79,
-          "DecodeThenRegex": 106.56500000000001
+          "PatternUtf8Bytes": 19,
+          "InputUtf8Bytes": 8208,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 124.1,
+          "ConstructionAllocatedBytes": 99505,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 1250.74,
+          "Utf8Regex": 33.025,
+          "PredecodedRegex": 84.91499999999999,
+          "DecodeThenRegex": 93.375
         },
         "character/unicode-class-dense": {
           "PatternUtf8Bytes": 13,
           "InputUtf8Bytes": 7168,
           "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 14.444999999999999,
-          "ConstructionAllocatedBytes": 41841,
+          "ConstructionMicroseconds": 32.160000000000004,
+          "ConstructionAllocatedBytes": 39801,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 58.285000000000004,
-          "Utf8Regex": 118.505,
-          "PredecodedRegex": 111.79,
-          "DecodeThenRegex": 116.11500000000001
+          "Utf8Pcre2": 1043.8200000000002,
+          "Utf8Regex": 324.65,
+          "PredecodedRegex": 326.31,
+          "DecodeThenRegex": 320.57
         },
         "backtracking/alternation-repeat": {
           "PatternUtf8Bytes": 10,
           "InputUtf8Bytes": 7168,
           "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 25.455000000000002,
-          "ConstructionAllocatedBytes": 55401,
+          "ConstructionMicroseconds": 39.980000000000004,
+          "ConstructionAllocatedBytes": 54793,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 252.865,
-          "Utf8Regex": 44.7,
-          "PredecodedRegex": 43.925,
-          "DecodeThenRegex": 44.875
+          "Utf8Pcre2": 908.915,
+          "Utf8Regex": 161.10999999999999,
+          "PredecodedRegex": 146.91500000000002,
+          "DecodeThenRegex": 163.155
+        },
+        "industry/leipzig-name-family-count": {
+          "PatternUtf8Bytes": 27,
+          "InputUtf8Bytes": 16013977,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 96.1,
+          "ConstructionAllocatedBytes": 99032,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 4013269.8,
+          "Utf8Regex": 13634.2,
+          "PredecodedRegex": 11160.6,
+          "DecodeThenRegex": 20118.3
+        },
+        "industry/leipzig-river-window-count": {
+          "PatternUtf8Bytes": 33,
+          "InputUtf8Bytes": 16013977,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 75.7,
+          "ConstructionAllocatedBytes": 100440,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 3307561,
+          "Utf8Regex": 21730.6,
+          "PredecodedRegex": 43690.4,
+          "DecodeThenRegex": 58043
+        },
+        "industry/leipzig-symbol-count": {
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 16013977,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 31,
+          "ConstructionAllocatedBytes": 39048,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 265577.5,
+          "Utf8Regex": 2140.3,
+          "PredecodedRegex": 31051.8,
+          "DecodeThenRegex": 39439.5
+        },
+        "industry/leipzig-twain-count": {
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16013977,
+          "EffectiveIterations": 6,
+          "ConstructionMicroseconds": 28.71666666666667,
+          "ConstructionAllocatedBytes": 52996,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 4,
+          "Utf8Pcre2": 36578.85,
+          "Utf8Regex": 5340.583333333333,
+          "PredecodedRegex": 3596.2166666666667,
+          "DecodeThenRegex": 14113.833333333334
+        },
+        "industry/mariomka-email-count": {
+          "PatternUtf8Bytes": 28,
+          "InputUtf8Bytes": 6839410,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 51.4,
+          "ConstructionAllocatedBytes": 58368,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 2547258.7,
+          "Utf8Regex": 3240.2,
+          "PredecodedRegex": 494.1,
+          "DecodeThenRegex": 8407.4
+        },
+        "industry/mariomka-ip-count": {
+          "PatternUtf8Bytes": 87,
+          "InputUtf8Bytes": 6839410,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 121.7,
+          "ConstructionAllocatedBytes": 146928,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 2251364.2,
+          "Utf8Regex": 4455.9,
+          "PredecodedRegex": 9994.8,
+          "DecodeThenRegex": 16345.4
+        },
+        "industry/mariomka-uri-count": {
+          "PatternUtf8Bytes": 51,
+          "InputUtf8Bytes": 6839410,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 81.7,
+          "ConstructionAllocatedBytes": 128432,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2218129.5,
+          "Utf8Regex": 4212.3,
+          "PredecodedRegex": 2057.3,
+          "DecodeThenRegex": 8926.1
+        },
+        "industry/rust-sherlock-holmes-window-count": {
+          "PatternUtf8Bytes": 39,
+          "InputUtf8Bytes": 594930,
+          "EffectiveIterations": 2,
+          "ConstructionMicroseconds": 77.15,
+          "ConstructionAllocatedBytes": 107400,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 123570.5,
+          "Utf8Regex": 147.8,
+          "PredecodedRegex": 272.15,
+          "DecodeThenRegex": 465.2
+        },
+        "industry/rust-sherlock-ing-count": {
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 594930,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 77.2,
+          "ConstructionAllocatedBytes": 130584,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 138379.3,
+          "Utf8Regex": 403.5,
+          "PredecodedRegex": 12205.1,
+          "DecodeThenRegex": 12900.6
+        },
+        "industry/rust-sherlock-letter-count": {
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 594930,
+          "EffectiveIterations": 15,
+          "ConstructionMicroseconds": 28.52,
+          "ConstructionAllocatedBytes": 38992,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 16036.173333333334,
+          "Utf8Regex": 1413.32,
+          "PredecodedRegex": 21548.64,
+          "DecodeThenRegex": 21195.54666666667
+        },
+        "industry/rust-sherlock-nonnewline-count": {
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 594930,
+          "EffectiveIterations": 7,
+          "ConstructionMicroseconds": 31.17142857142857,
+          "ConstructionAllocatedBytes": 42096,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 36249.1,
+          "Utf8Regex": 171.64285714285714,
+          "PredecodedRegex": 1094.6142857142856,
+          "DecodeThenRegex": 1371.142857142857
+        },
+        "industry/rust-sherlock-word-holmes-count": {
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 594930,
+          "EffectiveIterations": 1,
+          "ConstructionMicroseconds": 222.6,
+          "ConstructionAllocatedBytes": 599904,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 289179.7,
+          "Utf8Regex": 23.9,
+          "PredecodedRegex": 8242.9,
+          "DecodeThenRegex": 8613.3
         }
       }
     },
     "pcre2-managed-compatible-enumerate": {
       "Cases": {
         "simple/ab-plus": {
-          "Utf8Pcre2": 7.0251399999999995,
-          "Utf8Regex": 4.90004,
-          "PredecodedRegex": 0.36954000000000004,
-          "DecodeThenRegex": 0.39524000000000004
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 38.727,
+          "ConstructionAllocatedBytes": 54664,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 4.376,
+          "Utf8Regex": 19.347,
+          "PredecodedRegex": 0.5479999999999999,
+          "DecodeThenRegex": 0.5920000000000001
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 6.9127,
-          "Utf8Regex": 10.3522,
-          "PredecodedRegex": 0.23586,
-          "DecodeThenRegex": 0.2658
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 46.532,
+          "ConstructionAllocatedBytes": 49480,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.5639999999999996,
+          "Utf8Regex": 29.885,
+          "PredecodedRegex": 0.39299999999999996,
+          "DecodeThenRegex": 0.402
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 7.17708,
-          "Utf8Regex": 31.982259999999997,
-          "PredecodedRegex": 0.56462,
-          "DecodeThenRegex": 0.6088
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 79.362,
+          "ConstructionAllocatedBytes": 89248,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 4.314,
+          "Utf8Regex": 34.439,
+          "PredecodedRegex": 0.628,
+          "DecodeThenRegex": 0.652
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 7.7144,
-          "Utf8Regex": 13.116179999999998,
-          "PredecodedRegex": 0.8339200000000001,
-          "DecodeThenRegex": 1.0847799999999999
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 45,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 55.905,
+          "ConstructionAllocatedBytes": 87312,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 3.196,
+          "Utf8Regex": 35.157,
+          "PredecodedRegex": 0.778,
+          "DecodeThenRegex": 0.797
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 10.89034,
-          "Utf8Regex": 4.83746,
-          "PredecodedRegex": 0.23128,
-          "DecodeThenRegex": 0.28772
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 93.336,
+          "ConstructionAllocatedBytes": 246696,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.162999999999999,
+          "Utf8Regex": 17.852,
+          "PredecodedRegex": 0.302,
+          "DecodeThenRegex": 0.335
         }
       }
     },
     "pcre2-managed-compatible-matchmany": {
       "Cases": {
         "simple/ab-plus": {
-          "Utf8Pcre2": 0.6822199999999999
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 39.595,
+          "ConstructionAllocatedBytes": 54664,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.033
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 1.34352
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 31.798000000000002,
+          "ConstructionAllocatedBytes": 49480,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.433
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 0.81424
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 68.895,
+          "ConstructionAllocatedBytes": 89248,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 1.93
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 1.4706
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 45,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 57.144,
+          "ConstructionAllocatedBytes": 87312,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.878
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 4.60288
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 70.365,
+          "ConstructionAllocatedBytes": 246696,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.541
         }
       }
     },
     "pcre2-managed-compatible-replace": {
       "Cases": {
         "common/replace-words": {
-          "Utf8Pcre2": 161.34,
-          "Utf8Regex": 153.82999999999998,
-          "PredecodedRegex": 163.63,
-          "DecodeThenRegex": 121.66
+          "PatternUtf8Bytes": 19,
+          "InputUtf8Bytes": 8208,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 73.81,
+          "ConstructionAllocatedBytes": 99368,
+          "FirstCallAllocatedBytes": 9888,
+          "WarmAllocatedBytes": 9576,
+          "Utf8Pcre2": 1327.9950000000001,
+          "Utf8Regex": 114.05499999999999,
+          "PredecodedRegex": 106.38,
+          "DecodeThenRegex": 117.1
         },
         "simple/ab-plus": {
-          "Utf8Pcre2": 0.55192,
-          "Utf8Regex": 1.69208,
-          "PredecodedRegex": 0.89474,
-          "DecodeThenRegex": 0.5544399999999999
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 16,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 54.839,
+          "ConstructionAllocatedBytes": 54664,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 3.162,
+          "Utf8Regex": 12.015,
+          "PredecodedRegex": 0.652,
+          "DecodeThenRegex": 0.9229999999999999
         },
         "simple/foo-dense": {
-          "Utf8Pcre2": 0.5925,
-          "Utf8Regex": 4.067080000000001,
-          "PredecodedRegex": 0.50348,
-          "DecodeThenRegex": 0.55632
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 18,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 29.555,
+          "ConstructionAllocatedBytes": 49480,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 1.105,
+          "Utf8Regex": 20.881999999999998,
+          "PredecodedRegex": 0.45799999999999996,
+          "DecodeThenRegex": 0.77
         },
         "simple/foo-optional-bar": {
-          "Utf8Pcre2": 0.69924,
-          "Utf8Regex": 1.1506,
-          "PredecodedRegex": 0.9260799999999999,
-          "DecodeThenRegex": 1.14726
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 67.12899999999999,
+          "ConstructionAllocatedBytes": 89248,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 3.035,
+          "Utf8Regex": 2.075,
+          "PredecodedRegex": 0.713,
+          "DecodeThenRegex": 1.093
         },
         "simple/httpclient-caseless": {
-          "Utf8Pcre2": 1.6708,
-          "Utf8Regex": 5.610180000000001,
-          "PredecodedRegex": 0.8422200000000001,
-          "DecodeThenRegex": 1.58998
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 45,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 44.01,
+          "ConstructionAllocatedBytes": 87312,
+          "FirstCallAllocatedBytes": 384,
+          "WarmAllocatedBytes": 104,
+          "Utf8Pcre2": 1.736,
+          "Utf8Regex": 21.131,
+          "PredecodedRegex": 0.868,
+          "DecodeThenRegex": 0.92
         },
         "simple/loglevel-multiline": {
-          "Utf8Pcre2": 0.6148,
-          "Utf8Regex": 1.12754,
-          "PredecodedRegex": 0.29324,
-          "DecodeThenRegex": 0.46126000000000006
+          "PatternUtf8Bytes": 11,
+          "InputUtf8Bytes": 67,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 75.792,
+          "ConstructionAllocatedBytes": 246696,
+          "FirstCallAllocatedBytes": 416,
+          "WarmAllocatedBytes": 128,
+          "Utf8Pcre2": 2.887,
+          "Utf8Regex": 9.132,
+          "PredecodedRegex": 0.389,
+          "DecodeThenRegex": 0.425
         }
       }
     },
     "pcre2-special-ismatch": {
       "Cases": {
         "pcre2/backslash-c-literal": {
-          "Utf8Pcre2": 0.2286
+          "PatternUtf8Bytes": 6,
+          "InputUtf8Bytes": 5,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 33.33515625,
+          "ConstructionAllocatedBytes": 30848,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.061399999999999996
         },
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 0.23204
+          "PatternUtf8Bytes": 17,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 40.70390625,
+          "ConstructionAllocatedBytes": 38160,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.4758
         },
         "pcre2/conditional-accept-negative-lookahead": {
-          "Utf8Pcre2": 0.17656
+          "PatternUtf8Bytes": 27,
+          "InputUtf8Bytes": 3,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 41.90390625,
+          "ConstructionAllocatedBytes": 44424,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.2758
         },
         "pcre2/conditional-lookahead": {
-          "Utf8Pcre2": 0.21474000000000001
+          "PatternUtf8Bytes": 18,
+          "InputUtf8Bytes": 3,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 41.93359375,
+          "ConstructionAllocatedBytes": 55528,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.31639999999999996
         },
         "pcre2/conditional-negative-lookahead": {
-          "Utf8Pcre2": 0.1621
+          "PatternUtf8Bytes": 18,
+          "InputUtf8Bytes": 3,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 43.670703125,
+          "ConstructionAllocatedBytes": 55568,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.2794
         },
         "pcre2/recursive-optional": {
-          "Utf8Pcre2": 0.20598000000000002
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 6,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 54.212890625,
+          "ConstructionAllocatedBytes": 49216,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 6.9758000000000004
         },
         "pcre2/recursive-palindrome": {
-          "Utf8Pcre2": 0.22391999999999998
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 6,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 50.340625,
+          "ConstructionAllocatedBytes": 48848,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 6.97
         },
         "pcre2/subroutine-prefix-digits": {
-          "Utf8Pcre2": 0.2092
+          "PatternUtf8Bytes": 13,
+          "InputUtf8Bytes": 5,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 52.482421875,
+          "ConstructionAllocatedBytes": 40744,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.5896
+        },
+        "pcre2/grapheme-cluster": {
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 248,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 38.98203125,
+          "ConstructionAllocatedBytes": 31024,
+          "FirstCallAllocatedBytes": 0,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 0.6724
         }
       }
     },
     "pcre2-special-count": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 0.5043500000000001
+          "PatternUtf8Bytes": 17,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 43.55,
+          "ConstructionAllocatedBytes": 39112,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 9.152000000000001
         },
         "pcre2/branch-reset-basic": {
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
-          "EffectiveIterations": 2000,
-          "ConstructionMicroseconds": 47.18671875,
-          "ConstructionAllocatedBytes": 99976,
-          "FirstCallAllocatedBytes": 1112,
-          "WarmAllocatedBytes": 104,
-          "Utf8Pcre2": 0.33055
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 41.591,
+          "ConstructionAllocatedBytes": 38608,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.614
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 4.9811000000000005
+          "PatternUtf8Bytes": 36,
+          "InputUtf8Bytes": 31,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 50.528,
+          "ConstructionAllocatedBytes": 44072,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.424000000000001
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 5.1306
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 22,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 52.593999999999994,
+          "ConstructionAllocatedBytes": 43040,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.041
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 5.03275
+          "PatternUtf8Bytes": 28,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 99.458,
+          "ConstructionAllocatedBytes": 83872,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 9.998
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 4.9338
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 13,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 39.949,
+          "ConstructionAllocatedBytes": 37128,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 3.8689999999999998
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 5.5825
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 46.771,
+          "ConstructionAllocatedBytes": 42104,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 3.855
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 5.026800000000001
+          "PatternUtf8Bytes": 7,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 38.676,
+          "ConstructionAllocatedBytes": 35928,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.975999999999999
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 5.185149999999999
+          "PatternUtf8Bytes": 8,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 44.653,
+          "ConstructionAllocatedBytes": 35752,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.9760000000000004
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 4.960850000000001
+          "PatternUtf8Bytes": 9,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 36.05,
+          "ConstructionAllocatedBytes": 34392,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.49
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 4.948
+          "PatternUtf8Bytes": 14,
+          "InputUtf8Bytes": 9,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 65.594,
+          "ConstructionAllocatedBytes": 44096,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 8.121
+        },
+        "literal/empty-unicode": {
+          "PatternUtf8Bytes": 0,
+          "InputUtf8Bytes": 320,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 31.139999999999997,
+          "ConstructionAllocatedBytes": 39809,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 24.73
+        },
+        "pcre2/grapheme-cluster": {
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 248,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 34.603,
+          "ConstructionAllocatedBytes": 31944,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 15.757
         }
       }
     },
     "pcre2-special-enumerate": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.79805
+          "PatternUtf8Bytes": 17,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 42.718999999999994,
+          "ConstructionAllocatedBytes": 39112,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.469000000000001
         },
         "pcre2/branch-reset-basic": {
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
-          "EffectiveIterations": 2000,
-          "ConstructionMicroseconds": 48.20546875,
-          "ConstructionAllocatedBytes": 99976,
-          "FirstCallAllocatedBytes": 48,
-          "WarmAllocatedBytes": 48,
-          "Utf8Pcre2": 18.284599999999998
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 49.751999999999995,
+          "ConstructionAllocatedBytes": 38608,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.9479999999999995
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.7592
+          "PatternUtf8Bytes": 36,
+          "InputUtf8Bytes": 31,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 59.982,
+          "ConstructionAllocatedBytes": 44072,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.949000000000002
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 6.7698
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 22,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 50.772,
+          "ConstructionAllocatedBytes": 43040,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 8.71
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 6.78015
+          "PatternUtf8Bytes": 28,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 116.426,
+          "ConstructionAllocatedBytes": 83872,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 13.225
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.729
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 13,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 46.505,
+          "ConstructionAllocatedBytes": 37128,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.086
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.98905
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 54.611000000000004,
+          "ConstructionAllocatedBytes": 42104,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 5.08
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.8915
+          "PatternUtf8Bytes": 7,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 44.371,
+          "ConstructionAllocatedBytes": 35928,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 11.934000000000001
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.83405
+          "PatternUtf8Bytes": 8,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 45.243,
+          "ConstructionAllocatedBytes": 35752,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 4.22
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.7305
+          "PatternUtf8Bytes": 9,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 44.276,
+          "ConstructionAllocatedBytes": 34392,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 11.957
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 6.8051
+          "PatternUtf8Bytes": 14,
+          "InputUtf8Bytes": 9,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 49.3,
+          "ConstructionAllocatedBytes": 44096,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 9.798
+        },
+        "literal/empty-unicode": {
+          "PatternUtf8Bytes": 0,
+          "InputUtf8Bytes": 320,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 29.77,
+          "ConstructionAllocatedBytes": 39809,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 30.73
+        },
+        "pcre2/grapheme-cluster": {
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 248,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 41.738,
+          "ConstructionAllocatedBytes": 31944,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 22.016
         }
       }
     },
     "pcre2-special-matchmany": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.74575
+          "PatternUtf8Bytes": 17,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 47.176,
+          "ConstructionAllocatedBytes": 39112,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 9.122
         },
         "pcre2/branch-reset-basic": {
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
-          "EffectiveIterations": 2000,
-          "ConstructionMicroseconds": 47.871484375,
-          "ConstructionAllocatedBytes": 99976,
-          "FirstCallAllocatedBytes": 0,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 102.446,
+          "ConstructionAllocatedBytes": 38608,
+          "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 13.00715
+          "Utf8Pcre2": 4.702
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.8033
+          "PatternUtf8Bytes": 36,
+          "InputUtf8Bytes": 31,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 124.125,
+          "ConstructionAllocatedBytes": 44072,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 20.717
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 7.0196499999999995
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 22,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 103.788,
+          "ConstructionAllocatedBytes": 43040,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.875
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 6.7429499999999996
+          "PatternUtf8Bytes": 28,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 182.5,
+          "ConstructionAllocatedBytes": 83872,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 19.333
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.77355
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 13,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 74.965,
+          "ConstructionAllocatedBytes": 37128,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 11.444
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.79405
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 91.65799999999999,
+          "ConstructionAllocatedBytes": 42104,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.533
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.8239
+          "PatternUtf8Bytes": 7,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 83.74600000000001,
+          "ConstructionAllocatedBytes": 35928,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 27.413
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.686850000000001
+          "PatternUtf8Bytes": 8,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 82.851,
+          "ConstructionAllocatedBytes": 35752,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 7.261
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.73275
+          "PatternUtf8Bytes": 9,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 74.075,
+          "ConstructionAllocatedBytes": 34392,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 27.345
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 6.81925
+          "PatternUtf8Bytes": 14,
+          "InputUtf8Bytes": 9,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 83.001,
+          "ConstructionAllocatedBytes": 44096,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 21.326
+        },
+        "literal/empty-unicode": {
+          "PatternUtf8Bytes": 0,
+          "InputUtf8Bytes": 320,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 32.845,
+          "ConstructionAllocatedBytes": 39809,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 2.96
+        },
+        "pcre2/grapheme-cluster": {
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 248,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 79.72,
+          "ConstructionAllocatedBytes": 31944,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 8.828
         }
       }
     },
     "pcre2-special-replace": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "Utf8Pcre2": 6.866350000000001
+          "PatternUtf8Bytes": 17,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 71.40899999999999,
+          "ConstructionAllocatedBytes": 39112,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 24.878
         },
         "pcre2/branch-reset-basic": {
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
-          "EffectiveIterations": 2000,
-          "ConstructionMicroseconds": 49.218359375,
-          "ConstructionAllocatedBytes": 99976,
-          "FirstCallAllocatedBytes": 344,
-          "WarmAllocatedBytes": 240,
-          "Utf8Pcre2": 17.49785
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 73.392,
+          "ConstructionAllocatedBytes": 38608,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 13.89
         },
         "pcre2/branch-reset-followup": {
-          "Utf8Pcre2": 6.5317
+          "PatternUtf8Bytes": 36,
+          "InputUtf8Bytes": 31,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 66.88,
+          "ConstructionAllocatedBytes": 43152,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 23.11
         },
         "pcre2/branch-reset-nested": {
-          "Utf8Pcre2": 6.978899999999999
+          "PatternUtf8Bytes": 21,
+          "InputUtf8Bytes": 22,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 51.797,
+          "ConstructionAllocatedBytes": 42120,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 13.109000000000002
         },
         "pcre2/duplicate-names": {
-          "Utf8Pcre2": 7.0808
+          "PatternUtf8Bytes": 28,
+          "InputUtf8Bytes": 23,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 102.382,
+          "ConstructionAllocatedBytes": 83752,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 21.217
         },
         "pcre2/kreset-atomic-alt": {
-          "Utf8Pcre2": 6.5325500000000005
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 13,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 34.882,
+          "ConstructionAllocatedBytes": 36176,
+          "FirstCallAllocatedBytes": 392,
+          "WarmAllocatedBytes": 88,
+          "Utf8Pcre2": 12.484000000000002
         },
         "pcre2/kreset-bar-or-baz": {
-          "Utf8Pcre2": 6.5862
+          "PatternUtf8Bytes": 16,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 34.881,
+          "ConstructionAllocatedBytes": 41152,
+          "FirstCallAllocatedBytes": 392,
+          "WarmAllocatedBytes": 88,
+          "Utf8Pcre2": 10.767000000000001
         },
         "pcre2/kreset-captured-repeat": {
-          "Utf8Pcre2": 6.60025
+          "PatternUtf8Bytes": 7,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 38.741,
+          "ConstructionAllocatedBytes": 34976,
+          "FirstCallAllocatedBytes": 3576,
+          "WarmAllocatedBytes": 3272,
+          "Utf8Pcre2": 70.869
         },
         "pcre2/kreset-global": {
-          "Utf8Pcre2": 6.551699999999999
+          "PatternUtf8Bytes": 8,
+          "InputUtf8Bytes": 26,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 28.729,
+          "ConstructionAllocatedBytes": 34800,
+          "FirstCallAllocatedBytes": 400,
+          "WarmAllocatedBytes": 96,
+          "Utf8Pcre2": 7.643
         },
         "pcre2/kreset-repeat": {
-          "Utf8Pcre2": 6.4996
+          "PatternUtf8Bytes": 9,
+          "InputUtf8Bytes": 14,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 31.436,
+          "ConstructionAllocatedBytes": 33440,
+          "FirstCallAllocatedBytes": 3072,
+          "WarmAllocatedBytes": 2768,
+          "Utf8Pcre2": 50.195
         },
         "pcre2/same-start-global": {
-          "Utf8Pcre2": 0.6554
+          "PatternUtf8Bytes": 14,
+          "InputUtf8Bytes": 9,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 24.162,
+          "ConstructionAllocatedBytes": 43872,
+          "FirstCallAllocatedBytes": 672,
+          "WarmAllocatedBytes": 88,
+          "Utf8Pcre2": 17.761
+        },
+        "literal/empty-unicode": {
+          "PatternUtf8Bytes": 0,
+          "InputUtf8Bytes": 320,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 66.265,
+          "ConstructionAllocatedBytes": 39809,
+          "FirstCallAllocatedBytes": 832,
+          "WarmAllocatedBytes": 529,
+          "Utf8Pcre2": 93.625
+        },
+        "pcre2/grapheme-cluster": {
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 248,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 36.07,
+          "ConstructionAllocatedBytes": 30992,
+          "FirstCallAllocatedBytes": 416,
+          "WarmAllocatedBytes": 112,
+          "Utf8Pcre2": 55.028
         }
       }
     }
@@ -523,33 +1491,33 @@
           "PatternUtf8Bytes": 32,
           "InputUtf8Bytes": 32,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 28.36875,
-          "WarmMicroseconds": 0.23125,
-          "ConstructionAllocatedBytes": 123585,
-          "FirstCallAllocatedBytes": 944,
-          "WarmAllocatedBytes": 136
+          "ConstructionMicroseconds": 78.375,
+          "WarmMicroseconds": 0.33125,
+          "ConstructionAllocatedBytes": 99785,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "128",
           "PatternUtf8Bytes": 128,
           "InputUtf8Bytes": 128,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 29.1625,
-          "WarmMicroseconds": 0.753125,
-          "ConstructionAllocatedBytes": 71017,
-          "FirstCallAllocatedBytes": 1136,
-          "WarmAllocatedBytes": 328
+          "ConstructionMicroseconds": 93.725,
+          "WarmMicroseconds": 0.278125,
+          "ConstructionAllocatedBytes": 49857,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "512",
           "PatternUtf8Bytes": 512,
           "InputUtf8Bytes": 512,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 68.90625,
-          "WarmMicroseconds": 0.290625,
-          "ConstructionAllocatedBytes": 76393,
-          "FirstCallAllocatedBytes": 1904,
-          "WarmAllocatedBytes": 1096
+          "ConstructionMicroseconds": 211.28125,
+          "WarmMicroseconds": 0.25625,
+          "ConstructionAllocatedBytes": 69057,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         }
       ]
     },
@@ -561,33 +1529,33 @@
           "PatternUtf8Bytes": 20,
           "InputUtf8Bytes": 4,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 35.85,
-          "WarmMicroseconds": 0.05,
-          "ConstructionAllocatedBytes": 112569,
-          "FirstCallAllocatedBytes": 944,
-          "WarmAllocatedBytes": 80
+          "ConstructionMicroseconds": 143.85,
+          "WarmMicroseconds": 2.315625,
+          "ConstructionAllocatedBytes": 79121,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "4",
           "PatternUtf8Bytes": 32,
           "InputUtf8Bytes": 4,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 69.84375,
-          "WarmMicroseconds": 0.04375,
-          "ConstructionAllocatedBytes": 311201,
-          "FirstCallAllocatedBytes": 944,
-          "WarmAllocatedBytes": 80
+          "ConstructionMicroseconds": 276.23125,
+          "WarmMicroseconds": 2.628125,
+          "ConstructionAllocatedBytes": 186761,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "8",
           "PatternUtf8Bytes": 56,
           "InputUtf8Bytes": 4,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 112.40625,
-          "WarmMicroseconds": 0.04375,
-          "ConstructionAllocatedBytes": 458761,
-          "FirstCallAllocatedBytes": 944,
-          "WarmAllocatedBytes": 80
+          "ConstructionMicroseconds": 253.9625,
+          "WarmMicroseconds": 4.928125,
+          "ConstructionAllocatedBytes": 150745,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         }
       ]
     },
@@ -599,33 +1567,33 @@
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 128,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 38.2375,
-          "WarmMicroseconds": 3.875,
-          "ConstructionAllocatedBytes": 95737,
-          "FirstCallAllocatedBytes": 1360,
-          "WarmAllocatedBytes": 328
+          "ConstructionMicroseconds": 136.0375,
+          "WarmMicroseconds": 123.340625,
+          "ConstructionAllocatedBytes": 78377,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "1024",
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 1024,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 63.2,
-          "WarmMicroseconds": 28.9,
-          "ConstructionAllocatedBytes": 95769,
-          "FirstCallAllocatedBytes": 3152,
-          "WarmAllocatedBytes": 2120
+          "ConstructionMicroseconds": 245.91875,
+          "WarmMicroseconds": 188.428125,
+          "ConstructionAllocatedBytes": 78761,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "4096",
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 4096,
-          "EffectiveIterations": 8,
-          "ConstructionMicroseconds": 38.1125,
-          "WarmMicroseconds": 120.6,
-          "ConstructionAllocatedBytes": 95771,
-          "FirstCallAllocatedBytes": 9296,
-          "WarmAllocatedBytes": 8267
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 99.48125,
+          "WarmMicroseconds": 500.66,
+          "ConstructionAllocatedBytes": 78761,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
         }
       ]
     },
@@ -637,221 +1605,31 @@
           "PatternUtf8Bytes": 10,
           "InputUtf8Bytes": 128,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 38.75625,
-          "WarmMicroseconds": 0.896875,
-          "ConstructionAllocatedBytes": 133889,
-          "FirstCallAllocatedBytes": 1192,
-          "WarmAllocatedBytes": 328
-        },
-        {
-          "Scale": "1024",
-          "PatternUtf8Bytes": 10,
-          "InputUtf8Bytes": 1024,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 37.725,
-          "WarmMicroseconds": 5.534375,
-          "ConstructionAllocatedBytes": 133889,
-          "FirstCallAllocatedBytes": 2984,
-          "WarmAllocatedBytes": 2120
-        },
-        {
-          "Scale": "4096",
-          "PatternUtf8Bytes": 10,
-          "InputUtf8Bytes": 4096,
-          "EffectiveIterations": 8,
-          "ConstructionMicroseconds": 36.525,
-          "WarmMicroseconds": 46.5,
-          "ConstructionAllocatedBytes": 133891,
-          "FirstCallAllocatedBytes": 9128,
-          "WarmAllocatedBytes": 8267
-        }
-      ]
-    },
-    "dense-non-ascii-coordinates": {
-      "Operation": "Count",
-      "Points": [
-        {
-          "Scale": "128",
-          "PatternUtf8Bytes": 2,
-          "InputUtf8Bytes": 128,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 64.06875,
-          "WarmMicroseconds": 3.8625,
-          "ConstructionAllocatedBytes": 66297,
-          "FirstCallAllocatedBytes": 1392,
-          "WarmAllocatedBytes": 584
-        },
-        {
-          "Scale": "1024",
-          "PatternUtf8Bytes": 2,
-          "InputUtf8Bytes": 1024,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 27.93125,
-          "WarmMicroseconds": 11.190625,
-          "ConstructionAllocatedBytes": 66297,
-          "FirstCallAllocatedBytes": 4528,
-          "WarmAllocatedBytes": 3720
-        },
-        {
-          "Scale": "4096",
-          "PatternUtf8Bytes": 2,
-          "InputUtf8Bytes": 4096,
-          "EffectiveIterations": 8,
-          "ConstructionMicroseconds": 26.575,
-          "WarmMicroseconds": 43.8,
-          "ConstructionAllocatedBytes": 66299,
-          "FirstCallAllocatedBytes": 15280,
-          "WarmAllocatedBytes": 14475
-        }
-      ]
-    },
-    "zero-width-iteration": {
-      "Operation": "Count",
-      "Points": [
-        {
-          "Scale": "128",
-          "PatternUtf8Bytes": 5,
-          "InputUtf8Bytes": 128,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 25.375,
-          "WarmMicroseconds": 3.55,
-          "ConstructionAllocatedBytes": 71777,
-          "FirstCallAllocatedBytes": 1360,
-          "WarmAllocatedBytes": 328
-        },
-        {
-          "Scale": "1024",
-          "PatternUtf8Bytes": 5,
-          "InputUtf8Bytes": 1024,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 26.2625,
-          "WarmMicroseconds": 27.659375,
-          "ConstructionAllocatedBytes": 71777,
-          "FirstCallAllocatedBytes": 3152,
-          "WarmAllocatedBytes": 2120
-        },
-        {
-          "Scale": "4096",
-          "PatternUtf8Bytes": 5,
-          "InputUtf8Bytes": 4096,
-          "EffectiveIterations": 8,
-          "ConstructionMicroseconds": 24.0875,
-          "WarmMicroseconds": 211.4625,
-          "ConstructionAllocatedBytes": 71779,
-          "FirstCallAllocatedBytes": 9296,
-          "WarmAllocatedBytes": 8267
-        }
-      ]
-    },
-    "capture-rollback": {
-      "Operation": "Count",
-      "Points": [
-        {
-          "Scale": "16",
-          "PatternUtf8Bytes": 10,
-          "InputUtf8Bytes": 33,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 35.2625,
-          "WarmMicroseconds": 0.784375,
-          "ConstructionAllocatedBytes": 90513,
-          "FirstCallAllocatedBytes": 3064,
-          "WarmAllocatedBytes": 136
-        },
-        {
-          "Scale": "64",
-          "PatternUtf8Bytes": 10,
-          "InputUtf8Bytes": 129,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 33.81875,
-          "WarmMicroseconds": 2.828125,
-          "ConstructionAllocatedBytes": 90513,
-          "FirstCallAllocatedBytes": 6680,
-          "WarmAllocatedBytes": 328
-        },
-        {
-          "Scale": "256",
-          "PatternUtf8Bytes": 10,
-          "InputUtf8Bytes": 513,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 33.39375,
-          "WarmMicroseconds": 11.05,
-          "ConstructionAllocatedBytes": 90513,
-          "FirstCallAllocatedBytes": 24976,
-          "WarmAllocatedBytes": 1096
-        }
-      ]
-    },
-    "replacement-growth": {
-      "Operation": "Replace",
-      "Points": [
-        {
-          "Scale": "32",
-          "PatternUtf8Bytes": 3,
-          "InputUtf8Bytes": 32,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 28.16875,
-          "WarmMicroseconds": 23.9125,
-          "ConstructionAllocatedBytes": 74017,
-          "FirstCallAllocatedBytes": 38576,
-          "WarmAllocatedBytes": 37816
-        },
-        {
-          "Scale": "128",
-          "PatternUtf8Bytes": 3,
-          "InputUtf8Bytes": 128,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 33.30625,
-          "WarmMicroseconds": 71.234375,
-          "ConstructionAllocatedBytes": 74017,
-          "FirstCallAllocatedBytes": 175664,
-          "WarmAllocatedBytes": 174904
-        },
-        {
-          "Scale": "512",
-          "PatternUtf8Bytes": 3,
-          "InputUtf8Bytes": 512,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 28.88125,
-          "WarmMicroseconds": 312.146875,
-          "ConstructionAllocatedBytes": 74017,
-          "FirstCallAllocatedBytes": 1092656,
-          "WarmAllocatedBytes": 1091896
-        }
-      ]
-    },
-    "character-class-dense": {
-      "Operation": "Count",
-      "Points": [
-        {
-          "Scale": "128",
-          "PatternUtf8Bytes": 13,
-          "InputUtf8Bytes": 175,
-          "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 15.06875,
-          "WarmMicroseconds": 1.4875,
-          "ConstructionAllocatedBytes": 41841,
+          "ConstructionMicroseconds": 183.6625,
+          "WarmMicroseconds": 13.184375,
+          "ConstructionAllocatedBytes": 105297,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
         },
         {
           "Scale": "1024",
-          "PatternUtf8Bytes": 13,
-          "InputUtf8Bytes": 1428,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 15.8375,
-          "WarmMicroseconds": 12.525,
-          "ConstructionAllocatedBytes": 41841,
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 175.4375,
+          "WarmMicroseconds": 130.04375,
+          "ConstructionAllocatedBytes": 105297,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 1
+          "WarmAllocatedBytes": 0
         },
         {
           "Scale": "4096",
-          "PatternUtf8Bytes": 13,
-          "InputUtf8Bytes": 5733,
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 4096,
           "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 15.93125,
-          "WarmMicroseconds": 47.175,
-          "ConstructionAllocatedBytes": 41841,
+          "ConstructionMicroseconds": 123.8375,
+          "WarmMicroseconds": 410.28000000000003,
+          "ConstructionAllocatedBytes": 105297,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1
         }
@@ -865,9 +1643,9 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 257,
           "EffectiveIterations": 32,
-          "ConstructionMicroseconds": 19.60625,
-          "WarmMicroseconds": 3.096875,
-          "ConstructionAllocatedBytes": 61249,
+          "ConstructionMicroseconds": 168.90625,
+          "WarmMicroseconds": 9.05625,
+          "ConstructionAllocatedBytes": 61553,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
         },
@@ -876,9 +1654,9 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 2049,
           "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 19.03125,
-          "WarmMicroseconds": 43.745,
-          "ConstructionAllocatedBytes": 61249,
+          "ConstructionMicroseconds": 130.74375,
+          "WarmMicroseconds": 62.56,
+          "ConstructionAllocatedBytes": 61553,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1
         },
@@ -887,11 +1665,201 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 8193,
           "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 19.18125,
-          "WarmMicroseconds": 98.615,
-          "ConstructionAllocatedBytes": 61249,
+          "ConstructionMicroseconds": 116.06875,
+          "WarmMicroseconds": 250.43,
+          "ConstructionAllocatedBytes": 61553,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1
+        }
+      ]
+    },
+    "dense-non-ascii-coordinates": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 38.75,
+          "WarmMicroseconds": 11.11875,
+          "ConstructionAllocatedBytes": 40433,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 41.475,
+          "WarmMicroseconds": 87.253125,
+          "ConstructionAllocatedBytes": 40433,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 2,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 45.89375,
+          "WarmMicroseconds": 344.6,
+          "ConstructionAllocatedBytes": 40433,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        }
+      ]
+    },
+    "character-class-dense": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 13,
+          "InputUtf8Bytes": 175,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 79.89375,
+          "WarmMicroseconds": 17.203125,
+          "ConstructionAllocatedBytes": 40081,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 13,
+          "InputUtf8Bytes": 1428,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 188.6375,
+          "WarmMicroseconds": 115.92,
+          "ConstructionAllocatedBytes": 40081,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 13,
+          "InputUtf8Bytes": 5733,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 86.41875,
+          "WarmMicroseconds": 282.21,
+          "ConstructionAllocatedBytes": 40081,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        }
+      ]
+    },
+    "zero-width-iteration": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 46.56875,
+          "WarmMicroseconds": 38.09375,
+          "ConstructionAllocatedBytes": 41225,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 50.6625,
+          "WarmMicroseconds": 298.634375,
+          "ConstructionAllocatedBytes": 41225,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 5,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 52.66875,
+          "WarmMicroseconds": 1192.435,
+          "ConstructionAllocatedBytes": 41225,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        }
+      ]
+    },
+    "capture-rollback": {
+      "Operation": "Count",
+      "Points": [
+        {
+          "Scale": "16",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 33,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 68.575,
+          "WarmMicroseconds": 6.584375,
+          "ConstructionAllocatedBytes": 62401,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "64",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 129,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 68.1375,
+          "WarmMicroseconds": 20.16875,
+          "ConstructionAllocatedBytes": 62401,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "256",
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 513,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 68.01875,
+          "WarmMicroseconds": 72.7625,
+          "ConstructionAllocatedBytes": 62401,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        }
+      ]
+    },
+    "replacement-growth": {
+      "Operation": "Replace",
+      "Points": [
+        {
+          "Scale": "32",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 32,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 43.91875,
+          "WarmMicroseconds": 33.465625,
+          "ConstructionAllocatedBytes": 50529,
+          "FirstCallAllocatedBytes": 21448,
+          "WarmAllocatedBytes": 21224
+        },
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 128,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 45.09375,
+          "WarmMicroseconds": 128.4875,
+          "ConstructionAllocatedBytes": 50529,
+          "FirstCallAllocatedBytes": 84040,
+          "WarmAllocatedBytes": 83816
+        },
+        {
+          "Scale": "512",
+          "PatternUtf8Bytes": 3,
+          "InputUtf8Bytes": 512,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 43.4125,
+          "WarmMicroseconds": 407.8375,
+          "ConstructionAllocatedBytes": 50529,
+          "FirstCallAllocatedBytes": 334408,
+          "WarmAllocatedBytes": 334184
         }
       ]
     }

@@ -362,11 +362,11 @@ internal static partial class BenchmarkInspectReporter
                     PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
                     InputUtf8Bytes = context.InputBytes.Length,
                     EffectiveIterations = effectiveIterations,
-                    ConstructionMicroseconds = MeasureMicroseconds(
+                    ConstructionMicroseconds = MeasurePcre2SnapshotMicroseconds(
                         samples,
                         constructionIterations,
                         () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
-                    WarmMicroseconds = MeasureMicroseconds(
+                    WarmMicroseconds = MeasurePcre2SnapshotMicroseconds(
                         samples,
                         effectiveIterations,
                         () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, family.Operation)),
@@ -852,12 +852,25 @@ internal static partial class BenchmarkInspectReporter
     private static void RefreshPcre2SnapshotSection(Pcre2BenchmarkSnapshot snapshot, Pcre2BenchmarkSection section, int iterations, int samples)
     {
         var sectionSnapshot = GetOrAddPcre2SnapshotSection(snapshot, section);
-        sectionSnapshot.Cases.Clear();
+        var benchmarkCases = Utf8Pcre2BenchmarkCatalog.GetAllCases()
+            .Where(c => IsCaseInPcre2Section(c, section))
+            .OrderBy(static c => c.Id, StringComparer.Ordinal)
+            .ToArray();
+        var currentCaseIds = benchmarkCases.Select(static benchmarkCase => benchmarkCase.Id).ToHashSet(StringComparer.Ordinal);
 
-        foreach (var benchmarkCase in Utf8Pcre2BenchmarkCatalog.GetAllCases().Where(c => IsCaseInPcre2Section(c, section)).OrderBy(static c => c.Id, StringComparer.Ordinal))
+        foreach (var benchmarkCase in benchmarkCases)
         {
+            Console.WriteLine($"Measuring {GetPcre2SectionToken(section)}: {benchmarkCase.Id}");
             sectionSnapshot.Cases[benchmarkCase.Id] = MeasurePcre2SnapshotCase(section, benchmarkCase.Id, iterations, samples);
+            SavePcre2BenchmarkSnapshot(snapshot);
         }
+
+        foreach (var staleCaseId in sectionSnapshot.Cases.Keys.Where(caseId => !currentCaseIds.Contains(caseId)).ToArray())
+        {
+            sectionSnapshot.Cases.Remove(staleCaseId);
+        }
+
+        SavePcre2BenchmarkSnapshot(snapshot);
     }
 
     private static bool IsCaseInPcre2Section(Utf8Pcre2BenchmarkCase benchmarkCase, Pcre2BenchmarkSection section)
@@ -881,17 +894,18 @@ internal static partial class BenchmarkInspectReporter
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
         var operation = GetPcre2SectionRequirements(section).Operation;
-        var effectiveIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, iterations);
+        var maximumIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, iterations);
+        var effectiveIterations = CalibratePcre2SnapshotIterations(context, operation, maximumIterations);
         var allocationIterations = Math.Min(effectiveIterations, 4096);
         var constructionIterations = Math.Min(effectiveIterations, 256);
 
         double utf8Pcre2 = operation switch
         {
-            Utf8Pcre2BenchmarkOperation.IsMatch => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0),
-            Utf8Pcre2BenchmarkOperation.Count => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes)),
-            Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasureMicroseconds(samples, effectiveIterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes)),
-            Utf8Pcre2BenchmarkOperation.MatchMany => MeasureMicroseconds(samples, effectiveIterations, () => ExecutePcre2MatchManyIndexSum(context.Utf8Pcre2Regex, context.InputBytes)),
-            Utf8Pcre2BenchmarkOperation.Replace => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length),
+            Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0),
+            Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes)),
+            Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes)),
+            Utf8Pcre2BenchmarkOperation.MatchMany => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecutePcre2MatchManyIndexSum(context.Utf8Pcre2Regex, context.InputBytes)),
+            Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length),
             _ => throw new InvalidOperationException($"Unsupported PCRE2 snapshot operation '{operation}'."),
         };
 
@@ -903,10 +917,10 @@ internal static partial class BenchmarkInspectReporter
         {
             utf8Regex = operation switch
             {
-                Utf8Pcre2BenchmarkOperation.IsMatch => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.IsMatch(context.InputBytes) ? 1 : 0),
-                Utf8Pcre2BenchmarkOperation.Count => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.Count(context.InputBytes)),
-                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasureMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2Utf8EnumeratorIndexSum(context)),
-                Utf8Pcre2BenchmarkOperation.Replace => MeasureMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length),
+                Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.IsMatch(context.InputBytes) ? 1 : 0),
+                Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.Count(context.InputBytes)),
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2Utf8EnumeratorIndexSum(context)),
+                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length),
                 _ => null,
             };
         }
@@ -915,10 +929,10 @@ internal static partial class BenchmarkInspectReporter
         {
             predecodedRegex = operation switch
             {
-                Utf8Pcre2BenchmarkOperation.IsMatch => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(context.InputString) ? 1 : 0),
-                Utf8Pcre2BenchmarkOperation.Count => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(context.InputString)),
-                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasureMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2PredecodedEnumerateIndexSum(context)),
-                Utf8Pcre2BenchmarkOperation.Replace => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(context.InputString, context.Replacement).Length),
+                Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(context.InputString) ? 1 : 0),
+                Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(context.InputString)),
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2PredecodedEnumerateIndexSum(context)),
+                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(context.InputString, context.Replacement).Length),
                 _ => null,
             };
         }
@@ -927,10 +941,10 @@ internal static partial class BenchmarkInspectReporter
         {
             decodeThenRegex = operation switch
             {
-                Utf8Pcre2BenchmarkOperation.IsMatch => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(Encoding.UTF8.GetString(context.InputBytes)) ? 1 : 0),
-                Utf8Pcre2BenchmarkOperation.Count => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(Encoding.UTF8.GetString(context.InputBytes))),
-                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasureMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2DecodeEnumerateIndexSum(context)),
-                Utf8Pcre2BenchmarkOperation.Replace => MeasureMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(Encoding.UTF8.GetString(context.InputBytes), context.Replacement).Length),
+                Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(Encoding.UTF8.GetString(context.InputBytes)) ? 1 : 0),
+                Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(Encoding.UTF8.GetString(context.InputBytes))),
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2DecodeEnumerateIndexSum(context)),
+                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(Encoding.UTF8.GetString(context.InputBytes), context.Replacement).Length),
                 _ => null,
             };
         }
@@ -940,7 +954,7 @@ internal static partial class BenchmarkInspectReporter
             PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
             InputUtf8Bytes = context.InputBytes.Length,
             EffectiveIterations = effectiveIterations,
-            ConstructionMicroseconds = MeasureMicroseconds(
+            ConstructionMicroseconds = MeasurePcre2SnapshotMicroseconds(
                 samples,
                 constructionIterations,
                 () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
@@ -979,6 +993,67 @@ internal static partial class BenchmarkInspectReporter
             Utf8Pcre2BenchmarkOperation.Replace => regex.Replace(context.InputBytes, context.Replacement).Length,
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         };
+
+    private static double MeasurePcre2SnapshotMicroseconds(int samples, int iterations, Func<int> action)
+    {
+        var warmupIterations = (int)Math.Clamp((long)iterations * 2, 1, 256);
+        var sampleValues = new (TimeSpan Elapsed, int Sink)[samples];
+        for (var sample = 0; sample < samples; sample++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            var sink = 0;
+            for (var warmup = 0; warmup < warmupIterations; warmup++)
+            {
+                sink ^= action();
+            }
+
+            var start = Stopwatch.GetTimestamp();
+            for (var iteration = 0; iteration < iterations; iteration++)
+            {
+                sink ^= action();
+            }
+
+            sampleValues[sample] = (Stopwatch.GetElapsedTime(start), sink);
+        }
+
+        Array.Sort(sampleValues, static (left, right) => left.Elapsed.CompareTo(right.Elapsed));
+        var median = sampleValues[sampleValues.Length / 2];
+        GC.KeepAlive(median.Sink);
+        return median.Elapsed.TotalMicroseconds / iterations;
+    }
+
+    private static int CalibratePcre2SnapshotIterations(
+        Utf8Pcre2BenchmarkContext context,
+        Utf8Pcre2BenchmarkOperation operation,
+        int maximumIterations)
+    {
+        const int probeIterations = 3;
+        const double targetMicrosecondsPerSample = 250_000;
+
+        _ = ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
+        var checksum = 0;
+        var start = Stopwatch.GetTimestamp();
+        for (var probe = 0; probe < probeIterations; probe++)
+        {
+            checksum ^= ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
+        }
+
+        var elapsedMicroseconds = Stopwatch.GetElapsedTime(start).TotalMicroseconds / probeIterations;
+        GC.KeepAlive(checksum);
+        if (elapsedMicroseconds <= 0)
+        {
+            return maximumIterations;
+        }
+
+        var budgetedIterations = (int)Math.Clamp(
+            targetMicrosecondsPerSample / elapsedMicroseconds,
+            1,
+            maximumIterations);
+        return budgetedIterations;
+    }
 
     private static long MeasurePcre2FirstCallAllocatedBytes(
         Utf8Pcre2BenchmarkCase benchmarkCase,
@@ -1026,17 +1101,9 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ParsePcre2SnapshotIterations(Utf8Pcre2BenchmarkCase benchmarkCase, Pcre2BenchmarkSection section, int requestedIterations)
     {
-        if (benchmarkCase.Id.Contains('/', StringComparison.Ordinal) &&
-            LokadPublicBenchmarkContext.GetAllCaseIds().Contains(benchmarkCase.Id, StringComparer.Ordinal) &&
-            section is
-                Pcre2BenchmarkSection.ManagedCompatibleIsMatch or
-                Pcre2BenchmarkSection.ManagedCompatibleCount or
-                Pcre2BenchmarkSection.ManagedCompatibleReplace)
-        {
-            var context = new LokadPublicBenchmarkContext(benchmarkCase.Id);
-            return ParseReadmePublicIterations(context, requestedIterations.ToString(CultureInfo.InvariantCulture));
-        }
-
+        // PCRE2 rows use their own cost envelope. Reusing README floors can
+        // turn a millisecond-scale managed PCRE2 operation into a many-minute
+        // refresh without adding useful statistical resolution.
         var inputBytes = Encoding.UTF8.GetByteCount(benchmarkCase.Input);
         var operation = GetPcre2SectionRequirements(section).Operation;
         var isManagedCompatibleSection = section is
@@ -1052,22 +1119,22 @@ internal static partial class BenchmarkInspectReporter
             {
                 return operation switch
                 {
-                    Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(10000, requestedIterations),
-                    Utf8Pcre2BenchmarkOperation.Count => Math.Max(5000, requestedIterations),
-                    Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(5000, requestedIterations),
-                    Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(5000, requestedIterations),
-                    Utf8Pcre2BenchmarkOperation.Replace => Math.Max(5000, requestedIterations),
+                    Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(1000, requestedIterations),
+                    Utf8Pcre2BenchmarkOperation.Count => Math.Max(100, requestedIterations),
+                    Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(100, requestedIterations),
+                    Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(100, requestedIterations),
+                    Utf8Pcre2BenchmarkOperation.Replace => Math.Max(100, requestedIterations),
                     _ => requestedIterations,
                 };
             }
 
             return operation switch
             {
-                Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(5000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.Count => Math.Max(2000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(2000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(2000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.Replace => Math.Max(2000, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(500, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.Count => Math.Max(100, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(100, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(100, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.Replace => Math.Max(100, requestedIterations),
                 _ => requestedIterations,
             };
         }
@@ -1076,11 +1143,11 @@ internal static partial class BenchmarkInspectReporter
         {
             return operation switch
             {
-                Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(2000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.Count => Math.Max(1000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(1000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(1000, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.Replace => Math.Max(1000, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(100, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.Count => Math.Max(20, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(20, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(20, requestedIterations),
+                Utf8Pcre2BenchmarkOperation.Replace => Math.Max(20, requestedIterations),
                 _ => requestedIterations,
             };
         }
