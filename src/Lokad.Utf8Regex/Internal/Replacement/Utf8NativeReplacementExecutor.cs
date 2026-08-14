@@ -39,6 +39,24 @@ internal static class Utf8NativeReplacementExecutor
         }
     }
 
+    public static byte[] Replace(
+        ReadOnlySpan<byte> input,
+        Utf8ReplacementPlan plan,
+        ref Utf8OperationMatchCursor cursor)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
+        {
+            var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
+            return EmitAllocated(input, plan, outputLength, ref ledger);
+        }
+        finally
+        {
+            ledger.Dispose();
+        }
+    }
+
     public static bool TryReplace(
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
@@ -51,6 +69,26 @@ internal static class Utf8NativeReplacementExecutor
         try
         {
             var outputLength = BuildRanges(input, plan, tryFindNextMatch, ref ledger);
+            return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten);
+        }
+        finally
+        {
+            ledger.Dispose();
+        }
+    }
+
+    public static bool TryReplace(
+        ReadOnlySpan<byte> input,
+        Utf8ReplacementPlan plan,
+        ref Utf8OperationMatchCursor cursor,
+        Span<byte> destination,
+        out int bytesWritten)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
+        {
+            var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
             return TryEmit(input, plan, outputLength, destination, ref ledger, out bytesWritten);
         }
         finally
@@ -124,6 +162,28 @@ internal static class Utf8NativeReplacementExecutor
             AddSnapshot(plan, match, ref ledger);
             outputLength.ReplaceRange(match.Length, GetReplacementLength(input, plan, match));
             nextStart = match.Index + Math.Max(match.Length, 1);
+        }
+
+        return outputLength;
+    }
+
+    private static Utf8ReplacementOutputLength BuildRanges(
+        ReadOnlySpan<byte> input,
+        Utf8ReplacementPlan plan,
+        ref Utf8OperationMatchCursor cursor,
+        ref Utf8ReplacementRangeLedger ledger)
+    {
+        var outputLength = new Utf8ReplacementOutputLength(input.Length);
+        while (cursor.MoveNext())
+        {
+            var current = cursor.Current;
+            var match = new Utf8NativeReplacementMatch(
+                current.IndexInBytes,
+                current.LengthInBytes,
+                current.CaptureSlots,
+                current.BranchId);
+            AddSnapshot(plan, match, ref ledger);
+            outputLength.ReplaceRange(match.Length, GetReplacementLength(input, plan, match));
         }
 
         return outputLength;
