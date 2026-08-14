@@ -1,4 +1,6 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Execution;
+
+namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal readonly record struct Utf8NativeReplacementMatch(
     int Index,

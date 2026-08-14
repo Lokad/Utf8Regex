@@ -1,6 +1,6 @@
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ReplacementPlanLowerer
 {

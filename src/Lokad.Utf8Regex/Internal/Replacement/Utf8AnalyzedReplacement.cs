@@ -1,5 +1,4 @@
-using Lokad.Utf8Regex.Internal.Execution;
-namespace Lokad.Utf8Regex.Internal.FrontEnd;
+namespace Lokad.Utf8Regex.Internal.Replacement;
 
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 

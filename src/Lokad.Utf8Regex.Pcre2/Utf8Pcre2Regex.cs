@@ -6145,7 +6145,7 @@ public sealed class Utf8Pcre2Regex
 
     private SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
     {
-        return _replacementComponent.Plans.GetOrAdd(
+        return _replacementComponent.GetOrAdd(
             new SimpleReplacementCacheKey(replacement, substitutionOptions),
             static key => TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var plan) ? plan : null);
     }
@@ -7471,7 +7471,58 @@ public sealed class Utf8Pcre2Regex
 
     private sealed class Pcre2ReplacementComponent
     {
-        internal ConcurrentDictionary<SimpleReplacementCacheKey, SimpleReplacementPlan?> Plans { get; } = new();
+        private const int Capacity = 16;
+        private readonly ConcurrentDictionary<SimpleReplacementCacheKey, Lazy<SimpleReplacementPlan?>> _plans = new();
+        private readonly ConcurrentQueue<SimpleReplacementCacheKey> _insertionOrder = new();
+
+        internal int Count => _plans.Count;
+
+        internal SimpleReplacementPlan? GetOrAdd(
+            SimpleReplacementCacheKey key,
+            Func<SimpleReplacementCacheKey, SimpleReplacementPlan?> factory)
+        {
+            while (true)
+            {
+                if (_plans.TryGetValue(key, out var existing))
+                {
+                    return GetPreparedValue(key, existing);
+                }
+
+                var created = new Lazy<SimpleReplacementPlan?>(
+                    () => factory(key),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+                if (_plans.TryAdd(key, created))
+                {
+                    _insertionOrder.Enqueue(key);
+                    TrimToCapacity();
+                    return GetPreparedValue(key, created);
+                }
+            }
+        }
+
+        private SimpleReplacementPlan? GetPreparedValue(
+            SimpleReplacementCacheKey key,
+            Lazy<SimpleReplacementPlan?> preparation)
+        {
+            try
+            {
+                return preparation.Value;
+            }
+            catch
+            {
+                _plans.TryRemove(
+                    new KeyValuePair<SimpleReplacementCacheKey, Lazy<SimpleReplacementPlan?>>(key, preparation));
+                throw;
+            }
+        }
+
+        private void TrimToCapacity()
+        {
+            while (_plans.Count > Capacity && _insertionOrder.TryDequeue(out var key))
+            {
+                _plans.TryRemove(key, out _);
+            }
+        }
     }
 
     private enum ReplacementCaseTransformMode
@@ -7586,6 +7637,8 @@ public sealed class Utf8Pcre2Regex
     internal bool DebugHasUtf8SearchEquivalentRegex => HasSearchEquivalentUtf8Regex;
 
     internal bool DebugHasManagedRegex => HasManagedRegex;
+
+    internal int DebugReplacementCacheEntryCount => _replacementComponent.Count;
 
     internal string DebugDescribeExecutionPlan()
         => $"IsMatch={_program.Operations.IsMatch.Kind}, Count={_program.Operations.Count.Kind}, Enumerate={_program.Operations.Enumerate.Kind}, Match={_program.Operations.Match.Kind}, Replace={_program.Operations.Replace.Kind}";

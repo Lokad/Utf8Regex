@@ -17,6 +17,11 @@ public ref struct Utf8ReplacementWriter
 {
     private ArrayBufferWriter<byte>? _buffer;
 
+    internal Utf8ReplacementWriter(ArrayBufferWriter<byte> buffer)
+    {
+        _buffer = buffer;
+    }
+
     public void Append(ReadOnlySpan<byte> utf8)
     {
         _buffer ??= new ArrayBufferWriter<byte>();
@@ -62,5 +67,12 @@ public ref struct Utf8ReplacementWriter
         var bytes = _buffer is null ? ReadOnlySpan<byte>.Empty : _buffer.WrittenSpan;
         _ = Utf8Validation.Validate(bytes);
         return Encoding.UTF8.GetString(bytes);
+    }
+
+    internal ReadOnlySpan<byte> GetValidatedBytes()
+    {
+        var bytes = _buffer is null ? ReadOnlySpan<byte>.Empty : _buffer.WrittenSpan;
+        _ = Utf8Validation.Validate(bytes);
+        return bytes;
     }
 }

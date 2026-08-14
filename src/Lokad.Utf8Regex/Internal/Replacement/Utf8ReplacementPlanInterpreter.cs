@@ -1,4 +1,4 @@
-namespace Lokad.Utf8Regex.Internal.Execution;
+namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ReplacementPlanInterpreter
 {

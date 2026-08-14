@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -13,6 +14,8 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
     private readonly TimeSpan _matchTimeout;
     private readonly Utf8VerifierRuntime _verifierRuntime;
     private readonly Utf8CompiledEngineRuntime _runtime;
+    private readonly Utf8ReplacementPlanCache _replacementCache = new();
+    private readonly int[] _groupNumbers;
     private readonly string[] _groupNames;
 
     public Utf8AsciiCultureInvariantStrategy(
@@ -40,6 +43,7 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
             PreparedRegex,
             _verifierRuntime,
             strategyOptions);
+        _groupNumbers = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
         _groupNames = groupNames;
     }
 
@@ -106,10 +110,25 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
             subject.BoundaryMap);
     }
 
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement) =>
-        Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
+    {
+        var analyzed = GetParsedReplacement(replacement);
+        if (analyzed.LiteralUtf8 is { } replacementBytes)
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                PreparedRegex,
+                _verifierRuntime,
+                input,
+                default,
+                CreateBudget());
+            return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor);
+        }
+
+        return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             Encoding.UTF8.GetString(input),
             replacement));
+    }
 
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement) =>
         _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -122,17 +141,46 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
         Span<byte> destination,
         out int bytesWritten)
     {
-        var result = Replace(input, replacement);
-        if (result.Length > destination.Length)
+        var analyzed = GetParsedReplacement(replacement);
+        if (analyzed.LiteralUtf8 is { } replacementBytes)
         {
-            bytesWritten = 0;
-            return OperationStatus.DestinationTooSmall;
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                PreparedRegex,
+                _verifierRuntime,
+                input,
+                default,
+                CreateBudget());
+            return Utf8CursorReplaceEngine.TryReplace(
+                input,
+                replacementBytes,
+                destination,
+                ref cursor,
+                out bytesWritten)
+                ? OperationStatus.Done
+                : OperationStatus.DestinationTooSmall;
         }
 
-        result.CopyTo(destination);
-        bytesWritten = result.Length;
-        return OperationStatus.Done;
+        var result = Replace(input, replacement);
+        if (result.Length <= destination.Length)
+        {
+            result.CopyTo(destination);
+            bytesWritten = result.Length;
+            return OperationStatus.Done;
+        }
+
+        bytesWritten = 0;
+        return OperationStatus.DestinationTooSmall;
     }
+
+    private Utf8AnalyzedReplacement GetParsedReplacement(string replacement) =>
+        _replacementCache.GetOrAdd(
+            replacement,
+            (GroupNumbers: _groupNumbers, GroupNames: _groupNames),
+            static (replacementText, state) => Utf8FrontEndReplacementAnalyzer.Analyze(
+                replacementText,
+                state.GroupNumbers,
+                state.GroupNames));
 
     private Utf8ExecutionDeadline CreateBudget() => Utf8ExecutionDeadline.Start(_matchTimeout);
 }

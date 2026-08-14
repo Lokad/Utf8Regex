@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Execution;
-using System.Buffers;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
@@ -15,26 +14,29 @@ internal static class Utf8LiteralReplaceEngine
         int matchLength,
         Utf8ExecutionDeadline budget)
     {
-        if (matchLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(matchLength));
-        }
-
+        ArgumentOutOfRangeException.ThrowIfNegative(matchLength);
         if (matchLength == 0)
         {
             return input.ToArray();
         }
 
-        var state = BuildFixedLengthState(input, replacement, findFirst, findNext, matchLength, budget);
-        if (state is null)
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
         {
-            return input.ToArray();
+            var outputLength = BuildFixedLengthRanges(
+                input,
+                replacement.Length,
+                findFirst,
+                findNext,
+                matchLength,
+                budget,
+                ref ledger);
+            return EmitAllocated(input, replacement, outputLength, ref ledger);
         }
-
-        var fixedState = state.Value;
-        var output = new byte[fixedState.OutputLength];
-        WriteFixedLengthReplacement(input, replacement, findNext, matchLength, fixedState.FirstIndex, output, budget);
-        return output;
+        finally
+        {
+            ledger.Dispose();
+        }
     }
 
     public static byte[] Replace(
@@ -43,17 +45,21 @@ internal static class Utf8LiteralReplaceEngine
         TryFindNextMatch tryFindNextMatch,
         Utf8ExecutionDeadline budget)
     {
-        var state = BuildVariableLengthState(input, replacement, tryFindNextMatch, budget);
-        if (state.Count == 0)
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
         {
-            Return(state);
-            return input.ToArray();
+            var outputLength = BuildVariableLengthRanges(
+                input,
+                replacement.Length,
+                tryFindNextMatch,
+                budget,
+                ref ledger);
+            return EmitAllocated(input, replacement, outputLength, ref ledger);
         }
-
-        var output = new byte[state.OutputLength];
-        WriteVariableLengthReplacement(input, replacement, output, state);
-        Return(state);
-        return output;
+        finally
+        {
+            ledger.Dispose();
+        }
     }
 
     public static bool TryReplace(
@@ -66,32 +72,29 @@ internal static class Utf8LiteralReplaceEngine
         out int bytesWritten,
         Utf8ExecutionDeadline budget)
     {
-        if (matchLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(matchLength));
-        }
-
+        ArgumentOutOfRangeException.ThrowIfNegative(matchLength);
         if (matchLength == 0)
         {
-            return TryCopyToDestination(input, destination, out bytesWritten);
+            return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten);
         }
 
-        var state = BuildFixedLengthState(input, replacement, findFirst, findNext, matchLength, budget);
-        if (state is null)
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
         {
-            return TryCopyToDestination(input, destination, out bytesWritten);
+            var outputLength = BuildFixedLengthRanges(
+                input,
+                replacement.Length,
+                findFirst,
+                findNext,
+                matchLength,
+                budget,
+                ref ledger);
+            return TryEmit(input, replacement, outputLength, destination, ref ledger, out bytesWritten);
         }
-
-        var fixedState = state.Value;
-        if (fixedState.OutputLength > destination.Length)
+        finally
         {
-            bytesWritten = 0;
-            return false;
+            ledger.Dispose();
         }
-
-        WriteFixedLengthReplacement(input, replacement, findNext, matchLength, fixedState.FirstIndex, destination, budget);
-        bytesWritten = fixedState.OutputLength;
-        return true;
     }
 
     public static bool TryReplace(
@@ -102,198 +105,130 @@ internal static class Utf8LiteralReplaceEngine
         out int bytesWritten,
         Utf8ExecutionDeadline budget)
     {
-        var state = BuildVariableLengthState(input, replacement, tryFindNextMatch, budget);
-        if (state.Count == 0)
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
         {
-            Return(state);
-            return TryCopyToDestination(input, destination, out bytesWritten);
+            var outputLength = BuildVariableLengthRanges(
+                input,
+                replacement.Length,
+                tryFindNextMatch,
+                budget,
+                ref ledger);
+            return TryEmit(input, replacement, outputLength, destination, ref ledger, out bytesWritten);
         }
-
-        if (state.OutputLength > destination.Length)
+        finally
         {
-            bytesWritten = 0;
-            Return(state);
-            return false;
+            ledger.Dispose();
         }
-
-        WriteVariableLengthReplacement(input, replacement, destination, state);
-        bytesWritten = state.OutputLength;
-        Return(state);
-        return true;
     }
 
-    private static FixedLengthState? BuildFixedLengthState(
+    private static Utf8ReplacementOutputLength BuildFixedLengthRanges(
         ReadOnlySpan<byte> input,
-        byte[] replacement,
+        int replacementLength,
         Func<ReadOnlySpan<byte>, int> findFirst,
         Func<ReadOnlySpan<byte>, int, int> findNext,
         int matchLength,
-        Utf8ExecutionDeadline budget)
+        Utf8ExecutionDeadline budget,
+        ref Utf8ReplacementRangeLedger ledger)
     {
+        var outputLength = new Utf8ReplacementOutputLength(input.Length);
         budget.Step();
-        var firstIndex = findFirst(input);
-        if (firstIndex < 0)
-        {
-            return null;
-        }
-
-        var outputLength = input.Length;
-        var delta = replacement.Length - matchLength;
-        var position = 0;
-        var currentMatch = firstIndex;
-
+        var currentMatch = findFirst(input);
         while (currentMatch >= 0)
         {
             budget.Step();
-            checked
-            {
-                outputLength += delta;
-            }
+            ledger.Add(new Utf8ReplacementRange(currentMatch, matchLength));
+            outputLength.ReplaceRange(matchLength, replacementLength);
 
-            position = currentMatch + matchLength;
-            currentMatch = position <= input.Length - matchLength
-                ? findNext(input, position)
+            var nextStart = currentMatch + matchLength;
+            currentMatch = nextStart <= input.Length - matchLength
+                ? findNext(input, nextStart)
                 : -1;
         }
 
-        return new FixedLengthState(firstIndex, outputLength);
+        return outputLength;
     }
 
-    private static void WriteFixedLengthReplacement(
+    private static Utf8ReplacementOutputLength BuildVariableLengthRanges(
         ReadOnlySpan<byte> input,
-        byte[] replacement,
-        Func<ReadOnlySpan<byte>, int, int> findNext,
-        int matchLength,
-        int firstIndex,
-        Span<byte> destination,
-        Utf8ExecutionDeadline budget)
-    {
-        var position = 0;
-        var currentMatch = firstIndex;
-        var written = 0;
-        while (currentMatch >= 0)
-        {
-            budget.Step();
-            written += CopySlice(input, position, currentMatch - position, destination, written);
-            replacement.CopyTo(destination[written..]);
-            written += replacement.Length;
-
-            position = currentMatch + matchLength;
-            currentMatch = position <= input.Length - matchLength
-                ? findNext(input, position)
-                : -1;
-        }
-
-        CopySlice(input, position, input.Length - position, destination, written);
-    }
-
-    private static VariableLengthState BuildVariableLengthState(
-        ReadOnlySpan<byte> input,
-        byte[] replacement,
+        int replacementLength,
         TryFindNextMatch tryFindNextMatch,
-        Utf8ExecutionDeadline budget)
+        Utf8ExecutionDeadline budget,
+        ref Utf8ReplacementRangeLedger ledger)
     {
-        var positions = ArrayPool<int>.Shared.Rent(16);
-        var lengths = ArrayPool<int>.Shared.Rent(16);
-        budget.Step();
-        if (!tryFindNextMatch(input, 0, out var currentMatch, out var currentLength))
+        var outputLength = new Utf8ReplacementOutputLength(input.Length);
+        var nextStart = 0;
+        while (nextStart <= input.Length)
         {
-            return new VariableLengthState(positions, lengths, 0, input.Length);
-        }
-
-        var outputLength = input.Length;
-        var count = 0;
-        while (currentMatch >= 0)
-        {
-            if (count == positions.Length)
-            {
-                Grow(ref positions, ref lengths);
-            }
-
-            positions[count] = currentMatch;
-            lengths[count] = currentLength;
-            count++;
-
             budget.Step();
-            checked
-            {
-                outputLength += replacement.Length - currentLength;
-            }
-
-            var position = currentMatch + currentLength;
-            if (!tryFindNextMatch(input, position, out currentMatch, out currentLength))
+            if (!tryFindNextMatch(input, nextStart, out var matchIndex, out var matchLength))
             {
                 break;
             }
+
+            ledger.Add(new Utf8ReplacementRange(matchIndex, matchLength));
+            outputLength.ReplaceRange(matchLength, replacementLength);
+            nextStart = matchIndex + Math.Max(matchLength, 1);
         }
 
-        return new VariableLengthState(positions, lengths, count, outputLength);
+        return outputLength;
     }
 
-    private static void WriteVariableLengthReplacement(
+    private static byte[] EmitAllocated(
         ReadOnlySpan<byte> input,
         byte[] replacement,
-        Span<byte> destination,
-        VariableLengthState state)
+        Utf8ReplacementOutputLength outputLength,
+        ref Utf8ReplacementRangeLedger ledger)
     {
-        var position = 0;
-        var written = 0;
-        for (var i = 0; i < state.Count; i++)
+        if (ledger.Count == 0)
         {
-            var currentMatch = state.Positions[i];
-            var currentLength = state.Lengths[i];
-            written += CopySlice(input, position, currentMatch - position, destination, written);
-            replacement.CopyTo(destination[written..]);
-            written += replacement.Length;
-            position = currentMatch + currentLength;
+            return input.ToArray();
         }
 
-        CopySlice(input, position, input.Length - position, destination, written);
+        var output = new byte[outputLength.Value];
+        Emit(input, replacement, output, ledger.WrittenRanges);
+        return output;
     }
 
-    private static bool TryCopyToDestination(ReadOnlySpan<byte> input, Span<byte> destination, out int bytesWritten)
+    private static bool TryEmit(
+        ReadOnlySpan<byte> input,
+        byte[] replacement,
+        Utf8ReplacementOutputLength outputLength,
+        Span<byte> destination,
+        ref Utf8ReplacementRangeLedger ledger,
+        out int bytesWritten)
     {
-        if (input.Length > destination.Length)
+        if (ledger.Count == 0)
+        {
+            return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten);
+        }
+
+        if (outputLength.Value > destination.Length)
         {
             bytesWritten = 0;
             return false;
         }
 
-        input.CopyTo(destination);
-        bytesWritten = input.Length;
+        Emit(input, replacement, destination, ledger.WrittenRanges);
+        bytesWritten = outputLength.Value;
         return true;
     }
 
-    private static int CopySlice(ReadOnlySpan<byte> input, int start, int length, Span<byte> destination, int destinationOffset)
+    private static void Emit(
+        ReadOnlySpan<byte> input,
+        byte[] replacement,
+        Span<byte> destination,
+        ReadOnlySpan<Utf8ReplacementRange> matches)
     {
-        if (length == 0)
+        var sourcePosition = 0;
+        var sink = new Utf8ReplacementOutputSink(destination);
+        foreach (var match in matches)
         {
-            return 0;
+            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition);
+            sink.Append(replacement);
+            sourcePosition = match.Start + match.Length;
         }
 
-        input.Slice(start, length).CopyTo(destination[destinationOffset..]);
-        return length;
+        sink.Append(input[sourcePosition..]);
     }
-
-    private readonly record struct FixedLengthState(int FirstIndex, int OutputLength);
-
-    private static void Grow(ref int[] positions, ref int[] lengths)
-    {
-        var grownPositions = ArrayPool<int>.Shared.Rent(positions.Length * 2);
-        var grownLengths = ArrayPool<int>.Shared.Rent(lengths.Length * 2);
-        Array.Copy(positions, grownPositions, positions.Length);
-        Array.Copy(lengths, grownLengths, lengths.Length);
-        ArrayPool<int>.Shared.Return(positions);
-        ArrayPool<int>.Shared.Return(lengths);
-        positions = grownPositions;
-        lengths = grownLengths;
-    }
-
-    private static void Return(VariableLengthState state)
-    {
-        ArrayPool<int>.Shared.Return(state.Positions);
-        ArrayPool<int>.Shared.Return(state.Lengths);
-    }
-
-    private readonly record struct VariableLengthState(int[] Positions, int[] Lengths, int Count, int OutputLength);
 }
