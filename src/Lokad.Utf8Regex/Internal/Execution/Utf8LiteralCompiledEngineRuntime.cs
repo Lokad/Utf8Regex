@@ -74,7 +74,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     public override bool SupportsWellFormedOnlyMatch => false;
     public override bool WellFormedOnlyMatchMissIsDefinitive => _smallAsciiLiteralFamilyPrimitive is not null;
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (!_usesRightToLeft)
         {
@@ -101,7 +101,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         };
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return _regexPlan.ExecutionKind switch
         {
@@ -117,7 +117,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         };
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (!_usesRightToLeft)
         {
@@ -163,7 +163,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return true;
         }
 
-        if (TryMatchAsciiDirect(input, budget: null, out match))
+        if (TryMatchAsciiDirect(input, budget: Utf8ExecutionDeadline.Infinite, out match))
         {
             return true;
         }
@@ -172,9 +172,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return false;
     }
 
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0 &&
             primitive.TryFindFirst(input, out var index, out var matchedLength))
@@ -183,7 +183,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return true;
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0 &&
             TryMatchAsciiDirect(input, budget, out match))
         {
@@ -258,7 +258,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             _ => false,
         };
 
-    private bool TryMatchAsciiDirect(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    private bool TryMatchAsciiDirect(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         match = _regexPlan.ExecutionKind switch
         {
@@ -342,7 +342,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return false;
     }
 
-    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget)
+    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionDeadline budget)
     {
         var literal = _regexPlan.LiteralUtf8;
         return _regexPlan.ExecutionKind switch
@@ -379,7 +379,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         };
     }
 
-    private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         if (literal.Length == 0)
@@ -387,26 +387,26 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return Utf8Validation.Validate(input).Utf16Length + 1;
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
         {
             return CountExactUtf8LiteralValidatedThreeByte(input, literal);
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
         {
             return CountExactUtf8LiteralLeadingScalarAnchored(input, literal, leadingSegmentLength);
         }
 
-        if (budget is null && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)
+        if (budget.IsInfinite && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)
         {
             return literalSearch.CountWithMetrics(input, out _, out _);
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
         {
@@ -417,7 +417,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         var index = 0;
         while (index <= input.Length - literal.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             var found = input[index..].IndexOf(literal);
             if (found < 0)
             {
@@ -699,11 +699,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         };
     }
 
-    private int CountAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var literalSearch = _regexPlan.SearchPlan.LiteralSearch ?? throw UnexpectedExecutionKind();
-        if (budget is null)
+        if (budget.IsInfinite)
         {
             var preferredCompareIndex = literalSearch.GetIgnoreCasePreferredCompareIndex();
             if (preferredCompareIndex >= 0)
@@ -718,7 +718,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         var index = 0;
         while (index <= input.Length - literal.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             var found = literalSearch.IndexOf(input[index..]);
             if (found < 0)
             {
@@ -732,9 +732,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return count;
     }
 
-    private int CountExactUtf8Literals(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountExactUtf8Literals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _shortAsciiLiteralFamilyCounter.HasValue)
         {
             return _shortAsciiLiteralFamilyCounter.Count(input);
@@ -747,7 +747,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             var startIndex = 0;
             while (startIndex <= input.Length - primitive.ShortestLength)
             {
-                budget?.Step(input[startIndex..]);
+                budget.Step();
                 if (!primitive.TryFindNextNonOverlapping(input, ref startIndex, out _, out _))
                 {
                     return primitiveCount;
@@ -769,7 +769,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
             {
-                budget?.Step(input[state.NextStart..]);
+                budget.Step();
                 if (!_regexPlan.SearchPlan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out _))
                 {
                     return fastCount;
@@ -785,13 +785,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return CountSmallAsciiLiteralFamily(input, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, budget);
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _leadingUtf8SegmentLiteralFamilyPrefilter.HasValue)
         {
             return CountLeadingUtf8SegmentLiteralFamilyHybrid(input, _leadingUtf8SegmentLiteralFamilyPrefilter, _leadingUtf8SegmentLiteralFamilyAutomaton, 2048);
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _bmpThreeByteLiteralFamilySearch.HasValue)
         {
             return CountExactUtf8LiteralFamilyValidated(input, _bmpThreeByteLiteralFamilySearch);
@@ -800,7 +800,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
-            if (budget is null && _emittedLiteralFamilyCounter is not null)
+            if (budget.IsInfinite && _emittedLiteralFamilyCounter is not null)
             {
                 return _emittedLiteralFamilyCounter.Count(input);
             }
@@ -1031,12 +1031,12 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return count;
     }
 
-    private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
-            if (budget is null && _emittedLiteralFamilyCounter is not null)
+            if (budget.IsInfinite && _emittedLiteralFamilyCounter is not null)
             {
                 return _emittedLiteralFamilyCounter.Count(input);
             }
@@ -1061,24 +1061,24 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return count;
     }
 
-    private bool IsMatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    private bool IsMatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         if (!rightToLeft &&
-            budget is null &&
+            budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
             return primitive.TryFindFirst(input, out _, out _);
         }
 
         if (!rightToLeft &&
-            budget is null &&
+            budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
             _smallAsciiLiteralFamilyFirstBytes is not null)
         {
             return TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out _, out _);
         }
 
-        if (!rightToLeft && budget is null && _emittedLiteralFamilyCounter is not null)
+        if (!rightToLeft && budget.IsInfinite && _emittedLiteralFamilyCounter is not null)
         {
             return _emittedLiteralFamilyCounter.IsMatch(input);
         }
@@ -1086,10 +1086,10 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
     }
 
-    private Utf8ValueMatch MatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    private Utf8ValueMatch MatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         if (!rightToLeft &&
-            budget is null &&
+            budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive &&
             primitive.TryFindFirst(input, out var primitiveIndex, out var primitiveLength))
         {
@@ -1097,7 +1097,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         if (!rightToLeft &&
-            budget is null &&
+            budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
             _smallAsciiLiteralFamilyFirstBytes is not null &&
             TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out var directLength))
@@ -1106,7 +1106,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         if (!rightToLeft &&
-            budget is null &&
+            budget.IsInfinite &&
             _emittedLiteralFamilyCounter is not null &&
             _emittedLiteralFamilyCounter.TryMatch(input, out var index, out var matchedByteLength))
         {
@@ -1137,7 +1137,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
 
-    private Utf8ValueMatch MatchExactAsciiLiteral(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    private Utf8ValueMatch MatchExactAsciiLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
@@ -1151,7 +1151,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return new Utf8ValueMatch(true, true, index, literal.Length, index, literal.Length);
     }
 
-    private Utf8ValueMatch MatchExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    private Utf8ValueMatch MatchExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
@@ -1171,7 +1171,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             literal.Length);
     }
 
-    private Utf8ValueMatch MatchAsciiAlignedExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private Utf8ValueMatch MatchAsciiAlignedExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = _usesRightToLeft
@@ -1185,7 +1185,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return new Utf8ValueMatch(true, true, index, literal.Length, index, literal.Length);
     }
 
-    private Utf8ValueMatch MatchAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    private Utf8ValueMatch MatchAsciiLiteralIgnoreCase(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
@@ -1214,12 +1214,12 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         };
     }
 
-    private bool TryFindLiteralFamilyMatch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft, out Utf8ValueMatch match)
+    private bool TryFindLiteralFamilyMatch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft, out Utf8ValueMatch match)
     {
         PreparedSearchMatch preparedMatch;
         if (rightToLeft)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out preparedMatch))
             {
                 match = Utf8ValueMatch.NoMatch;
@@ -1228,7 +1228,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
         else
         {
-            budget?.Step(input);
+            budget.Step();
             if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out preparedMatch))
             {
                 match = Utf8ValueMatch.NoMatch;
@@ -1240,9 +1240,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return true;
     }
 
-    private int FindFirstLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int FindFirstLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
@@ -1253,9 +1253,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
     }
 
-    private int FindLastLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int FindLastLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             return Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match)
@@ -1266,9 +1266,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
     }
 
-    private int FindFirstIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int FindFirstIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
@@ -1279,9 +1279,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return Utf8SearchExecutor.FindFirst(_regexPlan.SearchPlan, input);
     }
 
-    private int FindLastIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int FindLastIgnoreCaseLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         if (_regexPlan.SearchPlan.HasBoundaryRequirements || _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
             return Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match)
@@ -1292,10 +1292,10 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return Utf8SearchExecutor.FindLast(_regexPlan.SearchPlan, input);
     }
 
-    private int FindNextUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedByteLength)
+    private int FindNextUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
-        if (budget is null &&
+        if (budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
             _smallAsciiLiteralFamilyFirstBytes is not null &&
             TryFindNextSmallAsciiLiteralFamily(input, startIndex, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out matchedByteLength))
@@ -1303,7 +1303,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return directIndex;
         }
 
-        budget?.Step(input);
+        budget.Step();
         if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, startIndex, out var match))
         {
             return -1;
@@ -1313,10 +1313,10 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return match.Index;
     }
 
-    private int FindLastUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out int matchedByteLength)
+    private int FindLastUtf8LiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
-        budget?.Step(input);
+        budget.Step();
         if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
         {
             return -1;
@@ -1326,10 +1326,10 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return match.Index;
     }
 
-    private int FindNextAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedByteLength)
+    private int FindNextAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
-        budget?.Step(input);
+        budget.Step();
         if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, startIndex, out var match))
         {
             return -1;
@@ -1339,10 +1339,10 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return match.Index;
     }
 
-    private int FindLastAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out int matchedByteLength)
+    private int FindLastAsciiIgnoreCaseLiteralAlternationViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out int matchedByteLength)
     {
         matchedByteLength = 0;
-        budget?.Step(input);
+        budget.Step();
         if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out var match))
         {
             return -1;
@@ -1445,13 +1445,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return primitive.TryFindNextNonOverlapping(probe, ref startIndex, out _, out _);
     }
 
-    private static int CountSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, byte[][] literals, SearchValues<byte> firstBytes, Utf8ExecutionBudget? budget)
+    private static int CountSmallAsciiLiteralFamily(ReadOnlySpan<byte> input, byte[][] literals, SearchValues<byte> firstBytes, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
         while (TryFindNextSmallAsciiLiteralFamily(input, startIndex, literals, firstBytes, out var index, out var matchedLength))
         {
-            budget?.Step(input[startIndex..]);
+            budget.Step();
             count++;
             startIndex = index + matchedLength;
         }

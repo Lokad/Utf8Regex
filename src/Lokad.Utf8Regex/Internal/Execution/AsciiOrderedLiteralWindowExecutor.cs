@@ -9,7 +9,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         return FindNext(input, plan, searchPlan, default, startIndex, budget, out matchedLength);
@@ -21,7 +21,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -43,7 +43,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         var searchFrom = startIndex;
         while (searchFrom <= input.Length - leadingLiteral.Length)
         {
-            budget?.Step(input);
+            budget.Step();
 
             var relative = input[searchFrom..].IndexOf(leadingLiteral);
             if (relative < 0)
@@ -74,7 +74,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Count(input, plan, searchPlan, default, budget);
     }
@@ -84,7 +84,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (CanUseSeparatorOnlySingleLiteralFastPath(plan))
         {
@@ -418,7 +418,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
     private static int CountSeparatorOnlySingleLiteral(
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
@@ -442,7 +442,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         ReadOnlySpan<byte> trailingLiteral,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -451,7 +451,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
 
         while (trailingSearchFrom <= input.Length - trailingLiteral.Length)
         {
-            budget?.Step(input);
+            budget.Step();
 
             var relative = input[trailingSearchFrom..].IndexOf(trailingLiteral);
             if (relative < 0)
@@ -510,7 +510,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         PreparedLiteralSetSearch familySearch,
         PreparedAsciiFindPlan trailingFindPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var minTrailingIndex = 0;
@@ -519,7 +519,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
 
         while (true)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!TryFindNextTrailingBoundaryMatch(input, plan, trailingFindPlan, minTrailingIndex, out var trailingIndex))
             {
                 return count;
@@ -549,7 +549,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var trailingLiteral = plan.TrailingLiteralUtf8.AsSpan();
         var count = 0;
@@ -567,7 +567,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
                     continue;
                 }
 
-                budget?.Step(input);
+                budget.Step();
                 if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralLeadingBoundary, input, leadingStart) ||
                     !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralTrailingBoundary, input, leadingStart + leadingMatchLength))
                 {
@@ -603,7 +603,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralLeadingBoundary, input, match.Index) ||
                 !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralTrailingBoundary, input, match.Index + match.Length))
             {
@@ -636,7 +636,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         Utf8SearchPlan searchPlan,
         PreparedAsciiFindPlan trailingFindPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
@@ -750,7 +750,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         ReadOnlySpan<byte> input,
         AsciiOrderedLiteralWindowPlan plan,
         PreparedLiteralSetSearch familySearch,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
@@ -774,7 +774,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         PreparedLiteralSetSearch familySearch)
     {
-        return CountPairedLiteralFamilyByTrailingAnchor(input, plan, familySearch, default, budget: null);
+        return CountPairedLiteralFamilyByTrailingAnchor(input, plan, familySearch, default, budget: Utf8ExecutionDeadline.Infinite);
     }
 
     private static bool TryMatchAtWithTrailingCursor(
@@ -1071,14 +1071,14 @@ internal static class AsciiOrderedLiteralWindowExecutor
         ReadOnlySpan<byte> trailingLiteral,
         PreparedAsciiFindPlan trailingFindPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
         var searchFrom = startIndex;
         while (searchFrom < input.Length)
         {
-            budget?.Step(input);
+            budget.Step();
 
             if (!familySearch.TryFindFirstMatchWithLength(input[searchFrom..], out var relativeIndex, out var leadingMatchLength))
             {
@@ -1109,14 +1109,14 @@ internal static class AsciiOrderedLiteralWindowExecutor
         PreparedLiteralSetSearch familySearch,
         PreparedAsciiFindPlan trailingFindPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
         var searchFrom = startIndex;
         while (searchFrom < input.Length)
         {
-            budget?.Step(input);
+            budget.Step();
 
             if (!familySearch.TryFindFirstMatchWithLength(input[searchFrom..], out var relativeIndex, out var leadingMatchLength))
             {
@@ -1265,7 +1265,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         AsciiOrderedLiteralWindowPlan plan,
         PreparedLiteralSetSearch familySearch,
         PreparedAsciiFindPlan trailingFindPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var minTrailingIndex = 0;
@@ -1277,7 +1277,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
 
         while (true)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!TryFindNextTrailingFamilyBoundaryMatch(
                     input,
                     plan,

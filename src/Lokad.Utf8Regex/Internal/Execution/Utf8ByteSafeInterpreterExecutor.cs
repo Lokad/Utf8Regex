@@ -29,7 +29,7 @@ internal static class Utf8ByteSafeLinearExecutor
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -56,7 +56,7 @@ internal static class Utf8ByteSafeLinearExecutor
                     continue;
                 }
 
-                budget?.Step(input);
+                budget.Step();
                 Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
                 if (verifierRuntime.TryMatch(input, matchStart, 0, budget, out matchedLength))
                 {
@@ -82,7 +82,7 @@ internal static class Utf8ByteSafeLinearExecutor
             }
 
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (verifierRuntime.TryMatch(input, candidate.StartIndex, 0, budget, out matchedLength))
             {
@@ -98,7 +98,7 @@ internal static class Utf8ByteSafeLinearExecutor
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return FindNext(input, regexPlan, verifierRuntime, 0, budget, out _) >= 0;
     }
@@ -107,7 +107,7 @@ internal static class Utf8ByteSafeLinearExecutor
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (regexPlan.DeterministicAnchor.HasValue)
         {
@@ -135,7 +135,7 @@ internal static class Utf8ByteSafeLinearExecutor
         ReadOnlySpan<byte> input,
         Utf8DeterministicAnchorSearch anchor,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedSearchScanState(0, default);
@@ -156,7 +156,7 @@ internal static class Utf8ByteSafeLinearExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!verifierRuntime.TryMatch(input, matchStart, 0, budget, out var matchedLength))
             {
@@ -231,7 +231,7 @@ internal static class Utf8ByteSafeInterpreterExecutor
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         return Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime, startIndex, budget, out matchedLength);
@@ -241,7 +241,7 @@ internal static class Utf8ByteSafeInterpreterExecutor
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Utf8ByteSafeLinearExecutor.IsMatch(input, regexPlan, verifierRuntime, budget);
     }
@@ -250,7 +250,7 @@ internal static class Utf8ByteSafeInterpreterExecutor
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Utf8ByteSafeLinearExecutor.Count(input, regexPlan, verifierRuntime, budget);
     }

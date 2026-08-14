@@ -170,7 +170,7 @@ public sealed class Utf8RegexConstructionTests
                 bytes,
                 regex.StructuralIdentifierFamilyPlan,
                 regex.SearchPlan,
-                budget: null));
+                budget: Utf8ExecutionDeadline.Infinite));
     }
 
     [Fact]

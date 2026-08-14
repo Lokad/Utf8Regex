@@ -2,6 +2,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
@@ -19,6 +20,8 @@ public ref struct Utf8ValueSplitEnumerator
     private int _segmentStartUtf16;
     private int _remainingCount;
     private bool _completed;
+    private string? _timeoutPattern;
+    private TimeSpan _timeout;
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
@@ -38,6 +41,8 @@ public ref struct Utf8ValueSplitEnumerator
         _segmentStartUtf16 = 0;
         _remainingCount = 0;
         _completed = false;
+        _timeoutPattern = null;
+        _timeout = default;
         Current = default;
     }
 
@@ -47,7 +52,7 @@ public ref struct Utf8ValueSplitEnumerator
         byte[] literal,
         NativeExecutionKind executionKind,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(
             input,
             CreateLiteralCursor(input, searchPlan, literal, executionKind, budget),
@@ -65,7 +70,7 @@ public ref struct Utf8ValueSplitEnumerator
         NativeExecutionKind executionKind,
         int count,
         Utf8BoundaryMap? boundaryMap,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(
             input,
             CreateLiteralCursor(input, searchPlan, literal, executionKind, budget),
@@ -80,7 +85,7 @@ public ref struct Utf8ValueSplitEnumerator
         ReadOnlySpan<byte> input,
         Utf8SearchPlan searchPlan,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(input, new Utf8OperationMatchCursor(input, searchPlan, budget), count, Utf8Validation.Validate(input).Utf16Length)
     {
     }
@@ -90,7 +95,7 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8SearchPlan searchPlan,
         int count,
         NativeExecutionKind executionKind,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(
             input,
             new Utf8OperationMatchCursor(input, searchPlan, executionKind, budget),
@@ -106,7 +111,7 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8ExecutionProgram? executionProgram,
         AsciiSimplePatternPlan simplePatternPlan,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(input, new Utf8OperationMatchCursor(input, executionProgram, simplePatternPlan, budget), count, input.Length)
     {
     }
@@ -117,7 +122,7 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8ExecutionProgram? executionProgram,
         AsciiSimplePatternPlan simplePatternPlan,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(
             input,
             new Utf8OperationMatchCursor(input, executionProgram, searchPlan, simplePatternPlan, budget),
@@ -130,7 +135,7 @@ public ref struct Utf8ValueSplitEnumerator
         ReadOnlySpan<byte> input,
         Utf8StructuralLinearProgram structuralLinearProgram,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(input, new Utf8OperationMatchCursor(input, structuralLinearProgram, budget), count, input.Length)
     {
     }
@@ -139,7 +144,7 @@ public ref struct Utf8ValueSplitEnumerator
         ReadOnlySpan<byte> input,
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         : this(input, new Utf8OperationMatchCursor(input, smallAsciiLiteralFamilySearch, budget), count, input.Length)
     {
     }
@@ -161,6 +166,8 @@ public ref struct Utf8ValueSplitEnumerator
         _segmentStartUtf16 = 0;
         _remainingCount = count;
         _completed = false;
+        _timeoutPattern = null;
+        _timeout = default;
         Current = default;
     }
 
@@ -168,9 +175,29 @@ public ref struct Utf8ValueSplitEnumerator
 
     public Utf8ValueSplitEnumerator GetEnumerator() => this;
 
-    public bool MoveNext() => _sourceKind == SplitSourceKind.NativeMatchCursor
-        ? MoveNextNative()
-        : MoveNextFallback();
+    public bool MoveNext()
+    {
+        try
+        {
+            return _sourceKind == SplitSourceKind.NativeMatchCursor
+                ? MoveNextNative()
+                : MoveNextFallback();
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
+        {
+            throw new RegexMatchTimeoutException(
+                Encoding.UTF8.GetString(_input),
+                _timeoutPattern,
+                _timeout);
+        }
+    }
+
+    internal Utf8ValueSplitEnumerator WithTimeoutMapping(string pattern, TimeSpan timeout)
+    {
+        _timeoutPattern = pattern;
+        _timeout = timeout;
+        return this;
+    }
 
     private bool MoveNextFallback()
     {
@@ -235,7 +262,7 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8SearchPlan searchPlan,
         byte[] literal,
         NativeExecutionKind executionKind,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return executionKind == NativeExecutionKind.ExactUtf8Literal
             ? new Utf8OperationMatchCursor(

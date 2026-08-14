@@ -11,7 +11,7 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
         => new(CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget));
 
     public static Utf8OperationMatchCursor CreateMatchCursor(
@@ -19,7 +19,7 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8VerifierRuntime? verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
         return regexPlan.ExecutionKind switch
@@ -63,7 +63,7 @@ internal static class Utf8CompiledOperationCursorFactory
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         int count,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
         return regexPlan.ExecutionKind switch

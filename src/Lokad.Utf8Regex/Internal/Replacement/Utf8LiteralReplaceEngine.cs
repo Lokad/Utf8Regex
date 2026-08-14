@@ -13,7 +13,7 @@ internal static class Utf8LiteralReplaceEngine
         Func<ReadOnlySpan<byte>, int> findFirst,
         Func<ReadOnlySpan<byte>, int, int> findNext,
         int matchLength,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (matchLength < 0)
         {
@@ -41,7 +41,7 @@ internal static class Utf8LiteralReplaceEngine
         ReadOnlySpan<byte> input,
         byte[] replacement,
         TryFindNextMatch tryFindNextMatch,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildVariableLengthState(input, replacement, tryFindNextMatch, budget);
         if (state.Count == 0)
@@ -64,7 +64,7 @@ internal static class Utf8LiteralReplaceEngine
         int matchLength,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (matchLength < 0)
         {
@@ -100,7 +100,7 @@ internal static class Utf8LiteralReplaceEngine
         TryFindNextMatch tryFindNextMatch,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildVariableLengthState(input, replacement, tryFindNextMatch, budget);
         if (state.Count == 0)
@@ -128,9 +128,9 @@ internal static class Utf8LiteralReplaceEngine
         Func<ReadOnlySpan<byte>, int> findFirst,
         Func<ReadOnlySpan<byte>, int, int> findNext,
         int matchLength,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         var firstIndex = findFirst(input);
         if (firstIndex < 0)
         {
@@ -144,7 +144,7 @@ internal static class Utf8LiteralReplaceEngine
 
         while (currentMatch >= 0)
         {
-            budget?.Step(input);
+            budget.Step();
             checked
             {
                 outputLength += delta;
@@ -166,14 +166,14 @@ internal static class Utf8LiteralReplaceEngine
         int matchLength,
         int firstIndex,
         Span<byte> destination,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var position = 0;
         var currentMatch = firstIndex;
         var written = 0;
         while (currentMatch >= 0)
         {
-            budget?.Step(input);
+            budget.Step();
             written += CopySlice(input, position, currentMatch - position, destination, written);
             replacement.CopyTo(destination[written..]);
             written += replacement.Length;
@@ -191,11 +191,11 @@ internal static class Utf8LiteralReplaceEngine
         ReadOnlySpan<byte> input,
         byte[] replacement,
         TryFindNextMatch tryFindNextMatch,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var positions = ArrayPool<int>.Shared.Rent(16);
         var lengths = ArrayPool<int>.Shared.Rent(16);
-        budget?.Step(input);
+        budget.Step();
         if (!tryFindNextMatch(input, 0, out var currentMatch, out var currentLength))
         {
             return new VariableLengthState(positions, lengths, 0, input.Length);
@@ -214,7 +214,7 @@ internal static class Utf8LiteralReplaceEngine
             lengths[count] = currentLength;
             count++;
 
-            budget?.Step(input);
+            budget.Step();
             checked
             {
                 outputLength += replacement.Length - currentLength;

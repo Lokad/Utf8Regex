@@ -1937,11 +1937,11 @@ internal static partial class BenchmarkInspectReporter
             Measure("Utf8CompiledDirect", iterations, () => context.CompiledUtf8Regex.DebugCountViaCompiledEngine(context.InputBytes));
             if (simplePatternPlan.BoundedSuffixLiteralPlan.HasValue)
             {
-                Measure("BoundedSuffixDirect", iterations, () => Utf8AsciiBoundedSuffixLiteralExecutor.Count(context.InputBytes, simplePatternPlan.BoundedSuffixLiteralPlan, budget: null));
+                Measure("BoundedSuffixDirect", iterations, () => Utf8AsciiBoundedSuffixLiteralExecutor.Count(context.InputBytes, simplePatternPlan.BoundedSuffixLiteralPlan, budget: Utf8ExecutionDeadline.Infinite));
             }
             if (simplePatternPlan.RunPlan.HasValue)
             {
-                Measure("RunPlanDirect", iterations, () => Utf8AsciiCharClassRunExecutor.Count(context.InputBytes, simplePatternPlan.RunPlan, budget: null));
+                Measure("RunPlanDirect", iterations, () => Utf8AsciiCharClassRunExecutor.Count(context.InputBytes, simplePatternPlan.RunPlan, budget: Utf8ExecutionDeadline.Infinite));
             }
             Measure("FallbackCandidates", iterations, () => context.Utf8Regex.DebugCountFallbackCandidates(context.InputBytes));
             Measure("FallbackBoundaryCandidates", iterations, () => context.Utf8Regex.DebugCountFallbackBoundaryCandidates(context.InputBytes));
@@ -3466,7 +3466,7 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("LeadingCandidates", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyLeadingCandidates(context.InputBytes, plan, familySearch));
             Measure("GapQualified", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyGapQualifiedCandidates(context.InputBytes, plan, familySearch));
-            Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamily(context.InputBytes, plan, familySearch, budget: null));
+            Measure("LeadingMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamily(context.InputBytes, plan, familySearch, budget: Utf8ExecutionDeadline.Infinite));
             Measure("TrailingAnchorMatches", iterations, () => AsciiOrderedLiteralWindowExecutor.CountPairedLiteralFamilyTrailingAnchorMatches(context.InputBytes, plan, familySearch));
         }
         else
@@ -5309,7 +5309,7 @@ internal static partial class BenchmarkInspectReporter
             program,
             input,
             ref state,
-            budget: null,
+            budget: Utf8ExecutionDeadline.Infinite,
             out var match))
         {
             sum += match.Index;
@@ -5320,7 +5320,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ExecuteStructuralLinearCount(Utf8StructuralLinearProgram program, byte[] input)
     {
-        return Utf8AsciiInstructionLinearExecutor.CountDeterministic(program, input, budget: null);
+        return Utf8AsciiInstructionLinearExecutor.CountDeterministic(program, input, budget: Utf8ExecutionDeadline.Infinite);
     }
 
     private static int ExecuteStructuralLinearFixedWidthIndexSum(Utf8StructuralLinearProgram program, byte[] input)
@@ -5336,7 +5336,7 @@ internal static partial class BenchmarkInspectReporter
             program,
             input,
             ref state,
-            budget: null,
+            budget: Utf8ExecutionDeadline.Infinite,
             out var index))
         {
             sum += index;
@@ -5353,7 +5353,7 @@ internal static partial class BenchmarkInspectReporter
             program,
             input,
             ref state,
-            budget: null,
+            budget: Utf8ExecutionDeadline.Infinite,
             out _))
         {
             count++;
@@ -5365,7 +5365,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteStructuralLinearEnumeratorMoveNextCount(Utf8StructuralLinearProgram program, byte[] input)
     {
         var count = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             count++;
@@ -5377,7 +5377,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteStructuralLinearEnumeratorIndexSum(Utf8StructuralLinearProgram program, byte[] input)
     {
         var sum = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;
@@ -5459,7 +5459,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var count = 0;
         var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             count++;
@@ -5472,7 +5472,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;
@@ -5619,7 +5619,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(Utf8SearchPlan plan, byte[] input)
     {
         var count = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             count++;
@@ -5631,7 +5631,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(Utf8SearchPlan plan, byte[] input)
     {
         var sum = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: null);
+        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: Utf8ExecutionDeadline.Infinite);
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;
@@ -5648,7 +5648,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var count = 0;
         var startIndex = 0;
-        while (linearRuntime.TryFindNext(input, validation, verifierRuntime, startIndex, budget: null, out var matchIndex, out var matchedLength))
+        while (linearRuntime.TryFindNext(input, validation, verifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchIndex, out var matchedLength))
         {
             count++;
             startIndex = matchIndex + Math.Max(matchedLength, 1);
@@ -5663,7 +5663,7 @@ internal static partial class BenchmarkInspectReporter
         byte[] input,
         Utf8ValidationResult validation)
     {
-        return linearRuntime.Count(input, validation, verifierRuntime, budget: null);
+        return linearRuntime.Count(input, validation, verifierRuntime, budget: Utf8ExecutionDeadline.Infinite);
     }
 
     private static int ExecuteStructuralFamilyFindNextIndexSum(
@@ -5674,7 +5674,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var startIndex = 0;
-        while (linearRuntime.TryFindNext(input, validation, verifierRuntime, startIndex, budget: null, out var matchIndex, out var matchedLength))
+        while (linearRuntime.TryFindNext(input, validation, verifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchIndex, out var matchedLength))
         {
             sum += matchIndex;
             startIndex = matchIndex + Math.Max(matchedLength, 1);
@@ -5690,7 +5690,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var count = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: null, out _, out _))
+        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
         {
             count++;
         }
@@ -5705,7 +5705,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var count = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: null, out _, out _))
+        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out _, out _))
         {
             count++;
         }
@@ -5720,7 +5720,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var state = linearRuntime.CreateScanState(0);
-        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: null, out var matchIndex, out _))
+        while (linearRuntime.TryFindNextStateful(input, verifierRuntime, ref state, budget: Utf8ExecutionDeadline.Infinite, out var matchIndex, out _))
         {
             sum += matchIndex;
         }
@@ -6047,7 +6047,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var count = 0;
         var startIndex = 0;
-        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: null, out var matchedLength) is var matchIndex && matchIndex >= 0)
+        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength) is var matchIndex && matchIndex >= 0)
         {
             count++;
             startIndex = matchIndex + Math.Max(matchedLength, 1);
@@ -6060,7 +6060,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var sum = 0;
         var startIndex = 0;
-        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: null, out var matchedLength) is var matchIndex && matchIndex >= 0)
+        while (Utf8ByteSafeLinearExecutor.FindNext(input, regexPlan, verifierRuntime.StructuralVerifierRuntime, startIndex, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength) is var matchIndex && matchIndex >= 0)
         {
             sum += matchIndex;
             startIndex = matchIndex + Math.Max(matchedLength, 1);

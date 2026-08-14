@@ -9,7 +9,7 @@ internal abstract class Utf8StructuralVerifierRuntime
 
     public Utf8StructuralVerifierPlan Plan { get; }
 
-    public abstract bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionBudget? budget, out int matchedLength);
+    public abstract bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength);
 }
 
 internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRuntime
@@ -19,7 +19,7 @@ internal sealed class Utf8NoStructuralVerifierRuntime : Utf8StructuralVerifierRu
     {
     }
 
-    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionBudget? budget, out int matchedLength)
+    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         return false;
@@ -33,7 +33,7 @@ internal sealed class Utf8AsciiStructuralVerifierRuntime : Utf8StructuralVerifie
     {
     }
 
-    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionBudget? budget, out int matchedLength)
+    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         return Plan.AsciiProgram.TryMatch(input, matchIndex, prefixLength, out matchedLength);
     }
@@ -46,7 +46,7 @@ internal sealed class Utf8ByteSafeLinearVerifierRuntime : Utf8StructuralVerifier
     {
     }
 
-    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionBudget? budget, out int matchedLength)
+    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         if (Plan.ByteSafeLinearProgram.HasValue)
         {
@@ -84,7 +84,7 @@ internal sealed class Utf8ByteSafeLazyDfaVerifierRuntime : Utf8StructuralVerifie
     {
     }
 
-    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionBudget? budget, out int matchedLength)
+    public override bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         if (Plan.ByteSafeLazyDfaProgram.HasValue)
         {

@@ -390,7 +390,7 @@ public sealed class Utf8SearchPlanTests
         Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.SearchPlan, regex.SearchPlan.CountOperation, regex.SearchPlan.FirstMatchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(
-            Utf8BackendInstructionExecutor.CountLiteralFamily(regex.SearchPlan, regex.SearchPlan.CountOperation, input, budget: null),
+            Utf8BackendInstructionExecutor.CountLiteralFamily(regex.SearchPlan, regex.SearchPlan.CountOperation, input, budget: Utf8ExecutionDeadline.Infinite),
             counter!.Count(input));
     }
 
@@ -404,10 +404,10 @@ public sealed class Utf8SearchPlanTests
         Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.SearchPlan, regex.SearchPlan.CountOperation, regex.SearchPlan.FirstMatchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, hit, budget: null, rightToLeft: false),
+            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             counter!.IsMatch(hit));
         Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, miss, budget: null, rightToLeft: false),
+            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, miss, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             counter.IsMatch(miss));
     }
 
@@ -422,7 +422,7 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(counter);
 
         Assert.True(counter!.TryMatch(hit, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, hit, regex.SearchPlan.AlternateLiteralUtf16Lengths, budget: null, rightToLeft: false);
+        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.SearchPlan, regex.SearchPlan.FirstMatchOperation, hit, regex.SearchPlan.AlternateLiteralUtf16Lengths, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         Assert.True(interpreted.Success);
         Assert.Equal(interpreted.IndexInBytes, emittedIndex);
         Assert.Equal(interpreted.LengthInBytes, emittedLength);
@@ -458,10 +458,10 @@ public sealed class Utf8SearchPlanTests
         Assert.NotNull(backend);
 
         Assert.Equal(
-            Utf8SearchStrategyExecutor.CountLiteralFamily(regex.SearchPlan, input, budget: null),
+            Utf8SearchStrategyExecutor.CountLiteralFamily(regex.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite),
             backend!.Count(input));
         Assert.Equal(
-            Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.SearchPlan, input, budget: null, rightToLeft: false),
+            Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             backend.IsMatch(input));
     }
 
@@ -471,8 +471,8 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
-        Assert.Equal(3, Utf8SearchStrategyExecutor.CountLiteralFamily(regex.SearchPlan, input, budget: null));
-        Assert.True(Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.SearchPlan, input, budget: null, rightToLeft: false));
+        Assert.Equal(3, Utf8SearchStrategyExecutor.CountLiteralFamily(regex.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite));
+        Assert.True(Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false));
     }
 
     [Fact]

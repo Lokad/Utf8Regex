@@ -691,13 +691,13 @@ internal abstract class Utf8StructuralLinearRuntime
 
     protected Utf8StructuralLinearProgram Program { get; }
 
-    public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget);
+    public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
-    public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget);
+    public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
-    public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget);
+    public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget);
 
-    public abstract bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionBudget? budget, out int matchIndex, out int matchedLength);
+    public abstract bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength);
 
     public static Utf8StructuralLinearRuntime Create(Utf8StructuralLinearProgram program)
     {
@@ -724,22 +724,22 @@ internal sealed class Utf8NoStructuralLinearRuntime : Utf8StructuralLinearRuntim
     {
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return false;
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return 0;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return Utf8ValueMatch.NoMatch;
     }
 
-    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionBudget? budget, out int matchIndex, out int matchedLength)
+    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
         matchedLength = 0;
@@ -754,13 +754,13 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
     {
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return Utf8AsciiInstructionLinearExecutor.SupportsInput(Program, validation) &&
             Utf8AsciiInstructionLinearExecutor.FindNext(Program, input, 0, budget, out _) >= 0;
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (!Utf8AsciiInstructionLinearExecutor.SupportsInput(Program, validation))
         {
@@ -790,7 +790,7 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
         return count;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (!Utf8AsciiInstructionLinearExecutor.SupportsInput(Program, validation))
         {
@@ -805,7 +805,7 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
             : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
     }
 
-    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionBudget? budget, out int matchIndex, out int matchedLength)
+    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         if (!Utf8AsciiInstructionLinearExecutor.SupportsInput(Program, validation))
         {
@@ -828,7 +828,7 @@ internal static class Utf8AsciiFixedTokenLinearExecutor
         return validation.IsAscii || program.AllowsUtf8ByteSafe;
     }
 
-    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         return Utf8AsciiInstructionLinearExecutor.FindNext(program, input, startIndex, budget, out matchedLength);
     }
@@ -841,7 +841,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return validation.IsAscii || program.AllowsUtf8ByteSafe;
     }
 
-    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         var instructionProgram = program.InstructionProgram;
@@ -862,7 +862,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var searchFrom = startIndex + instructionProgram.SearchLiteralOffset;
             while (searchFrom <= input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
 
                 var relative = instructionProgram.SearchLiterals.Length == 1
                     ? AsciiSearch.IndexOfExact(input[searchFrom..], instructionProgram.SearchLiterals[0])
@@ -893,7 +893,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var searchFrom = startIndex + instructionProgram.SearchLiteralOffset;
             while (searchFrom <= input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
 
                 var relative = instructionProgram.SearchLiterals.Length == 1
                     ? (instructionProgram.IgnoreCase
@@ -930,7 +930,8 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 input,
                 new AsciiSimplePatternRunPlan(runCharClass, instructionProgram.Instructions[0].MinCount, instructionProgram.Instructions[0].MaxCount),
                 startIndex,
-                out matchedLength);
+                out matchedLength,
+                budget);
             if (matchIndex >= 0)
             {
                 diagnostics?.CountSearchCandidate();
@@ -959,7 +960,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                     return -1;
                 }
 
-                budget?.Step(input);
+                budget.Step();
                 diagnostics?.CountSearchCandidate();
                 if (TryMatchAt(input, program, candidateStart, out matchedLength))
                 {
@@ -981,7 +982,12 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var candidateStart = startIndex;
             while (candidateStart <= input.Length)
             {
-                var runStart = Utf8AsciiCharClassRunExecutor.FindNext(input, plan.LeadingRunPlan, candidateStart, out var runLength);
+                var runStart = Utf8AsciiCharClassRunExecutor.FindNext(
+                    input,
+                    plan.LeadingRunPlan,
+                    candidateStart,
+                    out var runLength,
+                    budget);
                 if (runStart < 0)
                 {
                     return -1;
@@ -994,7 +1000,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 }
 
                 diagnostics?.CountSearchCandidate();
-                budget?.Step(input);
+                budget.Step();
                 if (TryMatchTokenWindowAt(input, plan, runStart, out matchedLength))
                 {
                     diagnostics?.CountVerifierInvocation();
@@ -1012,7 +1018,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var searchStart = Math.Max(startIndex, 0);
             while (searchStart < input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
                 var relative = input[searchStart..].IndexOfAny((byte)'"', (byte)'\'');
                 if (relative < 0)
                 {
@@ -1056,7 +1062,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
         for (var candidate = startIndex; candidate <= input.Length; candidate++)
         {
-            budget?.Step(input);
+            budget.Step();
             diagnostics?.CountSearchCandidate();
             if (TryMatchAt(input, program, candidate, out matchedLength))
             {
@@ -1069,7 +1075,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return -1;
     }
 
-    public static int FindNextDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    public static int FindNextDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         if (!program.DeterministicProgram.HasValue)
@@ -1088,7 +1094,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             : -1;
     }
 
-    public static int FindNextDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    public static int FindNextDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         if (!program.DeterministicProgram.HasValue || program.DeterministicProgram.FixedWidthLength <= 0)
@@ -1110,7 +1116,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8AsciiDeterministicMatch match)
     {
         match = default;
@@ -1143,7 +1149,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchIndex,
         out int matchedLength)
     {
@@ -1168,7 +1174,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 var searchFrom = Math.Max(state.SearchFrom, state.NextStartIndex + deterministicProgram.SearchLiteralOffset);
                 while (searchFrom <= input.Length)
                 {
-                    budget?.Step(input);
+                    budget.Step();
 
                     var relative = deterministicProgram.SearchLiterals.Length == 1
                         ? (deterministicProgram.IgnoreCase
@@ -1200,7 +1206,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var searchFromWithDiagnostics = Math.Max(state.SearchFrom, state.NextStartIndex + deterministicProgram.SearchLiteralOffset);
             while (searchFromWithDiagnostics <= input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
 
                 var relative = deterministicProgram.SearchLiterals.Length == 1
                     ? (deterministicProgram.IgnoreCase
@@ -1236,7 +1242,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         {
             for (var candidate = state.NextStartIndex; candidate <= input.Length; candidate++)
             {
-                budget?.Step(input);
+                budget.Step();
                 if (TryMatchAt(input, deterministicProgram, candidate, out matchedLength))
                 {
                     matchIndex = candidate;
@@ -1252,7 +1258,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
         for (var candidate = state.NextStartIndex; candidate <= input.Length; candidate++)
         {
-            budget?.Step(input);
+            budget.Step();
             diagnostics?.CountSearchCandidate();
             if (TryMatchAt(input, deterministicProgram, candidate, out matchedLength))
             {
@@ -1273,7 +1279,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchIndex)
     {
         matchIndex = -1;
@@ -1301,7 +1307,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 var searchFrom = Math.Max(state.SearchFrom, state.NextStartIndex + deterministicProgram.SearchLiteralOffset);
                 while (searchFrom <= input.Length)
                 {
-                    budget?.Step(input);
+                    budget.Step();
 
                     var relative = deterministicProgram.SearchLiterals.Length == 1
                         ? (deterministicProgram.IgnoreCase
@@ -1334,7 +1340,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             var searchFromWithDiagnostics = Math.Max(state.SearchFrom, state.NextStartIndex + deterministicProgram.SearchLiteralOffset);
             while (searchFromWithDiagnostics <= input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
 
                 var relative = deterministicProgram.SearchLiterals.Length == 1
                     ? (deterministicProgram.IgnoreCase
@@ -1371,7 +1377,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         {
             for (var candidate = state.NextStartIndex; candidate <= input.Length; candidate++)
             {
-                budget?.Step(input);
+                budget.Step();
                 if (TryMatchFixedWidthAt(input, deterministicProgram, candidate, out _))
                 {
                     matchIndex = candidate;
@@ -1387,7 +1393,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
         for (var candidate = state.NextStartIndex; candidate <= input.Length; candidate++)
         {
-            budget?.Step(input);
+            budget.Step();
             diagnostics?.CountSearchCandidate();
             if (TryMatchFixedWidthAt(input, deterministicProgram, candidate, out _))
             {
@@ -1404,7 +1410,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return false;
     }
 
-    public static int CountDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    public static int CountDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!program.DeterministicProgram.HasValue)
         {
@@ -1431,7 +1437,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return count;
     }
 
-    public static int CountDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    public static int CountDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!program.DeterministicProgram.HasValue || program.DeterministicProgram.FixedWidthLength <= 0)
         {
@@ -2129,14 +2135,14 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
     {
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         return UsesRightToLeft(verifierRuntime)
             ? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input))
             : FindNext(input, verifierRuntime, 0, budget, out _) >= 0;
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_automaton");
         return UsesRightToLeft(verifierRuntime)
@@ -2144,7 +2150,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
             : CountForward(input, verifierRuntime, budget);
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (UsesRightToLeft(verifierRuntime))
         {
@@ -2157,7 +2163,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
             : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
     }
 
-    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionBudget? budget, out int matchIndex, out int matchedLength)
+    public override bool TryFindNext(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         if (UsesRightToLeft(verifierRuntime))
         {
@@ -2170,7 +2176,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         return matchIndex >= 0;
     }
 
-    private int CountForward(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget)
+    private int CountForward(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget)
     {
         if (CanUseStatefulSearch())
         {
@@ -2219,7 +2225,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         ReadOnlySpan<byte> input,
         Utf8VerifierRuntime verifierRuntime,
         ref Utf8AsciiStructuralFamilyScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchIndex,
         out int matchedLength)
     {
@@ -2239,7 +2245,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             var prefixLength = candidate.MatchLength;
             if (prefixLength <= 0 &&
                 !AsciiSearch.TryGetMatchedLiteralLength(input, candidate.StartIndex, searchData.Value, out prefixLength))
@@ -2291,7 +2297,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
         return false;
     }
 
-    private int FindNext(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    private int FindNext(ReadOnlySpan<byte> input, Utf8VerifierRuntime verifierRuntime, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         var searchData = Program.SearchPlan.AlternateLiteralSearchData;
@@ -2310,7 +2316,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
                     continue;
                 }
 
-                budget?.Step(input);
+                budget.Step();
                 var prefixLength = candidate.MatchLength;
                 if (prefixLength <= 0 &&
                     !AsciiSearch.TryGetMatchedLiteralLength(input, candidate.StartIndex, searchData.Value, out prefixLength))
@@ -2334,7 +2340,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
             candidate >= 0;
             candidate = Utf8SearchExecutor.FindNext(Program.SearchPlan, input, candidate + 1))
         {
-            budget?.Step(input);
+            budget.Step();
             if (!AsciiSearch.TryGetMatchedLiteralLength(input, candidate, searchData.Value, out var prefixLength))
             {
                 continue;

@@ -17,7 +17,7 @@ internal static class Utf8SearchPortfolioRuntime
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
         match = default;
@@ -28,7 +28,7 @@ internal static class Utf8SearchPortfolioRuntime
 
         while (true)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out match))
             {
                 return false;
@@ -51,7 +51,7 @@ internal static class Utf8SearchPortfolioRuntime
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         bool rightToLeft)
     {
         if (!plan.HasPreparedSearcher)
@@ -61,21 +61,21 @@ internal static class Utf8SearchPortfolioRuntime
 
         if (rightToLeft)
         {
-            budget?.Step(input);
+            budget.Step();
             return Utf8SearchExecutor.TryFindLastMatch(plan, input, input.Length, out _);
         }
 
         if (program.Confirmation.Kind == Utf8ConfirmationKind.None &&
             program.Kind is Utf8SearchOperationKind.DirectSearch or Utf8SearchOperationKind.HybridSearch)
         {
-            budget?.Step(input);
+            budget.Step();
             return plan.PreparedSearcher.TryFindFirstMatch(input, out _);
         }
 
         var state = new PreparedSearchScanState(0, default);
         while (true)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!plan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
             {
                 return false;
@@ -92,14 +92,14 @@ internal static class Utf8SearchPortfolioRuntime
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (!plan.HasPreparedSearcher)
         {
             return 0;
         }
 
-        if (budget is null &&
+        if (budget.IsInfinite &&
             program.Confirmation.Kind == Utf8ConfirmationKind.None &&
             program.Kind == Utf8SearchOperationKind.HybridSearch &&
             plan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton)
@@ -115,7 +115,7 @@ internal static class Utf8SearchPortfolioRuntime
             var state = new PreparedMultiLiteralScanState(0, 0, 0);
             while (true)
             {
-                budget?.Step(input);
+                budget.Step();
                 if (!plan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out _, out _))
                 {
                     return count;
@@ -128,24 +128,24 @@ internal static class Utf8SearchPortfolioRuntime
         if (plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_prepared_with_requirements_length_only");
-            return budget is null
+            return budget.IsInfinite
                 ? CountPreparedWithRequirementsLengthOnlyNoBudget(plan, program.Confirmation, input)
                 : CountPreparedWithRequirementsLengthOnly(input, plan, program.Confirmation, budget);
         }
 
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("literal_family_prepared_with_requirements_match");
-        return budget is null
+        return budget.IsInfinite
             ? CountPreparedWithRequirementsNoBudget(plan, program.Confirmation, input)
             : CountPreparedWithRequirements(input, plan, program.Confirmation, budget);
     }
 
-    private static int CountPreparedWithRequirements(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionBudget budget)
+    private static int CountPreparedWithRequirements(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         while (true)
         {
-            budget.Step(input);
+            budget.Step();
             if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out var match))
             {
                 return count;
@@ -158,13 +158,13 @@ internal static class Utf8SearchPortfolioRuntime
         }
     }
 
-    private static int CountPreparedWithRequirementsLengthOnly(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionBudget budget)
+    private static int CountPreparedWithRequirementsLengthOnly(ReadOnlySpan<byte> input, Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         while (true)
         {
-            budget.Step(input);
+            budget.Step();
             if (!plan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var index, out var matchedLength))
             {
                 return count;

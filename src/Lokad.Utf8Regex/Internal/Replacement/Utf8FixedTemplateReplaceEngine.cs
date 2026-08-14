@@ -9,7 +9,7 @@ internal static class Utf8FixedTemplateReplaceEngine
         ReadOnlySpan<byte> input,
         Utf8FixedTemplateReplacement template,
         Utf8StructuralLinearProgram structuralLinearProgram,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildFixedTokenState(input, template, structuralLinearProgram, budget);
         if (state is null)
@@ -36,7 +36,7 @@ internal static class Utf8FixedTemplateReplaceEngine
         Utf8StructuralLinearProgram structuralLinearProgram,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildFixedTokenState(input, template, structuralLinearProgram, budget);
         if (state is null)
@@ -68,7 +68,7 @@ internal static class Utf8FixedTemplateReplaceEngine
         Utf8FixedTemplateReplacement template,
         Func<ReadOnlySpan<byte>, int> findFirst,
         Func<ReadOnlySpan<byte>, int, int> findNext,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildState(input, template, findFirst, findNext, budget);
         if (state is null)
@@ -89,7 +89,7 @@ internal static class Utf8FixedTemplateReplaceEngine
         Func<ReadOnlySpan<byte>, int, int> findNext,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var state = BuildState(input, template, findFirst, findNext, budget);
         if (state is null)
@@ -114,9 +114,9 @@ internal static class Utf8FixedTemplateReplaceEngine
         Utf8FixedTemplateReplacement template,
         Func<ReadOnlySpan<byte>, int> findFirst,
         Func<ReadOnlySpan<byte>, int, int> findNext,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
-        budget?.Step(input);
+        budget.Step();
         var firstIndex = findFirst(input);
         if (firstIndex < 0)
         {
@@ -130,7 +130,7 @@ internal static class Utf8FixedTemplateReplaceEngine
 
         while (currentMatch >= 0)
         {
-            budget?.Step(input);
+            budget.Step();
             checked
             {
                 outputLength += delta;
@@ -149,7 +149,7 @@ internal static class Utf8FixedTemplateReplaceEngine
         ReadOnlySpan<byte> input,
         Utf8FixedTemplateReplacement template,
         Utf8StructuralLinearProgram structuralLinearProgram,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var positions = ArrayPool<int>.Shared.Rent(16);
         var count = 0;
@@ -199,14 +199,14 @@ internal static class Utf8FixedTemplateReplaceEngine
         Func<ReadOnlySpan<byte>, int, int> findNext,
         int firstIndex,
         Span<byte> destination,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var position = 0;
         var currentMatch = firstIndex;
         var written = 0;
         while (currentMatch >= 0)
         {
-            budget?.Step(input);
+            budget.Step();
             written += CopySlice(input, position, currentMatch - position, destination, written);
             written += AppendTemplate(destination[written..], input, template, currentMatch);
 

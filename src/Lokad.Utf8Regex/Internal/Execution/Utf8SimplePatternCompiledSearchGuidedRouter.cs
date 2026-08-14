@@ -63,7 +63,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
         AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out bool isMatch)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)
@@ -95,7 +95,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
         Utf8CompiledSymmetricLiteralWindowCounter? compiledSymmetricLiteralWindowCounter,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int count)
     {
         if (repeatedDigitGroupPlan.HasValue)
@@ -123,7 +123,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
 
         if (symmetricLiteralWindowPlan.HasValue)
         {
-            if (budget is null && compiledSymmetricLiteralWindowCounter is not null)
+            if (budget.IsInfinite && compiledSymmetricLiteralWindowCounter is not null)
             {
                 Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_simple_pattern_symmetric_literal_window_compiled");
                 count = compiledSymmetricLiteralWindowCounter.Count(input);
@@ -145,7 +145,7 @@ internal static class Utf8SimplePatternCompiledSearchGuidedRouter
         AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         if (repeatedDigitGroupPlan.HasValue && validation.IsAscii)

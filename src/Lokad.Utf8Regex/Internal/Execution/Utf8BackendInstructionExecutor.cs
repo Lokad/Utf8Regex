@@ -56,7 +56,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
         return Utf8SearchPortfolioRuntime.TryFindNextLiteralFamilyMatch(
@@ -72,7 +72,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Utf8SearchPortfolioRuntime.CountLiteralFamily(plan, program, input, budget);
     }
@@ -81,7 +81,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         bool rightToLeft)
     {
         return Utf8SearchPortfolioRuntime.IsMatchLiteralFamily(plan, program, input, budget, rightToLeft);
@@ -92,12 +92,12 @@ internal static class Utf8BackendInstructionExecutor
         Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         int[]? alternateLiteralUtf16Lengths,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         bool rightToLeft)
     {
         if (rightToLeft)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!Utf8SearchExecutor.TryFindLastMatch(plan, input, input.Length, out var rightToLeftMatch))
             {
                 return Utf8ValueMatch.NoMatch;
@@ -174,7 +174,7 @@ internal static class Utf8BackendInstructionExecutor
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         _ = program;
@@ -213,7 +213,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
             input,
@@ -230,7 +230,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return Utf8AsciiStructuralIdentifierFamilyExecutor.Count(
             input,
@@ -245,7 +245,7 @@ internal static class Utf8BackendInstructionExecutor
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var index = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
             input,
@@ -264,7 +264,7 @@ internal static class Utf8BackendInstructionExecutor
     public static bool IsMatchOrderedLiteralWindow(
         Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return AsciiOrderedLiteralWindowExecutor.FindNext(
             input,
@@ -278,7 +278,7 @@ internal static class Utf8BackendInstructionExecutor
     public static int CountOrderedLiteralWindow(
         Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         return AsciiOrderedLiteralWindowExecutor.Count(
             input,
@@ -290,7 +290,7 @@ internal static class Utf8BackendInstructionExecutor
     public static Utf8ValueMatch MatchOrderedLiteralWindow(
         Utf8PreparedRegex regexPlan,
         ReadOnlySpan<byte> input,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var index = AsciiOrderedLiteralWindowExecutor.FindNext(
             input,

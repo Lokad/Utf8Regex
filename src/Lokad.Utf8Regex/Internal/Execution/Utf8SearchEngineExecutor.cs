@@ -17,7 +17,7 @@ internal static class Utf8SearchEngineExecutor
         };
     }
 
-    public static bool TryFindFirst(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget = null)
+    public static bool TryFindFirst(Utf8PreparedRegex regexPlan, Utf8VerifierRuntime verifierRuntime, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         var primaryExecutionEngine = GetPrimaryExecutionEngine(regexPlan);
         return primaryExecutionEngine.Kind switch

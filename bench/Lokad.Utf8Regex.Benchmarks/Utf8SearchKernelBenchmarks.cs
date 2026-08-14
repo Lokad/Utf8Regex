@@ -249,7 +249,7 @@ public class Utf8SearchKernelBenchmarks
             _denseEnumerateProgram,
             input,
             ref state,
-            budget: null,
+            budget: Utf8ExecutionDeadline.Infinite,
             out var match))
         {
             sum += match.Index;

@@ -11,7 +11,7 @@ internal static class Utf8FixedMatchReplaceEngine
         ReadOnlySpan<byte> input,
         byte[] replacement,
         Utf8StructuralLinearProgram structuralLinearProgram,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (structuralLinearProgram.Kind != Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -38,7 +38,7 @@ internal static class Utf8FixedMatchReplaceEngine
         Utf8StructuralLinearProgram structuralLinearProgram,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (structuralLinearProgram.Kind != Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -71,7 +71,7 @@ internal static class Utf8FixedMatchReplaceEngine
         byte[] replacement,
         int matchLength,
         FindNextMatch findNextMatch,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (matchLength <= 0)
         {
@@ -98,7 +98,7 @@ internal static class Utf8FixedMatchReplaceEngine
         FindNextMatch findNextMatch,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         if (matchLength <= 0)
         {
@@ -130,7 +130,7 @@ internal static class Utf8FixedMatchReplaceEngine
         int replacementLength,
         int matchLength,
         FindNextMatch findNextMatch,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var positions = ArrayPool<int>.Shared.Rent(16);
         var count = 0;
@@ -139,7 +139,7 @@ internal static class Utf8FixedMatchReplaceEngine
 
         while (start <= input.Length - matchLength)
         {
-            budget?.Step(input);
+            budget.Step();
             var matchIndex = findNextMatch(input, start);
             if (matchIndex < 0)
             {
@@ -171,7 +171,7 @@ internal static class Utf8FixedMatchReplaceEngine
         int replacementLength,
         int matchLength,
         Utf8StructuralLinearProgram structuralLinearProgram,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var positions = ArrayPool<int>.Shared.Rent(16);
         var count = 0;
@@ -213,7 +213,7 @@ internal static class Utf8FixedMatchReplaceEngine
         byte[] replacement,
         Utf8StructuralLinearProgram structuralLinearProgram,
         Span<byte> destination,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var matchLength = structuralLinearProgram.SimplePatternPlan.MinLength;
         var scanState = new Utf8AsciiDeterministicScanState(0, structuralLinearProgram.DeterministicProgram.SearchLiteralOffset);

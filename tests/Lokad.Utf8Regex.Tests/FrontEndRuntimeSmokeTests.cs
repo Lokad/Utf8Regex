@@ -276,9 +276,9 @@ public sealed class FrontEndRuntimeSmokeTests
     {
         var analysis = Utf8FrontEnd.Compile("abc", RegexOptions.None);
 
-        Assert.True(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("abcdef"u8, analysis.ExecutionProgram, ignoreCase: false, budget: null, out var matchedLength));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("abcdef"u8, analysis.ExecutionProgram, ignoreCase: false, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength));
         Assert.Equal(3, matchedLength);
-        Assert.False(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("abxdef"u8, analysis.ExecutionProgram, ignoreCase: false, budget: null, out _));
+        Assert.False(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("abxdef"u8, analysis.ExecutionProgram, ignoreCase: false, budget: Utf8ExecutionDeadline.Infinite, out _));
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public sealed class FrontEndRuntimeSmokeTests
     {
         var analysis = Utf8FrontEnd.Compile("(?i)abc", RegexOptions.CultureInvariant);
 
-        Assert.True(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("ABCdef"u8, analysis.ExecutionProgram, ignoreCase: true, budget: null, out var matchedLength));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchLiteralPrefix("ABCdef"u8, analysis.ExecutionProgram, ignoreCase: true, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength));
         Assert.Equal(3, matchedLength);
     }
 
@@ -317,7 +317,7 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile("(a)(b)?", RegexOptions.CultureInvariant);
         var captures = new Utf8CaptureSlots(3);
 
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("ab"u8, analysis.ExecutionProgram, 0, captures, budget: null, out var matchedLength));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("ab"u8, analysis.ExecutionProgram, 0, captures, budget: Utf8ExecutionDeadline.Infinite, out var matchedLength));
         Assert.Equal(2, matchedLength);
         Assert.True(captures.TryGet(1, out var firstStart, out var firstLength));
         Assert.Equal(0, firstStart);
@@ -326,7 +326,7 @@ public sealed class FrontEndRuntimeSmokeTests
         Assert.Equal(1, secondStart);
         Assert.Equal(1, secondLength);
 
-        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("a"u8, analysis.ExecutionProgram, 0, captures, budget: null, out matchedLength));
+        Assert.True(Utf8ExecutionInterpreter.TryMatchPrefix("a"u8, analysis.ExecutionProgram, 0, captures, budget: Utf8ExecutionDeadline.Infinite, out matchedLength));
         Assert.Equal(1, matchedLength);
         Assert.True(captures.TryGet(1, out firstStart, out firstLength));
         Assert.Equal(0, firstStart);

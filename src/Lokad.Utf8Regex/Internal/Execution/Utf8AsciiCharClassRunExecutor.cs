@@ -2,12 +2,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiCharClassRunExecutor
 {
-    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionBudget? budget = null)
+    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionDeadline budget)
     {
         return FindNext(input, runPlan, 0, out _, budget) >= 0;
     }
 
-    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionBudget? budget = null)
+    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionDeadline budget)
     {
         if (!runPlan.HasValue || runPlan.CharClass is not { } charClass)
         {
@@ -23,7 +23,7 @@ internal static class Utf8AsciiCharClassRunExecutor
         var index = 0;
         while (index < input.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             var relative = runPlan.Search.IndexOf(input[index..]);
             if (relative < 0)
             {
@@ -50,7 +50,7 @@ internal static class Utf8AsciiCharClassRunExecutor
         return count;
     }
 
-    private static int CountKnownPredicateRun(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionBudget? budget)
+    private static int CountKnownPredicateRun(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var index = 0;
@@ -60,7 +60,7 @@ internal static class Utf8AsciiCharClassRunExecutor
 
         while (index < input.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             var relative = runPlan.Search.IndexOf(input[index..]);
             if (relative < 0)
             {
@@ -98,7 +98,7 @@ internal static class Utf8AsciiCharClassRunExecutor
         return count;
     }
 
-    public static int FindNext(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, int startIndex, out int matchedLength, Utf8ExecutionBudget? budget = null)
+    public static int FindNext(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, int startIndex, out int matchedLength, Utf8ExecutionDeadline budget)
     {
         matchedLength = 0;
         if (!runPlan.HasValue || runPlan.CharClass is not { } charClass || startIndex >= input.Length)
@@ -114,7 +114,7 @@ internal static class Utf8AsciiCharClassRunExecutor
         var index = startIndex;
         while (index < input.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             if (charClass.Contains(input[index]))
             {
                 var remaining = 0;
@@ -145,7 +145,7 @@ internal static class Utf8AsciiCharClassRunExecutor
         return -1;
     }
 
-    private static int FindNextKnownPredicateRun(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, int startIndex, out int matchedLength, Utf8ExecutionBudget? budget)
+    private static int FindNextKnownPredicateRun(ReadOnlySpan<byte> input, AsciiSimplePatternRunPlan runPlan, int startIndex, out int matchedLength, Utf8ExecutionDeadline budget)
     {
         matchedLength = 0;
         var index = startIndex;
@@ -155,7 +155,7 @@ internal static class Utf8AsciiCharClassRunExecutor
 
         while (index < input.Length)
         {
-            budget?.Step(input[index..]);
+            budget.Step();
             var relative = runPlan.Search.IndexOf(input[index..]);
             if (relative < 0)
             {

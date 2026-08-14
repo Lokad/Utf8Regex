@@ -57,7 +57,7 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
         TryMatchDirectWithoutValidation(input, out match);
 
     public bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match) =>
-        _runtime.TryMatchWithoutValidation(input, budget: null, out match);
+        _runtime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
 
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
@@ -134,5 +134,5 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
         return OperationStatus.Done;
     }
 
-    private Utf8ExecutionBudget? CreateBudget() => Utf8ExecutionBudget.Create(_pattern, _matchTimeout);
+    private Utf8ExecutionDeadline CreateBudget() => Utf8ExecutionDeadline.Start(_matchTimeout);
 }

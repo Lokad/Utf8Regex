@@ -38,13 +38,13 @@ internal abstract class Utf8CompiledEngineRuntime
         return TryMatchAsciiWellFormedOnly(input, out match);
     }
 
-    public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget);
+    public abstract bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget);
 
-    public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget);
+    public abstract int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget);
 
-    public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget);
+    public abstract Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget);
 
-    public virtual bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    public virtual bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;
         return false;
@@ -81,17 +81,17 @@ internal abstract class Utf8CompiledEngineRuntime
         return false;
     }
 
-    public virtual byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget)
+    public virtual byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionDeadline budget)
     {
         throw new InvalidOperationException("Exact literal replacement bytes are only valid for compiled literal engines.");
     }
 
-    public virtual byte[] ReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Utf8ExecutionBudget? budget)
+    public virtual byte[] ReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Utf8ExecutionDeadline budget)
     {
         throw new InvalidOperationException("Literal replacement bytes are not supported by this compiled engine.");
     }
 
-    public virtual bool TryReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionBudget? budget)
+    public virtual bool TryReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
         bytesWritten = 0;
         throw new InvalidOperationException("Literal replacement bytes are not supported by this compiled engine.");
@@ -121,16 +121,16 @@ internal sealed class Utf8ExactLiteralCompiledEngineRuntime : Utf8CompiledEngine
     public override bool PreferValidateOnlyCount => _inner.PreferValidateOnlyCount;
     public override bool TryMatchAsciiWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchAsciiWellFormedOnly(input, out match);
     public override bool TryMatchWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchWellFormedOnly(input, out match);
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.IsMatch(input, validation, budget);
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.Count(input, validation, budget);
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.Match(input, validation, budget);
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.IsMatch(input, validation, budget);
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Count(input, validation, budget);
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Match(input, validation, budget);
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
     public override bool TryDebugCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralValidatedThreeByte(input, out count);
     public override bool TryDebugCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralLeadingScalarAnchored(input, out count);
     public override bool TryDebugCountExactUtf8LiteralPreparedSearch(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralPreparedSearch(input, out count);
     public override bool TryDebugCountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, out int count) => _inner.TryDebugCountExactUtf8LiteralAnchored(input, out count);
     public override bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength) => _inner.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedByteLength);
-    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
+    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionDeadline budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
 }
 
 internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
@@ -147,12 +147,12 @@ internal sealed class Utf8LiteralFamilyCompiledEngineRuntime : Utf8CompiledEngin
     public override bool PreferValidateOnlyCount => _inner.PreferValidateOnlyCount;
     public override bool TryMatchAsciiWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchAsciiWellFormedOnly(input, out match);
     public override bool TryMatchWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match) => _inner.TryMatchWellFormedOnly(input, out match);
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.IsMatch(input, validation, budget);
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.Count(input, validation, budget);
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget) => _inner.Match(input, validation, budget);
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.IsMatch(input, validation, budget);
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Count(input, validation, budget);
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget) => _inner.Match(input, validation, budget);
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match) => _inner.TryMatchWithoutValidation(input, budget, out match);
     public override bool TryDebugMatchAsciiLiteralFamilyRaw(ReadOnlySpan<byte> input, out int index, out int matchedByteLength) => _inner.TryDebugMatchAsciiLiteralFamilyRaw(input, out index, out matchedByteLength);
-    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionBudget? budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
+    public override byte[] ReplaceExactLiteral(ReadOnlySpan<byte> input, byte[] replacementBytes, Utf8ExecutionDeadline budget) => _inner.ReplaceExactLiteral(input, replacementBytes, budget);
 }
 
 internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEngineRuntime
@@ -166,7 +166,7 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
         _verifierRuntime = inner.VerifierRuntime;
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return UsesRightToLeft()
             ? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input))
@@ -181,7 +181,7 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
                 out _) >= 0;
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_family");
         return UsesRightToLeft()
@@ -195,7 +195,7 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
                 budget);
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (UsesRightToLeft())
         {
@@ -302,7 +302,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         return false;
     }
 
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatchWithoutValidation(
                 _anchoredBoundedDatePlan,
@@ -340,7 +340,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         return false;
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -404,7 +404,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -487,7 +487,7 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         return count;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -608,7 +608,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
 
     public override bool UsesEmittedKernelMatcher => _emittedKernelMatcher is not null;
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
@@ -634,7 +634,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         return _linearRuntime.IsMatch(input, validation, _verifierRuntime, budget);
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
@@ -660,7 +660,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         return _linearRuntime.Count(input, validation, _verifierRuntime, budget);
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
@@ -689,7 +689,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         return _linearRuntime.Match(input, validation, _verifierRuntime, budget);
     }
 
-    public override byte[] ReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Utf8ExecutionBudget? budget)
+    public override byte[] ReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -717,7 +717,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             budget);
     }
 
-    public override bool TryReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionBudget? budget)
+    public override bool TryReplaceLiteralBytes(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[] replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.StructuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern)
         {
@@ -787,7 +787,7 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
         return false;
     }
 
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         if (_canUseDirectPrefixUntilByteMatch &&
             Utf8InputAnalyzer.IsAscii(input))
@@ -802,18 +802,18 @@ internal sealed class Utf8ByteSafeLinearCompiledEngineRuntime : Utf8CompiledEngi
         return false;
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return Utf8ByteSafeLinearExecutor.IsMatch(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_byte_safe_linear");
         return Utf8ByteSafeLinearExecutor.Count(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_canUseDirectPrefixUntilByteMatch && validation.IsAscii &&
             Utf8AsciiPrefixTokenExecutor.TryMatchAnchoredPrefixUntilByte(input, _prefixUntilByteLiteral!, _prefixUntilByteTerminator, out var docLineLength))
@@ -849,7 +849,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
             : null;
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (Utf8SearchGuidedFallbackCompiledPolicy.ShouldBypassIsMatch(_regexPlan))
         {
@@ -869,7 +869,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         return TryFindNextVerifiedMatch(input, probe, 0, ref boundaryMap, ref decoded, out _, out _);
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_search_guided");
         if (Utf8SearchGuidedFallbackCompiledPolicy.CanUseEmittedBackend(_emittedBackend, budget))
@@ -916,7 +916,7 @@ internal sealed class Utf8SearchGuidedFallbackCompiledEngineRuntime : Utf8Compil
         return count;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         var probe = GetProbeValidation(input, validation);
         Utf8BoundaryMap? boundaryMap = null;
@@ -976,7 +976,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
     }
 
     public override bool SupportsWellFormedOnlyCount => true;
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_compiled");
         Utf8BoundaryMap? boundaryMap = null;
@@ -985,7 +985,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
         return TryFindNextMatch(input, probe, 0, ref boundaryMap, ref decoded, budget, out _);
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_compiled");
         var count = 0;
@@ -1003,7 +1003,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
         return count;
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return Utf8CompiledFallbackMatchProjection.Match(input, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex);
     }
@@ -1014,7 +1014,7 @@ internal sealed class Utf8CompiledFallbackCompiledEngineRuntime : Utf8CompiledEn
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         return Utf8CompiledFallbackMatchRouter.TryFindNextMatch(
@@ -1091,7 +1091,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
             out match);
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (validation.IsAscii &&
             TryMatchDirectAsciiFamily(input, out _, out _))
@@ -1102,7 +1102,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(Encoding.UTF8.GetString(input));
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (Utf8FallbackDirectFamilyCountRouter.TryCount(
             input,
@@ -1122,7 +1122,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (validation.IsAscii &&
             TryMatchDirectAsciiFamily(input, out var matchIndex, out var matchedLength))
@@ -1146,7 +1146,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
         return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, boundaryMap);
     }
 
-    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, out Utf8ValueMatch match)
+    public override bool TryMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         return Utf8FallbackDirectFamilyRuntimePolicy.TryMatchWithoutValidation(
             input,

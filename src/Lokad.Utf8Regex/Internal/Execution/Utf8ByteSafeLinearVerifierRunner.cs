@@ -7,12 +7,12 @@ internal static class Utf8ByteSafeLinearVerifierRunner
         Utf8ExecutionProgram? program,
         int startIndex,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
         captures?.Clear();
-        budget?.Step(input);
+        budget.Step();
 
         if (program is null ||
             program.Instructions.Count == 0 ||

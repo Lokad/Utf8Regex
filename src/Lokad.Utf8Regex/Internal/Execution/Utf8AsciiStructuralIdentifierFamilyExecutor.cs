@@ -29,7 +29,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -77,7 +77,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             var state = new Utf8StructuralSearchState(new PreparedSearchScanState(startIndex, default), default);
             while (structuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
             {
-                budget?.Step(input);
+                budget.Step();
                 var prefixLength = candidate.MatchLength;
                 if (prefixLength <= 0 &&
                     !AsciiSearch.TryGetMatchedLiteralLength(input, candidate.StartIndex, searchData.Value, out prefixLength))
@@ -101,7 +101,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             candidate >= 0;
             candidate = Utf8SearchExecutor.FindNext(searchPlan, input, candidate + 1))
         {
-            budget?.Step(input);
+            budget.Step();
             if (!AsciiSearch.TryGetMatchedLiteralLength(input, candidate, searchData.Value, out var prefixLength))
             {
                 continue;
@@ -124,13 +124,13 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
 
         if (searchPlan.AlternateLiteralSearch is { } literalSearch &&
-            budget is null)
+            budget.IsInfinite)
         {
             return FindNextIdentifierTailOnlyFused(input, familyPlan, literalSearch, startIndex, out matchedLength);
         }
@@ -149,7 +149,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8SearchPlan searchPlan,
         Utf8StructuralSearchPlan structuralSearchPlan,
         Utf8StructuralVerifierRuntime verifierRuntime,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var searchData = searchPlan.AlternateLiteralSearchData;
         if (searchData.HasValue &&
@@ -187,7 +187,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         Utf8SearchPlan searchPlan,
         AsciiExactLiteralSearchData searchData,
         Utf8StructuralSearchPlan structuralSearchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
         {
@@ -205,7 +205,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             var prefixLength = candidate.MatchLength;
             if (prefixLength <= 0 &&
                 !AsciiSearch.TryGetMatchedLiteralLength(input, candidate.StartIndex, searchData, out prefixLength))
@@ -232,7 +232,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (CanUseUpperWordIdentifierKernel(familyPlan))
         {
@@ -266,7 +266,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, match.Index, match.Length, familyPlan, out var matchedLength))
@@ -286,7 +286,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -300,7 +300,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, matchIndex, matchLength, familyPlan, out var matchedLength))
@@ -320,10 +320,10 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (searchPlan.AlternateLiteralSearch is { } literalSearch &&
-            budget is null)
+            budget.IsInfinite)
         {
             return CountIdentifierTailOnlyFused(input, familyPlan, literalSearch);
         }
@@ -345,7 +345,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchIdentifierTailOnly(input, match.Index, match.Length, familyPlan, out var matchedLength))
@@ -371,11 +371,11 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         // Prefer the reverse suffix kernel when it is available; it is usually a better
         // shape for `prefix \s+ literal\b` than repeatedly restarting from each prefix hit.
-        if (budget is null)
+        if (budget.IsInfinite)
         {
             if (searchPlan.AlternateLiteralSearchData is { } searchData &&
                 TryGetSharedPrefixSuffixOnlyKernel(familyPlan, searchData, out var sharedPrefixBucket, out var sharedPrefixSuffixLiteral, out var sharedPrefixSeparatorMinCount))
@@ -421,7 +421,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchSimpleSuffix(
                     input, match.Index, match.Index + match.Length, familyPlan, out var matchedLength))
             {
@@ -479,7 +479,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -490,7 +490,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, out var anchorOffset, out var anchorBytes))
         {
@@ -515,7 +515,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!TryMatchUpperWordIdentifierAt(input, familyPlan, matchIndex, prefixLength, out var matchedLength))
@@ -535,7 +535,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         if (!TryGetUpperWordIdentifierKernelSpec(familyPlan, out var anchorOffset, out var anchorBytes))
@@ -563,7 +563,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!TryMatchUpperWordIdentifierAt(input, familyPlan, matchIndex, prefixLength, out matchedLength))
@@ -724,7 +724,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -738,7 +738,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchSimpleSuffix(
                     input, matchIndex, matchIndex + matchLength, familyPlan, out var matchedLength))
             {
@@ -855,7 +855,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
@@ -869,7 +869,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchIdentifierTailOnly(input, matchIndex, matchLength, familyPlan, out var matchedLength))
@@ -962,7 +962,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -975,7 +975,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchIdentifierTailOnly(input, matchIndex, matchLength, familyPlan, out matchedLength))
@@ -995,7 +995,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         Utf8SearchPlan searchPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -1008,7 +1008,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatchIdentifierTailOnly(input, match.Index, match.Length, familyPlan, out matchedLength))
@@ -1027,7 +1027,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         ReadOnlySpan<byte> input,
         in AsciiStructuralIdentifierFamilyPlan familyPlan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -1046,7 +1046,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             }
 
             var trailingLiteralStart = searchFrom + relativeIndex;
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (TryMatchTrailingLiteralIdentifierAt(
@@ -1530,7 +1530,7 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         };
     }
 
-    private static bool TryMatchAt(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, in AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8StructuralVerifierRuntime verifierRuntime, Utf8ExecutionBudget? budget, out int matchedLength)
+    private static bool TryMatchAt(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, in AsciiStructuralIdentifierFamilyPlan familyPlan, Utf8StructuralVerifierRuntime verifierRuntime, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         return AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, matchIndex, prefixLength, familyPlan, out matchedLength);
     }

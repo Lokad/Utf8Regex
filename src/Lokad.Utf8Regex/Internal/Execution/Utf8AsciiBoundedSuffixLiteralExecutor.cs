@@ -4,12 +4,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiBoundedSuffixLiteralExecutor
 {
-    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionBudget? budget)
+    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
     {
         return FindNext(input, plan, 0, out _, out _, budget) >= 0;
     }
 
-    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionBudget? budget)
+    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_ascii_bounded_suffix_literal");
         var count = 0;
@@ -29,7 +29,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         return count;
     }
 
-    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionBudget? budget)
+    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternBoundedSuffixLiteralPlan plan, Utf8ExecutionDeadline budget)
     {
         var index = FindNext(input, plan, 0, out var matchedLength, out _, budget);
         return index < 0
@@ -43,7 +43,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         int startIndex,
         out int matchedLength,
         out int literalIndex,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         matchedLength = 0;
         literalIndex = -1;
@@ -86,7 +86,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
             }
 
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            budget?.Step(input);
+            budget.Step();
 
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (!TryMatchAt(input, plan, candidateLiteralIndex, startIndex, out var candidateStart, out matchedLength))

@@ -12,12 +12,12 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
         _plan = plan;
     }
 
-    public bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return FindNext(input, 0, budget, out _) >= 0;
     }
 
-    public int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("native_structural_linear_automaton");
         var count = 0;
@@ -37,7 +37,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
         return count;
     }
 
-    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         var index = FindNext(input, 0, budget, out var matchedLength);
         return index < 0
@@ -45,13 +45,13 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
             : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
     }
 
-    public bool TryFindNext(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchIndex, out int matchedLength)
+    public bool TryFindNext(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchIndex, out int matchedLength)
     {
         matchIndex = FindNext(input, startIndex, budget, out matchedLength);
         return matchIndex >= 0;
     }
 
-    private int FindNext(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionBudget? budget, out int matchedLength)
+    private int FindNext(ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         var candidateStart = startIndex;
@@ -68,7 +68,7 @@ internal sealed class Utf8StructuralRepeatedSegmentRuntime
             }
 
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            budget?.Step(input);
+            budget.Step();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
             if (TryMatchAt(input, candidateStart, out matchedLength))
             {

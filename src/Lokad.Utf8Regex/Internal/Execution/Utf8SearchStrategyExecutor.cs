@@ -39,7 +39,7 @@ internal static class Utf8SearchStrategyExecutor
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         return Utf8BackendInstructionExecutor.TryFindNextCompiledFallbackMatch(
@@ -92,7 +92,7 @@ internal static class Utf8SearchStrategyExecutor
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         return TryFindNextCompiledFallbackMatch(
@@ -113,7 +113,7 @@ internal static class Utf8SearchStrategyExecutor
         Utf8SearchPlan plan,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
         return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
@@ -125,7 +125,7 @@ internal static class Utf8SearchStrategyExecutor
             out match);
     }
 
-    public static int CountLiteralFamily(Utf8SearchPlan plan, ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    public static int CountLiteralFamily(Utf8SearchPlan plan, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         return Utf8BackendInstructionExecutor.CountLiteralFamily(
             plan,
@@ -134,7 +134,7 @@ internal static class Utf8SearchStrategyExecutor
             budget);
     }
 
-    public static bool IsMatchLiteralFamily(Utf8SearchPlan plan, ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget, bool rightToLeft)
+    public static bool IsMatchLiteralFamily(Utf8SearchPlan plan, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
             plan,

@@ -20,7 +20,7 @@ internal ref struct Utf8OperationMatchCursor
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
     private readonly Utf8BoundaryMap? _boundaryMap;
-    private readonly Utf8ExecutionBudget? _budget;
+    private readonly Utf8ExecutionDeadline _budget;
     private readonly int _literalUtf16Length;
     private readonly int _totalUtf16Length;
     private readonly Utf8ProjectionPlan _projectionPlan;
@@ -37,7 +37,7 @@ internal ref struct Utf8OperationMatchCursor
     private int _baseByteOffset;
     private int _baseUtf16Offset;
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -89,7 +89,7 @@ internal ref struct Utf8OperationMatchCursor
         _literal = null;
         _input = input;
         _boundaryMap = boundaryMap;
-        _budget = null;
+        _budget = Utf8ExecutionDeadline.Infinite;
         _literalUtf16Length = 0;
         _totalUtf16Length = boundaryMap.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
@@ -122,7 +122,7 @@ internal ref struct Utf8OperationMatchCursor
         _literal = null;
         _input = input;
         _boundaryMap = boundaryMap;
-        _budget = null;
+        _budget = Utf8ExecutionDeadline.Infinite;
         _literalUtf16Length = 0;
         _totalUtf16Length = boundaryMap.Utf16Length;
         _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
@@ -141,7 +141,7 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.FallbackRegex;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = simplePatternPlan;
         _structuralLinearProgram = default;
@@ -174,7 +174,7 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.AsciiSimplePattern;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, Utf8SearchPlan searchPlan, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, Utf8SearchPlan searchPlan, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = simplePatternPlan;
         _structuralLinearProgram = default;
@@ -240,7 +240,7 @@ internal ref struct Utf8OperationMatchCursor
         };
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, int literalUtf16Length, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, int literalUtf16Length, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -271,12 +271,12 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.ExactUtf8Literal;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, Utf8ExecutionDeadline budget)
     {
         this = new Utf8OperationMatchCursor(input, searchPlan, NativeExecutionKind.ExactUtf8Literals, budget);
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, NativeExecutionKind executionKind, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -316,7 +316,7 @@ internal ref struct Utf8OperationMatchCursor
             : EnumeratorMode.ExactUtf8Literals;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8StructuralLinearProgram structuralLinearProgram, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8StructuralLinearProgram structuralLinearProgram, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = structuralLinearProgram;
@@ -355,7 +355,7 @@ internal ref struct Utf8OperationMatchCursor
             : EnumeratorMode.Exhausted;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionBudget? budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -391,7 +391,7 @@ internal ref struct Utf8OperationMatchCursor
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input,
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -439,7 +439,7 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
-        _budget?.Step(_remaining);
+        _budget.Step();
         var index = Utf8SearchExecutor.FindFirst(_searchPlan, _remaining);
         if (index < 0)
         {
@@ -468,7 +468,7 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
-        _budget?.Step(_remaining);
+        _budget.Step();
         var index = Utf8SearchExecutor.FindFirst(_searchPlan, _remaining);
         if (index < 0)
         {
@@ -497,7 +497,7 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
-        _budget?.Step(_remaining);
+        _budget.Step();
         var index = _literalSearch is { } literalSearch &&
             !_hasBoundaryRequirements &&
             !_hasTrailingLiteralRequirement

@@ -12,9 +12,9 @@ internal static class Utf8SearchGuidedFallbackCompiledPolicy
         return string.Equals(regexPlan.FallbackReason, "unsupported_conditional", StringComparison.Ordinal);
     }
 
-    public static bool CanUseEmittedBackend(Utf8EmittedSearchGuidedFallback? emittedBackend, Utf8ExecutionBudget? budget)
+    public static bool CanUseEmittedBackend(Utf8EmittedSearchGuidedFallback? emittedBackend, Utf8ExecutionDeadline budget)
     {
-        return budget is null && emittedBackend is not null;
+        return budget.IsInfinite && emittedBackend is not null;
     }
 
     public static bool ShouldDemoteToFallbackCount(int verifierCount)

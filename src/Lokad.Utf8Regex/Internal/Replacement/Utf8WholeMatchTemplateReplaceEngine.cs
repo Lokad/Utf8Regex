@@ -11,7 +11,7 @@ internal static class Utf8WholeMatchTemplateReplaceEngine
         ReadOnlySpan<byte> input,
         Utf8ReplacementPlan plan,
         TryFindNextMatch tryFindNextMatch,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var template = CreateTemplate(plan);
         var state = BuildState(input, template, tryFindNextMatch, budget);
@@ -33,7 +33,7 @@ internal static class Utf8WholeMatchTemplateReplaceEngine
         TryFindNextMatch tryFindNextMatch,
         Span<byte> destination,
         out int bytesWritten,
-        Utf8ExecutionBudget? budget = null)
+        Utf8ExecutionDeadline budget)
     {
         var template = CreateTemplate(plan);
         var state = BuildState(input, template, tryFindNextMatch, budget);
@@ -108,11 +108,11 @@ internal static class Utf8WholeMatchTemplateReplaceEngine
         ReadOnlySpan<byte> input,
         Template template,
         TryFindNextMatch tryFindNextMatch,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
         var positions = ArrayPool<int>.Shared.Rent(16);
         var lengths = ArrayPool<int>.Shared.Rent(16);
-        budget?.Step(input);
+        budget.Step();
         if (!tryFindNextMatch(input, 0, out var currentMatch, out var currentLength))
         {
             return new VariableLengthState(positions, lengths, 0, input.Length);
@@ -131,7 +131,7 @@ internal static class Utf8WholeMatchTemplateReplaceEngine
             lengths[count] = currentLength;
             count++;
 
-            budget?.Step(input);
+            budget.Step();
             checked
             {
                 outputLength += template.LiteralBytesPerMatch + ((template.WholeMatchCopiesPerMatch - 1) * currentLength);

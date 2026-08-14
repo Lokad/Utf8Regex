@@ -14,7 +14,7 @@ internal static class Utf8ExecutionInterpreter
         int startIndex,
         out int matchedLength)
     {
-        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, captures: null, budget: null, out matchedLength);
+        return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, captures: null, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
     public static int FindNextSimplePattern(
@@ -24,7 +24,7 @@ internal static class Utf8ExecutionInterpreter
         AsciiSimplePatternPlan plan,
         int startIndex,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -45,7 +45,7 @@ internal static class Utf8ExecutionInterpreter
                 candidate >= 0;
                 candidate = Utf8SearchExecutor.FindNext(searchPlan, input, candidate + 1))
             {
-                budget?.Step(input);
+                budget.Step();
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
 
                 if (!MatchesFixedLiterals(input, candidate, plan))
@@ -71,7 +71,7 @@ internal static class Utf8ExecutionInterpreter
             var searchFrom = startIndex + plan.SearchLiteralOffset;
             while (searchFrom <= input.Length)
             {
-                budget?.Step(input);
+                budget.Step();
 
                 var relative = plan.SearchLiterals.Length == 1
                     ? (plan.IgnoreCase
@@ -113,7 +113,7 @@ internal static class Utf8ExecutionInterpreter
 
         for (var index = startIndex; index <= input.Length; index++)
         {
-            budget?.Step(input);
+            budget.Step();
             if (TryMatchSimplePatternAt(input, program, plan, index, captures, budget, out matchedLength))
             {
                 return index;
@@ -129,7 +129,7 @@ internal static class Utf8ExecutionInterpreter
         Utf8SearchPlan searchPlan,
         AsciiSimplePatternPlan plan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int candidate,
         out int matchedLength)
     {
@@ -158,7 +158,7 @@ internal static class Utf8ExecutionInterpreter
 
         while (searchFrom <= input.Length - anchorLiteral.Length)
         {
-            budget?.Step(input);
+            budget.Step();
 
             var relative = ignoreCase
                 ? Internal.Search.AsciiSearch.IndexOfIgnoreCase(input[searchFrom..], anchorLiteral)
@@ -289,7 +289,7 @@ internal static class Utf8ExecutionInterpreter
         int startIndex,
         out int matchedLength)
     {
-        return TryMatchPrefix(input, program, startIndex, captures: null, budget: null, out matchedLength);
+        return TryMatchPrefix(input, program, startIndex, captures: null, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
     public static bool TryMatchPrefix(
@@ -297,7 +297,7 @@ internal static class Utf8ExecutionInterpreter
         Utf8ExecutionProgram? program,
         int startIndex,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         return Utf8ByteSafeLinearVerifierRunner.TryMatchPrefix(input, program, startIndex, captures, budget, out matchedLength);
@@ -309,7 +309,7 @@ internal static class Utf8ExecutionInterpreter
         AsciiSimplePatternPlan plan,
         int startIndex,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         if (captures is null && TryMatchSimplePatternWithoutCaptures(input, plan, startIndex, out matchedLength))
@@ -366,7 +366,7 @@ internal static class Utf8ExecutionInterpreter
         int instructionIndex,
         int startIndex,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         return TryMatchProgramNode(input, program, instructionIndex, startIndex, captures, budget, out endIndex);
@@ -692,7 +692,7 @@ internal static class Utf8ExecutionInterpreter
         ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program,
         bool ignoreCase,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -704,7 +704,7 @@ internal static class Utf8ExecutionInterpreter
         var offset = 0;
         foreach (var instruction in program.Instructions)
         {
-            budget?.Step(input);
+            budget.Step();
 
             if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
             {
@@ -826,10 +826,10 @@ internal static class Utf8ExecutionInterpreter
         int enterIndex,
         int index,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
-        budget?.Step(input);
+        budget.Step();
 
         var instruction = program.Instructions[enterIndex];
         if (instruction.Kind != Utf8ExecutionInstructionKind.Enter)
@@ -923,7 +923,7 @@ internal static class Utf8ExecutionInterpreter
         int exitIndex,
         int index,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         if (currentIndex >= exitIndex)
@@ -992,7 +992,7 @@ internal static class Utf8ExecutionInterpreter
         int exitIndex,
         int index,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         var loop = program.Instructions[enterIndex];
@@ -1081,7 +1081,7 @@ internal static class Utf8ExecutionInterpreter
         Utf8ExecutionInstruction loop,
         int index,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         if (loop.Max == int.MaxValue || loop.Max < loop.Min)
@@ -1149,7 +1149,7 @@ internal static class Utf8ExecutionInterpreter
         Utf8ExecutionInstruction loop,
         int index,
         Utf8CaptureSlots? captures,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int endIndex)
     {
         if (enterIndex + 1 < loop.PartnerIndex)

@@ -53,12 +53,12 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
         return count;
     }
 
-    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionBudget? budget)
+    public static bool IsMatch(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
     {
         return FindNext(input, plan, 0, budget, out _) >= 0;
     }
 
-    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionBudget? budget)
+    public static int Count(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
     {
         var count = 0;
         var startIndex = 0;
@@ -77,7 +77,7 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
         return count;
     }
 
-    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionBudget? budget)
+    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, AsciiSimplePatternSymmetricLiteralWindowPlan plan, Utf8ExecutionDeadline budget)
     {
         var matchIndex = FindNext(input, plan, 0, budget, out var matchedLength);
         return matchIndex < 0
@@ -89,7 +89,7 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
         ReadOnlySpan<byte> input,
         AsciiSimplePatternSymmetricLiteralWindowPlan plan,
         int startIndex,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int matchedLength)
     {
         matchedLength = 0;
@@ -103,7 +103,7 @@ internal static class Utf8AsciiSymmetricLiteralWindowExecutor
         var searchFrom = startIndex;
         while (searchFrom <= input.Length - plan.SearchData.ShortestLength)
         {
-            budget?.Step(input);
+            budget.Step();
             if (!TryFindNextAnchorCandidate(input, plan, searchFrom, out var candidateStart))
             {
                 return -1;

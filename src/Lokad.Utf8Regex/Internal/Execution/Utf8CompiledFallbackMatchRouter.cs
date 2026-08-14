@@ -16,7 +16,7 @@ internal static class Utf8CompiledFallbackMatchRouter
         int startIndex,
         ref Utf8BoundaryMap? boundaryMap,
         ref string? decoded,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;

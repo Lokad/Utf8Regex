@@ -24,7 +24,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
 
     internal Utf8VerifierRuntime VerifierRuntime => _verifierRuntime;
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return _compiledEngine.Kind switch
         {
@@ -36,7 +36,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         };
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return _compiledEngine.Kind switch
         {
@@ -48,7 +48,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         };
     }
 
-    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionBudget? budget)
+    public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         return _compiledEngine.Kind switch
         {
@@ -62,7 +62,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         };
     }
 
-    private int CountSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (_compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral)
         {
@@ -101,7 +101,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         return count;
     }
 
-    private Utf8ValueMatch MatchSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private Utf8ValueMatch MatchSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (_compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral)
         {
@@ -133,7 +133,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
         return new Utf8ValueMatch(true, true, index, matchLength, index, matchLength);
     }
 
-    private bool IsMatchSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private bool IsMatchSimplePattern(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (_compiledPatternFamily.Kind == Utf8CompiledPatternFamilyKind.BoundedSuffixLiteral)
         {
@@ -156,7 +156,7 @@ internal sealed class Utf8NonLiteralCompiledEngineRuntime : Utf8CompiledEngineRu
             out _) >= 0;
     }
 
-    private int CountByteSafeFallback(ReadOnlySpan<byte> input, Utf8ExecutionBudget? budget)
+    private int CountByteSafeFallback(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute("fallback_byte_safe_linear");
         return Utf8ByteSafeLinearExecutor.Count(input, _regexPlan, _verifierRuntime.StructuralVerifierRuntime, budget);

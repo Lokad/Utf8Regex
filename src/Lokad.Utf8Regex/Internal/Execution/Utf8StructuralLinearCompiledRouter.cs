@@ -24,9 +24,9 @@ internal static class Utf8StructuralLinearCompiledRouter
         bool emitEnabled,
         Utf8EmittedDeterministicMatcher? emittedDeterministicMatcher,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
-        return budget is null &&
+        return budget.IsInfinite &&
             emitEnabled &&
             validation.IsAscii &&
             emittedDeterministicMatcher is not null &&
@@ -38,9 +38,9 @@ internal static class Utf8StructuralLinearCompiledRouter
         bool emitEnabled,
         Utf8EmittedKernelMatcher? emittedKernelMatcher,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget)
+        Utf8ExecutionDeadline budget)
     {
-        return budget is null &&
+        return budget.IsInfinite &&
             emitEnabled &&
             emittedKernelMatcher is not null &&
             regexPlan.ExecutionKind is NativeExecutionKind.AsciiStructuralIdentifierFamily or NativeExecutionKind.AsciiOrderedLiteralWindow;
@@ -55,7 +55,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out bool isMatch)
     {
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
@@ -110,7 +110,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out int count)
     {
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
@@ -189,7 +189,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         PreparedAsciiFindPlan orderedWindowTrailingFindPlan,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        Utf8ExecutionBudget? budget,
+        Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
         if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))

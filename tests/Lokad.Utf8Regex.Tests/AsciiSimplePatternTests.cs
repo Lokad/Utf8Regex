@@ -157,7 +157,7 @@ public sealed class AsciiSimplePatternTests
             analysis.StructuralLinearProgram,
             input,
             ref state,
-            budget: null,
+            budget: Utf8ExecutionDeadline.Infinite,
             out var match))
         {
             offsets.Add(match.Index);
