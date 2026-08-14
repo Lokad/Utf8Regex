@@ -151,6 +151,14 @@ public sealed class Pcre2BacktrackingCompilerTests
             Assert.True(regex.IsMatch(input));
         }
 
+        // Cross the tiered-compilation threshold with a complete batch before
+        // taking the steady-state allocation sample. Test ordering must not be
+        // what happens to warm this operation in repository runs.
+        for (var i = 0; i < 256; i++)
+        {
+            Assert.True(regex.IsMatch(input));
+        }
+
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 256; i++)
         {

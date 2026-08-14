@@ -74,6 +74,11 @@ The package contract is [`SPEC-PCRE2.md`](../../SPEC-PCRE2.md), internal
 ownership is described in [`ARCHITECTURE.md`](ARCHITECTURE.md), and release
 evidence is recorded in [`QUALIFICATION.md`](QUALIFICATION.md).
 
+Run `./test-packaged-pcre2.ps1 -Configuration Release` from the repository
+root to pack a version-coherent core/companion pair, reject native or RID
+assets, replace the PCRE2 test project's sibling references with package
+references, and execute the complete PCRE2 suite from an isolated NuGet cache.
+
 - Project: [`Lokad.Utf8Regex.Pcre2.csproj`](Lokad.Utf8Regex.Pcre2.csproj)
 - Facade: [`Utf8Pcre2Regex.cs`](Utf8Pcre2Regex.cs)
 - Result types: [`Utf8Pcre2CoreTypes.cs`](Utf8Pcre2CoreTypes.cs)

@@ -171,6 +171,11 @@ public sealed class Pcre2CaptureBackreferenceTests
             _ = regex.IsMatch(input);
         }
 
+        for (var index = 0; index < 256; index++)
+        {
+            _ = regex.IsMatch(input);
+        }
+
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 256; index++)
         {
