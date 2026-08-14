@@ -129,10 +129,7 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("PublicConstruct", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumeratePublicConstructionOnly(context.InputBytes, 0));
             Measure("NativeMaterialize", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateNativeMaterializationOnly(context.InputBytes, 0));
-            Measure("ArrayConstruct", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateArrayBackedConstructionOnly(context.InputBytes, 0));
             Measure("RawEnumerateSum", samples, iterations, () => ExecutePcre2PublicRawEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("ArrayPublicMoveNext", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateArrayBackedPublicMoveNextCount(context.InputBytes, 0));
-            Measure("ArrayPublicEnumerateSum", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateArrayBackedPublicIndexSum(context.InputBytes, 0));
             Measure("InternalPublicMoveNext", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicMoveNextCount(context.InputBytes, 0));
             Measure("InternalPublicCurrent", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentCount(context.InputBytes, 0));
             Measure("InternalPublicCurrentStartSum", samples, iterations, () => context.Utf8Pcre2Regex.DebugEnumerateInternalPublicCurrentStartSum(context.InputBytes, 0));

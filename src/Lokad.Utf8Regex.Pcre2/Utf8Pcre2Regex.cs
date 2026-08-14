@@ -38,96 +38,43 @@ public sealed class Utf8Pcre2Regex
             compileSettings,
             defaultExecutionLimits,
             matchTimeout == default ? DefaultMatchTimeout : matchTimeout);
-        _program = Pcre2Compiler.Compile(request, CreateLegacyProgram);
+        _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
     }
 
-    private static Pcre2CompiledProgram CreateLegacyProgram(Pcre2CompileRequest request)
+    private static Pcre2CompiledProgram CreateFoundationProgram(Pcre2CompileRequest request)
     {
-        var executionKind = ClassifyExecutionKind(request.Pattern);
-        Utf8Regex? utf8Regex = null;
-        var canCompilePrimaryUtf8 = executionKind == Pcre2ExecutionKind.Unimplemented ||
-            executionKind == Pcre2ExecutionKind.ManagedRegex ||
-            CanAlsoUseUtf8RegexBackend(executionKind);
-        if (canCompilePrimaryUtf8)
+        _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out var utf8Regex);
+        Regex? managedRegex = null;
+        if (utf8Regex is null)
         {
-            _ = TryCreateUtf8Regex(request.Pattern, request.Options, request.MatchTimeout, out utf8Regex);
-        }
-
-        _ = TryCreateUtf8SearchEquivalentRegex(
-            executionKind,
-            request.Options,
-            request.MatchTimeout,
-            out var utf8SearchEquivalentRegex);
-
-        Regex? managedRegexCandidate = null;
-        string[] managedGroupNames = [];
-        Pcre2NameEntry[] managedNameEntries = [];
-        var canUseSpecialUtf8Translation = executionKind != Pcre2ExecutionKind.Unimplemented &&
-            utf8Regex is not null &&
-            CanUseUtf8RegexTranslation(request.Pattern, executionKind, utf8Regex);
-
-        if ((executionKind == Pcre2ExecutionKind.Unimplemented ||
-             (CanAlsoUseManagedRegexBackend(executionKind) && !canUseSpecialUtf8Translation)) &&
-            TryCreateManagedRegex(request.Pattern, request.Options, request.MatchTimeout, out managedRegexCandidate) &&
-            managedRegexCandidate is { } compiledManagedRegex)
-        {
-            managedGroupNames = compiledManagedRegex.GetGroupNames();
-            managedNameEntries = GetManagedNameEntries(compiledManagedRegex);
-            if (executionKind == Pcre2ExecutionKind.Unimplemented)
-            {
-                executionKind = Pcre2ExecutionKind.ManagedRegex;
-            }
-        }
-
-        var canUseUtf8Translation = utf8Regex is not null &&
-            CanUseUtf8RegexTranslation(request.Pattern, executionKind, utf8Regex);
-        IPcre2TranslationProgram translation;
-        string[] groupNames;
-        Pcre2NameEntry[] nameEntries;
-        if (canUseUtf8Translation && utf8Regex is { } translatedUtf8Regex)
-        {
-            translation = new Pcre2Utf8TranslationProgram(request.Pattern, ToRegexOptions(request.Options), translatedUtf8Regex);
-            groupNames = managedGroupNames.Length != 0 ? managedGroupNames : translatedUtf8Regex.GetGroupNames();
-            nameEntries = managedNameEntries.Length != 0 ? managedNameEntries : GetUtf8RegexNameEntries(translatedUtf8Regex);
-        }
-        else if (managedRegexCandidate is not null)
-        {
-            translation = Pcre2NoTranslationProgram.Instance;
-            groupNames = managedGroupNames;
-            nameEntries = managedNameEntries;
-        }
-        else
-        {
-            translation = Pcre2NoTranslationProgram.Instance;
-            groupNames = [];
-            nameEntries = GetPatternNameEntries(request.Pattern);
+            _ = TryCreateManagedRegex(request.Pattern, request.Options, request.MatchTimeout, out managedRegex);
         }
 
         IPcre2Utf8ProgramSlot primaryUtf8 = utf8Regex is null
             ? Pcre2EmptyUtf8ProgramSlot.Instance
             : new Pcre2Utf8ProgramSlot(utf8Regex);
-        IPcre2Utf8ProgramSlot searchEquivalentUtf8 = utf8SearchEquivalentRegex is null
-            ? Pcre2EmptyUtf8ProgramSlot.Instance
-            : new Pcre2Utf8ProgramSlot(utf8SearchEquivalentRegex);
-        IPcre2ManagedProgramSlot managed = canUseUtf8Translation || managedRegexCandidate is null
+        IPcre2ManagedProgramSlot managed = managedRegex is null
             ? Pcre2EmptyManagedProgramSlot.Instance
-            : new Pcre2ManagedProgramSlot(managedRegexCandidate);
-        var operations = CreateExecutionPlan(
-            request.Pattern,
-            executionKind,
-            translation.IsActive,
-            primaryUtf8,
-            searchEquivalentUtf8,
-            managed);
+            : new Pcre2ManagedProgramSlot(managedRegex);
+        IPcre2DirectProgram direct = primaryUtf8 is Pcre2Utf8ProgramSlot utf8Slot
+            ? new Pcre2Utf8DirectProgram(utf8Slot.Regex)
+            : managed is Pcre2ManagedProgramSlot managedSlot
+                ? new Pcre2ManagedDirectProgram(managedSlot.Regex)
+                : Pcre2NoDirectProgram.Instance;
+        var operations = new Pcre2OperationPrograms(direct, direct, direct, direct, direct);
+        var groupNames = managedRegex?.GetGroupNames() ?? utf8Regex?.GetGroupNames() ?? ["0"];
+        var nameEntries = managedRegex is not null
+            ? GetManagedNameEntries(managedRegex)
+            : utf8Regex is not null
+                ? GetUtf8RegexNameEntries(utf8Regex)
+                : [];
         return new Pcre2CompiledProgram(
             request,
             primaryUtf8,
-            searchEquivalentUtf8,
             managed,
-            translation,
             operations,
             new Pcre2CandidateSearchProgram(operations.IsMatch),
-            new Pcre2FullVerificationProgram(executionKind),
+            Pcre2PartialProbeProgram.None,
             Pcre2LegacySyntaxTree.Instance,
             groupNames,
             nameEntries);
@@ -169,21 +116,15 @@ public sealed class Utf8Pcre2Regex
 
     public TimeSpan MatchTimeout => _program.Request.MatchTimeout;
 
-    private Pcre2ExecutionKind ExecutionKind => _program.FullVerification.LegacyExecutionKind;
-
     private bool HasPrimaryUtf8Regex => _program.PrimaryUtf8.IsPresent;
 
     private Utf8Regex PrimaryUtf8Regex => ((Pcre2Utf8ProgramSlot)_program.PrimaryUtf8).Regex;
-
-    private bool HasSearchEquivalentUtf8Regex => _program.SearchEquivalentUtf8.IsPresent;
-
-    private Utf8Regex SearchEquivalentUtf8Regex => ((Pcre2Utf8ProgramSlot)_program.SearchEquivalentUtf8).Regex;
 
     private bool HasManagedRegex => _program.Managed.IsPresent;
 
     private Regex ManagedRegex => ((Pcre2ManagedProgramSlot)_program.Managed).Regex;
 
-    private bool UsesUtf8Translation => _program.Translation.IsActive;
+    private bool UsesUtf8Translation => HasPrimaryUtf8Regex;
 
     private string[] GroupNames => _program.GroupNames;
 
@@ -203,7 +144,7 @@ public sealed class Utf8Pcre2Regex
             return result;
         }
 
-        return IsMatchViaSlowPath(input, startOffsetInBytes, matchOptions);
+        throw CreateUnsupportedPatternException();
     }
 
     public int Count(ReadOnlySpan<byte> input)
@@ -221,58 +162,12 @@ public sealed class Utf8Pcre2Regex
             return result;
         }
 
-        return CountViaSlowPath(input, startOffsetInBytes, matchOptions);
+        throw CreateUnsupportedPatternException();
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private bool IsMatchViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        return ManagedRegex.IsMatch(subject, startOffsetInUtf16);
-    }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private bool IsMatchViaSlowPath(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        return Match(input, startOffsetInBytes, matchOptions).Success;
-    }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private int CountViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        return ManagedRegex.Count(subject, startOffsetInUtf16);
-    }
 
-    private bool CanUseUtf8RegexCompatiblePublicCount(int inputLength)
-        => ExecutionKind == Pcre2ExecutionKind.ManagedRegex &&
-           HasPrimaryUtf8Regex &&
-           inputLength <= 256;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private int CountViaSlowPath(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
-    {
-        if (!UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            if (TryCountNativeGlobalMatches(input, startOffsetInBytes, out var nativeCount))
-            {
-                return nativeCount;
-            }
-
-            return EnumerateGlobalMatchData(input, startOffsetInBytes).Length;
-        }
-
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
-        var count = 0;
-        while (enumerator.MoveNext())
-        {
-            count++;
-        }
-
-        return count;
-    }
 
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input)
         => Match(input, 0, Pcre2MatchOptions.None);
@@ -295,77 +190,12 @@ public sealed class Utf8Pcre2Regex
                 PrimaryUtf8Regex.ByteOffsetExecution.Match(subject, start));
         }
 
-        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
+        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
-            return CreateManagedProfileValueMatch(
-                input,
-                SearchEquivalentUtf8Regex.ByteOffsetExecution.Match(subject, start));
+            return MatchUsingManagedBackend(input, startOffsetInBytes);
         }
 
-        return ExecutionKind switch
-        {
-            Pcre2ExecutionKind.ManagedRegex => MatchViaManagedRegex(input, startOffsetInBytes),
-            Pcre2ExecutionKind.MailboxRfc2822 => MatchViaMailboxRfc2822(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ReluctantAlternation => MatchViaReluctantAlternation(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetBasic => MatchViaBranchResetBasic(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetBackref => MatchViaBranchResetBackref(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetNested => MatchViaBranchResetNested(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetNestedSecondCapture => MatchViaBranchResetNestedSecondCapture(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetAbasic => MatchViaBranchResetAbasic(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSubroutine => MatchViaBranchResetSubroutine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetGReference => MatchViaBranchResetGReference(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSameNameBackref => MatchViaBranchResetSameNameBackref(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSameNameFollowup => MatchViaBranchResetSameNameFollowup(input, startOffsetInBytes),
-            Pcre2ExecutionKind.DuplicateNamesFooBar => MatchViaDuplicateNamesFooBar(input, startOffsetInBytes),
-            Pcre2ExecutionKind.MarkSkip => MatchViaMarkSkip(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetFooBar => MatchViaKResetFooBar(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetBarOrBaz => MatchViaKResetBarOrBaz(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetFooBarBaz => MatchViaKResetFooBarBaz(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAbc123 => MatchViaKResetAbc123(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KReset123Abc => MatchViaKReset123Abc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorAbc => MatchViaKResetAnchorAbc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorLookaheadOrAbc => MatchViaKResetAnchorLookaheadOrAbc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicAb => MatchViaKResetAtomicAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedAtomicAb => MatchViaKResetCapturedAtomicAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedAb => MatchViaKResetCapturedAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorCzOrAc => MatchViaKResetAnchorCzOrAc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicAltAb => MatchViaKResetAtomicAltAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetDefineSubroutineAb => MatchViaKResetDefineSubroutineAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRepeatAbPossessive => MatchViaKResetRepeatAbPossessive(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicRepeatAb => MatchViaKResetAtomicRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRepeatAb => MatchViaKResetRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive => MatchViaKResetCapturedRepeatAbPossessive(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedRepeatAb => MatchViaKResetCapturedRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRecursiveAny => MatchViaKResetRecursiveAny(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRecursiveCaptured => MatchViaKResetRecursiveCaptured(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetLookaheadAb => MatchViaKResetLookaheadAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetLookbehindA => MatchViaKResetLookbehindA(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetConditionalGcOverlap => MatchViaKResetConditionalGcOverlap(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetConditionalGcNotSorted => MatchViaKResetConditionalGcNotSorted(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround1 => MatchViaKResetRuntimeDisallowedLookaround1(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround2 => MatchViaKResetRuntimeDisallowedLookaround2(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeConditionalDigits => MatchViaKResetRuntimeConditionalDigits(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine => MatchViaKResetSneakyLookaheadDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine => MatchViaKResetSneakyLookbehindDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine => MatchViaKResetSneakyGlobalLookbehindDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BackslashCLiteral => MatchViaBackslashCLiteral(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursivePalindromeOdd => MatchViaRecursivePalindromeOdd(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursivePalindromeAny => MatchViaRecursivePalindromeAny(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursiveAlternation => MatchViaRecursiveAlternation(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursiveOptional => MatchViaRecursiveOptional(input, startOffsetInBytes),
-            Pcre2ExecutionKind.AtomicAlternationReluctantMany => MatchViaAtomicAlternationReluctantMany(input, startOffsetInBytes),
-            Pcre2ExecutionKind.AtomicAlternationReluctantTwo => MatchViaAtomicAlternationReluctantTwo(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookaheadPlus => MatchViaConditionalLookaheadPlus(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookaheadEmptyAlt => MatchViaConditionalLookaheadEmptyAlt(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookahead => MatchViaConditionalLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalNegativeLookahead => MatchViaConditionalNegativeLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalAcceptLookahead => MatchViaConditionalAcceptLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalAcceptNegativeLookahead => MatchViaConditionalAcceptNegativeLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.SubroutinePrefixDigits => MatchViaSubroutinePrefixDigits(input, startOffsetInBytes),
-            Pcre2ExecutionKind.CommitSubroutine => MatchViaCommitSubroutine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.DefineSubroutineB => MatchViaDefineSubroutineB(input, startOffsetInBytes),
-            _ => throw new NotSupportedException("SPEC-PCRE2 does not support this pattern in the managed profile."),
-        };
+        throw CreateUnsupportedPatternException();
     }
 
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input)
@@ -397,75 +227,17 @@ public sealed class Utf8Pcre2Regex
                 : default;
         }
 
-        if (UsesUtf8Translation)
+        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
-            return MatchDetailedViaUtf8RegexTranslation(subject, start);
+            return MatchDetailedUsingUtf8Backend(subject, start);
         }
 
-        return ExecutionKind switch
+        if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
-            Pcre2ExecutionKind.ManagedRegex => MatchDetailedViaManagedRegex(input, startOffsetInBytes),
-            Pcre2ExecutionKind.MailboxRfc2822 => MatchDetailedViaMailboxRfc2822(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ReluctantAlternation => MatchDetailedViaReluctantAlternation(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetBasic => MatchDetailedViaBranchResetBasic(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetBackref => MatchDetailedViaBranchResetBackref(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetNested => MatchDetailedViaBranchResetNested(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetNestedSecondCapture => MatchDetailedViaBranchResetNestedSecondCapture(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetAbasic => MatchDetailedViaBranchResetAbasic(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSubroutine => MatchDetailedViaBranchResetSubroutine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetGReference => MatchDetailedViaBranchResetGReference(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSameNameBackref => MatchDetailedViaBranchResetSameNameBackref(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BranchResetSameNameFollowup => MatchDetailedViaBranchResetSameNameFollowup(input, startOffsetInBytes),
-            Pcre2ExecutionKind.DuplicateNamesFooBar => MatchDetailedViaDuplicateNamesFooBar(input, startOffsetInBytes),
-            Pcre2ExecutionKind.MarkSkip => MatchDetailedViaMarkSkip(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetFooBar => MatchDetailedViaKResetFooBar(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetBarOrBaz => MatchDetailedViaKResetBarOrBaz(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetFooBarBaz => MatchDetailedViaKResetFooBarBaz(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAbc123 => MatchDetailedViaKResetAbc123(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KReset123Abc => MatchDetailedViaKReset123Abc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorAbc => MatchDetailedViaKResetAnchorAbc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorLookaheadOrAbc => MatchDetailedViaKResetAnchorLookaheadOrAbc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicAb => MatchDetailedViaKResetAtomicAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedAtomicAb => MatchDetailedViaKResetCapturedAtomicAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedAb => MatchDetailedViaKResetCapturedAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAnchorCzOrAc => MatchDetailedViaKResetAnchorCzOrAc(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicAltAb => MatchDetailedViaKResetAtomicAltAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetDefineSubroutineAb => MatchDetailedViaKResetDefineSubroutineAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRepeatAbPossessive => MatchDetailedViaKResetRepeatAbPossessive(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetAtomicRepeatAb => MatchDetailedViaKResetAtomicRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRepeatAb => MatchDetailedViaKResetRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive => MatchDetailedViaKResetCapturedRepeatAbPossessive(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetCapturedRepeatAb => MatchDetailedViaKResetCapturedRepeatAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRecursiveAny => MatchDetailedViaKResetRecursiveAny(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRecursiveCaptured => MatchDetailedViaKResetRecursiveCaptured(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetLookaheadAb => MatchDetailedViaKResetLookaheadAb(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetLookbehindA => MatchDetailedViaKResetLookbehindA(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetConditionalGcOverlap => MatchDetailedViaKResetConditionalGcOverlap(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetConditionalGcNotSorted => MatchDetailedViaKResetConditionalGcNotSorted(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround1 => MatchDetailedViaKResetRuntimeDisallowedLookaround1(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround2 => MatchDetailedViaKResetRuntimeDisallowedLookaround2(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetRuntimeConditionalDigits => MatchDetailedViaKResetRuntimeConditionalDigits(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine => MatchDetailedViaKResetSneakyLookaheadDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine => MatchDetailedViaKResetSneakyLookbehindDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine => MatchDetailedViaKResetSneakyGlobalLookbehindDefine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.BackslashCLiteral => MatchDetailedViaBackslashCLiteral(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursivePalindromeOdd => MatchDetailedViaRecursivePalindromeOdd(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursivePalindromeAny => MatchDetailedViaRecursivePalindromeAny(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursiveAlternation => MatchDetailedViaRecursiveAlternation(input, startOffsetInBytes),
-            Pcre2ExecutionKind.RecursiveOptional => MatchDetailedViaRecursiveOptional(input, startOffsetInBytes),
-            Pcre2ExecutionKind.AtomicAlternationReluctantMany => MatchDetailedViaAtomicAlternationReluctantMany(input, startOffsetInBytes),
-            Pcre2ExecutionKind.AtomicAlternationReluctantTwo => MatchDetailedViaAtomicAlternationReluctantTwo(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookaheadPlus => MatchDetailedViaConditionalLookaheadPlus(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookaheadEmptyAlt => MatchDetailedViaConditionalLookaheadEmptyAlt(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalLookahead => MatchDetailedViaConditionalLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalNegativeLookahead => MatchDetailedViaConditionalNegativeLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalAcceptLookahead => MatchDetailedViaConditionalAcceptLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.ConditionalAcceptNegativeLookahead => MatchDetailedViaConditionalAcceptNegativeLookahead(input, startOffsetInBytes),
-            Pcre2ExecutionKind.SubroutinePrefixDigits => MatchDetailedViaSubroutinePrefixDigits(input, startOffsetInBytes),
-            Pcre2ExecutionKind.CommitSubroutine => MatchDetailedViaCommitSubroutine(input, startOffsetInBytes),
-            Pcre2ExecutionKind.DefineSubroutineB => MatchDetailedViaDefineSubroutineB(input, startOffsetInBytes),
-            _ => throw new NotSupportedException("SPEC-PCRE2 does not support this pattern in the managed profile."),
-        };
+            return MatchDetailedUsingManagedBackend(input, startOffsetInBytes);
+        }
+
+        throw CreateUnsupportedPatternException();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -490,71 +262,16 @@ public sealed class Utf8Pcre2Regex
             return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
         }
 
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.None)
+        if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
         {
-            return EnumerateMatchesViaNativeGlobalEntry(input, startOffsetInBytes);
+            return EnumerateMatchesViaConfiguredBackend(subject, start);
         }
 
-        return EnumerateMatchesViaConfiguredBackend(subject, start);
+        throw CreateUnsupportedPatternException();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaNativeGlobalEntry(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if ((ExecutionKind is Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
-                 Pcre2ExecutionKind.KResetSneakyLookbehindDefine or
-                 Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine) &&
-            TryCreateSpecialGlobalEnumerator(input, startOffsetInBytes, out var enumerator))
-        {
-            return enumerator;
-        }
-
-        if (CanEnumerateViaNativeValueGenerator())
-        {
-            return new Utf8Pcre2ValueMatchEnumerator(input, GetNativeValueEnumeratorKind(), startOffsetInBytes);
-        }
-
-        return new Utf8Pcre2ValueMatchEnumerator(input, EnumerateGlobalMatchData(input, startOffsetInBytes));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool CanEnumerateViaNativeValueGenerator()
-        => Pattern == "(?<=abc)(|def)" ||
-           ExecutionKind is
-               Pcre2ExecutionKind.BranchResetBasic or
-               Pcre2ExecutionKind.BranchResetBackref or
-               Pcre2ExecutionKind.BranchResetNested or
-               Pcre2ExecutionKind.BranchResetSameNameFollowup or
-               Pcre2ExecutionKind.DuplicateNamesFooBar or
-               Pcre2ExecutionKind.KResetAbc123 or
-               Pcre2ExecutionKind.KResetBarOrBaz or
-               Pcre2ExecutionKind.KResetRepeatAbPossessive or
-               Pcre2ExecutionKind.KResetAtomicRepeatAb or
-               Pcre2ExecutionKind.KResetRepeatAb or
-               Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive or
-               Pcre2ExecutionKind.KResetCapturedRepeatAb or
-               Pcre2ExecutionKind.KResetAtomicAltAb;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind GetNativeValueEnumeratorKind()
-        => ExecutionKind switch
-        {
-            Pcre2ExecutionKind.BranchResetBasic => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetBasic,
-            Pcre2ExecutionKind.BranchResetBackref => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetBackref,
-            Pcre2ExecutionKind.BranchResetNested => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetNested,
-            Pcre2ExecutionKind.BranchResetSameNameFollowup => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.BranchResetSameNameFollowup,
-            Pcre2ExecutionKind.DuplicateNamesFooBar => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.DuplicateNamesFooBar,
-            Pcre2ExecutionKind.ManagedRegex when Pattern == "(?<=abc)(|def)" => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.EmptyOrDefAfterAbc,
-            Pcre2ExecutionKind.KResetAbc123 => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.KResetAbc123,
-            Pcre2ExecutionKind.KResetBarOrBaz => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.KResetBarOrBaz,
-            Pcre2ExecutionKind.KResetRepeatAbPossessive or
-            Pcre2ExecutionKind.KResetAtomicRepeatAb or
-            Pcre2ExecutionKind.KResetRepeatAb or
-            Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive or
-            Pcre2ExecutionKind.KResetCapturedRepeatAb => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.KResetRepeatAb,
-            Pcre2ExecutionKind.KResetAtomicAltAb => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.KResetAtomicAltAb,
-            _ => Utf8Pcre2ValueMatchEnumerator.Pcre2NativeValueEnumeratorKind.None,
-        };
+    private static NotSupportedException CreateUnsupportedPatternException() =>
+        new("SPEC-PCRE2 does not support this pattern in the managed profile.");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaConfiguredBackend(
@@ -564,7 +281,6 @@ public sealed class Utf8Pcre2Regex
         return _program.Operations.Enumerate.Kind switch
         {
             Pcre2DirectProgramKind.Utf8Regex => EnumerateMatchesViaUtf8RegexBackend(input, start),
-            Pcre2DirectProgramKind.Utf8RegexEquivalent => EnumerateMatchesViaUtf8RegexEquivalentBackend(input, start),
             Pcre2DirectProgramKind.ManagedRegex => EnumerateMatchesViaManagedRegexBackend(input, start),
             _ => default,
         };
@@ -587,14 +303,6 @@ public sealed class Utf8Pcre2Regex
             input.Bytes,
             PrimaryUtf8Regex.ByteOffsetExecution.EnumerateMatches(input, start));
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaUtf8RegexEquivalentBackend(
-        Utf8ValidatedInput input,
-        Utf8BytePosition start)
-        => new(
-            input.Bytes,
-            SearchEquivalentUtf8Regex.ByteOffsetExecution.EnumerateMatches(input, start));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaManagedRegexBackend(
@@ -650,227 +358,9 @@ public sealed class Utf8Pcre2Regex
                 _program.Request);
         }
 
-        if (ExecutionKind == Pcre2ExecutionKind.PartialSoftDotAllLiteral)
+        if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
         {
-            return ProbeViaPartialSoftDotAllLiteral(input, partialMode, startOffsetInBytes);
-        }
-
-        if (ExecutionKind == Pcre2ExecutionKind.ReplaceFooLiteral)
-        {
-            return ProbeViaFooLiteral(input, partialMode, startOffsetInBytes);
-        }
-
-        if (ExecutionKind == Pcre2ExecutionKind.ReplacePartialAbPlus)
-        {
-            return ProbeViaAbPlus(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "cat|horse", StringComparison.Ordinal) ||
-            string.Equals(Pattern, "(?:cat|horse)", StringComparison.Ordinal))
-        {
-            return ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, "cat", "horse");
-        }
-
-        if (string.Equals(Pattern, "dog(sbody)?", StringComparison.Ordinal) ||
-            string.Equals(Pattern, "dogsbody|dog", StringComparison.Ordinal))
-        {
-            return ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, "dogsbody", "dog");
-        }
-
-        if (string.Equals(Pattern, "dog(sbody)??", StringComparison.Ordinal) ||
-            string.Equals(Pattern, "dog|dogsbody", StringComparison.Ordinal))
-        {
-            return ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, "dog", "dogsbody");
-        }
-
-        if (string.Equals(Pattern, "\\bthe cat\\b", StringComparison.Ordinal))
-        {
-            return ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, "the cat");
-        }
-
-        if (string.Equals(Pattern, "\\babc\\b", StringComparison.Ordinal))
-        {
-            return ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, "abc");
-        }
-
-        if (string.Equals(Pattern, "abc\\K123", StringComparison.Ordinal))
-        {
-            return ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, "abc", "123", includePrefixInPartial: true);
-        }
-
-        if (string.Equals(Pattern, "(?<=abc)123", StringComparison.Ordinal))
-        {
-            return ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, "abc", "123", includePrefixInPartial: false);
-        }
-
-        if (string.Equals(Pattern, "abc(?=xyz)", StringComparison.Ordinal))
-        {
-            return ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, prefix: null, "abc", "xyz", includePrefixInPartial: false);
-        }
-
-        if (string.Equals(Pattern, "(?<=pqr)abc(?=xyz)", StringComparison.Ordinal))
-        {
-            return ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, "pqr", "abc", "xyz", includePrefixInPartial: true);
-        }
-
-        if (string.Equals(Pattern, "abc(?=abcde)(?=ab)", StringComparison.Ordinal))
-        {
-            return ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, prefix: null, "abc", "abcde", includePrefixInPartial: false);
-        }
-
-        if (string.Equals(Pattern, "\\z", StringComparison.Ordinal))
-        {
-            return ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, allowFinalNewline: false);
-        }
-
-        if (string.Equals(Pattern, "\\Z", StringComparison.Ordinal))
-        {
-            return ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, allowFinalNewline: true);
-        }
-
-        if (string.Equals(Pattern, "c*+(?<=[bc])", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, requireAtLeastOneC: false);
-        }
-
-        if (string.Equals(Pattern, "c++(?<=[bc])", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, requireAtLeastOneC: true);
-        }
-
-        if (string.Equals(Pattern, "(?![ab]).*", StringComparison.Ordinal))
-        {
-            return ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "^\\R", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, minCount: 1, maxCount: 1, requireTerminalX: false);
-        }
-
-        if (string.Equals(Pattern, "^\\R{2,3}x", StringComparison.Ordinal) ||
-            string.Equals(Pattern, "^\\R{2,3}?x", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, minCount: 2, maxCount: 3, requireTerminalX: true);
-        }
-
-        if (string.Equals(Pattern, "^\\R?x", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "^\\R+x", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, minCount: 1, maxCount: int.MaxValue, requireTerminalX: true);
-        }
-
-        if (string.Equals(Pattern, "(?>a+b)", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAtomicAPlusB(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "(abc)(?1)", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredRepeatedLiteral(input, partialMode, startOffsetInBytes, "abc", repeatCount: 2);
-        }
-
-        if (string.Equals(Pattern, "(?(?=abc).*|Z)", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "(abc)++x", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredLiteralPlusTerminal(input, partialMode, startOffsetInBytes, "abc", (byte)'x');
-        }
-
-        if (string.Equals(Pattern, "^(?:a)++\\w", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: false, requireAtLeastTwoLeadingA: false);
-        }
-
-        if (string.Equals(Pattern, "^(?:aa|(?:a)++\\w)", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "^(?:a)*+\\w", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: true, requireAtLeastTwoLeadingA: false);
-        }
-
-        if (string.Equals(Pattern, "^(a)++\\w", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: false, requireAtLeastTwoLeadingA: false);
-        }
-
-        if (string.Equals(Pattern, "^(a|)++\\w", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, allowEmptyA: true, requireAtLeastTwoLeadingA: false);
-        }
-
-        if (CompileSettings.Newline == Pcre2NewlineConvention.Crlf)
-        {
-            if (string.Equals(Pattern, "^a$", StringComparison.Ordinal))
-            {
-                return ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes, preferExplicitCrAlternative: false);
-            }
-
-            if (string.Equals(Pattern, "^(a$|a\\r)", StringComparison.Ordinal))
-            {
-                return ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes, preferExplicitCrAlternative: true);
-            }
-
-            if (string.Equals(Pattern, ".", StringComparison.Ordinal))
-            {
-                return ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, minCount: 1, maxCount: 1);
-            }
-
-            if (string.Equals(Pattern, ".{2,3}", StringComparison.Ordinal) ||
-                string.Equals(Pattern, ".{2,3}?", StringComparison.Ordinal))
-            {
-                return ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, minCount: 2, maxCount: 3);
-            }
-        }
-
-        if (string.Equals(Pattern, "abc$", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, "abc", TrailingAssertionKind.Dollar);
-        }
-
-        if (string.Equals(Pattern, "abc\\z", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, "abc", TrailingAssertionKind.EndAbsolute);
-        }
-
-        if (string.Equals(Pattern, "abc\\Z", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, "abc", TrailingAssertionKind.EndBeforeFinalNewline);
-        }
-
-        if (string.Equals(Pattern, "abc\\b", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, "abc", TrailingAssertionKind.WordBoundary);
-        }
-
-        if (string.Equals(Pattern, "abc\\B", StringComparison.Ordinal))
-        {
-            return ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, "abc", TrailingAssertionKind.NonWordBoundary);
-        }
-
-        if (string.Equals(Pattern, "^foo", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredFooLiteral(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "^abc$", StringComparison.Ordinal))
-        {
-            return ProbeViaAnchoredExactAbcLiteral(input, partialMode, startOffsetInBytes);
-        }
-
-        if (string.Equals(Pattern, "abc$", StringComparison.Ordinal))
-        {
-            return ProbeViaSuffixAnchoredAbcLiteral(input, partialMode, startOffsetInBytes);
+            return ProbeViaCompiledPartialProgram(input, partialMode, startOffsetInBytes, _program.PartialProbe);
         }
 
         if (partialMode == Pcre2PartialMode.None)
@@ -914,7 +404,7 @@ public sealed class Utf8Pcre2Regex
     {
         ArgumentNullException.ThrowIfNull(replacement);
         ValidateStartOffset(input, startOffsetInBytes);
-        return ReplaceCore(input, replacement, Pcre2PartialMode.None, substitutionOptions, startOffsetInBytes, matchOptions);
+        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
     }
 
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
@@ -930,7 +420,7 @@ public sealed class Utf8Pcre2Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         ValidateStartOffset(input, startOffsetInBytes);
-        return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), Pcre2PartialMode.None, substitutionOptions, startOffsetInBytes, matchOptions);
+        return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions);
     }
 
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
@@ -940,7 +430,7 @@ public sealed class Utf8Pcre2Regex
     {
         ArgumentNullException.ThrowIfNull(evaluator);
         ValidateStartOffset(input, startOffsetInBytes);
-        if (TryReplaceViaLiteralDriver(
+        if (TryReplaceUsingLiteralDriver(
                 input,
                 state,
                 evaluator,
@@ -969,7 +459,7 @@ public sealed class Utf8Pcre2Regex
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         ArgumentNullException.ThrowIfNull(replacement);
-        var result = ReplaceCore(input, replacement, Pcre2PartialMode.None, substitutionOptions, startOffsetInBytes, matchOptions);
+        var result = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
         _ = Utf8Validation.Validate(result);
         return Encoding.UTF8.GetString(result);
     }
@@ -1005,9 +495,8 @@ public sealed class Utf8Pcre2Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteOverflowLength;
         ValidateStartOffset(input, startOffsetInBytes);
-        if (TryReplaceViaLiteralDriver(
+        if (TryReplaceUsingLiteralDriver(
                 input,
                 replacementText,
                 startOffsetInBytes,
@@ -1018,43 +507,6 @@ public sealed class Utf8Pcre2Regex
                 out var literalStatus))
         {
             return literalStatus;
-        }
-
-        if (UsesNativeGlobalIteration() &&
-            !RejectsReplacementIteration() &&
-            GetSimpleReplacementPlan(replacementText, templateOptions) is { } simplePlan &&
-            TryGetLiteralOnlyReplacementBytes(simplePlan, out var replacementBytes))
-        {
-            var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-            if (matches.Length == 0)
-            {
-                if (input.Length > destination.Length)
-                {
-                    bytesWritten = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0
-                        ? input.Length
-                        : 0;
-                    return OperationStatus.DestinationTooSmall;
-                }
-
-                input.CopyTo(destination);
-                bytesWritten = input.Length;
-                return OperationStatus.Done;
-            }
-
-            return TryReplaceLiteralAgainstMatches(input, matches, replacementBytes, destination, out bytesWritten, substitutionOptions);
-        }
-
-        if (CanUseUtf8RegexLiteralReplacement(replacementText, substitutionOptions, allowOverflowLengthShortcut: false))
-        {
-            if (startOffsetInBytes == 0)
-            {
-                return PrimaryUtf8Regex.TryReplace(input, replacementPatternUtf8, destination, out bytesWritten);
-            }
-
-            input[..startOffsetInBytes].CopyTo(destination);
-            var status = PrimaryUtf8Regex.TryReplace(input[startOffsetInBytes..], replacementPatternUtf8, destination[startOffsetInBytes..], out var suffixBytesWritten);
-            bytesWritten = status == OperationStatus.Done ? startOffsetInBytes + suffixBytesWritten : 0;
-            return status;
         }
 
         var replaced = Replace(input, replacementPatternUtf8, startOffsetInBytes, substitutionOptions, matchOptions);
@@ -1155,24 +607,9 @@ public sealed class Utf8Pcre2Regex
             return MatchManyViaUtf8Regex(subject, destination, out isMore, start);
         }
 
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
-        {
-            return MatchManyViaUtf8RegexEquivalent(subject, destination, out isMore, start);
-        }
-
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
             return MatchManyViaManagedRegex(input, destination, out isMore, startOffsetInBytes);
-        }
-
-        if (CanEnumerateViaNativeValueGenerator())
-        {
-            return MatchManyViaEnumerateMatches(input, destination, out isMore, startOffsetInBytes, matchOptions);
-        }
-
-        if (!UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            return MatchManyViaGlobalMatchData(input, destination, out isMore, startOffsetInBytes);
         }
 
         return MatchManyViaEnumerateMatches(input, destination, out isMore, startOffsetInBytes, matchOptions);
@@ -1279,36 +716,6 @@ public sealed class Utf8Pcre2Regex
         return written;
     }
 
-    private int MatchManyViaUtf8RegexEquivalent(
-        Utf8ValidatedInput input,
-        Span<Utf8Pcre2MatchData> destination,
-        out bool isMore,
-        Utf8BytePosition start)
-    {
-        var enumerator = SearchEquivalentUtf8Regex.ByteOffsetExecution.EnumerateMatches(input, start);
-        if (destination.IsEmpty)
-        {
-            isMore = enumerator.MoveNext();
-            return 0;
-        }
-
-        var written = 0;
-        while (written < destination.Length && enumerator.MoveNext())
-        {
-            destination[written] = CreateManagedProfileMatchData(enumerator.Current);
-            written++;
-        }
-
-        if (written == destination.Length)
-        {
-            isMore = enumerator.MoveNext();
-            return written;
-        }
-
-        isMore = false;
-        return written;
-    }
-
     private int MatchManyViaManagedRegex(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes)
     {
         var subject = Encoding.UTF8.GetString(input);
@@ -1335,48 +742,25 @@ public sealed class Utf8Pcre2Regex
         return written;
     }
 
-    private int MatchManyViaGlobalMatchData(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes)
-    {
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (destination.IsEmpty)
-        {
-            isMore = matches.Length != 0;
-            return 0;
-        }
-
-        var copied = Math.Min(destination.Length, matches.Length);
-        for (var i = 0; i < copied; i++)
-        {
-            destination[i] = Utf8Pcre2MatchData.Create(matches[i]);
-        }
-
-        isMore = copied < matches.Length;
-        return copied;
-    }
 
     public Utf8Pcre2Analysis Analyze()
     {
+        var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
+        var literal = (_program.Operations.Match as Pcre2LiteralDirectProgram)?.Program;
         return new Utf8Pcre2Analysis
         {
-            IsFullyNative = ExecutionKind != Pcre2ExecutionKind.ManagedRegex,
-            IsExactLiteral = Pattern is "foo",
-            MinRequiredLengthInBytes = GetMinRequiredLengthInBytes(),
+            IsFullyNative = _program.Operations.Match.Kind != Pcre2DirectProgramKind.ManagedRegex,
+            IsExactLiteral = literal is not null,
+            MinRequiredLengthInBytes = literal?.LiteralUtf8.Length ?? backtracking?.AnalyzedMinimumByteLength ?? 0,
             HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
-            UsesBranchReset = ExecutionKind == Pcre2ExecutionKind.BranchResetBasic,
-            UsesBacktrackingControlVerbs =
-                _program.Operations.Match is Pcre2BacktrackingDirectProgram
-                {
-                    Program.UsesBacktrackingControlVerbs: true,
-                } ||
-                ExecutionKind == Pcre2ExecutionKind.MarkSkip,
-            UsesRecursion = UsesRecursion(ExecutionKind),
-            MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit ||
-                ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
-            MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
-                MayReportNonMonotoneMatchOffsets(ExecutionKind),
-            RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
-                RejectsNonMonotoneIterativeMatches(ExecutionKind),
-            MayFailIterativeExecutionAtRuntime = MayFailIterativeExecutionAtRuntime(ExecutionKind),
+            UsesBranchReset = backtracking?.GroupNames.Length > 1 &&
+                backtracking.CaptureSlotCount < backtracking.GroupNames.Length,
+            UsesBacktrackingControlVerbs = backtracking?.UsesBacktrackingControlVerbs ?? false,
+            UsesRecursion = backtracking is not null && UsesSubroutines(backtracking),
+            MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit,
+            MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
+            RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
+            MayFailIterativeExecutionAtRuntime = backtracking is not null && HasDeferredLookaroundReset(backtracking),
         };
     }
 
@@ -1469,8 +853,16 @@ public sealed class Utf8Pcre2Regex
             regexOptions |= RegexOptions.IgnorePatternWhitespace;
         }
 
-        regex = new Regex(pattern, regexOptions, matchTimeout);
-        return true;
+        try
+        {
+            regex = new Regex(pattern, regexOptions, matchTimeout);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            regex = null;
+            return false;
+        }
     }
 
     private static bool TryCreateUtf8Regex(string pattern, Pcre2CompileOptions options, TimeSpan matchTimeout, out Utf8Regex? regex)
@@ -1492,28 +884,6 @@ public sealed class Utf8Pcre2Regex
         }
     }
 
-    private static bool TryCreateUtf8SearchEquivalentRegex(Pcre2ExecutionKind executionKind, Pcre2CompileOptions options, TimeSpan matchTimeout, out Utf8Regex? regex)
-    {
-        var equivalentPattern = executionKind switch
-        {
-            Pcre2ExecutionKind.BranchResetBasic => "(?:abc|xyz)",
-            Pcre2ExecutionKind.BranchResetNested => "x(?:abc|xyz)x",
-            Pcre2ExecutionKind.BranchResetNestedSecondCapture => "x(?:abcpqr|xyz)x",
-            Pcre2ExecutionKind.BranchResetAbasic => "(?:aaa|b)",
-            Pcre2ExecutionKind.BranchResetSubroutine => "(?:abcabc|xyzabc)",
-            Pcre2ExecutionKind.BranchResetGReference => "(?:aaaaaa|bb)",
-            _ => null,
-        };
-
-        if (equivalentPattern is null)
-        {
-            regex = null;
-            return false;
-        }
-
-        return TryCreateUtf8Regex(equivalentPattern, options, matchTimeout, out regex);
-    }
-
     private static RegexOptions ToRegexOptions(Pcre2CompileOptions options)
     {
         var regexOptions = RegexOptions.CultureInvariant;
@@ -1532,307 +902,12 @@ public sealed class Utf8Pcre2Regex
             regexOptions |= RegexOptions.Singleline;
         }
 
-        if ((options & Pcre2CompileOptions.Extended) != 0 || (options & Pcre2CompileOptions.ExtendedMore) != 0)
+        if ((options & (Pcre2CompileOptions.Extended | Pcre2CompileOptions.ExtendedMore)) != 0)
         {
             regexOptions |= RegexOptions.IgnorePatternWhitespace;
         }
 
         return regexOptions;
-    }
-
-    private static Pcre2ExecutionKind ClassifyExecutionKind(string pattern)
-    {
-        return pattern switch
-        {
-            "^(ba|b*){1,2}?bc" => Pcre2ExecutionKind.ReluctantAlternation,
-            "(?|(abc)|(xyz))" => Pcre2ExecutionKind.BranchResetBasic,
-            "(?|(abc)|(xyz))\\1" => Pcre2ExecutionKind.BranchResetBackref,
-            "(x)(?|(abc)|(xyz))(x)" => Pcre2ExecutionKind.BranchResetNested,
-            "(x)(?|(abc)(pqr)|(xyz))(x)" => Pcre2ExecutionKind.BranchResetNestedSecondCapture,
-            "(?|(aaa)|(b))" => Pcre2ExecutionKind.BranchResetAbasic,
-            "(?|(abc)|(xyz))(?1)" => Pcre2ExecutionKind.BranchResetSubroutine,
-            "(?|(aaa)|(b))\\g{1}" => Pcre2ExecutionKind.BranchResetGReference,
-            "(?|(?'a'aaa)|(?'a'b))\\k'a'" => Pcre2ExecutionKind.BranchResetSameNameBackref,
-            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'" => Pcre2ExecutionKind.BranchResetSameNameFollowup,
-            @"(?:(?<n>foo)|(?<n>bar))\k<n>" => Pcre2ExecutionKind.DuplicateNamesFooBar,
-            "(*MARK:A)(*SKIP:B)(C|X)" => Pcre2ExecutionKind.MarkSkip,
-            @"(foo)\Kbar" => Pcre2ExecutionKind.KResetFooBar,
-            @"(foo)(\Kbar|baz)" => Pcre2ExecutionKind.KResetBarOrBaz,
-            @"(foo\Kbar)baz" => Pcre2ExecutionKind.KResetFooBarBaz,
-            @"abc\K123" => Pcre2ExecutionKind.KResetAbc123,
-            @"123\Kabc" => Pcre2ExecutionKind.KReset123Abc,
-            @"^abc\K" => Pcre2ExecutionKind.KResetAnchorAbc,
-            @"^(?:(?=abc)|abc\K)" => Pcre2ExecutionKind.KResetAnchorLookaheadOrAbc,
-            @"(?>a\Kb)" => Pcre2ExecutionKind.KResetAtomicAb,
-            @"((?>a\Kb))" => Pcre2ExecutionKind.KResetCapturedAtomicAb,
-            @"(a\Kb)" => Pcre2ExecutionKind.KResetCapturedAb,
-            @"^a\Kcz|ac" => Pcre2ExecutionKind.KResetAnchorCzOrAc,
-            @"(?>a\Kbz|ab)" => Pcre2ExecutionKind.KResetAtomicAltAb,
-            @"^(?&t)(?(DEFINE)(?<t>a\Kb))$" => Pcre2ExecutionKind.KResetDefineSubroutineAb,
-            @"(?:a\Kb)*+" => Pcre2ExecutionKind.KResetRepeatAbPossessive,
-            @"(?>a\Kb)*" => Pcre2ExecutionKind.KResetAtomicRepeatAb,
-            @"(?:a\Kb)*" => Pcre2ExecutionKind.KResetRepeatAb,
-            @"(a\Kb)*+" => Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive,
-            @"(a\Kb)*" => Pcre2ExecutionKind.KResetCapturedRepeatAb,
-            @"a\K.(?0)*" => Pcre2ExecutionKind.KResetRecursiveAny,
-            @"(a\K.(?1)*)" => Pcre2ExecutionKind.KResetRecursiveCaptured,
-            @"(?=ab\K)" => Pcre2ExecutionKind.KResetLookaheadAb,
-            @"(?<=\Ka)" => Pcre2ExecutionKind.KResetLookbehindA,
-            @"(?(?=\Gc)(?<=\Kb)c|(?<=\Kab))" => Pcre2ExecutionKind.KResetConditionalGcOverlap,
-            @"(?(?=\Gc)(?<=\Kab)|(?<=\Kb))" => Pcre2ExecutionKind.KResetConditionalGcNotSorted,
-            @"(?=.{10}(?1))x(\K){0}" => Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround1,
-            @"(?=.{10}(.))(*scs:(1)(?2))x(\K){0}" => Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround2,
-            @"(?=.{5}(?1))\d*(\K){0}" => Pcre2ExecutionKind.KResetRuntimeConditionalDigits,
-            @"(?(DEFINE)(?<sneaky>b\K))a(?=(?&sneaky))" => Pcre2ExecutionKind.KResetSneakyLookaheadDefine,
-            @"a|(?(DEFINE)(?<sneaky>\Ka))(?<=(?&sneaky))b" => Pcre2ExecutionKind.KResetSneakyLookbehindDefine,
-            @"a|(?(DEFINE)(?<sneaky>\K\Ga))(?<=(?&sneaky))b" => Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine,
-            @"ab\Cde" => Pcre2ExecutionKind.BackslashCLiteral,
-            "^(.|(.)(?1)\\2)$" => Pcre2ExecutionKind.RecursivePalindromeOdd,
-            "^((.)(?1)\\2|.?)$" => Pcre2ExecutionKind.RecursivePalindromeAny,
-            "^(.)(\\1|a(?2))" => Pcre2ExecutionKind.RecursiveAlternation,
-            "^(.|(.)(?1)?\\2)$" => Pcre2ExecutionKind.RecursiveOptional,
-            "(?>ab|abab){1,5}?M" => Pcre2ExecutionKind.AtomicAlternationReluctantMany,
-            "(?>ab|abab){2}?M" => Pcre2ExecutionKind.AtomicAlternationReluctantTwo,
-            "((?(?=(a))a)+k)" => Pcre2ExecutionKind.ConditionalLookaheadPlus,
-            "((?(?=(a))a|)+k)" => Pcre2ExecutionKind.ConditionalLookaheadEmptyAlt,
-            "^(?(?=(a))abc|def)" => Pcre2ExecutionKind.ConditionalLookahead,
-            "^(?(?!(a))def|abc)" => Pcre2ExecutionKind.ConditionalNegativeLookahead,
-            "^(?(?=(a)(*ACCEPT))abc|def)" => Pcre2ExecutionKind.ConditionalAcceptLookahead,
-            "^(?(?!(a)(*ACCEPT))def|abc)" => Pcre2ExecutionKind.ConditionalAcceptNegativeLookahead,
-            "^(?1)\\d{3}(a)" => Pcre2ExecutionKind.SubroutinePrefixDigits,
-            "(?1)(A(*COMMIT)|B)D" => Pcre2ExecutionKind.CommitSubroutine,
-            "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)" => Pcre2ExecutionKind.DefineSubroutineB,
-            "f.*" => Pcre2ExecutionKind.PartialSoftDotAllLiteral,
-            "foo" => Pcre2ExecutionKind.ReplaceFooLiteral,
-            "foo(?<Bar>BAR)?" => Pcre2ExecutionKind.ReplaceFooOptionalBar,
-            "(a)b+" => Pcre2ExecutionKind.ReplacePartialAbPlus,
-            "c*+(?<=[bc])" => Pcre2ExecutionKind.ProbeTrailingCLookbehind,
-            "c++(?<=[bc])" => Pcre2ExecutionKind.ProbeTrailingCPlusLookbehind,
-            "^(?:a)++\\w" => Pcre2ExecutionKind.ProbeAnchoredAPlusWord,
-            "^(?:aa|(?:a)++\\w)" => Pcre2ExecutionKind.ProbeAnchoredAaOrAPlusWord,
-            "^(?:a)*+\\w" => Pcre2ExecutionKind.ProbeAnchoredAStarWord,
-            "^(a)++\\w" => Pcre2ExecutionKind.ProbeAnchoredCapturedAPlusWord,
-            "^(a|)++\\w" => Pcre2ExecutionKind.ProbeAnchoredOptionalAPlusWord,
-            "(abc)++x" => Pcre2ExecutionKind.ProbeAnchoredAbcPlusTerminalX,
-            "(abc)(?1)" => Pcre2ExecutionKind.ProbeRecursiveAbcTwice,
-            "^\\R" => Pcre2ExecutionKind.ProbeAnchoredR,
-            "^\\R{2,3}x" => Pcre2ExecutionKind.ProbeAnchoredRRangeX,
-            "^\\R{2,3}?x" => Pcre2ExecutionKind.ProbeAnchoredRRangeReluctantX,
-            "^\\R?x" => Pcre2ExecutionKind.ProbeAnchoredROptionalX,
-            "^\\R+x" => Pcre2ExecutionKind.ProbeAnchoredRPlusX,
-            _ when IsMailboxRfc2822Pattern(pattern) => Pcre2ExecutionKind.MailboxRfc2822,
-            _ => Pcre2ExecutionKind.Unimplemented,
-        };
-    }
-
-    private static Pcre2NameEntry[] GetPatternNameEntries(string pattern)
-    {
-        return pattern switch
-        {
-            @"(?:(?<n>foo)|(?<n>bar))\k<n>" =>
-            [
-                new Pcre2NameEntry { Name = "n", Number = 1 },
-                new Pcre2NameEntry { Name = "n", Number = 2 },
-            ],
-            "(?|(?'a'aaa)|(?'a'b))\\k'a'" =>
-            [
-                new Pcre2NameEntry { Name = "a", Number = 1 },
-            ],
-            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'" =>
-            [
-                new Pcre2NameEntry { Name = "a", Number = 1 },
-                new Pcre2NameEntry { Name = "a", Number = 2 },
-            ],
-            _ => [],
-        };
-    }
-
-    private static bool CanAlsoUseUtf8RegexBackend(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.ReplaceFooLiteral or
-            Pcre2ExecutionKind.ReplaceFooOptionalBar or
-            Pcre2ExecutionKind.ReplacePartialAbPlus;
-    }
-
-    private static bool CanAlsoUseManagedRegexBackend(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.ReplaceFooOptionalBar or
-            Pcre2ExecutionKind.ReplacePartialAbPlus;
-    }
-
-    private static Pcre2OperationPrograms CreateExecutionPlan(
-        string pattern,
-        Pcre2ExecutionKind executionKind,
-        bool translatedToUtf8Regex,
-        IPcre2Utf8ProgramSlot primaryUtf8,
-        IPcre2Utf8ProgramSlot utf8SearchEquivalent,
-        IPcre2ManagedProgramSlot managed)
-    {
-        var isManagedCompatible = executionKind == Pcre2ExecutionKind.ManagedRegex || CanAlsoUseManagedRegexBackend(executionKind);
-        var prefersNativeGlobalEntry = RequiresNativeGlobalEntryPath(pattern, executionKind) &&
-            !CanUseUtf8RegexEquivalentGlobalEntry(executionKind, utf8SearchEquivalent);
-
-        IPcre2DirectProgram directProgram = Pcre2NoDirectProgram.Instance;
-        if (translatedToUtf8Regex)
-        {
-            directProgram = new Pcre2Utf8DirectProgram(
-                ((Pcre2Utf8ProgramSlot)primaryUtf8).Regex,
-                Pcre2DirectProgramKind.Utf8Regex);
-        }
-        else if (utf8SearchEquivalent is Pcre2Utf8ProgramSlot equivalent)
-        {
-            directProgram = new Pcre2Utf8DirectProgram(equivalent.Regex, Pcre2DirectProgramKind.Utf8RegexEquivalent);
-        }
-        else if (managed is Pcre2ManagedProgramSlot managedProgram && isManagedCompatible)
-        {
-            directProgram = new Pcre2ManagedDirectProgram(managedProgram.Regex);
-        }
-
-        var noProgram = Pcre2NoDirectProgram.Instance;
-        var countProgram = prefersNativeGlobalEntry ? noProgram : directProgram;
-        var enumerateProgram = prefersNativeGlobalEntry ? noProgram : directProgram;
-        var matchProgram = directProgram.Kind is Pcre2DirectProgramKind.Utf8Regex or Pcre2DirectProgramKind.Utf8RegexEquivalent
-            ? directProgram
-            : noProgram;
-        IPcre2DirectProgram replaceProgram = noProgram;
-        if (!prefersNativeGlobalEntry && directProgram.Kind == Pcre2DirectProgramKind.Utf8Regex)
-        {
-            replaceProgram = directProgram;
-        }
-        else if (!prefersNativeGlobalEntry && managed is Pcre2ManagedProgramSlot replacementManaged && isManagedCompatible)
-        {
-            replaceProgram = new Pcre2ManagedDirectProgram(replacementManaged.Regex);
-        }
-
-        return new Pcre2OperationPrograms(
-            directProgram,
-            countProgram,
-            enumerateProgram,
-            matchProgram,
-            replaceProgram);
-    }
-
-    private static bool CanUseUtf8RegexEquivalentGlobalEntry(Pcre2ExecutionKind executionKind, IPcre2Utf8ProgramSlot utf8SearchEquivalent)
-    {
-        if (!utf8SearchEquivalent.IsPresent)
-        {
-            return false;
-        }
-
-        return executionKind is
-            Pcre2ExecutionKind.BranchResetBasic or
-            Pcre2ExecutionKind.BranchResetNested;
-    }
-
-    private static bool CanUseUtf8RegexTranslation(string pattern, Pcre2ExecutionKind executionKind, Utf8Regex utf8Regex)
-    {
-        if (executionKind != Pcre2ExecutionKind.ManagedRegex &&
-            !CanAlsoUseUtf8RegexBackend(executionKind))
-        {
-            return false;
-        }
-
-        if (executionKind == Pcre2ExecutionKind.ManagedRegex)
-        {
-            return true;
-        }
-
-        var isNativeStructuralOrLiteral = utf8Regex.ExecutionKind is
-            Internal.Planning.NativeExecutionKind.ExactAsciiLiteral or
-            Internal.Planning.NativeExecutionKind.AsciiLiteralIgnoreCase or
-            Internal.Planning.NativeExecutionKind.ExactUtf8Literal or
-            Internal.Planning.NativeExecutionKind.ExactUtf8Literals or
-            Internal.Planning.NativeExecutionKind.AsciiSimplePattern or
-            Internal.Planning.NativeExecutionKind.AsciiOrderedLiteralWindow;
-        if (isNativeStructuralOrLiteral)
-        {
-            return true;
-        }
-
-        return IsStructurallyTranslatedManagedPattern(pattern);
-    }
-
-    private static bool IsStructurallyTranslatedManagedPattern(string pattern)
-    {
-        return pattern is
-            @"(a)b+" or
-            @"^\d{1,2}/\d{1,2}/\d{4}$" or
-            @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b" or
-            @"(\d{4}[- ]){3}\d{3,4}" or
-            @"^[-+]?\d*\.?\d*$" or
-            @"^([0-9]+)(\-| |$)(.*)$" or
-            @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?" or
-            @"\w{10,}" or
-            @"\b\w{10,}\b" or
-            @"\w+\s+Holmes" or
-            @"[^\n]*";
-    }
-
-    private static bool RequiresNativeGlobalEntryPath(string pattern, Pcre2ExecutionKind executionKind)
-    {
-        return RequiresSpecialGlobalIteration(pattern) ||
-            CanEnumerateViaRepeatedDetailedMatching(executionKind);
-    }
-
-    private static bool RequiresSpecialGlobalIteration(string pattern)
-    {
-        return pattern is
-            "abc\\K|def\\K" or
-            "ab\\Kc|de\\Kf" or
-            "(?<=abc)(|def)" or
-            "(?<=abc)(|DEF)" or
-            "(?<=\\G.)" or
-            "(?<=\\Ka)" or
-            "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))" or
-            "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))" or
-            "(?=ab\\K)";
-    }
-
-    private static bool UsesRecursion(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.KResetDefineSubroutineAb or
-            Pcre2ExecutionKind.KResetRecursiveAny or
-            Pcre2ExecutionKind.KResetRecursiveCaptured or
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround1 or
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround2 or
-            Pcre2ExecutionKind.KResetRuntimeConditionalDigits or
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine or
-            Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine or
-            Pcre2ExecutionKind.RecursivePalindromeOdd or
-            Pcre2ExecutionKind.RecursivePalindromeAny or
-            Pcre2ExecutionKind.RecursiveAlternation or
-            Pcre2ExecutionKind.RecursiveOptional or
-            Pcre2ExecutionKind.SubroutinePrefixDigits or
-            Pcre2ExecutionKind.CommitSubroutine or
-            Pcre2ExecutionKind.DefineSubroutineB;
-    }
-
-    private static bool MayReportNonMonotoneMatchOffsets(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.KResetFooBar or
-            Pcre2ExecutionKind.KResetLookaheadAb or
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine;
-    }
-
-    private static bool RejectsNonMonotoneIterativeMatches(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.KResetLookbehindA or
-            Pcre2ExecutionKind.KResetConditionalGcOverlap or
-            Pcre2ExecutionKind.KResetConditionalGcNotSorted or
-            Pcre2ExecutionKind.KResetLookaheadAb;
-    }
-
-    private static bool MayFailIterativeExecutionAtRuntime(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine;
     }
 
     private static Pcre2NameEntry[] GetManagedNameEntries(Regex regex)
@@ -1862,80 +937,7 @@ public sealed class Utf8Pcre2Regex
             .ToArray();
     }
 
-    private int GetMinRequiredLengthInBytes()
-    {
-        return Pattern switch
-        {
-            "^(ba|b*){1,2}?bc" => 5,
-            "(?|(abc)|(xyz))" => 3,
-            "(?|(abc)|(xyz))\\1" => 6,
-            "(x)(?|(abc)|(xyz))(x)" => 5,
-            "(x)(?|(abc)(pqr)|(xyz))(x)" => 5,
-            "(?|(aaa)|(b))" => 1,
-            "(?|(abc)|(xyz))(?1)" => 6,
-            "(?|(aaa)|(b))\\g{1}" => 2,
-            "(?|(?'a'aaa)|(?'a'b))\\k'a'" => 2,
-            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'" => 6,
-            @"(?:(?<n>foo)|(?<n>bar))\k<n>" => 6,
-            "(*MARK:A)(*SKIP:B)(C|X)" => 1,
-            @"(foo)\Kbar" => 6,
-            @"(foo)(\Kbar|baz)" => 6,
-            @"(foo\Kbar)baz" => 9,
-            @"abc\K123" => 6,
-            @"123\Kabc" => 6,
-            @"^abc\K" => 3,
-            @"^(?:(?=abc)|abc\K)" => 0,
-            @"(?>a\Kb)" => 2,
-            @"((?>a\Kb))" => 2,
-            @"(a\Kb)" => 2,
-            @"^a\Kcz|ac" => 2,
-            @"(?>a\Kbz|ab)" => 2,
-            @"^(?&t)(?(DEFINE)(?<t>a\Kb))$" => 2,
-            @"(?:a\Kb)*+" => 0,
-            @"(?>a\Kb)*" => 0,
-            @"(?:a\Kb)*" => 0,
-            @"(a\Kb)*+" => 0,
-            @"(a\Kb)*" => 0,
-            @"a\K.(?0)*" => 2,
-            @"(a\K.(?1)*)" => 2,
-            @"(?=ab\K)" => 0,
-            @"(?<=\Ka)" => 1,
-            @"(?(?=\Gc)(?<=\Kb)c|(?<=\Kab))" => 2,
-            @"(?(?=\Gc)(?<=\Kab)|(?<=\Kb))" => 1,
-            @"(?=.{10}(?1))x(\K){0}" => 1,
-            @"(?=.{10}(.))(*scs:(1)(?2))x(\K){0}" => 1,
-            @"(?=.{5}(?1))\d*(\K){0}" => 0,
-            @"ab\Cde" => 5,
-            "^(.|(.)(?1)\\2)$" => 1,
-            "^((.)(?1)\\2|.?)$" => 0,
-            "^(.)(\\1|a(?2))" => 3,
-            "^(.|(.)(?1)?\\2)$" => 1,
-            "(?>ab|abab){1,5}?M" => 11,
-            "(?>ab|abab){2}?M" => 5,
-            "((?(?=(a))a)+k)" => 2,
-            "((?(?=(a))a|)+k)" => 2,
-            "^(?(?=(a))abc|def)" => 3,
-            "^(?(?!(a))def|abc)" => 3,
-            "^(?(?=(a)(*ACCEPT))abc|def)" => 3,
-            "^(?(?!(a)(*ACCEPT))def|abc)" => 3,
-            "^(?1)\\d{3}(a)" => 5,
-            "(?1)(A(*COMMIT)|B)D" => 3,
-            "(?<DEFINE>b)(?(DEFINE)(a+))(?&DEFINE)" => 2,
-            "f.*" => 1,
-            "foo" => 3,
-            "foo(?<Bar>BAR)?" => 3,
-            "(a)b+" => 2,
-            _ when IsMailboxRfc2822Pattern(Pattern) => 7,
-            _ => 0,
-        };
-    }
-
-    private static bool IsMailboxRfc2822Pattern(string pattern)
-        => pattern.StartsWith("/(?ix)(?(DEFINE)", StringComparison.Ordinal) &&
-           pattern.Contains("(?<mailbox>", StringComparison.Ordinal) &&
-           pattern.EndsWith("^(?&mailbox)$/", StringComparison.Ordinal);
-
-    private Utf8Pcre2ValueMatch MatchViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    private Utf8Pcre2ValueMatch MatchUsingManagedBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
@@ -1943,13 +945,8 @@ public sealed class Utf8Pcre2Regex
         return Utf8Pcre2ValueMatch.Create(input, match);
     }
 
-    private static Utf8Pcre2ValueMatch MatchViaMailboxRfc2822(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaMailboxRfc2822(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
 
-    private Utf8Pcre2MatchContext MatchDetailedViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    private Utf8Pcre2MatchContext MatchDetailedUsingManagedBackend(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
@@ -1957,7 +954,7 @@ public sealed class Utf8Pcre2Regex
         return Utf8Pcre2MatchContext.Create(input, match, GroupNames);
     }
 
-    private Utf8Pcre2MatchContext MatchDetailedViaUtf8RegexTranslation(
+    private Utf8Pcre2MatchContext MatchDetailedUsingUtf8Backend(
         Utf8ValidatedInput input,
         Utf8BytePosition start)
     {
@@ -1965,1338 +962,161 @@ public sealed class Utf8Pcre2Regex
         return CreateManagedProfileMatchContext(input.Bytes, context, GroupNames);
     }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaMailboxRfc2822(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input[startOffsetInBytes..]);
-        if (subject is
-            "Alan Other <user@dom.ain>" or
-            "<user@dom.ain>" or
-            "user@dom.ain" or
-            "user@[]" or
-            "user@[domain literal]" or
-            "user@[domain literal with \"[square brackets\"] inside]" or
-            "\"A. Other\" <user.1234@dom.ain> (a comment)" or
-            "A. Other <user.1234@dom.ain> (a comment)" or
-            "\"/s=user/ou=host/o=place/prmd=uu.yy/admd= /c=gb/\"@x400-re.lay")
-        {
-            var end = startOffsetInBytes + input[startOffsetInBytes..].Length;
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, end)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetBasic(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("abc"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("xyz"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetBackref(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetBackref(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetBackref(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("abcabc"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("xyzxyz"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetNested(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetNested(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetNested(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("xabcx"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 4),
-                    Pcre2GroupData.FromByteOffsets(input, 3, startOffsetInBytes + 4, startOffsetInBytes + 5),
-                ]);
-        }
-
-        if (remaining.StartsWith("xxyzx"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 4),
-                    Pcre2GroupData.FromByteOffsets(input, 3, startOffsetInBytes + 4, startOffsetInBytes + 5),
-                ]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetNestedSecondCapture(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetNestedSecondCapture(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetNestedSecondCapture(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("xabcpqrx"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 8),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 4),
-                    Pcre2GroupData.FromByteOffsets(input, 3, startOffsetInBytes + 4, startOffsetInBytes + 7),
-                    Pcre2GroupData.FromByteOffsets(input, 4, startOffsetInBytes + 7, startOffsetInBytes + 8),
-                ]);
-        }
-
-        if (remaining.StartsWith("xxyzx"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 4),
-                    new Pcre2GroupData { Number = 3, Success = false },
-                    Pcre2GroupData.FromByteOffsets(input, 4, startOffsetInBytes + 4, startOffsetInBytes + 5),
-                ]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetAbasic(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetAbasic(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetAbasic(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        for (var offset = 0; offset < remaining.Length; offset++)
-        {
-            if (remaining[offset..].StartsWith("aaa"u8))
-            {
-                var start = startOffsetInBytes + offset;
-                return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, start, start + 3), Pcre2GroupData.FromByteOffsets(input, 1, start, start + 3)]);
-            }
-
-            if (remaining[offset] == (byte)'b')
-            {
-                var start = startOffsetInBytes + offset;
-                return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, start, start + 1), Pcre2GroupData.FromByteOffsets(input, 1, start, start + 1)]);
-            }
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetSubroutine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetSubroutine(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetSubroutine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("abcabc"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("xyzabc"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetGReference(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetGReference(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetGReference(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("aaaaaa"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("bb"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 2), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetSameNameBackref(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetSameNameBackref(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetSameNameBackref(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("aaaaaa"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)],
-                [new Pcre2NameEntry { Name = "a", Number = 1 }]);
-        }
-
-        if (remaining.StartsWith("bb"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 2), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1)],
-                [new Pcre2NameEntry { Name = "a", Number = 1 }]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetSameNameFollowup(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetSameNameFollowup(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaBranchResetSameNameFollowup(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("aaaccccaaa"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 10),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 3, startOffsetInBytes + 7),
-                ],
-                [new Pcre2NameEntry { Name = "a", Number = 1 }, new Pcre2NameEntry { Name = "a", Number = 2 }]);
-        }
-
-        if (remaining.StartsWith("bccccb"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 5),
-                ],
-                [new Pcre2NameEntry { Name = "a", Number = 1 }, new Pcre2NameEntry { Name = "a", Number = 2 }]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaReluctantAlternation(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("bbabc"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes + 1, startOffsetInBytes + 3),
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaReluctantAlternation(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaReluctantAlternation(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaDuplicateNamesFooBar(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("foofoo"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3),
-                    new Pcre2GroupData { Number = 2, Success = false }
-                ],
-                [new Pcre2NameEntry { Name = "n", Number = 1 }, new Pcre2NameEntry { Name = "n", Number = 2 }]);
-        }
-
-        if (remaining.StartsWith("barbar"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6),
-                    new Pcre2GroupData { Number = 1, Success = false },
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes, startOffsetInBytes + 3)
-                ],
-                [new Pcre2NameEntry { Name = "n", Number = 1 }, new Pcre2NameEntry { Name = "n", Number = 2 }]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaDuplicateNamesFooBar(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaDuplicateNamesFooBar(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaMarkSkip(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("C"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1)
-                ],
-                null,
-                "A");
-        }
-
-        return Utf8Pcre2MatchContext.Create(input, [], null, "A");
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaMarkSkip(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaMarkSkip(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetFooBar(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("foobar"u8)
-            ? Utf8Pcre2ValueMatch.Create(input, Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 6))
-            : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetFooBar(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("foobar"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 6),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3)
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetBarOrBaz(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetBarOrBaz(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetBarOrBaz(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("foobar"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 6),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 3, startOffsetInBytes + 6)
-                ]);
-        }
-
-        if (remaining.StartsWith("foobaz"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 6),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 3),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 3, startOffsetInBytes + 6)
-                ]);
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaBranchResetBasic(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaBranchResetBasic(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetFooBarBaz(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetFooBarBaz(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetFooBarBaz(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("foobarbaz"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 9),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 6)
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetAbc123(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAbc123(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAbc123(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var index = input[startOffsetInBytes..].IndexOf("abc123"u8);
-        if (index < 0)
-        {
-            return default;
-        }
 
-        var matchStart = startOffsetInBytes + index + 3;
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, matchStart, matchStart + 3)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKReset123Abc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKReset123Abc(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKReset123Abc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var index = input[startOffsetInBytes..].IndexOf("123abc"u8);
-        if (index < 0)
-        {
-            return default;
-        }
 
-        var matchStart = startOffsetInBytes + index + 3;
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, matchStart, matchStart + 3)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetAnchorAbc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAnchorAbc(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAnchorAbc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("abc"u8))
-        {
-            return default;
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 3)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetAnchorLookaheadOrAbc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAnchorLookaheadOrAbc(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAnchorLookaheadOrAbc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("abc"u8))
-        {
-            return default;
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetAtomicAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAtomicAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAtomicAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("ab"u8)
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 2)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetCapturedAtomicAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetCapturedAtomicAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetCapturedAtomicAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("ab"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 2),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 2)
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetCapturedAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetCapturedAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetCapturedAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("ab"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 2),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 2)
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetAnchorCzOrAc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAnchorCzOrAc(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAnchorCzOrAc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("acz"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("ac"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 2)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetAtomicAltAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAtomicAltAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAtomicAltAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.StartsWith("abz"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 3)]);
-        }
 
-        if (remaining.StartsWith("ab"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 2)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetDefineSubroutineAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetDefineSubroutineAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetDefineSubroutineAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.SequenceEqual("ab"u8))
-        {
-            return default;
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 2)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetRepeatAbPossessive(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRepeatAbPossessive(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRepeatAbPossessive(ReadOnlySpan<byte> input, int startOffsetInBytes)
-        => MatchDetailedViaRepeatedKResetAb(input, startOffsetInBytes, includeCapture: false);
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetAtomicRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetAtomicRepeatAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetAtomicRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-        => MatchDetailedViaRepeatedKResetAb(input, startOffsetInBytes, includeCapture: false);
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRepeatAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-        => MatchDetailedViaRepeatedKResetAb(input, startOffsetInBytes, includeCapture: false);
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetCapturedRepeatAbPossessive(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetCapturedRepeatAbPossessive(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetCapturedRepeatAbPossessive(ReadOnlySpan<byte> input, int startOffsetInBytes)
-        => MatchDetailedViaRepeatedKResetAb(input, startOffsetInBytes, includeCapture: true);
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetCapturedRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetCapturedRepeatAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetCapturedRepeatAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-        => MatchDetailedViaRepeatedKResetAb(input, startOffsetInBytes, includeCapture: true);
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaRepeatedKResetAb(ReadOnlySpan<byte> input, int startOffsetInBytes, bool includeCapture)
-    {
-        var cursor = startOffsetInBytes;
-        var lastAbStart = -1;
-        while (cursor <= input.Length - 2 && input[cursor] == (byte)'a' && input[cursor + 1] == (byte)'b')
-        {
-            lastAbStart = cursor;
-            cursor += 2;
-        }
-
-        if (lastAbStart < 0)
-        {
-            return Utf8Pcre2MatchContext.Create(input, includeCapture
-                ? [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes),
-                    new Pcre2GroupData { Number = 1, Success = false }
-                ]
-                : [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes)]);
-        }
-
-        var groups = includeCapture
-            ? new[]
-            {
-                Pcre2GroupData.FromByteOffsets(input, 0, lastAbStart + 1, lastAbStart + 2),
-                Pcre2GroupData.FromByteOffsets(input, 1, lastAbStart, lastAbStart + 2)
-            }
-            : new[]
-            {
-                Pcre2GroupData.FromByteOffsets(input, 0, lastAbStart + 1, lastAbStart + 2)
-            };
-
-        return Utf8Pcre2MatchContext.Create(input, groups);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetRecursiveAny(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRecursiveAny(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRecursiveAny(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.SequenceEqual("abac"u8))
-        {
-            return default;
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 4)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetRecursiveCaptured(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRecursiveCaptured(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRecursiveCaptured(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.SequenceEqual("abac"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 3, startOffsetInBytes + 4),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 4)
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetLookaheadAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetLookaheadAb(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetLookaheadAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("ab"u8))
-        {
-            return default;
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [new Pcre2GroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes + 2,
-            EndOffsetInBytes = startOffsetInBytes,
-            StartOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..(startOffsetInBytes + 2)]),
-            EndOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]),
-        }]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetLookbehindA(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetLookbehindA(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetLookbehindA(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return !remaining.IsEmpty && remaining[0] == (byte)'a'
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetConditionalGcOverlap(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetConditionalGcOverlap(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetConditionalGcOverlap(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abc"u8)
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 2)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetConditionalGcNotSorted(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetConditionalGcNotSorted(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetConditionalGcNotSorted(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abc"u8)
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 1, startOffsetInBytes + 2)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaKResetRuntimeDisallowedLookaround1(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRuntimeDisallowedLookaround1(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRuntimeDisallowedLookaround1(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.SequenceEqual("x1234567890"u8))
-        {
-            throw new Pcre2MatchException("disallowed use of \\K in lookaround", Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetRuntimeDisallowedLookaround2(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRuntimeDisallowedLookaround2(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRuntimeDisallowedLookaround2(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.SequenceEqual("x1234567890"u8))
-        {
-            throw new Pcre2MatchException("disallowed use of \\K in lookaround", Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetRuntimeConditionalDigits(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetRuntimeConditionalDigits(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetRuntimeConditionalDigits(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.SequenceEqual("1234567890"u8))
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 5, startOffsetInBytes + 10)]);
-        }
 
-        if (remaining.SequenceEqual("abcdefgh"u8))
-        {
-            throw new Pcre2MatchException("disallowed use of \\K in lookaround", Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-        }
 
-        return default;
-    }
 
-    private Utf8Pcre2ValueMatch MatchViaKResetSneakyLookaheadDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetSneakyLookaheadDefine(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private Utf8Pcre2MatchContext MatchDetailedViaKResetSneakyLookaheadDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.SequenceEqual("ab"u8))
-        {
-            return default;
-        }
 
-        if (!CompileSettings.AllowLookaroundBackslashK)
-        {
-            throw new Pcre2MatchException("disallowed use of \\K in lookaround", Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-        }
 
-        return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 2, startOffsetInBytes + 1)]);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetSneakyLookbehindDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetSneakyLookbehindDefine(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetSneakyLookbehindDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length > 0 && remaining[0] == (byte)'a')
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaKResetSneakyGlobalLookbehindDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaKResetSneakyGlobalLookbehindDefine(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaKResetSneakyGlobalLookbehindDefine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length > 0 && remaining[0] == (byte)'a')
-        {
-            return Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1)]);
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaBackslashCLiteral(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length < 5)
-        {
-            return default;
-        }
 
-        if (remaining[0] == (byte)'a' && remaining[1] == (byte)'b' && remaining[3] == (byte)'d' && remaining[4] == (byte)'e')
-        {
-            return Utf8Pcre2ValueMatch.Create(input, Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5));
-        }
 
-        return default;
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaBackslashCLiteral(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var match = MatchViaBackslashCLiteral(input, startOffsetInBytes);
-        return match.Success
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaRecursivePalindromeOdd(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaRecursivePalindromeOdd(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaRecursivePalindromeOdd(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return TryMatchPalindrome(input, startOffsetInBytes, requireOddLength: true, allowEmpty: false);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaRecursivePalindromeAny(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaRecursivePalindromeAny(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaRecursivePalindromeAny(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return TryMatchPalindrome(input, startOffsetInBytes, requireOddLength: false, allowEmpty: true);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaRecursiveAlternation(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaRecursiveAlternation(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaRecursiveAlternation(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length < 3 || remaining[1] != (byte)'a' || remaining[2] != remaining[0])
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-                Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes + 1, startOffsetInBytes + 3),
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaRecursiveOptional(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaRecursiveOptional(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaRecursiveOptional(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return TryMatchPalindrome(input, startOffsetInBytes, requireOddLength: true, allowEmpty: true);
-    }
 
-    private static Utf8Pcre2MatchContext MatchDetailedViaAtomicAlternationReluctantMany(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abababababababababababM"u8)
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 12, startOffsetInBytes + 23)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaAtomicAlternationReluctantMany(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abababababababababababM"u8)
-            ? Utf8Pcre2ValueMatch.Create(input, Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 12, startOffsetInBytes + 23))
-            : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaAtomicAlternationReluctantTwo(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abababM"u8)
-            ? Utf8Pcre2MatchContext.Create(input, [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 2, startOffsetInBytes + 7)])
-            : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaAtomicAlternationReluctantTwo(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return remaining.StartsWith("abababM"u8)
-            ? Utf8Pcre2ValueMatch.Create(input, Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes + 2, startOffsetInBytes + 7))
-            : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalLookaheadPlus(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchDetailedViaConditionalLookaheadAk(input, startOffsetInBytes);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaConditionalLookaheadPlus(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalLookaheadPlus(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalLookaheadEmptyAlt(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchDetailedViaConditionalLookaheadAk(input, startOffsetInBytes);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaConditionalLookaheadEmptyAlt(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalLookaheadEmptyAlt(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalLookaheadAk(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        var relativeIndex = remaining.IndexOf("ak"u8);
-        if (relativeIndex < 0)
-        {
-            return default;
-        }
-
-        var matchStart = startOffsetInBytes + relativeIndex;
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, matchStart, matchStart + 2),
-                Pcre2GroupData.FromByteOffsets(input, 1, matchStart, matchStart + 2),
-                Pcre2GroupData.FromByteOffsets(input, 2, matchStart, matchStart + 1),
-            ]);
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchDetailedViaConditionalAnchorAbc(input, startOffsetInBytes);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaConditionalLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalLookahead(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalNegativeLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return MatchDetailedViaConditionalAnchorAbc(input, startOffsetInBytes);
-    }
 
-    private static Utf8Pcre2ValueMatch MatchViaConditionalNegativeLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalNegativeLookahead(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalAnchorAbc(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if (startOffsetInBytes != 0)
-        {
-            return default;
-        }
-
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("abc"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-            ]);
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalAcceptLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if (startOffsetInBytes != 0)
-        {
-            return default;
-        }
-
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("abc"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaConditionalAcceptLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalAcceptLookahead(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaConditionalAcceptNegativeLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if (startOffsetInBytes != 0)
-        {
-            return default;
-        }
-
-        var remaining = input[startOffsetInBytes..];
-        if (!remaining.StartsWith("abc"u8))
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 3),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaConditionalAcceptNegativeLookahead(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaConditionalAcceptNegativeLookahead(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaSubroutinePrefixDigits(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if (startOffsetInBytes != 0)
-        {
-            return default;
-        }
-
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.Length < 5 ||
-            remaining[0] != (byte)'a' ||
-            !char.IsAsciiDigit((char)remaining[1]) ||
-            !char.IsAsciiDigit((char)remaining[2]) ||
-            !char.IsAsciiDigit((char)remaining[3]) ||
-            remaining[4] != (byte)'a')
-        {
-            return default;
-        }
-
-        return Utf8Pcre2MatchContext.Create(
-            input,
-            [
-                Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 5),
-                Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1),
-            ]);
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaSubroutinePrefixDigits(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaSubroutinePrefixDigits(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaCommitSubroutine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var detailed = MatchDetailedViaCommitSubroutine(input, startOffsetInBytes);
-        return detailed.Success ? detailed.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaCommitSubroutine(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        for (var i = startOffsetInBytes; i + 2 < input.Length; i++)
-        {
-            if (input[i] == (byte)'A' && input[i + 1] == (byte)'B' && input[i + 2] == (byte)'D')
-            {
-                return Utf8Pcre2MatchContext.Create(
-                    input,
-                    [
-                        Pcre2GroupData.FromByteOffsets(input, 0, i, i + 3),
-                        Pcre2GroupData.FromByteOffsets(input, 1, i + 1, i + 2),
-                    ]);
-            }
-
-            if (input[i] == (byte)'B' && input[i + 1] == (byte)'A' && input[i + 2] == (byte)'D')
-            {
-                return Utf8Pcre2MatchContext.Create(
-                    input,
-                    [
-                        Pcre2GroupData.FromByteOffsets(input, 0, i, i + 3),
-                        Pcre2GroupData.FromByteOffsets(input, 1, i + 1, i + 2),
-                    ]);
-            }
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2MatchContext MatchDetailedViaDefineSubroutineB(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        for (var i = startOffsetInBytes; i + 1 < input.Length; i++)
-        {
-            if (input[i] == (byte)'b' && input[i + 1] == (byte)'b')
-            {
-                return Utf8Pcre2MatchContext.Create(
-                    input,
-                    [
-                        Pcre2GroupData.FromByteOffsets(input, 0, i, i + 2),
-                        Pcre2GroupData.FromByteOffsets(input, 1, i, i + 1),
-                    ]);
-            }
-        }
-
-        return default;
-    }
-
-    private static Utf8Pcre2ValueMatch MatchViaDefineSubroutineB(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var context = MatchDetailedViaDefineSubroutineB(input, startOffsetInBytes);
-        return context.Success ? context.Value : default;
-    }
-
-    private static Utf8Pcre2MatchContext TryMatchPalindrome(ReadOnlySpan<byte> input, int startOffsetInBytes, bool requireOddLength, bool allowEmpty)
-    {
-        var remaining = input[startOffsetInBytes..];
-        if (remaining.IsEmpty)
-        {
-            if (!allowEmpty)
-            {
-                return default;
-            }
-
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes)]);
-        }
-
-        for (var length = remaining.Length; length >= 0; length--)
-        {
-            if (requireOddLength && (length & 1) == 0)
-            {
-                continue;
-            }
-
-            if (!allowEmpty && length == 0)
-            {
-                continue;
-            }
-
-            var candidate = remaining[..length];
-            if (!IsAsciiPalindrome(candidate))
-            {
-                continue;
-            }
-
-            if (length == 1 && !allowEmpty)
-            {
-                return Utf8Pcre2MatchContext.Create(
-                    input,
-                    [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1)]);
-            }
-
-            if (length == 1)
-            {
-                return Utf8Pcre2MatchContext.Create(
-                    input,
-                    [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1), Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + 1)]);
-            }
-
-            return Utf8Pcre2MatchContext.Create(
-                input,
-                [
-                    Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + length),
-                    Pcre2GroupData.FromByteOffsets(input, 1, startOffsetInBytes, startOffsetInBytes + length),
-                    Pcre2GroupData.FromByteOffsets(input, 2, startOffsetInBytes, startOffsetInBytes + 1),
-                ]);
-        }
-
-        return default;
-    }
-
-    private static bool IsAsciiPalindrome(ReadOnlySpan<byte> value)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private static Utf8Pcre2ProbeResult ProbeViaCompiledPartialProgram(
+        ReadOnlySpan<byte> input,
+        Pcre2PartialMode partialMode,
+        int startOffsetInBytes,
+        Pcre2PartialProbeProgram program)
     {
-        for (var i = 0; i < value.Length / 2; i++)
+        return program.Kind switch
         {
-            if (value[i] != value[value.Length - 1 - i])
-            {
-                return false;
-            }
-        }
-
-        return true;
+            Pcre2PartialProbeProgramKind.PartialSoftDotAllLiteral => ProbeViaPartialSoftDotAllLiteral(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AbPlus => ProbeViaAbPlus(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.LiteralAlternation => ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
+            Pcre2PartialProbeProgramKind.OrderedLiteralAlternation => ProbeViaOrderedLiteralAlternation(input, partialMode, startOffsetInBytes, program.Operands),
+            Pcre2PartialProbeProgramKind.WordBoundaryLiteral => ProbeViaWordBoundaryLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+            Pcre2PartialProbeProgramKind.InspectedPrefixLiteral => ProbeViaInspectedPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Flag),
+            Pcre2PartialProbeProgramKind.InspectedContextLiteral => ProbeViaInspectedContextLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.Operands[1], program.Operands[2], program.Flag),
+            Pcre2PartialProbeProgramKind.EndAssertion => ProbeViaEndAssertion(input, partialMode, startOffsetInBytes, program.Flag),
+            Pcre2PartialProbeProgramKind.TrailingCWithLookbehind => ProbeViaTrailingCWithLookbehind(input, partialMode, startOffsetInBytes, program.Flag),
+            Pcre2PartialProbeProgramKind.NegativeStartClassDotStar => ProbeViaNegativeStartClassDotStar(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AnchoredNewlineSequence => ProbeViaAnchoredNewlineSequence(input, partialMode, startOffsetInBytes, program.First, program.Second, program.Flag),
+            Pcre2PartialProbeProgramKind.AnchoredOptionalNewlineThenX => ProbeViaAnchoredOptionalNewlineThenX(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AnchoredAtomicAPlusB => ProbeViaAnchoredAtomicAPlusB(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AnchoredRepeatedLiteral => ProbeViaAnchoredRepeatedLiteral(input, partialMode, startOffsetInBytes, program.Operands[0], program.First),
+            Pcre2PartialProbeProgramKind.AnchoredConditionalAbcDotStarOrZ => ProbeViaAnchoredConditionalAbcDotStarOrZ(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AnchoredLiteralPlusTerminal => ProbeViaAnchoredLiteralPlusTerminal(input, partialMode, startOffsetInBytes, program.Operands[0], (byte)program.Terminal),
+            Pcre2PartialProbeProgramKind.AnchoredAPlusWord => ProbeViaAnchoredAPlusWord(input, partialMode, startOffsetInBytes, program.Flag, false),
+            Pcre2PartialProbeProgramKind.AnchoredAaOrAPlusWord => ProbeViaAnchoredAaOrAPlusWord(input, partialMode, startOffsetInBytes),
+            Pcre2PartialProbeProgramKind.AnchoredACrlfEnd => ProbeViaAnchoredACrlfEnd(input, partialMode, startOffsetInBytes, program.Flag),
+            Pcre2PartialProbeProgramKind.CrlfDotQuantifier => ProbeViaCrlfDotQuantifier(input, partialMode, startOffsetInBytes, program.First, program.Second),
+            Pcre2PartialProbeProgramKind.TrailingLiteralAssertion => ProbeViaTrailingLiteralAssertion(input, partialMode, startOffsetInBytes, program.Operands[0], program.TrailingAssertion),
+            Pcre2PartialProbeProgramKind.AnchoredPrefixLiteral => ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+            Pcre2PartialProbeProgramKind.AnchoredExactLiteral => ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, program.Operands[0]),
+            _ => throw new InvalidOperationException("The compiled partial-probe program is not executable."),
+        };
     }
 
     private static Utf8Pcre2ProbeResult ProbeViaPartialSoftDotAllLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
@@ -3315,26 +1135,6 @@ public sealed class Utf8Pcre2Regex
         }
 
         return Utf8Pcre2ProbeResult.CreateNoMatch(input);
-    }
-
-    private static Utf8Pcre2ProbeResult ProbeViaFooLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        return ProbeViaLiteralAlternation(input, partialMode, startOffsetInBytes, "foo");
-    }
-
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredFooLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        return ProbeViaAnchoredPrefixLiteral(input, partialMode, startOffsetInBytes, "foo");
-    }
-
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredExactAbcLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        return ProbeViaAnchoredExactLiteral(input, partialMode, startOffsetInBytes, "abc");
-    }
-
-    private static Utf8Pcre2ProbeResult ProbeViaSuffixAnchoredAbcLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
-    {
-        return ProbeViaSuffixAnchoredLiteral(input, partialMode, startOffsetInBytes, "abc");
     }
 
     private static Utf8Pcre2ProbeResult ProbeViaAbPlus(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
@@ -3384,10 +1184,9 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        params string[] literals)
+        byte[][] literalBytes)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalBytes = literals.Select(Encoding.UTF8.GetBytes).ToArray();
         var bestIndex = -1;
         byte[]? bestLiteral = null;
         foreach (var literal in literalBytes)
@@ -3436,10 +1235,9 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        params string[] literals)
+        byte[][] literalBytes)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalBytes = literals.Select(Encoding.UTF8.GetBytes).ToArray();
         Pcre2GroupData? firstPartial = null;
 
         for (var start = 0; start < remaining.Length; start++)
@@ -3488,10 +1286,9 @@ public sealed class Utf8Pcre2Regex
             : Utf8Pcre2ProbeResult.CreateNoMatch(input);
     }
 
-    private static Utf8Pcre2ProbeResult ProbeViaWordBoundaryLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string literal)
+    private static Utf8Pcre2ProbeResult ProbeViaWordBoundaryLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
         for (var start = 0; start < remaining.Length; start++)
         {
             if (!HasAsciiWordBoundary(remaining, start))
@@ -3548,13 +1345,11 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        string inspectedPrefix,
-        string matchedLiteral,
+        byte[] prefixUtf8,
+        byte[] literalUtf8,
         bool includePrefixInPartial)
     {
         var remaining = input[startOffsetInBytes..];
-        var prefixUtf8 = Encoding.UTF8.GetBytes(inspectedPrefix);
-        var literalUtf8 = Encoding.UTF8.GetBytes(matchedLiteral);
         for (var start = 0; start <= remaining.Length - prefixUtf8.Length; start++)
         {
             if (!remaining[start..].StartsWith(prefixUtf8))
@@ -3594,15 +1389,12 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        string? prefix,
-        string matchedLiteral,
-        string inspectedSuffix,
+        byte[] prefixUtf8,
+        byte[] literalUtf8,
+        byte[] suffixUtf8,
         bool includePrefixInPartial)
     {
         var remaining = input[startOffsetInBytes..];
-        var prefixUtf8 = prefix is null ? [] : Encoding.UTF8.GetBytes(prefix);
-        var literalUtf8 = Encoding.UTF8.GetBytes(matchedLiteral);
-        var suffixUtf8 = Encoding.UTF8.GetBytes(inspectedSuffix);
         var maxStart = remaining.Length - prefixUtf8.Length - literalUtf8.Length;
         for (var start = 0; start <= maxStart; start++)
         {
@@ -3846,10 +1638,9 @@ public sealed class Utf8Pcre2Regex
         return Utf8Pcre2ProbeResult.CreateNoMatch(input);
     }
 
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredRepeatedLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string literal, int repeatCount)
+    private static Utf8Pcre2ProbeResult ProbeViaAnchoredRepeatedLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, int repeatCount)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
         var requiredLength = literalUtf8.Length * repeatCount;
         var matched = 0;
         while (matched < remaining.Length && matched < requiredLength && remaining[matched] == literalUtf8[matched % literalUtf8.Length])
@@ -3901,10 +1692,9 @@ public sealed class Utf8Pcre2Regex
         return Utf8Pcre2ProbeResult.CreateNoMatch(input);
     }
 
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredLiteralPlusTerminal(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string repeatedLiteral, byte terminal)
+    private static Utf8Pcre2ProbeResult ProbeViaAnchoredLiteralPlusTerminal(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8, byte terminal)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(repeatedLiteral);
         var cursor = 0;
         while (cursor + literalUtf8.Length <= remaining.Length && remaining[cursor..].StartsWith(literalUtf8))
         {
@@ -4093,16 +1883,15 @@ public sealed class Utf8Pcre2Regex
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
-        string literal,
-        TrailingAssertionKind assertion)
+        byte[] literalUtf8,
+        Pcre2PartialProbeTrailingAssertion assertion)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
         var index = remaining.IndexOf(literalUtf8);
         if (index < 0)
         {
             if (partialMode != Pcre2PartialMode.None &&
-                assertion == TrailingAssertionKind.Dollar)
+                assertion == Pcre2PartialProbeTrailingAssertion.Dollar)
             {
                 var partialLength = LongestTrailingSuffixLength(remaining, literalUtf8);
                 if (partialLength > 0)
@@ -4124,18 +1913,18 @@ public sealed class Utf8Pcre2Regex
 
         var full = assertion switch
         {
-            TrailingAssertionKind.Dollar => atEnd || hasFinalNewline,
-            TrailingAssertionKind.EndAbsolute => atEnd,
-            TrailingAssertionKind.EndBeforeFinalNewline => atEnd || hasFinalNewline,
-            TrailingAssertionKind.WordBoundary => !rightIsWord,
-            TrailingAssertionKind.NonWordBoundary => rightIsWord,
+            Pcre2PartialProbeTrailingAssertion.Dollar => atEnd || hasFinalNewline,
+            Pcre2PartialProbeTrailingAssertion.EndAbsolute => atEnd,
+            Pcre2PartialProbeTrailingAssertion.EndBeforeFinalNewline => atEnd || hasFinalNewline,
+            Pcre2PartialProbeTrailingAssertion.WordBoundary => !rightIsWord,
+            Pcre2PartialProbeTrailingAssertion.NonWordBoundary => rightIsWord,
             _ => false,
         };
 
         if (full)
         {
             if (partialMode == Pcre2PartialMode.Hard &&
-                assertion is TrailingAssertionKind.Dollar or TrailingAssertionKind.EndAbsolute or TrailingAssertionKind.EndBeforeFinalNewline or TrailingAssertionKind.WordBoundary or TrailingAssertionKind.NonWordBoundary &&
+                assertion is Pcre2PartialProbeTrailingAssertion.Dollar or Pcre2PartialProbeTrailingAssertion.EndAbsolute or Pcre2PartialProbeTrailingAssertion.EndBeforeFinalNewline or Pcre2PartialProbeTrailingAssertion.WordBoundary or Pcre2PartialProbeTrailingAssertion.NonWordBoundary &&
                 atEnd)
             {
                 return Utf8Pcre2ProbeResult.CreatePartial(
@@ -4149,7 +1938,7 @@ public sealed class Utf8Pcre2Regex
         }
 
         if (partialMode != Pcre2PartialMode.None &&
-            assertion is TrailingAssertionKind.WordBoundary or TrailingAssertionKind.NonWordBoundary &&
+            assertion is Pcre2PartialProbeTrailingAssertion.WordBoundary or Pcre2PartialProbeTrailingAssertion.NonWordBoundary &&
             atEnd)
         {
             return Utf8Pcre2ProbeResult.CreatePartial(
@@ -4189,10 +1978,9 @@ public sealed class Utf8Pcre2Regex
         return false;
     }
 
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string literal)
+    private static Utf8Pcre2ProbeResult ProbeViaAnchoredExactLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
         if (remaining.SequenceEqual(literalUtf8))
         {
             if (partialMode == Pcre2PartialMode.Hard)
@@ -4221,10 +2009,9 @@ public sealed class Utf8Pcre2Regex
         return Utf8Pcre2ProbeResult.CreateNoMatch(input);
     }
 
-    private static Utf8Pcre2ProbeResult ProbeViaAnchoredPrefixLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string literal)
+    private static Utf8Pcre2ProbeResult ProbeViaAnchoredPrefixLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, byte[] literalUtf8)
     {
         var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
         if (remaining.StartsWith(literalUtf8))
         {
             return Utf8Pcre2ProbeResult.CreateFullMatch(
@@ -4240,38 +2027,6 @@ public sealed class Utf8Pcre2Regex
                 return Utf8Pcre2ProbeResult.CreatePartial(
                     input,
                     Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + partialLength));
-            }
-        }
-
-        return Utf8Pcre2ProbeResult.CreateNoMatch(input);
-    }
-
-    private static Utf8Pcre2ProbeResult ProbeViaSuffixAnchoredLiteral(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, string literal)
-    {
-        var remaining = input[startOffsetInBytes..];
-        var literalUtf8 = Encoding.UTF8.GetBytes(literal);
-        if (remaining.EndsWith(literalUtf8))
-        {
-            if (partialMode == Pcre2PartialMode.Hard)
-            {
-                return Utf8Pcre2ProbeResult.CreatePartial(
-                    input,
-                    Pcre2GroupData.FromByteOffsets(input, 0, input.Length - literalUtf8.Length, input.Length));
-            }
-
-            return Utf8Pcre2ProbeResult.CreateFullMatch(
-                input,
-                [Pcre2GroupData.FromByteOffsets(input, 0, input.Length - literalUtf8.Length, input.Length)]);
-        }
-
-        if (partialMode != Pcre2PartialMode.None)
-        {
-            var partialLength = LongestTrailingSuffixLength(remaining, literalUtf8);
-            if (partialLength > 0)
-            {
-                return Utf8Pcre2ProbeResult.CreatePartial(
-                    input,
-                    Pcre2GroupData.FromByteOffsets(input, 0, input.Length - partialLength, input.Length));
             }
         }
 
@@ -4335,612 +2090,28 @@ public sealed class Utf8Pcre2Regex
         return groups;
     }
 
-    private static Pcre2GroupData CaptureValue(Utf8Pcre2MatchContext match)
-        => match.GetGroup(0)._data;
 
-    private Pcre2GroupData[] EnumerateGlobalMatchData(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        return Pattern switch
-        {
-            "(?|(abc)|(xyz))" => EnumerateLiteralAlternation(input, startOffsetInBytes, "abc"u8, "xyz"u8),
-            "(?|(abc)|(xyz))\\1" => EnumerateLiteralAlternation(input, startOffsetInBytes, "abcabc"u8, "xyzxyz"u8),
-            "(x)(?|(abc)|(xyz))(x)" => EnumerateLiteralAlternation(input, startOffsetInBytes, "xabcx"u8, "xxyzx"u8),
-            "(x)(?|(abc)(pqr)|(xyz))(x)" => EnumerateLiteralAlternation(input, startOffsetInBytes, "xabcpqrx"u8, "xxyzx"u8),
-            "(?|(abc)|(xyz))(?1)" => EnumerateLiteralAlternation(input, startOffsetInBytes, "abcabc"u8, "xyzabc"u8),
-            "(?|(aaa)|(b))\\g{1}" => EnumerateLiteralAlternation(input, startOffsetInBytes, "aaaaaa"u8, "bb"u8),
-            "(?|(?'a'aaa)|(?'a'b))\\k'a'" => EnumerateLiteralAlternation(input, startOffsetInBytes, "aaaaaa"u8, "bb"u8),
-            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'" => EnumerateLiteralAlternation(input, startOffsetInBytes, "aaaccccaaa"u8, "bccccb"u8),
-            "(?:(?<n>foo)|(?<n>bar))\\k<n>" => EnumerateLiteralAlternation(input, startOffsetInBytes, "foofoo"u8, "barbar"u8),
-            "bb(.*?)c" => EnumerateSingleLiteral(input, startOffsetInBytes, "bbabc"u8),
-            "abc\\K|def\\K" => EnumerateLiteralKZeroLength(input, startOffsetInBytes),
-            "ab\\Kc|de\\Kf" => EnumerateLiteralKValue(input, startOffsetInBytes),
-            "(?:a\\Kb)*+" or "(?>a\\Kb)*" or "(?:a\\Kb)*" or "(a\\Kb)*+" or "(a\\Kb)*" => EnumerateRepeatedKResetAb(input, startOffsetInBytes),
-            "(?>a\\Kbz|ab)" => EnumerateKResetAtomicAltAb(input, startOffsetInBytes),
-            "(?<=abc)(|def)" => EnumerateEmptyOrLiteralAfterAbc(input, startOffsetInBytes, "def"u8),
-            "(?<=abc)(|DEF)" => EnumerateEmptyOrLiteralAfterAbc(input, startOffsetInBytes, "DEF"u8),
-            "(?<=\\G.)" => EnumerateGBoundary(input, startOffsetInBytes),
-            "(?<=\\Ka)" or "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))" or "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))" or "(?=ab\\K)"
-                => throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches."),
-            _ when CanEnumerateViaRepeatedDetailedMatching() => EnumerateViaRepeatedDetailedMatching(input, startOffsetInBytes),
-            _ when HasManagedRegex => EnumerateViaManagedRegex(input, startOffsetInBytes),
-            _ => throw new NotSupportedException("SPEC-PCRE2 does not support global iteration for this pattern in the managed profile."),
-        };
-    }
 
-    private bool CanEnumerateViaRepeatedDetailedMatching()
-        => CanEnumerateViaRepeatedDetailedMatching(ExecutionKind);
 
-    private static bool CanEnumerateViaRepeatedDetailedMatching(Pcre2ExecutionKind executionKind)
-    {
-        return executionKind is
-            Pcre2ExecutionKind.MailboxRfc2822 or
-            Pcre2ExecutionKind.ReluctantAlternation or
-            Pcre2ExecutionKind.BranchResetBasic or
-            Pcre2ExecutionKind.BranchResetBackref or
-            Pcre2ExecutionKind.BranchResetNested or
-            Pcre2ExecutionKind.BranchResetNestedSecondCapture or
-            Pcre2ExecutionKind.BranchResetAbasic or
-            Pcre2ExecutionKind.BranchResetSubroutine or
-            Pcre2ExecutionKind.BranchResetGReference or
-            Pcre2ExecutionKind.BranchResetSameNameBackref or
-            Pcre2ExecutionKind.BranchResetSameNameFollowup or
-            Pcre2ExecutionKind.DuplicateNamesFooBar or
-            Pcre2ExecutionKind.BackslashCLiteral or
-            Pcre2ExecutionKind.MarkSkip or
-            Pcre2ExecutionKind.KResetFooBar or
-            Pcre2ExecutionKind.KResetBarOrBaz or
-            Pcre2ExecutionKind.KResetFooBarBaz or
-            Pcre2ExecutionKind.KResetAbc123 or
-            Pcre2ExecutionKind.KReset123Abc or
-            Pcre2ExecutionKind.KResetAnchorAbc or
-            Pcre2ExecutionKind.KResetAnchorLookaheadOrAbc or
-            Pcre2ExecutionKind.KResetAtomicAb or
-            Pcre2ExecutionKind.KResetCapturedAtomicAb or
-            Pcre2ExecutionKind.KResetCapturedAb or
-            Pcre2ExecutionKind.KResetAnchorCzOrAc or
-            Pcre2ExecutionKind.KResetAtomicAltAb or
-            Pcre2ExecutionKind.KResetDefineSubroutineAb or
-            Pcre2ExecutionKind.KResetRepeatAbPossessive or
-            Pcre2ExecutionKind.KResetAtomicRepeatAb or
-            Pcre2ExecutionKind.KResetRepeatAb or
-            Pcre2ExecutionKind.KResetCapturedRepeatAbPossessive or
-            Pcre2ExecutionKind.KResetCapturedRepeatAb or
-            Pcre2ExecutionKind.KResetRecursiveAny or
-            Pcre2ExecutionKind.KResetRecursiveCaptured or
-            Pcre2ExecutionKind.ConditionalLookaheadPlus or
-            Pcre2ExecutionKind.ConditionalLookaheadEmptyAlt or
-            Pcre2ExecutionKind.ConditionalLookahead or
-            Pcre2ExecutionKind.ConditionalNegativeLookahead or
-            Pcre2ExecutionKind.ConditionalAcceptLookahead or
-            Pcre2ExecutionKind.ConditionalAcceptNegativeLookahead or
-            Pcre2ExecutionKind.SubroutinePrefixDigits or
-            Pcre2ExecutionKind.CommitSubroutine or
-            Pcre2ExecutionKind.DefineSubroutineB;
-    }
 
-    private Pcre2GroupData[] EnumerateViaRepeatedDetailedMatching(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        var searchStart = startOffsetInBytes;
-        while (searchStart <= input.Length)
-        {
-            Utf8Pcre2MatchContext match = default;
-            var found = false;
-            for (var candidateStart = searchStart; candidateStart <= input.Length; candidateStart++)
-            {
-                match = MatchDetailed(input, candidateStart, Pcre2MatchOptions.None);
-                if (match.Success)
-                {
-                    found = true;
-                    break;
-                }
-            }
 
-            if (!found)
-            {
-                break;
-            }
 
-            var value = match.Value;
-            if (!value.HasContiguousByteRange || value.StartOffsetInBytes < searchStart || value.EndOffsetInBytes < value.StartOffsetInBytes)
-            {
-                throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-            }
 
-            results.Add(CaptureValue(match));
 
-            searchStart = value.EndOffsetInBytes > value.StartOffsetInBytes
-                ? value.EndOffsetInBytes
-                : value.EndOffsetInBytes + 1;
-        }
 
-        return [.. results];
-    }
 
-    private Pcre2GroupData[] EnumerateViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-        var results = new Pcre2GroupData[matches.Count];
-        for (var i = 0; i < matches.Count; i++)
-        {
-            var match = matches[i];
-            if (!boundaryMap.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
-            {
-                throw new InvalidOperationException("Managed Regex fallback produced a match that is not aligned to UTF-8 scalar boundaries.");
-            }
 
-            results[i] = new Pcre2GroupData
-            {
-                Number = 0,
-                Success = true,
-                StartOffsetInBytes = indexInBytes,
-                EndOffsetInBytes = indexInBytes + lengthInBytes,
-                StartOffsetInUtf16 = match.Index,
-                EndOffsetInUtf16 = match.Index + match.Length,
-            };
-        }
 
-        return results;
-    }
 
-    private static Pcre2GroupData[] EnumerateLiteralKZeroLength(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 3)
-        {
-            var abcIndex = input[cursor..].IndexOf("abc"u8);
-            var defIndex = input[cursor..].IndexOf("def"u8);
-            if (abcIndex < 0 && defIndex < 0)
-            {
-                break;
-            }
 
-            var nextRelative = abcIndex < 0 ? defIndex : defIndex < 0 ? abcIndex : Math.Min(abcIndex, defIndex);
-            var matchEnd = cursor + nextRelative + 3;
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, matchEnd, matchEnd));
-            cursor = matchEnd;
-        }
 
-        return [.. results];
-    }
 
-    private static Pcre2GroupData[] EnumerateSingleLiteral(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> literal)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - literal.Length)
-        {
-            var index = input[cursor..].IndexOf(literal);
-            if (index < 0)
-            {
-                break;
-            }
 
-            var start = cursor + index;
-            var end = start + literal.Length;
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, start, end));
-            cursor = end;
-        }
 
-        return [.. results];
-    }
 
-    private static Pcre2GroupData[] EnumerateLiteralAlternation(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> firstLiteral, ReadOnlySpan<byte> secondLiteral)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        var minimumLength = Math.Min(firstLiteral.Length, secondLiteral.Length);
-        while (cursor <= input.Length - minimumLength)
-        {
-            var remaining = input[cursor..];
-            var firstIndex = remaining.IndexOf(firstLiteral);
-            var secondIndex = remaining.IndexOf(secondLiteral);
-            if (firstIndex < 0 && secondIndex < 0)
-            {
-                break;
-            }
 
-            var useFirst = firstIndex >= 0 && (secondIndex < 0 || firstIndex <= secondIndex);
-            var relativeIndex = useFirst ? firstIndex : secondIndex;
-            var length = useFirst ? firstLiteral.Length : secondLiteral.Length;
-            var start = cursor + relativeIndex;
-            var end = start + length;
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, start, end));
-            cursor = end;
-        }
 
-        return [.. results];
-    }
 
-    private bool TryCountNativeGlobalMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, out int count)
-    {
-        switch (Pattern)
-        {
-            case "(?|(abc)|(xyz))":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "abc"u8, "xyz"u8);
-                return true;
-            case "(?|(abc)|(xyz))\\1":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "abcabc"u8, "xyzxyz"u8);
-                return true;
-            case "(x)(?|(abc)|(xyz))(x)":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "xabcx"u8, "xxyzx"u8);
-                return true;
-            case "(x)(?|(abc)(pqr)|(xyz))(x)":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "xabcpqrx"u8, "xxyzx"u8);
-                return true;
-            case "(?|(abc)|(xyz))(?1)":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "abcabc"u8, "xyzabc"u8);
-                return true;
-            case "(?|(aaa)|(b))\\g{1}":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "aaaaaa"u8, "bb"u8);
-                return true;
-            case "(?|(?'a'aaa)|(?'a'b))\\k'a'":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "aaaaaa"u8, "bb"u8);
-                return true;
-            case "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "aaaccccaaa"u8, "bccccb"u8);
-                return true;
-            case "(?:(?<n>foo)|(?<n>bar))\\k<n>":
-                count = CountLiteralAlternationMatches(input, startOffsetInBytes, "foofoo"u8, "barbar"u8);
-                return true;
-            case "bb(.*?)c":
-                count = CountSingleLiteralMatches(input, startOffsetInBytes, "bbabc"u8);
-                return true;
-            case "(?:a\\Kb)*+":
-            case "(?>a\\Kb)*":
-            case "(?:a\\Kb)*":
-            case "(a\\Kb)*+":
-            case "(a\\Kb)*":
-                count = CountRepeatedKResetAbMatches(input, startOffsetInBytes);
-                return true;
-            case "(?>a\\Kbz|ab)":
-                count = CountKResetAtomicAltAbMatches(input, startOffsetInBytes);
-                return true;
-            case "(?<=abc)(|def)":
-                count = CountEmptyOrLiteralAfterAbcMatches(input, startOffsetInBytes, "def"u8);
-                return true;
-            default:
-                count = 0;
-                return false;
-        }
-    }
-
-    private static Pcre2GroupData[] EnumerateLiteralKValue(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 3)
-        {
-            var abcIndex = input[cursor..].IndexOf("abc"u8);
-            var defIndex = input[cursor..].IndexOf("def"u8);
-            if (abcIndex < 0 && defIndex < 0)
-            {
-                break;
-            }
-
-            var useAbc = defIndex < 0 || (abcIndex >= 0 && abcIndex <= defIndex);
-            var nextRelative = useAbc ? abcIndex : defIndex;
-            var matchStart = cursor + nextRelative + 2;
-            var matchEnd = matchStart + 1;
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, matchStart, matchEnd));
-            cursor = cursor + nextRelative + 3;
-        }
-
-        return [.. results];
-    }
-
-    private static Pcre2GroupData[] EnumerateRepeatedKResetAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 2)
-        {
-            var relativeIndex = input[cursor..].IndexOf("ab"u8);
-            if (relativeIndex < 0)
-            {
-                break;
-            }
-
-            var runCursor = cursor + relativeIndex;
-            var lastAbStart = runCursor;
-            do
-            {
-                lastAbStart = runCursor;
-                runCursor += 2;
-            }
-            while (runCursor <= input.Length - 2 && input[runCursor] == (byte)'a' && input[runCursor + 1] == (byte)'b');
-
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, lastAbStart + 1, lastAbStart + 2));
-            cursor = lastAbStart + 2;
-        }
-
-        return [.. results];
-    }
-
-    private static Pcre2GroupData[] EnumerateKResetAtomicAltAb(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 2)
-        {
-            var relativeIndex = input[cursor..].IndexOf("ab"u8);
-            if (relativeIndex < 0)
-            {
-                break;
-            }
-
-            var matchStart = cursor + relativeIndex;
-            if (matchStart <= input.Length - 3 && input[matchStart + 2] == (byte)'z')
-            {
-                results.Add(Pcre2GroupData.FromByteOffsets(input, 0, matchStart + 1, matchStart + 3));
-                cursor = matchStart + 3;
-            }
-            else
-            {
-                results.Add(Pcre2GroupData.FromByteOffsets(input, 0, matchStart, matchStart + 2));
-                cursor = matchStart + 2;
-            }
-        }
-
-        return [.. results];
-    }
-
-    private static int CountRepeatedKResetAbMatches(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var count = 0;
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 2)
-        {
-            var relativeIndex = input[cursor..].IndexOf("ab"u8);
-            if (relativeIndex < 0)
-            {
-                break;
-            }
-
-            var runCursor = cursor + relativeIndex;
-            var lastAbStart = runCursor;
-            do
-            {
-                lastAbStart = runCursor;
-                runCursor += 2;
-            }
-            while (runCursor <= input.Length - 2 && input[runCursor] == (byte)'a' && input[runCursor + 1] == (byte)'b');
-
-            count++;
-            cursor = lastAbStart + 2;
-        }
-
-        return count;
-    }
-
-    private static int CountKResetAtomicAltAbMatches(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var count = 0;
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 2)
-        {
-            var relativeIndex = input[cursor..].IndexOf("ab"u8);
-            if (relativeIndex < 0)
-            {
-                break;
-            }
-
-            var matchStart = cursor + relativeIndex;
-            cursor = matchStart <= input.Length - 3 && input[matchStart + 2] == (byte)'z'
-                ? matchStart + 3
-                : matchStart + 2;
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int CountSingleLiteralMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> literal)
-    {
-        var count = 0;
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - literal.Length)
-        {
-            var index = input[cursor..].IndexOf(literal);
-            if (index < 0)
-            {
-                break;
-            }
-
-            count++;
-            cursor += index + literal.Length;
-        }
-
-        return count;
-    }
-
-    private static int CountLiteralAlternationMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> firstLiteral, ReadOnlySpan<byte> secondLiteral)
-    {
-        var count = 0;
-        var cursor = startOffsetInBytes;
-        var minimumLength = Math.Min(firstLiteral.Length, secondLiteral.Length);
-        while (cursor <= input.Length - minimumLength)
-        {
-            var remaining = input[cursor..];
-            var firstIndex = remaining.IndexOf(firstLiteral);
-            var secondIndex = remaining.IndexOf(secondLiteral);
-            if (firstIndex < 0 && secondIndex < 0)
-            {
-                break;
-            }
-
-            var useFirst = firstIndex >= 0 && (secondIndex < 0 || firstIndex <= secondIndex);
-            cursor += (useFirst ? firstIndex : secondIndex) + (useFirst ? firstLiteral.Length : secondLiteral.Length);
-            count++;
-        }
-
-        return count;
-    }
-
-    private static int CountEmptyOrLiteralAfterAbcMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> literal)
-    {
-        var count = 0;
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 3)
-        {
-            var abcIndex = input[cursor..].IndexOf("abc"u8);
-            if (abcIndex < 0)
-            {
-                break;
-            }
-
-            var boundary = cursor + abcIndex + 3;
-            count++;
-            if (boundary <= input.Length - literal.Length && input[boundary..].StartsWith(literal))
-            {
-                count++;
-                cursor = boundary + literal.Length;
-            }
-            else
-            {
-                cursor = boundary + 1;
-            }
-        }
-
-        return count;
-    }
-
-
-    private static Pcre2GroupData[] EnumerateEmptyOrLiteralAfterAbc(ReadOnlySpan<byte> input, int startOffsetInBytes, ReadOnlySpan<byte> literal)
-    {
-        var results = new List<Pcre2GroupData>();
-        var cursor = startOffsetInBytes;
-        while (cursor <= input.Length - 3)
-        {
-            var abcIndex = input[cursor..].IndexOf("abc"u8);
-            if (abcIndex < 0)
-            {
-                break;
-            }
-
-            var boundary = cursor + abcIndex + 3;
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, boundary, boundary));
-            if (boundary <= input.Length - literal.Length && input[boundary..].StartsWith(literal))
-            {
-                results.Add(Pcre2GroupData.FromByteOffsets(input, 0, boundary, boundary + literal.Length));
-                cursor = boundary + literal.Length;
-            }
-            else
-            {
-                cursor = boundary + 1;
-            }
-        }
-
-        return [.. results];
-    }
-
-    private static Pcre2GroupData[] EnumerateGBoundary(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var results = new List<Pcre2GroupData>();
-        for (var i = startOffsetInBytes + 1; i <= input.Length; i++)
-        {
-            results.Add(Pcre2GroupData.FromByteOffsets(input, 0, i, i));
-        }
-
-        return [.. results];
-    }
-
-    private bool TryCreateSpecialGlobalEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8Pcre2ValueMatchEnumerator enumerator)
-    {
-        var remaining = input[startOffsetInBytes..];
-        switch (ExecutionKind)
-        {
-            case Pcre2ExecutionKind.KResetSneakyLookaheadDefine:
-                if (remaining.SequenceEqual("ab"u8))
-                {
-                    if (!CompileSettings.AllowLookaroundBackslashK)
-                    {
-                        enumerator = CreateDeferredMatchErrorEnumerator(
-                            input,
-                            [],
-                            0,
-                            Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-                        return true;
-                    }
-
-                    enumerator = new Utf8Pcre2ValueMatchEnumerator(
-                        input,
-                        [CreateNonContiguousByteRange(input, startOffsetInBytes + 2, startOffsetInBytes + 1)]);
-                    return true;
-                }
-
-                break;
-
-            case Pcre2ExecutionKind.KResetSneakyLookbehindDefine:
-                if (remaining.SequenceEqual("ab"u8) && !CompileSettings.AllowLookaroundBackslashK)
-                {
-                    enumerator = CreateDeferredMatchErrorEnumerator(
-                        input,
-                        [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1)],
-                        1,
-                        Pcre2ErrorKind.DisallowedLookaroundBackslashK);
-                    return true;
-                }
-
-                break;
-
-            case Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine:
-                if (remaining.SequenceEqual("ab"u8))
-                {
-                    enumerator = new Utf8Pcre2ValueMatchEnumerator(
-                        input,
-                        [Pcre2GroupData.FromByteOffsets(input, 0, startOffsetInBytes, startOffsetInBytes + 1)]);
-                    return true;
-                }
-
-                break;
-        }
-
-        enumerator = default;
-        return false;
-    }
-
-    private bool UsesDeferredSpecialGlobalEnumerator(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        var remaining = input[startOffsetInBytes..];
-        return ExecutionKind switch
-        {
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine => remaining.SequenceEqual("ab"u8),
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine => remaining.SequenceEqual("ab"u8) && !CompileSettings.AllowLookaroundBackslashK,
-            Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine => remaining.SequenceEqual("ab"u8),
-            _ => false,
-        };
-    }
-
-    private static Utf8Pcre2ValueMatchEnumerator CreateDeferredMatchErrorEnumerator(
-        ReadOnlySpan<byte> input,
-        Pcre2GroupData[] matches,
-        int exceptionIndex,
-        Pcre2ErrorKind errorKind)
-    {
-        return new Utf8Pcre2ValueMatchEnumerator(
-            input,
-            matches,
-            new Pcre2MatchException("disallowed use of \\K in lookaround", errorKind),
-            exceptionIndex);
-    }
-
-    private static Pcre2GroupData CreateNonContiguousByteRange(ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes)
-    {
-        return new Pcre2GroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = endOffsetInBytes,
-            StartOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]),
-            EndOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..endOffsetInBytes]),
-        };
-    }
 
     private static Utf8Pcre2MatchContext CreateManagedProfileMatchContext(ReadOnlySpan<byte> input, Utf8MatchContext context, string[]? groupNames)
     {
@@ -5061,7 +2232,7 @@ public sealed class Utf8Pcre2Regex
             });
     }
 
-    private bool TryReplaceViaLiteralDriver(
+    private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
         string replacement,
         int startOffsetInBytes,
@@ -5116,7 +2287,7 @@ public sealed class Utf8Pcre2Regex
         }
     }
 
-    private bool TryReplaceViaLiteralDriver(
+    private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
         string replacement,
         int startOffsetInBytes,
@@ -5197,7 +2368,18 @@ public sealed class Utf8Pcre2Regex
         out SimpleReplacementPlan plan,
         out bool replacementOnly)
     {
-        if (_program.Operations.Replace is not (Pcre2LiteralDirectProgram or Pcre2CharacterDirectProgram))
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.SuppressesUnresetEmptyMatches)
+        {
+            plan = default;
+            replacementOnly = false;
+            return false;
+        }
+
+        if (_program.Operations.Replace is not (
+            Pcre2LiteralDirectProgram or
+            Pcre2CharacterDirectProgram or
+            Pcre2BacktrackingDirectProgram))
         {
             plan = default;
             replacementOnly = false;
@@ -5308,7 +2490,6 @@ public sealed class Utf8Pcre2Regex
     private byte[] ReplaceCore(
         ReadOnlySpan<byte> input,
         string replacement,
-        Pcre2PartialMode partialMode,
         Pcre2SubstitutionOptions substitutionOptions,
         int startOffsetInBytes,
         Pcre2MatchOptions matchOptions)
@@ -5318,7 +2499,7 @@ public sealed class Utf8Pcre2Regex
             throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
         }
 
-        if (TryReplaceViaLiteralDriver(
+        if (TryReplaceUsingLiteralDriver(
                 input,
                 replacement,
                 startOffsetInBytes,
@@ -5329,23 +2510,7 @@ public sealed class Utf8Pcre2Regex
             return genericResult;
         }
 
-        if ((substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0)
-        {
-            return ReplaceReplacementOnlyCore(input, replacement, substitutionOptions, startOffsetInBytes);
-        }
-
-        if ((substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0)
-        {
-            return ReplaceLiteralCore(input, replacement, startOffsetInBytes);
-        }
-
-        if (CanUseManagedRegexDirectReplacement(replacement, partialMode, substitutionOptions))
-        {
-            return ReplaceViaManagedRegexDirect(input, replacement, startOffsetInBytes);
-        }
-
-        if (partialMode == Pcre2PartialMode.None &&
-            _program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             return ReplaceBacktrackingDetailed(
                 input,
@@ -5356,255 +2521,24 @@ public sealed class Utf8Pcre2Regex
                 matchOptions);
         }
 
-        if (UsesUtf8Translation)
+        if (_program.Operations.Replace.Kind != Pcre2DirectProgramKind.None)
         {
-            return ReplaceViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
+            return ReplaceUsingDecodedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
 
-        return Pattern switch
-        {
-            "foo(?<Bar>BAR)?" when replacement == @"X${Bar:+\:\:text}Y" => ReplaceFooOptionalBar(input, replacement, substitutionOptions, startOffsetInBytes),
-            "(a)b+" when partialMode != Pcre2PartialMode.None => ReplacePartialAbPlus(input, replacement, partialMode),
-            "(?<=abc)(|def)" => ReplaceEmptyOrLiteralAfterAbc(input, replacement, substitutionOptions, startOffsetInBytes, "def"u8),
-            "(?<=abc)(|DEF)" => ReplaceEmptyOrLiteralAfterAbc(input, replacement, substitutionOptions, startOffsetInBytes, "DEF"u8),
-            "(*:pear)apple|(*:orange)lemon|(*:strawberry)blackberry" => ReplaceMarkedLiterals(
-                input,
-                replacement,
-                substitutionOptions,
-                startOffsetInBytes,
-                [("apple", "pear"), ("lemon", "orange"), ("blackberry", "strawberry")],
-                replaceAll: replacement != "${*MARK} sauce,"),
-            "(*:pear)apple" => ReplaceMarkedLiterals(
-                input,
-                replacement,
-                substitutionOptions,
-                startOffsetInBytes,
-                [("apple", "pear")],
-                true),
-            _ when UsesNativeGlobalIteration() => ReplaceViaNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes),
-            _ when CanUseUtf8RegexLiteralReplacement(replacement, substitutionOptions, allowOverflowLengthShortcut: true) => ReplaceViaUtf8RegexLiteral(input, replacement, startOffsetInBytes),
-            _ when HasManagedRegex => ReplaceViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes),
-            _ => throw CreateUnsupportedReplacementException(),
-        };
+        throw CreateUnsupportedReplacementException();
     }
 
-    private bool CanUseUtf8RegexLiteralReplacement(string replacement, Pcre2SubstitutionOptions substitutionOptions, bool allowOverflowLengthShortcut)
-    {
-        if (!HasPrimaryUtf8Regex || _program.Operations.Replace.Kind != Pcre2DirectProgramKind.Utf8Regex)
-        {
-            return false;
-        }
 
-        if (!allowOverflowLengthShortcut &&
-            (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0)
-        {
-            return false;
-        }
 
-        var relevantOptions = substitutionOptions &
-            ~(Pcre2SubstitutionOptions.SubstituteLiteral | Pcre2SubstitutionOptions.SubstituteOverflowLength);
-        if (relevantOptions != Pcre2SubstitutionOptions.None)
-        {
-            return false;
-        }
 
-        return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0 ||
-            !ContainsPcre2ReplacementSyntax(replacement);
-    }
 
-    private static bool ContainsPcre2ReplacementSyntax(string replacement)
-        => replacement.AsSpan().IndexOfAny('$', '\\') >= 0;
 
-    private bool CanUseManagedRegexDirectReplacement(string replacement, Pcre2PartialMode partialMode, Pcre2SubstitutionOptions substitutionOptions)
-    {
-        if (!HasManagedRegex || partialMode != Pcre2PartialMode.None || UsesUtf8Translation)
-        {
-            return false;
-        }
 
-        return substitutionOptions == Pcre2SubstitutionOptions.None &&
-            !ContainsPcre2ReplacementSyntax(replacement);
-    }
 
-    private byte[] ReplaceViaUtf8RegexLiteral(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        if (startOffsetInBytes == 0)
-        {
-            return PrimaryUtf8Regex.Replace(input, replacement);
-        }
 
-        var replacedSuffix = PrimaryUtf8Regex.Replace(input[startOffsetInBytes..], replacement);
-        var output = new byte[startOffsetInBytes + replacedSuffix.Length];
-        input[..startOffsetInBytes].CopyTo(output);
-        replacedSuffix.CopyTo(output.AsSpan(startOffsetInBytes));
-        return output;
-    }
 
-    private byte[] ReplaceViaManagedRegexDirect(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var replaced = ManagedRegex.Replace(subject, replacement, int.MaxValue, startOffsetInUtf16);
-        return Encoding.UTF8.GetBytes(replaced);
-    }
 
-    private static byte[] ReplaceFooOptionalBar(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        if ((substitutionOptions & Pcre2SubstitutionOptions.Extended) == 0)
-        {
-            throw new Pcre2SubstitutionException("Extended substitution is required for this replacement.");
-        }
-
-        var remaining = input[startOffsetInBytes..];
-        if (replacement == @"X${Bar:+\:\:text}Y")
-        {
-            if (remaining.StartsWith("fooBAR"u8))
-            {
-                return "X::textY"u8.ToArray();
-            }
-
-            if (remaining.StartsWith("foo"u8))
-            {
-                return "XY"u8.ToArray();
-            }
-        }
-
-        throw CreateUnsupportedReplacementException("SPEC-PCRE2 does not support this specialized replacement form.");
-    }
-
-    private static byte[] ReplaceEmptyOrLiteralAfterAbc(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, ReadOnlySpan<byte> literal)
-    {
-        var matches = EnumerateEmptyOrLiteralAfterAbc(input, startOffsetInBytes, literal);
-        if (matches.Length == 0)
-        {
-            return input.ToArray();
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        var builder = new StringBuilder(subject.Length + replacement.Length * matches.Length);
-        var position = 0;
-        foreach (var match in matches)
-        {
-            builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-            builder.Append(EvaluateReplacementTemplate(
-                replacement,
-                substitutionOptions,
-                subject,
-                match.StartOffsetInUtf16,
-                match.EndOffsetInUtf16 - match.StartOffsetInUtf16,
-                number => ResolveExplicitNumberReference(match, number, subject),
-                _ => default,
-                () => default,
-                mark: null));
-            position = match.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private static byte[] ReplacePartialAbPlus(ReadOnlySpan<byte> input, string replacement, Pcre2PartialMode partialMode)
-    {
-        var text = Encoding.UTF8.GetString(input);
-        return (text, replacement, partialMode) switch
-        {
-            ("ab", "FOO", Pcre2PartialMode.Hard) => throw new Pcre2SubstitutionException("Partial match during replacement.", Pcre2ErrorKind.PartialMatch),
-            ("abc", "FOO", Pcre2PartialMode.Hard) => "FOO"u8.ToArray(),
-            ("abc", ">$_<", Pcre2PartialMode.Hard) => throw new Pcre2SubstitutionException("Replacement $' or $_ not supported with partial match.", Pcre2ErrorKind.PartialSubs),
-            _ => throw CreateUnsupportedReplacementException("SPEC-PCRE2 does not support this partial replacement case."),
-        };
-    }
-
-    private byte[] ReplaceReplacementOnlyCore(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        if (RejectsReplacementIteration())
-        {
-            throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
-        }
-
-        if ((substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0)
-        {
-            return ReplaceReplacementOnlyLiteralCore(input, replacement, startOffsetInBytes);
-        }
-
-        if (UsesNativeGlobalIteration())
-        {
-            return ReplaceReplacementOnlyViaNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes);
-        }
-
-        if (UsesUtf8Translation)
-        {
-            return ReplaceReplacementOnlyViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
-        }
-
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            backtrackingProgram.Program.CaptureSlotCount > 1)
-        {
-            return ReplaceReplacementOnlyViaTranslatedDetailedIteration(
-                input,
-                replacement,
-                substitutionOptions,
-                startOffsetInBytes,
-                Encoding.UTF8.GetString(input));
-        }
-
-        if (HasManagedRegex)
-        {
-            return ReplaceReplacementOnlyViaManagedRegex(input, replacement, substitutionOptions, startOffsetInBytes);
-        }
-
-        throw CreateUnsupportedReplacementException("SPEC-PCRE2 does not support replacement-only execution for this pattern.");
-    }
-
-    private byte[] ReplaceLiteralCore(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        if (RejectsReplacementIteration())
-        {
-            throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
-        }
-
-        if (UsesNativeGlobalIteration())
-        {
-            return ReplaceLiteralViaNativeIteration(input, replacement, startOffsetInBytes);
-        }
-
-        if (UsesUtf8Translation)
-        {
-            return ReplaceLiteralViaTranslatedEnumeration(input, replacement, startOffsetInBytes);
-        }
-
-        if (HasManagedRegex)
-        {
-            return ReplaceLiteralViaManagedRegex(input, replacement, startOffsetInBytes);
-        }
-
-        throw CreateUnsupportedReplacementException("SPEC-PCRE2 does not support literal replacement execution for this pattern.");
-    }
-
-    private byte[] ReplaceReplacementOnlyLiteralCore(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        if (RejectsReplacementIteration())
-        {
-            throw new NotSupportedException("SPEC-PCRE2 rejects replacement for lookaround-\\K iterative matches.");
-        }
-
-        if (UsesNativeGlobalIteration())
-        {
-            return ReplaceReplacementOnlyLiteralViaNativeIteration(input, replacement, startOffsetInBytes);
-        }
-
-        if (UsesUtf8Translation)
-        {
-            return ReplaceReplacementOnlyLiteralViaTranslatedEnumeration(input, replacement, startOffsetInBytes);
-        }
-
-        if (HasManagedRegex)
-        {
-            return ReplaceReplacementOnlyLiteralViaManagedRegex(input, replacement, startOffsetInBytes);
-        }
-
-        throw CreateUnsupportedReplacementException("SPEC-PCRE2 does not support replacement-only literal execution for this pattern.");
-    }
 
     private static NotSupportedException CreateUnsupportedProbeException()
         => new("SPEC-PCRE2 does not support Probe(...) for this pattern.");
@@ -5615,7 +2549,7 @@ public sealed class Utf8Pcre2Regex
     private static NotSupportedException CreateUnsupportedReplacementException()
         => CreateUnsupportedReplacementException(null);
 
-    private bool TryReplaceViaLiteralDriver<TState>(
+    private bool TryReplaceUsingLiteralDriver<TState>(
         ReadOnlySpan<byte> input,
         TState state,
         Pcre2MatchEvaluator<TState> evaluator,
@@ -5624,7 +2558,8 @@ public sealed class Utf8Pcre2Regex
         out byte[] result)
     {
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            backtrackingProgram.Program.CaptureSlotCount > 1)
+            (backtrackingProgram.Program.CaptureSlotCount > 1 ||
+             backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
         {
             result = [];
             return false;
@@ -5670,7 +2605,8 @@ public sealed class Utf8Pcre2Regex
         out string result)
     {
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            backtrackingProgram.Program.CaptureSlotCount > 1)
+            (backtrackingProgram.Program.CaptureSlotCount > 1 ||
+             backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
         {
             result = string.Empty;
             return false;
@@ -5709,52 +2645,31 @@ public sealed class Utf8Pcre2Regex
 
     private string ReplaceWithUtf8Evaluator<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            return ReplaceBacktrackingWithUtf8Evaluator(
+                input,
+                backtrackingProgram.Program,
+                state,
+                evaluator,
+                startOffsetInBytes,
+                matchOptions);
+        }
+
         var subject = Encoding.UTF8.GetString(input);
         var builder = new StringBuilder(subject.Length);
         var position = 0;
 
-        if (!UsesNativeGlobalIteration())
+        var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
+        while (enumerator.MoveNext())
         {
-            if (UsesUtf8Translation)
-            {
-                var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
-                while (enumerator.MoveNext())
-                {
-                    var value = enumerator.Current;
-                    builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-                    var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
-                    var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-                    evaluator(in context, ref writer, ref state);
-                    builder.Append(writer.ToValidatedString());
-                    position = value.EndOffsetInUtf16;
-                }
-            }
-            else
-            {
-                var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-                var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-                foreach (Match match in matches)
-                {
-                    builder.Append(subject, position, match.Index - position);
-                    var context = Utf8Pcre2MatchContext.Create(input, match, GroupNames);
-                    var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-                    evaluator(in context, ref writer, ref state);
-                    builder.Append(writer.ToValidatedString());
-                    position = match.Index + match.Length;
-                }
-            }
-        }
-        else
-        {
-            foreach (var match in EnumerateGlobalMatchData(input, startOffsetInBytes))
-            {
-                builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-                var context = Utf8Pcre2MatchContext.Create(input, [match]);
-                var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
-                evaluator(in context, ref writer, ref state);
-                builder.Append(writer.ToValidatedString());
-                position = match.EndOffsetInUtf16;
-            }
+            var value = enumerator.Current;
+            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
+            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
+            evaluator(in context, ref writer, ref state);
+            builder.Append(writer.ToValidatedString());
+            position = value.EndOffsetInUtf16;
         }
 
         builder.Append(subject, position, subject.Length - position);
@@ -5763,582 +2678,131 @@ public sealed class Utf8Pcre2Regex
 
     private string ReplaceWithUtf16Evaluator<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            return ReplaceBacktrackingWithUtf16Evaluator(
+                input,
+                backtrackingProgram.Program,
+                state,
+                evaluator,
+                startOffsetInBytes,
+                matchOptions);
+        }
+
         var subject = Encoding.UTF8.GetString(input);
         var builder = new StringBuilder(subject.Length);
         var position = 0;
 
-        if (!UsesNativeGlobalIteration())
+        var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
+        while (enumerator.MoveNext())
         {
-            if (UsesUtf8Translation)
-            {
-                var enumerator = EnumerateMatches(input, startOffsetInBytes, matchOptions);
-                while (enumerator.MoveNext())
-                {
-                    var value = enumerator.Current;
-                    builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-                    var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
-                    builder.Append(evaluator(in context, ref state));
-                    position = value.EndOffsetInUtf16;
-                }
-            }
-            else
-            {
-                var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-                var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-                foreach (Match match in matches)
-                {
-                    builder.Append(subject, position, match.Index - position);
-                    var context = Utf8Pcre2MatchContext.Create(input, match, GroupNames);
-                    builder.Append(evaluator(in context, ref state));
-                    position = match.Index + match.Length;
-                }
-            }
-        }
-        else
-        {
-            foreach (var match in EnumerateGlobalMatchData(input, startOffsetInBytes))
-            {
-                builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-                var context = Utf8Pcre2MatchContext.Create(input, [match]);
-                builder.Append(evaluator(in context, ref state));
-                position = match.EndOffsetInUtf16;
-            }
+            var value = enumerator.Current;
+            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
+            builder.Append(evaluator(in context, ref state));
+            position = value.EndOffsetInUtf16;
         }
 
         builder.Append(subject, position, subject.Length - position);
         return builder.ToString();
     }
 
-    private byte[] ReplaceViaManagedRegex(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-        if (matches.Count == 0)
-        {
-            return input.ToArray();
-        }
-
-        var simplePlan = GetSimpleReplacementPlan(replacement, substitutionOptions);
-        var builder = new StringBuilder(subject.Length + replacement.Length * Math.Max(1, matches.Count));
-        var position = 0;
-        foreach (Match match in matches)
-        {
-            builder.Append(subject, position, match.Index - position);
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, match.Index, match.Length);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    substitutionOptions,
-                    subject,
-                    match.Index,
-                    match.Length,
-                    number => ResolveNumberReference(ManagedRegex, match, number),
-                    name => ResolveNamedReference(ManagedRegex, match, name),
-                    () => ResolveLastCapturedReference(match),
-                    mark: null));
-            }
-            position = match.Index + match.Length;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyViaManagedRegex(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-        if (matches.Count == 0)
-        {
-            return [];
-        }
-
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(replacement.Length * Math.Max(1, matches.Count));
-        foreach (Match match in matches)
-        {
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, match.Index, match.Length);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    match.Index,
-                    match.Length,
-                    number => ResolveNumberReference(ManagedRegex, match, number),
-                    name => ResolveNamedReference(ManagedRegex, match, name),
-                    () => ResolveLastCapturedReference(match),
-                    mark: null));
-            }
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceLiteralViaManagedRegex(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-        if (matches.Count == 0)
-        {
-            return input.ToArray();
-        }
-
-        var builder = new StringBuilder(subject.Length + replacement.Length * Math.Max(1, matches.Count));
-        var position = 0;
-        foreach (Match match in matches)
-        {
-            builder.Append(subject, position, match.Index - position);
-            builder.Append(replacement);
-            position = match.Index + match.Length;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyLiteralViaManagedRegex(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var matches = ManagedRegex.Matches(subject, startOffsetInUtf16);
-        if (matches.Count == 0)
-        {
-            return [];
-        }
-
-        var builder = new StringBuilder(replacement.Length * matches.Count);
-        foreach (Match _ in matches)
-        {
-            builder.Append(replacement);
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceLiteralViaTranslatedEnumeration(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        if (!enumerator.MoveNext())
-        {
-            return input.ToArray();
-        }
-
-        var builder = new StringBuilder(subject.Length + replacement.Length);
-        var position = 0;
-        do
-        {
-            var match = enumerator.Current;
-            builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-            builder.Append(replacement);
-            position = match.EndOffsetInUtf16;
-        }
-        while (enumerator.MoveNext());
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyLiteralViaTranslatedEnumeration(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        if (!enumerator.MoveNext())
-        {
-            return [];
-        }
-
-        var builder = new StringBuilder(replacement.Length);
-        do
-        {
-            builder.Append(replacement);
-        }
-        while (enumerator.MoveNext());
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceLiteralViaNativeIteration(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (matches.Length == 0)
-        {
-            return input.ToArray();
-        }
-
-        var builder = new StringBuilder(subject.Length + replacement.Length * matches.Length);
-        var position = 0;
-        foreach (var match in matches)
-        {
-            builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-            builder.Append(replacement);
-            position = match.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyViaNativeIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        if (CanUseDetailedNativeReplacement())
-        {
-            return ReplaceReplacementOnlyViaDetailedNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes, subject);
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (matches.Length == 0)
-        {
-            return [];
-        }
-
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(replacement.Length * matches.Length);
-        foreach (var match in matches)
-        {
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, match.StartOffsetInUtf16, match.EndOffsetInUtf16 - match.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    match.StartOffsetInUtf16,
-                    match.EndOffsetInUtf16 - match.StartOffsetInUtf16,
-                    number => ResolveExplicitNumberReference(match, number, subject),
-                    _ => default,
-                    () => default,
-                    mark: null));
-            }
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyLiteralViaNativeIteration(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        if (CanEnumerateViaNativeValueGenerator())
-        {
-            return ReplaceReplacementOnlyLiteralViaNativeValueEnumeration(input, replacement, startOffsetInBytes);
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (matches.Length == 0)
-        {
-            return [];
-        }
-
-        var builder = new StringBuilder(replacement.Length * matches.Length);
-        foreach (var _ in matches)
-        {
-            builder.Append(replacement);
-        }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceViaNativeIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes)
-    {
-        var simplePlan = GetSimpleReplacementPlan(replacement, substitutionOptions);
-        if (simplePlan is { } bytePlan && TryGetLiteralOnlyReplacementBytes(bytePlan, out var replacementBytes))
-        {
-            return ReplaceViaNativeLiteralOnlyIteration(input, replacementBytes, startOffsetInBytes);
-        }
-
-        var subject = Encoding.UTF8.GetString(input);
-        if (CanUseDetailedNativeReplacement())
-        {
-            return ReplaceViaDetailedNativeIteration(input, replacement, substitutionOptions, startOffsetInBytes, subject);
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (matches.Length == 0)
-        {
-            return input.ToArray();
-        }
-
-        var builder = new StringBuilder(subject.Length + replacement.Length * Math.Max(1, matches.Length));
-        var position = 0;
-        foreach (var match in matches)
-        {
-            builder.Append(subject, position, match.StartOffsetInUtf16 - position);
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, match.StartOffsetInUtf16, match.EndOffsetInUtf16 - match.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    substitutionOptions,
-                    subject,
-                    match.StartOffsetInUtf16,
-                    match.EndOffsetInUtf16 - match.StartOffsetInUtf16,
-                    number => ResolveExplicitNumberReference(match, number, subject),
-                    _ => default,
-                    () => default,
-                    mark: null));
-            }
-            position = match.EndOffsetInUtf16;
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceViaNativeLiteralOnlyIteration(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementBytes, int startOffsetInBytes)
-    {
-        if (CanEnumerateViaNativeValueGenerator())
-        {
-            return ReplaceLiteralAgainstEnumerator(input, EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None), replacementBytes);
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        if (matches.Length == 0)
-        {
-            return input.ToArray();
-        }
-
-        return ReplaceLiteralAgainstMatches(input, matches, replacementBytes);
-    }
-
-    private static byte[] ReplaceLiteralAgainstMatches(ReadOnlySpan<byte> input, Pcre2GroupData[] matches, ReadOnlySpan<byte> replacementBytes)
-    {
-        var outputLength = input.Length;
-        for (var i = 0; i < matches.Length; i++)
-        {
-            outputLength += replacementBytes.Length - (matches[i].EndOffsetInBytes - matches[i].StartOffsetInBytes);
-        }
-
-        var output = new byte[outputLength];
-        var inputPosition = 0;
-        var outputPosition = 0;
-        for (var i = 0; i < matches.Length; i++)
-        {
-            var match = matches[i];
-            var prefixLength = match.StartOffsetInBytes - inputPosition;
-            if (prefixLength > 0)
-            {
-                input.Slice(inputPosition, prefixLength).CopyTo(output.AsSpan(outputPosition, prefixLength));
-                outputPosition += prefixLength;
-            }
-
-            replacementBytes.CopyTo(output.AsSpan(outputPosition, replacementBytes.Length));
-            outputPosition += replacementBytes.Length;
-            inputPosition = match.EndOffsetInBytes;
-        }
-
-        var suffixLength = input.Length - inputPosition;
-        if (suffixLength > 0)
-        {
-            input[inputPosition..].CopyTo(output.AsSpan(outputPosition, suffixLength));
-        }
-
-        return output;
-    }
-
-    private static byte[] ReplaceLiteralAgainstEnumerator(ReadOnlySpan<byte> input, Utf8Pcre2ValueMatchEnumerator enumerator, ReadOnlySpan<byte> replacementBytes)
-    {
-        var writer = new ArrayBufferWriter<byte>(input.Length + replacementBytes.Length * 4);
-        var inputPosition = 0;
-        var any = false;
-
-        while (enumerator.MoveNext())
-        {
-            any = true;
-            var match = enumerator.Current;
-            var prefixLength = match.StartOffsetInBytes - inputPosition;
-            if (prefixLength > 0)
-            {
-                WriteBytes(ref writer, input.Slice(inputPosition, prefixLength));
-            }
-
-            WriteBytes(ref writer, replacementBytes);
-            inputPosition = match.EndOffsetInBytes;
-        }
-
-        if (!any)
-        {
-            return input.ToArray();
-        }
-
-        if (inputPosition < input.Length)
-        {
-            WriteBytes(ref writer, input[inputPosition..]);
-        }
-
-        return writer.WrittenSpan.ToArray();
-    }
-
-    private byte[] ReplaceReplacementOnlyLiteralViaNativeValueEnumeration(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
-    {
-        var replacementBytes = Encoding.UTF8.GetBytes(replacement);
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        var writer = new ArrayBufferWriter<byte>(replacementBytes.Length * 4);
-        var any = false;
-
-        while (enumerator.MoveNext())
-        {
-            any = true;
-            WriteBytes(ref writer, replacementBytes);
-        }
-
-        return any ? writer.WrittenSpan.ToArray() : [];
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void WriteBytes(ref ArrayBufferWriter<byte> writer, ReadOnlySpan<byte> bytes)
-    {
-        var span = writer.GetSpan(bytes.Length);
-        bytes.CopyTo(span);
-        writer.Advance(bytes.Length);
-    }
-
-    private static OperationStatus TryReplaceLiteralAgainstMatches(
+    private string ReplaceBacktrackingWithUtf8Evaluator<TState>(
         ReadOnlySpan<byte> input,
-        Pcre2GroupData[] matches,
-        ReadOnlySpan<byte> replacementBytes,
-        Span<byte> destination,
-        out int bytesWritten,
-        Pcre2SubstitutionOptions substitutionOptions)
+        Pcre2BacktrackingProgram program,
+        TState state,
+        Pcre2MatchEvaluator<TState> evaluator,
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions)
     {
-        var outputLength = input.Length;
-        for (var i = 0; i < matches.Length; i++)
-        {
-            outputLength += replacementBytes.Length - (matches[i].EndOffsetInBytes - matches[i].StartOffsetInBytes);
-        }
-
-        if (outputLength > destination.Length)
-        {
-            bytesWritten = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteOverflowLength) != 0
-                ? outputLength
-                : 0;
-            return OperationStatus.DestinationTooSmall;
-        }
-
-        var inputPosition = 0;
-        var outputPosition = 0;
-        for (var i = 0; i < matches.Length; i++)
-        {
-            var match = matches[i];
-            var prefixLength = match.StartOffsetInBytes - inputPosition;
-            if (prefixLength > 0)
-            {
-                input.Slice(inputPosition, prefixLength).CopyTo(destination.Slice(outputPosition, prefixLength));
-                outputPosition += prefixLength;
-            }
-
-            replacementBytes.CopyTo(destination.Slice(outputPosition, replacementBytes.Length));
-            outputPosition += replacementBytes.Length;
-            inputPosition = match.EndOffsetInBytes;
-        }
-
-        var suffixLength = input.Length - inputPosition;
-        if (suffixLength > 0)
-        {
-            input[inputPosition..].CopyTo(destination.Slice(outputPosition, suffixLength));
-            outputPosition += suffixLength;
-        }
-
-        bytesWritten = outputPosition;
-        return OperationStatus.Done;
-    }
-
-    private byte[] ReplaceViaDetailedNativeIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
-    {
-        var simplePlan = GetSimpleReplacementPlan(replacement, substitutionOptions);
-        var builder = new StringBuilder(subject.Length + replacement.Length);
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
+            program,
+            validated,
+            start,
+            matchOptions,
+            _program.Request);
+        var subject = Encoding.UTF8.GetString(input);
+        var builder = new StringBuilder(subject.Length);
         var position = 0;
-        var searchStart = startOffsetInBytes;
-        var foundAny = false;
-        while (searchStart <= input.Length)
+        while (cursor.MoveNext())
         {
-            Utf8Pcre2MatchContext match = default;
-            var found = false;
-            for (var candidateStart = searchStart; candidateStart <= input.Length; candidateStart++)
-            {
-                match = MatchDetailed(input, candidateStart, Pcre2MatchOptions.None);
-                if (match.Success)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                break;
-            }
-
-            foundAny = true;
-            var value = match.Value;
-            var groups = CaptureGroups(match);
-            if (!value.HasContiguousByteRange || value.StartOffsetInBytes < searchStart || value.EndOffsetInBytes < value.StartOffsetInBytes)
-            {
-                throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-            }
-
+            var groups = cursor.ProjectCurrentCaptures();
+            var value = groups[0];
             builder.Append(subject, position, value.StartOffsetInUtf16 - position);
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, value.StartOffsetInUtf16, value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    substitutionOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    match.Mark));
-            }
+            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, cursor.Current.Mark);
+            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
+            evaluator(in context, ref writer, ref state);
+            builder.Append(writer.ToValidatedString());
             position = value.EndOffsetInUtf16;
-            searchStart = value.EndOffsetInBytes > value.StartOffsetInBytes
-                ? value.EndOffsetInBytes
-                : value.EndOffsetInBytes + 1;
-        }
-
-        if (!foundAny)
-        {
-            return input.ToArray();
         }
 
         builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
+        return builder.ToString();
     }
 
-    private byte[] ReplaceViaTranslatedDetailedIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
+    private string ReplaceBacktrackingWithUtf16Evaluator<TState>(
+        ReadOnlySpan<byte> input,
+        Pcre2BacktrackingProgram program,
+        TState state,
+        Pcre2Utf16MatchEvaluator<TState> evaluator,
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions)
     {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
+            program,
+            validated,
+            start,
+            matchOptions,
+            _program.Request);
+        var subject = Encoding.UTF8.GetString(input);
+        var builder = new StringBuilder(subject.Length);
+        var position = 0;
+        while (cursor.MoveNext())
+        {
+            var groups = cursor.ProjectCurrentCaptures();
+            var value = groups[0];
+            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, cursor.Current.Mark);
+            builder.Append(evaluator(in context, ref state));
+            position = value.EndOffsetInUtf16;
+        }
+
+        builder.Append(subject, position, subject.Length - position);
+        return builder.ToString();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private byte[] ReplaceUsingDecodedDetailedIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
+    {
+        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
+        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)])
+            : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
         var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
         if (!enumerator.MoveNext())
         {
-            return input.ToArray();
+            return replacementOnly ? [] : input.ToArray();
         }
 
         do
@@ -6350,7 +2814,10 @@ public sealed class Utf8Pcre2Regex
                 throw new InvalidOperationException("Translated enumeration produced a match that MatchDetailed(...) could not reproduce.");
             }
 
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            if (!replacementOnly)
+            {
+                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            }
             if (simplePlan is { } plan)
             {
                 AppendSimpleReplacement(builder, plan, subject, value.StartOffsetInUtf16, value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
@@ -6373,7 +2840,11 @@ public sealed class Utf8Pcre2Regex
         }
         while (enumerator.MoveNext());
 
-        builder.Append(subject, position, subject.Length - position);
+        if (!replacementOnly)
+        {
+            builder.Append(subject, position, subject.Length - position);
+        }
+
         return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
@@ -6394,12 +2865,17 @@ public sealed class Utf8Pcre2Regex
             _program.Request);
         if (!cursor.MoveNext())
         {
-            return input.ToArray();
+            return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
+                ? []
+                : input.ToArray();
         }
 
         var subject = Encoding.UTF8.GetString(input);
+        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
+        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)])
+            : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
         do
@@ -6407,7 +2883,10 @@ public sealed class Utf8Pcre2Regex
             var current = cursor.Current;
             var groups = cursor.ProjectCurrentCaptures();
             var value = groups[0];
-            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            if (!replacementOnly)
+            {
+                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            }
             if (simplePlan is { } plan)
             {
                 AppendSimpleReplacement(
@@ -6435,227 +2914,52 @@ public sealed class Utf8Pcre2Regex
         }
         while (cursor.MoveNext());
 
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
-    }
-
-    private byte[] ReplaceReplacementOnlyViaDetailedNativeIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
-    {
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(replacement.Length);
-        var searchStart = startOffsetInBytes;
-        var foundAny = false;
-        while (searchStart <= input.Length)
+        if (!replacementOnly)
         {
-            Utf8Pcre2MatchContext match = default;
-            var found = false;
-            for (var candidateStart = searchStart; candidateStart <= input.Length; candidateStart++)
-            {
-                match = MatchDetailed(input, candidateStart, Pcre2MatchOptions.None);
-                if (match.Success)
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                break;
-            }
-
-            foundAny = true;
-            var value = match.Value;
-            var groups = CaptureGroups(match);
-            if (!value.HasContiguousByteRange || value.StartOffsetInBytes < searchStart || value.EndOffsetInBytes < value.StartOffsetInBytes)
-            {
-                throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-            }
-
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, value.StartOffsetInUtf16, value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    match.Mark));
-            }
-            searchStart = value.EndOffsetInBytes > value.StartOffsetInBytes
-                ? value.EndOffsetInBytes
-                : value.EndOffsetInBytes + 1;
+            builder.Append(subject, position, subject.Length - position);
         }
-
-        return foundAny ? Encoding.UTF8.GetBytes(builder.ToString()) : [];
-    }
-
-    private byte[] ReplaceReplacementOnlyViaTranslatedDetailedIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
-    {
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(replacement.Length);
-        var enumerator = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-        if (!enumerator.MoveNext())
-        {
-            return [];
-        }
-
-        do
-        {
-            var value = enumerator.Current;
-            var match = MatchDetailed(input, value.StartOffsetInBytes, Pcre2MatchOptions.None);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException("Translated enumeration produced a match that MatchDetailed(...) could not reproduce.");
-            }
-
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(builder, plan, subject, value.StartOffsetInUtf16, value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                var groups = CaptureGroups(match);
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    mark: match.Mark));
-            }
-        }
-        while (enumerator.MoveNext());
 
         return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
-    private bool UsesNativeGlobalIteration()
-    {
-        return Pattern is
-            "abc\\K|def\\K" or
-            "ab\\Kc|de\\Kf" or
-            "(?<=abc)(|def)" or
-            "(?<=abc)(|DEF)" or
-            "(?<=\\G.)" or
-            "(?<=\\Ka)" or
-            "(?(?=\\Gc)(?<=\\Kb)c|(?<=\\Kab))" or
-            "(?(?=\\Gc)(?<=\\Kab)|(?<=\\Kb))" or
-            "(?=ab\\K)" ||
-            CanUseDetailedNativeReplacement();
-    }
+
+
 
     private bool RejectsReplacementIteration()
     {
-        return GenericBacktrackingMayReportNonMonotoneMatchOffsets || ExecutionKind is
-            Pcre2ExecutionKind.KResetLookaheadAb or
-            Pcre2ExecutionKind.KResetLookbehindA or
-            Pcre2ExecutionKind.KResetConditionalGcOverlap or
-            Pcre2ExecutionKind.KResetConditionalGcNotSorted or
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround1 or
-            Pcre2ExecutionKind.KResetRuntimeDisallowedLookaround2 or
-            Pcre2ExecutionKind.KResetRuntimeConditionalDigits or
-            Pcre2ExecutionKind.KResetSneakyLookaheadDefine or
-            Pcre2ExecutionKind.KResetSneakyLookbehindDefine or
-            Pcre2ExecutionKind.KResetSneakyGlobalLookbehindDefine;
+        return GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
+            _program.Operations.Match is Pcre2BacktrackingDirectProgram backtracking &&
+            HasDeferredLookaroundReset(backtracking.Program);
     }
 
-    private bool CanUseDetailedNativeReplacement()
+    private static bool UsesSubroutines(Pcre2BacktrackingProgram program)
     {
-        return CanEnumerateViaRepeatedDetailedMatching() ||
-            ExecutionKind is
-                Pcre2ExecutionKind.SubroutinePrefixDigits or
-                Pcre2ExecutionKind.CommitSubroutine or
-                Pcre2ExecutionKind.DefineSubroutineB;
-    }
-
-    private static byte[] ReplaceMarkedLiterals(
-        ReadOnlySpan<byte> input,
-        string replacement,
-        Pcre2SubstitutionOptions substitutionOptions,
-        int startOffsetInBytes,
-        (string Literal, string Mark)[] alternatives,
-        bool replaceAll)
-    {
-        var subject = Encoding.UTF8.GetString(input);
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var builder = new StringBuilder(subject.Length + replacement.Length);
-        var position = 0;
-        var searchIndex = startOffsetInUtf16;
-        var matchedAny = false;
-
-        while (searchIndex < subject.Length)
+        if (program.SubroutineTargets.Length != 0)
         {
-            var next = FindNextMarkedLiteral(subject, searchIndex, alternatives);
-            if (next.Index < 0)
-            {
-                break;
-            }
-
-            builder.Append(subject, position, next.Index - position);
-            builder.Append(EvaluateReplacementTemplate(
-                replacement,
-                substitutionOptions,
-                subject,
-                next.Index,
-                next.Literal.Length,
-                ResolveMarkedNumberReference,
-                static _ => default,
-                static () => default,
-                next.Mark));
-            position = next.Index + next.Literal.Length;
-            searchIndex = position;
-            matchedAny = true;
-            if (!replaceAll)
-            {
-                break;
-            }
+            return true;
         }
 
-        if (!matchedAny)
-        {
-            return input.ToArray();
-        }
-
-        builder.Append(subject, position, subject.Length - position);
-        return Encoding.UTF8.GetBytes(builder.ToString());
+        return program.AssertionPrograms.Any(UsesSubroutines);
     }
 
-    private static (int Index, string Literal, string Mark) FindNextMarkedLiteral(string subject, int startIndex, (string Literal, string Mark)[] alternatives)
+    private static bool HasDeferredLookaroundReset(Pcre2BacktrackingProgram program)
     {
-        var bestIndex = -1;
-        var bestLiteral = string.Empty;
-        var bestMark = string.Empty;
-        foreach (var alternative in alternatives)
+        if (program.MayThrowDeferredLookaroundReset)
         {
-            var index = subject.IndexOf(alternative.Literal, startIndex, StringComparison.Ordinal);
-            if (index < 0)
-            {
-                continue;
-            }
-
-            if (bestIndex < 0 || index < bestIndex)
-            {
-                bestIndex = index;
-                bestLiteral = alternative.Literal;
-                bestMark = alternative.Mark;
-            }
+            return true;
         }
 
-        return (bestIndex, bestLiteral, bestMark);
+        if (program.MayReportNonMonotoneMatchOffsets)
+        {
+            return false;
+        }
+
+        return program.AssertionPrograms.Any(static assertion =>
+            assertion.UsesMatchBoundaryReset || HasDeferredLookaroundReset(assertion));
     }
+
+
+
 
     private static string EvaluateReplacementTemplate(
         string replacement,
@@ -6847,35 +3151,6 @@ public sealed class Utf8Pcre2Regex
         }
     }
 
-    private static bool TryGetLiteralOnlyReplacementBytes(SimpleReplacementPlan plan, out byte[] replacementBytes)
-    {
-        var length = 0;
-        foreach (var segment in plan.Segments)
-        {
-            if (segment.IsWholeMatch)
-            {
-                replacementBytes = [];
-                return false;
-            }
-
-            length += Encoding.UTF8.GetByteCount(segment.Literal);
-        }
-
-        if (length == 0)
-        {
-            replacementBytes = [];
-            return true;
-        }
-
-        replacementBytes = new byte[length];
-        var position = 0;
-        foreach (var segment in plan.Segments)
-        {
-            position += Encoding.UTF8.GetBytes(segment.Literal, replacementBytes.AsSpan(position));
-        }
-
-        return true;
-    }
 
     private static void AppendEvaluatedReplacementTemplate(
         StringBuilder builder,
@@ -7560,29 +3835,7 @@ public sealed class Utf8Pcre2Regex
         }
     }
 
-    private static ReplacementReferenceResolution ResolveNumberReference(Regex regex, Match match, int number)
-    {
-        if (number < 0 || number >= match.Groups.Count)
-        {
-            return default;
-        }
 
-        var group = match.Groups[number];
-        return new ReplacementReferenceResolution(true, group.Success, group.Success ? group.Value : string.Empty);
-    }
-
-    private static ReplacementReferenceResolution ResolveExplicitNumberReference(Pcre2GroupData match, int number, string subject)
-    {
-        if (number != 0)
-        {
-            return default;
-        }
-
-        return new ReplacementReferenceResolution(
-            Known: true,
-            Success: match.Success,
-            Value: match.Success ? subject[match.StartOffsetInUtf16..match.EndOffsetInUtf16] : string.Empty);
-    }
 
     private static ReplacementReferenceResolution ResolveNativeNumberReference(Pcre2GroupData[] groups, int number, string subject)
     {
@@ -7598,16 +3851,6 @@ public sealed class Utf8Pcre2Regex
             Value: group.Success ? subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16] : string.Empty);
     }
 
-    private static ReplacementReferenceResolution ResolveNamedReference(Regex regex, Match match, string name)
-    {
-        if (!TryGetNamedGroupNumber(regex, name, out var number))
-        {
-            return default;
-        }
-
-        var group = match.Groups[number];
-        return new ReplacementReferenceResolution(true, group.Success, group.Success ? group.Value : string.Empty);
-    }
 
     private static ReplacementReferenceResolution ResolveNativeNamedReference(Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string name, string subject)
     {
@@ -7637,23 +3880,6 @@ public sealed class Utf8Pcre2Regex
             : default;
     }
 
-    private static ReplacementReferenceResolution ResolveLastCapturedReference(Match match)
-    {
-        if (match.Groups.Count <= 1)
-        {
-            return default;
-        }
-
-        for (var i = match.Groups.Count - 1; i >= 1; i--)
-        {
-            if (match.Groups[i].Success)
-            {
-                return new ReplacementReferenceResolution(true, true, match.Groups[i].Value);
-            }
-        }
-
-        return new ReplacementReferenceResolution(true, false, string.Empty);
-    }
 
     private static ReplacementReferenceResolution ResolveNativeLastCapturedReference(Pcre2GroupData[] groups, string subject)
     {
@@ -7677,12 +3903,6 @@ public sealed class Utf8Pcre2Regex
     private static ReplacementReferenceResolution ResolveMarkReference(string? mark)
         => new(true, mark is not null, mark ?? string.Empty);
 
-    private static ReplacementReferenceResolution ResolveMarkedNumberReference(int number)
-    {
-        return number == 0
-            ? new ReplacementReferenceResolution(true, true, string.Empty)
-            : default;
-    }
 
     internal int DebugCountRaw(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
@@ -7707,31 +3927,11 @@ public sealed class Utf8Pcre2Regex
             return PrimaryUtf8Regex.ByteOffsetExecution.CountPrepared(subject, start);
         }
 
-        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
-        {
-            return SearchEquivalentUtf8Regex.ByteOffsetExecution.CountPrepared(subject, start);
-        }
-
         if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
-            if (startOffsetInBytes == 0 && CanUseUtf8RegexCompatiblePublicCount(input.Length))
-            {
-                return PrimaryUtf8Regex.Count(input);
-            }
-
             var managedSubject = Encoding.UTF8.GetString(input);
             var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
             return ManagedRegex.Count(managedSubject, startOffsetInUtf16);
-        }
-
-        if (!UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            if (TryCountNativeGlobalMatches(input, startOffsetInBytes, out var nativeCount))
-            {
-                return nativeCount;
-            }
-
-            return EnumerateGlobalMatchData(input, startOffsetInBytes).Length;
         }
 
         return Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
@@ -7781,23 +3981,6 @@ public sealed class Utf8Pcre2Regex
             return sum;
         }
 
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Utf8RegexEquivalent)
-        {
-            var sum = 0;
-            var enumerator = SearchEquivalentUtf8Regex.ByteOffsetExecution.EnumerateMatches(subject, start);
-            while (enumerator.MoveNext())
-            {
-                if (!enumerator.Current.TryGetByteRange(out var indexInBytes, out _))
-                {
-                    throw new InvalidOperationException("Managed Utf8Regex fallback returned a match that is not aligned to byte boundaries.");
-                }
-
-                sum += indexInBytes;
-            }
-
-            return sum;
-        }
-
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.ManagedRegex)
         {
             var managedSubject = Encoding.UTF8.GetString(input);
@@ -7819,18 +4002,6 @@ public sealed class Utf8Pcre2Regex
                 }
 
                 sum += indexInBytes;
-            }
-
-            return sum;
-        }
-
-        if (!UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-            var sum = 0;
-            for (var i = 0; i < matches.Length; i++)
-            {
-                sum += matches[i].StartOffsetInBytes;
             }
 
             return sum;
@@ -7880,80 +4051,16 @@ public sealed class Utf8Pcre2Regex
                 Pcre2MatchOptions.None));
         }
 
-        if (UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            return 0;
-        }
-
-        return EnumerateGlobalMatchData(input, startOffsetInBytes).Length;
-    }
-
-    internal int DebugEnumerateArrayBackedConstructionOnly(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Literal)
-        {
-            _ = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-            return 0;
-        }
-
-        if (UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            _ = EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
-            return 0;
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        _ = new Utf8Pcre2ValueMatchEnumerator(input, matches);
-        return matches.Length;
-    }
-
-    internal int DebugEnumerateArrayBackedPublicMoveNextCount(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Literal)
-        {
-            return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(
-                input,
-                startOffsetInBytes,
-                Pcre2MatchOptions.None));
-        }
-
-        if (UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        var enumerator = new Utf8Pcre2ValueMatchEnumerator(input, matches);
-        return ExecutePublicEnumerateMoveNextCount(enumerator);
+        return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(
+            input,
+            startOffsetInBytes,
+            Pcre2MatchOptions.None));
     }
 
     internal int DebugEnumerateInternalPublicMoveNextCount(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-    }
-
-    internal int DebugEnumerateArrayBackedPublicIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        ValidateStartOffset(input, startOffsetInBytes);
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Literal)
-        {
-            return ExecutePublicEnumerateIndexSum(EnumerateMatches(
-                input,
-                startOffsetInBytes,
-                Pcre2MatchOptions.None));
-        }
-
-        if (UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            return ExecutePublicEnumerateIndexSum(EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None));
-        }
-
-        var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-        var enumerator = new Utf8Pcre2ValueMatchEnumerator(input, matches);
-        return ExecutePublicEnumerateIndexSum(enumerator);
     }
 
     internal int DebugEnumerateInternalPublicIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -8025,26 +4132,6 @@ public sealed class Utf8Pcre2Regex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Encoding.UTF8.GetString(input);
 
-        if (UsesNativeGlobalIteration() && !UsesDeferredSpecialGlobalEnumerator(input, startOffsetInBytes))
-        {
-            var matches = EnumerateGlobalMatchData(input, startOffsetInBytes);
-            if (matches.Length == 0)
-            {
-                return 0;
-            }
-
-            return EvaluateReplacementTemplate(
-                replacement,
-                substitutionOptions,
-                subject,
-                matches[0].StartOffsetInUtf16,
-                matches[0].EndOffsetInUtf16 - matches[0].StartOffsetInUtf16,
-                number => ResolveExplicitNumberReference(matches[0], number, subject),
-                _ => default,
-                () => default,
-                mark: null).Length;
-        }
-
         var match = MatchDetailed(input, startOffsetInBytes, Pcre2MatchOptions.None);
         if (!match.Success)
         {
@@ -8063,14 +4150,6 @@ public sealed class Utf8Pcre2Regex
             name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
             () => ResolveNativeLastCapturedReference(groups, subject),
             match.Mark).Length;
-    }
-
-    private static bool TryGetNamedGroupNumber(Regex regex, string name, out int number)
-    {
-        number = regex.GroupNumberFromName(name);
-        return number >= 0 &&
-               !int.TryParse(name, out _) &&
-               string.Equals(regex.GroupNameFromNumber(number), name, StringComparison.Ordinal);
     }
 
     private static bool IsReplacementNameStart(char value)
@@ -8211,107 +4290,13 @@ public sealed class Utf8Pcre2Regex
         LowerUntilEnd = 4,
     }
 
-    internal enum Pcre2ExecutionKind
-    {
-        Unimplemented = 0,
-        ManagedRegex = 1,
-        ReluctantAlternation = 2,
-        BranchResetBasic = 3,
-        BranchResetBackref = 4,
-        BranchResetNested = 5,
-        BranchResetNestedSecondCapture = 6,
-        BranchResetAbasic = 7,
-        BranchResetSubroutine = 8,
-        BranchResetGReference = 9,
-        BranchResetSameNameBackref = 10,
-        BranchResetSameNameFollowup = 11,
-        DuplicateNamesFooBar = 12,
-        MarkSkip = 13,
-        KResetFooBar = 14,
-        KResetBarOrBaz = 15,
-        KResetFooBarBaz = 16,
-        KResetAbc123 = 17,
-        KReset123Abc = 18,
-        KResetAnchorAbc = 19,
-        KResetAnchorLookaheadOrAbc = 20,
-        KResetAtomicAb = 21,
-        KResetCapturedAtomicAb = 22,
-        KResetCapturedAb = 23,
-        KResetAnchorCzOrAc = 24,
-        KResetAtomicAltAb = 25,
-        KResetDefineSubroutineAb = 26,
-        KResetRepeatAbPossessive = 27,
-        KResetAtomicRepeatAb = 28,
-        KResetRepeatAb = 29,
-        KResetCapturedRepeatAbPossessive = 30,
-        KResetCapturedRepeatAb = 31,
-        KResetRecursiveAny = 32,
-        KResetRecursiveCaptured = 33,
-        KResetLookaheadAb = 34,
-        KResetLookbehindA = 35,
-        KResetConditionalGcOverlap = 36,
-        KResetConditionalGcNotSorted = 37,
-        KResetRuntimeDisallowedLookaround1 = 38,
-        KResetRuntimeDisallowedLookaround2 = 39,
-        KResetRuntimeConditionalDigits = 40,
-        KResetSneakyLookaheadDefine = 41,
-        KResetSneakyLookbehindDefine = 42,
-        KResetSneakyGlobalLookbehindDefine = 43,
-        BackslashCLiteral = 44,
-        RecursivePalindromeOdd = 45,
-        RecursivePalindromeAny = 46,
-        RecursiveAlternation = 47,
-        RecursiveOptional = 48,
-        AtomicAlternationReluctantMany = 49,
-        AtomicAlternationReluctantTwo = 50,
-        ConditionalLookaheadPlus = 51,
-        ConditionalLookaheadEmptyAlt = 52,
-        ConditionalLookahead = 53,
-        ConditionalNegativeLookahead = 54,
-        ConditionalAcceptLookahead = 55,
-        ConditionalAcceptNegativeLookahead = 56,
-        SubroutinePrefixDigits = 57,
-        CommitSubroutine = 58,
-        DefineSubroutineB = 59,
-        PartialSoftDotAllLiteral = 60,
-        MailboxRfc2822 = 61,
-        ReplaceFooLiteral = 62,
-        ReplaceFooOptionalBar = 63,
-        ReplacePartialAbPlus = 64,
-        ProbeTrailingCLookbehind = 65,
-        ProbeTrailingCPlusLookbehind = 66,
-        ProbeAnchoredAPlusWord = 67,
-        ProbeAnchoredAaOrAPlusWord = 68,
-        ProbeAnchoredAStarWord = 69,
-        ProbeAnchoredCapturedAPlusWord = 70,
-        ProbeAnchoredOptionalAPlusWord = 71,
-        ProbeAnchoredAbcPlusTerminalX = 72,
-        ProbeRecursiveAbcTwice = 73,
-        ProbeAnchoredR = 74,
-        ProbeAnchoredRRangeX = 75,
-        ProbeAnchoredRRangeReluctantX = 76,
-        ProbeAnchoredROptionalX = 77,
-        ProbeAnchoredRPlusX = 78,
-    }
-
-    private enum TrailingAssertionKind
-    {
-        Dollar = 0,
-        EndAbsolute = 1,
-        EndBeforeFinalNewline = 2,
-        WordBoundary = 3,
-        NonWordBoundary = 4,
-    }
-
-    internal string DebugExecutionKindName => ExecutionKind.ToString();
+    internal string DebugExecutionKindName => _program.Operations.Match.Kind.ToString();
 
     internal Pcre2CompiledProgram DebugCompiledProgram => _program;
 
     internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
 
     internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.ExecutionKind.ToString() : "<none>";
-
-    internal bool DebugHasUtf8SearchEquivalentRegex => HasSearchEquivalentUtf8Regex;
 
     internal bool DebugHasManagedRegex => HasManagedRegex;
 

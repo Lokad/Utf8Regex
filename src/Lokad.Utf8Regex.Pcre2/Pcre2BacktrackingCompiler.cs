@@ -375,6 +375,7 @@ internal sealed class Pcre2BacktrackingProgram
         string[] groupNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
+        int analyzedMinimumByteLength,
         int minimumScalarLength,
         int maximumScalarLength,
         byte? leadingAsciiByte,
@@ -388,7 +389,9 @@ internal sealed class Pcre2BacktrackingProgram
         RequiresCaptureState = requiresCaptureState;
         HasCaptureWrites = hasCaptureWrites;
         UsesBacktrackingControlVerbs = usesBacktrackingControlVerbs;
-        UsesMatchBoundaryReset = usesMatchBoundaryReset;
+        UsesMatchBoundaryReset = usesMatchBoundaryReset ||
+            instructions.Any(static instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.MatchBoundaryReset) ||
+            assertionPrograms.Any(static program => program.UsesMatchBoundaryReset);
         MayReportNonMonotoneMatchOffsets = mayReportNonMonotoneMatchOffsets;
         MayThrowDeferredLookaroundReset = mayThrowDeferredLookaroundReset;
         SuppressesUnresetEmptyMatches = suppressesUnresetEmptyMatches;
@@ -401,6 +404,7 @@ internal sealed class Pcre2BacktrackingProgram
         GroupNames = groupNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
+        AnalyzedMinimumByteLength = analyzedMinimumByteLength;
         MinimumScalarLength = minimumScalarLength;
         MaximumScalarLength = maximumScalarLength;
         LeadingAsciiByte = leadingAsciiByte;
@@ -447,6 +451,8 @@ internal sealed class Pcre2BacktrackingProgram
     internal Pcre2NameEntry[] NameEntries { get; }
 
     internal int MinimumByteLength { get; }
+
+    internal int AnalyzedMinimumByteLength { get; }
 
     internal int MinimumScalarLength { get; }
 
@@ -2217,6 +2223,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _groupNames,
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
+            Pcre2BacktrackingAnalysis.GetMinimumByteLength(root, _captureDefinitions, _nameSlots),
             Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
@@ -2639,6 +2646,12 @@ internal sealed class Pcre2BacktrackingLowerer
 
 internal static class Pcre2BacktrackingAnalysis
 {
+    internal static int GetMinimumByteLength(
+        IPcre2BacktrackingNode node,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
+        IReadOnlyDictionary<string, int[]> nameSlots) =>
+        GetMinimumByteLength(node, captureDefinitions, nameSlots, []);
+
     internal static int GetMinimumByteLength(IPcre2BacktrackingNode node)
     {
         return node switch
@@ -2661,6 +2674,116 @@ internal static class Pcre2BacktrackingAnalysis
             _ => 0,
         };
     }
+
+    private static int GetMinimumByteLength(
+        IPcre2BacktrackingNode node,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
+        IReadOnlyDictionary<string, int[]> nameSlots,
+        HashSet<int> activeCaptures)
+    {
+        switch (node)
+        {
+            case Pcre2EmptyBacktrackingNode:
+                return 0;
+            case Pcre2TokenBacktrackingNode token:
+                return ConsumesInput(token.Token.Kind) ? 1 : 0;
+            case Pcre2SequenceBacktrackingNode sequence:
+                var sequenceMinimum = 0;
+                foreach (var child in sequence.Children)
+                {
+                    sequenceMinimum = SaturatingAdd(
+                        sequenceMinimum,
+                        GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
+                }
+
+                return sequenceMinimum;
+            case Pcre2AlternationBacktrackingNode alternation:
+                return alternation.Alternatives.Min(
+                    child => GetMinimumByteLength(child, captureDefinitions, nameSlots, activeCaptures));
+            case Pcre2RepeatBacktrackingNode repeat:
+                return SaturatingMultiply(
+                    GetMinimumByteLength(repeat.Body, captureDefinitions, nameSlots, activeCaptures),
+                    repeat.Minimum);
+            case Pcre2CaptureBacktrackingNode capture:
+                return GetMinimumByteLength(capture.Body, captureDefinitions, nameSlots, activeCaptures);
+            case Pcre2BackreferenceBacktrackingNode backreference:
+                return GetBackreferenceMinimum(backreference.Target, captureDefinitions, nameSlots, activeCaptures);
+            case Pcre2AssertionBacktrackingNode:
+                return 0;
+            case Pcre2SubroutineCallBacktrackingNode subroutine:
+                var subroutineSlot = ResolveReferenceSlot(subroutine.Target);
+                return subroutineSlot > 0
+                    ? GetCaptureMinimum(subroutineSlot, captureDefinitions, nameSlots, activeCaptures)
+                    : 0;
+            case Pcre2ConditionalBacktrackingNode conditional:
+                return Math.Min(
+                    GetMinimumByteLength(conditional.YesBranch, captureDefinitions, nameSlots, activeCaptures),
+                    GetMinimumByteLength(conditional.NoBranch, captureDefinitions, nameSlots, activeCaptures));
+            case Pcre2AtomicBacktrackingNode atomic:
+                return GetMinimumByteLength(atomic.Body, captureDefinitions, nameSlots, activeCaptures);
+            default:
+                return 0;
+        }
+    }
+
+    private static int GetBackreferenceMinimum(
+        Pcre2BackreferenceTarget target,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
+        IReadOnlyDictionary<string, int[]> nameSlots,
+        HashSet<int> activeCaptures)
+    {
+        if (target.Kind != Pcre2BackreferenceTargetKind.Named)
+        {
+            return GetCaptureMinimum(
+                ResolveReferenceSlot(target),
+                captureDefinitions,
+                nameSlots,
+                activeCaptures);
+        }
+
+        if (!nameSlots.TryGetValue(target.Name, out var slots) || slots.Length == 0)
+        {
+            return 0;
+        }
+
+        var minimum = int.MaxValue;
+        foreach (var slot in slots)
+        {
+            minimum = Math.Min(
+                minimum,
+                GetCaptureMinimum(slot, captureDefinitions, nameSlots, activeCaptures));
+        }
+
+        return minimum == int.MaxValue ? 0 : minimum;
+    }
+
+    private static int GetCaptureMinimum(
+        int slot,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
+        IReadOnlyDictionary<string, int[]> nameSlots,
+        HashSet<int> activeCaptures)
+    {
+        if (slot <= 0 ||
+            !captureDefinitions.TryGetValue(slot, out var capture) ||
+            !activeCaptures.Add(slot))
+        {
+            return 0;
+        }
+
+        var minimum = GetMinimumByteLength(capture.Body, captureDefinitions, nameSlots, activeCaptures);
+        _ = activeCaptures.Remove(slot);
+        return minimum;
+    }
+
+    private static int ResolveReferenceSlot(Pcre2BackreferenceTarget target) => target.Kind switch
+    {
+        Pcre2BackreferenceTargetKind.Absolute => target.Number,
+        Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
+            target.CaptureCountAtReference + target.Number,
+        Pcre2BackreferenceTargetKind.Relative =>
+            target.CaptureCountAtReference + target.Number + 1,
+        _ => 0,
+    };
 
     internal static int GetMinimumScalarLength(IPcre2BacktrackingNode node) => node switch
     {

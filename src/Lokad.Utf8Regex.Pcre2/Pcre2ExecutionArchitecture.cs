@@ -12,18 +12,18 @@ internal readonly record struct Pcre2CompileRequest(
     Utf8Pcre2ExecutionLimits DefaultLimits,
     TimeSpan MatchTimeout);
 
-internal delegate Pcre2CompiledProgram Pcre2LegacyProgramFactory(Pcre2CompileRequest request);
+internal delegate Pcre2CompiledProgram Pcre2FoundationProgramFactory(Pcre2CompileRequest request);
 
 internal static class Pcre2Compiler
 {
-    internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request, Pcre2LegacyProgramFactory legacyProgramFactory)
+    internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request, Pcre2FoundationProgramFactory foundationProgramFactory)
     {
         ArgumentNullException.ThrowIfNull(request.Pattern);
-        ArgumentNullException.ThrowIfNull(legacyProgramFactory);
+        ArgumentNullException.ThrowIfNull(foundationProgramFactory);
         Pcre2CompileValidator.Validate(request.Pattern, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
-            var literalProgram = legacyProgramFactory(request);
+            var literalProgram = foundationProgramFactory(request);
             literalProgram = Pcre2CompiledProgramOverlay.WithLiteralOneShot(literalProgram, literal.SyntaxTree, literal.Program);
             Pcre2ProgramInvariant.Validate(literalProgram);
             return literalProgram;
@@ -34,7 +34,7 @@ internal static class Pcre2Compiler
             Pcre2CompiledProgram foundation;
             try
             {
-                foundation = legacyProgramFactory(request);
+                foundation = foundationProgramFactory(request);
             }
             catch (RegexParseException)
             {
@@ -51,7 +51,7 @@ internal static class Pcre2Compiler
             Pcre2CompiledProgram foundation;
             try
             {
-                foundation = legacyProgramFactory(request);
+                foundation = foundationProgramFactory(request);
             }
             catch (RegexParseException)
             {
@@ -66,7 +66,7 @@ internal static class Pcre2Compiler
             return foundation;
         }
 
-        var program = legacyProgramFactory(request);
+        var program = foundationProgramFactory(request);
         Pcre2ProgramInvariant.Validate(program);
         return program;
     }
@@ -146,18 +146,12 @@ internal sealed class Pcre2NoDirectProgram : IPcre2DirectProgram
 
 internal sealed class Pcre2Utf8DirectProgram : IPcre2DirectProgram
 {
-    internal Pcre2Utf8DirectProgram(Utf8Regex regex, Pcre2DirectProgramKind kind)
+    internal Pcre2Utf8DirectProgram(Utf8Regex regex)
     {
-        if (kind is not (Pcre2DirectProgramKind.Utf8Regex or Pcre2DirectProgramKind.Utf8RegexEquivalent))
-        {
-            throw new ArgumentOutOfRangeException(nameof(kind));
-        }
-
         Regex = regex;
-        Kind = kind;
     }
 
-    public Pcre2DirectProgramKind Kind { get; }
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Utf8Regex;
 
     internal Utf8Regex Regex { get; }
 }
@@ -215,10 +209,9 @@ internal enum Pcre2DirectProgramKind : byte
     None = 0,
     Utf8Regex = 1,
     ManagedRegex = 2,
-    Utf8RegexEquivalent = 3,
-    Pcre2Literal = 4,
-    Pcre2Character = 5,
-    Pcre2Backtracking = 6,
+    Pcre2Literal = 3,
+    Pcre2Character = 4,
+    Pcre2Backtracking = 5,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -230,65 +223,25 @@ internal readonly record struct Pcre2OperationPrograms(
 
 internal readonly record struct Pcre2CandidateSearchProgram(IPcre2DirectProgram Program);
 
-internal readonly record struct Pcre2FullVerificationProgram(Utf8Pcre2Regex.Pcre2ExecutionKind LegacyExecutionKind);
-
-internal interface IPcre2TranslationProgram
-{
-    bool IsActive { get; }
-}
-
-internal sealed class Pcre2NoTranslationProgram : IPcre2TranslationProgram
-{
-    internal static Pcre2NoTranslationProgram Instance { get; } = new();
-
-    private Pcre2NoTranslationProgram()
-    {
-    }
-
-    public bool IsActive => false;
-}
-
-internal sealed class Pcre2Utf8TranslationProgram : IPcre2TranslationProgram
-{
-    internal Pcre2Utf8TranslationProgram(string pattern, RegexOptions options, Utf8Regex regex)
-    {
-        Pattern = pattern;
-        Options = options;
-        Regex = regex;
-    }
-
-    public bool IsActive => true;
-
-    internal string Pattern { get; }
-
-    internal RegexOptions Options { get; }
-
-    internal Utf8Regex Regex { get; }
-}
-
 internal sealed class Pcre2CompiledProgram
 {
     internal Pcre2CompiledProgram(
         Pcre2CompileRequest request,
         IPcre2Utf8ProgramSlot primaryUtf8,
-        IPcre2Utf8ProgramSlot searchEquivalentUtf8,
         IPcre2ManagedProgramSlot managed,
-        IPcre2TranslationProgram translation,
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
-        Pcre2FullVerificationProgram fullVerification,
+        Pcre2PartialProbeProgram partialProbe,
         IPcre2SyntaxTree syntaxTree,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries)
     {
         Request = request;
         PrimaryUtf8 = primaryUtf8;
-        SearchEquivalentUtf8 = searchEquivalentUtf8;
         Managed = managed;
-        Translation = translation;
         Operations = operations;
         CandidateSearch = candidateSearch;
-        FullVerification = fullVerification;
+        PartialProbe = partialProbe;
         SyntaxTree = syntaxTree;
         GroupNames = [.. groupNames];
         NameEntries = [.. nameEntries];
@@ -298,17 +251,13 @@ internal sealed class Pcre2CompiledProgram
 
     internal IPcre2Utf8ProgramSlot PrimaryUtf8 { get; }
 
-    internal IPcre2Utf8ProgramSlot SearchEquivalentUtf8 { get; }
-
     internal IPcre2ManagedProgramSlot Managed { get; }
-
-    internal IPcre2TranslationProgram Translation { get; }
 
     internal Pcre2OperationPrograms Operations { get; }
 
     internal Pcre2CandidateSearchProgram CandidateSearch { get; }
 
-    internal Pcre2FullVerificationProgram FullVerification { get; }
+    internal Pcre2PartialProbeProgram PartialProbe { get; }
 
     internal IPcre2SyntaxTree SyntaxTree { get; }
 
@@ -325,12 +274,10 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             request,
             Pcre2EmptyUtf8ProgramSlot.Instance,
-            Pcre2EmptyUtf8ProgramSlot.Instance,
             Pcre2EmptyManagedProgramSlot.Instance,
-            Pcre2NoTranslationProgram.Instance,
             new Pcre2OperationPrograms(none, none, none, none, none),
             new Pcre2CandidateSearchProgram(none),
-            new Pcre2FullVerificationProgram(Utf8Pcre2Regex.Pcre2ExecutionKind.Unimplemented),
+            Pcre2PartialProbeProgram.None,
             Pcre2LegacySyntaxTree.Instance,
             ["0"],
             []);
@@ -353,12 +300,10 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.SearchEquivalentUtf8,
             legacy.Managed,
-            legacy.Translation,
             operations,
             new Pcre2CandidateSearchProgram(direct),
-            legacy.FullVerification,
+            Pcre2PartialProbeProgram.None,
             syntaxTree,
             legacy.GroupNames,
             legacy.NameEntries);
@@ -381,12 +326,10 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.SearchEquivalentUtf8,
             legacy.Managed,
-            legacy.Translation,
             operations,
             new Pcre2CandidateSearchProgram(direct),
-            legacy.FullVerification,
+            Pcre2PartialProbeCompiler.Compile(characterProgram, legacy.Request),
             syntaxTree,
             legacy.GroupNames,
             legacy.NameEntries);
@@ -409,12 +352,10 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.SearchEquivalentUtf8,
             legacy.Managed,
-            legacy.Translation,
             operations,
             new Pcre2CandidateSearchProgram(direct),
-            legacy.FullVerification,
+            Pcre2PartialProbeCompiler.Compile(syntaxTree, legacy.Request),
             syntaxTree,
             backtrackingProgram.GroupNames,
             backtrackingProgram.NameEntries);
@@ -438,8 +379,8 @@ internal static class Pcre2ProgramInvariant
         ArgumentNullException.ThrowIfNull(directProgram);
         if (directProgram is Pcre2Utf8DirectProgram utf8Program)
         {
-            var isOwnedUtf8Program = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary && ReferenceEquals(primary.Regex, utf8Program.Regex) ||
-                program.SearchEquivalentUtf8 is Pcre2Utf8ProgramSlot equivalent && ReferenceEquals(equivalent.Regex, utf8Program.Regex);
+            var isOwnedUtf8Program = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
+                ReferenceEquals(primary.Regex, utf8Program.Regex);
             if (!isOwnedUtf8Program)
             {
                 throw new InvalidOperationException("A direct UTF-8 backend must be owned by its compiled PCRE2 program.");

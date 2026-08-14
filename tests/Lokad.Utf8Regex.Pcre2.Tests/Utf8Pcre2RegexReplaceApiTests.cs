@@ -129,7 +129,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
     }
 
     [Fact]
-    public void TryReplaceSupportsNativeGlobalLiteralReplacement()
+    public void TryReplacePreservesKResetSubstitutionEmptyRetrySemantics()
     {
         var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*");
         Span<byte> destination = stackalloc byte[16];
@@ -137,12 +137,12 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
         var status = regex.TryReplace("ab xx ab"u8, "R"u8, destination, out var bytesWritten);
 
         Assert.Equal(OperationStatus.Done, status);
-        Assert.Equal(8, bytesWritten);
-        Assert.Equal("aR xx aR"u8.ToArray(), destination[..bytesWritten].ToArray());
+        Assert.Equal(13, bytesWritten);
+        Assert.Equal("aRR RxRxR aRR"u8.ToArray(), destination[..bytesWritten].ToArray());
     }
 
     [Fact]
-    public void TryReplaceReportsLengthForNativeGlobalLiteralReplacement()
+    public void TryReplaceReportsLengthForKResetSubstitutionEmptyRetries()
     {
         var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*");
         Span<byte> destination = stackalloc byte[4];
@@ -156,7 +156,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength);
 
         Assert.Equal(OperationStatus.DestinationTooSmall, status);
-        Assert.Equal(8, bytesWritten);
+        Assert.Equal(13, bytesWritten);
         Assert.Equal("stay"u8.ToArray(), destination.ToArray());
     }
 
@@ -212,42 +212,42 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
     }
 
     [Fact]
-    public void ReplaceReplacementOnlyUnsupportedNativePatternIsExplicitlyRejected()
+    public void ReplaceReplacementOnlyUsesGenericBacktrackingIteration()
     {
         var regex = new Utf8Pcre2Regex("c*+(?<=[bc])");
 
-        var exception = Assert.Throws<NotSupportedException>(() => regex.ReplaceToString(
+        var actual = regex.ReplaceToString(
             "cc"u8,
             "X",
-            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly);
 
-        Assert.Contains("replacement-only execution", exception.Message);
+        Assert.Equal("XX", actual);
     }
 
     [Fact]
-    public void ReplaceLiteralUnsupportedNativePatternIsExplicitlyRejected()
+    public void ReplaceLiteralUsesGenericBacktrackingIteration()
     {
         var regex = new Utf8Pcre2Regex("c*+(?<=[bc])");
 
-        var exception = Assert.Throws<NotSupportedException>(() => regex.ReplaceToString(
+        var actual = regex.ReplaceToString(
             "cc"u8,
             "X",
-            substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral));
+            substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral);
 
-        Assert.Contains("literal replacement execution", exception.Message);
+        Assert.Equal("XX", actual);
     }
 
     [Fact]
-    public void ReplaceReplacementOnlyLiteralUnsupportedNativePatternIsExplicitlyRejected()
+    public void ReplaceReplacementOnlyLiteralUsesGenericBacktrackingIteration()
     {
         var regex = new Utf8Pcre2Regex("c*+(?<=[bc])");
 
-        var exception = Assert.Throws<NotSupportedException>(() => regex.ReplaceToString(
+        var actual = regex.ReplaceToString(
             "cc"u8,
             "X",
-            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly | Pcre2SubstitutionOptions.SubstituteLiteral));
+            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly | Pcre2SubstitutionOptions.SubstituteLiteral);
 
-        Assert.Contains("replacement-only literal execution", exception.Message);
+        Assert.Equal("XX", actual);
     }
 
     [Fact]

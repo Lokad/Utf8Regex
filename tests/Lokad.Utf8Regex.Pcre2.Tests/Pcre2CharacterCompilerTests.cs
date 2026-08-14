@@ -243,9 +243,12 @@ public sealed class Pcre2CharacterCompilerTests
     {
         var regex = new Utf8Pcre2Regex(@"\p{L}");
         var input = "--é--"u8.ToArray();
-        _ = regex.IsMatch(input);
-        _ = regex.Match(input);
-        _ = regex.Count(input);
+        for (var warmup = 0; warmup < 128; warmup++)
+        {
+            _ = regex.IsMatch(input);
+            _ = regex.Match(input);
+            _ = regex.Count(input);
+        }
 
         var matched = true;
         var before = GC.GetAllocatedBytesForCurrentThread();

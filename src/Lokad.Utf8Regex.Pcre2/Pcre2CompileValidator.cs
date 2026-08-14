@@ -52,35 +52,157 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
         }
 
-        if (pattern == "[abcd")
+        ValidateStructure(pattern);
+    }
+
+    private static void ValidateStructure(string pattern)
+    {
+        var groupDepth = 0;
+        var inCharacterClass = false;
+        var classHasAtom = false;
+        var previousClassScalar = -1;
+        var rangeLow = -1;
+        var quoted = false;
+        var previousWasZeroWidth = false;
+        for (var offset = 0; offset < pattern.Length; offset++)
+        {
+            var character = pattern[offset];
+            if (quoted)
+            {
+                if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
+                {
+                    quoted = false;
+                    offset++;
+                }
+
+                continue;
+            }
+
+            if (inCharacterClass)
+            {
+                if (character == ']' && classHasAtom)
+                {
+                    inCharacterClass = false;
+                    previousClassScalar = -1;
+                    rangeLow = -1;
+                    previousWasZeroWidth = false;
+                    continue;
+                }
+
+                if (character == '\\' && offset + 1 < pattern.Length)
+                {
+                    var escape = pattern[++offset];
+                    if (escape is 'B' or 'R' or 'X')
+                    {
+                        throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
+                    }
+
+                    CompleteClassAtom(escape, ref classHasAtom, ref previousClassScalar, ref rangeLow);
+                    continue;
+                }
+
+                if (character == '-' && previousClassScalar >= 0 && offset + 1 < pattern.Length && pattern[offset + 1] != ']')
+                {
+                    rangeLow = previousClassScalar;
+                    previousClassScalar = -1;
+                    continue;
+                }
+
+                CompleteClassAtom(character, ref classHasAtom, ref previousClassScalar, ref rangeLow);
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                if (offset + 1 >= pattern.Length)
+                {
+                    continue;
+                }
+
+                var escape = pattern[++offset];
+                if (escape == 'Q')
+                {
+                    quoted = true;
+                }
+
+                previousWasZeroWidth = escape is 'A' or 'b' or 'B' or 'G' or 'z' or 'Z';
+                continue;
+            }
+
+            if (character == '[')
+            {
+                inCharacterClass = true;
+                classHasAtom = false;
+                previousClassScalar = -1;
+                rangeLow = -1;
+                previousWasZeroWidth = false;
+                continue;
+            }
+
+            if (character == '(' && pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            {
+                var commentEnd = pattern.IndexOf(')', offset + 3);
+                if (commentEnd < 0)
+                {
+                    throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
+                }
+
+                offset = commentEnd;
+                previousWasZeroWidth = false;
+                continue;
+            }
+
+            if (character == '(')
+            {
+                groupDepth++;
+                previousWasZeroWidth = false;
+                continue;
+            }
+
+            if (character == ')')
+            {
+                if (groupDepth > 0)
+                {
+                    groupDepth--;
+                }
+
+                previousWasZeroWidth = false;
+                continue;
+            }
+
+            if (character is '*' or '+' or '?' && previousWasZeroWidth)
+            {
+                throw new Pcre2CompileException("Quantifier does not follow a repeatable item.", Pcre2ErrorKind.QuantifierInvalid);
+            }
+
+            previousWasZeroWidth = character is '^' or '$';
+        }
+
+        if (inCharacterClass)
         {
             throw new Pcre2CompileException("Missing terminating ] for character class.", Pcre2ErrorKind.MissingCharacterClassTerminator);
         }
 
-        if (pattern is @"[\B]" or @"[\R]" or @"[\X]")
+        if (groupDepth != 0)
         {
-            throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
+            throw new Pcre2CompileException("Missing closing parenthesis.", Pcre2ErrorKind.MissingClosingParenthesis);
         }
+    }
 
-        if (pattern == "[z-a]")
+    private static void CompleteClassAtom(
+        char character,
+        ref bool classHasAtom,
+        ref int previousClassScalar,
+        ref int rangeLow)
+    {
+        classHasAtom = true;
+        if (rangeLow >= 0 && character < rangeLow)
         {
             throw new Pcre2CompileException("Range out of order in character class.", Pcre2ErrorKind.ClassRangeOrder);
         }
 
-        if (pattern == "^*")
-        {
-            throw new Pcre2CompileException("Quantifier does not follow a repeatable item.", Pcre2ErrorKind.QuantifierInvalid);
-        }
-
-        if (pattern == "(abc")
-        {
-            throw new Pcre2CompileException("Missing closing parenthesis.", Pcre2ErrorKind.MissingClosingParenthesis);
-        }
-
-        if (pattern == "(?# abc")
-        {
-            throw new Pcre2CompileException("Missing ) after comment.", Pcre2ErrorKind.MissingCommentClosing);
-        }
+        previousClassScalar = character;
+        rangeLow = -1;
     }
 
     private static bool ContainsLookaroundBackslashK(string pattern)
