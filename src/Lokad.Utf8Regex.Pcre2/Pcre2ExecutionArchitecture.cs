@@ -46,6 +46,26 @@ internal static class Pcre2Compiler
             return foundation;
         }
 
+        if (Pcre2BacktrackingCompiler.Compile(request) is Pcre2CompiledBacktrackingOutcome backtracking)
+        {
+            Pcre2CompiledProgram foundation;
+            try
+            {
+                foundation = legacyProgramFactory(request);
+            }
+            catch (RegexParseException)
+            {
+                foundation = Pcre2CompiledProgramOverlay.CreateGenericFoundation(request);
+            }
+
+            foundation = Pcre2CompiledProgramOverlay.WithBacktracking(
+                foundation,
+                backtracking.SyntaxTree,
+                backtracking.Program);
+            Pcre2ProgramInvariant.Validate(foundation);
+            return foundation;
+        }
+
         var program = legacyProgramFactory(request);
         Pcre2ProgramInvariant.Validate(program);
         return program;
@@ -178,6 +198,18 @@ internal sealed class Pcre2CharacterDirectProgram : IPcre2DirectProgram
     internal Pcre2CharacterProgram Program { get; }
 }
 
+internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2BacktrackingDirectProgram(Pcre2BacktrackingProgram program)
+    {
+        Program = program;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Backtracking;
+
+    internal Pcre2BacktrackingProgram Program { get; }
+}
+
 internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
@@ -186,6 +218,7 @@ internal enum Pcre2DirectProgramKind : byte
     Utf8RegexEquivalent = 3,
     Pcre2Literal = 4,
     Pcre2Character = 5,
+    Pcre2Backtracking = 6,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -358,6 +391,34 @@ internal static class Pcre2CompiledProgramOverlay
             legacy.GroupNames,
             legacy.NameEntries);
     }
+
+    internal static Pcre2CompiledProgram WithBacktracking(
+        Pcre2CompiledProgram legacy,
+        Pcre2BacktrackingSyntaxTree syntaxTree,
+        Pcre2BacktrackingProgram backtrackingProgram)
+    {
+        var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
+        var operations = legacy.Operations with
+        {
+            IsMatch = direct,
+            Count = direct,
+            Enumerate = direct,
+            Match = direct,
+            Replace = direct,
+        };
+        return new Pcre2CompiledProgram(
+            legacy.Request,
+            legacy.PrimaryUtf8,
+            legacy.SearchEquivalentUtf8,
+            legacy.Managed,
+            legacy.Translation,
+            operations,
+            new Pcre2CandidateSearchProgram(direct),
+            legacy.FullVerification,
+            syntaxTree,
+            legacy.GroupNames,
+            legacy.NameEntries);
+    }
 }
 
 internal static class Pcre2ProgramInvariant
@@ -425,6 +486,17 @@ internal static class Pcre2Runner
             return true;
         }
 
+        if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            result = ExecuteBacktracking(
+                backtrackingProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = utf8Program.Regex.ByteOffsetExecution.IsMatch(input, start);
@@ -466,6 +538,15 @@ internal static class Pcre2Runner
         {
             directMatch = ExecuteCharacter(
                 characterProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request);
+        }
+        else if (compiledProgram.Operations.Match is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            directMatch = ExecuteBacktracking(
+                backtrackingProgram.Program,
                 ref input,
                 start,
                 matchOptions,
@@ -534,6 +615,24 @@ internal static class Pcre2Runner
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
         }
     }
+
+    private static Pcre2CharacterMatch ExecuteBacktracking(
+        Pcre2BacktrackingProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        try
+        {
+            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+            return Pcre2BacktrackingRunner.Match(program, ref input, start, matchOptions, ref budget);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+        }
+    }
 }
 
 internal static class Pcre2GlobalOperationDriver
@@ -595,6 +694,13 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
+        if (compiledProgram.Operations.Enumerate is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+                backtrackingProgram.Program, input, start, matchOptions, compiledProgram.Request);
+            return true;
+        }
+
         cursor = default;
         return false;
     }
@@ -605,12 +711,14 @@ internal ref struct Pcre2GlobalMatchCursor
     private readonly Pcre2GlobalCursorKind _kind;
     private Pcre2LiteralGlobalMatchCursor _literal;
     private Pcre2CharacterGlobalMatchCursor _character;
+    private Pcre2BacktrackingGlobalMatchCursor _backtracking;
 
     private Pcre2GlobalMatchCursor(Pcre2LiteralGlobalMatchCursor literal)
     {
         _kind = Pcre2GlobalCursorKind.Literal;
         _literal = literal;
         _character = default;
+        _backtracking = default;
     }
 
     private Pcre2GlobalMatchCursor(Pcre2CharacterGlobalMatchCursor character)
@@ -618,12 +726,22 @@ internal ref struct Pcre2GlobalMatchCursor
         _kind = Pcre2GlobalCursorKind.Character;
         _literal = default;
         _character = character;
+        _backtracking = default;
+    }
+
+    private Pcre2GlobalMatchCursor(Pcre2BacktrackingGlobalMatchCursor backtracking)
+    {
+        _kind = Pcre2GlobalCursorKind.Backtracking;
+        _literal = default;
+        _character = default;
+        _backtracking = backtracking;
     }
 
     internal Pcre2GroupData Current => _kind switch
     {
         Pcre2GlobalCursorKind.Literal => _literal.Current,
         Pcre2GlobalCursorKind.Character => _character.Current,
+        Pcre2GlobalCursorKind.Backtracking => _backtracking.Current,
         _ => default,
     };
 
@@ -643,10 +761,19 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2CompileRequest request) =>
         new(new Pcre2CharacterGlobalMatchCursor(program, input, start, matchOptions, request));
 
+    internal static Pcre2GlobalMatchCursor CreateBacktracking(
+        Pcre2BacktrackingProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(new Pcre2BacktrackingGlobalMatchCursor(program, input, start, matchOptions, request));
+
     internal bool MoveNext() => _kind switch
     {
         Pcre2GlobalCursorKind.Literal => _literal.MoveNext(),
         Pcre2GlobalCursorKind.Character => _character.MoveNext(),
+        Pcre2GlobalCursorKind.Backtracking => _backtracking.MoveNext(),
         _ => false,
     };
 
@@ -655,6 +782,88 @@ internal ref struct Pcre2GlobalMatchCursor
         None = 0,
         Literal = 1,
         Character = 2,
+        Backtracking = 3,
+    }
+}
+
+internal ref struct Pcre2BacktrackingGlobalMatchCursor
+{
+    private readonly Pcre2BacktrackingProgram _program;
+    private Utf8ValidatedInput _input;
+    private readonly Pcre2CompileRequest _request;
+    private readonly Pcre2MatchOptions _matchOptions;
+    private Pcre2ResourceBudget _budget;
+    private Utf8ProjectionCursor _projection;
+    private Utf8BytePosition _restartPosition;
+    private Pcre2GlobalRetryState _retryState;
+
+    internal Pcre2BacktrackingGlobalMatchCursor(
+        Pcre2BacktrackingProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        _program = program;
+        _input = input;
+        _request = request;
+        _matchOptions = matchOptions;
+        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+        _projection = input.CreateProjectionCursor();
+        _restartPosition = start;
+        _retryState = Pcre2GlobalRetryState.Search;
+        Current = default;
+    }
+
+    internal Pcre2GroupData Current { get; private set; }
+
+    internal bool MoveNext()
+    {
+        while (_retryState != Pcre2GlobalRetryState.Finished)
+        {
+            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
+            var options = retryingEmptyAtSamePosition
+                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
+                : _matchOptions;
+
+            Pcre2CharacterMatch match;
+            try
+            {
+                match = Pcre2BacktrackingRunner.Match(
+                    _program,
+                    ref _input,
+                    _restartPosition,
+                    options,
+                    ref _budget);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            }
+
+            if (match.Success)
+            {
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
+                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
+                _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
+                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
+                    : Pcre2GlobalRetryState.Search;
+                return true;
+            }
+
+            if (!retryingEmptyAtSamePosition ||
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
+            {
+                _retryState = Pcre2GlobalRetryState.Finished;
+                Current = default;
+                return false;
+            }
+
+            _retryState = Pcre2GlobalRetryState.Search;
+        }
+
+        Current = default;
+        return false;
     }
 }
 
@@ -944,7 +1153,36 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void ChargeBacktracking() => BacktrackingSteps++;
+    internal void ChargeBacktracking()
+    {
+        BacktrackingSteps++;
+        _deadline.Step();
+        if (Limits.MatchLimit != 0 &&
+            (CandidateSteps > Limits.MatchLimit || BacktrackingSteps > Limits.MatchLimit - CandidateSteps))
+        {
+            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", "MatchLimit");
+        }
+    }
+
+    internal void ChargeFrame(uint depth, ulong heapBytes)
+    {
+        Depth = Math.Max(Depth, depth);
+        if (Limits.DepthLimit != 0 && depth > Limits.DepthLimit)
+        {
+            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+        }
+
+        ChargeHeap(heapBytes);
+    }
+
+    internal void ChargeHeap(ulong heapBytes)
+    {
+        HeapBytes = Math.Max(HeapBytes, heapBytes);
+        if (Limits.HeapLimitInBytes != 0 && heapBytes > Limits.HeapLimitInBytes)
+        {
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+        }
+    }
 
     internal void SetDepth(uint depth) => Depth = depth;
 
@@ -956,6 +1194,7 @@ internal enum Pcre2SyntaxNodeKind : byte
     LegacyPattern = 0,
     Literal = 1,
     CharacterProgram = 2,
+    BacktrackingProgram = 3,
 }
 
 internal interface IPcre2SyntaxTree

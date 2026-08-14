@@ -200,6 +200,19 @@
           "Utf8Regex": 118.505,
           "PredecodedRegex": 111.79,
           "DecodeThenRegex": 116.11500000000001
+        },
+        "backtracking/alternation-repeat": {
+          "PatternUtf8Bytes": 10,
+          "InputUtf8Bytes": 7168,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 25.455000000000002,
+          "ConstructionAllocatedBytes": 55401,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 252.865,
+          "Utf8Regex": 44.7,
+          "PredecodedRegex": 43.925,
+          "DecodeThenRegex": 44.875
         }
       }
     },
@@ -839,6 +852,44 @@
           "ConstructionMicroseconds": 15.93125,
           "WarmMicroseconds": 47.175,
           "ConstructionAllocatedBytes": 41841,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        }
+      ]
+    },
+    "branch-repeat-linear": {
+      "Operation": "IsMatch",
+      "Points": [
+        {
+          "Scale": "128",
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 257,
+          "EffectiveIterations": 32,
+          "ConstructionMicroseconds": 19.60625,
+          "WarmMicroseconds": 3.096875,
+          "ConstructionAllocatedBytes": 61249,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "Scale": "1024",
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 2049,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 19.03125,
+          "WarmMicroseconds": 43.745,
+          "ConstructionAllocatedBytes": 61249,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 1
+        },
+        {
+          "Scale": "4096",
+          "PatternUtf8Bytes": 12,
+          "InputUtf8Bytes": 8193,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 19.18125,
+          "WarmMicroseconds": 98.615,
+          "ConstructionAllocatedBytes": 61249,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1
         }

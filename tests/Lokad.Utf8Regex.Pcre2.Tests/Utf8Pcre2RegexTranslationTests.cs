@@ -41,12 +41,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void Utf8LiteralAlternationUsesUtf8RegexTranslation()
+    public void Utf8LiteralAlternationUsesPcre2BacktrackingProgram()
     {
         var regex = new Utf8Pcre2Regex("café|naïve");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
         Assert.Equal(2, regex.Count("xxcafé yy naïve zz"u8));
 
@@ -123,32 +123,32 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void ManagedRegexAsciiSimplePatternCountUsesUtf8RegexTranslation()
+    public void AsciiQuantifiedPatternUsesPcre2BacktrackingProgram()
     {
         var regex = new Utf8Pcre2Regex(@"\s[a-zA-Z]{0,12}ing\s");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count(" sing  bringing  going  go "u8));
     }
 
     [Fact]
-    public void ManagedRegexAsciiOrderedWindowUsesUtf8RegexTranslation()
+    public void OrderedWindowUsesPcre2BacktrackingProgram()
     {
         var regex = new Utf8Pcre2Regex("Tom.{10,25}river|river.{10,25}Tom");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.Equal(2, regex.Count("Tom and Becky near the river xx river beside old Tom"u8));
     }
 
     [Fact]
-    public void DateValidatorUsesUtf8RegexTranslation()
+    public void DateValidatorUsesPcre2BacktrackingProgram()
     {
         var regex = new Utf8Pcre2Regex(@"^\d{1,2}/\d{1,2}/\d{4}$");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Utf8Regex, Count=Utf8Regex, Enumerate=Utf8Regex, Match=Utf8Regex, Replace=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("12/12/2001"u8));
         Assert.False(regex.IsMatch("12-12-2001"u8));
     }

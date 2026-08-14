@@ -266,6 +266,17 @@ internal static class Pcre2CharacterCompiler
             : Pcre2NotCharacterOutcome.Instance;
     }
 
+    internal static bool TryCompileSingleToken(
+        Pcre2CompileRequest request,
+        int patternOffset,
+        Pcre2CharacterOptions options,
+        out Pcre2CharacterToken token,
+        out int patternLength)
+    {
+        var parser = new Pcre2CharacterParser(request, patternOffset, options);
+        return parser.TryParseOne(out token, out patternLength);
+    }
+
     private static byte? GetLeadingAsciiByte(Pcre2CharacterToken[] tokens)
     {
         if (tokens.Length == 0 ||
@@ -291,10 +302,19 @@ internal sealed class Pcre2CharacterParser
     private bool _requiresCharacterProgram;
 
     internal Pcre2CharacterParser(Pcre2CompileRequest request)
+        : this(request, 0, GetInitialOptions(request.Options))
+    {
+    }
+
+    internal Pcre2CharacterParser(
+        Pcre2CompileRequest request,
+        int patternOffset,
+        Pcre2CharacterOptions options)
     {
         _request = request;
         _pattern = request.Pattern;
-        _options = GetInitialOptions(request.Options);
+        _offset = patternOffset;
+        _options = options;
         _requiresCharacterProgram = (request.Options &
             (Pcre2CompileOptions.Caseless |
              Pcre2CompileOptions.Extended |
@@ -378,6 +398,66 @@ internal sealed class Pcre2CharacterParser
         return _requiresCharacterProgram ||
             tokens.Any(static token => token.Kind != Pcre2CharacterTokenKind.Literal) ||
             tokens.Length == 0;
+    }
+
+    internal bool TryParseOne(out Pcre2CharacterToken token, out int patternLength)
+    {
+        var start = _offset;
+        if (_offset >= _pattern.Length)
+        {
+            token = default;
+            patternLength = 0;
+            return false;
+        }
+
+        var ch = _pattern[_offset];
+        if (ch == '[')
+        {
+            if (!TryParseClass(start, out var characterClass))
+            {
+                token = default;
+                patternLength = 0;
+                return false;
+            }
+
+            token = Pcre2CharacterToken.CreateClass(characterClass, _options, start, _offset - start);
+        }
+        else if (ch == '\\')
+        {
+            if (!TryParseEscape(start) || _tokens.Count != 1)
+            {
+                token = default;
+                patternLength = 0;
+                return false;
+            }
+
+            token = _tokens[0];
+        }
+        else
+        {
+            _offset++;
+            token = ch switch
+            {
+                '.' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.Any, _options, start, 1),
+                '^' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.BeginningOfLine, _options, start, 1),
+                '$' => Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.EndOfLine, _options, start, 1),
+                _ => CreateLiteralToken(start),
+            };
+        }
+
+        patternLength = _offset - start;
+        return true;
+
+        Pcre2CharacterToken CreateLiteralToken(int literalStart)
+        {
+            _offset = literalStart;
+            if (!TryReadPatternRune(out var literal, out var length))
+            {
+                return default;
+            }
+
+            return Pcre2CharacterToken.CreateLiteral(literal, _options, literalStart, length);
+        }
     }
 
     private bool TryParseGlobalOptions(int start)
@@ -1255,137 +1335,17 @@ internal static class Pcre2CharacterRunner
         var index = candidate;
         foreach (var token in program.Tokens)
         {
-            switch (token.Kind)
+            if (!TryMatchToken(
+                    token,
+                    program.Request,
+                    input,
+                    index,
+                    firstMatchingPosition,
+                    matchOptions,
+                    out index))
             {
-                case Pcre2CharacterTokenKind.Literal:
-                    if (!TryDecode(input, index, out var literalSubject, out var literalWidth) ||
-                        !Pcre2CharacterSemantics.Equals(token.Literal, literalSubject, (token.Options & Pcre2CharacterOptions.Caseless) != 0))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    index += literalWidth;
-                    break;
-
-                case Pcre2CharacterTokenKind.CharacterClass:
-                    if (!TryDecode(input, index, out var classSubject, out var classWidth) ||
-                        !token.CharacterClass.Matches(
-                            classSubject,
-                            (program.Request.Options & Pcre2CompileOptions.Ucp) != 0,
-                            (token.Options & Pcre2CharacterOptions.Caseless) != 0))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    index += classWidth;
-                    break;
-
-                case Pcre2CharacterTokenKind.Any:
-                    if (!TryDecode(input, index, out _, out var anyWidth) ||
-                        (token.Options & Pcre2CharacterOptions.DotAll) == 0 &&
-                        Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, program.Request.Settings.Newline, out _))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    index += anyWidth;
-                    break;
-
-                case Pcre2CharacterTokenKind.AnyNotNewline:
-                    if (!TryDecode(input, index, out _, out var notNewlineWidth) ||
-                        Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, program.Request.Settings.Newline, out _))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    index += notNewlineWidth;
-                    break;
-
-                case Pcre2CharacterTokenKind.NewlineSequence:
-                    if (!Pcre2CharacterSemantics.TryGetBsrWidth(input, index, program.Request.Settings.Bsr, out var newlineWidth))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    index += newlineWidth;
-                    break;
-
-                case Pcre2CharacterTokenKind.BeginningOfLine:
-                    if (!Pcre2CharacterSemantics.IsBeginningOfLine(input, index, token.Options, matchOptions, program.Request.Settings.Newline))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.EndOfLine:
-                    if (!Pcre2CharacterSemantics.IsEndOfLine(input, index, token.Options, matchOptions, program.Request.Options, program.Request.Settings.Newline))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.BeginningOfSubject:
-                    if (index != 0)
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
-                    if (!Pcre2CharacterSemantics.IsEndOrBeforeFinalNewline(input, index, program.Request.Settings.Newline))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.EndOfSubject:
-                    if (index != input.Length)
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.FirstMatchingPosition:
-                    if (index != firstMatchingPosition)
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                case Pcre2CharacterTokenKind.WordBoundary:
-                case Pcre2CharacterTokenKind.NonWordBoundary:
-                    var boundary = Pcre2CharacterSemantics.IsWordBoundary(
-                        input,
-                        index,
-                        (program.Request.Options & Pcre2CompileOptions.Ucp) != 0);
-                    if (boundary != (token.Kind == Pcre2CharacterTokenKind.WordBoundary))
-                    {
-                        end = 0;
-                        return false;
-                    }
-
-                    break;
-
-                default:
-                    end = 0;
-                    return false;
+                end = 0;
+                return false;
             }
         }
 
@@ -1393,23 +1353,134 @@ internal static class Pcre2CharacterRunner
         return true;
     }
 
-    private static bool TryAdvanceCandidate(
+    internal static bool TryMatchToken(
+        Pcre2CharacterToken token,
+        Pcre2CompileRequest request,
+        ReadOnlySpan<byte> input,
+        int index,
+        int firstMatchingPosition,
+        Pcre2MatchOptions matchOptions,
+        out int nextIndex)
+    {
+        nextIndex = index;
+        switch (token.Kind)
+        {
+            case Pcre2CharacterTokenKind.Literal:
+                if (!TryDecode(input, index, out var literalSubject, out var literalWidth) ||
+                    !Pcre2CharacterSemantics.Equals(token.Literal, literalSubject, (token.Options & Pcre2CharacterOptions.Caseless) != 0))
+                {
+                    return false;
+                }
+
+                nextIndex += literalWidth;
+                return true;
+
+            case Pcre2CharacterTokenKind.CharacterClass:
+                if (!TryDecode(input, index, out var classSubject, out var classWidth) ||
+                    !token.CharacterClass.Matches(
+                        classSubject,
+                        (request.Options & Pcre2CompileOptions.Ucp) != 0,
+                        (token.Options & Pcre2CharacterOptions.Caseless) != 0))
+                {
+                    return false;
+                }
+
+                nextIndex += classWidth;
+                return true;
+
+            case Pcre2CharacterTokenKind.Any:
+                if (!TryDecode(input, index, out _, out var anyWidth) ||
+                    (token.Options & Pcre2CharacterOptions.DotAll) == 0 &&
+                    Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
+                {
+                    return false;
+                }
+
+                nextIndex += anyWidth;
+                return true;
+
+            case Pcre2CharacterTokenKind.AnyNotNewline:
+                if (!TryDecode(input, index, out _, out var notNewlineWidth) ||
+                    Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
+                {
+                    return false;
+                }
+
+                nextIndex += notNewlineWidth;
+                return true;
+
+            case Pcre2CharacterTokenKind.NewlineSequence:
+                if (!Pcre2CharacterSemantics.TryGetBsrWidth(input, index, request.Settings.Bsr, out var newlineWidth))
+                {
+                    return false;
+                }
+
+                nextIndex += newlineWidth;
+                return true;
+
+            case Pcre2CharacterTokenKind.BeginningOfLine:
+                return Pcre2CharacterSemantics.IsBeginningOfLine(input, index, token.Options, matchOptions, request.Settings.Newline);
+
+            case Pcre2CharacterTokenKind.EndOfLine:
+                return Pcre2CharacterSemantics.IsEndOfLine(input, index, token.Options, matchOptions, request.Options, request.Settings.Newline);
+
+            case Pcre2CharacterTokenKind.BeginningOfSubject:
+                return index == 0;
+
+            case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
+                return Pcre2CharacterSemantics.IsEndOrBeforeFinalNewline(input, index, request.Settings.Newline);
+
+            case Pcre2CharacterTokenKind.EndOfSubject:
+                return index == input.Length;
+
+            case Pcre2CharacterTokenKind.FirstMatchingPosition:
+                return index == firstMatchingPosition;
+
+            case Pcre2CharacterTokenKind.WordBoundary:
+            case Pcre2CharacterTokenKind.NonWordBoundary:
+                var boundary = Pcre2CharacterSemantics.IsWordBoundary(
+                    input,
+                    index,
+                    (request.Options & Pcre2CompileOptions.Ucp) != 0);
+                return boundary == (token.Kind == Pcre2CharacterTokenKind.WordBoundary);
+
+            default:
+                return false;
+        }
+    }
+
+    internal static bool TryAdvanceCandidate(
         Pcre2CharacterProgram program,
+        ref Utf8ValidatedInput input,
+        int candidate,
+        bool allowAcceleration,
+        out int next) =>
+        TryAdvanceCandidate(
+            program.Request,
+            program.LeadingAsciiByte,
+            ref input,
+            candidate,
+            allowAcceleration,
+            out next);
+
+    internal static bool TryAdvanceCandidate(
+        Pcre2CompileRequest request,
+        byte? leadingAsciiByte,
         ref Utf8ValidatedInput input,
         int candidate,
         bool allowAcceleration,
         out int next)
     {
-        if ((program.Request.Options & Pcre2CompileOptions.FirstLine) != 0 &&
-            Pcre2CharacterSemantics.TryGetNewlineWidth(input.Bytes, candidate, program.Request.Settings.Newline, out _))
+        if ((request.Options & Pcre2CompileOptions.FirstLine) != 0 &&
+            Pcre2CharacterSemantics.TryGetNewlineWidth(input.Bytes, candidate, request.Settings.Newline, out _))
         {
             next = 0;
             return false;
         }
 
         if (allowAcceleration &&
-            (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
-            program.LeadingAsciiByte is { } leading &&
+            (request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
+            leadingAsciiByte is { } leading &&
             candidate < input.Bytes.Length)
         {
             var relative = input.Bytes[(candidate + 1)..].IndexOf(leading);

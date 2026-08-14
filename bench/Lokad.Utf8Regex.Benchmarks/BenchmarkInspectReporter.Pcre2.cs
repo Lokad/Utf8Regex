@@ -422,6 +422,12 @@ internal static partial class BenchmarkInspectReporter
                 static _ => "ab[0-9]{2}",
                 static size => string.Concat(Enumerable.Repeat("abXX", size / 4))),
             CreatePcre2ScalingFamily(
+                "branch-repeat-linear",
+                Utf8Pcre2BenchmarkOperation.IsMatch,
+                [128, 1024, 4096],
+                static _ => "^(?:ab|a)+z$",
+                static size => string.Concat(Enumerable.Repeat("ab", size)) + "z"),
+            CreatePcre2ScalingFamily(
                 "dense-non-ascii-coordinates",
                 Utf8Pcre2BenchmarkOperation.Count,
                 [128, 1024, 4096],

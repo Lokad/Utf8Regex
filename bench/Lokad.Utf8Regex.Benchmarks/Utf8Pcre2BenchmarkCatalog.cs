@@ -59,6 +59,12 @@ internal static class Utf8Pcre2BenchmarkCatalog
             replacement: "x",
             supportedOperations: Utf8Pcre2BenchmarkOperation.Count),
         new(
+            "backtracking/alternation-repeat",
+            "(?:ab|a)+z",
+            string.Concat(Enumerable.Repeat("ababaz ", 1024)),
+            replacement: "x",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count),
+        new(
             "simple/loglevel-multiline",
             "^ERROR: .+$",
             "INFO: boot\nERROR: first failure\nDEBUG: noisy\nERROR: second failure\n",

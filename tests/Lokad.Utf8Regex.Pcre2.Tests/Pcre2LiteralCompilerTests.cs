@@ -116,11 +116,11 @@ public sealed class Pcre2LiteralCompilerTests
     }
 
     [Fact]
-    public void NonliteralPatternRemainsOnFrozenLegacySyntaxPath()
+    public void AlternationUsesGenericBacktrackingSyntaxPath()
     {
         var regex = new Utf8Pcre2Regex("abc|def");
 
-        Assert.Equal(Pcre2SyntaxNodeKind.LegacyPattern, regex.DebugCompiledProgram.SyntaxTree.RootKind);
+        Assert.Equal(Pcre2SyntaxNodeKind.BacktrackingProgram, regex.DebugCompiledProgram.SyntaxTree.RootKind);
         Assert.True(regex.IsMatch("--def--"u8));
     }
 
