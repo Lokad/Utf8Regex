@@ -1,90 +1,115 @@
 # Managed PCRE2 execution architecture
 
-The PCRE2 companion is a UTF-8-native managed implementation. Its public
-surface is `Utf8Pcre2Regex`; compiler, planner, runner, global iteration, and
-replacement details remain internal and removable with the companion project.
+`Lokad.Utf8Regex.Pcre2` is a managed UTF-8 companion, not a mode of
+`Utf8Regex` and not a native PCRE2 binding. Its semantic front end and runtime
+remain removable with the companion project. The base library retains its
+.NET 10 `Regex` contract.
 
 ## Directional flow
 
-Compilation follows one direction:
+Compilation is one-way:
 
-`Pcre2CompileRequest -> Pcre2Compiler -> Pcre2CompiledProgram`
+`Pcre2CompileRequest -> validation -> parser/semantic tree -> lowering -> Pcre2CompiledProgram`
 
-Execution follows another:
+Invocation is one-way:
 
-`Pcre2CompiledProgram + invocation input -> Pcre2Runner / Pcre2GlobalOperationDriver -> public result`
+`validated UTF-8 subject -> operation program -> runner/cursor -> public projection`
 
-`Pcre2CompiledProgram` is immutable after construction and may be shared by
-concurrent callers. Captures, backtracking checkpoints, iteration cursors,
-timeout state, and resource counters belong to `Pcre2InvocationState`; an
-invocation state must never be retained by a compiled program or public result.
+Replacement consumes matches from the same compiled operation program and
+global cursor used by the other operations. It does not parse patterns, choose
+a backend, or implement an independent matching loop. Partial probing has a
+separate, curated program because PCRE2 partial matching is not an ordinary
+successful match.
 
-The current implementation keeps the pre-compiler pattern implementations in
-`Utf8Pcre2Regex` behind `Pcre2FullVerificationProgram`. This is an explicit
-legacy-runner adapter. `BootstrapMigration.Shipped.txt` owns its deletion: each
-vertical feature slice replaces legacy verification with a generic compiled
-program, then removes the corresponding `Pcre2ExecutionKind` entry and
-complete-pattern classifier arm.
+`Utf8Pcre2Regex` owns one immutable `Pcre2CompiledProgram` plus a bounded,
+thread-safe replacement-plan cache. The facade validates public arguments,
+creates an operation-local subject context, delegates once, and projects the
+result. It does not classify complete pattern strings or select fixture-shaped
+execution methods.
 
-The first migrated slice parses literal scalars, escaped literal
-metacharacters, concatenation, `\A`, `\G`, and `\z` into
-`Pcre2LiteralSyntaxTree`. Its immutable `Pcre2LiteralProgram` uses the shared
-prepared substring kernel for one-shot `IsMatch`, `Match`, and capture-zero
-`MatchDetailed`. Other operations deliberately retain the legacy adapter until
-the global-operation slice owns their progression semantics.
-
-## Program ownership
+## Compiled-program ownership
 
 The compiled program owns:
 
-* normalized compile settings and immutable metadata;
-* a candidate-search program selected for the compiled pattern;
-* a full-verification program;
-* an operation plan made of typed backend variants; and
-* only backend programs that are used by an operation or are required to
-  preserve detailed verification semantics.
+- the normalized compile request and immutable group/name metadata;
+- the semantic syntax tree;
+- one typed program for each public operation;
+- the candidate-search program; and
+- an optional partial-probe program derived from semantic nodes.
 
-There are no nullable backend fields. Empty, UTF-8, and managed slots are
-closed variants, while each direct operation program carries its non-null
-payload. Candidate search and full verification are separate even when the
-bootstrap temporarily selects the same underlying program.
+Direct operation programs are closed variants: no program, compatible
+`Utf8Regex`, compatible BCL `Regex`, PCRE2 literal, PCRE2 character, or PCRE2
+backtracking. `Pcre2ProgramInvariant` proves that any compatible backend is
+owned by the same compiled program. Literal, character, and backtracking
+programs generically cover the admitted syntax; no `Pcre2ExecutionKind`,
+complete-pattern classifier, or legacy match/replacement router remains.
 
-Replacement-plan memoization is deliberately outside the immutable program in
-`Pcre2ReplacementComponent`. The cache is thread-safe and stores compile-owned
-replacement plans only; match output remains invocation-owned.
+Delegation to `Utf8Regex` or BCL `Regex` is an optimization for the proven
+common subset. The PCRE2 semantic compiler always owns PCRE2-only constructs,
+and the corpus verifies that delegation does not change the selected PCRE2
+profile.
 
-## Allocation and complexity contract
+## Invocation and global progress
 
-Compile-owned storage may scale with pattern length, capture count, and the
-number of compiled candidate atoms. Invocation-owned storage may scale with
-capture count, live backtracking checkpoints, and explicit public output.
-Buffers that grow with transient backtracking or output should be pooled once
-the corresponding generic runtime slice owns them.
+Capture slots, undo journals, backtracking/call frames, resource counters,
+timeout state, UTF-8 projection state, and global progress are invocation
+local. Compiled regex instances retain none of those buffers and can be used
+concurrently.
 
-Invocation-local `Pcre2ResourceBudget` values keep independent candidate,
-backtracking, depth, and
-heap counters. A zero public limit retains the documented engine-default or
-unlimited meaning; it is not translated into an immediate failure. Candidate
-search does not consume the backtracking budget. Full verification does not
-charge failed bytes a second time as candidate work. L3 and later slices wire
-these counters to the generic instruction runner.
+The backtracking runtime keeps consumed and reported ranges distinct. `\K`
+changes the reported start but not the consumed range used for restart and
+empty-match detection. Global cursors apply PCRE2's empty retry at the same
+position, then advance by one valid UTF-8 scalar only when that retry fails.
+Count, enumeration, `MatchMany`, and substitution share this progression
+machinery, with an operation-specific disposition for non-monotone results and
+reset-empty substitution.
 
-Global iteration owns its search offset and previous reported range. It must
-apply the PCRE2 empty-match retry rule and make forward progress without
-rescanning an already rejected prefix. Replacement consumes the same global
-driver and must not implement another match loop.
+`Pcre2ResourceBudget` meters candidate work, backtracking, depth, heap, and
+managed timeout independently. A public zero limit retains its documented
+engine-default or unlimited meaning. Stack-like transient state uses pooled
+storage with deterministic return; result arrays and caller-requested output
+remain ordinary owned allocations.
 
-## Reuse from Lokad.Utf8Regex
+## Partial probing
 
-The companion reuses only flavor-neutral core facilities:
+`Probe` is deliberately smaller than normal matching. The compiler recognizes
+the curated partial profile from character/backtracking semantic trees and
+emits a typed `Pcre2PartialProbeProgram`. Exact semantic-shape keys may select
+a specialized partial algorithm, but they are not complete source-pattern
+keys, do not affect normal matching, and fall back to the ordinary non-partial
+runner whenever the request does not ask for partial matching. Unsupported
+partial shapes fail explicitly.
 
-* UTF-8 validation and byte/UTF-16 boundary projection;
-* immutable `Utf8Regex` programs for syntax that has already been proven
-  semantically equivalent; and
-* UTF-8 candidate-search machinery when a PCRE2 verifier still makes the final
-  semantic decision.
+## Reuse from `Lokad.Utf8Regex`
 
-The existing friend-assembly declaration is marked
-`PCRE2-INTEGRATION-POINT`. PCRE2 syntax nodes, flags, diagnostics, limits, and
-backtracking semantics remain in `Lokad.Utf8Regex.Pcre2`; they do not enter the
-.NET-compatible core semantic front end.
+The companion reuses only flavor-neutral mechanics:
+
+- UTF-8 validation and operation-local byte/UTF-16 projection;
+- prepared search kernels and byte-set carriers;
+- transactional UTF-8 output writing;
+- pooled stack storage;
+- timeout polling; and
+- adjacent-scalar access.
+
+Every necessary core hook is tagged `PCRE2-INTEGRATION-POINT`. PCRE2 syntax,
+options, compile errors, Unicode policy, capture rules, empty-match policy, and
+replacement grammar remain in the companion. No generic flavor framework or
+PCRE2 mode enters the core.
+
+The only product friendship is the reviewed core-to-companion access needed
+for these internal mechanics. Test and benchmark friendships expose internal
+diagnostics only; no `InternalsVisibleTo` declaration appears in a project
+file.
+
+## Removability and dependency boundary
+
+All PCRE2 production types and files live under
+`src/Lokad.Utf8Regex.Pcre2/`. The package targets `net10.0`, depends only on
+the BCL and `Lokad.Utf8Regex`, and contains no P/Invoke, native loader, RID
+asset, external matcher, or generated native payload. Removing the companion
+project and the explicitly tagged core hooks leaves the `.NET`-semantic
+library intact.
+
+Release evidence and the reviewed ownership, C#-guideline, package, corpus,
+allocation, and scaling inventories are recorded in
+[`QUALIFICATION.md`](QUALIFICATION.md).

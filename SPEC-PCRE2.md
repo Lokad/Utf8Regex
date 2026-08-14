@@ -1,4 +1,4 @@
-## Side-by-side PCRE2 support in `Lokad.Utf8Regex`
+# Side-by-side PCRE2 support in `Lokad.Utf8Regex`
 
 ### 1. Top-level decision
 
@@ -22,7 +22,13 @@ PCRE2 replacement must use **PCRE2 substitution semantics**, not `.NET` substitu
 
 Because this library is text-centric and UTF-8-native, the default PCRE2 profile must **forbid `\C`** and must **not** opt into the legacy `\K`-inside-lookaround compatibility mode. Both remain available as explicit opt-ins. This is principled because PCRE2 documents that `\C` matches a single code unit even in UTF mode and can split a multi-code-unit character, and it documents that lookaround `\K` is forbidden by default and only re-enabled by an extra compile option. ([PCRE][5])
 
-### 3. Proposed public surface
+### 3. Frozen public surface
+
+The declarations below describe the package contract. The exact mechanically
+enforced surface is
+[`tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt`](tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt);
+implementation work must update neither that snapshot nor these declarations
+without a separate public-API decision.
 
 ```csharp
 namespace Lokad.Utf8Regex;
@@ -438,7 +444,7 @@ public readonly struct Utf8Pcre2Analysis
 
 `Utf8Regex` stays exactly as it is today. No existing constructor, option, result type, replacement grammar, or exception contract changes. The PCRE2 extension is additive only.
 
-`Utf8Pcre2Regex` uses **PCRE2 standard matcher semantics in UTF-8 mode**. The DFA matcher is deferred. `RightToLeft` does not exist on the PCRE2 side and must not be emulated. All public start positions on the PCRE2 side are expressed as **byte offsets into the UTF-8 input**, not UTF-16 code-unit offsets. ([PCRE][2])
+`Utf8Pcre2Regex` uses **PCRE2 standard matcher semantics in UTF-8 mode**. The DFA matcher is outside the managed profile. `RightToLeft` does not exist on the PCRE2 side and must not be emulated. All public start positions on the PCRE2 side are expressed as **byte offsets into the UTF-8 input**, not UTF-16 code-unit offsets. ([PCRE][2])
 
 The PCRE2 side owns its own compile options, match options, substitution options, compile settings, and execution limits. Do not reuse `RegexOptions` and do not pretend `TimeSpan` is the only resource-control model. `TimeSpan MatchTimeout` is allowed only as an additional managed guard for consistency with the library’s broader shape; the primary PCRE2-facing resource knobs are `MatchLimit`, `DepthLimit`, and `HeapLimitInBytes`. ([PCRE][6])
 
@@ -466,7 +472,7 @@ Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMa
 
 Opting into `\C` does not opt out of subject validation: the complete subject must still be well-formed UTF-8, while each `\C` atom consumes exactly one byte. Global matching resumes at the consumed byte offset, so successive `\C` matches may expose the individual bytes of one scalar; the normal empty-match retry and progress rule still applies. Byte-returning replacement APIs preserve these byte semantics and can therefore produce non-UTF-8 output when a substitution leaves only part of a scalar. String-returning replacement APIs reject such an output. Match/group UTF-16 coordinate access and string extraction throw when `HasUtf16Projection` is `false`. `\C` remains forbidden in UTF lookbehind.
 
-PCRE2 replacement uses PCRE2 substitution syntax. By default, only dollar-based substitutions are recognized. Backslash escapes in replacement text are processed only when `Pcre2SubstitutionOptions.Extended` is set. The initial supported default substitution forms are:
+PCRE2 replacement uses PCRE2 substitution syntax. By default, only dollar-based substitutions are recognized. Backslash escapes in replacement text are processed only when `Pcre2SubstitutionOptions.Extended` is set. The selected default substitution forms are:
 
 * `$$`
 * `$n`
@@ -485,16 +491,9 @@ This is a semantic requirement; do not use `.NET` replacement parsing on the PCR
 
 `Replace` and `TryReplace` operate left-to-right only. If the pattern was compiled with `AllowLookaroundBackslashK = true` and a successful match would end before it starts, replacement APIs throw `NotSupportedException`. This mirrors the fact that PCRE2 substitution explicitly does not support those successful `\K` lookaround cases. The same restriction applies to APIs that inherently require forward global progress over successive matches: `Count`, `EnumerateMatches`, and `MatchMany` also throw `NotSupportedException` when the next successful match in the requested iteration would report `EndOffsetInBytes < StartOffsetInBytes`. Single-match APIs (`IsMatch`, `Match`, `MatchDetailed`, `Probe`) remain supported. ([PCRE][3])
 
-For global left-to-right operations (`Count`, `EnumerateMatches`, `MatchMany`, and all replacement APIs), the iteration contract is explicit:
+For global left-to-right operations (`Count`, `EnumerateMatches`, `MatchMany`, and all replacement APIs), the runtime tracks a private **consumed range** separately from the public reported range. Iteration begins at `startOffsetInBytes`; after a nonempty consumed match, the next search begins at the consumed end. `\K` may change the reported start but never the restart position. After an empty consumed match, the runtime first retries the same position with the PCRE2 anchored/not-empty-at-start disposition. Only if that retry fails does it advance to the next UTF-8 scalar boundary. Iteration stops when no next boundary exists. Caller-supplied `Pcre2MatchOptions.NotEmpty` and `Pcre2MatchOptions.NotEmptyAtStart` continue to apply on every attempt, and partial matching is never consulted by these loops.
 
-* iteration begins at `startOffsetInBytes`
-* after a successful match with `EndOffsetInBytes > StartOffsetInBytes`, the next search begins at `EndOffsetInBytes`
-* after a successful empty match with `EndOffsetInBytes == StartOffsetInBytes`, the next search begins at the next UTF-8 scalar boundary after `EndOffsetInBytes`
-* if there is no next scalar boundary, iteration stops
-* `Pcre2MatchOptions.NotEmpty` and `Pcre2MatchOptions.NotEmptyAtStart` are applied on each restart exactly as ordinary per-match options
-* partial-match behavior is never consulted during these loops because partial is available only via `Probe(...)`
-
-This rule is required so the public global APIs have deterministic, loop-safe behavior independent of PCRE2’s one-shot matcher entrypoint.
+All global operations share that cursor, but their result disposition can differ where upstream PCRE2 substitution semantics require it. In particular, replacement preserves an admitted reset-empty `\K` result that ordinary global enumeration suppresses. This behavior is frozen by operation-specific corpus vectors rather than inferred from public reported offsets.
 
 The `Mark` property on `Utf8Pcre2MatchContext` and `Utf8Pcre2ProbeResult` returns the last encountered named backtracking verb on the relevant path, if any. It is available after success, partial, or no-match, matching PCRE2’s documented behavior. ([PCRE][3])
 
@@ -509,18 +508,18 @@ Failure contracts must be explicit:
 Supported-profile boundary for completion is also explicit:
 
 * public APIs must either execute successfully, throw a documented dedicated PCRE2 exception, or throw `NotSupportedException` for an intentional `SPEC-PCRE2` rejection
-* raw public `NotImplementedException` is acceptable only for genuine implementation backlog that has not yet been classified into supported vs rejected behavior
+* raw public `NotImplementedException` is prohibited; implementation backlog must be classified as a supported operation, a dedicated profile error, or an intentional `NotSupportedException` rejection
 * non-monotone iterative `\K` cases are rejected for left-to-right global APIs (`Count`, `EnumerateMatches`, `MatchMany`, all replacement modes), even when single-match APIs remain supported
 * `Probe(...)` is intentionally a smaller surface than `Match(...)`; patterns outside the curated partial-probe profile must fail explicitly rather than silently approximating managed `.NET` behavior
-* replacement APIs are intentionally narrower than single-match APIs for special native patterns; unsupported replacement modes for otherwise-compilable patterns must fail explicitly rather than falling through unpredictably
+* every accepted corpus pattern has an explicit operation-capability disposition; replacement rejects only the documented profile cases and never falls through to an unrelated backend or grammar
 * the executable corpus plus `Utf8Pcre2CompletionLedgerTests` are the closure mechanism for this boundary; newly supported or newly rejected cases must be reflected there so the ledger remains a deliberate snapshot instead of drifting implicitly
 * performance work must prefer reuse of existing managed `Lokad.Utf8Regex` infrastructure where semantics allow it; do not introduce a second regex engine architecture under the PCRE2 profile
 
-### 5. Deliberate non-goals for the first PCRE2 release
+### 5. Deliberate managed-profile non-goals
 
-Do not add PCRE2 callouts yet.
+PCRE2 callouts and callback execution are outside this profile.
 
-Do not add the DFA matcher yet.
+The PCRE2 DFA matcher is outside this profile.
 
 Do not attempt a fake unification of `.NET` and PCRE2 result types beyond shared low-level internals such as UTF-8 validation, byte/UTF-16 coordinate translation, vectorized literal search, timeout polling, and `Utf8ReplacementWriter`.
 

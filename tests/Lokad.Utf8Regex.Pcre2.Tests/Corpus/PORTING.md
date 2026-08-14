@@ -49,7 +49,9 @@ Use statuses deliberately:
 * `Active`
   The case is expected to pass and should run in normal CI.
 * `UnsupportedYet`
-  The case is in planned scope but not implemented yet.
+  The case is an explicit compatibility backlog item. It is not part of the
+  currently qualified managed profile unless a later specification decision
+  admits it.
 * `OutOfScopeBySpec`
   The case is intentionally excluded by `SPEC-PCRE2.md`.
 * `KnownFailure`
@@ -57,9 +59,22 @@ Use statuses deliberately:
 
 Do not use status as a vague parking lot. The status should answer whether the case belongs to the product and whether it should currently pass.
 
-## First batches to port
+## Qualified inventory
 
-Port in topical batches rather than file order:
+The 2026-08-14 profile contains 635 operation rows: 597 active, 24 out of
+scope by specification, and 14 explicit compatibility-backlog rows. Active
+coverage comprises 16 compile, 117 match, 97 detailed-match, 39 count, 37
+enumeration, 119 probe, and 172 replacement rows. The local backlog ledgers
+must contain exactly one reasoned disposition for every non-active row.
+
+`BootstrapMigration.Shipped.txt` and `BootstrapMethods.Shipped.txt` are closure
+ledgers: both counts are zero. A newly accepted corpus row must execute through
+the generic compiler/runtime; it may not add a complete-pattern classifier or
+fixture-specific match/replacement method.
+
+## Coverage maintenance
+
+Port future cases in topical batches rather than file order:
 
 1. compile errors and option handling
 2. single-match capture slots and name table semantics
