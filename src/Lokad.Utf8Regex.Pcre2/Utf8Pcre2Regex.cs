@@ -870,6 +870,14 @@ public sealed class Utf8Pcre2Regex
             return ProbeViaNonPartialMatch(input, startOffsetInBytes);
         }
 
+        if (_program.Operations.Match is Pcre2BacktrackingDirectProgram backtrackingProgram &&
+            backtrackingProgram.Program.AssertionPrograms.Length != 0 &&
+            Pcre2Runner.TryMatchDetailed(_program, ref subject, start, matchOptions, out var directGroups) &&
+            directGroups.Length != 0)
+        {
+            return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries);
+        }
+
         throw CreateUnsupportedProbeException();
     }
 

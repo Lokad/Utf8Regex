@@ -71,6 +71,12 @@ internal static class Utf8Pcre2BenchmarkCatalog
             replacement: "$1",
             supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
         new(
+            "backtracking/assertion-capture",
+            "(?=(?<token>[a-z]{3}[0-9]{3}))abc123",
+            new string('x', 4096) + " abc123",
+            replacement: "$1",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
             "simple/loglevel-multiline",
             "^ERROR: .+$",
             "INFO: boot\nERROR: first failure\nDEBUG: noisy\nERROR: second failure\n",
