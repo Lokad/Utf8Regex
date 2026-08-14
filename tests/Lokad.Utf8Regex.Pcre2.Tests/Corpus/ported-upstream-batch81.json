@@ -1,0 +1,131 @@
+[
+  {
+    "Id": "pcre2.selected-unicode.count-grapheme-clusters.mixed",
+    "Pattern": "\\X",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": "á🇫🇷👩🏽‍💻\r\n한",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 5,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "grapheme-cluster", "selected-profile"],
+    "Source": "ported/upstream:pcre2-selected-extended-grapheme-cluster-count"
+  },
+  {
+    "Id": "pcre2.selected-unicode.enumerate-grapheme-clusters.mixed",
+    "Pattern": "\\X",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": "á🇫🇷👩🏽‍💻\r\n한",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 5,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        { "Success": true, "StartOffsetInBytes": 0, "EndOffsetInBytes": 3, "ValueText": "á" },
+        { "Success": true, "StartOffsetInBytes": 3, "EndOffsetInBytes": 11, "ValueText": "🇫🇷" },
+        { "Success": true, "StartOffsetInBytes": 11, "EndOffsetInBytes": 26, "ValueText": "👩🏽‍💻" },
+        { "Success": true, "StartOffsetInBytes": 26, "EndOffsetInBytes": 28, "ValueText": "\r\n" },
+        { "Success": true, "StartOffsetInBytes": 28, "EndOffsetInBytes": 31, "ValueText": "한" }
+      ]
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "grapheme-cluster", "selected-profile"],
+    "Source": "ported/upstream:pcre2-selected-extended-grapheme-cluster-enumerate"
+  },
+  {
+    "Id": "pcre2.selected-unicode.match-grapheme-quantifier.mixed",
+    "Pattern": "^(?:\\X){3}$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": "á🇫🇷👩🏽‍💻",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 26,
+      "ValueText": "á🇫🇷👩🏽‍💻",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "grapheme-cluster", "quantifier", "selected-profile"],
+    "Source": "ported/upstream:pcre2-selected-extended-grapheme-cluster-quantifier"
+  },
+  {
+    "Id": "pcre2.selected-unicode.match-quoted-literal-composed",
+    "Pattern": "^\\Q.a+\\E!$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": ".a+!",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 4,
+      "ValueText": ".a+!",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["quoted-literal", "generic-composition"],
+    "Source": "ported/upstream:pcre2-quoted-literal-composition"
+  },
+  {
+    "Id": "pcre2.selected-unicode.match-named-codepoint-escape-composed",
+    "Pattern": "^(?:\\N{U+0061}|\\N{U+03B2})+$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": "aβ",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 3,
+      "ValueText": "aβ",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "named-codepoint-escape", "generic-composition"],
+    "Source": "ported/upstream:pcre2-named-codepoint-escape-composition"
+  },
+  {
+    "Id": "pcre2.selected-unicode.replace-grapheme-clusters.mixed",
+    "Pattern": "\\X",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "MatchOptions": [],
+    "InputText": "á🇫🇷",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "G",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "GG",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "grapheme-cluster", "replacement", "selected-profile"],
+    "Source": "ported/upstream:pcre2-selected-extended-grapheme-cluster-replace"
+  }
+]

@@ -152,6 +152,13 @@ internal static class Utf8Pcre2BenchmarkCatalog
             supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
+            "pcre2/grapheme-cluster",
+            @"\X",
+            string.Concat(Enumerable.Repeat("a\u0301🇫🇷👩🏽‍💻\r\n한", 8)),
+            replacement: "G",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch | Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
+        new(
             "pcre2/same-start-global",
             "(?<=abc)(|def)",
             "abcdefabc",

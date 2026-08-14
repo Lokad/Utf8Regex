@@ -377,7 +377,8 @@ internal sealed class Pcre2BacktrackingProgram
         int minimumByteLength,
         int minimumScalarLength,
         int maximumScalarLength,
-        byte? leadingAsciiByte)
+        byte? leadingAsciiByte,
+        bool leadingExtendedGraphemeCluster)
     {
         Instructions = instructions;
         Request = request;
@@ -402,6 +403,7 @@ internal sealed class Pcre2BacktrackingProgram
         MinimumScalarLength = minimumScalarLength;
         MaximumScalarLength = maximumScalarLength;
         LeadingAsciiByte = leadingAsciiByte;
+        LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
     }
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
@@ -449,6 +451,8 @@ internal sealed class Pcre2BacktrackingProgram
     internal int MaximumScalarLength { get; }
 
     internal byte? LeadingAsciiByte { get; }
+
+    internal bool LeadingExtendedGraphemeCluster { get; }
 }
 
 internal enum Pcre2BacktrackingInstructionKind : byte
@@ -748,6 +752,34 @@ internal sealed class Pcre2BacktrackingParser
 
             if (TryParseGlobalOptions())
             {
+                continue;
+            }
+
+            if (_pattern.AsSpan(_offset).StartsWith("\\Q", StringComparison.Ordinal))
+            {
+                if (!TryParseQuotedSequence(out var quotedChildren))
+                {
+                    node = Pcre2EmptyBacktrackingNode.Instance;
+                    return false;
+                }
+
+                if (quotedChildren.Length == 0)
+                {
+                    continue;
+                }
+
+                for (var quotedIndex = 0; quotedIndex < quotedChildren.Length - 1; quotedIndex++)
+                {
+                    children.Add(quotedChildren[quotedIndex]);
+                }
+                var quotedTail = quotedChildren[^1];
+                if (!TryParseQuantifier(quotedTail, out quotedTail))
+                {
+                    node = Pcre2EmptyBacktrackingNode.Instance;
+                    return false;
+                }
+
+                children.Add(quotedTail);
                 continue;
             }
 
@@ -1083,6 +1115,37 @@ internal sealed class Pcre2BacktrackingParser
         }
 
         return false;
+    }
+
+    private bool TryParseQuotedSequence(out IPcre2BacktrackingNode[] children)
+    {
+        var result = new List<IPcre2BacktrackingNode>();
+        _offset += 2;
+        while (_offset < _pattern.Length)
+        {
+            if (_pattern.AsSpan(_offset).StartsWith("\\E", StringComparison.Ordinal))
+            {
+                _offset += 2;
+                break;
+            }
+
+            var literalStart = _offset;
+            if (Rune.DecodeFromUtf16(_pattern.AsSpan(_offset), out var literal, out var length) != OperationStatus.Done)
+            {
+                children = [];
+                return false;
+            }
+
+            _offset += length;
+            result.Add(new Pcre2TokenBacktrackingNode(Pcre2CharacterToken.CreateLiteral(
+                literal,
+                _options,
+                literalStart,
+                length)));
+        }
+
+        children = [.. result];
+        return true;
     }
 
     private bool TryParseGBackreference(out IPcre2BacktrackingNode node)
@@ -2152,7 +2215,8 @@ internal sealed class Pcre2BacktrackingLowerer
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
             Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
-            Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root));
+            Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
+            Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root));
     }
 
     private void EmitNode(IPcre2BacktrackingNode node)
@@ -2618,9 +2682,12 @@ internal static class Pcre2BacktrackingAnalysis
     internal static int GetMaximumScalarLength(IPcre2BacktrackingNode node) => node switch
     {
         Pcre2EmptyBacktrackingNode => 0,
-        Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.NewlineSequence
-            ? 2
-            : ConsumesScalar(token.Token.Kind) ? 1 : 0,
+        Pcre2TokenBacktrackingNode token => token.Token.Kind switch
+        {
+            Pcre2CharacterTokenKind.NewlineSequence => 2,
+            Pcre2CharacterTokenKind.ExtendedGraphemeCluster => int.MaxValue,
+            _ => ConsumesScalar(token.Token.Kind) ? 1 : 0,
+        },
         Pcre2SequenceBacktrackingNode sequence => sequence.Children.Aggregate(
             0,
             static (length, child) => SaturatingAdd(length, GetMaximumScalarLength(child))),
@@ -2643,6 +2710,21 @@ internal static class Pcre2BacktrackingAnalysis
     {
         return TryGetLeadingAsciiByte(node, out var leading) ? leading : null;
     }
+
+    internal static bool StartsWithExtendedGraphemeCluster(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2TokenBacktrackingNode token =>
+            token.Token.Kind == Pcre2CharacterTokenKind.ExtendedGraphemeCluster,
+        Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence =>
+            StartsWithExtendedGraphemeCluster(sequence.Children[0]),
+        Pcre2AlternationBacktrackingNode alternation =>
+            alternation.Alternatives.All(StartsWithExtendedGraphemeCluster),
+        Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
+            StartsWithExtendedGraphemeCluster(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => StartsWithExtendedGraphemeCluster(capture.Body),
+        Pcre2AtomicBacktrackingNode atomic => StartsWithExtendedGraphemeCluster(atomic.Body),
+        _ => false,
+    };
 
     private static int GetSequenceMinimum(Pcre2SequenceBacktrackingNode sequence)
     {
@@ -2732,7 +2814,8 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CharacterTokenKind.CharacterClass or
         Pcre2CharacterTokenKind.Any or
         Pcre2CharacterTokenKind.AnyNotNewline or
-        Pcre2CharacterTokenKind.NewlineSequence;
+        Pcre2CharacterTokenKind.NewlineSequence or
+        Pcre2CharacterTokenKind.ExtendedGraphemeCluster;
 
     private static bool CanConsume(IPcre2BacktrackingNode node) => node switch
     {
@@ -3000,9 +3083,20 @@ internal static class Pcre2BacktrackingRunner
                     ref input,
                     candidate,
                     !budget.RequiresCandidateMetering,
-                    out candidate))
+                    out var nextCandidate))
             {
                 break;
+            }
+
+            if (program.LeadingExtendedGraphemeCluster &&
+                (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
+                Pcre2GraphemeClusterSemantics.TryGetWidth(bytes, candidate, out var graphemeWidth))
+            {
+                candidate += graphemeWidth;
+            }
+            else
+            {
+                candidate = nextCandidate;
             }
         }
 

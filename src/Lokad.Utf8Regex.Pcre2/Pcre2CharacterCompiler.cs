@@ -23,11 +23,13 @@ internal sealed class Pcre2CharacterProgram
     internal Pcre2CharacterProgram(
         Pcre2CharacterToken[] tokens,
         Pcre2CompileRequest request,
-        byte? leadingAsciiByte)
+        byte? leadingAsciiByte,
+        bool leadingExtendedGraphemeCluster)
     {
         Tokens = tokens;
         Request = request;
         LeadingAsciiByte = leadingAsciiByte;
+        LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
     }
 
     internal Pcre2CharacterToken[] Tokens { get; }
@@ -35,6 +37,8 @@ internal sealed class Pcre2CharacterProgram
     internal Pcre2CompileRequest Request { get; }
 
     internal byte? LeadingAsciiByte { get; }
+
+    internal bool LeadingExtendedGraphemeCluster { get; }
 }
 
 internal interface IPcre2CharacterCompileOutcome
@@ -89,6 +93,7 @@ internal enum Pcre2CharacterTokenKind : byte
     FirstMatchingPosition = 10,
     WordBoundary = 11,
     NonWordBoundary = 12,
+    ExtendedGraphemeCluster = 13,
 }
 
 internal readonly struct Pcre2CharacterToken
@@ -262,7 +267,11 @@ internal static class Pcre2CharacterCompiler
         return parser.TryParse(out var tokens, out var nodes)
             ? new Pcre2CompiledCharacterOutcome(
                 new Pcre2CharacterSyntaxTree(nodes),
-                new Pcre2CharacterProgram(tokens, request, GetLeadingAsciiByte(tokens)))
+                new Pcre2CharacterProgram(
+                    tokens,
+                    request,
+                    GetLeadingAsciiByte(tokens),
+                    tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..]))
             : Pcre2NotCharacterOutcome.Instance;
     }
 
@@ -573,6 +582,9 @@ internal sealed class Pcre2CharacterParser
                 return true;
             case 'R':
                 Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.NewlineSequence, _options, start, 2));
+                return true;
+            case 'X':
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.ExtendedGraphemeCluster, _options, start, 2));
                 return true;
             case 'N':
                 if (_offset < _pattern.Length && _pattern[_offset] == '{')
@@ -1420,6 +1432,15 @@ internal static class Pcre2CharacterRunner
                 nextIndex += newlineWidth;
                 return true;
 
+            case Pcre2CharacterTokenKind.ExtendedGraphemeCluster:
+                if (!Pcre2GraphemeClusterSemantics.TryGetWidth(input, index, out var graphemeWidth))
+                {
+                    return false;
+                }
+
+                nextIndex += graphemeWidth;
+                return true;
+
             case Pcre2CharacterTokenKind.BeginningOfLine:
                 return Pcre2CharacterSemantics.IsBeginningOfLine(input, index, token.Options, matchOptions, request.Settings.Newline);
 
@@ -1456,14 +1477,24 @@ internal static class Pcre2CharacterRunner
         ref Utf8ValidatedInput input,
         int candidate,
         bool allowAcceleration,
-        out int next) =>
-        TryAdvanceCandidate(
+        out int next)
+    {
+        if (program.LeadingExtendedGraphemeCluster &&
+            (program.Request.Options & Pcre2CompileOptions.FirstLine) == 0 &&
+            Pcre2GraphemeClusterSemantics.TryGetWidth(input.Bytes, candidate, out var width))
+        {
+            next = candidate + width;
+            return true;
+        }
+
+        return TryAdvanceCandidate(
             program.Request,
             program.LeadingAsciiByte,
             ref input,
             candidate,
             allowAcceleration,
             out next);
+    }
 
     internal static bool TryAdvanceCandidate(
         Pcre2CompileRequest request,
@@ -1516,6 +1547,181 @@ internal static class Pcre2CharacterRunner
         }
 
         return Rune.DecodeFromUtf8(input[index..], out rune, out width) == OperationStatus.Done;
+    }
+}
+
+internal static class Pcre2GraphemeClusterSemantics
+{
+    internal static bool TryGetWidth(ReadOnlySpan<byte> input, int offset, out int width)
+    {
+        if (!TryDecode(input, offset, out var previous, out var previousWidth))
+        {
+            width = 0;
+            return false;
+        }
+
+        var end = offset + previousWidth;
+        var regionalIndicatorCount = IsRegionalIndicator(previous) ? 1 : 0;
+        var lastNonExtendWasExtendedPictographic = IsExtendedPictographic(previous);
+        var zwjFollowsExtendedPictographic = false;
+        var indicConsonantSeen = IsIndicConsonant(previous);
+        var indicLinkerSeen = false;
+
+        while (TryDecode(input, end, out var next, out var nextWidth))
+        {
+            var join = previous.Value == '\r' && next.Value == '\n' ||
+                !IsControl(previous) && !IsControl(next) &&
+                (IsHangulContinuation(previous, next) ||
+                 IsExtend(next) ||
+                 IsSpacingMark(next) ||
+                 IsPrepend(previous) ||
+                 previous.Value == 0x200D && zwjFollowsExtendedPictographic && IsExtendedPictographic(next) ||
+                 IsRegionalIndicator(previous) && IsRegionalIndicator(next) && regionalIndicatorCount % 2 != 0 ||
+                 indicConsonantSeen && indicLinkerSeen && IsIndicConsonant(next));
+            if (!join)
+            {
+                break;
+            }
+
+            end += nextWidth;
+            if (IsRegionalIndicator(next))
+            {
+                regionalIndicatorCount++;
+            }
+            else if (!IsExtend(next))
+            {
+                regionalIndicatorCount = 0;
+            }
+
+            if (next.Value == 0x200D)
+            {
+                zwjFollowsExtendedPictographic = lastNonExtendWasExtendedPictographic;
+            }
+            else if (!IsExtend(next))
+            {
+                lastNonExtendWasExtendedPictographic = IsExtendedPictographic(next);
+                zwjFollowsExtendedPictographic = false;
+            }
+
+            if (IsIndicLinker(next) && indicConsonantSeen)
+            {
+                indicLinkerSeen = true;
+            }
+            else if (IsIndicConsonant(next))
+            {
+                indicConsonantSeen = true;
+                indicLinkerSeen = false;
+            }
+            else if (!IsExtend(next) && next.Value != 0x200D)
+            {
+                indicConsonantSeen = false;
+                indicLinkerSeen = false;
+            }
+
+            previous = next;
+        }
+
+        width = end - offset;
+        return true;
+    }
+
+    private static bool IsControl(Rune rune)
+    {
+        if (rune.Value is 0x200C or 0x200D || IsPrepend(rune) || IsTagCharacter(rune))
+        {
+            return false;
+        }
+
+        return Rune.GetUnicodeCategory(rune) is
+            UnicodeCategory.Control or
+            UnicodeCategory.Format or
+            UnicodeCategory.LineSeparator or
+            UnicodeCategory.ParagraphSeparator or
+            UnicodeCategory.Surrogate;
+    }
+
+    private static bool IsExtend(Rune rune) =>
+        Rune.GetUnicodeCategory(rune) is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark ||
+        rune.Value is 0x200C or 0x200D or (>= 0x1F3FB and <= 0x1F3FF) ||
+        IsTagCharacter(rune);
+
+    private static bool IsSpacingMark(Rune rune) =>
+        Rune.GetUnicodeCategory(rune) == UnicodeCategory.SpacingCombiningMark;
+
+    private static bool IsPrepend(Rune rune) => rune.Value is
+        (>= 0x0600 and <= 0x0605) or 0x06DD or 0x070F or 0x0890 or 0x0891 or
+        0x08E2 or 0x0D4E or 0x110BD or 0x110CD or
+        (>= 0x111C2 and <= 0x111C3) or 0x113D1 or 0x1193F or 0x11941 or
+        0x11A3A or (>= 0x11A84 and <= 0x11A89) or 0x11D46;
+
+    private static bool IsHangulContinuation(Rune previous, Rune next) =>
+        IsHangulL(previous) && (IsHangulL(next) || IsHangulV(next) || IsHangulLv(next) || IsHangulLvt(next)) ||
+        (IsHangulLv(previous) || IsHangulV(previous)) && (IsHangulV(next) || IsHangulT(next)) ||
+        (IsHangulLvt(previous) || IsHangulT(previous)) && IsHangulT(next);
+
+    private static bool IsHangulL(Rune rune) => rune.Value is
+        (>= 0x1100 and <= 0x115F) or (>= 0xA960 and <= 0xA97C);
+
+    private static bool IsHangulV(Rune rune) => rune.Value is
+        (>= 0x1160 and <= 0x11A7) or (>= 0xD7B0 and <= 0xD7C6);
+
+    private static bool IsHangulT(Rune rune) => rune.Value is
+        (>= 0x11A8 and <= 0x11FF) or (>= 0xD7CB and <= 0xD7FB);
+
+    private static bool IsHangulLv(Rune rune) =>
+        rune.Value is >= 0xAC00 and <= 0xD7A3 && (rune.Value - 0xAC00) % 28 == 0;
+
+    private static bool IsHangulLvt(Rune rune) =>
+        rune.Value is >= 0xAC00 and <= 0xD7A3 && (rune.Value - 0xAC00) % 28 != 0;
+
+    private static bool IsRegionalIndicator(Rune rune) =>
+        rune.Value is >= 0x1F1E6 and <= 0x1F1FF;
+
+    private static bool IsExtendedPictographic(Rune rune) => rune.Value is
+        0x00A9 or 0x00AE or 0x203C or 0x2049 or 0x2122 or 0x2139 or
+        (>= 0x2194 and <= 0x2199) or (>= 0x21A9 and <= 0x21AA) or
+        (>= 0x231A and <= 0x231B) or 0x2328 or 0x2388 or 0x23CF or
+        (>= 0x23E9 and <= 0x23F3) or (>= 0x23F8 and <= 0x23FA) or
+        (>= 0x24C2 and <= 0x24C2) or (>= 0x25AA and <= 0x25AB) or
+        (>= 0x25B6 and <= 0x25B6) or (>= 0x25C0 and <= 0x25C0) or
+        (>= 0x25FB and <= 0x25FE) or (>= 0x2600 and <= 0x27BF) or
+        (>= 0x2934 and <= 0x2935) or (>= 0x2B05 and <= 0x2B07) or
+        (>= 0x2B1B and <= 0x2B1C) or 0x2B50 or 0x2B55 or
+        (>= 0x3030 and <= 0x3030) or 0x303D or 0x3297 or 0x3299 or
+        (>= 0x1F000 and <= 0x1FAFF);
+
+    private static bool IsIndicConsonant(Rune rune) =>
+        Rune.GetUnicodeCategory(rune) is
+            UnicodeCategory.UppercaseLetter or
+            UnicodeCategory.LowercaseLetter or
+            UnicodeCategory.TitlecaseLetter or
+            UnicodeCategory.ModifierLetter or
+            UnicodeCategory.OtherLetter;
+
+    private static bool IsIndicLinker(Rune rune) => rune.Value is
+        0x094D or 0x09CD or 0x0A4D or 0x0ACD or 0x0B4D or 0x0BCD or 0x0C4D or
+        0x0CCD or 0x0D3B or 0x0D3C or 0x0D4D or 0x0DCA or 0x0E3A or 0x0F84 or
+        0x1039 or 0x103A or 0x1714 or 0x1734 or 0x17D2 or 0x1A60 or 0x1B44 or
+        0x1BAA or 0x1BAB or 0xA806 or 0xA82C or 0xA8C4 or 0xA953 or 0xA9C0 or
+        0xAAF6 or 0xABED or 0x10A3F or 0x11046 or 0x11070 or 0x11133 or
+        0x111C0 or 0x11235 or 0x112EA or 0x1134D or 0x11442 or 0x114C2 or
+        0x115BF or 0x1163F or 0x116B6 or 0x1172B or 0x11839 or 0x1193D or
+        0x119E0 or 0x11A34 or 0x11A47 or 0x11A99 or 0x11C3F or 0x11D44 or
+        0x11D45 or 0x11D97 or 0x16AF0 or 0x16B44;
+
+    private static bool IsTagCharacter(Rune rune) =>
+        rune.Value is >= 0xE0020 and <= 0xE007F;
+
+    private static bool TryDecode(ReadOnlySpan<byte> input, int offset, out Rune rune, out int width)
+    {
+        if ((uint)offset >= (uint)input.Length)
+        {
+            rune = default;
+            width = 0;
+            return false;
+        }
+
+        return Rune.DecodeFromUtf8(input[offset..], out rune, out width) == OperationStatus.Done;
     }
 }
 

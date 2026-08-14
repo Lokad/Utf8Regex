@@ -5194,7 +5194,7 @@ public sealed class Utf8Pcre2Regex
         out SimpleReplacementPlan plan,
         out bool replacementOnly)
     {
-        if (_program.Operations.Replace is not Pcre2LiteralDirectProgram)
+        if (_program.Operations.Replace is not (Pcre2LiteralDirectProgram or Pcre2CharacterDirectProgram))
         {
             plan = default;
             replacementOnly = false;
@@ -7677,6 +7677,16 @@ public sealed class Utf8Pcre2Regex
     internal int DebugCountRaw(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2GlobalOperationDriver.TryCount(
+                _program,
+                ref subject,
+                start,
+                Pcre2MatchOptions.None,
+                out var directCount))
+        {
+            return directCount;
+        }
+
         if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.Pcre2Literal)
         {
             return Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
@@ -7720,6 +7730,22 @@ public sealed class Utf8Pcre2Regex
     internal int DebugEnumerateRawIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(
+                _program,
+                subject,
+                start,
+                Pcre2MatchOptions.None,
+                out var directCursor))
+        {
+            var directSum = 0;
+            while (directCursor.MoveNext())
+            {
+                directSum += directCursor.Current.StartOffsetInBytes;
+            }
+
+            return directSum;
+        }
+
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Literal)
         {
             return ExecutePublicEnumerateIndexSum(EnumerateMatches(
@@ -7819,7 +7845,23 @@ public sealed class Utf8Pcre2Regex
 
     internal int DebugEnumerateNativeMaterializationOnly(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        ValidateStartOffset(input, startOffsetInBytes);
+        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(
+                _program,
+                subject,
+                start,
+                Pcre2MatchOptions.None,
+                out var directCursor))
+        {
+            var directCount = 0;
+            while (directCursor.MoveNext())
+            {
+                directCount++;
+            }
+
+            return directCount;
+        }
+
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Literal)
         {
             return ExecutePublicEnumerateMoveNextCount(EnumerateMatches(
