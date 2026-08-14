@@ -1,8 +1,6 @@
-# Post-L0 mechanical C# debt, owned source only.
-# project | debt-kind | target | count | removal-owner
-Lokad.Utf8Regex.Pcre2 | null-forgiving | _groups | 1 | L4
-Lokad.Utf8Regex.Pcre2 | null-forgiving | _matches | 1 | L4
-Lokad.Utf8Regex.Pcre2 | default-parameter | * | 0 | L0
-Lokad.Utf8Regex.Pcre2 | undocumented-abstract-or-virtual | * | 0 | L0
-Lokad.Utf8Regex.Pcre2 | project-internals-visible-to | * | 0 | L0
-Lokad.Utf8Regex | pcre2-integration-point | * | 0 | C0-C8
+# L15 mechanical C# qualification, owned source only.
+# project | check | count
+Lokad.Utf8Regex.Pcre2 | null-forgiving | 0
+Lokad.Utf8Regex.Pcre2 | default-parameter | 0
+Lokad.Utf8Regex.Pcre2 | undocumented-abstract-or-virtual | 0
+Lokad.Utf8Regex.Pcre2 | project-file-internals-visible-to | 0

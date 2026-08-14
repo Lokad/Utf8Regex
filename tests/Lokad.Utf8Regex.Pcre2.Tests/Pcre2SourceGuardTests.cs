@@ -35,24 +35,12 @@ public sealed class Pcre2SourceGuardTests
         var sourceFiles = Directory.GetFiles(sourceDirectory, "*.cs", SearchOption.AllDirectories);
         var source = string.Join('\n', sourceFiles.OrderBy(static path => path, StringComparer.Ordinal).Select(File.ReadAllText));
 
-        // Frozen L0 baseline. Later owners may reduce these counts, but no change may
-        // silently add a new target or increase a legacy target's use.
-        var allowedNullForgivingCounts = new Dictionary<string, int>(StringComparer.Ordinal)
-        {
-            ["_groups"] = 1,
-            ["_matches"] = 1,
-        };
         var actualNullForgivingCounts = s_nullForgivingExpression.Matches(source)
             .Select(static match => match.Groups["target"].Value)
             .GroupBy(static target => target, StringComparer.Ordinal)
             .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
 
-        foreach (var (target, count) in actualNullForgivingCounts)
-        {
-            Assert.True(
-                allowedNullForgivingCounts.TryGetValue(target, out var allowedCount) && count <= allowedCount,
-                $"Null-forgiving expression debt grew for '{target}': {count} occurrence(s).");
-        }
+        Assert.Empty(actualNullForgivingCounts);
 
         Assert.DoesNotContain(" abstract ", source, StringComparison.Ordinal);
         Assert.DoesNotContain(" virtual ", source, StringComparison.Ordinal);

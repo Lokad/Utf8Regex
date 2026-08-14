@@ -26,7 +26,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {context.Utf8Pcre2Regex.DebugExecutionKindName}");
         Console.WriteLine($"UsesTranslation   : {context.Utf8Pcre2Regex.DebugUsesUtf8RegexTranslation}");
         Console.WriteLine($"Utf8ExecKind      : {context.Utf8Pcre2Regex.DebugUtf8RegexExecutionKindName}");
-        Console.WriteLine($"HasUtf8Equivalent : {context.Utf8Pcre2Regex.DebugHasUtf8SearchEquivalentRegex}");
         Console.WriteLine($"HasManagedRegex   : {context.Utf8Pcre2Regex.DebugHasManagedRegex}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
         Console.WriteLine($"HasUtf8Regex      : {context.Utf8Regex is not null}");
@@ -49,7 +48,6 @@ internal static partial class BenchmarkInspectReporter
                         benchmarkCase.SupportedBackends,
                         regex.DebugExecutionKindName,
                         regex.DebugUtf8RegexExecutionKindName,
-                        regex.DebugHasUtf8SearchEquivalentRegex,
                         regex.DebugHasManagedRegex,
                         regex.DebugDescribeExecutionPlan());
                 })
@@ -1160,7 +1158,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"## {title}");
         foreach (var row in rows)
         {
-            Console.WriteLine($"- {row.CaseId}: ops={row.SupportedOperations}, kind={row.ExecutionKind}, utf8={row.Utf8ExecutionKind}, searchEq={(row.HasUtf8SearchEquivalentRegex ? "yes" : "no")}, managed={(row.HasManagedRegex ? "yes" : "no")}, plan={row.ExecutionPlan}");
+            Console.WriteLine($"- {row.CaseId}: ops={row.SupportedOperations}, kind={row.ExecutionKind}, utf8={row.Utf8ExecutionKind}, managed={(row.HasManagedRegex ? "yes" : "no")}, plan={row.ExecutionPlan}");
         }
 
         Console.WriteLine();
@@ -1268,7 +1266,6 @@ internal static partial class BenchmarkInspectReporter
         Utf8Pcre2BenchmarkBackend SupportedBackends,
         string ExecutionKind,
         string Utf8ExecutionKind,
-        bool HasUtf8SearchEquivalentRegex,
         bool HasManagedRegex,
         string ExecutionPlan);
 

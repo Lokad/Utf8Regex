@@ -360,7 +360,7 @@ public sealed class Utf8Pcre2Regex
 
         if (_program.PartialProbe.Kind != Pcre2PartialProbeProgramKind.None)
         {
-            return ProbeViaCompiledPartialProgram(input, partialMode, startOffsetInBytes, _program.PartialProbe);
+            return Pcre2PartialProbeRunner.Probe(input, partialMode, startOffsetInBytes, _program.PartialProbe);
         }
 
         if (partialMode == Pcre2PartialMode.None)
@@ -1084,7 +1084,9 @@ public sealed class Utf8Pcre2Regex
 
 
 
-    private static Utf8Pcre2ProbeResult ProbeViaCompiledPartialProgram(
+    private static class Pcre2PartialProbeRunner
+{
+    internal static Utf8Pcre2ProbeResult Probe(
         ReadOnlySpan<byte> input,
         Pcre2PartialMode partialMode,
         int startOffsetInBytes,
@@ -2069,6 +2071,8 @@ public sealed class Utf8Pcre2Regex
         }
 
         return 0;
+    }
+
     }
 
     private Utf8Pcre2ProbeResult ProbeViaNonPartialMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)

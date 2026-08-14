@@ -291,7 +291,9 @@ public readonly ref struct Utf8Pcre2MatchContext
 
     public bool Success => _groups is { Length: > 0 } && _groups[0].Success;
 
-    public Utf8Pcre2ValueMatch Value => Success ? Utf8Pcre2ValueMatch.Create(_input, _groups![0]) : default;
+    public Utf8Pcre2ValueMatch Value => _groups is { Length: > 0 } groups && groups[0].Success
+        ? Utf8Pcre2ValueMatch.Create(_input, groups[0])
+        : default;
 
     public int CaptureSlotCount => _groups?.Length ?? 0;
 
