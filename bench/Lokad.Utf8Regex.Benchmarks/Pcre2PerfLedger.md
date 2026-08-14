@@ -2,13 +2,16 @@
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
 2026-08-14 snapshot has SHA-256
-`14E9635C4E34DFC36AE2BD85A9E41BCC4E3CECF647B714BF7A549EFD7FC57287`.
+`A8B039A5FA785D8664DA7CAD2BF6E92577DA745020060AC8BE6F4A467CD993A7`.
 It contains 126 operation rows in ten top-line sections and ten scaling
-families with three points each.
+families with four 1×/2×/4×/8× points each.
 
 ## Measurement protocol
 
 - Release build, sequential commands, 20 requested iterations, three samples.
+- Dense/sparse candidate and capture-rollback scaling rows were rerun with 100
+  requested iterations and seven samples after the base refresh exposed noisy
+  nonmonotone timings.
 - Every row records its effective iteration count.
 - PCRE2 refresh uses input/operation-specific maximums plus a warm pilot that
   caps each timed sample at approximately 250 ms. Fast rows retain up to 1,000
@@ -26,34 +29,35 @@ families with three points each.
 
 ## Scaling result
 
-The warm ratios below compare point 2 / point 1 and point 3 / point 2. Input
-ratios are shown where input is the varied dimension; the Cartesian family
-instead doubles its alternative count at each point.
+The warm ratios below compare each successive doubling. Input ratios are shown
+where input is the varied dimension; the Cartesian family instead doubles its
+alternative count at each point.
 
 | Family | Scale ratios | Warm-time ratios | Warm allocation |
 |---|---:|---:|---:|
-| Long flat patterns | 4×, 4× pattern/input | 0.84×, 0.92× | 0 B |
-| Cartesian literal families | 2×, 2× alternatives | 1.13×, 1.88× | 0 B |
-| Dense+sparse candidates | 8×, 4× input | 1.53×, 2.66× | 0–1 B |
-| Candidate-heavy misses | 8×, 4× input | 9.86×, 3.15× | 0–1 B |
-| Branch/repeat | 8×, 4× input | 6.91×, 4.00× | 0–1 B |
-| Dense non-ASCII coordinates | 8×, 4× input | 7.85×, 3.95× | 0–1 B |
-| Dense character classes | 8.2×, 4× input | 6.74×, 2.43× | 0–1 B |
-| Zero-width iteration | 8×, 4× input | 7.84×, 3.99× | 0–1 B |
-| Capture rollback | 3.9×, 4× input | 3.06×, 3.61× | 0 B |
-| Replacement growth | 4×, 4× input/output | 3.84×, 3.17× | 21,224 / 83,816 / 334,184 B |
+| Long flat patterns | 2× pattern/input | 1.01×, 1.03×, 1.08× | 0 B |
+| Cartesian literal families | 2× alternatives | 1.71×, 1.82×, 2.87× | 0 B |
+| Dense+sparse candidates | 2× input | 1.79×, 1.65×, 2.19× | 0 B |
+| Candidate-heavy misses | 2× input | 1.99×, 1.99×, 2.00× | 0–1 B |
+| Branch/repeat | 2× input | 2.00×, 1.94×, 2.03× | 1 B |
+| Dense non-ASCII coordinates | 2× input | 1.99×, 1.99×, 1.97× | 0–1 B |
+| Dense character classes | 2× input | 1.95×, 1.99×, 1.92× | 0–1 B |
+| Zero-width iteration | 2× input | 1.99×, 1.99×, 2.09× | 0–1 B |
+| Capture rollback | approximately 2× input | 1.74×, 1.62×, 0.66× | 0 B |
+| Replacement growth | 2× input/output | 1.78×, 1.73×, 1.83× | 42,088 / 83,816 / 167,272 / 334,184 B |
 
 No family has an unexplained quadratic curve. Candidate misses, branching,
 coordinate projection, character classes, zero-width progress, and capture
-rollback track input growth approximately linearly. The first candidate-miss
-step is 9.86× for 8× input and returns to 3.15× for the following 4× step.
-Cartesian compilation/execution remains below the semantic alternative growth.
+rollback track input growth approximately linearly. The dense/sparse family
+uses a constant pattern across points so the curve measures input growth rather
+than size-dependent planner changes. Cartesian execution grows faster than its
+last alternative-count doubling but remains well below quadratic growth.
 Replacement allocation is the required returned byte array and scales with
 the doubled output, while non-result operations allocate zero bytes per warm
 invocation apart from measurement rounding of at most one byte.
 
 Construction storage is bounded by pattern/program size. The long-flat
-construction time grows 1.20× then 2.25× for successive 4× pattern growth;
+construction time grows 1.15×, 1.27×, and 1.42× for successive 2× pattern growth;
 the other fixed-pattern families remain flat. Per-instance replacement plans
 are capped at 16 cache entries.
 

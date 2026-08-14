@@ -34,7 +34,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         {
             Assert.False(string.IsNullOrWhiteSpace(family.Value.GetProperty("Operation").GetString()));
             var points = family.Value.GetProperty("Points").EnumerateArray().ToArray();
-            Assert.Equal(3, points.Length);
+            Assert.Equal(4, points.Length);
             Assert.True(IsStrictlyIncreasing(points.Select(static point => point.GetProperty("PatternUtf8Bytes").GetInt32())) ||
                         IsStrictlyIncreasing(points.Select(static point => point.GetProperty("InputUtf8Bytes").GetInt32())));
             Assert.All(points, AssertCompleteMeasurement);
