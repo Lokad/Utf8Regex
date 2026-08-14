@@ -26,6 +26,13 @@ vertical feature slice replaces legacy verification with a generic compiled
 program, then removes the corresponding `Pcre2ExecutionKind` entry and
 complete-pattern classifier arm.
 
+The first migrated slice parses literal scalars, escaped literal
+metacharacters, concatenation, `\A`, `\G`, and `\z` into
+`Pcre2LiteralSyntaxTree`. Its immutable `Pcre2LiteralProgram` uses the shared
+prepared substring kernel for one-shot `IsMatch`, `Match`, and capture-zero
+`MatchDetailed`. Other operations deliberately retain the legacy adapter until
+the global-operation slice owns their progression semantics.
+
 ## Program ownership
 
 The compiled program owns:
@@ -54,7 +61,8 @@ capture count, live backtracking checkpoints, and explicit public output.
 Buffers that grow with transient backtracking or output should be pooled once
 the corresponding generic runtime slice owns them.
 
-`Pcre2ResourceBudget` keeps independent candidate, backtracking, depth, and
+Invocation-local `Pcre2ResourceBudget` values keep independent candidate,
+backtracking, depth, and
 heap counters. A zero public limit retains the documented engine-default or
 unlimited meaning; it is not translated into an immediate failure. Candidate
 search does not consume the backtracking budget. Full verification does not

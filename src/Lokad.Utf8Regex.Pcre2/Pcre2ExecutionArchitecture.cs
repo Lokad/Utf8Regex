@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -21,6 +22,11 @@ internal static class Pcre2Compiler
         ArgumentNullException.ThrowIfNull(legacyProgramFactory);
         Pcre2CompileValidator.Validate(request.Pattern, request.Settings);
         var program = legacyProgramFactory(request);
+        if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
+        {
+            program = Pcre2CompiledProgramOverlay.WithLiteralOneShot(program, literal.SyntaxTree, literal.Program);
+        }
+
         Pcre2ProgramInvariant.Validate(program);
         return program;
     }
@@ -128,12 +134,25 @@ internal sealed class Pcre2ManagedDirectProgram : IPcre2DirectProgram
     internal Regex Regex { get; }
 }
 
+internal sealed class Pcre2LiteralDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2LiteralDirectProgram(Pcre2LiteralProgram program)
+    {
+        Program = program;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Literal;
+
+    internal Pcre2LiteralProgram Program { get; }
+}
+
 internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
     Utf8Regex = 1,
     ManagedRegex = 2,
     Utf8RegexEquivalent = 3,
+    Pcre2Literal = 4,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -192,6 +211,7 @@ internal sealed class Pcre2CompiledProgram
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2FullVerificationProgram fullVerification,
+        IPcre2SyntaxTree syntaxTree,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries)
     {
@@ -203,6 +223,7 @@ internal sealed class Pcre2CompiledProgram
         Operations = operations;
         CandidateSearch = candidateSearch;
         FullVerification = fullVerification;
+        SyntaxTree = syntaxTree;
         GroupNames = [.. groupNames];
         NameEntries = [.. nameEntries];
     }
@@ -223,9 +244,39 @@ internal sealed class Pcre2CompiledProgram
 
     internal Pcre2FullVerificationProgram FullVerification { get; }
 
+    internal IPcre2SyntaxTree SyntaxTree { get; }
+
     internal string[] GroupNames { get; }
 
     internal Pcre2NameEntry[] NameEntries { get; }
+}
+
+internal static class Pcre2CompiledProgramOverlay
+{
+    internal static Pcre2CompiledProgram WithLiteralOneShot(
+        Pcre2CompiledProgram legacy,
+        Pcre2LiteralSyntaxTree syntaxTree,
+        Pcre2LiteralProgram literalProgram)
+    {
+        var direct = new Pcre2LiteralDirectProgram(literalProgram);
+        var operations = legacy.Operations with
+        {
+            IsMatch = direct,
+            Match = direct,
+        };
+        return new Pcre2CompiledProgram(
+            legacy.Request,
+            legacy.PrimaryUtf8,
+            legacy.SearchEquivalentUtf8,
+            legacy.Managed,
+            legacy.Translation,
+            operations,
+            new Pcre2CandidateSearchProgram(direct),
+            legacy.FullVerification,
+            syntaxTree,
+            legacy.GroupNames,
+            legacy.NameEntries);
+    }
 }
 
 internal static class Pcre2ProgramInvariant
@@ -264,11 +315,24 @@ internal static class Pcre2ProgramInvariant
 internal static class Pcre2Runner
 {
     internal static bool TryIsMatch(
-        IPcre2DirectProgram program,
-        Utf8ValidatedInput input,
+        Pcre2CompiledProgram compiledProgram,
+        ref Utf8ValidatedInput input,
         Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
         out bool result)
     {
+        var program = compiledProgram.Operations.IsMatch;
+        if (program is Pcre2LiteralDirectProgram literalProgram)
+        {
+            result = ExecuteLiteral(
+                literalProgram.Program,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = utf8Program.Regex.ByteOffsetExecution.IsMatch(input, start);
@@ -284,6 +348,65 @@ internal static class Pcre2Runner
 
         result = false;
         return false;
+    }
+
+    internal static bool TryMatch(
+        Pcre2CompiledProgram compiledProgram,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        out Pcre2GroupData result)
+    {
+        if (compiledProgram.Operations.Match is not Pcre2LiteralDirectProgram literalProgram)
+        {
+            result = default;
+            return false;
+        }
+
+        var literalMatch = ExecuteLiteral(
+            literalProgram.Program,
+            ref input,
+            start,
+            matchOptions,
+            compiledProgram.Request);
+        if (!literalMatch.Success)
+        {
+            result = default;
+            return true;
+        }
+
+        var byteRange = new Utf8ByteRange(
+            new Utf8BytePosition(literalMatch.StartOffsetInBytes),
+            new Utf8BytePosition(literalMatch.EndOffsetInBytes));
+        var utf16Range = input.ProjectRange(byteRange);
+        result = new Pcre2GroupData
+        {
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = literalMatch.StartOffsetInBytes,
+            EndOffsetInBytes = literalMatch.EndOffsetInBytes,
+            StartOffsetInUtf16 = utf16Range.Start.Value,
+            EndOffsetInUtf16 = utf16Range.End.Value,
+        };
+        return true;
+    }
+
+    private static Pcre2LiteralMatch ExecuteLiteral(
+        Pcre2LiteralProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        try
+        {
+            var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+            return Pcre2LiteralRunner.Match(program, ref input, start, matchOptions, ref budget);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+        }
     }
 }
 
@@ -343,12 +466,19 @@ internal sealed class Pcre2GlobalIterationState
     internal int PreviousEndOffsetInBytes { get; set; } = -1;
 }
 
-internal sealed class Pcre2ResourceBudget
+internal struct Pcre2ResourceBudget
 {
+    private readonly Utf8ExecutionDeadline _deadline;
+
     internal Pcre2ResourceBudget(Utf8Pcre2ExecutionLimits limits, TimeSpan timeout)
     {
         Limits = limits;
         Timeout = timeout;
+        _deadline = Utf8ExecutionDeadline.Start(timeout);
+        CandidateSteps = 0;
+        BacktrackingSteps = 0;
+        Depth = 0;
+        HeapBytes = 0;
     }
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
@@ -363,7 +493,17 @@ internal sealed class Pcre2ResourceBudget
 
     internal ulong HeapBytes { get; private set; }
 
-    internal void ChargeCandidate() => CandidateSteps++;
+    internal bool RequiresCandidateMetering => !_deadline.IsInfinite || Limits.MatchLimit != 0;
+
+    internal void ChargeCandidate()
+    {
+        CandidateSteps++;
+        _deadline.Step();
+        if (Limits.MatchLimit != 0 && CandidateSteps > Limits.MatchLimit)
+        {
+            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", "MatchLimit");
+        }
+    }
 
     internal void ChargeBacktracking() => BacktrackingSteps++;
 
@@ -375,6 +515,23 @@ internal sealed class Pcre2ResourceBudget
 internal enum Pcre2SyntaxNodeKind : byte
 {
     LegacyPattern = 0,
+    Literal = 1,
+}
+
+internal interface IPcre2SyntaxTree
+{
+    Pcre2SyntaxNodeKind RootKind { get; }
+}
+
+internal sealed class Pcre2LegacySyntaxTree : IPcre2SyntaxTree
+{
+    internal static Pcre2LegacySyntaxTree Instance { get; } = new();
+
+    private Pcre2LegacySyntaxTree()
+    {
+    }
+
+    public Pcre2SyntaxNodeKind RootKind => Pcre2SyntaxNodeKind.LegacyPattern;
 }
 
 internal readonly record struct Pcre2SyntaxNode(Pcre2SyntaxNodeKind Kind, int StartOffset, int Length);

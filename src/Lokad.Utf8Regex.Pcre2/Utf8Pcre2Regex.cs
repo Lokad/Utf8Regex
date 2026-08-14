@@ -127,6 +127,7 @@ public sealed class Utf8Pcre2Regex
             operations,
             new Pcre2CandidateSearchProgram(operations.IsMatch),
             new Pcre2FullVerificationProgram(executionKind),
+            Pcre2LegacySyntaxTree.Instance,
             groupNames,
             nameEntries);
     }
@@ -196,7 +197,7 @@ public sealed class Utf8Pcre2Regex
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryIsMatch(_program.Operations.IsMatch, subject, start, out var result))
+        if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, out var result))
         {
             return result;
         }
@@ -280,6 +281,11 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, out var directMatch))
+        {
+            return Utf8Pcre2ValueMatch.Create(input, directMatch);
+        }
+
         if (_program.Operations.Match.Kind == Pcre2DirectProgramKind.Utf8Regex)
         {
             return CreateManagedProfileValueMatch(
@@ -369,6 +375,13 @@ public sealed class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, out var directMatch))
+        {
+            return directMatch.Success
+                ? Utf8Pcre2MatchContext.Create(input, [directMatch], NameEntries)
+                : default;
+        }
+
         if (UsesUtf8Translation)
         {
             return MatchDetailedViaUtf8RegexTranslation(subject, start);

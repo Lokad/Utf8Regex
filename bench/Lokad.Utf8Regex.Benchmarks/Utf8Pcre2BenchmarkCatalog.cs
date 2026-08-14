@@ -7,6 +7,26 @@ internal static class Utf8Pcre2BenchmarkCatalog
 {
     private static readonly Utf8Pcre2BenchmarkCase[] s_curatedCases =
     [
+        new(
+            "literal/early",
+            "needle",
+            "needle " + new string('x', 4096),
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
+            "literal/late",
+            "needle",
+            new string('x', 4096) + " needle",
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
+            "literal/missing",
+            "needle",
+            new string('x', 4096),
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
+        new(
+            "literal/absolute-anchored",
+            @"\Aneedle",
+            "needle " + new string('x', 4096),
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch),
         new("simple/foo-dense", "foo", "xxfoozz foo foo xx"),
         new("simple/foo-optional-bar", "foo(?<Bar>BAR)?", "foo fooBAR x fooBAR foo", replacement: "bar"),
         new("simple/ab-plus", "(a)b+", "ab abb abbb x ab", replacement: "bar"),

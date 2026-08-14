@@ -11,7 +11,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var delegated = new Utf8Pcre2Regex("abc").DebugCompiledProgram;
         var special = new Utf8Pcre2Regex("(?|(abc)|(xyz))").DebugCompiledProgram;
 
-        Assert.IsType<Pcre2Utf8DirectProgram>(delegated.Operations.IsMatch);
+        Assert.IsType<Pcre2LiteralDirectProgram>(delegated.Operations.IsMatch);
         Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
         Assert.IsType<Pcre2Utf8DirectProgram>(special.Operations.IsMatch);
         Assert.IsType<Pcre2Utf8ProgramSlot>(special.SearchEquivalentUtf8);
@@ -32,7 +32,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.NotSame(first.Captures, second.Captures);
         Assert.NotSame(first.Backtracking, second.Backtracking);
         Assert.NotSame(first.GlobalIteration, second.GlobalIteration);
-        Assert.NotSame(first.Budget, second.Budget);
+        Assert.Equal(0UL, first.Budget.CandidateSteps);
+        Assert.Equal(0UL, second.Budget.CandidateSteps);
     }
 
     [Fact]
