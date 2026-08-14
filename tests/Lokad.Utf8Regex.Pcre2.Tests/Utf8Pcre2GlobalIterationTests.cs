@@ -49,7 +49,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
 
         var replaced = regex.Replace(input, "R");
 
-        Assert.Equal("aR xx aR yy aR", Encoding.UTF8.GetString(replaced));
+        Assert.Equal("aRR RxRxR aRR RyRyR aRR", Encoding.UTF8.GetString(replaced));
     }
 
     [Fact]

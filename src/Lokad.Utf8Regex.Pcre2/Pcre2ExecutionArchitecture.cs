@@ -564,18 +564,16 @@ internal static class Pcre2Runner
             return true;
         }
 
-        var byteRange = new Utf8ByteRange(
-            new Utf8BytePosition(directMatch.StartOffsetInBytes),
-            new Utf8BytePosition(directMatch.EndOffsetInBytes));
-        var utf16Range = input.ProjectRange(byteRange);
+        var startInUtf16 = input.Project(new Utf8BytePosition(directMatch.StartOffsetInBytes));
+        var endInUtf16 = input.Project(new Utf8BytePosition(directMatch.EndOffsetInBytes));
         result = new Pcre2GroupData
         {
             Number = 0,
             Success = true,
             StartOffsetInBytes = directMatch.StartOffsetInBytes,
             EndOffsetInBytes = directMatch.EndOffsetInBytes,
-            StartOffsetInUtf16 = utf16Range.Start.Value,
-            EndOffsetInUtf16 = utf16Range.End.Value,
+            StartOffsetInUtf16 = startInUtf16.Value,
+            EndOffsetInUtf16 = endInUtf16.Value,
         };
         return true;
     }
@@ -685,7 +683,7 @@ internal static class Pcre2Runner
         }
     }
 
-    private static Pcre2GroupData[] ProjectCaptures(
+    internal static Pcre2GroupData[] ProjectCaptures(
         Pcre2CaptureByteRange[] captures,
         ref Utf8ValidatedInput input)
     {
@@ -906,6 +904,7 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
     private Pcre2ResourceBudget _budget;
     private Utf8ProjectionCursor _projection;
     private Utf8BytePosition _restartPosition;
+    private Utf8BytePosition _firstMatchingPosition;
     private Pcre2GlobalRetryState _retryState;
 
     internal Pcre2BacktrackingGlobalMatchCursor(
@@ -922,6 +921,7 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
         _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
         _projection = input.CreateProjectionCursor();
         _restartPosition = start;
+        _firstMatchingPosition = start;
         _retryState = Pcre2GlobalRetryState.Search;
         Current = default;
     }
@@ -944,6 +944,7 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
                     _program,
                     ref _input,
                     _restartPosition,
+                    _firstMatchingPosition,
                     options,
                     ref _budget);
             }
@@ -954,9 +955,124 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
 
             if (match.Success)
             {
+                if (_program.SuppressesUnresetEmptyMatches && !match.MatchBoundaryWasReset &&
+                    match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes)
+                {
+                    if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
+                            ref _input,
+                            _request.Settings,
+                            new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
+                            out _restartPosition))
+                    {
+                        _retryState = Pcre2GlobalRetryState.Finished;
+                        Current = default;
+                        return false;
+                    }
+
+                    _retryState = Pcre2GlobalRetryState.Search;
+                    continue;
+                }
+
+                if (match.StartOffsetInBytes > match.EndOffsetInBytes)
+                {
+                    throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
+                }
+
                 Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
+                _firstMatchingPosition = _restartPosition;
+                _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
+                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
+                    : Pcre2GlobalRetryState.Search;
+                return true;
+            }
+
+            if (!retryingEmptyAtSamePosition ||
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
+            {
+                _retryState = Pcre2GlobalRetryState.Finished;
+                Current = default;
+                return false;
+            }
+
+            _retryState = Pcre2GlobalRetryState.Search;
+        }
+
+        Current = default;
+        return false;
+    }
+}
+
+internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
+{
+    private readonly Pcre2BacktrackingProgram _program;
+    private Utf8ValidatedInput _input;
+    private readonly Pcre2CompileRequest _request;
+    private readonly Pcre2MatchOptions _matchOptions;
+    private Pcre2ResourceBudget _budget;
+    private Utf8BytePosition _restartPosition;
+    private Utf8BytePosition _firstMatchingPosition;
+    private Pcre2GlobalRetryState _retryState;
+
+    internal Pcre2BacktrackingDetailedGlobalMatchCursor(
+        Pcre2BacktrackingProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request)
+    {
+        _program = program;
+        _input = input;
+        _request = request;
+        _matchOptions = matchOptions;
+        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+        _restartPosition = start;
+        _firstMatchingPosition = start;
+        _retryState = Pcre2GlobalRetryState.Search;
+        Current = default;
+    }
+
+    internal Pcre2BacktrackingMatch Current { get; private set; }
+
+    internal Pcre2GroupData[] ProjectCurrentCaptures() =>
+        Pcre2Runner.ProjectCaptures(Current.Captures, ref _input);
+
+    internal bool MoveNext()
+    {
+        while (_retryState != Pcre2GlobalRetryState.Finished)
+        {
+            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
+            var options = retryingEmptyAtSamePosition
+                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
+                : _matchOptions;
+
+            Pcre2BacktrackingMatch match;
+            try
+            {
+                match = Pcre2BacktrackingRunner.MatchDetailed(
+                    _program,
+                    ref _input,
+                    _restartPosition,
+                    _firstMatchingPosition,
+                    options,
+                    ref _budget);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            }
+
+            if (match.Success)
+            {
+                if (match.StartOffsetInBytes > match.EndOffsetInBytes)
+                {
+                    throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
+                }
+
+                Current = match;
+                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
+                _firstMatchingPosition = _restartPosition;
+                _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
                     ? Pcre2GlobalRetryState.EmptyAtSamePosition
                     : Pcre2GlobalRetryState.Search;
                 return true;

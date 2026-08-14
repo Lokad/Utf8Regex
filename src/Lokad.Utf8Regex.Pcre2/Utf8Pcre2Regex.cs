@@ -214,6 +214,7 @@ public sealed class Utf8Pcre2Regex
 
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, out var result))
         {
@@ -476,6 +477,7 @@ public sealed class Utf8Pcre2Regex
 
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
 
         if (Pcre2GlobalOperationDriver.TryCreateCursor(
@@ -1116,6 +1118,7 @@ public sealed class Utf8Pcre2Regex
 
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
@@ -1129,6 +1132,16 @@ public sealed class Utf8Pcre2Regex
             {
                 destination[written] = Utf8Pcre2MatchData.Create(directCursor.Current);
                 written++;
+            }
+
+            if (written == destination.Length && written != 0 &&
+                _program.Operations.Enumerate is Pcre2BacktrackingDirectProgram
+                {
+                    Program.MayThrowDeferredLookaroundReset: true,
+                })
+            {
+                isMore = true;
+                return written;
             }
 
             isMore = directCursor.MoveNext();
@@ -1356,8 +1369,10 @@ public sealed class Utf8Pcre2Regex
                 ExecutionKind == Pcre2ExecutionKind.MarkSkip,
             UsesRecursion = UsesRecursion(ExecutionKind),
             MayProduceNonUtf8Slices = ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
-            MayReportNonMonotoneMatchOffsets = MayReportNonMonotoneMatchOffsets(ExecutionKind),
-            RejectsNonMonotoneIterativeMatches = RejectsNonMonotoneIterativeMatches(ExecutionKind),
+            MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
+                MayReportNonMonotoneMatchOffsets(ExecutionKind),
+            RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
+                RejectsNonMonotoneIterativeMatches(ExecutionKind),
             MayFailIterativeExecutionAtRuntime = MayFailIterativeExecutionAtRuntime(ExecutionKind),
         };
     }
@@ -5326,20 +5341,21 @@ public sealed class Utf8Pcre2Regex
             return ReplaceViaManagedRegexDirect(input, replacement, startOffsetInBytes);
         }
 
-        if (UsesUtf8Translation)
+        if (partialMode == Pcre2PartialMode.None &&
+            _program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
-            return ReplaceViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
-        }
-
-        if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
-            backtrackingProgram.Program.CaptureSlotCount > 1)
-        {
-            return ReplaceViaTranslatedDetailedIteration(
+            return ReplaceBacktrackingDetailed(
                 input,
+                backtrackingProgram.Program,
                 replacement,
                 substitutionOptions,
                 startOffsetInBytes,
-                Encoding.UTF8.GetString(input));
+                matchOptions);
+        }
+
+        if (UsesUtf8Translation)
+        {
+            return ReplaceViaTranslatedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
         }
 
         return Pattern switch
@@ -6358,6 +6374,68 @@ public sealed class Utf8Pcre2Regex
         return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
+    private byte[] ReplaceBacktrackingDetailed(
+        ReadOnlySpan<byte> input,
+        Pcre2BacktrackingProgram program,
+        string replacement,
+        Pcre2SubstitutionOptions substitutionOptions,
+        int startOffsetInBytes,
+        Pcre2MatchOptions matchOptions)
+    {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
+            program,
+            validated,
+            start,
+            matchOptions,
+            _program.Request);
+        if (!cursor.MoveNext())
+        {
+            return input.ToArray();
+        }
+
+        var subject = Encoding.UTF8.GetString(input);
+        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+        var simplePlan = GetSimpleReplacementPlan(replacement, templateOptions);
+        var builder = new StringBuilder(subject.Length + replacement.Length);
+        var position = 0;
+        do
+        {
+            var current = cursor.Current;
+            var groups = cursor.ProjectCurrentCaptures();
+            var value = groups[0];
+            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            if (simplePlan is { } plan)
+            {
+                AppendSimpleReplacement(
+                    builder,
+                    plan,
+                    subject,
+                    value.StartOffsetInUtf16,
+                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
+            }
+            else
+            {
+                builder.Append(EvaluateReplacementTemplate(
+                    replacement,
+                    templateOptions,
+                    subject,
+                    value.StartOffsetInUtf16,
+                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
+                    number => ResolveNativeNumberReference(groups, number, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
+                    () => ResolveNativeLastCapturedReference(groups, subject),
+                    mark: current.Mark));
+            }
+
+            position = value.EndOffsetInUtf16;
+        }
+        while (cursor.MoveNext());
+
+        builder.Append(subject, position, subject.Length - position);
+        return Encoding.UTF8.GetBytes(builder.ToString());
+    }
+
     private byte[] ReplaceReplacementOnlyViaDetailedNativeIteration(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions, int startOffsetInBytes, string subject)
     {
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
@@ -6478,7 +6556,7 @@ public sealed class Utf8Pcre2Regex
 
     private bool RejectsReplacementIteration()
     {
-        return ExecutionKind is
+        return GenericBacktrackingMayReportNonMonotoneMatchOffsets || ExecutionKind is
             Pcre2ExecutionKind.KResetLookaheadAb or
             Pcre2ExecutionKind.KResetLookbehindA or
             Pcre2ExecutionKind.KResetConditionalGcOverlap or
@@ -6608,6 +6686,20 @@ public sealed class Utf8Pcre2Regex
             ref quoted,
             syntaxOnly);
         return builder.ToString();
+    }
+
+    private bool GenericBacktrackingMayReportNonMonotoneMatchOffsets =>
+        _program.Operations.Match is Pcre2BacktrackingDirectProgram
+        {
+            Program.MayReportNonMonotoneMatchOffsets: true,
+        };
+
+    private void ThrowIfGenericIterationMayBeNonMonotone()
+    {
+        if (GenericBacktrackingMayReportNonMonotoneMatchOffsets)
+        {
+            throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
+        }
     }
 
     private static string EvaluateReplacementTemplate(

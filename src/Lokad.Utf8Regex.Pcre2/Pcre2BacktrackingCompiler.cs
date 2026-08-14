@@ -64,6 +64,7 @@ internal enum Pcre2BacktrackingNodeKind : byte
     Conditional = 9,
     Atomic = 10,
     ControlVerb = 11,
+    MatchBoundaryReset = 12,
 }
 
 internal sealed class Pcre2EmptyBacktrackingNode : IPcre2BacktrackingNode
@@ -296,6 +297,17 @@ internal sealed class Pcre2ControlVerbBacktrackingNode : IPcre2BacktrackingNode
     internal string Name { get; }
 }
 
+internal sealed class Pcre2MatchBoundaryResetBacktrackingNode : IPcre2BacktrackingNode
+{
+    internal static Pcre2MatchBoundaryResetBacktrackingNode Instance { get; } = new();
+
+    private Pcre2MatchBoundaryResetBacktrackingNode()
+    {
+    }
+
+    public Pcre2BacktrackingNodeKind Kind => Pcre2BacktrackingNodeKind.MatchBoundaryReset;
+}
+
 internal enum Pcre2RepeatPreference : byte
 {
     Greedy = 0,
@@ -350,6 +362,10 @@ internal sealed class Pcre2BacktrackingProgram
         bool requiresCaptureState,
         bool hasCaptureWrites,
         bool usesBacktrackingControlVerbs,
+        bool usesMatchBoundaryReset,
+        bool mayReportNonMonotoneMatchOffsets,
+        bool mayThrowDeferredLookaroundReset,
+        bool suppressesUnresetEmptyMatches,
         Pcre2BacktrackingProgram[] assertionPrograms,
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
@@ -370,6 +386,10 @@ internal sealed class Pcre2BacktrackingProgram
         RequiresCaptureState = requiresCaptureState;
         HasCaptureWrites = hasCaptureWrites;
         UsesBacktrackingControlVerbs = usesBacktrackingControlVerbs;
+        UsesMatchBoundaryReset = usesMatchBoundaryReset;
+        MayReportNonMonotoneMatchOffsets = mayReportNonMonotoneMatchOffsets;
+        MayThrowDeferredLookaroundReset = mayThrowDeferredLookaroundReset;
+        SuppressesUnresetEmptyMatches = suppressesUnresetEmptyMatches;
         AssertionPrograms = assertionPrograms;
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
@@ -397,6 +417,14 @@ internal sealed class Pcre2BacktrackingProgram
     internal bool HasCaptureWrites { get; }
 
     internal bool UsesBacktrackingControlVerbs { get; }
+
+    internal bool UsesMatchBoundaryReset { get; }
+
+    internal bool MayReportNonMonotoneMatchOffsets { get; }
+
+    internal bool MayThrowDeferredLookaroundReset { get; }
+
+    internal bool SuppressesUnresetEmptyMatches { get; }
 
     internal Pcre2BacktrackingProgram[] AssertionPrograms { get; }
 
@@ -446,6 +474,7 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     ControlFail = 18,
     ControlMark = 19,
     ControlDeferred = 20,
+    MatchBoundaryReset = 21,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -580,6 +609,9 @@ internal readonly struct Pcre2BacktrackingInstruction
         int nameId,
         int thenTarget) =>
         new(Pcre2BacktrackingInstructionKind.ControlDeferred, default, thenTarget, 0, nameId, (int)verb, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateMatchBoundaryReset() =>
+        new(Pcre2BacktrackingInstructionKind.MatchBoundaryReset, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -739,6 +771,14 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseAtom(out IPcre2BacktrackingNode node)
     {
+        if (_pattern.AsSpan(_offset).StartsWith("\\K", StringComparison.Ordinal))
+        {
+            _sawControlFlow = true;
+            _offset += 2;
+            node = Pcre2MatchBoundaryResetBacktrackingNode.Instance;
+            return true;
+        }
+
         if (TryParseBackreference(out node))
         {
             return true;
@@ -2039,6 +2079,9 @@ internal sealed class Pcre2BacktrackingLowerer
     private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
     private bool _usesBacktrackingControlVerbs;
+    private bool _usesMatchBoundaryReset;
+    private bool _mayReportNonMonotoneMatchOffsets;
+    private bool _mayThrowDeferredLookaroundReset;
     private bool _hasSubroutineCalls;
     private List<int>? _thenPatches;
 
@@ -2094,6 +2137,10 @@ internal sealed class Pcre2BacktrackingLowerer
             _requiresCaptureState,
             _hasCaptureWrites,
             _usesBacktrackingControlVerbs,
+            _usesMatchBoundaryReset,
+            _mayReportNonMonotoneMatchOffsets,
+            _mayThrowDeferredLookaroundReset,
+            SuppressesUnresetEmptyMatches(root),
             [.. _assertionPrograms],
             [.. _backreferenceSlotSets],
             [.. _conditions],
@@ -2165,6 +2212,10 @@ internal sealed class Pcre2BacktrackingLowerer
                 _requiresCaptureState |= assertionProgram.RequiresCaptureState;
                 _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
                 _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
+                _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
+                _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
+                _mayThrowDeferredLookaroundReset |=
+                    assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
                 foreach (var markName in assertionProgram.MarkNames)
                 {
                     _ = GetMarkNameId(markName);
@@ -2188,6 +2239,10 @@ internal sealed class Pcre2BacktrackingLowerer
                 return;
             case Pcre2ControlVerbBacktrackingNode controlVerb:
                 EmitControlVerb(controlVerb);
+                return;
+            case Pcre2MatchBoundaryResetBacktrackingNode:
+                _usesMatchBoundaryReset = true;
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateMatchBoundaryReset());
                 return;
             default:
                 throw new InvalidOperationException("The PCRE2 backtracking syntax node is not lowerable.");
@@ -2339,6 +2394,10 @@ internal sealed class Pcre2BacktrackingLowerer
             _requiresCaptureState |= assertionProgram.RequiresCaptureState;
             _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
             _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
+            _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
+            _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
+            _mayThrowDeferredLookaroundReset |=
+                assertionProgram.UsesMatchBoundaryReset && !ContainsMatchBoundaryReset(assertion.Body);
             foreach (var markName in assertionProgram.MarkNames)
             {
                 _ = GetMarkNameId(markName);
@@ -2485,6 +2544,28 @@ internal sealed class Pcre2BacktrackingLowerer
         Pcre2AtomicBacktrackingNode atomic => ContainsDeferredControlVerb(atomic.Body),
         _ => false,
     };
+
+    private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2MatchBoundaryResetBacktrackingNode => true,
+        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsMatchBoundaryReset),
+        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsMatchBoundaryReset),
+        Pcre2RepeatBacktrackingNode repeat => ContainsMatchBoundaryReset(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => ContainsMatchBoundaryReset(capture.Body),
+        Pcre2AssertionBacktrackingNode assertion => ContainsMatchBoundaryReset(assertion.Body),
+        Pcre2ConditionalBacktrackingNode conditional =>
+            conditional.Assertion is not null && ContainsMatchBoundaryReset(conditional.Assertion.Body) ||
+            ContainsMatchBoundaryReset(conditional.YesBranch) ||
+            ContainsMatchBoundaryReset(conditional.NoBranch),
+        Pcre2AtomicBacktrackingNode atomic => ContainsMatchBoundaryReset(atomic.Body),
+        _ => false,
+    };
+
+    private static bool SuppressesUnresetEmptyMatches(IPcre2BacktrackingNode node) =>
+        node is Pcre2RepeatBacktrackingNode
+        {
+            Minimum: 0,
+        } repeat && ContainsMatchBoundaryReset(repeat.Body);
 }
 
 internal static class Pcre2BacktrackingAnalysis
@@ -2507,6 +2588,7 @@ internal static class Pcre2BacktrackingAnalysis
                 GetMinimumByteLength(conditional.NoBranch)),
             Pcre2AtomicBacktrackingNode atomic => GetMinimumByteLength(atomic.Body),
             Pcre2ControlVerbBacktrackingNode => 0,
+            Pcre2MatchBoundaryResetBacktrackingNode => 0,
             _ => 0,
         };
     }
@@ -2529,6 +2611,7 @@ internal static class Pcre2BacktrackingAnalysis
             GetMinimumScalarLength(conditional.NoBranch)),
         Pcre2AtomicBacktrackingNode atomic => GetMinimumScalarLength(atomic.Body),
         Pcre2ControlVerbBacktrackingNode => 0,
+        Pcre2MatchBoundaryResetBacktrackingNode => 0,
         _ => 0,
     };
 
@@ -2552,6 +2635,7 @@ internal static class Pcre2BacktrackingAnalysis
             GetMaximumScalarLength(conditional.NoBranch)),
         Pcre2AtomicBacktrackingNode atomic => GetMaximumScalarLength(atomic.Body),
         Pcre2ControlVerbBacktrackingNode => 0,
+        Pcre2MatchBoundaryResetBacktrackingNode => 0,
         _ => int.MaxValue,
     };
 
@@ -2665,6 +2749,7 @@ internal static class Pcre2BacktrackingAnalysis
             CanConsume(conditional.YesBranch) || CanConsume(conditional.NoBranch),
         Pcre2AtomicBacktrackingNode atomic => CanConsume(atomic.Body),
         Pcre2ControlVerbBacktrackingNode => false,
+        Pcre2MatchBoundaryResetBacktrackingNode => false,
         _ => true,
     };
 
@@ -2687,6 +2772,8 @@ internal enum Pcre2BacktrackingResumeAction : byte
 internal readonly record struct Pcre2BacktrackingFrame(
     int Instruction,
     int InputOffsetInBytes,
+    int ReportedStartOffsetInBytes,
+    bool MatchBoundaryWasReset,
     int RepeatCheckpoint,
     int CaptureCheckpoint,
     int CallCheckpoint,
@@ -2772,15 +2859,23 @@ internal readonly record struct Pcre2BacktrackingMatch(
     bool Success,
     int StartOffsetInBytes,
     int EndOffsetInBytes,
+    int ConsumedStartOffsetInBytes,
     int ConsumedEndOffsetInBytes,
+    bool MatchBoundaryWasReset,
     Pcre2CaptureByteRange[] Captures,
     string? Mark)
 {
     internal static Pcre2BacktrackingMatch NoMatch =>
-        new(false, 0, 0, 0, [], null);
+        new(false, 0, 0, 0, 0, false, [], null);
 
     internal Pcre2CharacterMatch ToCharacterMatch() => Success
-        ? new Pcre2CharacterMatch(true, StartOffsetInBytes, EndOffsetInBytes, ConsumedEndOffsetInBytes)
+        ? new Pcre2CharacterMatch(
+            true,
+            StartOffsetInBytes,
+            EndOffsetInBytes,
+            ConsumedStartOffsetInBytes,
+            ConsumedEndOffsetInBytes,
+            MatchBoundaryWasReset)
         : Pcre2CharacterMatch.NoMatch;
 }
 
@@ -2796,6 +2891,23 @@ internal static class Pcre2BacktrackingRunner
             program,
             ref input,
             start,
+            start,
+            matchOptions,
+            Pcre2CaptureMaterialization.None,
+            ref budget).ToCharacterMatch();
+
+    internal static Pcre2CharacterMatch Match(
+        Pcre2BacktrackingProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition searchStart,
+        Utf8BytePosition firstMatchingPosition,
+        Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget)
+        => MatchCore(
+            program,
+            ref input,
+            searchStart,
+            firstMatchingPosition,
             matchOptions,
             Pcre2CaptureMaterialization.None,
             ref budget).ToCharacterMatch();
@@ -2810,6 +2922,23 @@ internal static class Pcre2BacktrackingRunner
             program,
             ref input,
             start,
+            start,
+            matchOptions,
+            Pcre2CaptureMaterialization.FinalSlots,
+            ref budget);
+
+    internal static Pcre2BacktrackingMatch MatchDetailed(
+        Pcre2BacktrackingProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition searchStart,
+        Utf8BytePosition firstMatchingPosition,
+        Pcre2MatchOptions matchOptions,
+        ref Pcre2ResourceBudget budget)
+        => MatchCore(
+            program,
+            ref input,
+            searchStart,
+            firstMatchingPosition,
             matchOptions,
             Pcre2CaptureMaterialization.FinalSlots,
             ref budget);
@@ -2818,6 +2947,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2BacktrackingProgram program,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
+        Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
         ref Pcre2ResourceBudget budget)
@@ -2837,7 +2967,7 @@ internal static class Pcre2BacktrackingRunner
                     program,
                     bytes,
                     candidate,
-                    start.Value,
+                    firstMatchingPosition.Value,
                     matchOptions,
                     captureMaterialization,
                     ReadOnlySpan<int>.Empty,
@@ -2876,7 +3006,7 @@ internal static class Pcre2BacktrackingRunner
             }
         }
 
-        return new Pcre2BacktrackingMatch(false, 0, 0, 0, [], lastMark);
+        return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, [], lastMark);
     }
 
     private static bool TryMatchAt(
@@ -3012,6 +3142,8 @@ internal static class Pcre2BacktrackingRunner
         {
             var instructionIndex = 0;
             var inputIndex = candidate;
+            var reportedStartOffsetInBytes = candidate;
+            var matchBoundaryWasReset = false;
             var subroutineRestoreGeneration = 0;
             var currentMarkId = -1;
             var currentMarkPosition = -1;
@@ -3043,6 +3175,8 @@ internal static class Pcre2BacktrackingRunner
                             new Pcre2BacktrackingFrame(
                                 instruction.SecondaryTarget,
                                 inputIndex,
+                                reportedStartOffsetInBytes,
+                                matchBoundaryWasReset,
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 subroutineCallMutations.Count,
@@ -3096,6 +3230,8 @@ internal static class Pcre2BacktrackingRunner
                                         new Pcre2BacktrackingFrame(
                                             instruction.SecondaryTarget,
                                             inputIndex,
+                                            reportedStartOffsetInBytes,
+                                            matchBoundaryWasReset,
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
@@ -3129,6 +3265,8 @@ internal static class Pcre2BacktrackingRunner
                                         new Pcre2BacktrackingFrame(
                                             instruction.PrimaryTarget,
                                             inputIndex,
+                                            reportedStartOffsetInBytes,
+                                            matchBoundaryWasReset,
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
@@ -3288,14 +3426,22 @@ internal static class Pcre2BacktrackingRunner
                                 instruction.AssertionKind,
                                 input,
                                 inputIndex,
+                                firstMatchingPosition,
                                 matchOptions,
                                 captureStarts,
                                 captureEnds,
                                 depthBase + frames.Count + subroutineCalls.Count + 1,
                                 ref budget,
                                 out var assertionCaptures,
-                                out var assertionMark))
+                                out var assertionMark,
+                                out var assertionReportedStart))
                         {
+                            if (assertionReportedStart >= 0)
+                            {
+                                reportedStartOffsetInBytes = assertionReportedStart;
+                                matchBoundaryWasReset = true;
+                            }
+
                             MergeAssertionCaptures(
                                 assertionCaptures,
                                 subroutineCalls.Count,
@@ -3418,13 +3564,20 @@ internal static class Pcre2BacktrackingRunner
                                 condition.AssertionKind,
                                 input,
                                 inputIndex,
+                                firstMatchingPosition,
                                 matchOptions,
                                 captureStarts,
                                 captureEnds,
                                 depthBase + frames.Count + subroutineCalls.Count + 1,
                                 ref budget,
                                 out conditionalCaptures,
-                                out var conditionalMark);
+                                out var conditionalMark,
+                                out var conditionalReportedStart);
+                            if (conditionalReportedStart >= 0)
+                            {
+                                reportedStartOffsetInBytes = conditionalReportedStart;
+                                matchBoundaryWasReset = true;
+                            }
                             MergeAssertionMark(
                                 program,
                                 conditionalMark,
@@ -3549,20 +3702,29 @@ internal static class Pcre2BacktrackingRunner
                         }
 
                         var acceptEmptyDisallowed =
-                            (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == candidate ||
+                            (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
                             (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 &&
-                            candidate == firstMatchingPosition && inputIndex == candidate;
+                            candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
                         if (!acceptEmptyDisallowed)
                         {
+                            ThrowIfDisallowedNonMonotoneLookaroundReset(
+                                program,
+                                isAssertion,
+                                matchBoundaryWasReset,
+                                reportedStartOffsetInBytes,
+                                candidate,
+                                inputIndex);
                             var acceptedCaptures = captureMaterialization == Pcre2CaptureMaterialization.FinalSlots
-                                ? MaterializeCaptures(program.CaptureSlotCount, candidate, inputIndex, captureStarts, captureEnds)
+                                ? MaterializeCaptures(program.CaptureSlotCount, reportedStartOffsetInBytes, inputIndex, captureStarts, captureEnds)
                                 : [];
                             failure = default;
                             match = new Pcre2BacktrackingMatch(
                                 true,
+                                reportedStartOffsetInBytes,
+                                inputIndex,
                                 candidate,
                                 inputIndex,
-                                inputIndex,
+                                matchBoundaryWasReset,
                                 acceptedCaptures,
                                 GetMark(program, currentMarkId));
                             return true;
@@ -3601,6 +3763,8 @@ internal static class Pcre2BacktrackingRunner
                             new Pcre2BacktrackingFrame(
                                 instructionIndex,
                                 inputIndex,
+                                reportedStartOffsetInBytes,
+                                matchBoundaryWasReset,
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 subroutineCallMutations.Count,
@@ -3629,21 +3793,36 @@ internal static class Pcre2BacktrackingRunner
                         instructionIndex++;
                         continue;
 
+                    case Pcre2BacktrackingInstructionKind.MatchBoundaryReset:
+                        reportedStartOffsetInBytes = inputIndex;
+                        matchBoundaryWasReset = true;
+                        instructionIndex++;
+                        continue;
+
                     case Pcre2BacktrackingInstructionKind.Accept:
                         var endAnchored = !isAssertion && (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0 ||
                             (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
-                        var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == candidate ||
-                            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition && inputIndex == candidate;
+                        var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
+                            (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
                         if ((!endAnchored || inputIndex == input.Length) && !emptyDisallowed)
                         {
+                            ThrowIfDisallowedNonMonotoneLookaroundReset(
+                                program,
+                                isAssertion,
+                                matchBoundaryWasReset,
+                                reportedStartOffsetInBytes,
+                                candidate,
+                                inputIndex);
                             var captures = captureMaterialization == Pcre2CaptureMaterialization.FinalSlots
-                                ? MaterializeCaptures(program.CaptureSlotCount, candidate, inputIndex, captureStarts, captureEnds)
+                                ? MaterializeCaptures(program.CaptureSlotCount, reportedStartOffsetInBytes, inputIndex, captureStarts, captureEnds)
                                 : [];
                             match = new Pcre2BacktrackingMatch(
                                 true,
+                                reportedStartOffsetInBytes,
+                                inputIndex,
                                 candidate,
                                 inputIndex,
-                                inputIndex,
+                                matchBoundaryWasReset,
                                 captures,
                                 GetMark(program, currentMarkId));
                             failure = default;
@@ -3671,6 +3850,8 @@ internal static class Pcre2BacktrackingRunner
                         captureOpenStarts,
                         captureOwners,
                         captureOpenOwners,
+                        ref reportedStartOffsetInBytes,
+                        ref matchBoundaryWasReset,
                         ref currentMarkId,
                         ref currentMarkPosition,
                         ref budget,
@@ -3683,6 +3864,8 @@ internal static class Pcre2BacktrackingRunner
                         0,
                         0,
                         0,
+                        0,
+                        false,
                         [],
                         GetMark(program, lastEncounteredMarkId));
                     return false;
@@ -3759,13 +3942,15 @@ internal static class Pcre2BacktrackingRunner
         Pcre2AssertionKind assertionKind,
         ReadOnlySpan<byte> input,
         int inputIndex,
+        int outerFirstMatchingPosition,
         Pcre2MatchOptions outerMatchOptions,
         ReadOnlySpan<int> captureStarts,
         ReadOnlySpan<int> captureEnds,
         int depth,
         ref Pcre2ResourceBudget budget,
         out Pcre2CaptureByteRange[] captures,
-        out string? mark)
+        out string? mark,
+        out int reportedStartOffsetInBytes)
     {
         budget.ChargeFrame((uint)depth, checked((ulong)depth * 32UL + (ulong)captureStarts.Length * 12UL));
         var isNegative = assertionKind is Pcre2AssertionKind.NegativeLookahead or Pcre2AssertionKind.NegativeLookbehind;
@@ -3783,7 +3968,7 @@ internal static class Pcre2BacktrackingRunner
                 assertionProgram,
                 input,
                 inputIndex,
-                inputIndex,
+                outerFirstMatchingPosition,
                 nestedOptions,
                 captureMaterialization,
                 captureStarts,
@@ -3795,6 +3980,9 @@ internal static class Pcre2BacktrackingRunner
                 out _);
             captures = matched ? assertionMatch.Captures : [];
             mark = matched ? assertionMatch.Mark : null;
+            reportedStartOffsetInBytes = matched && !isNegative && assertionMatch.MatchBoundaryWasReset
+                ? assertionMatch.StartOffsetInBytes
+                : -1;
             return isNegative ? !matched : matched;
         }
 
@@ -3814,6 +4002,7 @@ internal static class Pcre2BacktrackingRunner
             {
                 captures = [];
                 mark = null;
+                reportedStartOffsetInBytes = -1;
                 return isNegative;
             }
         }
@@ -3826,7 +4015,7 @@ internal static class Pcre2BacktrackingRunner
                     assertionProgram,
                     input[..inputIndex],
                     candidate,
-                    candidate,
+                    outerFirstMatchingPosition,
                     nestedOptions,
                     captureMaterialization,
                     captureStarts,
@@ -3839,6 +4028,9 @@ internal static class Pcre2BacktrackingRunner
             {
                 captures = assertionMatch.Captures;
                 mark = assertionMatch.Mark;
+                reportedStartOffsetInBytes = !isNegative && assertionMatch.MatchBoundaryWasReset
+                    ? assertionMatch.StartOffsetInBytes
+                    : -1;
                 return !isNegative;
             }
 
@@ -3853,7 +4045,27 @@ internal static class Pcre2BacktrackingRunner
 
         captures = [];
         mark = null;
+        reportedStartOffsetInBytes = -1;
         return isNegative;
+    }
+
+    private static void ThrowIfDisallowedNonMonotoneLookaroundReset(
+        Pcre2BacktrackingProgram program,
+        bool isAssertion,
+        bool matchBoundaryWasReset,
+        int reportedStartOffsetInBytes,
+        int consumedStartOffsetInBytes,
+        int consumedEndOffsetInBytes)
+    {
+        if (!isAssertion && matchBoundaryWasReset &&
+            (reportedStartOffsetInBytes < consumedStartOffsetInBytes ||
+             reportedStartOffsetInBytes > consumedEndOffsetInBytes) &&
+            !program.Request.Settings.AllowLookaroundBackslashK)
+        {
+            throw new Pcre2MatchException(
+                "disallowed use of \\K in lookaround",
+                Pcre2ErrorKind.DisallowedLookaroundBackslashK);
+        }
     }
 
     private static bool IsAnyCaptureSet(
@@ -4051,6 +4263,8 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureOpenStarts,
         Span<int> captureOwners,
         Span<int> captureOpenOwners,
+        ref int reportedStartOffsetInBytes,
+        ref bool matchBoundaryWasReset,
         ref int currentMarkId,
         ref int currentMarkPosition,
         ref Pcre2ResourceBudget budget,
@@ -4082,6 +4296,8 @@ internal static class Pcre2BacktrackingRunner
                 ref markTrail,
                 ref currentMarkId,
                 ref currentMarkPosition);
+            reportedStartOffsetInBytes = frame.ReportedStartOffsetInBytes;
+            matchBoundaryWasReset = frame.MatchBoundaryWasReset;
             if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
             {
                 SetRepeat(

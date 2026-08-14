@@ -1278,11 +1278,13 @@ internal readonly record struct Pcre2CharacterMatch(
     bool Success,
     int StartOffsetInBytes,
     int EndOffsetInBytes,
-    int ConsumedEndOffsetInBytes)
+    int ConsumedStartOffsetInBytes,
+    int ConsumedEndOffsetInBytes,
+    bool MatchBoundaryWasReset)
 {
     internal static Pcre2CharacterMatch NoMatch => default;
 
-    internal static Pcre2CharacterMatch Create(int start, int end) => new(true, start, end, end);
+    internal static Pcre2CharacterMatch Create(int start, int end) => new(true, start, end, start, end, false);
 }
 
 internal static class Pcre2CharacterRunner

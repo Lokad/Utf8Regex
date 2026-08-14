@@ -585,7 +585,7 @@
     "Operation": "Replace",
     "Expected": {
       "Outcome": "FullMatch",
-      "ReplacementText": "pear sauce, lemon blackberry",
+      "ReplacementText": "pear sauce, orange sauce, strawberry sauce,",
       "Groups": [],
       "NameEntries": []
     },
