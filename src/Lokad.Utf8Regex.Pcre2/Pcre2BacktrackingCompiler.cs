@@ -60,6 +60,8 @@ internal enum Pcre2BacktrackingNodeKind : byte
     Capture = 5,
     Backreference = 6,
     Assertion = 7,
+    SubroutineCall = 8,
+    Conditional = 9,
 }
 
 internal sealed class Pcre2EmptyBacktrackingNode : IPcre2BacktrackingNode
@@ -205,6 +207,55 @@ internal sealed class Pcre2AssertionBacktrackingNode : IPcre2BacktrackingNode
     internal IPcre2BacktrackingNode Body { get; }
 }
 
+internal sealed class Pcre2SubroutineCallBacktrackingNode : IPcre2BacktrackingNode
+{
+    internal Pcre2SubroutineCallBacktrackingNode(Pcre2BackreferenceTarget target)
+    {
+        Target = target;
+    }
+
+    public Pcre2BacktrackingNodeKind Kind => Pcre2BacktrackingNodeKind.SubroutineCall;
+
+    internal Pcre2BackreferenceTarget Target { get; }
+}
+
+internal enum Pcre2BacktrackingConditionKind : byte
+{
+    CaptureSet = 0,
+    Assertion = 1,
+    RecursionAny = 2,
+    RecursionSlot = 3,
+}
+
+internal sealed class Pcre2ConditionalBacktrackingNode : IPcre2BacktrackingNode
+{
+    internal Pcre2ConditionalBacktrackingNode(
+        Pcre2BacktrackingConditionKind conditionKind,
+        Pcre2BackreferenceTarget target,
+        Pcre2AssertionBacktrackingNode? assertion,
+        IPcre2BacktrackingNode yesBranch,
+        IPcre2BacktrackingNode noBranch)
+    {
+        ConditionKind = conditionKind;
+        Target = target;
+        Assertion = assertion;
+        YesBranch = yesBranch;
+        NoBranch = noBranch;
+    }
+
+    public Pcre2BacktrackingNodeKind Kind => Pcre2BacktrackingNodeKind.Conditional;
+
+    internal Pcre2BacktrackingConditionKind ConditionKind { get; }
+
+    internal Pcre2BackreferenceTarget Target { get; }
+
+    internal Pcre2AssertionBacktrackingNode? Assertion { get; }
+
+    internal IPcre2BacktrackingNode YesBranch { get; }
+
+    internal IPcre2BacktrackingNode NoBranch { get; }
+}
+
 internal enum Pcre2RepeatPreference : byte
 {
     Greedy = 0,
@@ -221,6 +272,33 @@ internal sealed class Pcre2BackreferenceSlotSet
     internal int[] Slots { get; }
 }
 
+internal sealed class Pcre2BacktrackingCondition
+{
+    internal Pcre2BacktrackingCondition(
+        Pcre2BacktrackingConditionKind kind,
+        int[] captureSlots,
+        int assertionProgramId,
+        Pcre2AssertionKind assertionKind,
+        int subroutineSlot)
+    {
+        Kind = kind;
+        CaptureSlots = captureSlots;
+        AssertionProgramId = assertionProgramId;
+        AssertionKind = assertionKind;
+        SubroutineSlot = subroutineSlot;
+    }
+
+    internal Pcre2BacktrackingConditionKind Kind { get; }
+
+    internal int[] CaptureSlots { get; }
+
+    internal int AssertionProgramId { get; }
+
+    internal Pcre2AssertionKind AssertionKind { get; }
+
+    internal int SubroutineSlot { get; }
+}
+
 internal sealed class Pcre2BacktrackingProgram
 {
     internal Pcre2BacktrackingProgram(
@@ -228,10 +306,12 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2CompileRequest request,
         int repeatCount,
         int captureSlotCount,
-        bool hasBackreferences,
+        bool requiresCaptureState,
         bool hasCaptureWrites,
         Pcre2BacktrackingProgram[] assertionPrograms,
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
+        Pcre2BacktrackingCondition[] conditions,
+        int[] subroutineTargets,
         string[] groupNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
@@ -243,10 +323,12 @@ internal sealed class Pcre2BacktrackingProgram
         Request = request;
         RepeatCount = repeatCount;
         CaptureSlotCount = captureSlotCount;
-        HasBackreferences = hasBackreferences;
+        RequiresCaptureState = requiresCaptureState;
         HasCaptureWrites = hasCaptureWrites;
         AssertionPrograms = assertionPrograms;
         BackreferenceSlotSets = backreferenceSlotSets;
+        Conditions = conditions;
+        SubroutineTargets = subroutineTargets;
         GroupNames = groupNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
@@ -263,13 +345,17 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal int CaptureSlotCount { get; }
 
-    internal bool HasBackreferences { get; }
+    internal bool RequiresCaptureState { get; }
 
     internal bool HasCaptureWrites { get; }
 
     internal Pcre2BacktrackingProgram[] AssertionPrograms { get; }
 
     internal Pcre2BackreferenceSlotSet[] BackreferenceSlotSets { get; }
+
+    internal Pcre2BacktrackingCondition[] Conditions { get; }
+
+    internal int[] SubroutineTargets { get; }
 
     internal string[] GroupNames { get; }
 
@@ -298,6 +384,9 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     Backreference = 9,
     Assertion = 10,
     BackreferenceSlotSet = 11,
+    SubroutineCall = 12,
+    SubroutineReturn = 13,
+    Conditional = 14,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -343,6 +432,10 @@ internal readonly struct Pcre2BacktrackingInstruction
     internal Pcre2AssertionKind AssertionKind => (Pcre2AssertionKind)Minimum;
 
     internal int BackreferenceSlotSetId => RepeatId;
+
+    internal int SubroutineSlot => RepeatId;
+
+    internal int ConditionId => RepeatId;
 
     internal int Maximum { get; }
 
@@ -391,6 +484,18 @@ internal readonly struct Pcre2BacktrackingInstruction
         int backreferenceSlotSetId,
         Pcre2CharacterOptions options) =>
         new(Pcre2BacktrackingInstructionKind.BackreferenceSlotSet, default, 0, 0, backreferenceSlotSetId, (int)options, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateSubroutineCall(int slot) =>
+        new(Pcre2BacktrackingInstructionKind.SubroutineCall, default, 0, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateSubroutineReturn() =>
+        new(Pcre2BacktrackingInstructionKind.SubroutineReturn, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateConditional(
+        int conditionId,
+        int yesTarget,
+        int noTarget) =>
+        new(Pcre2BacktrackingInstructionKind.Conditional, default, yesTarget, noTarget, conditionId, 0, 0, Pcre2RepeatPreference.Greedy);
 }
 
 internal static class Pcre2BacktrackingCompiler
@@ -405,7 +510,12 @@ internal static class Pcre2BacktrackingCompiler
 
         var nameEntries = parser.NameEntries;
         var groupNames = parser.GroupNames;
-        var lowerer = new Pcre2BacktrackingLowerer(parser.CaptureCount, nameEntries, request, groupNames);
+        var lowerer = new Pcre2BacktrackingLowerer(
+            parser.CaptureCount,
+            nameEntries,
+            parser.CaptureDefinitions,
+            request,
+            groupNames);
         var program = lowerer.Lower(root);
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
@@ -426,6 +536,7 @@ internal sealed class Pcre2BacktrackingParser
     private int _captureCount;
     private readonly List<Pcre2NameEntry> _nameEntries = [];
     private readonly Dictionary<int, string> _captureSlotNames = [];
+    private readonly Dictionary<int, Pcre2CaptureBacktrackingNode> _captureDefinitions = [];
 
     internal Pcre2BacktrackingParser(Pcre2CompileRequest request)
     {
@@ -440,6 +551,8 @@ internal sealed class Pcre2BacktrackingParser
     internal int CaptureCount => _captureCount;
 
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
+
+    internal IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> CaptureDefinitions => _captureDefinitions;
 
     internal string[] GroupNames
     {
@@ -549,6 +662,16 @@ internal sealed class Pcre2BacktrackingParser
 
         if (_pattern[_offset] == '(')
         {
+            if (TryParseConditional(out node))
+            {
+                return true;
+            }
+
+            if (TryParseSubroutineCall(out node))
+            {
+                return true;
+            }
+
             if (_pattern.AsSpan(_offset).StartsWith("(?|", StringComparison.Ordinal))
             {
                 return TryParseBranchReset(out node);
@@ -665,6 +788,7 @@ internal sealed class Pcre2BacktrackingParser
                 _ungreedy = outerUngreedy;
                 _noAutoCapture = outerNoAutoCapture;
                 node = new Pcre2CaptureBacktrackingNode(slot, captureName, body);
+                _captureDefinitions.TryAdd(slot, (Pcre2CaptureBacktrackingNode)node);
                 return true;
             }
 
@@ -1135,6 +1259,265 @@ internal sealed class Pcre2BacktrackingParser
         return _offset > start;
     }
 
+    private bool TryParseSubroutineCall(out IPcre2BacktrackingNode node)
+    {
+        node = Pcre2EmptyBacktrackingNode.Instance;
+        if (_pattern.AsSpan(_offset).StartsWith("(?R)", StringComparison.Ordinal) ||
+            _pattern.AsSpan(_offset).StartsWith("(?0)", StringComparison.Ordinal))
+        {
+            _offset += 4;
+            node = new Pcre2SubroutineCallBacktrackingNode(
+                new Pcre2BackreferenceTarget(Pcre2BackreferenceTargetKind.Absolute, 0, string.Empty, _captureCount));
+            return true;
+        }
+
+        if (_pattern.AsSpan(_offset).StartsWith("(?&", StringComparison.Ordinal) ||
+            _pattern.AsSpan(_offset).StartsWith("(?P>", StringComparison.Ordinal))
+        {
+            var nameStart = _offset + (_pattern[_offset + 2] == '&' ? 3 : 4);
+            var nameEnd = _pattern.IndexOf(')', nameStart);
+            if (nameEnd <= nameStart || !IsValidCaptureName(_pattern.AsSpan(nameStart, nameEnd - nameStart)))
+            {
+                return false;
+            }
+
+            var name = _pattern[nameStart..nameEnd];
+            _offset = nameEnd + 1;
+            node = new Pcre2SubroutineCallBacktrackingNode(
+                new Pcre2BackreferenceTarget(Pcre2BackreferenceTargetKind.Named, 0, name, _captureCount));
+            return true;
+        }
+
+        if (!_pattern.AsSpan(_offset).StartsWith("(?", StringComparison.Ordinal) ||
+            _offset + 3 >= _pattern.Length ||
+            _pattern[_offset + 2] is not ('+' or '-' or >= '1' and <= '9'))
+        {
+            return false;
+        }
+
+        var cursor = _offset + 2;
+        if (!TryReadReferenceNumber(ref cursor, true, out var number) ||
+            cursor >= _pattern.Length ||
+            _pattern[cursor] != ')')
+        {
+            return false;
+        }
+
+        var kind = _pattern[_offset + 2] is '+' or '-'
+            ? Pcre2BackreferenceTargetKind.Relative
+            : Pcre2BackreferenceTargetKind.Absolute;
+        _offset = cursor + 1;
+        node = new Pcre2SubroutineCallBacktrackingNode(
+            new Pcre2BackreferenceTarget(kind, number, string.Empty, _captureCount));
+        return true;
+    }
+
+    private bool TryParseConditional(out IPcre2BacktrackingNode node)
+    {
+        node = Pcre2EmptyBacktrackingNode.Instance;
+        if (!_pattern.AsSpan(_offset).StartsWith("(?(", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _sawControlFlow = true;
+        _offset += 3;
+        if (_pattern.AsSpan(_offset).StartsWith("DEFINE)", StringComparison.Ordinal))
+        {
+            _offset += 7;
+            if (!TryParseAlternation(true, out _) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+            {
+                return false;
+            }
+
+            _offset++;
+            return true;
+        }
+
+        var conditionKind = Pcre2BacktrackingConditionKind.CaptureSet;
+        var target = default(Pcre2BackreferenceTarget);
+        Pcre2AssertionBacktrackingNode? assertion = null;
+        if (TryParseConditionalAssertion(out assertion))
+        {
+            conditionKind = Pcre2BacktrackingConditionKind.Assertion;
+        }
+        else if (!TryParseConditionalReference(out conditionKind, out target))
+        {
+            return false;
+        }
+
+        var outerOptions = _options;
+        var outerUngreedy = _ungreedy;
+        var outerNoAutoCapture = _noAutoCapture;
+        if (!TryParseSequence(true, out var yesBranch))
+        {
+            return false;
+        }
+
+        IPcre2BacktrackingNode noBranch = Pcre2EmptyBacktrackingNode.Instance;
+        if (_offset < _pattern.Length && _pattern[_offset] == '|')
+        {
+            _offset++;
+            if (!TryParseSequence(true, out noBranch))
+            {
+                return false;
+            }
+        }
+
+        if (_offset >= _pattern.Length || _pattern[_offset] != ')')
+        {
+            return false;
+        }
+
+        _offset++;
+        _options = outerOptions;
+        _ungreedy = outerUngreedy;
+        _noAutoCapture = outerNoAutoCapture;
+        node = new Pcre2ConditionalBacktrackingNode(
+            conditionKind,
+            target,
+            assertion,
+            yesBranch,
+            noBranch);
+        return true;
+    }
+
+    private bool TryParseConditionalAssertion(out Pcre2AssertionBacktrackingNode? assertion)
+    {
+        assertion = null;
+        Pcre2AssertionKind kind;
+        var openingLength = 0;
+        if (_pattern.AsSpan(_offset).StartsWith("?<=", StringComparison.Ordinal))
+        {
+            kind = Pcre2AssertionKind.PositiveLookbehind;
+            openingLength = 3;
+        }
+        else if (_pattern.AsSpan(_offset).StartsWith("?<!", StringComparison.Ordinal))
+        {
+            kind = Pcre2AssertionKind.NegativeLookbehind;
+            openingLength = 3;
+        }
+        else if (_pattern.AsSpan(_offset).StartsWith("?=", StringComparison.Ordinal))
+        {
+            kind = Pcre2AssertionKind.PositiveLookahead;
+            openingLength = 2;
+        }
+        else if (_pattern.AsSpan(_offset).StartsWith("?!", StringComparison.Ordinal))
+        {
+            kind = Pcre2AssertionKind.NegativeLookahead;
+            openingLength = 2;
+        }
+        else
+        {
+            return false;
+        }
+
+        var outerOptions = _options;
+        var outerUngreedy = _ungreedy;
+        var outerNoAutoCapture = _noAutoCapture;
+        _offset += openingLength;
+        if (!TryParseAlternation(true, out var body) || _offset >= _pattern.Length || _pattern[_offset] != ')')
+        {
+            _options = outerOptions;
+            _ungreedy = outerUngreedy;
+            _noAutoCapture = outerNoAutoCapture;
+            return false;
+        }
+
+        _offset++;
+        _options = outerOptions;
+        _ungreedy = outerUngreedy;
+        _noAutoCapture = outerNoAutoCapture;
+        assertion = new Pcre2AssertionBacktrackingNode(kind, body);
+        return true;
+    }
+
+    private bool TryParseConditionalReference(
+        out Pcre2BacktrackingConditionKind conditionKind,
+        out Pcre2BackreferenceTarget target)
+    {
+        conditionKind = Pcre2BacktrackingConditionKind.CaptureSet;
+        target = default;
+        var contentStart = _offset;
+        var contentEnd = _pattern.IndexOf(')', contentStart);
+        if (contentEnd <= contentStart)
+        {
+            return false;
+        }
+
+        var content = _pattern.AsSpan(contentStart, contentEnd - contentStart);
+        if (content[0] == 'R')
+        {
+            if (content.Length == 1)
+            {
+                conditionKind = Pcre2BacktrackingConditionKind.RecursionAny;
+                _offset = contentEnd + 1;
+                return true;
+            }
+
+            var recursionTarget = content[1..];
+            if (recursionTarget[0] == '&')
+            {
+                recursionTarget = recursionTarget[1..];
+                if (!IsValidCaptureName(recursionTarget))
+                {
+                    return false;
+                }
+
+                target = new Pcre2BackreferenceTarget(
+                    Pcre2BackreferenceTargetKind.Named,
+                    0,
+                    recursionTarget.ToString(),
+                    _captureCount);
+            }
+            else if (TryParseSignedReference(recursionTarget, out var recursionNumber) && recursionNumber > 0)
+            {
+                target = new Pcre2BackreferenceTarget(
+                    Pcre2BackreferenceTargetKind.Absolute,
+                    recursionNumber,
+                    string.Empty,
+                    _captureCount);
+            }
+            else
+            {
+                return false;
+            }
+
+            conditionKind = Pcre2BacktrackingConditionKind.RecursionSlot;
+            _offset = contentEnd + 1;
+            return true;
+        }
+
+        if (content[0] == '<' && content[^1] == '>' || content[0] == '\'' && content[^1] == '\'')
+        {
+            content = content[1..^1];
+        }
+
+        if (TryParseSignedReference(content, out var number) && number > 0)
+        {
+            target = new Pcre2BackreferenceTarget(
+                Pcre2BackreferenceTargetKind.Absolute,
+                number,
+                string.Empty,
+                _captureCount);
+        }
+        else if (IsValidCaptureName(content))
+        {
+            target = new Pcre2BackreferenceTarget(
+                Pcre2BackreferenceTargetKind.Named,
+                0,
+                content.ToString(),
+                _captureCount);
+        }
+        else
+        {
+            return false;
+        }
+
+        _offset = contentEnd + 1;
+        return true;
+    }
+
     private bool TryParseBranchReset(out IPcre2BacktrackingNode node)
     {
         _sawControlFlow = true;
@@ -1453,23 +1836,28 @@ internal sealed class Pcre2BacktrackingLowerer
     private readonly List<Pcre2BacktrackingInstruction> _instructions = [];
     private readonly List<Pcre2BacktrackingProgram> _assertionPrograms = [];
     private readonly List<Pcre2BackreferenceSlotSet> _backreferenceSlotSets = [];
+    private readonly List<Pcre2BacktrackingCondition> _conditions = [];
     private readonly int _captureCount;
     private readonly Pcre2NameEntry[] _nameEntries;
+    private readonly IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> _captureDefinitions;
     private readonly Dictionary<string, int[]> _nameSlots;
     private readonly Pcre2CompileRequest _request;
     private readonly string[] _groupNames;
     private int _repeatCount;
-    private bool _hasBackreferences;
+    private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
+    private bool _hasSubroutineCalls;
 
     internal Pcre2BacktrackingLowerer(
         int captureCount,
         Pcre2NameEntry[] nameEntries,
+        IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
         Pcre2CompileRequest request,
         string[] groupNames)
     {
         _captureCount = captureCount;
         _nameEntries = nameEntries;
+        _captureDefinitions = captureDefinitions;
         _nameSlots = nameEntries
             .GroupBy(static entry => entry.Name, StringComparer.Ordinal)
             .ToDictionary(
@@ -1484,15 +1872,33 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         EmitNode(root);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
+        var subroutineTargets = Array.Empty<int>();
+        if (_hasSubroutineCalls)
+        {
+            subroutineTargets = new int[_captureCount + 1];
+            subroutineTargets.AsSpan().Fill(-1);
+            subroutineTargets[0] = _instructions.Count;
+            EmitNode(root);
+            _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+            foreach (var definition in _captureDefinitions.OrderBy(static pair => pair.Key))
+            {
+                subroutineTargets[definition.Key] = _instructions.Count;
+                EmitNode(definition.Value);
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+            }
+        }
+
         return new Pcre2BacktrackingProgram(
             [.. _instructions],
             _request,
             _repeatCount,
             _captureCount + 1,
-            _hasBackreferences,
+            _requiresCaptureState,
             _hasCaptureWrites,
             [.. _assertionPrograms],
             [.. _backreferenceSlotSets],
+            [.. _conditions],
+            subroutineTargets,
             _groupNames,
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
@@ -1529,23 +1935,32 @@ internal sealed class Pcre2BacktrackingLowerer
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
                 return;
             case Pcre2BackreferenceBacktrackingNode backreference:
-                _hasBackreferences = true;
+                _requiresCaptureState = true;
                 EmitBackreference(backreference);
                 return;
             case Pcre2AssertionBacktrackingNode assertion:
                 var assertionLowerer = new Pcre2BacktrackingLowerer(
                     _captureCount,
                     _nameEntries,
+                    _captureDefinitions,
                     _request,
                     _groupNames);
                 var assertionProgramId = _assertionPrograms.Count;
                 var assertionProgram = assertionLowerer.Lower(assertion.Body);
                 _assertionPrograms.Add(assertionProgram);
-                _hasBackreferences |= assertionProgram.HasBackreferences;
+                _requiresCaptureState |= assertionProgram.RequiresCaptureState;
                 _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateAssertion(
                     assertionProgramId,
                     assertion.AssertionKind));
+                return;
+            case Pcre2SubroutineCallBacktrackingNode subroutineCall:
+                _hasSubroutineCalls = true;
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(
+                    ResolveSubroutine(subroutineCall.Target)));
+                return;
+            case Pcre2ConditionalBacktrackingNode conditional:
+                EmitConditional(conditional);
                 return;
             default:
                 throw new InvalidOperationException("The PCRE2 backtracking syntax node is not lowerable.");
@@ -1593,6 +2008,95 @@ internal sealed class Pcre2BacktrackingLowerer
             repeat.Minimum,
             repeat.Maximum,
             repeat.Preference);
+    }
+
+    private void EmitConditional(Pcre2ConditionalBacktrackingNode conditional)
+    {
+        var conditionId = _conditions.Count;
+        _conditions.Add(CreateCondition(conditional));
+        var conditionIndex = _instructions.Count;
+        _instructions.Add(default);
+        var yesTarget = _instructions.Count;
+        EmitNode(conditional.YesBranch);
+        var exitJump = _instructions.Count;
+        _instructions.Add(default);
+        var noTarget = _instructions.Count;
+        EmitNode(conditional.NoBranch);
+        var exitTarget = _instructions.Count;
+        _instructions[conditionIndex] = Pcre2BacktrackingInstruction.CreateConditional(
+            conditionId,
+            yesTarget,
+            noTarget);
+        _instructions[exitJump] = Pcre2BacktrackingInstruction.CreateJump(exitTarget);
+    }
+
+    private Pcre2BacktrackingCondition CreateCondition(Pcre2ConditionalBacktrackingNode conditional)
+    {
+        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.Assertion)
+        {
+            var assertion = conditional.Assertion ??
+                throw new InvalidOperationException("A PCRE2 assertion condition requires an assertion body.");
+            var assertionLowerer = new Pcre2BacktrackingLowerer(
+                _captureCount,
+                _nameEntries,
+                _captureDefinitions,
+                _request,
+                _groupNames);
+            var assertionProgramId = _assertionPrograms.Count;
+            var assertionProgram = assertionLowerer.Lower(assertion.Body);
+            _assertionPrograms.Add(assertionProgram);
+            _requiresCaptureState |= assertionProgram.RequiresCaptureState;
+            _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
+            return new Pcre2BacktrackingCondition(
+                conditional.ConditionKind,
+                [],
+                assertionProgramId,
+                assertion.AssertionKind,
+                0);
+        }
+
+        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.RecursionAny)
+        {
+            return new Pcre2BacktrackingCondition(
+                conditional.ConditionKind,
+                [],
+                0,
+                default,
+                0);
+        }
+
+        if (conditional.ConditionKind == Pcre2BacktrackingConditionKind.RecursionSlot)
+        {
+            return new Pcre2BacktrackingCondition(
+                conditional.ConditionKind,
+                [],
+                0,
+                default,
+                ResolveSubroutine(conditional.Target));
+        }
+
+        var captureSlots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
+            ? ResolveNamedSlots(conditional.Target.Name)
+            : [ResolveBackreference(conditional.Target)];
+        _requiresCaptureState = true;
+        return new Pcre2BacktrackingCondition(
+            conditional.ConditionKind,
+            captureSlots,
+            0,
+            default,
+            0);
+    }
+
+    private int[] ResolveNamedSlots(string name)
+    {
+        if (!_nameSlots.TryGetValue(name, out var slots))
+        {
+            throw new Pcre2CompileException(
+                "Reference to a non-existent capturing group.",
+                Pcre2ErrorKind.UnrecognizedEscape);
+        }
+
+        return slots;
     }
 
     private int ResolveBackreference(Pcre2BackreferenceTarget target)
@@ -1643,6 +2147,28 @@ internal sealed class Pcre2BacktrackingLowerer
             slotSetId,
             backreference.Options));
     }
+
+    private int ResolveSubroutine(Pcre2BackreferenceTarget target)
+    {
+        var slot = target.Kind switch
+        {
+            Pcre2BackreferenceTargetKind.Absolute => target.Number,
+            Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
+                target.CaptureCountAtReference + target.Number,
+            Pcre2BackreferenceTargetKind.Relative =>
+                target.CaptureCountAtReference + target.Number + 1,
+            Pcre2BackreferenceTargetKind.Named when _nameSlots.TryGetValue(target.Name, out var slots) => slots[0],
+            _ => -1,
+        };
+        if (slot < 0 || slot > _captureCount || slot > 0 && !_captureDefinitions.ContainsKey(slot))
+        {
+            throw new Pcre2CompileException(
+                "Reference to a non-existent subroutine.",
+                Pcre2ErrorKind.InvalidAfterParensQuery);
+        }
+
+        return slot;
+    }
 }
 
 internal static class Pcre2BacktrackingAnalysis
@@ -1659,6 +2185,10 @@ internal static class Pcre2BacktrackingAnalysis
             Pcre2CaptureBacktrackingNode capture => GetMinimumByteLength(capture.Body),
             Pcre2BackreferenceBacktrackingNode => 0,
             Pcre2AssertionBacktrackingNode => 0,
+            Pcre2SubroutineCallBacktrackingNode => 0,
+            Pcre2ConditionalBacktrackingNode conditional => Math.Min(
+                GetMinimumByteLength(conditional.YesBranch),
+                GetMinimumByteLength(conditional.NoBranch)),
             _ => 0,
         };
     }
@@ -1675,6 +2205,10 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CaptureBacktrackingNode capture => GetMinimumScalarLength(capture.Body),
         Pcre2BackreferenceBacktrackingNode => 0,
         Pcre2AssertionBacktrackingNode => 0,
+        Pcre2SubroutineCallBacktrackingNode => 0,
+        Pcre2ConditionalBacktrackingNode conditional => Math.Min(
+            GetMinimumScalarLength(conditional.YesBranch),
+            GetMinimumScalarLength(conditional.NoBranch)),
         _ => 0,
     };
 
@@ -1692,6 +2226,10 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CaptureBacktrackingNode capture => GetMaximumScalarLength(capture.Body),
         Pcre2BackreferenceBacktrackingNode => int.MaxValue,
         Pcre2AssertionBacktrackingNode => 0,
+        Pcre2SubroutineCallBacktrackingNode => int.MaxValue,
+        Pcre2ConditionalBacktrackingNode conditional => Math.Max(
+            GetMaximumScalarLength(conditional.YesBranch),
+            GetMaximumScalarLength(conditional.NoBranch)),
         _ => int.MaxValue,
     };
 
@@ -1766,6 +2304,15 @@ internal static class Pcre2BacktrackingAnalysis
                 return TryGetLeadingAsciiByte(capture.Body, out leading);
             case Pcre2AssertionBacktrackingNode:
                 break;
+            case Pcre2ConditionalBacktrackingNode conditional:
+                if (TryGetLeadingAsciiByte(conditional.YesBranch, out var yesLeading) &&
+                    TryGetLeadingAsciiByte(conditional.NoBranch, out var noLeading) &&
+                    yesLeading == noLeading)
+                {
+                    leading = yesLeading;
+                    return true;
+                }
+                break;
         }
 
         leading = 0;
@@ -1789,6 +2336,9 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CaptureBacktrackingNode capture => CanConsume(capture.Body),
         Pcre2BackreferenceBacktrackingNode => true,
         Pcre2AssertionBacktrackingNode => false,
+        Pcre2SubroutineCallBacktrackingNode => true,
+        Pcre2ConditionalBacktrackingNode conditional =>
+            CanConsume(conditional.YesBranch) || CanConsume(conditional.NoBranch),
         _ => true,
     };
 
@@ -1812,6 +2362,7 @@ internal readonly record struct Pcre2BacktrackingFrame(
     int InputOffsetInBytes,
     int RepeatCheckpoint,
     int CaptureCheckpoint,
+    int CallCheckpoint,
     Pcre2BacktrackingResumeAction ResumeAction,
     int RepeatId,
     int RepeatCount,
@@ -1826,7 +2377,34 @@ internal readonly record struct Pcre2CaptureMutation(
     int Slot,
     int PreviousStart,
     int PreviousEnd,
-    int PreviousOpenStart);
+    int PreviousOpenStart,
+    int PreviousOwner,
+    int PreviousOpenOwner);
+
+internal readonly record struct Pcre2SubroutineCallFrame(
+    int ReturnInstruction,
+    int SubroutineSlot,
+    int RepeatCheckpoint,
+    int CaptureCheckpoint);
+
+internal readonly record struct Pcre2SubroutineCaptureSnapshot(
+    int Start,
+    int End,
+    int OpenStart,
+    int Owner,
+    int OpenOwner);
+
+internal readonly record struct Pcre2SubroutineRepeatSnapshot(int Count, int Position);
+
+internal enum Pcre2SubroutineCallMutationKind : byte
+{
+    Pushed = 0,
+    Popped = 1,
+}
+
+internal readonly record struct Pcre2SubroutineCallMutation(
+    Pcre2SubroutineCallMutationKind Kind,
+    Pcre2SubroutineCallFrame Frame);
 
 internal readonly record struct Pcre2CaptureByteRange(bool Success, int StartOffsetInBytes, int EndOffsetInBytes);
 
@@ -1954,9 +2532,11 @@ internal static class Pcre2BacktrackingRunner
         var frames = new Utf8PooledStateStack<Pcre2BacktrackingFrame>(frameLimit);
         var repeatMutations = new Utf8PooledStateStack<Pcre2RepeatMutation>(int.MaxValue);
         var captureMutations = new Utf8PooledStateStack<Pcre2CaptureMutation>(int.MaxValue);
+        var subroutineCalls = new Utf8PooledStateStack<Pcre2SubroutineCallFrame>(frameLimit);
+        var subroutineCallMutations = new Utf8PooledStateStack<Pcre2SubroutineCallMutation>(int.MaxValue);
         var rentedCounts = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
         var rentedPositions = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
-        var needsCaptureState = program.HasBackreferences ||
+        var needsCaptureState = program.RequiresCaptureState ||
             captureMaterialization == Pcre2CaptureMaterialization.FinalSlots ||
             !initialCaptureStarts.IsEmpty;
         var rentedCaptureStarts = !needsCaptureState || program.CaptureSlotCount <= 1
@@ -1968,6 +2548,30 @@ internal static class Pcre2BacktrackingRunner
         var rentedCaptureOpenStarts = !needsCaptureState || program.CaptureSlotCount <= 1
             ? null
             : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
+        var rentedCaptureOwners = !needsCaptureState || program.CaptureSlotCount <= 1
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
+        var rentedCaptureOpenOwners = !needsCaptureState || program.CaptureSlotCount <= 1
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
+        var rentedCaptureRestoreGenerations = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
+        var rentedCaptureRestoreSlots = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
+        var rentedCaptureRestoreSnapshots = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
+            ? null
+            : ArrayPool<Pcre2SubroutineCaptureSnapshot>.Shared.Rent(program.CaptureSlotCount);
+        var rentedRepeatRestoreGenerations = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.RepeatCount);
+        var rentedRepeatRestoreIds = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
+            ? null
+            : ArrayPool<int>.Shared.Rent(program.RepeatCount);
+        var rentedRepeatRestoreSnapshots = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
+            ? null
+            : ArrayPool<Pcre2SubroutineRepeatSnapshot>.Shared.Rent(program.RepeatCount);
         var counts = rentedCounts is null ? Span<int>.Empty : rentedCounts.AsSpan(0, program.RepeatCount);
         var positions = rentedPositions is null ? Span<int>.Empty : rentedPositions.AsSpan(0, program.RepeatCount);
         var captureStarts = rentedCaptureStarts is null
@@ -1979,24 +2583,62 @@ internal static class Pcre2BacktrackingRunner
         var captureOpenStarts = rentedCaptureOpenStarts is null
             ? Span<int>.Empty
             : rentedCaptureOpenStarts.AsSpan(0, program.CaptureSlotCount);
+        var captureOwners = rentedCaptureOwners is null
+            ? Span<int>.Empty
+            : rentedCaptureOwners.AsSpan(0, program.CaptureSlotCount);
+        var captureOpenOwners = rentedCaptureOpenOwners is null
+            ? Span<int>.Empty
+            : rentedCaptureOpenOwners.AsSpan(0, program.CaptureSlotCount);
+        var captureRestoreGenerations = rentedCaptureRestoreGenerations is null
+            ? Span<int>.Empty
+            : rentedCaptureRestoreGenerations.AsSpan(0, program.CaptureSlotCount);
+        var captureRestoreSlots = rentedCaptureRestoreSlots is null
+            ? Span<int>.Empty
+            : rentedCaptureRestoreSlots.AsSpan(0, program.CaptureSlotCount);
+        var captureRestoreSnapshots = rentedCaptureRestoreSnapshots is null
+            ? Span<Pcre2SubroutineCaptureSnapshot>.Empty
+            : rentedCaptureRestoreSnapshots.AsSpan(0, program.CaptureSlotCount);
+        var repeatRestoreGenerations = rentedRepeatRestoreGenerations is null
+            ? Span<int>.Empty
+            : rentedRepeatRestoreGenerations.AsSpan(0, program.RepeatCount);
+        var repeatRestoreIds = rentedRepeatRestoreIds is null
+            ? Span<int>.Empty
+            : rentedRepeatRestoreIds.AsSpan(0, program.RepeatCount);
+        var repeatRestoreSnapshots = rentedRepeatRestoreSnapshots is null
+            ? Span<Pcre2SubroutineRepeatSnapshot>.Empty
+            : rentedRepeatRestoreSnapshots.AsSpan(0, program.RepeatCount);
         counts.Fill(-1);
         positions.Fill(-1);
         captureStarts.Fill(-1);
         captureEnds.Fill(-1);
         captureOpenStarts.Fill(-1);
+        captureOwners.Fill(-1);
+        captureOpenOwners.Fill(-1);
+        captureRestoreGenerations.Clear();
+        repeatRestoreGenerations.Clear();
         if (!initialCaptureStarts.IsEmpty)
         {
             initialCaptureStarts.CopyTo(captureStarts);
             initialCaptureEnds.CopyTo(captureEnds);
+            for (var slot = 1; slot < captureStarts.Length; slot++)
+            {
+                if (captureStarts[slot] >= 0)
+                {
+                    captureOwners[slot] = 0;
+                }
+            }
         }
         budget.ChargeHeap(
             (ulong)program.RepeatCount * 8UL +
-            (ulong)captureStarts.Length * 12UL);
+            (ulong)captureStarts.Length * 20UL +
+            (ulong)captureRestoreSnapshots.Length * 28UL +
+            (ulong)repeatRestoreSnapshots.Length * 16UL);
 
         try
         {
             var instructionIndex = 0;
             var inputIndex = candidate;
+            var subroutineRestoreGeneration = 0;
             while (true)
             {
                 budget.ChargeBacktracking();
@@ -2026,15 +2668,18 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 repeatMutations.Count,
                                 captureMutations.Count,
+                                subroutineCallMutations.Count,
                                 Pcre2BacktrackingResumeAction.None,
                                 0,
                                 0,
                                 0),
                             repeatMutations.Count,
                             captureMutations.Count,
+                            subroutineCallMutations.Count,
                             program.RepeatCount,
                             captureStarts.Length,
                             depthBase,
+                            subroutineCalls.Count,
                             ref budget);
                         instructionIndex = instruction.PrimaryTarget;
                         continue;
@@ -2066,15 +2711,18 @@ internal static class Pcre2BacktrackingRunner
                                             inputIndex,
                                             repeatMutations.Count,
                                             captureMutations.Count,
+                                            subroutineCallMutations.Count,
                                             Pcre2BacktrackingResumeAction.None,
                                             0,
                                             0,
                                             0),
                                         repeatMutations.Count,
                                         captureMutations.Count,
+                                        subroutineCallMutations.Count,
                                         program.RepeatCount,
                                         captureStarts.Length,
                                         depthBase,
+                                        subroutineCalls.Count,
                                         ref budget);
                                 }
                                 else
@@ -2086,15 +2734,18 @@ internal static class Pcre2BacktrackingRunner
                                             inputIndex,
                                             repeatMutations.Count,
                                             captureMutations.Count,
+                                            subroutineCallMutations.Count,
                                             Pcre2BacktrackingResumeAction.EnterRepeat,
                                             repeatId,
                                             count + 1,
                                             inputIndex),
                                         repeatMutations.Count,
                                         captureMutations.Count,
+                                        subroutineCallMutations.Count,
                                         program.RepeatCount,
                                         captureStarts.Length,
                                         depthBase,
+                                        subroutineCalls.Count,
                                         ref budget);
                                     instructionIndex = instruction.SecondaryTarget;
                                     continue;
@@ -2125,14 +2776,27 @@ internal static class Pcre2BacktrackingRunner
                             continue;
                         }
 
+                        var startCaptureSlot = instruction.CaptureSlot;
+                        var currentCallDepth = subroutineCalls.Count;
+                        if (captureStarts[startCaptureSlot] >= 0 && captureOwners[startCaptureSlot] > currentCallDepth ||
+                            captureOpenStarts[startCaptureSlot] >= 0 && captureOpenOwners[startCaptureSlot] > currentCallDepth)
+                        {
+                            instructionIndex++;
+                            continue;
+                        }
+
                         SetCapture(
-                            instruction.CaptureSlot,
-                            captureStarts[instruction.CaptureSlot],
-                            captureEnds[instruction.CaptureSlot],
+                            startCaptureSlot,
+                            captureStarts[startCaptureSlot],
+                            captureEnds[startCaptureSlot],
                             inputIndex,
+                            captureOwners[startCaptureSlot],
+                            currentCallDepth,
                             captureStarts,
                             captureEnds,
                             captureOpenStarts,
+                            captureOwners,
+                            captureOpenOwners,
                             ref captureMutations,
                             ref budget);
                         instructionIndex++;
@@ -2145,14 +2809,26 @@ internal static class Pcre2BacktrackingRunner
                             continue;
                         }
 
+                        var endCaptureSlot = instruction.CaptureSlot;
+                        if (captureOpenStarts[endCaptureSlot] < 0 ||
+                            captureOpenOwners[endCaptureSlot] != subroutineCalls.Count)
+                        {
+                            instructionIndex++;
+                            continue;
+                        }
+
                         SetCapture(
-                            instruction.CaptureSlot,
-                            captureOpenStarts[instruction.CaptureSlot],
+                            endCaptureSlot,
+                            captureOpenStarts[endCaptureSlot],
                             inputIndex,
+                            -1,
+                            captureOpenOwners[endCaptureSlot],
                             -1,
                             captureStarts,
                             captureEnds,
                             captureOpenStarts,
+                            captureOwners,
+                            captureOpenOwners,
                             ref captureMutations,
                             ref budget);
                         instructionIndex++;
@@ -2208,34 +2884,141 @@ internal static class Pcre2BacktrackingRunner
                                 matchOptions,
                                 captureStarts,
                                 captureEnds,
-                                depthBase + frames.Count + 1,
+                                depthBase + frames.Count + subroutineCalls.Count + 1,
                                 ref budget,
                                 out var assertionCaptures))
                         {
-                            for (var slot = 1; slot < assertionCaptures.Length; slot++)
-                            {
-                                var capture = assertionCaptures[slot];
-                                if (!capture.Success)
-                                {
-                                    continue;
-                                }
-
-                                SetCapture(
-                                    slot,
-                                    capture.StartOffsetInBytes,
-                                    capture.EndOffsetInBytes,
-                                    -1,
-                                    captureStarts,
-                                    captureEnds,
-                                    captureOpenStarts,
-                                    ref captureMutations,
-                                    ref budget);
-                            }
+                            MergeAssertionCaptures(
+                                assertionCaptures,
+                                subroutineCalls.Count,
+                                captureStarts,
+                                captureEnds,
+                                captureOpenStarts,
+                                captureOwners,
+                                captureOpenOwners,
+                                ref captureMutations,
+                                ref budget);
 
                             instructionIndex++;
                             continue;
                         }
                         break;
+
+                    case Pcre2BacktrackingInstructionKind.SubroutineCall:
+                        var subroutineSlot = instruction.SubroutineSlot;
+                        var subroutineTarget = (uint)subroutineSlot < (uint)program.SubroutineTargets.Length
+                            ? program.SubroutineTargets[subroutineSlot]
+                            : -1;
+                        if (subroutineTarget < 0)
+                        {
+                            break;
+                        }
+
+                        PushSubroutineCall(
+                            new Pcre2SubroutineCallFrame(
+                                instructionIndex + 1,
+                                subroutineSlot,
+                                repeatMutations.Count,
+                                captureMutations.Count),
+                            ref subroutineCalls,
+                            ref subroutineCallMutations,
+                            depthBase + frames.Count,
+                            ref budget);
+                        for (var activeRepeatId = 0; activeRepeatId < counts.Length; activeRepeatId++)
+                        {
+                            if (counts[activeRepeatId] >= 0)
+                            {
+                                SetRepeat(
+                                    activeRepeatId,
+                                    -1,
+                                    -1,
+                                    counts,
+                                    positions,
+                                    ref repeatMutations,
+                                    ref budget);
+                            }
+                        }
+                        instructionIndex = subroutineTarget;
+                        continue;
+
+                    case Pcre2BacktrackingInstructionKind.SubroutineReturn:
+                        if (subroutineCalls.Count == 0)
+                        {
+                            break;
+                        }
+
+                        var returnCall = subroutineCalls[subroutineCalls.Count - 1];
+                        RestoreSubroutineState(
+                            returnCall,
+                            subroutineCalls.Count,
+                            counts,
+                            positions,
+                            captureStarts,
+                            captureEnds,
+                            captureOpenStarts,
+                            captureOwners,
+                            captureOpenOwners,
+                            repeatRestoreGenerations,
+                            repeatRestoreIds,
+                            repeatRestoreSnapshots,
+                            captureRestoreGenerations,
+                            captureRestoreSlots,
+                            captureRestoreSnapshots,
+                            ref subroutineRestoreGeneration,
+                            ref repeatMutations,
+                            ref captureMutations,
+                            ref budget);
+                        var completedCall = subroutineCalls.Pop();
+                        RecordSubroutineCallMutation(
+                            Pcre2SubroutineCallMutationKind.Popped,
+                            completedCall,
+                            ref subroutineCallMutations,
+                            ref budget);
+                        instructionIndex = completedCall.ReturnInstruction;
+                        continue;
+
+                    case Pcre2BacktrackingInstructionKind.Conditional:
+                        var condition = program.Conditions[instruction.ConditionId];
+                        var conditionMet = condition.Kind switch
+                        {
+                            Pcre2BacktrackingConditionKind.CaptureSet =>
+                                IsAnyCaptureSet(condition.CaptureSlots, captureStarts, captureEnds),
+                            Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.Count != 0,
+                            Pcre2BacktrackingConditionKind.RecursionSlot =>
+                                IsSubroutineActive(condition.SubroutineSlot, subroutineCalls),
+                            _ => false,
+                        };
+                        Pcre2CaptureByteRange[] conditionalCaptures = [];
+                        if (condition.Kind == Pcre2BacktrackingConditionKind.Assertion)
+                        {
+                            conditionMet = TryEvaluateAssertion(
+                                program.AssertionPrograms[condition.AssertionProgramId],
+                                condition.AssertionKind,
+                                input,
+                                inputIndex,
+                                matchOptions,
+                                captureStarts,
+                                captureEnds,
+                                depthBase + frames.Count + subroutineCalls.Count + 1,
+                                ref budget,
+                                out conditionalCaptures);
+                        }
+
+                        MergeAssertionCaptures(
+                            conditionalCaptures,
+                            subroutineCalls.Count,
+                            captureStarts,
+                            captureEnds,
+                            captureOpenStarts,
+                            captureOwners,
+                            captureOpenOwners,
+                            ref captureMutations,
+                            ref budget);
+
+                        instructionIndex = conditionMet
+                            ? instruction.PrimaryTarget
+                            : instruction.SecondaryTarget;
+                        continue;
 
                     case Pcre2BacktrackingInstructionKind.Accept:
                         var endAnchored = !isAssertion && (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0 ||
@@ -2265,11 +3048,15 @@ internal static class Pcre2BacktrackingRunner
                         ref frames,
                         ref repeatMutations,
                         ref captureMutations,
+                        ref subroutineCalls,
+                        ref subroutineCallMutations,
                         counts,
                         positions,
                         captureStarts,
                         captureEnds,
                         captureOpenStarts,
+                        captureOwners,
+                        captureOpenOwners,
                         ref budget,
                         out instructionIndex,
                         out inputIndex))
@@ -2281,6 +3068,8 @@ internal static class Pcre2BacktrackingRunner
         }
         finally
         {
+            subroutineCallMutations.Dispose();
+            subroutineCalls.Dispose();
             captureMutations.Dispose();
             repeatMutations.Dispose();
             frames.Dispose();
@@ -2303,6 +3092,38 @@ internal static class Pcre2BacktrackingRunner
             if (rentedCaptureOpenStarts is not null)
             {
                 ArrayPool<int>.Shared.Return(rentedCaptureOpenStarts);
+            }
+            if (rentedCaptureOwners is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedCaptureOwners);
+            }
+            if (rentedCaptureOpenOwners is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedCaptureOpenOwners);
+            }
+            if (rentedCaptureRestoreGenerations is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedCaptureRestoreGenerations);
+            }
+            if (rentedCaptureRestoreSlots is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedCaptureRestoreSlots);
+            }
+            if (rentedCaptureRestoreSnapshots is not null)
+            {
+                ArrayPool<Pcre2SubroutineCaptureSnapshot>.Shared.Return(rentedCaptureRestoreSnapshots);
+            }
+            if (rentedRepeatRestoreGenerations is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedRepeatRestoreGenerations);
+            }
+            if (rentedRepeatRestoreIds is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedRepeatRestoreIds);
+            }
+            if (rentedRepeatRestoreSnapshots is not null)
+            {
+                ArrayPool<Pcre2SubroutineRepeatSnapshot>.Shared.Return(rentedRepeatRestoreSnapshots);
             }
         }
     }
@@ -2344,7 +3165,7 @@ internal static class Pcre2BacktrackingRunner
                 true,
                 ref budget,
                 out var assertionMatch);
-            captures = !isNegative && matched ? assertionMatch.Captures : [];
+            captures = matched ? assertionMatch.Captures : [];
             return isNegative ? !matched : matched;
         }
 
@@ -2385,7 +3206,7 @@ internal static class Pcre2BacktrackingRunner
                     ref budget,
                     out var assertionMatch))
             {
-                captures = isNegative ? [] : assertionMatch.Captures;
+                captures = assertionMatch.Captures;
                 return !isNegative;
             }
 
@@ -2400,6 +3221,75 @@ internal static class Pcre2BacktrackingRunner
 
         captures = [];
         return isNegative;
+    }
+
+    private static bool IsAnyCaptureSet(
+        ReadOnlySpan<int> slots,
+        ReadOnlySpan<int> captureStarts,
+        ReadOnlySpan<int> captureEnds)
+    {
+        foreach (var slot in slots)
+        {
+            if ((uint)slot < (uint)captureStarts.Length &&
+                captureStarts[slot] >= 0 &&
+                captureEnds[slot] >= captureStarts[slot])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsSubroutineActive(
+        int slot,
+        Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls)
+    {
+        for (var index = calls.Count - 1; index >= 0; index--)
+        {
+            if (calls[index].SubroutineSlot == slot)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void MergeAssertionCaptures(
+        ReadOnlySpan<Pcre2CaptureByteRange> assertionCaptures,
+        int callDepth,
+        Span<int> captureStarts,
+        Span<int> captureEnds,
+        Span<int> captureOpenStarts,
+        Span<int> captureOwners,
+        Span<int> captureOpenOwners,
+        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2ResourceBudget budget)
+    {
+        for (var slot = 1; slot < assertionCaptures.Length; slot++)
+        {
+            var capture = assertionCaptures[slot];
+            if (!capture.Success)
+            {
+                continue;
+            }
+
+            SetCapture(
+                slot,
+                capture.StartOffsetInBytes,
+                capture.EndOffsetInBytes,
+                -1,
+                callDepth,
+                -1,
+                captureStarts,
+                captureEnds,
+                captureOpenStarts,
+                captureOwners,
+                captureOpenOwners,
+                ref captureMutations,
+                ref budget);
+        }
     }
 
     private static bool TryRetreatScalar(ReadOnlySpan<byte> input, int position, out int previous)
@@ -2420,16 +3310,19 @@ internal static class Pcre2BacktrackingRunner
         Pcre2BacktrackingFrame frame,
         int repeatMutationCount,
         int captureMutationCount,
+        int callMutationCount,
         int repeatCount,
         int captureSlotCount,
         int depthBase,
+        int callCount,
         ref Pcre2ResourceBudget budget)
     {
-        var nextDepth = checked(depthBase + frames.Count + 1);
+        var nextDepth = checked(depthBase + callCount + frames.Count + 1);
         var estimatedHeapBytes = checked(
             (ulong)nextDepth * 32UL +
             (ulong)repeatMutationCount * 12UL +
             (ulong)captureMutationCount * 16UL +
+            (ulong)callMutationCount * 12UL +
             (ulong)repeatCount * 8UL +
             (ulong)captureSlotCount * 12UL);
         budget.ChargeFrame((uint)nextDepth, estimatedHeapBytes);
@@ -2443,11 +3336,15 @@ internal static class Pcre2BacktrackingRunner
         ref Utf8PooledStateStack<Pcre2BacktrackingFrame> frames,
         ref Utf8PooledStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> subroutineCallMutations,
         Span<int> counts,
         Span<int> positions,
         Span<int> captureStarts,
         Span<int> captureEnds,
         Span<int> captureOpenStarts,
+        Span<int> captureOwners,
+        Span<int> captureOpenOwners,
         ref Pcre2ResourceBudget budget,
         out int instructionIndex,
         out int inputIndex)
@@ -2466,7 +3363,13 @@ internal static class Pcre2BacktrackingRunner
             ref captureMutations,
             captureStarts,
             captureEnds,
-            captureOpenStarts);
+            captureOpenStarts,
+            captureOwners,
+            captureOpenOwners);
+        RollbackSubroutineCalls(
+            frame.CallCheckpoint,
+            ref subroutineCalls,
+            ref subroutineCallMutations);
         if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
         {
             SetRepeat(
@@ -2482,6 +3385,184 @@ internal static class Pcre2BacktrackingRunner
         instructionIndex = frame.Instruction;
         inputIndex = frame.InputOffsetInBytes;
         return true;
+    }
+
+    private static void PushSubroutineCall(
+        Pcre2SubroutineCallFrame frame,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations,
+        int depthBase,
+        ref Pcre2ResourceBudget budget)
+    {
+        var nextDepth = checked(depthBase + calls.Count + 1);
+        budget.ChargeFrame(
+            (uint)nextDepth,
+            checked((ulong)nextDepth * 32UL + (ulong)(mutations.Count + 1) * 12UL));
+        if (!calls.TryPush(frame))
+        {
+            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+        }
+
+        RecordSubroutineCallMutation(
+            Pcre2SubroutineCallMutationKind.Pushed,
+            frame,
+            ref mutations,
+            ref budget);
+    }
+
+    private static void RestoreSubroutineState(
+        Pcre2SubroutineCallFrame call,
+        int callDepth,
+        Span<int> counts,
+        Span<int> positions,
+        Span<int> captureStarts,
+        Span<int> captureEnds,
+        Span<int> captureOpenStarts,
+        Span<int> captureOwners,
+        Span<int> captureOpenOwners,
+        Span<int> repeatRestoreGenerations,
+        Span<int> repeatRestoreIds,
+        Span<Pcre2SubroutineRepeatSnapshot> repeatRestoreSnapshots,
+        Span<int> captureRestoreGenerations,
+        Span<int> captureRestoreSlots,
+        Span<Pcre2SubroutineCaptureSnapshot> captureRestoreSnapshots,
+        ref int restoreGeneration,
+        ref Utf8PooledStateStack<Pcre2RepeatMutation> repeatMutations,
+        ref Utf8PooledStateStack<Pcre2CaptureMutation> captureMutations,
+        ref Pcre2ResourceBudget budget)
+    {
+        restoreGeneration++;
+        if (restoreGeneration <= 0)
+        {
+            repeatRestoreGenerations.Clear();
+            captureRestoreGenerations.Clear();
+            restoreGeneration = 1;
+        }
+
+        var generation = restoreGeneration;
+
+        var repeatRestoreCount = 0;
+        var repeatMutationCount = repeatMutations.Count;
+        for (var index = call.RepeatCheckpoint; index < repeatMutationCount; index++)
+        {
+            var mutation = repeatMutations[index];
+            if (repeatRestoreGenerations[mutation.RepeatId] == generation)
+            {
+                continue;
+            }
+
+            repeatRestoreGenerations[mutation.RepeatId] = generation;
+            repeatRestoreIds[repeatRestoreCount++] = mutation.RepeatId;
+            repeatRestoreSnapshots[mutation.RepeatId] = new Pcre2SubroutineRepeatSnapshot(
+                mutation.PreviousCount,
+                mutation.PreviousPosition);
+        }
+
+        for (var index = 0; index < repeatRestoreCount; index++)
+        {
+            var repeatId = repeatRestoreIds[index];
+            var snapshot = repeatRestoreSnapshots[repeatId];
+            SetRepeat(
+                repeatId,
+                snapshot.Count,
+                snapshot.Position,
+                counts,
+                positions,
+                ref repeatMutations,
+                ref budget);
+        }
+
+        var captureRestoreCount = 0;
+        var captureMutationCount = captureMutations.Count;
+        for (var index = call.CaptureCheckpoint; index < captureMutationCount; index++)
+        {
+            var mutation = captureMutations[index];
+            if (captureRestoreGenerations[mutation.Slot] == generation)
+            {
+                continue;
+            }
+
+            captureRestoreGenerations[mutation.Slot] = generation;
+            captureRestoreSlots[captureRestoreCount++] = mutation.Slot;
+            captureRestoreSnapshots[mutation.Slot] = new Pcre2SubroutineCaptureSnapshot(
+                mutation.PreviousStart,
+                mutation.PreviousEnd,
+                mutation.PreviousOpenStart,
+                mutation.PreviousOwner,
+                mutation.PreviousOpenOwner);
+        }
+
+        for (var index = 0; index < captureRestoreCount; index++)
+        {
+            var slot = captureRestoreSlots[index];
+            var finalStart = captureStarts[slot];
+            var finalEnd = captureEnds[slot];
+            var finalOwner = captureOwners[slot];
+            var snapshot = captureRestoreSnapshots[slot];
+            SetCapture(
+                slot,
+                snapshot.Start,
+                snapshot.End,
+                snapshot.OpenStart,
+                snapshot.Owner,
+                snapshot.OpenOwner,
+                captureStarts,
+                captureEnds,
+                captureOpenStarts,
+                captureOwners,
+                captureOpenOwners,
+                ref captureMutations,
+                ref budget);
+            if (snapshot.Start < 0 && snapshot.OpenStart < 0 && finalStart >= 0 && finalEnd >= finalStart)
+            {
+                SetCapture(
+                    slot,
+                    finalStart,
+                    finalEnd,
+                    -1,
+                    Math.Max(finalOwner, callDepth),
+                    -1,
+                    captureStarts,
+                    captureEnds,
+                    captureOpenStarts,
+                    captureOwners,
+                    captureOpenOwners,
+                    ref captureMutations,
+                    ref budget);
+            }
+        }
+    }
+
+    private static void RecordSubroutineCallMutation(
+        Pcre2SubroutineCallMutationKind kind,
+        Pcre2SubroutineCallFrame frame,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2ResourceBudget budget)
+    {
+        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 12UL));
+        if (!mutations.TryPush(new Pcre2SubroutineCallMutation(kind, frame)))
+        {
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+        }
+    }
+
+    private static void RollbackSubroutineCalls(
+        int checkpoint,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallFrame> calls,
+        ref Utf8PooledStateStack<Pcre2SubroutineCallMutation> mutations)
+    {
+        while (mutations.Count > checkpoint)
+        {
+            var mutation = mutations.Pop();
+            if (mutation.Kind == Pcre2SubroutineCallMutationKind.Pushed)
+            {
+                _ = calls.Pop();
+            }
+            else if (!calls.TryPush(mutation.Frame))
+            {
+                throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+            }
+        }
     }
 
     private static void SetRepeat(
@@ -2522,14 +3603,24 @@ internal static class Pcre2BacktrackingRunner
         int start,
         int end,
         int openStart,
+        int owner,
+        int openOwner,
         Span<int> starts,
         Span<int> ends,
         Span<int> openStarts,
+        Span<int> owners,
+        Span<int> openOwners,
         ref Utf8PooledStateStack<Pcre2CaptureMutation> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 16UL + (ulong)starts.Length * 12UL));
-        if (!mutations.TryPush(new Pcre2CaptureMutation(slot, starts[slot], ends[slot], openStarts[slot])))
+        budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 24UL + (ulong)starts.Length * 20UL));
+        if (!mutations.TryPush(new Pcre2CaptureMutation(
+                slot,
+                starts[slot],
+                ends[slot],
+                openStarts[slot],
+                owners[slot],
+                openOwners[slot])))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
         }
@@ -2537,6 +3628,8 @@ internal static class Pcre2BacktrackingRunner
         starts[slot] = start;
         ends[slot] = end;
         openStarts[slot] = openStart;
+        owners[slot] = owner;
+        openOwners[slot] = openOwner;
     }
 
     private static void RollbackCaptures(
@@ -2544,7 +3637,9 @@ internal static class Pcre2BacktrackingRunner
         ref Utf8PooledStateStack<Pcre2CaptureMutation> mutations,
         Span<int> starts,
         Span<int> ends,
-        Span<int> openStarts)
+        Span<int> openStarts,
+        Span<int> owners,
+        Span<int> openOwners)
     {
         while (mutations.Count > checkpoint)
         {
@@ -2552,6 +3647,8 @@ internal static class Pcre2BacktrackingRunner
             starts[mutation.Slot] = mutation.PreviousStart;
             ends[mutation.Slot] = mutation.PreviousEnd;
             openStarts[mutation.Slot] = mutation.PreviousOpenStart;
+            owners[mutation.Slot] = mutation.PreviousOwner;
+            openOwners[mutation.Slot] = mutation.PreviousOpenOwner;
         }
     }
 
