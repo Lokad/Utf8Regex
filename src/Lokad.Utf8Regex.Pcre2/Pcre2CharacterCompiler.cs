@@ -24,12 +24,14 @@ internal sealed class Pcre2CharacterProgram
         Pcre2CharacterToken[] tokens,
         Pcre2CompileRequest request,
         byte? leadingAsciiByte,
-        bool leadingExtendedGraphemeCluster)
+        bool leadingExtendedGraphemeCluster,
+        bool usesCodeUnit)
     {
         Tokens = tokens;
         Request = request;
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
+        UsesCodeUnit = usesCodeUnit;
     }
 
     internal Pcre2CharacterToken[] Tokens { get; }
@@ -39,6 +41,8 @@ internal sealed class Pcre2CharacterProgram
     internal byte? LeadingAsciiByte { get; }
 
     internal bool LeadingExtendedGraphemeCluster { get; }
+
+    internal bool UsesCodeUnit { get; }
 }
 
 internal interface IPcre2CharacterCompileOutcome
@@ -94,6 +98,7 @@ internal enum Pcre2CharacterTokenKind : byte
     WordBoundary = 11,
     NonWordBoundary = 12,
     ExtendedGraphemeCluster = 13,
+    CodeUnit = 14,
 }
 
 internal readonly struct Pcre2CharacterToken
@@ -271,7 +276,8 @@ internal static class Pcre2CharacterCompiler
                     tokens,
                     request,
                     GetLeadingAsciiByte(tokens),
-                    tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..]))
+                    tokens is [{ Kind: Pcre2CharacterTokenKind.ExtendedGraphemeCluster }, ..],
+                    tokens.Any(static token => token.Kind == Pcre2CharacterTokenKind.CodeUnit)))
             : Pcre2NotCharacterOutcome.Instance;
     }
 
@@ -585,6 +591,14 @@ internal sealed class Pcre2CharacterParser
                 return true;
             case 'X':
                 Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.ExtendedGraphemeCluster, _options, start, 2));
+                return true;
+            case 'C':
+                if (_request.Settings.BackslashC != Pcre2BackslashCPolicy.Allow)
+                {
+                    return false;
+                }
+
+                Add(Pcre2CharacterToken.Create(Pcre2CharacterTokenKind.CodeUnit, _options, start, 2));
                 return true;
             case 'N':
                 if (_offset < _pattern.Length && _pattern[_offset] == '{')
@@ -1441,6 +1455,15 @@ internal static class Pcre2CharacterRunner
                 nextIndex += graphemeWidth;
                 return true;
 
+            case Pcre2CharacterTokenKind.CodeUnit:
+                if (index >= input.Length)
+                {
+                    return false;
+                }
+
+                nextIndex++;
+                return true;
+
             case Pcre2CharacterTokenKind.BeginningOfLine:
                 return Pcre2CharacterSemantics.IsBeginningOfLine(input, index, token.Options, matchOptions, request.Settings.Newline);
 
@@ -1527,7 +1550,14 @@ internal static class Pcre2CharacterRunner
             return true;
         }
 
-        if (!input.TryAdvanceScalar(new Utf8BytePosition(candidate), out var nextPosition))
+        var candidatePosition = new Utf8BytePosition(candidate);
+        if (!input.IsScalarBoundary(candidatePosition))
+        {
+            next = candidate + 1;
+            return next <= input.Bytes.Length;
+        }
+
+        if (!input.TryAdvanceScalar(candidatePosition, out var nextPosition))
         {
             next = 0;
             return false;

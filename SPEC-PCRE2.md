@@ -464,6 +464,8 @@ Normal matching APIs (`IsMatch`, `Count`, `Match`, `MatchDetailed`, `EnumerateMa
 
 `HasUtf16Projection` is `true` only when the reported match/group can be projected exactly to UTF-16 coordinates and to a `string`. This is usually true in the default profile. It can become `false` only when the caller explicitly allows `\C` and the match/group splits a UTF-8 scalar. PCRE2 documents that `\C` matches a single code unit in UTF mode and can break up multi-unit characters. ([PCRE][5])
 
+Opting into `\C` does not opt out of subject validation: the complete subject must still be well-formed UTF-8, while each `\C` atom consumes exactly one byte. Global matching resumes at the consumed byte offset, so successive `\C` matches may expose the individual bytes of one scalar; the normal empty-match retry and progress rule still applies. Byte-returning replacement APIs preserve these byte semantics and can therefore produce non-UTF-8 output when a substitution leaves only part of a scalar. String-returning replacement APIs reject such an output. Match/group UTF-16 coordinate access and string extraction throw when `HasUtf16Projection` is `false`. `\C` remains forbidden in UTF lookbehind.
+
 PCRE2 replacement uses PCRE2 substitution syntax. By default, only dollar-based substitutions are recognized. Backslash escapes in replacement text are processed only when `Pcre2SubstitutionOptions.Extended` is set. The initial supported default substitution forms are:
 
 * `$$`

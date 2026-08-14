@@ -1,0 +1,113 @@
+[
+  {
+    "Id": "pcre2.selected-backslash-c.count-code-units.two-byte-scalar",
+    "Pattern": "\\C",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "é",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 2,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["backslash-c", "code-unit", "selected-profile"],
+    "Source": "ported/upstream:pcre2-backslash-c-two-byte-scalar-count"
+  },
+  {
+    "Id": "pcre2.selected-backslash-c.match-complete-two-byte-scalar",
+    "Pattern": "^\\C\\C$",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "é",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 0,
+      "EndOffsetInBytes": 2,
+      "ValueText": "é",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["backslash-c", "code-unit", "selected-profile"],
+    "Source": "ported/upstream:pcre2-backslash-c-complete-two-byte-scalar-match"
+  },
+  {
+    "Id": "pcre2.selected-backslash-c.match-detailed-split-scalar",
+    "Pattern": "(\\C)",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "é",
+    "StartOffsetInBytes": 0,
+    "Operation": "MatchDetailed",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "HasContiguousByteRange": true,
+      "Groups": [
+        { "Number": 0, "Success": true, "StartOffsetInBytes": 0, "EndOffsetInBytes": 1 },
+        { "Number": 1, "Success": true, "StartOffsetInBytes": 0, "EndOffsetInBytes": 1 }
+      ],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["backslash-c", "code-unit", "capture", "selected-profile"],
+    "Source": "ported/upstream:pcre2-backslash-c-split-scalar-capture"
+  },
+  {
+    "Id": "pcre2.selected-backslash-c.replace-code-units.two-byte-scalar",
+    "Pattern": "\\C",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Allow",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "é",
+    "StartOffsetInBytes": 0,
+    "ReplacementPattern": "x",
+    "SubstitutionOptions": [],
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "ReplacementText": "xx",
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["backslash-c", "code-unit", "replacement", "selected-profile"],
+    "Source": "ported/upstream:pcre2-backslash-c-two-byte-scalar-replace"
+  }
+]

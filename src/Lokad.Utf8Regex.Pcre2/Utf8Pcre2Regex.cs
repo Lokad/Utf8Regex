@@ -969,7 +969,9 @@ public sealed class Utf8Pcre2Regex
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         ArgumentNullException.ThrowIfNull(replacement);
-        return Encoding.UTF8.GetString(ReplaceCore(input, replacement, Pcre2PartialMode.None, substitutionOptions, startOffsetInBytes, matchOptions));
+        var result = ReplaceCore(input, replacement, Pcre2PartialMode.None, substitutionOptions, startOffsetInBytes, matchOptions);
+        _ = Utf8Validation.Validate(result);
+        return Encoding.UTF8.GetString(result);
     }
 
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
@@ -1368,7 +1370,8 @@ public sealed class Utf8Pcre2Regex
                 } ||
                 ExecutionKind == Pcre2ExecutionKind.MarkSkip,
             UsesRecursion = UsesRecursion(ExecutionKind),
-            MayProduceNonUtf8Slices = ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
+            MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit ||
+                ExecutionKind == Pcre2ExecutionKind.BackslashCLiteral,
             MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
                 MayReportNonMonotoneMatchOffsets(ExecutionKind),
             RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets ||
@@ -6693,6 +6696,13 @@ public sealed class Utf8Pcre2Regex
         {
             Program.MayReportNonMonotoneMatchOffsets: true,
         };
+
+    private bool GenericProgramUsesCodeUnit => _program.Operations.Match switch
+    {
+        Pcre2CharacterDirectProgram { Program.UsesCodeUnit: true } => true,
+        Pcre2BacktrackingDirectProgram { Program.UsesCodeUnit: true } => true,
+        _ => false,
+    };
 
     private void ThrowIfGenericIterationMayBeNonMonotone()
     {

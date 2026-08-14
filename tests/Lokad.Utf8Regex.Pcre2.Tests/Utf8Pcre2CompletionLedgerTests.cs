@@ -48,13 +48,13 @@ public sealed class Utf8Pcre2CompletionLedgerTests
         // Changes here should come from an explicit support/reject decision, not incidental drift.
         Assert.Equal(
             """
-            Active=606
+            Active=610
             CompileCovered=16
             ManagedMatchCovered=29
-            SpecialMatchCovered=196
+            SpecialMatchCovered=198
             ProbeCovered=119
-            ReplaceCovered=171
-            CountCovered=38
+            ReplaceCovered=172
+            CountCovered=39
             EnumerateCovered=37
             CompileRejected=16
             RuntimeRejected=17

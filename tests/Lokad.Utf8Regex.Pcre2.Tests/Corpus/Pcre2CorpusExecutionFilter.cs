@@ -54,6 +54,8 @@ public static class Pcre2CorpusExecutionFilter
         }
 
         return corpusCase.Pattern is "(?|(abc)|(xyz))"
+            or @"^\C\C$"
+            or @"(\C)"
             or "(?|(abc)|(xyz))\\1"
             or "(x)(?|(abc)|(xyz))(x)"
             or "(x)(?|(abc)(pqr)|(xyz))(x)"
@@ -131,6 +133,7 @@ public static class Pcre2CorpusExecutionFilter
         }
 
         return corpusCase.Pattern is "foo"
+            or @"\C"
             or "\\X"
             or "a"
             or "abc"
@@ -202,6 +205,7 @@ public static class Pcre2CorpusExecutionFilter
         }
 
         return corpusCase.Pattern is "abc\\K|def\\K"
+            or @"\C"
             or "\\X"
             or "ab\\Kc|de\\Kf"
             or "(?=C)"

@@ -44,32 +44,32 @@ public sealed class Pcre2CorpusFamilyLedgerTests
 
         Assert.Equal(
             """
-            Total=631
-            Active=606
+            Total=635
+            Active=610
             Compile.All=20
             Compile.Active=16
-            Match.All=229
-            Match.Active=225
+            Match.All=231
+            Match.Active=227
             BranchReset.All=75
             BranchReset.Active=71
             DuplicateNames.All=36
             DuplicateNames.Active=32
             LookaroundK.All=119
             LookaroundK.Active=118
-            BackslashC.All=5
-            BackslashC.Active=5
+            BackslashC.All=9
+            BackslashC.Active=9
             ControlVerb.All=36
             ControlVerb.Active=36
             Mark.All=13
             Mark.Active=13
             Partial.All=135
             Partial.Active=119
-            Replace.All=187
-            Replace.Active=171
+            Replace.All=188
+            Replace.Active=172
             Probe.All=119
             Probe.Active=119
-            GlobalIteration.All=76
-            GlobalIteration.Active=75
+            GlobalIteration.All=77
+            GlobalIteration.Active=76
             Recursion.All=116
             Recursion.Active=116
             NamedCaptures.All=127

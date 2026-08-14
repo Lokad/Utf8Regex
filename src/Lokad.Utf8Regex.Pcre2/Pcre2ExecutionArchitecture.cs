@@ -564,17 +564,11 @@ internal static class Pcre2Runner
             return true;
         }
 
-        var startInUtf16 = input.Project(new Utf8BytePosition(directMatch.StartOffsetInBytes));
-        var endInUtf16 = input.Project(new Utf8BytePosition(directMatch.EndOffsetInBytes));
-        result = new Pcre2GroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = directMatch.StartOffsetInBytes,
-            EndOffsetInBytes = directMatch.EndOffsetInBytes,
-            StartOffsetInUtf16 = startInUtf16.Value,
-            EndOffsetInUtf16 = endInUtf16.Value,
-        };
+        result = Pcre2GroupData.FromByteOffsets(
+            input.Bytes,
+            0,
+            directMatch.StartOffsetInBytes,
+            directMatch.EndOffsetInBytes);
         return true;
     }
 
@@ -696,8 +690,15 @@ internal static class Pcre2Runner
                 continue;
             }
 
-            endpoints[endpointCount++] = capture.StartOffsetInBytes;
-            endpoints[endpointCount++] = capture.EndOffsetInBytes;
+            if (input.IsScalarBoundary(new Utf8BytePosition(capture.StartOffsetInBytes)))
+            {
+                endpoints[endpointCount++] = capture.StartOffsetInBytes;
+            }
+
+            if (input.IsScalarBoundary(new Utf8BytePosition(capture.EndOffsetInBytes)))
+            {
+                endpoints[endpointCount++] = capture.EndOffsetInBytes;
+            }
         }
 
         Array.Sort(endpoints, 0, endpointCount);
@@ -729,14 +730,18 @@ internal static class Pcre2Runner
 
             var startIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.StartOffsetInBytes);
             var endIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.EndOffsetInBytes);
+            var hasUtf16Projection = startIndex >= 0 && endIndex >= 0;
             groups[slot] = new Pcre2GroupData
             {
                 Number = slot,
                 Success = true,
                 StartOffsetInBytes = capture.StartOffsetInBytes,
                 EndOffsetInBytes = capture.EndOffsetInBytes,
-                StartOffsetInUtf16 = utf16Endpoints[startIndex],
-                EndOffsetInUtf16 = utf16Endpoints[endIndex],
+                StartOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[startIndex] : 0,
+                EndOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[endIndex] : 0,
+                CoordinateFlagsSpecified = true,
+                Utf8SliceIsWellFormed = capture.StartOffsetInBytes <= capture.EndOffsetInBytes && hasUtf16Projection,
+                Utf16ProjectionIsExact = hasUtf16Projection,
             };
         }
 
@@ -978,7 +983,7 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
                     throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
                 }
 
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 _firstMatchingPosition = _restartPosition;
                 _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
@@ -1151,7 +1156,7 @@ internal ref struct Pcre2CharacterGlobalMatchCursor
 
             if (match.Success)
             {
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
                     ? Pcre2GlobalRetryState.EmptyAtSamePosition
@@ -1232,7 +1237,7 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
 
             if (match.Success)
             {
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _projection);
+                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
                     ? Pcre2GlobalRetryState.EmptyAtSamePosition
@@ -1254,15 +1259,32 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
         Current = default;
         return false;
     }
-
 }
 
 internal static class Pcre2GlobalCursorProjection
 {
-    internal static Pcre2GroupData Project(int startOffsetInBytes, int endOffsetInBytes, ref Utf8ProjectionCursor projection)
+    internal static Pcre2GroupData Project(
+        int startOffsetInBytes,
+        int endOffsetInBytes,
+        ref Utf8ValidatedInput input,
+        ref Utf8ProjectionCursor projection)
     {
         var start = new Utf8BytePosition(startOffsetInBytes);
         var end = new Utf8BytePosition(endOffsetInBytes);
+        if (!input.IsScalarBoundary(start) || !input.IsScalarBoundary(end))
+        {
+            return new Pcre2GroupData
+            {
+                Number = 0,
+                Success = true,
+                StartOffsetInBytes = startOffsetInBytes,
+                EndOffsetInBytes = endOffsetInBytes,
+                CoordinateFlagsSpecified = true,
+                Utf8SliceIsWellFormed = false,
+                Utf16ProjectionIsExact = false,
+            };
+        }
+
         var startInUtf16 = projection.Project(start);
         var endInUtf16 = projection.Project(end);
         return new Pcre2GroupData
@@ -1273,8 +1295,12 @@ internal static class Pcre2GlobalCursorProjection
             EndOffsetInBytes = end.Value,
             StartOffsetInUtf16 = startInUtf16.Value,
             EndOffsetInUtf16 = endInUtf16.Value,
+            CoordinateFlagsSpecified = true,
+            Utf8SliceIsWellFormed = start.Value <= end.Value,
+            Utf16ProjectionIsExact = true,
         };
     }
+
 }
 
 internal static class Pcre2GlobalCursorMovement
@@ -1286,6 +1312,12 @@ internal static class Pcre2GlobalCursorMovement
         out Utf8BytePosition next)
     {
         var bytes = input.Bytes;
+        if (!input.IsScalarBoundary(position))
+        {
+            next = new Utf8BytePosition(position.Value + 1);
+            return next.Value <= bytes.Length;
+        }
+
         if (RecognizesCrlf(settings.Newline) &&
             position.Value <= bytes.Length - 2 &&
             bytes[position.Value] == (byte)'\r' &&

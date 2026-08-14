@@ -29,9 +29,19 @@ internal readonly struct Pcre2GroupData
 
     public int EndOffsetInUtf16 { get; init; }
 
+    internal bool CoordinateFlagsSpecified { get; init; }
+
+    internal bool Utf8SliceIsWellFormed { get; init; }
+
+    internal bool Utf16ProjectionIsExact { get; init; }
+
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
-    public bool IsUtf8SliceWellFormed => HasContiguousByteRange;
+    public bool IsUtf8SliceWellFormed => Success &&
+        (CoordinateFlagsSpecified ? Utf8SliceIsWellFormed : HasContiguousByteRange);
+
+    public bool HasUtf16Projection => Success &&
+        (!CoordinateFlagsSpecified || Utf16ProjectionIsExact);
 
     public static Pcre2GroupData FromUtf16(ReadOnlySpan<byte> input, int number, Group group)
     {
@@ -55,13 +65,23 @@ internal readonly struct Pcre2GroupData
             EndOffsetInBytes = startOffsetInBytes + byteLength,
             StartOffsetInUtf16 = group.Index,
             EndOffsetInUtf16 = group.Index + group.Length,
+            CoordinateFlagsSpecified = true,
+            Utf8SliceIsWellFormed = true,
+            Utf16ProjectionIsExact = true,
         };
     }
 
     public static Pcre2GroupData FromByteOffsets(ReadOnlySpan<byte> input, int number, int startOffsetInBytes, int endOffsetInBytes)
     {
-        var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-        var endOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..endOffsetInBytes]);
+        var startIsBoundary = IsScalarBoundary(input, startOffsetInBytes);
+        var endIsBoundary = IsScalarBoundary(input, endOffsetInBytes);
+        var hasUtf16Projection = startIsBoundary && endIsBoundary;
+        var startOffsetInUtf16 = hasUtf16Projection
+            ? Encoding.UTF8.GetCharCount(input[..startOffsetInBytes])
+            : 0;
+        var endOffsetInUtf16 = hasUtf16Projection
+            ? Encoding.UTF8.GetCharCount(input[..endOffsetInBytes])
+            : 0;
         return new Pcre2GroupData
         {
             Number = number,
@@ -70,8 +90,16 @@ internal readonly struct Pcre2GroupData
             EndOffsetInBytes = endOffsetInBytes,
             StartOffsetInUtf16 = startOffsetInUtf16,
             EndOffsetInUtf16 = endOffsetInUtf16,
+            CoordinateFlagsSpecified = true,
+            Utf8SliceIsWellFormed = startOffsetInBytes <= endOffsetInBytes && hasUtf16Projection,
+            Utf16ProjectionIsExact = hasUtf16Projection,
         };
     }
+
+    private static bool IsScalarBoundary(ReadOnlySpan<byte> input, int offset) =>
+        offset >= 0 &&
+        offset <= input.Length &&
+        (offset == 0 || offset == input.Length || (input[offset] & 0xC0) != 0x80);
 }
 
 public readonly ref struct Utf8Pcre2ValueMatch
@@ -81,6 +109,8 @@ public readonly ref struct Utf8Pcre2ValueMatch
     private readonly int _endOffsetInBytes;
     private readonly int _startOffsetInUtf16;
     private readonly int _endOffsetInUtf16;
+    private readonly bool _isUtf8SliceWellFormed;
+    private readonly bool _hasUtf16Projection;
     private readonly bool _success;
 
     private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes, int startOffsetInUtf16, int endOffsetInUtf16)
@@ -90,6 +120,8 @@ public readonly ref struct Utf8Pcre2ValueMatch
         _endOffsetInBytes = endOffsetInBytes;
         _startOffsetInUtf16 = startOffsetInUtf16;
         _endOffsetInUtf16 = endOffsetInUtf16;
+        _isUtf8SliceWellFormed = true;
+        _hasUtf16Projection = true;
         _success = true;
     }
 
@@ -100,6 +132,8 @@ public readonly ref struct Utf8Pcre2ValueMatch
         _endOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0;
         _startOffsetInUtf16 = data.Success ? data.StartOffsetInUtf16 : 0;
         _endOffsetInUtf16 = data.Success ? data.EndOffsetInUtf16 : 0;
+        _isUtf8SliceWellFormed = data.IsUtf8SliceWellFormed;
+        _hasUtf16Projection = data.HasUtf16Projection;
         _success = data.Success;
     }
 
@@ -123,20 +157,36 @@ public readonly ref struct Utf8Pcre2ValueMatch
 
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
-    public bool IsUtf8SliceWellFormed => HasContiguousByteRange;
+    public bool IsUtf8SliceWellFormed => Success && _isUtf8SliceWellFormed;
 
-    public bool HasUtf16Projection => true;
+    public bool HasUtf16Projection => Success && _hasUtf16Projection;
 
     public int StartOffsetInUtf16
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _startOffsetInUtf16;
+        get
+        {
+            if (!HasUtf16Projection)
+            {
+                throw new InvalidOperationException("This match has no exact UTF-16 projection.");
+            }
+
+            return _startOffsetInUtf16;
+        }
     }
 
     public int EndOffsetInUtf16
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _endOffsetInUtf16;
+        get
+        {
+            if (!HasUtf16Projection)
+            {
+                throw new InvalidOperationException("This match has no exact UTF-16 projection.");
+            }
+
+            return _endOffsetInUtf16;
+        }
     }
 
     public ReadOnlySpan<byte> GetValueBytes()
@@ -154,7 +204,15 @@ public readonly ref struct Utf8Pcre2ValueMatch
         return _input[StartOffsetInBytes..EndOffsetInBytes];
     }
 
-    public string GetValueString() => Encoding.UTF8.GetString(GetValueBytes());
+    public string GetValueString()
+    {
+        if (!HasUtf16Projection)
+        {
+            throw new InvalidOperationException("This match has no exact string projection.");
+        }
+
+        return Encoding.UTF8.GetString(GetValueBytes());
+    }
 
     internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Match match)
     {
@@ -205,7 +263,7 @@ public readonly struct Utf8Pcre2MatchData
             EndOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0,
             HasContiguousByteRange = data.HasContiguousByteRange,
             IsUtf8SliceWellFormed = data.IsUtf8SliceWellFormed,
-            HasUtf16Projection = true,
+            HasUtf16Projection = data.HasUtf16Projection,
             StartOffsetInUtf16 = data.Success ? data.StartOffsetInUtf16 : 0,
             EndOffsetInUtf16 = data.Success ? data.EndOffsetInUtf16 : 0,
         };
@@ -384,11 +442,15 @@ public readonly ref struct Utf8Pcre2GroupContext
 
     public bool IsUtf8SliceWellFormed => _data.IsUtf8SliceWellFormed;
 
-    public bool HasUtf16Projection => true;
+    public bool HasUtf16Projection => _data.HasUtf16Projection;
 
-    public int StartOffsetInUtf16 => _data.Success ? _data.StartOffsetInUtf16 : 0;
+    public int StartOffsetInUtf16 => HasUtf16Projection
+        ? _data.StartOffsetInUtf16
+        : throw new InvalidOperationException("This group has no exact UTF-16 projection.");
 
-    public int EndOffsetInUtf16 => _data.Success ? _data.EndOffsetInUtf16 : 0;
+    public int EndOffsetInUtf16 => HasUtf16Projection
+        ? _data.EndOffsetInUtf16
+        : throw new InvalidOperationException("This group has no exact UTF-16 projection.");
 
     public ReadOnlySpan<byte> GetValueBytes()
     {
@@ -405,7 +467,15 @@ public readonly ref struct Utf8Pcre2GroupContext
         return _input[StartOffsetInBytes..EndOffsetInBytes];
     }
 
-    public string GetValueString() => Encoding.UTF8.GetString(GetValueBytes());
+    public string GetValueString()
+    {
+        if (!HasUtf16Projection)
+        {
+            throw new InvalidOperationException("This group has no exact string projection.");
+        }
+
+        return Encoding.UTF8.GetString(GetValueBytes());
+    }
 
     internal static Utf8Pcre2GroupContext Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
         => new(input, data);
@@ -731,10 +801,18 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
             return Utf8Pcre2ValueMatch.Create(
                 _input,
-                _currentData.StartOffsetInBytes,
-                _currentData.EndOffsetInBytes,
-                _currentData.StartOffsetInUtf16,
-                _currentData.EndOffsetInUtf16);
+                new Pcre2GroupData
+                {
+                    Number = 0,
+                    Success = _currentData.Success,
+                    StartOffsetInBytes = _currentData.StartOffsetInBytes,
+                    EndOffsetInBytes = _currentData.EndOffsetInBytes,
+                    StartOffsetInUtf16 = _currentData.StartOffsetInUtf16,
+                    EndOffsetInUtf16 = _currentData.EndOffsetInUtf16,
+                    CoordinateFlagsSpecified = _currentData.CoordinateFlagsSpecified,
+                    Utf8SliceIsWellFormed = _currentData.Utf8SliceIsWellFormed,
+                    Utf16ProjectionIsExact = _currentData.Utf16ProjectionIsExact,
+                });
         }
     }
 
@@ -792,6 +870,9 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 EndOffsetInBytes = match.EndOffsetInBytes,
                 StartOffsetInUtf16 = match.StartOffsetInUtf16,
                 EndOffsetInUtf16 = match.EndOffsetInUtf16,
+                CoordinateFlagsSpecified = true,
+                Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed,
+                Utf16ProjectionIsExact = match.HasUtf16Projection,
             };
             return true;
         }
@@ -1099,6 +1180,12 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         public int StartOffsetInUtf16 { get; init; }
 
         public int EndOffsetInUtf16 { get; init; }
+
+        public bool CoordinateFlagsSpecified { get; init; }
+
+        public bool Utf8SliceIsWellFormed { get; init; }
+
+        public bool Utf16ProjectionIsExact { get; init; }
 
         public static Pcre2ValueData FromByteOffsets(ReadOnlySpan<byte> input, int startOffsetInBytes, int endOffsetInBytes)
         {

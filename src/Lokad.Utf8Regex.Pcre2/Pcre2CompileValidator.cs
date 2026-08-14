@@ -11,14 +11,13 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
         }
 
-        if (settings.BackslashC == Pcre2BackslashCPolicy.Forbid && pattern.Contains(@"\C", StringComparison.Ordinal))
+        if (settings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false))
         {
             throw new Pcre2CompileException(@"Using \C is disabled by this library profile.", Pcre2ErrorKind.BackslashCDisabled);
         }
 
         if (settings.BackslashC == Pcre2BackslashCPolicy.Allow &&
-            pattern.Contains(@"(?<=", StringComparison.Ordinal) &&
-            pattern.Contains(@"\C", StringComparison.Ordinal))
+            ContainsBackslashC(pattern, true))
         {
             throw new Pcre2CompileException(@"\C is not allowed in UTF lookbehind.", Pcre2ErrorKind.BackslashCInUtfLookbehind);
         }
@@ -26,6 +25,11 @@ internal static class Pcre2CompileValidator
         if (!settings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern))
         {
             throw new Pcre2CompileException(@"\K is not allowed in lookarounds (but see PCRE2_EXTRA_ALLOW_LOOKAROUND_BSK)", Pcre2ErrorKind.LookaroundBackslashKDisabled);
+        }
+
+        if (ContainsBackslashCInCharacterClass(pattern))
+        {
+            throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
         }
 
         if (pattern.Contains("(?X)", StringComparison.Ordinal) || pattern.Contains("(?z)", StringComparison.Ordinal))
@@ -140,6 +144,150 @@ internal static class Pcre2CompileValidator
             if (isLookaround)
             {
                 lookaroundDepth++;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsBackslashC(string pattern, bool onlyInLookbehind)
+    {
+        var parentheses = new Stack<bool>();
+        var lookbehindDepth = 0;
+        var inCharacterClass = false;
+        var quoted = false;
+        for (var offset = 0; offset < pattern.Length; offset++)
+        {
+            var character = pattern[offset];
+            if (quoted)
+            {
+                if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
+                {
+                    quoted = false;
+                    offset++;
+                }
+
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                if (offset + 1 >= pattern.Length)
+                {
+                    continue;
+                }
+
+                var escape = pattern[++offset];
+                if (!inCharacterClass && escape == 'Q')
+                {
+                    quoted = true;
+                    continue;
+                }
+
+                if (escape == 'C' && (!onlyInLookbehind || lookbehindDepth != 0))
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (inCharacterClass)
+            {
+                inCharacterClass = character != ']';
+                continue;
+            }
+
+            if (character == '[')
+            {
+                inCharacterClass = true;
+                continue;
+            }
+
+            if (character == ')' && parentheses.TryPop(out var wasLookbehind))
+            {
+                if (wasLookbehind)
+                {
+                    lookbehindDepth--;
+                }
+
+                continue;
+            }
+
+            if (character != '(')
+            {
+                continue;
+            }
+
+            if (pattern.AsSpan(offset).StartsWith("(?#", StringComparison.Ordinal))
+            {
+                var commentEnd = pattern.IndexOf(')', offset + 3);
+                if (commentEnd < 0)
+                {
+                    return false;
+                }
+
+                offset = commentEnd;
+                continue;
+            }
+
+            var isLookbehind = pattern.AsSpan(offset).StartsWith("(?<=", StringComparison.Ordinal) ||
+                pattern.AsSpan(offset).StartsWith("(?<!", StringComparison.Ordinal);
+            parentheses.Push(isLookbehind);
+            if (isLookbehind)
+            {
+                lookbehindDepth++;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsBackslashCInCharacterClass(string pattern)
+    {
+        var inCharacterClass = false;
+        var quoted = false;
+        for (var offset = 0; offset < pattern.Length; offset++)
+        {
+            var character = pattern[offset];
+            if (quoted)
+            {
+                if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
+                {
+                    quoted = false;
+                    offset++;
+                }
+
+                continue;
+            }
+
+            if (character == '\\')
+            {
+                if (offset + 1 >= pattern.Length)
+                {
+                    continue;
+                }
+
+                var escape = pattern[++offset];
+                if (!inCharacterClass && escape == 'Q')
+                {
+                    quoted = true;
+                }
+                else if (inCharacterClass && escape == 'C')
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (character == '[')
+            {
+                inCharacterClass = true;
+            }
+            else if (character == ']')
+            {
+                inCharacterClass = false;
             }
         }
 

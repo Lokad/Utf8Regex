@@ -378,7 +378,8 @@ internal sealed class Pcre2BacktrackingProgram
         int minimumScalarLength,
         int maximumScalarLength,
         byte? leadingAsciiByte,
-        bool leadingExtendedGraphemeCluster)
+        bool leadingExtendedGraphemeCluster,
+        bool usesCodeUnit)
     {
         Instructions = instructions;
         Request = request;
@@ -404,6 +405,7 @@ internal sealed class Pcre2BacktrackingProgram
         MaximumScalarLength = maximumScalarLength;
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
+        UsesCodeUnit = usesCodeUnit;
     }
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
@@ -453,6 +455,8 @@ internal sealed class Pcre2BacktrackingProgram
     internal byte? LeadingAsciiByte { get; }
 
     internal bool LeadingExtendedGraphemeCluster { get; }
+
+    internal bool UsesCodeUnit { get; }
 }
 
 internal enum Pcre2BacktrackingInstructionKind : byte
@@ -2216,7 +2220,8 @@ internal sealed class Pcre2BacktrackingLowerer
             Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
-            Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root));
+            Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root),
+            Pcre2BacktrackingAnalysis.ContainsCodeUnit(root));
     }
 
     private void EmitNode(IPcre2BacktrackingNode node)
@@ -2639,7 +2644,7 @@ internal static class Pcre2BacktrackingAnalysis
         return node switch
         {
             Pcre2EmptyBacktrackingNode => 0,
-            Pcre2TokenBacktrackingNode token => ConsumesScalar(token.Token.Kind) ? 1 : 0,
+            Pcre2TokenBacktrackingNode token => ConsumesInput(token.Token.Kind) ? 1 : 0,
             Pcre2SequenceBacktrackingNode sequence => GetSequenceMinimum(sequence),
             Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Min(GetMinimumByteLength),
             Pcre2RepeatBacktrackingNode repeat => SaturatingMultiply(GetMinimumByteLength(repeat.Body), repeat.Minimum),
@@ -2723,6 +2728,22 @@ internal static class Pcre2BacktrackingAnalysis
             StartsWithExtendedGraphemeCluster(repeat.Body),
         Pcre2CaptureBacktrackingNode capture => StartsWithExtendedGraphemeCluster(capture.Body),
         Pcre2AtomicBacktrackingNode atomic => StartsWithExtendedGraphemeCluster(atomic.Body),
+        _ => false,
+    };
+
+    internal static bool ContainsCodeUnit(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit,
+        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsCodeUnit),
+        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsCodeUnit),
+        Pcre2RepeatBacktrackingNode repeat => ContainsCodeUnit(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => ContainsCodeUnit(capture.Body),
+        Pcre2AssertionBacktrackingNode assertion => ContainsCodeUnit(assertion.Body),
+        Pcre2ConditionalBacktrackingNode conditional =>
+            conditional.Assertion is not null && ContainsCodeUnit(conditional.Assertion.Body) ||
+            ContainsCodeUnit(conditional.YesBranch) ||
+            ContainsCodeUnit(conditional.NoBranch),
+        Pcre2AtomicBacktrackingNode atomic => ContainsCodeUnit(atomic.Body),
         _ => false,
     };
 
@@ -2817,10 +2838,13 @@ internal static class Pcre2BacktrackingAnalysis
         Pcre2CharacterTokenKind.NewlineSequence or
         Pcre2CharacterTokenKind.ExtendedGraphemeCluster;
 
+    private static bool ConsumesInput(Pcre2CharacterTokenKind kind) =>
+        ConsumesScalar(kind) || kind == Pcre2CharacterTokenKind.CodeUnit;
+
     private static bool CanConsume(IPcre2BacktrackingNode node) => node switch
     {
         Pcre2EmptyBacktrackingNode => false,
-        Pcre2TokenBacktrackingNode token => ConsumesScalar(token.Token.Kind),
+        Pcre2TokenBacktrackingNode token => ConsumesInput(token.Token.Kind),
         Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(CanConsume),
         Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(CanConsume),
         Pcre2RepeatBacktrackingNode repeat => repeat.Maximum > 0 && CanConsume(repeat.Body),
