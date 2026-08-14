@@ -9,6 +9,9 @@ The package does not bind to native PCRE2. Its only non-BCL implementation
 dependency is `Lokad.Utf8Regex`; there is no P/Invoke, native loader, RID
 payload, or external matcher executable.
 
+Release notes for the core and companion packages are tracked in the
+[repository changelog](https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md).
+
 ## Supported profile
 
 The generic PCRE2 compiler/runtime covers the admitted literal, character,

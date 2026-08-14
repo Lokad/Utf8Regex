@@ -16,6 +16,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
     <PackageTags>regex;utf8;utf-8;span;bytes;performance</PackageTags>
     <PackageProjectUrl>https://github.com/Lokad/Utf8Regex</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Lokad/Utf8Regex.git</RepositoryUrl>
@@ -32,6 +33,7 @@
   <ItemGroup>
     <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 
