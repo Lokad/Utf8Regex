@@ -17,7 +17,7 @@ once per compiled regex; scan state is retained by operation cursors.
 | `PreparedMultiLiteralSearch` packed/prefilter tiers | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | Every prefilter advances monotonically; selected offsets, masks, and buckets are retained. |
 | `PreparedMultiLiteralSearch` automaton tier | `O(L * alphabet)` | `O(n + matches)` | The automaton state is carried in `PreparedMultiLiteralScanState`; it never restarts after a rejected match. |
 | `PreparedMultiLiteralSearch` trie tier | `O(L)` | `O(n * max(m))` worst case | Trie nodes are immutable after preparation. |
-| `PreparedSearcher` | selected-owner cost | selected-owner cost | It is a typed dispatcher and does not add another scan. |
+| `PreparedSearcher` | selected-owner cost | selected-owner cost | It is a typed dispatcher and does not add another scan; overlapping byte-set cursors advance at least one byte after every candidate. |
 | `PreparedWindowSearch` | two selected-owner costs | `O(leading work + trailing work + c)` | Leading and trailing scan states are both retained. A dense leading stream with an absent trailing literal scans the trailing suffix once, not once per leading candidate. |
 | `Utf8LiteralEquality` | `O(1)` | `O(m)` per requested comparison | Bounds checks precede every comparison; no input scan is hidden here. |
 | `AsciiSearch` preparation helpers | `O(L + k * alphabet)` | none | These helpers only construct retained search data. |

@@ -39,6 +39,20 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 
 ### Performance And Reliability
 
+- Added reproducible core, PCRE2, and PythonRe comparative snapshots with
+  source/runtime provenance, bounded warmup, per-case checkpointing, and
+  adversarial 1×/2×/4×/8× scaling coverage.
+- Reused prepared core literal-family search for compatible PCRE2 value
+  operations and added AST-certified required literals, leading-byte sets,
+  and bounded literal windows before PCRE2 verification.
+- Reduced the former multi-second compatible PCRE2 `Count` cases to within
+  6.1× decode-then-Regex; the retained `[^\n]*` VM case remains the sole
+  material compatible P0 exception at about 15.3×.
+- Decode non-ASCII case-insensitive fallback subjects once for capture-free
+  core `Count` and `IsMatch` operations that cannot use native byte matching.
+- Removed PythonRe's quadratic pure-zero-width suffix probes and reranked
+  non-empty replacement through its translated managed regex after the new
+  comparative catalog exposed both losses.
 - Removed preventable temporary allocation from warmed non-result PCRE2
   operations and bounded pooled invocation state and replacement-plan caches.
 - Kept candidate search, Unicode coordinate projection, zero-width progress,
@@ -46,9 +60,9 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
   scaling workloads.
 - Improved failure-path cleanup, concurrent compiled-regex reuse, resource
   limits, and deterministic return of pooled buffers.
-- Retained known performance gaps on complex compatible whole-document
-  `Count` workloads; this release does not claim general throughput parity
-  with predecoded `.NET Regex`.
+- Retained and documented the remaining compatible and predecoded-baseline
+  gaps; this release does not claim general throughput parity with
+  predecoded `.NET Regex`.
 
 ### Compatibility Boundaries
 

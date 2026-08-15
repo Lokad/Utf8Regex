@@ -1,17 +1,18 @@
 # Managed PCRE2 performance qualification
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
-2026-08-14 snapshot has SHA-256
-`A8B039A5FA785D8664DA7CAD2BF6E92577DA745020060AC8BE6F4A467CD993A7`.
-It contains 126 operation rows in ten top-line sections and ten scaling
+2026-08-15 snapshot has SHA-256
+`A5725FF77304ADFF7DCEF48380D0B6256DD261515D12D979FD31A2D7B9B8B31C`.
+It contains 126 operation rows in ten top-line sections and eleven scaling
 families with four 1×/2×/4×/8× points each.
 
 ## Measurement protocol
 
-- Release build, sequential commands, 20 requested iterations, three samples.
-- Dense/sparse candidate and capture-rollback scaling rows were rerun with 100
-  requested iterations and seven samples after the base refresh exposed noisy
-  nonmonotone timings.
+- Release build and sequential commands. The original catalog used 20
+  requested iterations and three samples; the final selective qualification
+  used five samples for affected rows and scaling families.
+- Candidate-heavy scaling was rerun with 100 requested iterations and seven
+  samples after its shorter run exposed tiering noise.
 - Every row records its effective iteration count.
 - PCRE2 refresh uses input/operation-specific maximums plus a warm pilot that
   caps each timed sample at approximately 250 ms. Fast rows retain up to 1,000
@@ -37,14 +38,15 @@ alternative count at each point.
 |---|---:|---:|---:|
 | Long flat patterns | 2× pattern/input | 1.01×, 1.03×, 1.08× | 0 B |
 | Cartesian literal families | 2× alternatives | 1.71×, 1.82×, 2.87× | 0 B |
-| Dense+sparse candidates | 2× input | 1.79×, 1.65×, 2.19× | 0 B |
-| Candidate-heavy misses | 2× input | 1.99×, 1.99×, 2.00× | 0–1 B |
+| Dense+sparse candidates | 2× input | 1.96×, 1.78×, 2.23× | 0–1 B |
+| Candidate-heavy misses | 2× input | 0.47×, 1.77×, 2.03× | 0 B |
 | Branch/repeat | 2× input | 2.00×, 1.94×, 2.03× | 1 B |
 | Dense non-ASCII coordinates | 2× input | 1.99×, 1.99×, 1.97× | 0–1 B |
 | Dense character classes | 2× input | 1.95×, 1.99×, 1.92× | 0–1 B |
 | Zero-width iteration | 2× input | 1.99×, 1.99×, 2.09× | 0–1 B |
 | Capture rollback | approximately 2× input | 1.74×, 1.62×, 0.66× | 0 B |
 | Replacement growth | 2× input/output | 1.78×, 1.73×, 1.83× | 42,088 / 83,816 / 167,272 / 334,184 B |
+| Required-literal all-`a` miss | 2× input | 1.29×, 1.46×, 1.62× | 1 B |
 
 No family has an unexplained quadratic curve. Candidate misses, branching,
 coordinate projection, character classes, zero-width progress, and capture
@@ -54,32 +56,41 @@ than size-dependent planner changes. Cartesian execution grows faster than its
 last alternative-count doubling but remains well below quadratic growth.
 Replacement allocation is the required returned byte array and scales with
 the doubled output, while non-result operations allocate zero bytes per warm
-invocation apart from measurement rounding of at most one byte.
+invocation apart from measurement rounding of at most one byte. The first
+candidate-heavy point was measured before the process settled on its warmed
+tier, making the first ratio artificially sublinear; the subsequent doublings
+are 1.77× and 2.03× and show the relevant steady-state envelope.
 
 Construction storage is bounded by pattern/program size. The long-flat
 construction time grows 1.15×, 1.27×, and 1.42× for successive 2× pattern growth;
 the other fixed-pattern families remain flat. Per-instance replacement plans
 are capped at 16 cache entries.
 
-## Accepted priority gaps
+## Qualified P0 result
 
-The snapshot is evidence, not a parity claim. The generic PCRE2 verifier is
-still much slower than specialized core/.NET routes on several complex
-whole-document `Count` workloads:
+The snapshot is evidence, not a semantic parity claim. Candidate facts and
+flavor-neutral direct literal-family execution removed the former multi-second
+P0 losses:
 
-| Case | `Utf8Pcre2` | Ratio to predecoded Regex |
-|---|---:|---:|
-| `industry/leipzig-name-family-count` | 4.013 s | 359.59× |
-| `industry/leipzig-river-window-count` | 3.308 s | 75.70× |
-| `industry/mariomka-email-count` | 2.547 s | 5,155.35× |
-| `industry/mariomka-ip-count` | 2.251 s | 225.25× |
-| `industry/mariomka-uri-count` | 2.218 s | 1,078.18× |
+| Case | `Utf8Pcre2` | Decode-then-Regex | Ratio |
+|---|---:|---:|---:|
+| `industry/leipzig-name-family-count` | 2.960 ms | 13.672 ms | 0.22× |
+| `industry/leipzig-river-window-count` | 20.274 ms | 28.650 ms | 0.71× |
+| `industry/mariomka-email-count` | 11.852 ms | 7.194 ms | 1.65× |
+| `industry/mariomka-ip-count` | 13.782 ms | 13.103 ms | 1.05× |
+| `industry/mariomka-uri-count` | 18.908 ms | 6.487 ms | 2.91× |
+| `industry/rust-sherlock-word-holmes-count` | 1.170 ms | 5.144 ms | 0.23× |
+| `industry/rust-sherlock-holmes-window-count` | 2.196 ms | 0.365 ms | 6.02× |
+| `industry/rust-sherlock-ing-count` | 6.320 ms | 7.177 ms | 0.88× |
+| `common/matches-words` | 77.630 us | 77.800 us | 1.00× |
 
-These are the next optimization priorities: semantic-tree-derived candidate
-search and compatible-subset delegation, not fixture-shaped execution. Their
-poor constants do not hide an allocation leak or quadratic curve—the frozen
-candidate/search scaling families remain linear—but they do rule out claiming
-general throughput parity in 0.2.0.
+The remaining material compatible P0 limitation is
+`industry/rust-sherlock-nonnewline-count` (`[^\n]*`): 18.373 ms versus
+1.206 ms decode-then-Regex, or 15.23×. Only this one family passed the residual
+VM-cost threshold, so the bounded fusion gate correctly closed without adding
+a second executor. Email and URI still trail the predecoded baseline by 28.09×
+and 11.92× respectively, but stay below 3× decode-then-Regex; decoding is part
+of the comparable UTF-8 operation and PCRE2 semantics remain authoritative.
 
 PCRE2-specific global rows are substantially smaller in the curated inputs;
 the largest is `literal/empty-unicode` replacement at 93.625 us. Future
