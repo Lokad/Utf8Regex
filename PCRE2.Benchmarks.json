@@ -905,9 +905,9 @@
           "DecodeThenRegex": 30220.833333333332
         },
         "industry/leipzig-symbol-count": {
-          "MeasuredAtUtc": "2026-08-15T17:31:11.7748282+00:00",
+          "MeasuredAtUtc": "2026-08-15T23:12:30.938353+00:00",
           "Environment": {
-            "SourceCommit": "c36e55998534",
+            "SourceCommit": "5bc1476dc19b",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -917,15 +917,15 @@
           },
           "PatternUtf8Bytes": 6,
           "InputUtf8Bytes": 16013977,
-          "EffectiveIterations": 5,
-          "ConstructionMicroseconds": 12.459999999999999,
-          "ConstructionAllocatedBytes": 40748,
+          "EffectiveIterations": 4,
+          "ConstructionMicroseconds": 42.725,
+          "ConstructionAllocatedBytes": 41182,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 4,
-          "Utf8Pcre2": 44280.14,
-          "Utf8Regex": 1203.8799999999999,
-          "PredecodedRegex": 13554.720000000001,
-          "DecodeThenRegex": 18826.1
+          "WarmAllocatedBytes": 6,
+          "Utf8Pcre2": 44825.225,
+          "Utf8Regex": 1592.05,
+          "PredecodedRegex": 12263.7,
+          "DecodeThenRegex": 18509.625
         },
         "industry/leipzig-twain-count": {
           "MeasuredAtUtc": "2026-08-15T17:31:16.9154448+00:00",

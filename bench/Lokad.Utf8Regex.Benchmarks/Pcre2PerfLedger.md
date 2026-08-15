@@ -2,7 +2,7 @@
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
 2026-08-15 snapshot has SHA-256
-`22B38E029C40163D02E307F5D14C9E3E872817BE7F2AFD22A4681A3C60A69D8F`.
+`C9911C8B96711E0D957459EEF08A05A2BAF0BB1F78BE4A8B1A8BD669005FC53C`.
 It contains 126 operation rows in ten top-line sections and twelve scaling
 families with four 1×/2×/4×/8× points each.
 
@@ -148,3 +148,8 @@ has a vectorized ASCII math-symbol kernel. `\p{L}` is only 1.43x slower than
 the core route (1.549 ms versus 1.080 ms), so future work should first prove a
 narrow exact-category shared kernel rather than generalize all property
 semantics.
+
+The committed pre-experiment snapshot row on source `5bc1476d` records
+44.825 ms PCRE2, 1.592 ms core UTF-8, 18.510 ms decode-then-Regex, and 12.264
+ms predecoded Regex at four effective iterations. Use that row for persisted
+before/after evidence and the longer direct run above for attribution.
