@@ -423,6 +423,53 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ShapedFindAllHonorsByteStartAfterUnicodePrefix()
+    {
+        var regex = new Utf8PythonRegex("[a-z]+");
+        var input = "é ignored alpha beta"u8;
+        var startOffsetInBytes = "é ignored "u8.Length;
+
+        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
+        var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
+
+        Assert.Equal(["alpha", "beta"], strings.ScalarValues);
+        Assert.Equal(
+            strings.ScalarValues,
+            utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+    }
+
+    [Fact]
+    public void ShapedFindAllPreservesEmptyThenNonEmptyProgression()
+    {
+        var regex = new Utf8PythonRegex(@"\b|\w+");
+        string[] expected = ["", "a", "", "", "bc", ""];
+
+        var strings = regex.FindAllToStrings("a::bc"u8);
+        var utf8 = regex.FindAllToUtf8("a::bc"u8);
+
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Equal(expected, strings.ScalarValues);
+        Assert.Equal(
+            expected,
+            utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+    }
+
+    [Fact]
+    public void ShapedFindAllPreservesManagedPrefixAlternationOrder()
+    {
+        var regex = new Utf8PythonRegex("foo|foobar");
+
+        var strings = regex.FindAllToStrings("foobar foo"u8);
+        var utf8 = regex.FindAllToUtf8("foobar foo"u8);
+
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Equal(["foo", "foo"], strings.ScalarValues);
+        Assert.Equal(
+            strings.ScalarValues,
+            utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+    }
+
+    [Fact]
     public void FindIterDetailedReturnsHostFriendlySnapshots()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
@@ -556,6 +603,50 @@ public sealed class Utf8PythonRegexTests
 
         Assert.Equal("-foo -foo", System.Text.Encoding.UTF8.GetString(result.ResultBytes));
         Assert.Equal(2, result.ReplacementCount);
+    }
+
+    [Fact]
+    public void CallableSubnPreservesNamedUnmatchedGroupsAfterUnicodeByteStart()
+    {
+        var regex = new Utf8PythonRegex(@"(?P<word>[a-z]+)|(é)");
+        var input = "é pre | é foo"u8;
+        var startOffsetInBytes = "é pre | "u8.Length;
+
+        var text = regex.SubnToString(
+            input,
+            "unused",
+            static (_, match) =>
+            {
+                Assert.True(match.TryGetFirstSetGroup("word", out var word));
+                return word.Success ? $"<{word.ValueText}>" : "𝒜";
+            },
+            startOffsetInBytes: startOffsetInBytes);
+        Utf8PythonUtf8MatchEvaluator<string> utf8Evaluator = static (_, match) =>
+        {
+            Assert.True(match.TryGetFirstSetGroup("word", out var word));
+            return System.Text.Encoding.UTF8.GetBytes(word.Success ? $"<{word.ValueText}>" : "𝒜");
+        };
+        var utf8 = regex.Subn(input, "unused", utf8Evaluator, startOffsetInBytes: startOffsetInBytes);
+
+        Assert.Equal("é pre | 𝒜 <foo>", text.ResultText);
+        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
+        Assert.Equal(2, text.ReplacementCount);
+        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
+    }
+
+    [Fact]
+    public void CallableSubnPreservesLimitedEmptyMatchProgression()
+    {
+        var regex = new Utf8PythonRegex("");
+
+        var text = regex.SubnToString("ab"u8, 0, static (_, _) => "-", count: 2);
+        Utf8PythonUtf8MatchEvaluator<int> evaluator = static (_, _) => "-"u8.ToArray();
+        var utf8 = regex.Subn("ab"u8, 0, evaluator, count: 2);
+
+        Assert.Equal("-a-b", text.ResultText);
+        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
+        Assert.Equal(2, text.ReplacementCount);
+        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
     }
 
     [Fact]
