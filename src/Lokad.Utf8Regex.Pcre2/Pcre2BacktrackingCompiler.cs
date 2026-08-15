@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -3113,12 +3114,14 @@ internal static class Pcre2BacktrackingRunner
 {
     internal static Pcre2CharacterMatch Match(
         Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
         => MatchCore(
             program,
+            candidateSearch,
             ref input,
             start,
             start,
@@ -3128,6 +3131,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2CharacterMatch Match(
         Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition searchStart,
         Utf8BytePosition firstMatchingPosition,
@@ -3135,6 +3139,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget)
         => MatchCore(
             program,
+            candidateSearch,
             ref input,
             searchStart,
             firstMatchingPosition,
@@ -3144,12 +3149,14 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         ref Pcre2ResourceBudget budget)
         => MatchCore(
             program,
+            candidateSearch,
             ref input,
             start,
             start,
@@ -3159,6 +3166,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition searchStart,
         Utf8BytePosition firstMatchingPosition,
@@ -3166,6 +3174,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget)
         => MatchCore(
             program,
+            candidateSearch,
             ref input,
             searchStart,
             firstMatchingPosition,
@@ -3175,6 +3184,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition,
@@ -3186,12 +3196,33 @@ internal static class Pcre2BacktrackingRunner
         var anchored = (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
         var candidate = start.Value;
+        var useCandidateSearch = candidateSearch.HasValue &&
+            matchOptions == Pcre2MatchOptions.None &&
+            budget.IsUnmetered;
+        var candidateState = new PreparedSearchScanState(
+            candidate,
+            new PreparedMultiLiteralScanState(candidate, candidate, 0));
         string? lastMark = null;
         var maximumCandidate = program.MinimumByteLength > bytes.Length
             ? -1
             : bytes.Length - program.MinimumByteLength;
         while (candidate <= maximumCandidate)
         {
+            if (useCandidateSearch)
+            {
+                if (!TryFindNextCandidate(
+                        candidateSearch,
+                        program.Request,
+                        bytes,
+                        start.Value,
+                        ref candidateState,
+                        out candidate) ||
+                    candidate > maximumCandidate)
+                {
+                    break;
+                }
+            }
+
             budget.ChargeCandidate();
             if (TryMatchAt(
                     program,
@@ -3224,6 +3255,11 @@ internal static class Pcre2BacktrackingRunner
                 continue;
             }
 
+            if (useCandidateSearch)
+            {
+                continue;
+            }
+
             if (anchored || !Pcre2CharacterRunner.TryAdvanceCandidate(
                     program.Request,
                     program.LeadingAsciiByte,
@@ -3250,6 +3286,111 @@ internal static class Pcre2BacktrackingRunner
         return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, [], lastMark);
     }
 
+    private static bool TryFindNextCandidate(
+        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CompileRequest request,
+        ReadOnlySpan<byte> input,
+        int lowerBound,
+        ref PreparedSearchScanState state,
+        out int candidate)
+    {
+        while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var preparedCandidate))
+        {
+            if (candidateSearch.Kind is Pcre2CandidateSearchKind.BranchLeadingLiterals or
+                Pcre2CandidateSearchKind.LeadingAsciiSet or
+                Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow)
+            {
+                if (candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow &&
+                    !MatchesCandidateWindow(input, preparedCandidate.Index, candidateSearch.WindowConstraint))
+                {
+                    continue;
+                }
+
+                candidate = preparedCandidate.Index;
+                return true;
+            }
+
+            if (candidateSearch.Kind != Pcre2CandidateSearchKind.LeadingRunThenLiteral)
+            {
+                break;
+            }
+
+            var runStart = preparedCandidate.Index;
+            var valid = true;
+            for (var i = candidateSearch.LeadingRunTokens.Length - 1; i >= 0; i--)
+            {
+                var consumed = false;
+                while (TryRetreatScalarToBoundary(input, lowerBound, runStart, out var previous) &&
+                       Pcre2CharacterRunner.TryMatchToken(
+                           candidateSearch.LeadingRunTokens[i],
+                           request,
+                           input,
+                           previous,
+                           lowerBound,
+                           Pcre2MatchOptions.None,
+                           out var next) &&
+                       next == runStart)
+                {
+                    runStart = previous;
+                    consumed = true;
+                }
+
+                if (!consumed)
+                {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid)
+            {
+                candidate = runStart;
+                return true;
+            }
+        }
+
+        candidate = -1;
+        return false;
+    }
+
+    private static bool MatchesCandidateWindow(
+        ReadOnlySpan<byte> input,
+        int candidate,
+        Pcre2CandidateWindowConstraint constraint)
+    {
+        var latest = Math.Min(constraint.MaximumOffset, input.Length - candidate - constraint.Literal.Length);
+        for (var offset = constraint.MinimumOffset; offset <= latest; offset++)
+        {
+            if (input.Slice(candidate + offset, constraint.Literal.Length).SequenceEqual(constraint.Literal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryRetreatScalarToBoundary(
+        ReadOnlySpan<byte> input,
+        int lowerBound,
+        int position,
+        out int previous)
+    {
+        if (position <= lowerBound)
+        {
+            previous = 0;
+            return false;
+        }
+
+        previous = position - 1;
+        while (previous > lowerBound && (input[previous] & 0xC0) == 0x80)
+        {
+            previous--;
+        }
+
+        return true;
+    }
+
     private static bool TryMatchAt(
         Pcre2BacktrackingProgram program,
         ReadOnlySpan<byte> input,
@@ -3271,14 +3412,14 @@ internal static class Pcre2BacktrackingRunner
         var frameLimit = configuredFrameLimit == int.MaxValue
             ? int.MaxValue
             : Math.Max(0, configuredFrameLimit - depthBase);
-        var frames = new Utf8PooledStateStack<Pcre2BacktrackingFrame>(frameLimit);
-        var repeatMutations = new Utf8PooledStateStack<Pcre2RepeatMutation>(int.MaxValue);
-        var captureMutations = new Utf8PooledStateStack<Pcre2CaptureMutation>(int.MaxValue);
-        var subroutineCalls = new Utf8PooledStateStack<Pcre2SubroutineCallFrame>(frameLimit);
-        var subroutineCallMutations = new Utf8PooledStateStack<Pcre2SubroutineCallMutation>(int.MaxValue);
-        var atomicCheckpoints = new Utf8PooledStateStack<Pcre2AtomicCheckpoint>(frameLimit);
-        var markMutations = new Utf8PooledStateStack<Pcre2MarkMutation>(int.MaxValue);
-        var markTrail = new Utf8PooledStateStack<Pcre2MarkTrailEntry>(int.MaxValue);
+        var frames = new Utf8PooledStateStack<Pcre2BacktrackingFrame>(frameLimit, budget.CollectsDiagnostics);
+        var repeatMutations = new Utf8PooledStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var captureMutations = new Utf8PooledStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var subroutineCalls = new Utf8PooledStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
+        var subroutineCallMutations = new Utf8PooledStateStack<Pcre2SubroutineCallMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var atomicCheckpoints = new Utf8PooledStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
+        var markMutations = new Utf8PooledStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var markTrail = new Utf8PooledStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
         var rentedCounts = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
         var rentedPositions = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
         var needsCaptureState = program.RequiresCaptureState ||
@@ -4115,6 +4256,36 @@ internal static class Pcre2BacktrackingRunner
         }
         finally
         {
+            var stackRents = frames.RentCount +
+                repeatMutations.RentCount +
+                captureMutations.RentCount +
+                subroutineCalls.RentCount +
+                subroutineCallMutations.RentCount +
+                atomicCheckpoints.RentCount +
+                markMutations.RentCount +
+                markTrail.RentCount;
+            var stackGrowths = Math.Max(0, frames.RentCount - 1) +
+                Math.Max(0, repeatMutations.RentCount - 1) +
+                Math.Max(0, captureMutations.RentCount - 1) +
+                Math.Max(0, subroutineCalls.RentCount - 1) +
+                Math.Max(0, subroutineCallMutations.RentCount - 1) +
+                Math.Max(0, atomicCheckpoints.RentCount - 1) +
+                Math.Max(0, markMutations.RentCount - 1) +
+                Math.Max(0, markTrail.RentCount - 1);
+            var fixedRents = (rentedCounts is null ? 0 : 1) +
+                (rentedPositions is null ? 0 : 1) +
+                (rentedCaptureStarts is null ? 0 : 1) +
+                (rentedCaptureEnds is null ? 0 : 1) +
+                (rentedCaptureOpenStarts is null ? 0 : 1) +
+                (rentedCaptureOwners is null ? 0 : 1) +
+                (rentedCaptureOpenOwners is null ? 0 : 1) +
+                (rentedCaptureRestoreGenerations is null ? 0 : 1) +
+                (rentedCaptureRestoreSlots is null ? 0 : 1) +
+                (rentedCaptureRestoreSnapshots is null ? 0 : 1) +
+                (rentedRepeatRestoreGenerations is null ? 0 : 1) +
+                (rentedRepeatRestoreIds is null ? 0 : 1) +
+                (rentedRepeatRestoreSnapshots is null ? 0 : 1);
+            budget.RecordWorkspacePoolTraffic((ulong)(stackRents + fixedRents), (ulong)stackGrowths);
             markTrail.Dispose();
             markMutations.Dispose();
             atomicCheckpoints.Dispose();

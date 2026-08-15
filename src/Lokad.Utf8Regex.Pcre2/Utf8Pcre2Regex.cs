@@ -73,7 +73,7 @@ public sealed class Utf8Pcre2Regex
             primaryUtf8,
             managed,
             operations,
-            new Pcre2CandidateSearchProgram(operations.IsMatch),
+            default,
             Pcre2PartialProbeProgram.None,
             Pcre2LegacySyntaxTree.Instance,
             groupNames,
@@ -2722,6 +2722,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
+            _program.CandidateSearch,
             validated,
             start,
             matchOptions,
@@ -2756,6 +2757,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
+            _program.CandidateSearch,
             validated,
             start,
             matchOptions,
@@ -2863,6 +2865,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
+            _program.CandidateSearch,
             validated,
             start,
             matchOptions,
@@ -3939,6 +3942,32 @@ public sealed class Utf8Pcre2Regex
         }
 
         return Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
+    }
+
+    internal Pcre2CountDiagnostics DebugCountWithDiagnostics(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        ThrowIfGenericIterationMayBeNonMonotone();
+        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (_program.Operations.Enumerate is not Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            return new Pcre2CountDiagnostics(Count(input, startOffsetInBytes), default);
+        }
+
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+            backtrackingProgram.Program,
+            _program.CandidateSearch,
+            subject,
+            start,
+            Pcre2MatchOptions.None,
+            _program.Request,
+            collectDiagnostics: true);
+        var count = 0;
+        while (cursor.MoveNext())
+        {
+            count = checked(count + 1);
+        }
+
+        return new Pcre2CountDiagnostics(count, cursor.Diagnostics);
     }
 
     internal int DebugEnumerateRawIndexSum(ReadOnlySpan<byte> input, int startOffsetInBytes)

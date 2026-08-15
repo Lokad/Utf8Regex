@@ -6,10 +6,17 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal ref struct Utf8PooledStateStack<T> where T : struct
 {
     private readonly int _maximumCount;
+    private readonly bool _trackRents;
     private T[]? _items;
     private int _count;
+    private int _rentCount;
 
     public Utf8PooledStateStack(int maximumCount)
+        : this(maximumCount, trackRents: false)
+    {
+    }
+
+    public Utf8PooledStateStack(int maximumCount, bool trackRents)
     {
         if (maximumCount < 0)
         {
@@ -17,13 +24,17 @@ internal ref struct Utf8PooledStateStack<T> where T : struct
         }
 
         _maximumCount = maximumCount;
+        _trackRents = trackRents;
         _items = null;
         _count = 0;
+        _rentCount = 0;
     }
 
     public readonly int Count => _count;
 
     public readonly int MaximumCount => _maximumCount;
+
+    public readonly int RentCount => _rentCount;
 
     public readonly T this[int index]
     {
@@ -96,6 +107,10 @@ internal ref struct Utf8PooledStateStack<T> where T : struct
             ? Math.Min(Math.Max(4, requiredCount), _maximumCount)
             : Math.Min(checked(items.Length * 2), _maximumCount);
         var grown = ArrayPool<T>.Shared.Rent(requestedCount);
+        if (_trackRents)
+        {
+            _rentCount++;
+        }
         if (items is not null)
         {
             items.AsSpan(0, _count).CopyTo(grown);

@@ -361,7 +361,7 @@ internal static class Pcre2LiteralProbeRunner
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request)
     {
-        var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout);
+        var budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
         Pcre2LiteralMatch fullMatch;
         try
         {

@@ -182,6 +182,19 @@ internal readonly struct PreparedSearcher
                 state = new PreparedSearchScanState(match.Index + 1, default);
                 return true;
 
+            case PreparedSearcherKind.ByteSet:
+                var byteRelative = ByteSearch.IndexOf(input[state.NextStart..]);
+                if (byteRelative < 0)
+                {
+                    state = new PreparedSearchScanState(input.Length, default);
+                    return false;
+                }
+
+                var byteIndex = state.NextStart + byteRelative;
+                match = new PreparedSearchMatch(byteIndex, 1, 0);
+                state = new PreparedSearchScanState(byteIndex + 1, default);
+                return true;
+
             default:
                 return false;
         }

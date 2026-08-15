@@ -28,8 +28,31 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Utf8ExecKind      : {context.Utf8Pcre2Regex.DebugUtf8RegexExecutionKindName}");
         Console.WriteLine($"HasManagedRegex   : {context.Utf8Pcre2Regex.DebugHasManagedRegex}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
+        Console.WriteLine($"CandidateSearch   : {context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch.Kind}");
         Console.WriteLine($"HasUtf8Regex      : {context.Utf8Regex is not null}");
         Console.WriteLine($"HasRegex          : {context.Regex is not null}");
+        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
+        {
+            _ = context.Utf8Pcre2Regex.Count(context.InputBytes);
+            var allocatedBytes = MeasureAllocatedBytesPerInvocation(
+                3,
+                () => context.Utf8Pcre2Regex.Count(context.InputBytes));
+            var stopwatch = Stopwatch.StartNew();
+            var count = context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0);
+            stopwatch.Stop();
+            var seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
+            var execution = count.Execution;
+            Console.WriteLine($"CountResult       : {count.Count}");
+            Console.WriteLine($"CandidateAttempts : {execution.CandidateAttempts}");
+            Console.WriteLine($"VmSteps           : {execution.BacktrackingSteps}");
+            Console.WriteLine($"ResultProjections : {execution.ResultProjections}");
+            Console.WriteLine($"WorkspaceRents    : {execution.WorkspacePoolRents}");
+            Console.WriteLine($"WorkspaceGrowths  : {execution.WorkspacePoolGrowths}");
+            Console.WriteLine($"ManagedAllocBytes : {allocatedBytes}");
+            Console.WriteLine($"ThroughputBytes/s : {context.InputBytes.Length / seconds:F0}");
+            Console.WriteLine($"CandidatePassEq   : {(double)execution.CandidateAttempts / Math.Max(1, context.InputBytes.Length):F3}");
+            Console.WriteLine($"VmStepPassEq      : {(double)execution.BacktrackingSteps / Math.Max(1, context.InputBytes.Length):F3}");
+        }
         return 0;
     }
 
@@ -418,6 +441,12 @@ internal static partial class BenchmarkInspectReporter
                 [512, 1024, 2048, 4096],
                 static _ => "ab[0-9]{2}",
                 static size => string.Concat(Enumerable.Repeat("abXX", size / 4))),
+            CreatePcre2ScalingFamily(
+                "required-literal-all-a-miss",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [16_384, 32_768, 65_536, 131_072],
+                static _ => "[a-z]+@[a-z]+",
+                static size => new string('a', size)),
             CreatePcre2ScalingFamily(
                 "branch-repeat-linear",
                 Utf8Pcre2BenchmarkOperation.IsMatch,

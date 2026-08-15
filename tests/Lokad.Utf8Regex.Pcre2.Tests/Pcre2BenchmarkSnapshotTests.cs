@@ -15,6 +15,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         "dense-plus-sparse-candidate-portfolios",
         "long-flat-patterns",
         "replacement-growth",
+        "required-literal-all-a-miss",
         "zero-width-iteration",
     ];
 

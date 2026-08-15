@@ -16,7 +16,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.IsMatch);
         Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(special.PrimaryUtf8);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
-        Assert.Equal(special.Operations.IsMatch, special.CandidateSearch.Program);
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
     }
 

@@ -205,7 +205,87 @@ public sealed class Utf8Pcre2RegexTranslationTests
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal(Pcre2CandidateSearchKind.BranchLeadingLiterals, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(2, regex.Count("Tom and Becky near the river xx river beside old Tom"u8));
+    }
+
+    [Theory]
+    [InlineData(@"(?<=x)foo")]
+    [InlineData(@"foo\Kbar")]
+    [InlineData(@"(foo)\1")]
+    [InlineData(@"(?R)|foo")]
+    public void UnsafeStartSemanticsStayOffTheCandidateSearchPath(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.Equal(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
+    }
+
+    [Theory]
+    [InlineData(@"[a-z]+@[a-z]+", "xx foo@bar yy", 1)]
+    [InlineData(@"[\w]+://[^/\s?#]+", "xx https://example.test yy", 1)]
+    [InlineData(@"\w+\s+Holmes", "xx Sherlock Holmes yy Holmes", 2)]
+    public void LeadingRunRequiredLiteralUsesMonotoneCandidateSearch(
+        string pattern,
+        string input,
+        int expectedCount)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(expectedCount, regex.Count(bytes));
+    }
+
+    [Fact]
+    public void LeadingRunCandidateSearchRespectsAStartInsideTheRun()
+    {
+        var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+");
+        var input = "foo@bar"u8;
+
+        var match = regex.Match(input, 1);
+
+        Assert.True(match.Success);
+        Assert.Equal(1, match.StartOffsetInBytes);
+        Assert.Equal("oo@bar", match.GetValueString());
+    }
+
+    [Theory]
+    [InlineData("Tom.{10,25}river|river.{10,25}Tom")]
+    [InlineData(@"[a-z]+@[a-z]+")]
+    [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])")]
+    public void CandidateSearchStillValidatesMalformedPrefixesAndSuffixes(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var malformedPrefix = new byte[] { 0xC3, 0x28, (byte)'1', (byte)'9', (byte)'2', (byte)'.', (byte)'1' };
+        var malformedSuffix = new byte[] { (byte)'f', (byte)'o', (byte)'o', (byte)'@', (byte)'b', (byte)'a', (byte)'r', 0xC3, 0x28 };
+
+        Assert.NotEqual(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Throws<ArgumentException>(() => regex.Count(malformedPrefix));
+        Assert.Throws<ArgumentException>(() => regex.Count(malformedSuffix));
+    }
+
+    [Fact]
+    public void ConfiguredLimitsBypassCandidateSearchAndRetainPcre2Accounting()
+    {
+        var regex = new Utf8Pcre2Regex(
+            @"[a-z]+@[a-z]+",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xx foo@bar"u8));
+        Assert.Equal("MatchLimit", exception.ErrorKind);
+    }
+
+    [Fact]
+    public void IpAddressPatternUsesAnAsciiLeadingSetBeforePcre2Verification()
+    {
+        var regex = new Utf8Pcre2Regex(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])");
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(2, regex.Count("x 192.168.001.010 y 999.999.999.999 z 010.020.030.040"u8));
     }
 
     [Fact]

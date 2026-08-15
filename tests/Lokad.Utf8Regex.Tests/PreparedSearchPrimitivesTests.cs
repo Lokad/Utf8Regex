@@ -603,6 +603,19 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.Equal(input.Length - "await".Length, match.Trailing.Index);
     }
 
+    [Fact]
+    public void PreparedByteSetSearcherCanScanOverlappingMatchesFromANonzeroStart()
+    {
+        var searcher = new PreparedSearcher(PreparedByteSearch.Create((byte)'0', (byte)'1', (byte)'2'));
+        var state = new PreparedSearchScanState(2, default);
+
+        Assert.True(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out var first));
+        Assert.Equal(2, first.Index);
+        Assert.True(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out var second));
+        Assert.Equal(4, second.Index);
+        Assert.False(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out _));
+    }
+
     [Theory]
     [InlineData(256)]
     [InlineData(1024)]
