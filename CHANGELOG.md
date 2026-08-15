@@ -45,9 +45,17 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 - Reused prepared core literal-family search for compatible PCRE2 value
   operations and added AST-certified required literals, leading-byte sets,
   and bounded literal windows before PCRE2 verification.
-- Reduced the former multi-second compatible PCRE2 `Count` cases to within
-  6.1× decode-then-Regex; the retained `[^\n]*` VM case remains the sole
-  material compatible P0 exception at about 15.3×.
+- Added direct global counting for exact greedy excluded-ASCII repeats,
+  removing the former multi-millisecond PCRE2 `[^\n]*` path while preserving
+  the generic runner for metered and semantically richer cases.
+- Extended PCRE2 required-literal candidate search to unbounded leading runs
+  that can also consume the delimiter, while retaining PCRE2 backtracking as
+  the final matcher.
+- Added a shared zero-allocation core split cursor for eligible capture-free
+  patterns and applied it consistently to ordinary and compiled execution.
+- Admitted ASCII inputs to native simple-pattern plans for Unicode-category
+  intersections, with explicit Unicode fallback guards across matching and
+  output operations.
 - Decode non-ASCII case-insensitive fallback subjects once for capture-free
   core `Count` and `IsMatch` operations that cannot use native byte matching.
 - Removed PythonRe's quadratic pure-zero-width suffix probes and reranked
