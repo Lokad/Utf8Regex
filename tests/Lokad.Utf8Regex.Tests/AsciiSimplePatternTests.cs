@@ -103,6 +103,46 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnicodeSensitiveAsciiIntersectionPlansPreserveGlobalOperations(bool compiled)
+    {
+        const string pattern = @"\d{2}";
+        const string input = "a12 b١٢ c३४";
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var expected = new Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options);
+        var utf8 = System.Text.Encoding.UTF8.GetBytes(input);
+        var actualMatches = new List<string>();
+        var actualSplits = new List<string>();
+
+        foreach (var match in actual.EnumerateMatches(utf8))
+        {
+            actualMatches.Add(System.Text.Encoding.UTF8.GetString(
+                utf8.AsSpan(match.IndexInBytes, match.LengthInBytes)));
+        }
+
+        foreach (var split in actual.EnumerateSplits(utf8))
+        {
+            actualSplits.Add(split.GetValueString());
+        }
+
+        Span<byte> destination = stackalloc byte[utf8.Length];
+        var replaceStatus = actual.TryReplace(utf8, "#", destination, out var bytesWritten);
+        var expectedReplacement = expected.Replace(input, "#");
+
+        Assert.False(actual.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.Equal(expected.Count(input), actual.Count(utf8));
+        Assert.Equal(expected.Matches(input).Select(static match => match.Value), actualMatches);
+        Assert.Equal(expectedReplacement, actual.ReplaceToString(utf8, "#"));
+        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#")));
+        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#"u8)));
+        Assert.Equal(System.Buffers.OperationStatus.Done, replaceStatus);
+        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(destination[..bytesWritten]));
+        Assert.Equal(expected.Split(input), actualSplits);
+    }
+
     [Fact]
     public void SupportAnalyzerBuildsRunPlanForRepeatedAsciiCharClass()
     {
