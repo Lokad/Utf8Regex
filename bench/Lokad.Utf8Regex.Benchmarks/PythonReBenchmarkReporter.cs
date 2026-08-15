@@ -399,6 +399,7 @@ internal sealed class PythonReBenchmarkContext
     private readonly string _decoded;
     private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
+    private int _callbackChecksum;
 
     internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
     {
@@ -430,10 +431,8 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.SubnString => Checksum(_pythonRegex.SubnToString(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(
-            _pythonRegex.SubnToString(InputBytes, _case.Replacement, static (replacement, _) => replacement)),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(
-            _pythonRegex.Subn(InputBytes, _replacementBytes, static (replacement, _) => replacement)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_pythonRegex.SplitToStrings(InputBytes)),
         _ => throw new InvalidOperationException(),
     };
@@ -446,23 +445,51 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecutePredecodedRegex() => ExecuteRegex(_decoded);
 
+    private int ExecutePythonReEvaluatorString()
+    {
+        _callbackChecksum = 0;
+        var result = _pythonRegex.SubnToString(
+            InputBytes,
+            this,
+            static (context, match) =>
+            {
+                context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                return context._case.Replacement;
+            });
+        return Combine(Checksum(result), _callbackChecksum);
+    }
+
+    private int ExecutePythonReEvaluatorUtf8()
+    {
+        _callbackChecksum = 0;
+        var result = _pythonRegex.Subn(
+            InputBytes,
+            this,
+            static (context, match) =>
+            {
+                context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                return context._replacementBytes;
+            });
+        return Combine(Checksum(result), _callbackChecksum);
+    }
+
     private int ExecuteRegex(string input) => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,
         PythonReBenchmarkOperation.Search => Checksum(_regex.Match(input)),
         PythonReBenchmarkOperation.Match => ChecksumAtStart(_regex.Match(input)),
         PythonReBenchmarkOperation.FullMatch => Checksum(_fullRegex.Match(input)),
-        PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, BuildUtf8Offsets(input))),
+        PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input))),
         PythonReBenchmarkOperation.Count => _regex.Count(input),
         PythonReBenchmarkOperation.FindAllStrings => Checksum(MaterializeFindAllStrings(input)),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(MaterializeFindAllUtf8(input)),
         PythonReBenchmarkOperation.FindIterDetailed => Checksum(MaterializeFindIterDetailed(input)),
         PythonReBenchmarkOperation.ReplaceString => Checksum(_regex.Replace(input, _case.Replacement)),
         PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(Encoding.UTF8.GetBytes(_regex.Replace(input, _case.Replacement))),
-        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
-        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true)),
+        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: false)),
+        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true)),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true)),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_regex.Split(input)),
         _ => throw new InvalidOperationException(),
     };
@@ -524,7 +551,7 @@ internal sealed class PythonReBenchmarkContext
 
     private BclDetailedMatch[] MaterializeFindIterDetailed(string input)
     {
-        var utf8Offsets = BuildUtf8Offsets(input);
+        var utf8Offsets = GetUtf8Offsets(input);
         var matches = new List<BclDetailedMatch>();
         for (var match = _regex.Match(input); match.Success; match = match.NextMatch())
         {
@@ -534,18 +561,29 @@ internal sealed class PythonReBenchmarkContext
         return matches.ToArray();
     }
 
-    private BclSubnResult ReplaceAndCount(string input, bool encodeUtf8)
+    private BclSubnResult ReplaceAndCount(string input, bool encodeUtf8, bool materializeCallback)
     {
         var count = 0;
-        var result = _regex.Replace(input, _ =>
+        var callbackChecksum = 0;
+        var utf8Offsets = materializeCallback ? GetUtf8Offsets(input) : null;
+        var result = _regex.Replace(input, match =>
         {
             count++;
+            if (materializeCallback)
+            {
+                callbackChecksum = Combine(callbackChecksum, Checksum(MaterializeDetailed(match, input, utf8Offsets)));
+            }
+
             return _case.Replacement;
         });
-        return new BclSubnResult(result, encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null, count);
+        return new BclSubnResult(
+            result,
+            encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null,
+            count,
+            materializeCallback ? callbackChecksum : null);
     }
 
-    private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[] utf8Offsets)
+    private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[]? utf8Offsets)
     {
         if (!match.Success)
         {
@@ -557,7 +595,13 @@ internal sealed class PythonReBenchmarkContext
         {
             var group = match.Groups[index];
             groups[index] = group.Success
-                ? new BclDetailedGroup(true, utf8Offsets[group.Index], utf8Offsets[group.Index + group.Length], group.Index, group.Index + group.Length, group.Value)
+                ? new BclDetailedGroup(
+                    true,
+                    utf8Offsets is null ? group.Index : utf8Offsets[group.Index],
+                    utf8Offsets is null ? group.Index + group.Length : utf8Offsets[group.Index + group.Length],
+                    group.Index,
+                    group.Index + group.Length,
+                    group.Value)
                 : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
         }
 
@@ -589,6 +633,10 @@ internal sealed class PythonReBenchmarkContext
 
         return offsets;
     }
+
+    private int[]? GetUtf8Offsets(string input) => InputBytes.Length == input.Length
+        ? null
+        : BuildUtf8Offsets(input);
 
     private static int Checksum(Utf8PythonValueMatch match) => match.Success
         ? Combine(1, match.StartOffsetInUtf16, match.EndOffsetInUtf16)
@@ -704,9 +752,15 @@ internal sealed class PythonReBenchmarkContext
     private static int Checksum(Utf8PythonSubnUtf8Result result) =>
         Combine(Checksum(result.ResultBytes), result.ReplacementCount);
 
-    private static int Checksum(BclSubnResult result) => result.ResultBytes is null
-        ? Combine(Checksum(result.ResultText), result.ReplacementCount)
-        : Combine(Checksum(result.ResultBytes), result.ReplacementCount);
+    private static int Checksum(BclSubnResult result)
+    {
+        var checksum = result.ResultBytes is null
+            ? Combine(Checksum(result.ResultText), result.ReplacementCount)
+            : Combine(Checksum(result.ResultBytes), result.ReplacementCount);
+        return result.CallbackChecksum is int callbackChecksum
+            ? Combine(checksum, callbackChecksum)
+            : checksum;
+    }
 
     private static int Checksum(string?[] values)
     {
@@ -791,7 +845,11 @@ internal readonly record struct BclDetailedGroup(
     int EndOffsetInUtf16,
     string Value);
 
-internal sealed record BclSubnResult(string ResultText, byte[]? ResultBytes, int ReplacementCount);
+internal sealed record BclSubnResult(
+    string ResultText,
+    byte[]? ResultBytes,
+    int ReplacementCount,
+    int? CallbackChecksum);
 
 internal sealed class PythonReBenchmarkSnapshot
 {
