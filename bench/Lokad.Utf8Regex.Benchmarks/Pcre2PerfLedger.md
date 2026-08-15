@@ -153,3 +153,10 @@ The committed pre-experiment snapshot row on source `5bc1476d` records
 44.825 ms PCRE2, 1.592 ms core UTF-8, 18.510 ms decode-then-Regex, and 12.264
 ms predecoded Regex at four effective iterations. Use that row for persisted
 before/after evidence and the longer direct run above for attribution.
+
+Semantic admission is backed by upstream PCRE2 rather than the managed
+comparators. PCRE2 10.47 `testinput4` lines 933--938 specifies that
+`^\p{Sm}+` matches `+<|~¬⁄` and rejects `X` and U+09F2. Commit `e47f8b9f`
+normalizes that vector into an active `\p{Sm}` Count row with result 6; it
+passes through the generic PCRE2 character runner before the proposed shared
+kernel is enabled. The pre-experiment full solution passes 2,977/2,977.
