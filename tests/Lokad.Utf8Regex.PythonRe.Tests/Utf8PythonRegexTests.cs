@@ -16,6 +16,29 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(2, regex.Count("foo xx foo"u8));
     }
 
+    [Theory]
+    [InlineData("", 0, 0)]
+    [InlineData("abc", 0, 2)]
+    [InlineData(" abc ", 0, 2)]
+    [InlineData("a_b 12", 0, 4)]
+    [InlineData("éabc𝒜x", 0, 4)]
+    [InlineData("a b", 1, 3)]
+    [InlineData("a b", 2, 2)]
+    public void AsciiWordBoundaryCountUsesPythonPositions(string input, int startOffsetInBytes, int expected)
+    {
+        var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
+
+        Assert.Equal(expected, regex.Count(System.Text.Encoding.UTF8.GetBytes(input), startOffsetInBytes));
+    }
+
+    [Fact]
+    public void AsciiWordBoundaryCountDoesNotSpecializeEmbeddedBoundaryPatterns()
+    {
+        var regex = new Utf8PythonRegex(@"x\b", PythonReCompileOptions.Ascii);
+
+        Assert.Equal(2, regex.Count("x xé"u8));
+    }
+
     [Fact]
     public void Utf8PatternConstructorDecodesUtf8Pattern()
     {

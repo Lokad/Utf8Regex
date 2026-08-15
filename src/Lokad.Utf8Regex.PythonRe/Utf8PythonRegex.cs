@@ -17,6 +17,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canMatchEmpty;
     private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
+    private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly PythonReDirectBackendKind _searchBackend;
     private readonly PythonReDirectBackendKind _matchBackend;
     private readonly PythonReDirectBackendKind _fullMatchBackend;
@@ -51,6 +52,7 @@ public sealed class Utf8PythonRegex
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root);
         _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
+        _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
         _managedFullRegex = CreateManagedRegex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
@@ -154,6 +156,12 @@ public sealed class Utf8PythonRegex
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
         ValidateStartOffset(input, startOffsetInBytes);
+        if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan)
+        {
+            var decoded = Decode(input);
+            return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+        }
+
         if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && startOffsetInBytes == 0)
         {
             return _utf8Regex.Count(input);
@@ -169,6 +177,27 @@ public sealed class Utf8PythonRegex
 
         return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16, indexMap);
     }
+
+    private static int CountAsciiWordBoundaries(string subject, int startOffsetInUtf16)
+    {
+        var count = 0;
+        var leftIsWord = startOffsetInUtf16 > 0 && IsAsciiWord(subject[startOffsetInUtf16 - 1]);
+        for (var position = startOffsetInUtf16; position <= subject.Length; position++)
+        {
+            var rightIsWord = position < subject.Length && IsAsciiWord(subject[position]);
+            if (leftIsWord != rightIsWord)
+            {
+                count++;
+            }
+
+            leftIsWord = rightIsWord;
+        }
+
+        return count;
+    }
+
+    private static bool IsAsciiWord(char value) =>
+        char.IsAsciiLetterOrDigit(value) || value == '_';
 
     public Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
