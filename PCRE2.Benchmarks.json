@@ -951,9 +951,9 @@
           "DecodeThenRegex": 7006.135
         },
         "industry/mariomka-email-count": {
-          "MeasuredAtUtc": "2026-08-15T17:31:22.7699346+00:00",
+          "MeasuredAtUtc": "2026-08-15T20:07:36.6030675+00:00",
           "Environment": {
-            "SourceCommit": "c36e55998534",
+            "SourceCommit": "9ce54e7f7136",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -963,15 +963,15 @@
           },
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 6839410,
-          "EffectiveIterations": 17,
-          "ConstructionMicroseconds": 24.141176470588235,
-          "ConstructionAllocatedBytes": 60529,
+          "EffectiveIterations": 16,
+          "ConstructionMicroseconds": 103.4375,
+          "ConstructionAllocatedBytes": 61161,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 14516.60588235294,
-          "Utf8Regex": 2039.5176470588237,
-          "PredecodedRegex": 241.11176470588234,
-          "DecodeThenRegex": 4783.176470588235
+          "Utf8Pcre2": 11325.93125,
+          "Utf8Regex": 2139.83125,
+          "PredecodedRegex": 457.16875,
+          "DecodeThenRegex": 5240.2375
         },
         "industry/mariomka-ip-count": {
           "MeasuredAtUtc": "2026-08-15T17:31:30.7569382+00:00",
@@ -1089,9 +1089,9 @@
           "DecodeThenRegex": 13719.285
         },
         "industry/rust-sherlock-nonnewline-count": {
-          "MeasuredAtUtc": "2026-08-15T17:31:58.5689713+00:00",
+          "MeasuredAtUtc": "2026-08-15T20:07:26.7649531+00:00",
           "Environment": {
-            "SourceCommit": "c36e55998534",
+            "SourceCommit": "9ce54e7f7136",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1101,15 +1101,15 @@
           },
           "PatternUtf8Bytes": 6,
           "InputUtf8Bytes": 594930,
-          "EffectiveIterations": 11,
-          "ConstructionMicroseconds": 13.727272727272727,
-          "ConstructionAllocatedBytes": 44170,
+          "EffectiveIterations": 3,
+          "ConstructionMicroseconds": 52.43333333333334,
+          "ConstructionAllocatedBytes": 44552,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 2,
-          "Utf8Pcre2": 21732.327272727274,
-          "Utf8Regex": 120.94545454545455,
-          "PredecodedRegex": 683.5636363636363,
-          "DecodeThenRegex": 861.1181818181817
+          "WarmAllocatedBytes": 8,
+          "Utf8Pcre2": 19151.466666666667,
+          "Utf8Regex": 109.53333333333335,
+          "PredecodedRegex": 989.5666666666666,
+          "DecodeThenRegex": 1208.0666666666666
         },
         "industry/rust-sherlock-word-holmes-count": {
           "MeasuredAtUtc": "2026-08-15T17:32:02.9710108+00:00",
