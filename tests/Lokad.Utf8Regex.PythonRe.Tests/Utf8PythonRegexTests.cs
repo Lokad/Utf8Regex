@@ -383,6 +383,23 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void CapturedFindAllProjectsUnicodeUtf8RangesFromOneSubjectMap()
+    {
+        var regex = new Utf8PythonRegex("(é+)-(𝒜𝒜|𝒜)");
+        var input = "xx éé-𝒜𝒜 yy é-𝒜"u8;
+
+        var strings = regex.FindAllToStrings(input);
+        var utf8 = regex.FindAllToUtf8(input);
+
+        Assert.Equal(Utf8PythonFindAllShape.GroupTuple, strings.Shape);
+        Assert.Equal([["éé", "𝒜𝒜"], ["é", "𝒜"]], strings.TupleValues);
+        Assert.Equal(Utf8PythonFindAllShape.GroupTuple, utf8.Shape);
+        Assert.Equal(strings.TupleValues, utf8.TupleValues
+            .Select(static tuple => tuple.Select(System.Text.Encoding.UTF8.GetString).ToArray())
+            .ToArray());
+    }
+
+    [Fact]
     public void FindIterDetailedReturnsHostFriendlySnapshots()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");

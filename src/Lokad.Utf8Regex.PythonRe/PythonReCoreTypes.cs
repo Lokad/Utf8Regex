@@ -10,6 +10,58 @@ public readonly struct PythonReNameEntry
     public int Number { get; init; }
 }
 
+internal readonly struct PythonReUtf8IndexMap
+{
+    private readonly int[]? _byteOffsetsByUtf16Index;
+
+    private PythonReUtf8IndexMap(int[] byteOffsetsByUtf16Index)
+    {
+        _byteOffsetsByUtf16Index = byteOffsetsByUtf16Index;
+    }
+
+    public static PythonReUtf8IndexMap Create(ReadOnlySpan<byte> input, string decoded)
+    {
+        if (input.Length == decoded.Length)
+        {
+            return default;
+        }
+
+        var offsets = new int[decoded.Length + 1];
+        var utf16Index = 0;
+        var byteOffset = 0;
+        while (utf16Index < decoded.Length)
+        {
+            offsets[utf16Index] = byteOffset;
+            var value = decoded[utf16Index];
+            if (char.IsHighSurrogate(value) &&
+                utf16Index + 1 < decoded.Length &&
+                char.IsLowSurrogate(decoded[utf16Index + 1]))
+            {
+                offsets[utf16Index + 1] = byteOffset;
+                utf16Index += 2;
+                byteOffset += 4;
+                offsets[utf16Index] = byteOffset;
+                continue;
+            }
+
+            byteOffset += value <= 0x7f ? 1 : value <= 0x7ff ? 2 : 3;
+            utf16Index++;
+            offsets[utf16Index] = byteOffset;
+        }
+
+        if (byteOffset != input.Length)
+        {
+            throw new InvalidOperationException("The decoded subject does not map back to its UTF-8 input.");
+        }
+
+        return new PythonReUtf8IndexMap(offsets);
+    }
+
+    public int GetByteOffset(int utf16Index) => _byteOffsetsByUtf16Index is null
+        ? utf16Index
+        : _byteOffsetsByUtf16Index[utf16Index];
+}
+
 internal readonly struct PythonReGroupData
 {
     private const int NonContiguousByteStartSentinel = 1;
@@ -29,10 +81,11 @@ internal readonly struct PythonReGroupData
 
     public bool HasContiguousByteRange => Success && StartOffsetInBytes <= EndOffsetInBytes;
 
-    public static PythonReGroupData FromUtf16(ReadOnlySpan<byte> input, int number, Group group)
-        => FromUtf16(input, number, group, 0);
-
-    public static PythonReGroupData FromUtf16(ReadOnlySpan<byte> input, int number, Group group, int utf16BaseOffset)
+    public static PythonReGroupData FromUtf16(
+        int number,
+        Group group,
+        PythonReUtf8IndexMap indexMap,
+        int utf16BaseOffset = 0)
     {
         if (!group.Success)
         {
@@ -43,18 +96,16 @@ internal readonly struct PythonReGroupData
             };
         }
 
-        var decoded = Encoding.UTF8.GetString(input);
-        var absoluteUtf16Index = utf16BaseOffset + group.Index;
-        var startOffsetInBytes = Encoding.UTF8.GetByteCount(decoded.AsSpan(0, absoluteUtf16Index));
-        var byteLength = Encoding.UTF8.GetByteCount(decoded.AsSpan(absoluteUtf16Index, group.Length));
+        var startOffsetInUtf16 = utf16BaseOffset + group.Index;
+        var endOffsetInUtf16 = startOffsetInUtf16 + group.Length;
         return new PythonReGroupData
         {
             Number = number,
             Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = startOffsetInBytes + byteLength,
-            StartOffsetInUtf16 = absoluteUtf16Index,
-            EndOffsetInUtf16 = absoluteUtf16Index + group.Length,
+            StartOffsetInBytes = indexMap.GetByteOffset(startOffsetInUtf16),
+            EndOffsetInBytes = indexMap.GetByteOffset(endOffsetInUtf16),
+            StartOffsetInUtf16 = startOffsetInUtf16,
+            EndOffsetInUtf16 = endOffsetInUtf16,
         };
     }
 
@@ -220,16 +271,6 @@ public readonly ref struct Utf8PythonValueMatch
     }
 
     public string GetValueString() => PythonReValueTextExtractor.GetValueString(_input, _data);
-
-    internal static Utf8PythonValueMatch Create(ReadOnlySpan<byte> input, Match match)
-    {
-        if (!match.Success)
-        {
-            return default;
-        }
-
-        return new Utf8PythonValueMatch(input, PythonReGroupData.FromUtf16(input, 0, match.Groups[0]));
-    }
 
     internal static Utf8PythonValueMatch Create(ReadOnlySpan<byte> input, PythonReGroupData data) => new(input, data);
 }

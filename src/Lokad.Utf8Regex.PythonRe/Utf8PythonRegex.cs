@@ -164,13 +164,14 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (!_canMatchNonEmpty)
         {
             return _managedRegex.Count(subject, startOffsetInUtf16);
         }
 
-        return CountManagedMatchesPythonStyle(input, subject, startOffsetInUtf16);
+        return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16, indexMap);
     }
 
     public Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -185,9 +186,10 @@ public sealed class Utf8PythonRegex
 
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var match = _managedRegex.Match(subject, startOffsetInUtf16);
-        return CreateMatchContext(input, match);
+        return CreateMatchContext(input, match, indexMap);
     }
 
     public Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -214,7 +216,8 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        return CreateMatchContext(input, match);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return CreateMatchContext(input, match, indexMap);
     }
 
     public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -243,7 +246,8 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        return CreateMatchContext(input, match, startOffsetInUtf16);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return CreateMatchContext(input, match, indexMap, startOffsetInUtf16);
     }
 
     public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -278,7 +282,8 @@ public sealed class Utf8PythonRegex
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var match = _managedRegex.Match(subject, startOffsetInUtf16);
-        return CreateDetailedMatchData(input, match);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return CreateDetailedMatchData(input, match, indexMap);
     }
 
     public Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -305,7 +310,8 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        return CreateDetailedMatchData(input, match);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return CreateDetailedMatchData(input, match, indexMap);
     }
 
     public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -329,7 +335,8 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var tail = subject[startOffsetInUtf16..];
         var match = _managedFullRegex.Match(tail);
-        return match.Success ? CreateDetailedMatchData(input, match, startOffsetInUtf16) : default;
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return match.Success ? CreateDetailedMatchData(input, match, indexMap, startOffsetInUtf16) : default;
     }
 
     public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -342,6 +349,7 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var matches = new List<Utf8PythonMatchData>();
         var searchIndex = startOffsetInUtf16;
@@ -353,7 +361,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            var snapshot = CreateMatchSnapshot(input, match);
+            var snapshot = CreateMatchSnapshot(match, indexMap);
             var context = snapshot.ToContext(input, _nameEntries);
             var value = context.Value;
             matches.Add(new Utf8PythonMatchData
@@ -372,7 +380,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
             {
                 var nonEmptyValue = nonEmptySnapshot.ToContext(input, _nameEntries).Value;
                 matches.Add(new Utf8PythonMatchData
@@ -414,6 +422,7 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
@@ -427,7 +436,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllScalarValue(collected, CreateMatchSnapshot(input, match).ToContext(input, _nameEntries), 1);
+                AppendFindAllScalarValue(collected, CreateMatchSnapshot(match, indexMap).ToContext(input, _nameEntries), 1);
 
                 if (match.Length > 0)
                 {
@@ -435,7 +444,7 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
                 {
                     AppendFindAllScalarValue(collected, nonEmptySnapshot.ToContext(input, _nameEntries), 1);
                     searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
@@ -469,7 +478,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllTupleValue(tuples, CreateMatchSnapshot(input, match).ToContext(input, _nameEntries));
+                AppendFindAllTupleValue(tuples, CreateMatchSnapshot(match, indexMap).ToContext(input, _nameEntries));
 
                 if (match.Length > 0)
                 {
@@ -477,7 +486,7 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
                 {
                     AppendFindAllTupleValue(tuples, nonEmptySnapshot.ToContext(input, _nameEntries));
                     searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
@@ -522,6 +531,7 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
@@ -535,7 +545,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllScalarBytes(collected, input, CreateMatchSnapshot(input, match), 1);
+                AppendFindAllScalarBytes(collected, input, CreateMatchSnapshot(match, indexMap), 1);
 
                 if (match.Length > 0)
                 {
@@ -543,7 +553,7 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
                 {
                     AppendFindAllScalarBytes(collected, input, nonEmptySnapshot, 1);
                     searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
@@ -577,7 +587,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllTupleBytes(tuples, input, CreateMatchSnapshot(input, match));
+                AppendFindAllTupleBytes(tuples, input, CreateMatchSnapshot(match, indexMap));
 
                 if (match.Length > 0)
                 {
@@ -585,7 +595,7 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
                 {
                     AppendFindAllTupleBytes(tuples, input, nonEmptySnapshot);
                     searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
@@ -663,6 +673,7 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var builder = new StringBuilder();
         builder.Append(subject.AsSpan(0, startOffsetInUtf16));
@@ -678,7 +689,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            var snapshot = CreateMatchSnapshot(input, match);
+            var snapshot = CreateMatchSnapshot(match, indexMap);
             var context = snapshot.ToContext(input, _nameEntries);
             var value = context.Value;
             if (count == 0 || replaced < count)
@@ -699,7 +710,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
             {
                 var nonEmptyContext = nonEmptySnapshot.ToContext(input, _nameEntries);
                 var nonEmptyValue = nonEmptyContext.Value;
@@ -764,6 +775,7 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
 
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var builder = new StringBuilder();
         builder.Append(subject.AsSpan(0, startOffsetInUtf16));
@@ -779,7 +791,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            var snapshot = CreateMatchSnapshot(input, match);
+            var snapshot = CreateMatchSnapshot(match, indexMap);
             var detailed = snapshot.ToDetailedData(input, _nameEntries);
             var value = detailed.Value;
             if (count == 0 || replaced < count)
@@ -800,7 +812,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
             {
                 var nonEmptyDetailed = nonEmptySnapshot.ToDetailedData(input, _nameEntries);
                 var nonEmptyValue = nonEmptyDetailed.Value;
@@ -977,13 +989,14 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        return Utf8PythonValueMatch.Create(input, match);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf16(0, match.Groups[0], indexMap));
     }
 
     private int CountManagedMatchesPythonStyle(
-        ReadOnlySpan<byte> input,
         string subject,
-        int startOffsetInUtf16)
+        int startOffsetInUtf16,
+        PythonReUtf8IndexMap indexMap)
     {
         var count = 0;
         var searchIndex = startOffsetInUtf16;
@@ -1003,7 +1016,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptyAtSamePosition))
+            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptyAtSamePosition))
             {
                 count++;
                 searchIndex = nonEmptyAtSamePosition.Groups[0].EndOffsetInUtf16;
@@ -1022,9 +1035,9 @@ public sealed class Utf8PythonRegex
     }
 
     private bool TryCreateNonEmptySamePositionMatchSnapshot(
-        ReadOnlySpan<byte> input,
         string subject,
         int utf16Position,
+        PythonReUtf8IndexMap indexMap,
         out PythonReManagedMatchSnapshot snapshot)
     {
         if (!_canMatchNonEmpty || (uint)utf16Position >= (uint)subject.Length)
@@ -1041,7 +1054,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            snapshot = CreateMatchSnapshot(input, match, probe.Utf16BaseOffset);
+            snapshot = CreateMatchSnapshot(match, indexMap, probe.Utf16BaseOffset);
             return true;
         }
 
@@ -1248,24 +1261,32 @@ public sealed class Utf8PythonRegex
         return true;
     }
 
-    private Utf8PythonMatchContext CreateMatchContext(ReadOnlySpan<byte> input, Match match, int utf16BaseOffset = 0)
+    private Utf8PythonMatchContext CreateMatchContext(
+        ReadOnlySpan<byte> input,
+        Match match,
+        PythonReUtf8IndexMap indexMap,
+        int utf16BaseOffset = 0)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return CreateMatchSnapshot(input, match, utf16BaseOffset).ToContext(input, _nameEntries);
+        return CreateMatchSnapshot(match, indexMap, utf16BaseOffset).ToContext(input, _nameEntries);
     }
 
-    private Utf8PythonDetailedMatchData CreateDetailedMatchData(ReadOnlySpan<byte> input, Match match, int utf16BaseOffset = 0)
+    private Utf8PythonDetailedMatchData CreateDetailedMatchData(
+        ReadOnlySpan<byte> input,
+        Match match,
+        PythonReUtf8IndexMap indexMap,
+        int utf16BaseOffset = 0)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return CreateMatchSnapshot(input, match, utf16BaseOffset).ToDetailedData(input, _nameEntries);
+        return CreateMatchSnapshot(match, indexMap, utf16BaseOffset).ToDetailedData(input, _nameEntries);
     }
 
     private Utf8PythonMatchContext CreateMatchContextFromUtf8(
@@ -1308,12 +1329,15 @@ public sealed class Utf8PythonRegex
         return CreateDetailedMatchData(input, groups, _nameEntries);
     }
 
-    private static PythonReManagedMatchSnapshot CreateMatchSnapshot(ReadOnlySpan<byte> input, Match match, int utf16BaseOffset = 0)
+    private static PythonReManagedMatchSnapshot CreateMatchSnapshot(
+        Match match,
+        PythonReUtf8IndexMap indexMap,
+        int utf16BaseOffset = 0)
     {
         var groups = new PythonReGroupData[match.Groups.Count];
         for (var i = 0; i < match.Groups.Count; i++)
         {
-            groups[i] = PythonReGroupData.FromUtf16(input, i, match.Groups[i], utf16BaseOffset);
+            groups[i] = PythonReGroupData.FromUtf16(i, match.Groups[i], indexMap, utf16BaseOffset);
         }
 
         return new PythonReManagedMatchSnapshot(groups);
@@ -1512,6 +1536,7 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         List<byte> builder = [];
         builder.AddRange(input[..startOffsetInBytes].ToArray());
@@ -1527,7 +1552,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            var snapshot = CreateMatchSnapshot(input, match);
+            var snapshot = CreateMatchSnapshot(match, indexMap);
             var value = snapshot.Groups[0];
             if (count == 0 || replaced < count)
             {
@@ -1547,7 +1572,7 @@ public sealed class Utf8PythonRegex
                 continue;
             }
 
-            if (TryCreateNonEmptySamePositionMatchSnapshot(input, subject, match.Index, out var nonEmptySnapshot))
+            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
             {
                 var nonEmptyValue = nonEmptySnapshot.Groups[0];
                 if (count == 0 || replaced < count)
