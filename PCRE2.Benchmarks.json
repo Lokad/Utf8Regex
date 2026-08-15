@@ -489,30 +489,50 @@
           "DecodeThenRegex": 163.155
         },
         "industry/leipzig-name-family-count": {
+          "MeasuredAtUtc": "2026-08-15T14:08:55.9990251+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 27,
           "InputUtf8Bytes": 16013977,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 96.1,
-          "ConstructionAllocatedBytes": 99032,
+          "ConstructionMicroseconds": 262.1,
+          "ConstructionAllocatedBytes": 100232,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 24,
-          "Utf8Pcre2": 4013269.8,
-          "Utf8Regex": 13634.2,
-          "PredecodedRegex": 11160.6,
-          "DecodeThenRegex": 20118.3
+          "Utf8Pcre2": 2840316.4,
+          "Utf8Regex": 13508.7,
+          "PredecodedRegex": 17211.5,
+          "DecodeThenRegex": 25630.5
         },
         "industry/leipzig-river-window-count": {
+          "MeasuredAtUtc": "2026-08-15T14:09:45.6522545+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 33,
           "InputUtf8Bytes": 16013977,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 75.7,
-          "ConstructionAllocatedBytes": 100440,
+          "ConstructionMicroseconds": 232.9,
+          "ConstructionAllocatedBytes": 101912,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 24,
-          "Utf8Pcre2": 3307561,
-          "Utf8Regex": 21730.6,
-          "PredecodedRegex": 43690.4,
-          "DecodeThenRegex": 58043
+          "Utf8Pcre2": 3002827.9,
+          "Utf8Regex": 23802.9,
+          "PredecodedRegex": 37809.3,
+          "DecodeThenRegex": 49302.8
         },
         "industry/leipzig-symbol-count": {
           "PatternUtf8Bytes": 6,
@@ -541,56 +561,96 @@
           "DecodeThenRegex": 14113.833333333334
         },
         "industry/mariomka-email-count": {
+          "MeasuredAtUtc": "2026-08-15T14:10:31.5321524+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 6839410,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 51.4,
-          "ConstructionAllocatedBytes": 58368,
+          "ConstructionMicroseconds": 220.9,
+          "ConstructionAllocatedBytes": 59688,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 24,
-          "Utf8Pcre2": 2547258.7,
-          "Utf8Regex": 3240.2,
-          "PredecodedRegex": 494.1,
-          "DecodeThenRegex": 8407.4
+          "Utf8Pcre2": 2471483.7,
+          "Utf8Regex": 3615.8,
+          "PredecodedRegex": 481.3,
+          "DecodeThenRegex": 7507.5
         },
         "industry/mariomka-ip-count": {
+          "MeasuredAtUtc": "2026-08-15T14:11:12.657626+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 87,
           "InputUtf8Bytes": 6839410,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 121.7,
-          "ConstructionAllocatedBytes": 146928,
+          "ConstructionMicroseconds": 373,
+          "ConstructionAllocatedBytes": 175640,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 24,
-          "Utf8Pcre2": 2251364.2,
-          "Utf8Regex": 4455.9,
-          "PredecodedRegex": 9994.8,
-          "DecodeThenRegex": 16345.4
+          "Utf8Pcre2": 2240806.7,
+          "Utf8Regex": 5599.6,
+          "PredecodedRegex": 17525.9,
+          "DecodeThenRegex": 27840.7
         },
         "industry/mariomka-uri-count": {
+          "MeasuredAtUtc": "2026-08-15T14:11:49.3140166+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 51,
           "InputUtf8Bytes": 6839410,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 81.7,
-          "ConstructionAllocatedBytes": 128432,
+          "ConstructionMicroseconds": 398.7,
+          "ConstructionAllocatedBytes": 130352,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2218129.5,
-          "Utf8Regex": 4212.3,
-          "PredecodedRegex": 2057.3,
-          "DecodeThenRegex": 8926.1
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 2211424.4,
+          "Utf8Regex": 5601.7,
+          "PredecodedRegex": 2991,
+          "DecodeThenRegex": 10829.5
         },
         "industry/rust-sherlock-holmes-window-count": {
+          "MeasuredAtUtc": "2026-08-15T14:12:06.906788+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 39,
           "InputUtf8Bytes": 594930,
-          "EffectiveIterations": 2,
-          "ConstructionMicroseconds": 77.15,
-          "ConstructionAllocatedBytes": 107400,
+          "EffectiveIterations": 4,
+          "ConstructionMicroseconds": 236.725,
+          "ConstructionAllocatedBytes": 108878,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 123570.5,
-          "Utf8Regex": 147.8,
-          "PredecodedRegex": 272.15,
-          "DecodeThenRegex": 465.2
+          "WarmAllocatedBytes": 6,
+          "Utf8Pcre2": 59712.6,
+          "Utf8Regex": 449.775,
+          "PredecodedRegex": 257.7,
+          "DecodeThenRegex": 451.275
         },
         "industry/rust-sherlock-ing-count": {
           "PatternUtf8Bytes": 21,
@@ -619,30 +679,50 @@
           "DecodeThenRegex": 21195.54666666667
         },
         "industry/rust-sherlock-nonnewline-count": {
+          "MeasuredAtUtc": "2026-08-15T14:12:10.1648546+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 6,
           "InputUtf8Bytes": 594930,
-          "EffectiveIterations": 7,
-          "ConstructionMicroseconds": 31.17142857142857,
-          "ConstructionAllocatedBytes": 42096,
+          "EffectiveIterations": 3,
+          "ConstructionMicroseconds": 68.89999999999999,
+          "ConstructionAllocatedBytes": 43184,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 36249.1,
-          "Utf8Regex": 171.64285714285714,
-          "PredecodedRegex": 1094.6142857142856,
-          "DecodeThenRegex": 1371.142857142857
+          "WarmAllocatedBytes": 8,
+          "Utf8Pcre2": 18372.7,
+          "Utf8Regex": 112,
+          "PredecodedRegex": 1017.7333333333332,
+          "DecodeThenRegex": 1206
         },
         "industry/rust-sherlock-word-holmes-count": {
+          "MeasuredAtUtc": "2026-08-15T14:12:01.8755614+00:00",
+          "Environment": {
+            "SourceCommit": "c5d0002735c8",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 594930,
           "EffectiveIterations": 1,
-          "ConstructionMicroseconds": 222.6,
-          "ConstructionAllocatedBytes": 599904,
+          "ConstructionMicroseconds": 366.5,
+          "ConstructionAllocatedBytes": 732176,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 289179.7,
-          "Utf8Regex": 23.9,
-          "PredecodedRegex": 8242.9,
-          "DecodeThenRegex": 8613.3
+          "WarmAllocatedBytes": 24,
+          "Utf8Pcre2": 153973.1,
+          "Utf8Regex": 10.6,
+          "PredecodedRegex": 6838.4,
+          "DecodeThenRegex": 7083.5
         }
       }
     },

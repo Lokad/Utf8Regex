@@ -28,12 +28,22 @@
           "DecodeThenCompiledRegex": 6870.98
         },
         "literal/sherlock-casei-ru": {
-          "Utf8Regex": 8359.842,
-          "Utf8Compiled": 8093.389,
-          "PredecodedRegex": 551.756,
-          "CompiledRegex": 242.02,
-          "DecodeThenRegex": 6187.667,
-          "DecodeThenCompiledRegex": 5845.795
+          "MeasuredAtUtc": "2026-08-15T14:20:05.7409889+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 4244.935,
+          "Utf8Compiled": 4439.3,
+          "PredecodedRegex": 210.76,
+          "CompiledRegex": 120.03,
+          "DecodeThenRegex": 3106.765,
+          "DecodeThenCompiledRegex": 3088.645
         },
         "literal/sherlock-zh": {
           "Utf8Regex": 1037.32,
@@ -84,12 +94,22 @@
           "DecodeThenCompiledRegex": 9656.26
         },
         "literal-alternate/sherlock-casei-ru": {
-          "Utf8Regex": 42489.568,
-          "Utf8Compiled": 9859.646,
-          "PredecodedRegex": 35158.292,
-          "CompiledRegex": 2144.873,
-          "DecodeThenRegex": 42175.43,
-          "DecodeThenCompiledRegex": 7669.957
+          "MeasuredAtUtc": "2026-08-15T14:20:17.4637349+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 19212.71,
+          "Utf8Compiled": 5346.735,
+          "PredecodedRegex": 15536.925,
+          "CompiledRegex": 1194.535,
+          "DecodeThenRegex": 18285.03,
+          "DecodeThenCompiledRegex": 4078.77
         },
         "literal-alternate/sherlock-zh": {
           "Utf8Regex": 1689.977,
@@ -276,20 +296,40 @@
           "DecodeThenCompiledRegex": 1.862
         },
         "common/replace-words": {
-          "Utf8Regex": 184.79,
-          "Utf8Compiled": 58.986,
-          "PredecodedRegex": 116.06,
-          "CompiledRegex": 25.537,
-          "DecodeThenRegex": 114.678,
-          "DecodeThenCompiledRegex": 32.592
+          "MeasuredAtUtc": "2026-08-15T14:20:41.4454066+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 126.798,
+          "Utf8Compiled": 16.55,
+          "PredecodedRegex": 62.403,
+          "CompiledRegex": 16.461,
+          "DecodeThenRegex": 47.957,
+          "DecodeThenCompiledRegex": 16.484
         },
         "common/split-words": {
-          "Utf8Regex": 190.43,
-          "Utf8Compiled": 64.556,
-          "PredecodedRegex": 115.802,
-          "CompiledRegex": 31.854,
-          "DecodeThenRegex": 112.834,
-          "DecodeThenCompiledRegex": 26.201
+          "MeasuredAtUtc": "2026-08-15T14:20:29.6361098+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 112.243,
+          "Utf8Compiled": 26.241,
+          "PredecodedRegex": 49.503,
+          "CompiledRegex": 14.675,
+          "DecodeThenRegex": 50.874,
+          "DecodeThenCompiledRegex": 15.43
         },
         "common/backtracking": {
           "Utf8Regex": 0.197,
@@ -472,12 +512,22 @@
           "DecodeThenCompiledRegex": 5804.68
         },
         "literal/sherlock-casei-ru": {
-          "Utf8Regex": 9869.661,
-          "Utf8Compiled": 8326.845,
-          "PredecodedRegex": 562.885,
-          "CompiledRegex": 252.049,
-          "DecodeThenRegex": 6501.028,
-          "DecodeThenCompiledRegex": 6069.783
+          "MeasuredAtUtc": "2026-08-15T14:20:09.0902676+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 5514.065,
+          "Utf8Compiled": 4151.22,
+          "PredecodedRegex": 226.215,
+          "CompiledRegex": 118.97,
+          "DecodeThenRegex": 3068.905,
+          "DecodeThenCompiledRegex": 3067.005
         },
         "literal/sherlock-zh": {
           "Utf8Regex": 1034.34,
@@ -528,12 +578,22 @@
           "DecodeThenCompiledRegex": 8874.8
         },
         "literal-alternate/sherlock-casei-ru": {
-          "Utf8Regex": 42535.75,
-          "Utf8Compiled": 9868.287,
-          "PredecodedRegex": 35028.404,
-          "CompiledRegex": 1988.016,
-          "DecodeThenRegex": 40466.506,
-          "DecodeThenCompiledRegex": 7807.837
+          "MeasuredAtUtc": "2026-08-15T14:20:23.6764801+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 20008.175,
+          "Utf8Compiled": 5142.955,
+          "PredecodedRegex": 15054.735,
+          "CompiledRegex": 1232.4,
+          "DecodeThenRegex": 17964.645,
+          "DecodeThenCompiledRegex": 4063.345
         },
         "literal-alternate/sherlock-zh": {
           "Utf8Regex": 1695.115,
@@ -720,20 +780,40 @@
           "DecodeThenCompiledRegex": 2.005
         },
         "common/replace-words": {
-          "Utf8Regex": 175.813,
-          "Utf8Compiled": 54.89,
-          "PredecodedRegex": 110.608,
-          "CompiledRegex": 24.098,
-          "DecodeThenRegex": 111.201,
-          "DecodeThenCompiledRegex": 40.65
+          "MeasuredAtUtc": "2026-08-15T14:20:45.3230647+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 121.567,
+          "Utf8Compiled": 16.177,
+          "PredecodedRegex": 46.125,
+          "CompiledRegex": 17.304,
+          "DecodeThenRegex": 49.448,
+          "DecodeThenCompiledRegex": 16.317
         },
         "common/split-words": {
-          "Utf8Regex": 171.913,
-          "Utf8Compiled": 56.5,
-          "PredecodedRegex": 105.309,
-          "CompiledRegex": 23.939,
-          "DecodeThenRegex": 109.9,
-          "DecodeThenCompiledRegex": 33.124
+          "MeasuredAtUtc": "2026-08-15T14:20:33.6773493+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 123.005,
+          "Utf8Compiled": 24.786,
+          "PredecodedRegex": 64.772,
+          "CompiledRegex": 14.624,
+          "DecodeThenRegex": 56.165,
+          "DecodeThenCompiledRegex": 15.667
         },
         "common/backtracking": {
           "Utf8Regex": 0.196,
@@ -924,12 +1004,22 @@
           "DecodeThenCompiledRegex": 35.481
         },
         "literal-family/method-token-family": {
-          "Utf8Regex": 74.6,
-          "Utf8Compiled": 56.26,
-          "PredecodedRegex": 13.672,
-          "CompiledRegex": 6.222,
-          "DecodeThenRegex": 29.477,
-          "DecodeThenCompiledRegex": 27.426
+          "MeasuredAtUtc": "2026-08-15T14:20:52.1033863+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 5.68,
+          "Utf8Compiled": 5.61,
+          "PredecodedRegex": 12.955,
+          "CompiledRegex": 4.47,
+          "DecodeThenRegex": 9.845,
+          "DecodeThenCompiledRegex": 7.835
         },
         "structural/keyword-to-generic-type": {
           "Utf8Regex": 16.86,
@@ -1200,12 +1290,22 @@
           "DecodeThenCompiledRegex": 28.621
         },
         "literal-family/method-token-family": {
-          "Utf8Regex": 63.245,
-          "Utf8Compiled": 61.354,
-          "PredecodedRegex": 14.841,
-          "CompiledRegex": 6.126,
-          "DecodeThenRegex": 29.841,
-          "DecodeThenCompiledRegex": 22.467
+          "MeasuredAtUtc": "2026-08-15T14:20:54.4814365+00:00",
+          "Environment": {
+            "SourceCommit": "3d9c126a8cec",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Utf8Regex": 6.385,
+          "Utf8Compiled": 5.745,
+          "PredecodedRegex": 5.805,
+          "CompiledRegex": 3.865,
+          "DecodeThenRegex": 9.69,
+          "DecodeThenCompiledRegex": 7.91
         },
         "structural/keyword-to-generic-type": {
           "Utf8Regex": 16.56,

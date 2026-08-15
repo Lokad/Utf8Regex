@@ -86,14 +86,14 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal/sherlock-en` | 162.000 us | 281.720 us | 1,221.980 us |
 | `literal/sherlock-casei-en` | 374.160 us | 254.620 us | 1,267.760 us |
 | `literal/sherlock-ru` | 3,259.840 us | 191.220 us | 5,908.320 us |
-| `literal/sherlock-casei-ru` | 8,359.842 us | 551.756 us | 6,187.667 us |
+| `literal/sherlock-casei-ru` | 4,244.935 us | 210.760 us | 3,106.765 us |
 | `literal/sherlock-zh` | 1,037.320 us | 50.880 us | 2,491.920 us |
 | `literal-alternate/sherlock-en` | 1,113.340 us | 2,717.980 us | 3,666.860 us |
 | `literal-alternate/sherlock-en-nomatch` | 466.600 us | 1,157.860 us | 2,116.880 us |
 | `literal-alternate/sherlock-en-mixed` | 725.820 us | 1,281.840 us | 2,128.200 us |
 | `literal-alternate/sherlock-casei-en` | 9,596.960 us | 18,535.760 us | 17,276.360 us |
 | `literal-alternate/sherlock-ru` | 6,795.860 us | 11,419.820 us | 17,284.880 us |
-| `literal-alternate/sherlock-casei-ru` | 42,489.568 us | 35,158.292 us | 42,175.430 us |
+| `literal-alternate/sherlock-casei-ru` | 19,212.710 us | 15,536.925 us | 18,285.030 us |
 | `literal-alternate/sherlock-zh` | 1,689.977 us | 159.924 us | 2,414.127 us |
 | `bounded-repeat/letters-en` | 2,524.180 us | 6,091.920 us | 7,033.340 us |
 | `bounded-repeat/letters-ru` | 1,134.040 us | 20,393.300 us | 11,527.800 us |
@@ -124,8 +124,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-word` | `Count` | 7.390 us | 10.606 us | 18.463 us |
 | `common/matches-words` | `Count` | 32.593 us | 140.441 us | 146.190 us |
 | `common/match-word` | `Match` | 0.802 us | 0.339 us | 2.028 us |
-| `common/replace-words` | `Replace` | 184.790 us | 116.060 us | 114.678 us |
-| `common/split-words` | `Split` | 190.430 us | 115.802 us | 112.834 us |
+| `common/replace-words` | `Replace` | 126.798 us | 62.403 us | 47.957 us |
+| `common/split-words` | `Split` | 112.243 us | 49.503 us | 50.874 us |
 | `common/backtracking` | `IsMatch` | 0.197 us | 1.528 us | 1.655 us |
 | `common/one-node-backtracking` | `IsMatch` | 0.326 us | 1.053 us | 1.132 us |
 | `industry/mariomka-email-count` | `Count` | 3,220.956 us | 878.118 us | 12,584.236 us |
@@ -165,14 +165,14 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | `literal/sherlock-en` | 145.940 us | 152.600 us | 1,027.160 us |
 | `literal/sherlock-casei-en` | 385.000 us | 124.320 us | 1,030.200 us |
 | `literal/sherlock-ru` | 2,478.060 us | 146.220 us | 5,804.680 us |
-| `literal/sherlock-casei-ru` | 8,326.845 us | 252.049 us | 6,069.783 us |
+| `literal/sherlock-casei-ru` | 4,151.220 us | 118.970 us | 3,067.005 us |
 | `literal/sherlock-zh` | 1,029.980 us | 52.600 us | 2,420.440 us |
 | `literal-alternate/sherlock-en` | 1,087.520 us | 1,368.780 us | 2,282.900 us |
 | `literal-alternate/sherlock-en-nomatch` | 439.920 us | 215.520 us | 1,044.360 us |
 | `literal-alternate/sherlock-en-mixed` | 620.100 us | 220.440 us | 1,078.540 us |
 | `literal-alternate/sherlock-casei-en` | 2,523.180 us | 1,722.620 us | 3,152.360 us |
 | `literal-alternate/sherlock-ru` | 3,753.620 us | 2,367.640 us | 8,874.800 us |
-| `literal-alternate/sherlock-casei-ru` | 9,868.287 us | 1,988.016 us | 7,807.837 us |
+| `literal-alternate/sherlock-casei-ru` | 5,142.955 us | 1,232.400 us | 4,063.345 us |
 | `literal-alternate/sherlock-zh` | 1,582.044 us | 90.160 us | 2,285.439 us |
 | `bounded-repeat/letters-en` | 2,381.880 us | 5,641.240 us | 5,411.960 us |
 | `bounded-repeat/letters-ru` | 1,121.040 us | 5,941.840 us | 7,186.360 us |
@@ -203,8 +203,8 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-word` | `Count` | 7.095 us | 4.311 us | 5.938 us |
 | `common/matches-words` | `Count` | 32.708 us | 18.595 us | 31.954 us |
 | `common/match-word` | `Match` | 0.707 us | 0.128 us | 2.005 us |
-| `common/replace-words` | `Replace` | 54.890 us | 24.098 us | 40.650 us |
-| `common/split-words` | `Split` | 56.500 us | 23.939 us | 33.124 us |
+| `common/replace-words` | `Replace` | 16.177 us | 17.304 us | 16.317 us |
+| `common/split-words` | `Split` | 24.786 us | 14.624 us | 15.667 us |
 | `common/backtracking` | `IsMatch` | 0.200 us | 0.092 us | 0.134 us |
 | `common/one-node-backtracking` | `IsMatch` | 0.317 us | 0.103 us | 0.150 us |
 | `industry/mariomka-email-count` | `Count` | 2,914.005 us | 655.523 us | 10,787.569 us |
@@ -242,7 +242,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/call-token` | 16.080 us | 9.560 us | 20.120 us |
 | `literal/identifier-token-casei` | 34.020 us | 26.628 us | 43.529 us |
 | `literal-family/type-token-family` | 27.965 us | 45.567 us | 75.830 us |
-| `literal-family/method-token-family` | 74.600 us | 13.672 us | 29.477 us |
+| `literal-family/method-token-family` | 5.680 us | 12.955 us | 9.845 us |
 | `structural/keyword-to-generic-type` | 16.860 us | 10.020 us | 19.300 us |
 | `structural/keyword-family-to-capitalized-identifier` | 274.720 us | 520.640 us | 535.800 us |
 | `structural/method-family-call` | 11.016 us | 19.065 us | 28.132 us |
@@ -290,7 +290,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/call-token` | 16.400 us | 8.980 us | 19.060 us |
 | `literal/identifier-token-casei` | 31.256 us | 10.402 us | 28.168 us |
 | `literal-family/type-token-family` | 31.246 us | 10.568 us | 28.621 us |
-| `literal-family/method-token-family` | 61.354 us | 6.126 us | 22.467 us |
+| `literal-family/method-token-family` | 5.745 us | 3.865 us | 7.910 us |
 | `structural/keyword-to-generic-type` | 18.500 us | 6.020 us | 15.820 us |
 | `structural/keyword-family-to-capitalized-identifier` | 110.720 us | 81.540 us | 96.720 us |
 | `structural/method-family-call` | 5.180 us | 8.527 us | 20.634 us |
