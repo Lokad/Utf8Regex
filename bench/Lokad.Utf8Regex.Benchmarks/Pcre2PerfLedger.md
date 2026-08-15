@@ -2,7 +2,7 @@
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
 2026-08-15 snapshot has SHA-256
-`985D68B9EFC2FEDB5705973A2DDDEF957C573C6D04F8865B0EC18580184B23E9`.
+`22B38E029C40163D02E307F5D14C9E3E872817BE7F2AFD22A4681A3C60A69D8F`.
 It contains 126 operation rows in ten top-line sections and twelve scaling
 families with four 1×/2×/4×/8× points each.
 
@@ -129,6 +129,8 @@ Bounded runs continue to use their prior bounded-window route.
 At 20,000 iterations and seven samples, the accepted implementation moves the
 no-dot miss from 24.903 us to 0.405 us (-98.4%). It is faster than the 1.155 us
 decode-then-Regex comparator and close to the 0.353 us predecoded lower bound.
+The selective five-sample snapshot refresh records 0.402 us, 0 B warm
+allocation, and 20,000 effective iterations for the same PCRE2 operation.
 Greedy, lazy, possessive, adjacent/multiple delimiter, start-offset, Unicode,
 malformed-input, resource-metering, Count, enumeration, `MatchMany`, and
 replacement controls pass. The PCRE2 10.47 corpus passes 1,623/1,623 tests and

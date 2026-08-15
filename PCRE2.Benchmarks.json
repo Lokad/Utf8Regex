@@ -211,9 +211,9 @@
           "DecodeThenRegex": 0.1222
         },
         "common/one-node-backtracking": {
-          "MeasuredAtUtc": "2026-08-15T17:07:00.9466489+00:00",
+          "MeasuredAtUtc": "2026-08-15T23:10:19.8928795+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "57c0eeceaefb",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -223,15 +223,15 @@
           },
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 52,
-          "EffectiveIterations": 1000,
-          "ConstructionMicroseconds": 19.067578125,
-          "ConstructionAllocatedBytes": 54432,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 97.05703125,
+          "ConstructionAllocatedBytes": 54776,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 27.7042,
-          "Utf8Regex": 0.18330000000000002,
-          "PredecodedRegex": 0.42460000000000003,
-          "DecodeThenRegex": 0.4564
+          "Utf8Pcre2": 0.40203,
+          "Utf8Regex": 0.166995,
+          "PredecodedRegex": 0.6028,
+          "DecodeThenRegex": 0.6325649999999999
         },
         "common/uri-match": {
           "MeasuredAtUtc": "2026-08-15T17:07:01.067034+00:00",
