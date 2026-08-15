@@ -199,6 +199,20 @@ public sealed class Pcre2CharacterCompilerTests
     }
 
     [Fact]
+    public void SingleCharacterClassCountPreservesStartAndAnchoredSemantics()
+    {
+        var input = "1aé+"u8;
+        var regex = new Utf8Pcre2Regex(@"\p{L}");
+        var compileAnchored = new Utf8Pcre2Regex(@"\p{L}", Pcre2CompileOptions.Anchored);
+
+        Assert.Equal(2, regex.Count(input, 1));
+        Assert.Equal(1, regex.Count(input, 2));
+        Assert.Equal(0, compileAnchored.Count(input));
+        Assert.Equal(2, compileAnchored.Count(input, 1));
+        Assert.Equal(2, regex.Count(input, 1, Pcre2MatchOptions.Anchored));
+    }
+
+    [Fact]
     public void CharacterSearchChargesEveryMeteredCandidate()
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 128));

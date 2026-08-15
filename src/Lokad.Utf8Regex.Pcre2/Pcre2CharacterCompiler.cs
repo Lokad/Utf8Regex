@@ -43,6 +43,13 @@ internal sealed class Pcre2CharacterProgram
     internal bool LeadingExtendedGraphemeCluster { get; }
 
     internal bool UsesCodeUnit { get; }
+
+    internal bool CanCountSingleCharacterClassDirectly =>
+        Tokens is [{ Kind: Pcre2CharacterTokenKind.CharacterClass }] &&
+        (Request.Options &
+            (Pcre2CompileOptions.Anchored |
+             Pcre2CompileOptions.EndAnchored |
+             Pcre2CompileOptions.FirstLine)) == 0;
 }
 
 internal interface IPcre2CharacterCompileOutcome
@@ -1315,6 +1322,29 @@ internal readonly record struct Pcre2CharacterMatch(
 
 internal static class Pcre2CharacterRunner
 {
+    internal static int CountSingleCharacterClass(
+        Pcre2CharacterProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BytePosition start)
+    {
+        var token = program.Tokens[0];
+        var ucp = (program.Request.Options & Pcre2CompileOptions.Ucp) != 0;
+        var caseless = (token.Options & Pcre2CharacterOptions.Caseless) != 0;
+        var count = 0;
+        var index = start.Value;
+        while (TryDecode(input, index, out var scalar, out var width))
+        {
+            if (token.CharacterClass.Matches(scalar, ucp, caseless))
+            {
+                count++;
+            }
+
+            index += width;
+        }
+
+        return count;
+    }
+
     internal static Pcre2CharacterMatch Match(
         Pcre2CharacterProgram program,
         ref Utf8ValidatedInput input,

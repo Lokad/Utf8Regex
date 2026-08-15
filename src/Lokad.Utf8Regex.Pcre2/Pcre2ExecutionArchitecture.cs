@@ -1316,6 +1316,18 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
+        if (program is Pcre2CharacterDirectProgram characterProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request) &&
+            characterProgram.Program.CanCountSingleCharacterClassDirectly)
+        {
+            result = Pcre2CharacterRunner.CountSingleCharacterClass(
+                characterProgram.Program,
+                input.Bytes,
+                start);
+            return true;
+        }
+
         if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor))
         {
             result = 0;
