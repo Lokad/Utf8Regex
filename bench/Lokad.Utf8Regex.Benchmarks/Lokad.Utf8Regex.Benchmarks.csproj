@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex\Lokad.Utf8Regex.csproj" />
     <ProjectReference Include="..\..\src\Lokad.Utf8Regex.Pcre2\Lokad.Utf8Regex.Pcre2.csproj" />
+    <ProjectReference Include="..\..\src\Lokad.Utf8Regex.PythonRe\Lokad.Utf8Regex.PythonRe.csproj" />
   </ItemGroup>
 
   <ItemGroup>

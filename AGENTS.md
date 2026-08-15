@@ -96,6 +96,13 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--measure-pcre2-special-case`
 - PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
 
+PythonRe benchmark snapshot and diagnostics:
+
+- `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
+- Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
+- Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete eight-case catalog.
+- The managed UTF-8 adapter, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
+
 Current intended uses:
 
 - --inspect-pattern

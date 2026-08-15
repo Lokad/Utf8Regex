@@ -34,6 +34,11 @@ if (BenchmarkProgramRouter.TryHandlePcre2Command(args, out var pcre2ExitCode))
     return pcre2ExitCode;
 }
 
+if (PythonReBenchmarkReporter.TryHandleCommand(args, out var pythonReExitCode))
+{
+    return pythonReExitCode;
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-utf8-enumerator-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureUtf8EnumeratorCase(args[1], args.Length >= 3 ? args[2] : null);
