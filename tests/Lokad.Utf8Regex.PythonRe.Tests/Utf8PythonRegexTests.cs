@@ -397,24 +397,24 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ReplaceUsesPythonGroupSyntax()
+    public void ReplaceUsesManagedBackendAndPythonGroupSyntax()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");
 
         var replaced = regex.ReplaceToString("foo x foo"u8, "<\\g<word>>");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugReplaceBackend);
         Assert.Equal("<foo> x <foo>", replaced);
     }
 
     [Fact]
-    public void SubnCanUseUtf8RegexBackendForUnlimitedReplacement()
+    public void SubnUsesManagedBackendForUnlimitedReplacement()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
 
         var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", startOffsetInBytes: 3);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugReplaceBackend);
         Assert.Equal("xx <foo> yy <foo>", replaced.ResultText);
         Assert.Equal(2, replaced.ReplacementCount);
     }
@@ -431,13 +431,13 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ReplaceCanUseUtf8RegexBackendForAlternationPatterns()
+    public void ReplaceCanUseManagedBackendForAlternationPatterns()
     {
         var regex = new Utf8PythonRegex(@"(?:b)|(?::+)");
 
         var replaced = regex.ReplaceToString(":a:b::c"u8, "-");
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugReplaceBackend);
         Assert.Equal("-a---c", replaced);
     }
 

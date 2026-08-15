@@ -15,8 +15,8 @@ public sealed class Utf8PythonRegex
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
+    private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
-    private readonly bool _canUseUtf8ReplacementFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
     private readonly PythonReDirectBackendKind _matchBackend;
     private readonly PythonReDirectBackendKind _fullMatchBackend;
@@ -50,8 +50,8 @@ public sealed class Utf8PythonRegex
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(options);
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root);
+        _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
-        _canUseUtf8ReplacementFastPath = PythonReTranslator.CanUseUtf8ReplacementFastPath(parseResult.Root);
         _translation = PythonReTranslator.Translate(parseResult);
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
         _managedFullRegex = CreateManagedRegex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
@@ -78,9 +78,7 @@ public sealed class Utf8PythonRegex
         _findAllBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
-        _replaceBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8ReplacementFastPath
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
+        _replaceBackend = PythonReDirectBackendKind.ManagedRegex;
         _splitBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
@@ -167,6 +165,11 @@ public sealed class Utf8PythonRegex
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (!_canMatchNonEmpty)
+        {
+            return _managedRegex.Count(subject, startOffsetInUtf16);
+        }
+
         return CountManagedMatchesPythonStyle(input, subject, startOffsetInUtf16);
     }
 
@@ -654,11 +657,9 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-        if (_replaceBackend == PythonReDirectBackendKind.Utf8Regex &&
-            count == 0 &&
-            TrySubnToStringViaUtf8Regex(input, plan, startOffsetInBytes, out var utf8Result))
+        if (!_canMatchEmpty)
         {
-            return utf8Result;
+            return SubnToStringViaManagedRegex(input, plan, count, startOffsetInBytes);
         }
 
         var subject = Decode(input);
@@ -734,11 +735,14 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-        if (_replaceBackend == PythonReDirectBackendKind.Utf8Regex &&
-            count == 0 &&
-            TrySubnViaUtf8Regex(input, plan, startOffsetInBytes, out var utf8Result))
+        if (!_canMatchEmpty)
         {
-            return utf8Result;
+            var managedResult = SubnToStringViaManagedRegex(input, plan, count, startOffsetInBytes);
+            return new Utf8PythonSubnUtf8Result
+            {
+                ResultBytes = Encoding.UTF8.GetBytes(managedResult.ResultText),
+                ReplacementCount = managedResult.ReplacementCount,
+            };
         }
 
         return SubnManagedUtf8(input, startOffsetInBytes, count, static (source, snapshot, state) => state.ExpandToUtf8(source, snapshot.Groups), plan);
@@ -1023,7 +1027,7 @@ public sealed class Utf8PythonRegex
         int utf16Position,
         out PythonReManagedMatchSnapshot snapshot)
     {
-        if ((uint)utf16Position >= (uint)subject.Length)
+        if (!_canMatchNonEmpty || (uint)utf16Position >= (uint)subject.Length)
         {
             snapshot = default;
             return false;
@@ -1051,7 +1055,7 @@ public sealed class Utf8PythonRegex
         out Match match,
         out int utf16BaseOffset)
     {
-        if ((uint)utf16Position >= (uint)subject.Length)
+        if (!_canMatchNonEmpty || (uint)utf16Position >= (uint)subject.Length)
         {
             match = System.Text.RegularExpressions.Match.Empty;
             utf16BaseOffset = 0;
@@ -1173,54 +1177,25 @@ public sealed class Utf8PythonRegex
         return true;
     }
 
-    private bool TrySubnToStringViaUtf8Regex(
+    private Utf8PythonSubnResult SubnToStringViaManagedRegex(
         ReadOnlySpan<byte> input,
         PythonReReplacementPlan plan,
-        int startOffsetInBytes,
-        out Utf8PythonSubnResult result)
+        int count,
+        int startOffsetInBytes)
     {
-        if (_utf8Regex is null)
+        var subject = Decode(input);
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        var maximumReplacements = count == 0 ? int.MaxValue : count;
+        var replacementCount = Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
+        return new Utf8PythonSubnResult
         {
-            result = default;
-            return false;
-        }
-
-        var tail = input[startOffsetInBytes..];
-        var replacedTail = _utf8Regex.ReplaceToString(tail, plan.ToDotNetReplacementString());
-        var replacementCount = _utf8Regex.Count(tail);
-        result = new Utf8PythonSubnResult
-        {
-            ResultText = startOffsetInBytes == 0
-                ? replacedTail
-                : Encoding.UTF8.GetString(input[..startOffsetInBytes]) + replacedTail,
+            ResultText = _managedRegex.Replace(
+                subject,
+                plan.ToDotNetReplacementString(),
+                maximumReplacements,
+                startOffsetInUtf16),
             ReplacementCount = replacementCount,
         };
-        return true;
-    }
-
-    private bool TrySubnViaUtf8Regex(
-        ReadOnlySpan<byte> input,
-        PythonReReplacementPlan plan,
-        int startOffsetInBytes,
-        out Utf8PythonSubnUtf8Result result)
-    {
-        if (_utf8Regex is null)
-        {
-            result = default;
-            return false;
-        }
-
-        var tail = input[startOffsetInBytes..];
-        var replacedTail = _utf8Regex.Replace(tail, plan.ToDotNetReplacementString());
-        var replaced = new byte[startOffsetInBytes + replacedTail.Length];
-        input[..startOffsetInBytes].CopyTo(replaced);
-        replacedTail.CopyTo(replaced.AsSpan(startOffsetInBytes));
-        result = new Utf8PythonSubnUtf8Result
-        {
-            ResultBytes = replaced,
-            ReplacementCount = _utf8Regex.Count(tail),
-        };
-        return true;
     }
 
     private bool TrySplitToStringsViaUtf8Regex(

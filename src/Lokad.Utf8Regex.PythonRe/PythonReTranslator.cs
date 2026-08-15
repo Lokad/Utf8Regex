@@ -11,9 +11,13 @@ internal static class PythonReTranslator
 
     public static bool CanMatchEmpty(PythonReNode node) => GetWidth(node).Min == 0;
 
-    public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
+    public static bool CanMatchNonEmpty(PythonReNode node)
+    {
+        var max = GetWidth(node).Max;
+        return !max.HasValue || max.Value > 0;
+    }
 
-    public static bool CanUseUtf8ReplacementFastPath(PythonReNode node) => !ContainsConditional(node);
+    public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
 
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
@@ -557,19 +561,6 @@ internal static class PythonReTranslator
             PythonReQuantifierNode quantifier => IsUtf8IterationSafe(quantifier.Inner),
             PythonReGroupNode group => IsUtf8IterationSafe(group.Inner),
             _ => true,
-        };
-    }
-
-    private static bool ContainsConditional(PythonReNode node)
-    {
-        return node switch
-        {
-            PythonReConditionalNode => true,
-            PythonReSequenceNode sequence => sequence.Elements.Any(ContainsConditional),
-            PythonReAlternationNode alternation => alternation.Branches.Any(ContainsConditional),
-            PythonReQuantifierNode quantifier => ContainsConditional(quantifier.Inner),
-            PythonReGroupNode group => ContainsConditional(group.Inner),
-            _ => false,
         };
     }
 
