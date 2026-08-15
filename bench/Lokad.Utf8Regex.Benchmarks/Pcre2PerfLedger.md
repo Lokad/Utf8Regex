@@ -115,3 +115,34 @@ the largest is `literal/empty-unicode` replacement at 93.625 us. Future
 performance work should use `--emit-pcre2-priority-report` to select a family,
 then the appropriate case/scaling drilldown, and refresh only the affected
 snapshot rows.
+
+## Compatible candidate-search follow-up
+
+The P1 rerank selected `common/one-node-backtracking`, whose
+`[^a]+\.[^z]+` pattern previously disabled the existing
+`LeadingRunThenLiteral` plan because the leading run can also consume the dot.
+That exclusion was unnecessarily broad for an unbounded final leading run:
+the candidate search enumerates dot occurrences, retreats to the beginning of
+the run, and still delegates final match semantics to the PCRE2 backtracker.
+Bounded runs continue to use their prior bounded-window route.
+
+At 20,000 iterations and seven samples, the accepted implementation moves the
+no-dot miss from 24.903 us to 0.405 us (-98.4%). It is faster than the 1.155 us
+decode-then-Regex comparator and close to the 0.353 us predecoded lower bound.
+Greedy, lazy, possessive, adjacent/multiple delimiter, start-offset, Unicode,
+malformed-input, resource-metering, Count, enumeration, `MatchMany`, and
+replacement controls pass. The PCRE2 10.47 corpus passes 1,623/1,623 tests and
+the full solution passes 2,975/2,975. The implementation and evidence are in
+`7fe0cace`.
+
+The same rerank identifies a distinct next mechanism rather than an extension
+of this candidate change. On the 16,013,977-byte
+`industry/leipzig-symbol-count` input, public PCRE2 `\p{Sm}` Count takes
+38.942 ms while the core UTF-8 category route takes approximately 1.13--1.20
+ms. Raw PCRE2 and public PCRE2 are equivalent within noise, so wrapper
+validation and projection are not the cause. The existing PCRE2 character
+runner decodes and dispatches every scalar, whereas the core category counter
+has a vectorized ASCII math-symbol kernel. `\p{L}` is only 1.43x slower than
+the core route (1.549 ms versus 1.080 ms), so future work should first prove a
+narrow exact-category shared kernel rather than generalize all property
+semantics.
