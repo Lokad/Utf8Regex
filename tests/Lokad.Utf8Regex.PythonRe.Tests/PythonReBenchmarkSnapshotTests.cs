@@ -10,6 +10,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         "class-run/count",
         "family/count",
         "findall/full-strings",
+        "findall/full-utf8",
         "findall/many-capture-strings",
         "findall/many-capture-utf8",
         "findall/one-capture-strings",

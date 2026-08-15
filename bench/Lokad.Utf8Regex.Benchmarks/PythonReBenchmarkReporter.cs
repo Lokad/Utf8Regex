@@ -346,6 +346,8 @@ internal static class PythonReBenchmarkCatalog
             Repeat("Шерлок и Ватсон. ", 4_096), string.Empty, false),
         new("findall/full-strings", "[a-z]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
             Repeat("alpha beta gamma 123 ", 1_024), string.Empty, true),
+        new("findall/full-utf8", "[a-z]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllUtf8,
+            Repeat("alpha beta gamma 123 ", 1_024), string.Empty, true),
         new("findall/one-capture-strings", "item-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
             Repeat("item-12 item-345 ", 1_024), string.Empty, true),
         new("findall/many-capture-strings", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
