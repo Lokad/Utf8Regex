@@ -19,19 +19,22 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return true;
         }
 
-        if (!TryCreateAsciiCharClass(set, out var charClass))
+        if (DotNetAsciiCharClassProjector.TryProjectWholeClass(set, out var charClass))
+        {
+            token = new AsciiSimplePatternToken(
+                charClass,
+                DotNetAsciiCharClassProjector.RequiresAsciiInput(set));
+            return true;
+        }
+
+        if (!DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(set, out charClass))
         {
             token = default;
             return false;
         }
 
-        token = new AsciiSimplePatternToken(charClass);
+        token = new AsciiSimplePatternToken(charClass, requiresAsciiInput: true);
         return true;
-    }
-
-    private static bool TryCreateAsciiCharClass(string runtimeSet, out AsciiCharClass charClass)
-    {
-        return DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
     }
 
     private static bool TryExtractCharClassRunPlan(

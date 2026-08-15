@@ -78,7 +78,7 @@ internal sealed class RegexCharClass
 
     public void AddCharClass(RegexCharClass cc)
     {
-        Debug.Assert(cc.CanMerge && CanMerge);
+        Debug.Assert(cc.CanMerge && _subtractor is null);
 
         if (cc._rangelist is { Count: > 0 })
         {
@@ -93,7 +93,7 @@ internal sealed class RegexCharClass
 
     public bool TryAddCharClass(RegexCharClass cc)
     {
-        if (!cc.CanMerge || !CanMerge)
+        if (!cc.CanMerge || _subtractor is not null)
         {
             return false;
         }

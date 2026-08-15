@@ -45,13 +45,19 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     public void DotNetProjectionOwnsRegexCharClassDecoding()
     {
         Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(RuntimeFrontEnd.RegexCharClass.DigitClass, out var digits));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.SpaceClass, out var spaces));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(RuntimeFrontEnd.RegexCharClass.SpaceClass, out var spaces));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.SpaceClass, out _));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass, out var ecmaSpaces));
         Assert.False(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.DigitClass, out _));
+        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.SpaceClass));
+        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.DigitClass));
+        Assert.False(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass));
 
         for (var value = 0; value < 128; value++)
         {
             Assert.Equal(value is >= '0' and <= '9', digits.Contains((byte)value));
             Assert.Equal(Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value), spaces.Contains((byte)value));
+            Assert.Equal(spaces.Contains((byte)value), ecmaSpaces.Contains((byte)value));
         }
     }
 

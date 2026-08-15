@@ -7,13 +7,20 @@ internal readonly struct AsciiSimplePatternToken
         Kind = AsciiSimplePatternTokenKind.Literal;
         Literal = literal;
         CharClass = default;
+        RequiresAsciiInput = false;
     }
 
     public AsciiSimplePatternToken(AsciiCharClass charClass)
+        : this(charClass, requiresAsciiInput: false)
+    {
+    }
+
+    public AsciiSimplePatternToken(AsciiCharClass charClass, bool requiresAsciiInput)
     {
         Kind = AsciiSimplePatternTokenKind.CharClass;
         Literal = 0;
         CharClass = charClass;
+        RequiresAsciiInput = requiresAsciiInput;
     }
 
     private AsciiSimplePatternToken(AsciiSimplePatternTokenKind kind)
@@ -21,6 +28,7 @@ internal readonly struct AsciiSimplePatternToken
         Kind = kind;
         Literal = 0;
         CharClass = default;
+        RequiresAsciiInput = false;
     }
 
     public AsciiSimplePatternTokenKind Kind { get; }
@@ -28,6 +36,8 @@ internal readonly struct AsciiSimplePatternToken
     public byte Literal { get; }
 
     public AsciiCharClass CharClass { get; }
+
+    public bool RequiresAsciiInput { get; }
 
     public static AsciiSimplePatternToken Dot { get; } = new(AsciiSimplePatternTokenKind.Dot);
 }

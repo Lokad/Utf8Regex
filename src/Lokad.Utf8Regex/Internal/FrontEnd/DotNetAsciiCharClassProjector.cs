@@ -17,7 +17,13 @@ internal static class DotNetAsciiCharClassProjector
             return false;
         }
 
-        if (TryProjectKnownWhitespace(runtimeSet, out byteSet))
+        if (RuntimeFrontEnd.RegexCharClass.IsSubtraction(runtimeSet))
+        {
+            byteSet = AsciiCharClass.Empty;
+            return false;
+        }
+
+        if (TryProjectKnownAsciiWhitespace(runtimeSet, out byteSet))
         {
             return true;
         }
@@ -39,7 +45,9 @@ internal static class DotNetAsciiCharClassProjector
             return true;
         }
 
-        if (runtimeSet is null || !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
+        if (runtimeSet is null ||
+            RuntimeFrontEnd.RegexCharClass.IsSubtraction(runtimeSet) ||
+            !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
         {
             byteSet = AsciiCharClass.Empty;
             return false;
@@ -81,6 +89,19 @@ internal static class DotNetAsciiCharClassProjector
         return true;
     }
 
+    public static bool RequiresAsciiInput(string? runtimeSet)
+    {
+        if (runtimeSet == RuntimeFrontEnd.RegexCharClass.AnyClass ||
+            (runtimeSet is not null && RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet)))
+        {
+            return true;
+        }
+
+        return runtimeSet is not null &&
+            TryGetCategoryPayload(runtimeSet, out var categoryPayload) &&
+            IsKnownProjectedCategory(categoryPayload);
+    }
+
     private static AsciiCharClass CreateFromRuntimeSet(string runtimeSet)
     {
         ulong low = 0;
@@ -96,7 +117,7 @@ internal static class DotNetAsciiCharClassProjector
         return new AsciiCharClass(low, high, RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet));
     }
 
-    private static bool TryProjectKnownWhitespace(string runtimeSet, out AsciiCharClass byteSet)
+    private static bool TryProjectKnownAsciiWhitespace(string runtimeSet, out AsciiCharClass byteSet)
     {
         switch (runtimeSet)
         {
@@ -126,6 +147,11 @@ internal static class DotNetAsciiCharClassProjector
 
         var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
         var categoryLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.CategoryLengthIndex];
+        if ((setLength & 1) != 0)
+        {
+            return false;
+        }
+
         var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
         if (runtimeSet.Length < setEnd + categoryLength)
         {

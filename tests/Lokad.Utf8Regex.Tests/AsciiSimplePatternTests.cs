@@ -47,21 +47,60 @@ public sealed class AsciiSimplePatternTests
     [InlineData(@"[\w-][\s]")]
     [InlineData(@"ab.cd|xy\d\d")]
     [InlineData(@"\d{2,4}")]
-    public void SupportAnalyzerKeepsUnicodeSensitiveCharacterClassesOffAsciiSimplePattern(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-
-        Assert.NotEqual(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-    }
-
-    [Theory]
-    [InlineData(@"a\sb")]
-    [InlineData(@"[^\S]")]
-    public void SupportAnalyzerKeepsAsciiWhitespaceClassesOnAsciiSimplePattern(string pattern)
+    public void SupportAnalyzerLowersUnicodeSensitiveCharacterClassesAsAsciiIntersections(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+    }
+
+    [Theory]
+    [InlineData(@"a\sb")]
+    public void SupportAnalyzerLowersUnicodeWhitespaceClassesAsUnsafeAsciiIntersections(string pattern)
+    {
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+    }
+
+    [Fact]
+    public void SupportAnalyzerPreservesPredefinedClassInsideOuterNegation()
+    {
+        var regex = new Utf8Regex(@"[^\S]", RegexOptions.CultureInvariant);
+
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.Equal(Regex.IsMatch("\u2003", @"[^\S]"), regex.IsMatch("\u2003"u8));
+    }
+
+    [Theory]
+    [InlineData(@"^\d{1,3}$", "123")]
+    [InlineData(@"^\d{1,3}$", "١٢٣")]
+    [InlineData(@"^\D{1,3}$", "é")]
+    [InlineData(@"^\w{1,3}$", "Ж")]
+    [InlineData(@"^\W{1,3}$", "😀")]
+    [InlineData(@"^\s{1,3}$", "\u00A0")]
+    [InlineData(@"^\s{1,3}$", "\u2003")]
+    [InlineData(@"^\S{1,3}$", "Ж")]
+    [InlineData(@"^[^\D]{1,3}$", "١٢٣")]
+    [InlineData(@"^[^\W]{1,3}$", "Ж")]
+    [InlineData(@"^[^\S]{1,3}$", "\u2003")]
+    [InlineData(@"^[^x]{1,3}$", "é")]
+    public void UnicodeSensitiveAsciiIntersectionPlansMatchDotNet(string pattern, string input)
+    {
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var expected = new Regex(pattern, options);
+            var actual = new Utf8Regex(pattern, options);
+            var utf8 = System.Text.Encoding.UTF8.GetBytes(input);
+
+            Assert.Equal(NativeExecutionKind.AsciiSimplePattern, actual.Inspection.ExecutionKind);
+            Assert.False(actual.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+            Assert.Equal(expected.IsMatch(input), actual.IsMatch(utf8));
+            Assert.Equal(expected.Count(input), actual.Count(utf8));
+        }
     }
 
     [Fact]

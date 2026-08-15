@@ -126,7 +126,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         {
             foreach (var token in branch)
             {
-                if (token.Kind == AsciiSimplePatternTokenKind.Dot)
+                if (token.Kind == AsciiSimplePatternTokenKind.Dot || token.RequiresAsciiInput)
                 {
                     return false;
                 }

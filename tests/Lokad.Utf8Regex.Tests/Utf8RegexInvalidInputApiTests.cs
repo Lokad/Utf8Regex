@@ -63,6 +63,18 @@ public sealed class Utf8RegexInvalidInputApiTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void AsciiIntersectionSimplePatternRejectsInvalidUtf8(bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(@"^\d{1,3}$", options);
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(s_invalidUtf8));
+        Assert.Throws<ArgumentException>(() => regex.Count(s_invalidUtf8));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void StartAtApisRejectInvalidUtf8(bool compiled)
     {
         var regex = CreateRegex(compiled);

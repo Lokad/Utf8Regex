@@ -671,6 +671,17 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void ConstructorExtractsUnicodeDigitDatePlanWithAsciiInputGuard()
+    {
+        var regex = new Utf8Regex(@"^\d{1,2}/\d{1,2}/\d{4}$", RegexOptions.Compiled);
+
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.False(regex.Inspection.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
+    }
+
+    [Fact]
     public void EmittedBoundedDateTokenMatcherMatchesCompiledDateRuntime()
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
@@ -1361,7 +1372,7 @@ public sealed class Utf8RegexConstructionTests
         var baseline = new Utf8Regex("\\s[a-zA-Z]{0,12}ing\\s", RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, baseline.Inspection.ExecutionKind);
-        Assert.True(baseline.Inspection.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
+        Assert.False(baseline.Inspection.PreparedRegex.SimplePatternPlan.IsUtf8ByteSafe);
         Assert.True(baseline.Inspection.PreparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
     }
 
