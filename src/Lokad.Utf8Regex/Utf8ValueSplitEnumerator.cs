@@ -144,10 +144,25 @@ public ref struct Utf8ValueSplitEnumerator
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
-        int count,
-        Utf8ExecutionDeadline budget)
-        : this(input, new Utf8OperationMatchCursor(input, smallAsciiLiteralFamilySearch, budget), count, input.Length)
+        int count)
     {
+        _sourceKind = SplitSourceKind.SmallAsciiLiteralFamily;
+        _input = input;
+        _decoded = null;
+        _boundaryMap = null;
+        _totalUtf16Length = input.Length;
+        _fallbackEnumerator = default;
+        _matchCursor = new Utf8OperationMatchCursor(
+            input,
+            smallAsciiLiteralFamilySearch,
+            Utf8ExecutionDeadline.Infinite);
+        _segmentStartBytes = 0;
+        _segmentStartUtf16 = 0;
+        _remainingCount = count;
+        _completed = false;
+        _timeoutPattern = null;
+        _timeout = default;
+        Current = default;
     }
 
     private Utf8ValueSplitEnumerator(
@@ -180,9 +195,12 @@ public ref struct Utf8ValueSplitEnumerator
     {
         try
         {
-            return _sourceKind == SplitSourceKind.NativeMatchCursor
-                ? MoveNextNative()
-                : MoveNextFallback();
+            return _sourceKind switch
+            {
+                SplitSourceKind.NativeMatchCursor => MoveNextNative(),
+                SplitSourceKind.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
+                _ => MoveNextFallback(),
+            };
         }
         catch (Utf8ExecutionDeadlineExpiredException) when (_timeoutPattern is not null)
         {
@@ -257,6 +275,32 @@ public ref struct Utf8ValueSplitEnumerator
         return true;
     }
 
+    private bool MoveNextSmallAsciiLiteralFamily()
+    {
+        if (_completed || _remainingCount <= 0)
+        {
+            return false;
+        }
+
+        if (_remainingCount == 1 ||
+            !_matchCursor.TryMoveNextSmallAsciiLiteralFamilyCoordinates(out var matchIndex, out var matchLength))
+        {
+            return EmitTail();
+        }
+
+        Current = new Utf8ValueSplit(
+            _input,
+            decoded: null,
+            indexInUtf16: _segmentStartBytes,
+            lengthInUtf16: matchIndex - _segmentStartBytes,
+            indexInBytes: _segmentStartBytes,
+            lengthInBytes: matchIndex - _segmentStartBytes);
+        _segmentStartBytes = matchIndex + matchLength;
+        _segmentStartUtf16 = _segmentStartBytes;
+        _remainingCount--;
+        return true;
+    }
+
     private bool EmitTail()
     {
         Current = new Utf8ValueSplit(
@@ -291,5 +335,6 @@ public ref struct Utf8ValueSplitEnumerator
     {
         FallbackRegex = 0,
         NativeMatchCursor = 1,
+        SmallAsciiLiteralFamily = 2,
     }
 }

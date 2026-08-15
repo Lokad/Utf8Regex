@@ -427,6 +427,27 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PreparedSmallAsciiLiteralFamilySearchHandlesPrefixOverlapWithoutDispatchState()
+    {
+        byte[][] literals =
+        [
+            Encoding.UTF8.GetBytes("alpha"),
+            Encoding.UTF8.GetBytes("alphabet"),
+            Encoding.UTF8.GetBytes("bravo"),
+        ];
+        var input = Encoding.UTF8.GetBytes("alphabet bravo alpha");
+
+        Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
+        var start = 0;
+        Assert.True(search.TryFindNextNonOverlapping(input, ref start, out var firstIndex, out var firstLength));
+        Assert.Equal(0, firstIndex);
+        Assert.Equal("alpha".Length, firstLength);
+        Assert.True(search.TryFindNextNonOverlapping(input, ref start, out var secondIndex, out var secondLength));
+        Assert.Equal("alphabet ".Length, secondIndex);
+        Assert.Equal("bravo".Length, secondLength);
+    }
+
+    [Fact]
     public void PreparedShortAsciiLiteralFamilyCounterCountsThreeLiteralMatchesWordsShape()
     {
         byte[][] literals =

@@ -80,6 +80,20 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         UsesEmittedAnchoredValidatorMatcher: false,
         UsesEmittedKernelMatcher: false);
 
+    internal bool TryGetSmallAsciiLiteralFamilyPrimitive(
+        ReadOnlySpan<byte> input,
+        out PreparedSmallAsciiLiteralFamilySearch primitive)
+    {
+        if (_smallAsciiLiteralFamilyPrimitive is { } candidate && Utf8InputAnalyzer.IsAscii(input))
+        {
+            primitive = candidate;
+            return true;
+        }
+
+        primitive = default;
+        return false;
+    }
+
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (!_usesRightToLeft)

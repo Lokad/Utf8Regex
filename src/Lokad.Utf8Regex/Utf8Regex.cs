@@ -1104,6 +1104,15 @@ public sealed class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        if (count > 0 && TryGetSmallAsciiLiteralFamilySplitSearch(input, out var smallAsciiLiteralFamilySearch))
+        {
+            return new Utf8ValueSplitEnumerator(
+                input,
+                smallAsciiLiteralFamilySearch,
+                count)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
         if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
         {
             var subject = Utf8InputAnalyzer.Analyze(input);
@@ -1483,6 +1492,9 @@ public sealed class Utf8Regex
         var validation = Utf8Validation.Validate(input);
         return CanUseNativeSplit(validation);
     }
+
+    private bool DebugCanUseSmallAsciiLiteralFamilySplit(ReadOnlySpan<byte> input) =>
+        TryGetSmallAsciiLiteralFamilySplitSearch(input, out _);
 
     private int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count)
     {
@@ -2145,6 +2157,21 @@ public sealed class Utf8Regex
                 => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
             _ => false,
         };
+    }
+
+    private bool TryGetSmallAsciiLiteralFamilySplitSearch(
+        ReadOnlySpan<byte> input,
+        out PreparedSmallAsciiLiteralFamilySearch search)
+    {
+        if (MatchTimeout != Regex.InfiniteMatchTimeout ||
+            _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
+            _compiledEngineRuntime is not Utf8LiteralFamilyCompiledEngineRuntime literalFamilyRuntime)
+        {
+            search = default;
+            return false;
+        }
+
+        return literalFamilyRuntime.Inner.TryGetSmallAsciiLiteralFamilyPrimitive(input, out search);
     }
 
     private bool ShouldPreferFallbackForCompiledLiteralFamilyTextOperations()
@@ -3103,6 +3130,9 @@ public sealed class Utf8Regex
 
         public bool DebugCanUseNativeSplit(ReadOnlySpan<byte> input) =>
             _owner.DebugCanUseNativeSplit(input);
+
+        public bool DebugCanUseSmallAsciiLiteralFamilySplit(ReadOnlySpan<byte> input) =>
+            _owner.DebugCanUseSmallAsciiLiteralFamilySplit(input);
 
         public int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input) =>
             _owner.DebugCountSplitsViaCompiledEngine(input, int.MaxValue);

@@ -1655,8 +1655,9 @@ public sealed class Utf8RegexConstructionTests
         (string Pattern, string Input)[] cases =
         [
             ("tempus|magna|semper", "tempus magna semper et tempus"),
-            ("alpha|bravo|charlie|deltaa|echoo|foxtrot", "alpha/foxtrot/bravo/echoo/charlie/deltaa"),
+            ("Sherlock Holmes|John Watson|Mycroft Holmes|Mary Morstan|Mrs Hudson", "John Watson and Mrs Hudson met Sherlock Holmes"),
             ("alpha|alphabet|bravo", "alphabet bravo alpha"),
+            ("alpha|bravo|charlie", "no matching tokens here"),
         ];
 
         foreach (var testCase in cases)
@@ -1664,6 +1665,10 @@ public sealed class Utf8RegexConstructionTests
             var regex = new Utf8Regex(testCase.Pattern, options);
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
+
+            Assert.True(
+                regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(bytes),
+                $"Expected small ASCII literal-family Split route for '{testCase.Pattern}'.");
             foreach (var split in regex.EnumerateSplits(bytes))
             {
                 actual.Add(split.GetValueString());
@@ -1703,6 +1708,36 @@ public sealed class Utf8RegexConstructionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void SmallAsciiLiteralFamilySplitEnumerationDoesNotAllocatePerCall(bool compiled)
+    {
+        var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
+        var regex = new Utf8Regex("tempus|magna|semper", options);
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("tempus magna semper ", 64)));
+
+        for (var i = 0; i < 32; i++)
+        {
+            _ = CountSplitValues(regex, bytes);
+        }
+
+        var count = 0;
+        for (var i = 0; i < 64; i++)
+        {
+            count = CountSplitValues(regex, bytes);
+        }
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 1_024; i++)
+        {
+            count = CountSplitValues(regex, bytes);
+        }
+
+        Assert.Equal(193, count);
+        Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, 512);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void IneligibleLiteralFamilySplitShapesKeepFallbackSemantics(bool compiled)
     {
         var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
@@ -1718,6 +1753,8 @@ public sealed class Utf8RegexConstructionTests
             var regex = new Utf8Regex(testCase.Pattern, options);
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
+
+            Assert.False(regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(bytes));
             foreach (var split in regex.EnumerateSplits(bytes))
             {
                 actual.Add(split.GetValueString());
@@ -1725,6 +1762,35 @@ public sealed class Utf8RegexConstructionTests
 
             Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
         }
+
+        Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options)
+            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+        Assert.False(new Utf8Regex(
+                "alpha|bravo|charlie",
+                options,
+                TimeSpan.FromSeconds(1))
+            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+        Assert.False(new Utf8Regex("alpha|bravo|charlie", options | RegexOptions.RightToLeft)
+            .Inspection.DebugCanUseSmallAsciiLiteralFamilySplit("alpha bravo"u8));
+
+        var malformed = new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' };
+        var eligible = new Utf8Regex("alpha|bravo|charlie", options);
+        Assert.False(eligible.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(malformed));
+        Assert.Throws<ArgumentException>(() =>
+        {
+            _ = eligible.EnumerateSplits(malformed);
+        });
+    }
+
+    private static int CountSplitValues(Utf8Regex regex, byte[] input)
+    {
+        var count = 0;
+        foreach (var _ in regex.EnumerateSplits(input))
+        {
+            count++;
+        }
+
+        return count;
     }
 
     [Fact]

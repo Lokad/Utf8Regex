@@ -32,12 +32,12 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         byte SecondaryValue2,
         byte[] Literal2)
     {
-        public bool HasValue => SecondaryOffset >= 0;
+        public bool HasValue => Literal0 is not null;
     }
 
     private readonly record struct PairDispatch(int PrimaryOffset, int SecondaryOffset, PairDispatchEntry[] Entries)
     {
-        public bool HasValue => SecondaryOffset >= 0;
+        public bool HasValue => Entries is not null;
     }
 
     private readonly record struct PairDispatchEntry(byte PrimaryValue, byte SecondaryValue, byte[] Literal);
