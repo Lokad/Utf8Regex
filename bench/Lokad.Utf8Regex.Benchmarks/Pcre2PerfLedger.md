@@ -2,7 +2,7 @@
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
 2026-08-15 snapshot has SHA-256
-`A5725FF77304ADFF7DCEF48380D0B6256DD261515D12D979FD31A2D7B9B8B31C`.
+`CC3FAEC536E166C4FCD8F2879100C230B723862EA71D647BF668B9C8DE376D20`.
 It contains 126 operation rows in ten top-line sections and eleven scaling
 families with four 1×/2×/4×/8× points each.
 
@@ -84,13 +84,30 @@ P0 losses:
 | `industry/rust-sherlock-ing-count` | 6.320 ms | 7.177 ms | 0.88× |
 | `common/matches-words` | 77.630 us | 77.800 us | 1.00× |
 
-The remaining material compatible P0 limitation is
+At the initial P0 checkpoint, the remaining material compatible limitation was
 `industry/rust-sherlock-nonnewline-count` (`[^\n]*`): 18.373 ms versus
 1.206 ms decode-then-Regex, or 15.23×. Only this one family passed the residual
-VM-cost threshold, so the bounded fusion gate correctly closed without adding
-a second executor. Email and URI still trail the predecoded baseline by 28.09×
+VM-cost threshold. Email and URI still trailed the predecoded baseline by 28.09×
 and 11.92× respectively, but stay below 3× decode-then-Regex; decoding is part
 of the comparable UTF-8 operation and PCRE2 semantics remain authoritative.
+
+## Single-token repeat follow-up
+
+The residual non-newline case justified one reusable direct execution shape:
+an exact AST containing one consuming PCRE2 token under one quantifier. The
+executor preserves greedy, lazy, possessive, bounded, Unicode, `\R`, `\X`, and
+`\C` behavior, shares the global cursor used by enumerate, `MatchMany`, and
+replacement, and retains the backtracking VM whenever resource metering is
+requested. It reduced the public Count case from approximately 18.2 ms to
+4.0 ms without repeat workspace rents.
+
+A second and final variant recognizes an exact greedy unbounded negated-ASCII
+class and counts its global stream without constructing match projections. The
+qualified snapshot records 112.386 us versus 748.589 us for decode-then-Regex:
+6.66× faster, zero warm allocation, and 99.4% below the pre-experiment PCRE2
+time. The implementation and evidence are `cef416e`, `8aafc32`, and `1db3bd6`.
+All 1,612 PCRE2 tests pass; allocation sentinels run as one non-parallel
+measurement cohort so unrelated pooled work cannot contaminate their counters.
 
 PCRE2-specific global rows are substantially smaller in the curated inputs;
 the largest is `literal/empty-unicode` replacement at 93.625 us. Future
