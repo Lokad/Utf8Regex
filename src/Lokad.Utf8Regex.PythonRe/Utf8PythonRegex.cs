@@ -699,11 +699,20 @@ public sealed class Utf8PythonRegex
 
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
     {
-        return Encoding.UTF8.GetBytes(SubnToString(input, replacement, count, startOffsetInBytes).ResultText);
+        return Encoding.UTF8.GetBytes(ReplaceToString(input, replacement, count, startOffsetInBytes));
     }
 
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
     {
+        if (!_canMatchEmpty)
+        {
+            ValidateStartOffset(input, startOffsetInBytes);
+            var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+            var subject = Decode(input);
+            var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+            return ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16);
+        }
+
         return SubnToString(input, replacement, count, startOffsetInBytes).ResultText;
     }
 
@@ -1247,13 +1256,23 @@ public sealed class Utf8PythonRegex
         var replacementCount = Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
         return new Utf8PythonSubnResult
         {
-            ResultText = _managedRegex.Replace(
-                subject,
-                plan.ToDotNetReplacementString(),
-                maximumReplacements,
-                startOffsetInUtf16),
+            ResultText = ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16),
             ReplacementCount = replacementCount,
         };
+    }
+
+    private string ReplaceManagedSubject(
+        string subject,
+        PythonReReplacementPlan plan,
+        int count,
+        int startOffsetInUtf16)
+    {
+        var maximumReplacements = count == 0 ? int.MaxValue : count;
+        return _managedRegex.Replace(
+            subject,
+            plan.ToDotNetReplacementString(),
+            maximumReplacements,
+            startOffsetInUtf16);
     }
 
     private Utf8PythonMatchContext CreateMatchContext(
