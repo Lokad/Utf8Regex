@@ -4668,7 +4668,16 @@ internal static partial class BenchmarkInspectReporter
         => s_measurementEnvironment ??= new BenchmarkEnvironmentJson
         {
             SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
-            TrackedDirty = HasTrackedSourceChanges(RunGit("status", "--porcelain=v1", "--untracked-files=no")),
+            TrackedDirty = !string.IsNullOrWhiteSpace(RunGit(
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=no",
+                "--",
+                ".",
+                ":(exclude)README.md",
+                ":(exclude)README.Benchmarks.json",
+                ":(exclude)PCRE2.Benchmarks.json",
+                ":(exclude)bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md")),
             HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),
             Runtime = RuntimeInformation.FrameworkDescription,
             OperatingSystem = RuntimeInformation.OSDescription,
@@ -4677,26 +4686,6 @@ internal static partial class BenchmarkInspectReporter
                 Environment.GetEnvironmentVariable("COMPlus_TieredPGO") ??
                 "runtime-default",
         };
-
-    private static bool HasTrackedSourceChanges(string? status)
-    {
-        if (string.IsNullOrWhiteSpace(status))
-        {
-            return false;
-        }
-
-        foreach (var line in status.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
-        {
-            var path = line.Length > 3 ? line[3..].Replace('\\', '/') : line;
-            if (path is not "README.md" and not "README.Benchmarks.json" and not "PCRE2.Benchmarks.json" &&
-                !path.EndsWith("/Pcre2PerfLedger.md", StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     private sealed class BenchmarkEnvironmentJson
     {
