@@ -1307,6 +1307,15 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
+        if (program is Pcre2LiteralDirectProgram literalProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request) &&
+            literalProgram.Program.CanCountDirectly)
+        {
+            result = literalProgram.Program.CountNonOverlapping(input.Bytes[start.Value..]);
+            return true;
+        }
+
         if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor))
         {
             result = 0;

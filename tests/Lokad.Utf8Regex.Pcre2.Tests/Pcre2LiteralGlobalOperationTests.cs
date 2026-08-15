@@ -30,6 +30,22 @@ public sealed class Pcre2LiteralGlobalOperationTests
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
     }
 
+    [Theory]
+    [InlineData("a", "aaaa", 0, 4)]
+    [InlineData("aa", "aaa", 0, 1)]
+    [InlineData("é", "xéé", 1, 2)]
+    [InlineData("abc", "abcabc", 1, 1)]
+    public void LiteralCountPreservesNonOverlappingUnicodeAndStartSemantics(
+        string pattern,
+        string input,
+        int startOffsetInBytes,
+        int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(input), startOffsetInBytes));
+    }
+
     [Fact]
     public void EmptyLiteralProgressesAtScalarsWithoutDuplicates()
     {

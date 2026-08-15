@@ -64,6 +64,14 @@ internal sealed class Pcre2LiteralProgram
     internal bool EndAnchored { get; }
 
     internal bool HasExplicitEndAssertion { get; }
+
+    internal bool CanCountDirectly =>
+        _literalUtf8.Length != 0 &&
+        StartAnchor == Pcre2LiteralAnchor.None &&
+        !EndAnchored;
+
+    internal int CountNonOverlapping(ReadOnlySpan<byte> input) =>
+        Search.CountWithMetrics(input, out _, out _);
 }
 
 internal readonly record struct Pcre2LiteralMatch(
