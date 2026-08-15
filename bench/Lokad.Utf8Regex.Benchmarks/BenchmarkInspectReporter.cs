@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -16,6 +17,8 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class BenchmarkInspectReporter
 {
+    private static bool s_wroteMeasurementEnvironment;
+
     public static int RunInspectPattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
@@ -2450,16 +2453,17 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"LiteralBytes      : {(regex.Inspection.SearchPlan.LiteralUtf8 ?? []).Length}");
         Console.WriteLine($"InputBytes        : {benchmarkCase.InputBytes.Length}");
 
-        if (regex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literal || regex.Inspection.SearchPlan.LiteralUtf8 is not { Length: > 0 })
+        var isExactLiteral = regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 };
+        if (!isExactLiteral)
         {
-            Console.WriteLine("UnicodeLiteral    : case is not on ExactUtf8Literal");
-            return 1;
+            Console.WriteLine("UnicodeLiteral    : semantic fallback; exact-literal microkernels unavailable");
         }
 
-        var hasValidatedThreeByte = regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out _);
-        var hasLeadingScalar = regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(benchmarkCase.InputBytes, out _);
-        var hasPreparedSearch = regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out _);
-        var hasAnchorByte = regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out _);
+        var hasValidatedThreeByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out _);
+        var hasLeadingScalar = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralLeadingScalarAnchored(benchmarkCase.InputBytes, out _);
+        var hasPreparedSearch = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out _);
+        var hasAnchorByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out _);
 
         Console.WriteLine($"HasValidatedThreeByte: {hasValidatedThreeByte}");
         Console.WriteLine($"HasLeadingScalar  : {hasLeadingScalar}");
@@ -2512,11 +2516,8 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("CompiledDirect", iterations, () => regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
-        Measure(benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex", iterations, benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? benchmarkCase.CountPredecodedRegex : benchmarkCase.CountDecodeThenRegex);
-        if (benchmarkCase.Source == ReplicaBenchmarkSource.Lokad)
-        {
-            Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
-        }
+        Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
+        Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
 
         return 0;
     }
@@ -4322,20 +4323,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static double MeasureMedianMicroseconds(int samples, int iterations, Func<int> action)
-    {
-        var sampleValues = new double[samples];
-
-        for (var sample = 0; sample < samples; sample++)
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            sampleValues[sample] = MeasureCore(iterations, action).Elapsed.TotalMicroseconds / iterations;
-        }
-
-        Array.Sort(sampleValues);
-        return sampleValues[sampleValues.Length / 2];
-    }
+        => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;
 
     private static string FormatMicros(double value) => $"{value:N3} us";
 
@@ -4573,22 +4561,21 @@ internal static partial class BenchmarkInspectReporter
     }
     private static void Measure(string label, int samples, int iterations, Func<int> action)
     {
+        WriteMeasurementEnvironment();
         var measurement = MeasureMedianCore(samples, iterations, action);
-        Console.WriteLine($"{label,-18}: {measurement.Elapsed.TotalMilliseconds,10:F3} ms total | {measurement.Elapsed.TotalMicroseconds / iterations,10:F3} us/op | sink={measurement.Sink}");
+        Console.WriteLine(
+            $"{label,-18}: {measurement.Elapsed.TotalMilliseconds,10:F3} ms total | " +
+            $"{measurement.Elapsed.TotalMicroseconds / iterations,10:F3} us/op | sink={measurement.Sink} | " +
+            $"samples={samples} range={measurement.Minimum.TotalMicroseconds / iterations:F3}..{measurement.Maximum.TotalMicroseconds / iterations:F3} us/op | " +
+            $"warmup={measurement.WarmupIterations} calls/{measurement.WarmupElapsed.TotalMilliseconds:F1} ms");
     }
 
     private static void Measure(string label, int iterations, Func<int> action)
         => Measure(label, 1, iterations, action);
 
-    private static (TimeSpan Elapsed, int Sink) MeasureCore(int iterations, Func<int> action)
+    private static (TimeSpan Elapsed, int Sink) MeasureTimedCore(int iterations, Func<int> action)
     {
         var sink = 0;
-        var warmupIterations = Math.Clamp(iterations * 64, 65536, 262144);
-        for (var i = 0; i < warmupIterations; i++)
-        {
-            sink ^= action();
-        }
-
         var stopwatch = Stopwatch.StartNew();
         for (var i = 0; i < iterations; i++)
         {
@@ -4599,19 +4586,117 @@ internal static partial class BenchmarkInspectReporter
         return (stopwatch.Elapsed, sink);
     }
 
-    private static (TimeSpan Elapsed, int Sink) MeasureMedianCore(int samples, int iterations, Func<int> action)
+    private static MeasurementSummary MeasureMedianCore(int samples, int iterations, Func<int> action)
     {
+        var warmup = WarmupCore(action);
         var sampleValues = new (TimeSpan Elapsed, int Sink)[samples];
         for (var sample = 0; sample < samples; sample++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-            sampleValues[sample] = MeasureCore(iterations, action);
+            sampleValues[sample] = MeasureTimedCore(iterations, action);
         }
 
         Array.Sort(sampleValues, static (x, y) => x.Elapsed.CompareTo(y.Elapsed));
-        return sampleValues[sampleValues.Length / 2];
+        var median = sampleValues[sampleValues.Length / 2];
+        return new MeasurementSummary(
+            median.Elapsed,
+            sampleValues[0].Elapsed,
+            sampleValues[^1].Elapsed,
+            median.Sink ^ warmup.Sink,
+            warmup.Iterations,
+            warmup.Elapsed);
+    }
+
+    private static WarmupSummary WarmupCore(Func<int> action)
+    {
+        const int maximumIterations = 262144;
+        var target = TimeSpan.FromMilliseconds(250);
+        var sink = 0;
+        var iterations = 0;
+        var stopwatch = Stopwatch.StartNew();
+        do
+        {
+            sink ^= action();
+            iterations++;
+        }
+        while (iterations < maximumIterations && stopwatch.Elapsed < target);
+
+        stopwatch.Stop();
+        return new WarmupSummary(iterations, stopwatch.Elapsed, sink);
+    }
+
+    private readonly record struct MeasurementSummary(
+        TimeSpan Elapsed,
+        TimeSpan Minimum,
+        TimeSpan Maximum,
+        int Sink,
+        int WarmupIterations,
+        TimeSpan WarmupElapsed);
+
+    private readonly record struct WarmupSummary(int Iterations, TimeSpan Elapsed, int Sink);
+
+    private static void WriteMeasurementEnvironment()
+    {
+        if (s_wroteMeasurementEnvironment)
+        {
+            return;
+        }
+
+        s_wroteMeasurementEnvironment = true;
+        var sourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>";
+        var trackedStatus = RunGit("status", "--porcelain=v1", "--untracked-files=no");
+        var untrackedStatus = RunGit("ls-files", "--others", "--exclude-standard");
+        var processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ??
+            RuntimeInformation.ProcessArchitecture.ToString();
+        var tieredPgo = Environment.GetEnvironmentVariable("DOTNET_TieredPGO") ??
+            Environment.GetEnvironmentVariable("COMPlus_TieredPGO") ??
+            "runtime-default";
+
+        Console.WriteLine($"SourceCommit      : {sourceCommit}");
+        Console.WriteLine($"TrackedDirty      : {!string.IsNullOrWhiteSpace(trackedStatus)}");
+        Console.WriteLine($"HasUntrackedFiles : {!string.IsNullOrWhiteSpace(untrackedStatus)}");
+        Console.WriteLine($"Runtime           : {RuntimeInformation.FrameworkDescription}");
+        Console.WriteLine($"OperatingSystem   : {RuntimeInformation.OSDescription}");
+        Console.WriteLine($"Processor         : {processor}");
+        Console.WriteLine($"TieredPGO         : {tieredPgo}");
+    }
+
+    private static string? RunGit(params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        try
+        {
+            using var process = Process.Start(startInfo);
+            if (process is null || !process.WaitForExit(2000))
+            {
+                process?.Kill(entireProcessTree: true);
+                return null;
+            }
+
+            return process.ExitCode == 0 ? process.StandardOutput.ReadToEnd().Trim() : null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
     }
 
     private static bool TryParseMicrosecondsLine(string line, string label, out double value)

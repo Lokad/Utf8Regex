@@ -83,7 +83,7 @@ internal static partial class BenchmarkInspectReporter
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
         var requestedIterations = ParseIterations(iterationsText);
-        var iterations = Math.Max(requestedIterations, 16384);
+        var iterations = requestedIterations;
         var samples = ParseSamples(samplesText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -161,7 +161,7 @@ internal static partial class BenchmarkInspectReporter
 
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
         var requestedIterations = ParseIterations(iterationsText);
-        var iterations = Math.Max(requestedIterations, 16384);
+        var iterations = requestedIterations;
         var samples = ParseSamples(samplesText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -232,7 +232,7 @@ internal static partial class BenchmarkInspectReporter
 
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
         var requestedIterations = ParseIterations(iterationsText);
-        var iterations = Math.Max(requestedIterations, 16384);
+        var iterations = requestedIterations;
         var samples = ParseSamples(samplesText);
 
         Console.WriteLine($"CaseId            : {caseId}");
