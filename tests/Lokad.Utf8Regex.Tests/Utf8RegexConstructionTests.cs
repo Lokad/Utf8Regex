@@ -1646,6 +1646,87 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SmallAsciiLiteralFamilySplitShapesMatchDotNet(bool compiled)
+    {
+        var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
+        (string Pattern, string Input)[] cases =
+        [
+            ("tempus|magna|semper", "tempus magna semper et tempus"),
+            ("alpha|bravo|charlie|deltaa|echoo|foxtrot", "alpha/foxtrot/bravo/echoo/charlie/deltaa"),
+            ("alpha|alphabet|bravo", "alphabet bravo alpha"),
+        ];
+
+        foreach (var testCase in cases)
+        {
+            var regex = new Utf8Regex(testCase.Pattern, options);
+            var bytes = Encoding.UTF8.GetBytes(testCase.Input);
+            var actual = new List<string>();
+            foreach (var split in regex.EnumerateSplits(bytes))
+            {
+                actual.Add(split.GetValueString());
+            }
+
+            Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(false, 3)]
+    [InlineData(false, int.MaxValue)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    [InlineData(true, 3)]
+    [InlineData(true, int.MaxValue)]
+    public void SmallAsciiLiteralFamilySplitHonorsResultCount(bool compiled, int count)
+    {
+        const string pattern = "tempus|magna|semper";
+        const string input = "tempus magna semper et tempus";
+        var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
+        var regex = new Utf8Regex(pattern, options);
+        var managed = new Regex(pattern, options);
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        var actual = new List<string>();
+        foreach (var split in regex.EnumerateSplits(bytes, count))
+        {
+            actual.Add(split.GetValueString());
+        }
+
+        Assert.Equal(managed.Split(input, count), actual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IneligibleLiteralFamilySplitShapesKeepFallbackSemantics(bool compiled)
+    {
+        var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
+        (string Pattern, string Input)[] cases =
+        [
+            ("foo|bar", "foo bar foobar"),
+            ("alpha|bravo|charlie|deltaa|echoo|foxtrot|golfx", "golfx alpha foxtrot"),
+            ("éclair|bravo|charlie", "éclair bravo charlie"),
+        ];
+
+        foreach (var testCase in cases)
+        {
+            var regex = new Utf8Regex(testCase.Pattern, options);
+            var bytes = Encoding.UTF8.GetBytes(testCase.Input);
+            var actual = new List<string>();
+            foreach (var split in regex.EnumerateSplits(bytes))
+            {
+                actual.Add(split.GetValueString());
+            }
+
+            Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
+        }
+    }
+
     [Fact]
     public void CompiledExactAsciiLiteralFamilyCountMatchesDotNet()
     {

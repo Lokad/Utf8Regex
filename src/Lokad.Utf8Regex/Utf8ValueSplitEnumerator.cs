@@ -30,16 +30,17 @@ public ref struct Utf8ValueSplitEnumerator
         int count,
         Utf8BoundaryMap boundaryMap)
     {
-        _sourceKind = SplitSourceKind.FallbackRegex;
+        var emitTailOnly = count == 1;
+        _sourceKind = emitTailOnly ? SplitSourceKind.NativeMatchCursor : SplitSourceKind.FallbackRegex;
         _input = input;
         _decoded = decoded;
         _boundaryMap = boundaryMap;
         _totalUtf16Length = decoded.Length;
-        _fallbackEnumerator = regex.EnumerateSplits(decoded, count);
+        _fallbackEnumerator = emitTailOnly ? default : regex.EnumerateSplits(decoded, count);
         _matchCursor = default;
         _segmentStartBytes = 0;
         _segmentStartUtf16 = 0;
-        _remainingCount = 0;
+        _remainingCount = emitTailOnly ? 1 : 0;
         _completed = false;
         _timeoutPattern = null;
         _timeout = default;
@@ -207,14 +208,26 @@ public ref struct Utf8ValueSplitEnumerator
         }
 
         var range = _fallbackEnumerator.Current;
-        var start = range.Start.Value;
-        var end = range.End.Value;
+        var startIndex = range.Start;
+        var endIndex = range.End;
+        int start;
+        int length;
+        if (!startIndex.IsFromEnd && !endIndex.IsFromEnd)
+        {
+            start = startIndex.Value;
+            length = endIndex.Value - start;
+        }
+        else
+        {
+            (start, length) = range.GetOffsetAndLength(_totalUtf16Length);
+        }
+
         if (_boundaryMap is not { } boundaryMap)
         {
             throw new InvalidOperationException("Fallback split enumeration requires prepared UTF-16 projection.");
         }
 
-        Current = new Utf8ValueSplit(_input, _decoded, start, end - start, boundaryMap);
+        Current = new Utf8ValueSplit(_input, _decoded, start, length, boundaryMap);
         return true;
     }
 
