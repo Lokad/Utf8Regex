@@ -81,6 +81,7 @@ internal static class PythonReBenchmarkReporter
         int iterations,
         int samples)
     {
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
         var context = new PythonReBenchmarkContext(benchmarkCase);
         var pythonResult = context.ExecutePythonRe();
         var decodeResult = context.ExecuteDecodeThenRegex();
@@ -98,14 +99,33 @@ internal static class PythonReBenchmarkReporter
             Options = benchmarkCase.Options.ToString(),
             Operation = benchmarkCase.Operation.ToString(),
             InputUtf8Bytes = context.InputBytes.Length,
-            EffectiveIterations = iterations,
+            EffectiveIterations = effectiveIterations,
             Samples = samples,
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
             Environment = CaptureEnvironment(),
-            PythonRe = MeasureOperation(context.ExecutePythonRe, iterations, samples),
-            DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, iterations, samples),
-            PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, iterations, samples),
+            PythonRe = MeasureOperation(context.ExecutePythonRe, effectiveIterations, samples),
+            DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
+            PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples),
         };
+    }
+
+    private static int GetEffectiveIterations(PythonReBenchmarkCase benchmarkCase, int requestedIterations)
+    {
+        var minimum = benchmarkCase.Operation switch
+        {
+            PythonReBenchmarkOperation.IsMatch or
+            PythonReBenchmarkOperation.Search or
+            PythonReBenchmarkOperation.Match or
+            PythonReBenchmarkOperation.FullMatch or
+            PythonReBenchmarkOperation.SearchDetailed => 5_000,
+            PythonReBenchmarkOperation.Count when benchmarkCase.Id == "zero-width/count" => 5_000,
+            PythonReBenchmarkOperation.Count => 500,
+            PythonReBenchmarkOperation.FindAllStrings or
+            PythonReBenchmarkOperation.FindAllUtf8 or
+            PythonReBenchmarkOperation.FindIterDetailed => 1_000,
+            _ => 2_000,
+        };
+        return Math.Max(requestedIterations, minimum);
     }
 
     private static PythonReOperationMeasurement MeasureOperation(
