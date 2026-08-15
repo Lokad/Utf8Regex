@@ -550,7 +550,7 @@ internal static partial class BenchmarkInspectReporter
             var compiledUtf8Regex = context.CompiledUtf8Regex;
             var iterations = ParseIterations(iterationsText);
 
-            if (context.Operation != LokadPublicBenchmarkOperation.Count ||
+            if (context.Operation is not (LokadPublicBenchmarkOperation.Count or LokadPublicBenchmarkOperation.Split) ||
                 regex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
                 regex.Inspection.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals ||
                 !PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var primitive))
