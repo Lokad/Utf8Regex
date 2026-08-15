@@ -4259,7 +4259,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ParseLokadPrefixIterations(string? text)
     {
-        return Math.Max(500, ParseIterations(text));
+        return Math.Max(5000, ParseIterations(text));
     }
 
     private static int ParseShortPublicIterations(LokadPublicBenchmarkContext context, string? text)
