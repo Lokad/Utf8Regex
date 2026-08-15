@@ -295,7 +295,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 2;
+        snapshot.SchemaVersion = 3;
 
         foreach (var section in GetPcre2SectionsForCase(caseId))
         {
@@ -313,7 +313,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 2;
+        snapshot.SchemaVersion = 3;
         var sections = ParsePcre2Sections(sectionsText);
 
         foreach (var section in sections)
@@ -331,7 +331,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 2;
+        snapshot.SchemaVersion = 3;
         if (string.IsNullOrWhiteSpace(familyName))
         {
             snapshot.ScalingFamilies.Clear();
@@ -358,6 +358,8 @@ internal static partial class BenchmarkInspectReporter
                 var allocationIterations = Math.Min(effectiveIterations, 32);
                 familySnapshot.Points.Add(new Pcre2ScalingPointJson
                 {
+                    MeasuredAtUtc = DateTimeOffset.UtcNow,
+                    Environment = CaptureBenchmarkEnvironment(),
                     Scale = benchmarkCase.Id[(benchmarkCase.Id.LastIndexOf('/') + 1)..],
                     PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
                     InputUtf8Bytes = context.InputBytes.Length,
@@ -951,6 +953,8 @@ internal static partial class BenchmarkInspectReporter
 
         return new Pcre2CaseMeasurementJson
         {
+            MeasuredAtUtc = DateTimeOffset.UtcNow,
+            Environment = CaptureBenchmarkEnvironment(),
             PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
             InputUtf8Bytes = context.InputBytes.Length,
             EffectiveIterations = effectiveIterations,
@@ -1253,7 +1257,7 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class Pcre2BenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 1;
+        public int SchemaVersion { get; set; } = 3;
 
         public Dictionary<string, Pcre2BenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
 
@@ -1269,6 +1273,10 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class Pcre2ScalingPointJson
     {
+        public DateTimeOffset? MeasuredAtUtc { get; set; }
+
+        public BenchmarkEnvironmentJson? Environment { get; set; }
+
         public required string Scale { get; set; }
 
         public int PatternUtf8Bytes { get; set; }
@@ -1295,6 +1303,10 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class Pcre2CaseMeasurementJson
     {
+        public DateTimeOffset? MeasuredAtUtc { get; set; }
+
+        public BenchmarkEnvironmentJson? Environment { get; set; }
+
         public int? PatternUtf8Bytes { get; set; }
 
         public int? InputUtf8Bytes { get; set; }

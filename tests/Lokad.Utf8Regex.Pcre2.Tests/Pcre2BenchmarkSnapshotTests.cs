@@ -23,7 +23,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(3, root.GetProperty("SchemaVersion").GetInt32());
 
         var families = root.GetProperty("ScalingFamilies");
         Assert.Equal(

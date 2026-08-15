@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 2,
+  "SchemaVersion": 3,
   "Sections": {
     "pcre2-managed-compatible-ismatch": {
       "Cases": {

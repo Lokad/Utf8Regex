@@ -18,6 +18,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private static bool s_wroteMeasurementEnvironment;
+    private static BenchmarkEnvironmentJson? s_measurementEnvironment;
 
     public static int RunInspectPattern(string pattern, string? optionsText)
     {
@@ -785,6 +786,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
+        snapshot.SchemaVersion = 2;
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -4425,12 +4427,13 @@ internal static partial class BenchmarkInspectReporter
 
     private static readonly JsonSerializerOptions ReadmeBenchmarkSnapshotJsonOptions = new()
     {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
     };
 
     private sealed class ReadmeBenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 1;
+        public int SchemaVersion { get; set; } = 2;
 
         public Dictionary<string, ReadmeBenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
     }
@@ -4442,6 +4445,10 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class ReadmeCaseMeasurementJson
     {
+        public DateTimeOffset? MeasuredAtUtc { get; set; }
+
+        public BenchmarkEnvironmentJson? Environment { get; set; }
+
         public double Utf8Regex { get; set; }
 
         public double Utf8Compiled { get; set; }
@@ -4457,6 +4464,8 @@ internal static partial class BenchmarkInspectReporter
         public static ReadmeCaseMeasurementJson FromMeasurement(ReadmeCaseMeasurement measurement)
             => new()
             {
+                MeasuredAtUtc = DateTimeOffset.UtcNow,
+                Environment = CaptureBenchmarkEnvironment(),
                 Utf8Regex = measurement.Utf8Regex,
                 Utf8Compiled = measurement.Utf8Compiled,
                 PredecodedRegex = measurement.PredecodedRegex,
@@ -4645,22 +4654,45 @@ internal static partial class BenchmarkInspectReporter
         }
 
         s_wroteMeasurementEnvironment = true;
-        var sourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>";
-        var trackedStatus = RunGit("status", "--porcelain=v1", "--untracked-files=no");
-        var untrackedStatus = RunGit("ls-files", "--others", "--exclude-standard");
-        var processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ??
-            RuntimeInformation.ProcessArchitecture.ToString();
-        var tieredPgo = Environment.GetEnvironmentVariable("DOTNET_TieredPGO") ??
-            Environment.GetEnvironmentVariable("COMPlus_TieredPGO") ??
-            "runtime-default";
+        var environment = CaptureBenchmarkEnvironment();
+        Console.WriteLine($"SourceCommit      : {environment.SourceCommit}");
+        Console.WriteLine($"TrackedDirty      : {environment.TrackedDirty}");
+        Console.WriteLine($"HasUntrackedFiles : {environment.HasUntrackedFiles}");
+        Console.WriteLine($"Runtime           : {environment.Runtime}");
+        Console.WriteLine($"OperatingSystem   : {environment.OperatingSystem}");
+        Console.WriteLine($"Processor         : {environment.Processor}");
+        Console.WriteLine($"TieredPGO         : {environment.TieredPgo}");
+    }
 
-        Console.WriteLine($"SourceCommit      : {sourceCommit}");
-        Console.WriteLine($"TrackedDirty      : {!string.IsNullOrWhiteSpace(trackedStatus)}");
-        Console.WriteLine($"HasUntrackedFiles : {!string.IsNullOrWhiteSpace(untrackedStatus)}");
-        Console.WriteLine($"Runtime           : {RuntimeInformation.FrameworkDescription}");
-        Console.WriteLine($"OperatingSystem   : {RuntimeInformation.OSDescription}");
-        Console.WriteLine($"Processor         : {processor}");
-        Console.WriteLine($"TieredPGO         : {tieredPgo}");
+    private static BenchmarkEnvironmentJson CaptureBenchmarkEnvironment()
+        => s_measurementEnvironment ??= new BenchmarkEnvironmentJson
+        {
+            SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
+            TrackedDirty = !string.IsNullOrWhiteSpace(RunGit("status", "--porcelain=v1", "--untracked-files=no")),
+            HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),
+            Runtime = RuntimeInformation.FrameworkDescription,
+            OperatingSystem = RuntimeInformation.OSDescription,
+            Processor = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? RuntimeInformation.ProcessArchitecture.ToString(),
+            TieredPgo = Environment.GetEnvironmentVariable("DOTNET_TieredPGO") ??
+                Environment.GetEnvironmentVariable("COMPlus_TieredPGO") ??
+                "runtime-default",
+        };
+
+    private sealed class BenchmarkEnvironmentJson
+    {
+        public required string SourceCommit { get; set; }
+
+        public bool TrackedDirty { get; set; }
+
+        public bool HasUntrackedFiles { get; set; }
+
+        public required string Runtime { get; set; }
+
+        public required string OperatingSystem { get; set; }
+
+        public required string Processor { get; set; }
+
+        public required string TieredPgo { get; set; }
     }
 
     private static string? RunGit(params string[] arguments)
