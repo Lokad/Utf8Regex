@@ -20,7 +20,7 @@ internal static class Utf8SearchExecutor
         return plan.Kind switch
         {
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => TryFindNextPreparedMatch(plan, input, startIndex, out match),
             _ => TryFindFallbackMatch(plan, input, startIndex, reverse: false, out match),
         };
@@ -32,9 +32,9 @@ internal static class Utf8SearchExecutor
         return plan.Kind switch
         {
             Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: false),
-            Utf8SearchKind.AsciiLiteralIgnoreCase when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: true),
+            Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLiteralStart(plan, input, 0, ignoreCase: true),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindFirst(input),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
+            Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindAnyIgnoreCaseLiteralWithBoundaries(plan, input, 0)
                 : plan.PreparedSearcher.FindFirst(input),
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
@@ -60,7 +60,7 @@ internal static class Utf8SearchExecutor
         return plan.Kind switch
         {
             Utf8SearchKind.ExactAsciiLiteral => FindFilteredLiteralStart(plan, input, startIndex, ignoreCase: false),
-            Utf8SearchKind.AsciiLiteralIgnoreCase => FindFilteredLiteralStart(plan, input, startIndex, ignoreCase: true),
+            Utf8SearchKind.AsciiFoldedByteLiteral => FindFilteredLiteralStart(plan, input, startIndex, ignoreCase: true),
             Utf8SearchKind.FixedDistanceAsciiLiteral => FindFixedDistanceLiteral(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiChar => FindFixedDistanceChar(plan, input, startIndex),
             Utf8SearchKind.FixedDistanceAsciiSets => FindFixedDistanceSets(plan, input, startIndex),
@@ -77,9 +77,9 @@ internal static class Utf8SearchExecutor
         return plan.Kind switch
         {
             Utf8SearchKind.ExactAsciiLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: false),
-            Utf8SearchKind.AsciiLiteralIgnoreCase when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: true),
+            Utf8SearchKind.AsciiFoldedByteLiteral when literal is not null => FindFilteredLastLiteralStart(plan, input, input.Length, ignoreCase: true),
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => plan.PreparedSearcher.FindLast(input),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
+            Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
                 ? FindLastAnyIgnoreCaseLiteralWithBoundaries(plan, input, input.Length)
                 : plan.PreparedSearcher.FindLast(input),
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => plan.HasBoundaryRequirements
@@ -111,7 +111,7 @@ internal static class Utf8SearchExecutor
         return plan.Kind switch
         {
             Utf8SearchKind.ExactAsciiLiterals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
+            Utf8SearchKind.AsciiFoldedByteLiterals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
             Utf8SearchKind.ExactUtf8Literals when plan.HasPreparedSearcher => TryFindLastPreparedMatch(plan, input, startIndex, out match),
             _ => TryFindFallbackMatch(plan, input, startIndex, reverse: true, out match),
         };
@@ -214,7 +214,7 @@ internal static class Utf8SearchExecutor
             return false;
         }
 
-        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals or Utf8SearchKind.ExactUtf8Literals)
+        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals)
         {
             if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
             {
@@ -228,7 +228,7 @@ internal static class Utf8SearchExecutor
                 return false;
             }
 
-            var shortestLength = plan.Kind == Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+            var shortestLength = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals
                 ? plan.AlternateIgnoreCaseLiteralSearch?.ShortestLength ?? int.MaxValue
                 : plan.AlternateLiteralSearchData?.ShortestLength ?? int.MaxValue;
             if (shortestLength == int.MaxValue)
@@ -285,7 +285,7 @@ internal static class Utf8SearchExecutor
             return false;
         }
 
-        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals or Utf8SearchKind.ExactUtf8Literals)
+        if (plan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals)
         {
             if (!plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
             {
@@ -298,7 +298,7 @@ internal static class Utf8SearchExecutor
                 return false;
             }
 
-            var shortestLength = plan.Kind == Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+            var shortestLength = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals
                 ? plan.AlternateIgnoreCaseLiteralSearch?.ShortestLength ?? int.MaxValue
                 : plan.AlternateLiteralSearchData?.ShortestLength ?? int.MaxValue;
             if (shortestLength == int.MaxValue)

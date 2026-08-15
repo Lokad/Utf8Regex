@@ -209,12 +209,12 @@ internal static class Utf8ExecutionInterpreter
         ignoreCase = plan.IgnoreCase;
 
         if (CanUseCompiledSearchPlan(searchPlan, plan) &&
-            searchPlan.Kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar or Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiLiteralIgnoreCase &&
+            searchPlan.Kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar or Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral &&
             searchPlan.LiteralUtf8 is { Length: > 0 } searchLiteral)
         {
             anchorLiteral = searchLiteral;
             anchorOffset = searchPlan.Kind is Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar ? searchPlan.Distance : 0;
-            ignoreCase = searchPlan.Kind == Utf8SearchKind.AsciiLiteralIgnoreCase;
+            ignoreCase = searchPlan.Kind == Utf8SearchKind.AsciiFoldedByteLiteral;
             return true;
         }
 
@@ -236,7 +236,7 @@ internal static class Utf8ExecutionInterpreter
                 ContainsSearchLiteral(plan, searchPlan.LiteralUtf8),
             Utf8SearchKind.FixedDistanceAsciiChar => searchPlan.LiteralUtf8 is { Length: 1 } literal &&
                 MatchesFixedLiteralByteAtOffset(plan, searchPlan.Distance, literal[0]),
-            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiLiteralIgnoreCase => plan.SearchLiteralOffset == 0 &&
+            Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral => plan.SearchLiteralOffset == 0 &&
                 plan.SearchLiterals.Length == 1 &&
                 ContainsSearchLiteral(plan, searchPlan.LiteralUtf8),
             Utf8SearchKind.ExactAsciiLiterals => plan.SearchLiteralOffset == 0 &&

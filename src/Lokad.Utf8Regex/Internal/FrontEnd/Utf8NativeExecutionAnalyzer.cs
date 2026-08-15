@@ -122,7 +122,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
                 Utf8SearchFacts.Create(
-                    Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals,
+                    Utf8SearchKind.AsciiFoldedByteLiterals,
                     new Utf8SearchFactData
                     {
                         AlternateLiteralsUtf8 = ignoreCaseAlternateLiterals,
@@ -151,7 +151,7 @@ internal static class Utf8NativeExecutionAnalyzer
             }
 
             var searchKind = ignoreCase
-                ? Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+                ? Utf8SearchKind.AsciiFoldedByteLiterals
                 : !hasNonAscii &&
                   alternationLeadingBoundary == Utf8BoundaryRequirement.None &&
                   alternationTrailingBoundary == Utf8BoundaryRequirement.None
@@ -308,7 +308,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 executionPattern,
                 Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex),
                 Utf8SearchFacts.Create(
-                    ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals : Utf8SearchKind.ExactAsciiLiterals,
+                    ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiterals : Utf8SearchKind.ExactAsciiLiterals,
                     new Utf8SearchFactData
                     {
                         AlternateLiteralsUtf8 = literalBranches,
@@ -622,7 +622,7 @@ internal static class Utf8NativeExecutionAnalyzer
             ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             : NativeExecutionKind.ExactUtf8Literals;
         searchKind = ignoreCase
-            ? Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+            ? Utf8SearchKind.AsciiFoldedByteLiterals
             : hasNonAscii
                 ? Utf8SearchKind.ExactUtf8Literals
                 : Utf8SearchKind.ExactAsciiLiterals;

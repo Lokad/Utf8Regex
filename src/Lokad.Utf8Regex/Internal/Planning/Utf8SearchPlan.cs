@@ -42,7 +42,7 @@ internal readonly struct Utf8SearchPlan
         LiteralUtf8 = literalUtf8;
         CanGuideFallbackStarts = canGuideFallbackStarts;
         LiteralSearch = literalUtf8 is not null
-            ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiLiteralIgnoreCase)
+            ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiFoldedByteLiteral)
             : null;
         AlternateLiteralsUtf8 = alternateLiteralsUtf8;
         AlternateLiteralUtf16Lengths = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.ExactUtf8Literals
@@ -51,7 +51,7 @@ internal readonly struct Utf8SearchPlan
         AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 }
             ? new PreparedLiteralSetSearch(alternateLiteralsUtf8)
             : null;
-        AlternateIgnoreCaseLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+        AlternateIgnoreCaseLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.AsciiFoldedByteLiterals
             ? new PreparedAsciiIgnoreCaseLiteralSetSearch(alternateLiteralsUtf8)
             : null;
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
@@ -285,9 +285,9 @@ internal readonly struct Utf8SearchPlan
         {
             Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiChar when literalSearch.HasValue
                 => new PreparedSearcher(literalSearch.Value, ignoreCase: false),
-            Utf8SearchKind.AsciiLiteralIgnoreCase when literalSearch.HasValue
+            Utf8SearchKind.AsciiFoldedByteLiteral when literalSearch.HasValue
                 => new PreparedSearcher(literalSearch.Value, ignoreCase: true),
-            Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals or Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when multiLiteralSearch.HasValue
+            Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals or Utf8SearchKind.AsciiFoldedByteLiterals when multiLiteralSearch.HasValue
                 => new PreparedSearcher(multiLiteralSearch),
             _ => default,
         };
@@ -303,7 +303,7 @@ internal readonly struct Utf8SearchPlan
             Utf8SearchKind.ExactAsciiLiteral
                 when preparedSearcher.Kind == PreparedSearcherKind.ExactLiteral
                 => Utf8SearchPortfolioKind.ExactLiteral,
-            Utf8SearchKind.AsciiLiteralIgnoreCase
+            Utf8SearchKind.AsciiFoldedByteLiteral
                 when preparedSearcher.Kind == PreparedSearcherKind.IgnoreCaseLiteral
                 => Utf8SearchPortfolioKind.IgnoreCaseLiteral,
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
@@ -321,7 +321,7 @@ internal readonly struct Utf8SearchPlan
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals
                 when multiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactEarliest
                 => Utf8SearchPortfolioKind.ExactEarliestFamily,
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals
+            Utf8SearchKind.AsciiFoldedByteLiterals
                 when multiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase
                 => Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily,
             _ => Utf8SearchPortfolioKind.None,
@@ -336,7 +336,7 @@ internal readonly struct Utf8SearchPlan
         {
             Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals when alternateLiteralsUtf8 is { Length: > 0 }
                 => new PreparedMultiLiteralSearch(alternateLiteralsUtf8, ignoreCase: false),
-            Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals when alternateLiteralsUtf8 is { Length: > 0 }
+            Utf8SearchKind.AsciiFoldedByteLiterals when alternateLiteralsUtf8 is { Length: > 0 }
                 => new PreparedMultiLiteralSearch(alternateLiteralsUtf8, ignoreCase: true),
             _ => default,
         };

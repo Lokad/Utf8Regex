@@ -2479,6 +2479,7 @@ internal static partial class BenchmarkInspectReporter
         });
         Measure("Utf8IsValid", iterations, () => Utf8.IsValid(benchmarkCase.InputBytes) ? benchmarkCase.InputBytes.Length : 0);
         Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).Utf16Length);
+        Measure("StrictDecodeOnly", iterations, () => Utf8Validation.DecodeStrict(benchmarkCase.InputBytes).Length);
 
         if (hasValidatedThreeByte)
         {
@@ -2520,6 +2521,11 @@ internal static partial class BenchmarkInspectReporter
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
         Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
         Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
+
+        var decoded = Encoding.UTF8.GetString(benchmarkCase.InputBytes);
+        Measure("Utf8IsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(benchmarkCase.InputBytes) ? 1 : 0);
+        Measure("DecodeIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(Encoding.UTF8.GetString(benchmarkCase.InputBytes)) ? 1 : 0);
+        Measure("PredecodedIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(decoded) ? 1 : 0);
 
         return 0;
     }

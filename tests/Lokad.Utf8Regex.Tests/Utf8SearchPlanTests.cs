@@ -28,7 +28,7 @@ public sealed class Utf8SearchPlanTests
     {
         var regex = new Utf8Regex("needle", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasLiteral);
         Assert.Equal(PreparedSearcherKind.IgnoreCaseLiteral, regex.Inspection.SearchPlan.PreparedSearcher.Kind);
     }
@@ -38,7 +38,7 @@ public sealed class Utf8SearchPlanTests
     {
         var regex = new Utf8Regex("needle|thread|fiber", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily, regex.Inspection.SearchPortfolioKind);
         Assert.True(regex.Inspection.SearchPlan.HasAlternateLiterals);

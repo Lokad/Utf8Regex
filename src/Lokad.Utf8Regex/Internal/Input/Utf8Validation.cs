@@ -5,6 +5,10 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static class Utf8Validation
 {
+    private static readonly Encoding s_strictEncoding = new UTF8Encoding(
+        encoderShouldEmitUTF8Identifier: false,
+        throwOnInvalidBytes: true);
+
     public static Utf8ValidationResult Validate(ReadOnlySpan<byte> input)
     {
         return Utf8InputAnalyzer.ValidateOnly(input);
@@ -18,6 +22,18 @@ internal static class Utf8Validation
     public static void ThrowIfInvalid(ReadOnlySpan<byte> input)
     {
         _ = Validate(input);
+    }
+
+    public static string DecodeStrict(ReadOnlySpan<byte> input)
+    {
+        try
+        {
+            return s_strictEncoding.GetString(input);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw CreateInvalidUtf8Exception(Math.Max(0, exception.Index));
+        }
     }
 
     internal static ArgumentException CreateInvalidUtf8Exception(int byteOffset)

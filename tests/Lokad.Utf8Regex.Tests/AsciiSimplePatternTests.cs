@@ -22,7 +22,7 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex("ab.cd", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
     }
 
     [Theory]
@@ -79,7 +79,7 @@ public sealed class AsciiSimplePatternTests
         var analysis = Utf8FrontEnd.Compile("ab?c", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, analysis.SearchPlan.Kind);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class AsciiSimplePatternTests
         var analysis = Utf8FrontEnd.Compile("a[bc]?d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, analysis.SearchPlan.Kind);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public sealed class AsciiSimplePatternTests
         var analysis = Utf8FrontEnd.Compile("a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, analysis.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, analysis.SearchPlan.Kind);
     }
 
     [Theory]

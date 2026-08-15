@@ -166,7 +166,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (TrySelectLeadingLiteral(findOptimizations, out var leadingLiteral) && IsAscii(leadingLiteral))
         {
             var searchKind = UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions)
-                ? Utf8SearchKind.AsciiLiteralIgnoreCase
+                ? Utf8SearchKind.AsciiFoldedByteLiteral
                 : Utf8SearchKind.ExactAsciiLiteral;
 
             return Utf8SearchFacts.Create(
@@ -195,7 +195,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (TrySelectCandidateLiteral(findOptimizations, out var candidate) && IsAscii(candidate))
         {
             var searchKind = UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions)
-                ? Utf8SearchKind.AsciiLiteralIgnoreCase
+                ? Utf8SearchKind.AsciiFoldedByteLiteral
                 : Utf8SearchKind.ExactAsciiLiteral;
 
             return Utf8SearchFacts.Create(
@@ -455,7 +455,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         Utf8BoundaryRequirement trailingBoundary)
     {
         var searchKind = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCase
-            ? Utf8SearchKind.AsciiLiteralIgnoreCase
+            ? Utf8SearchKind.AsciiFoldedByteLiteral
             : Utf8SearchKind.ExactAsciiLiteral;
 
         return Utf8SearchFacts.Create(
@@ -568,7 +568,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             if (longest.Length > 0)
             {
                 return Utf8SearchFacts.Create(
-                           simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                           simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                            new Utf8SearchFactData
                            {
                                LiteralUtf8 = Encoding.UTF8.GetBytes(longest),
@@ -581,7 +581,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (semanticRegex.RuntimeTree?.FindOptimizations?.LongestLiteral is { Length: > 0 } literal)
         {
             return Utf8SearchFacts.Create(
-                       simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                       simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                        new Utf8SearchFactData
                        {
                            LiteralUtf8 = Encoding.UTF8.GetBytes(literal),

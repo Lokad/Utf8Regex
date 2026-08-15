@@ -4,10 +4,10 @@ internal enum Utf8SearchKind
 {
     None = 0,
     ExactAsciiLiteral = 1,
-    AsciiLiteralIgnoreCase = 2,
+    AsciiFoldedByteLiteral = 2,
     ExactAsciiLiterals = 3,
     ExactUtf8Literals = 4,
-    AsciiLiteralIgnoreCaseLiterals = 5,
+    AsciiFoldedByteLiterals = 5,
     FixedDistanceAsciiLiteral = 6,
     FixedDistanceAsciiChar = 7,
     FixedDistanceAsciiSets = 8,

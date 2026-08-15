@@ -210,9 +210,9 @@ internal readonly struct Utf8StructuralSearchPlan
             (canGuideFallbackStarts ||
              effectiveStartTransform.HasValue ||
              kind is Utf8SearchKind.ExactAsciiLiteral or
-                 Utf8SearchKind.AsciiLiteralIgnoreCase or
+                 Utf8SearchKind.AsciiFoldedByteLiteral or
                  Utf8SearchKind.ExactAsciiLiterals or
-                 Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals or
+                 Utf8SearchKind.AsciiFoldedByteLiterals or
                  Utf8SearchKind.ExactUtf8Literals))
         {
             return CreateStart(preparedSearcher, effectiveStartTransform);

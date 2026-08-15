@@ -103,7 +103,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         searchFacts = searchLiterals.Length switch
         {
             1 => Utf8SearchFacts.Create(
-                     ignoreCase ? Utf8SearchKind.AsciiLiteralIgnoreCase : Utf8SearchKind.ExactAsciiLiteral,
+                     ignoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
                      new Utf8SearchFactData
                      {
                          LiteralUtf8 = searchLiterals[0],

@@ -1739,7 +1739,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("foo(?=bar)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCase, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
     }
 
@@ -1749,7 +1749,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("(?:cat|dog)(?=house)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
     }
 
@@ -1931,7 +1931,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1941,7 +1941,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]
@@ -1951,7 +1951,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8SearchKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
     [Fact]

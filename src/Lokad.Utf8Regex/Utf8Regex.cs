@@ -770,6 +770,12 @@ public sealed class Utf8Regex
             return twin.IsMatch(input);
         }
 
+        if (ShouldDecodeWholeSubjectForFallbackValueOperation())
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (CanUseWellFormedOnlyValidation())
         {
             if (!TryUseAsciiInputValidationShortcut(input))
@@ -828,6 +834,12 @@ public sealed class Utf8Regex
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.Count(input);
+        }
+
+        if (ShouldDecodeWholeSubjectForFallbackValueOperation())
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                Utf8Validation.DecodeStrict(input));
         }
 
         if (CanUseFusedCompiledAsciiLiteralFamilyCount())
@@ -2657,6 +2669,20 @@ public sealed class Utf8Regex
     private bool ShouldSkipRequiredPrefilterForMatch()
     {
         return _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
+    }
+
+    private bool ShouldDecodeWholeSubjectForFallbackValueOperation()
+    {
+        var features = _preparedRegex.Features;
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
+            _preparedRegex.SearchPlan.Kind == Utf8SearchKind.AsciiFoldedByteLiteral &&
+            _preparedRegex.SearchPlan.MaxPossibleLength != int.MaxValue &&
+            features.CaptureCount <= 1 &&
+            !features.HasBackreferences &&
+            !features.HasLookarounds &&
+            !features.HasAtomicGroups &&
+            !features.HasConditionals &&
+            !features.HasLoops;
     }
 
     private Utf8ValidationResult GetWellFormedOnlyValidation(ReadOnlySpan<byte> input)
