@@ -310,6 +310,7 @@ internal enum PythonReBenchmarkOperation : byte
     SubnUtf8 = 12,
     SubnEvaluatorString = 13,
     SplitStrings = 14,
+    SubnEvaluatorUtf8 = 15,
 }
 
 internal sealed record PythonReBenchmarkCase(
@@ -367,6 +368,8 @@ internal static class PythonReBenchmarkCatalog
             Repeat("cat fox cat dog ", 1_024), "tiger", true),
         new("replacement/evaluator-string", "([a-z]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.SubnEvaluatorString,
             Repeat("cat fox dog ", 512), "token", true),
+        new("replacement/evaluator-utf8", "([a-z]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.SubnEvaluatorUtf8,
+            Repeat("cat fox dog ", 512), "token", true),
         new("split/no-captures", "[,;]", PythonReCompileOptions.None, PythonReBenchmarkOperation.SplitStrings,
             Repeat("alpha,beta;gamma,delta;", 512), string.Empty, true),
         new("split/captures", "([,;])", PythonReCompileOptions.None, PythonReBenchmarkOperation.SplitStrings,
@@ -392,6 +395,7 @@ internal sealed class PythonReBenchmarkContext
     private readonly Regex _regex;
     private readonly Regex _fullRegex;
     private readonly string _decoded;
+    private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
 
     internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
@@ -399,6 +403,7 @@ internal sealed class PythonReBenchmarkContext
         _case = benchmarkCase;
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         _decoded = benchmarkCase.Input;
+        _replacementBytes = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
         var regexOptions = ToRegexOptions(benchmarkCase.Options);
         _regex = new Regex(benchmarkCase.Pattern, regexOptions, Regex.InfiniteMatchTimeout);
@@ -425,6 +430,8 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),
         PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(
             _pythonRegex.SubnToString(InputBytes, _case.Replacement, static (replacement, _) => replacement)),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(
+            _pythonRegex.Subn(InputBytes, _replacementBytes, static (replacement, _) => replacement)),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_pythonRegex.SplitToStrings(InputBytes)),
         _ => throw new InvalidOperationException(),
     };
@@ -453,6 +460,7 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true)),
         PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true)),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_regex.Split(input)),
         _ => throw new InvalidOperationException(),
     };

@@ -20,6 +20,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         "literal/search-miss",
         "prefix/match",
         "replacement/evaluator-string",
+        "replacement/evaluator-utf8",
         "replacement/fixed-string",
         "replacement/fixed-utf8",
         "replacement/subn-string",
