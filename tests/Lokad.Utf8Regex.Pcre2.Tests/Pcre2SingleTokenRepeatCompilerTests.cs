@@ -110,6 +110,28 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
         Assert.Equal(["abc", "", "def", ""], GetValues(regex, "abcédef"u8));
     }
 
+    [Theory]
+    [InlineData("", 0, 1)]
+    [InlineData("abc", 0, 2)]
+    [InlineData("\n", 0, 2)]
+    [InlineData("abc\ndef", 0, 4)]
+    [InlineData("abc\n\ndef", 0, 5)]
+    [InlineData("abc\ndef", 4, 2)]
+    [InlineData("abc\ndef", 3, 3)]
+    public void ExcludedAsciiCountKernelPreservesGlobalProgression(
+        string inputText,
+        int startOffsetInBytes,
+        int expected)
+    {
+        var regex = new Utf8Pcre2Regex(@"[^\n]*");
+
+        Assert.True(regex.DebugCompiledProgram.Operations.Count is Pcre2SingleTokenRepeatDirectProgram
+        {
+            Program.CanCountGreedyExcludedAsciiDirectly: true,
+        });
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText), startOffsetInBytes));
+    }
+
     [Fact]
     public void DirectRepeatAnalyzerRejectsComposedAndCapturedShapes()
     {

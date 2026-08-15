@@ -541,6 +541,13 @@ internal sealed class Pcre2SingleTokenRepeatProgram
 
     internal bool UsesCodeUnit => Token.Kind == Pcre2CharacterTokenKind.CodeUnit;
 
+    internal bool CanCountGreedyExcludedAsciiDirectly =>
+        GreedyExcludedAsciiByte.HasValue &&
+        (Request.Options &
+            (Pcre2CompileOptions.Anchored |
+             Pcre2CompileOptions.EndAnchored |
+             Pcre2CompileOptions.FirstLine)) == 0;
+
     private static byte? TryGetGreedyExcludedAsciiByte(
         Pcre2CharacterToken token,
         int minimum,
@@ -1099,6 +1106,34 @@ internal static class Pcre2CandidateSearchAnalyzer
 
 internal static class Pcre2SingleTokenRepeatRunner
 {
+    internal static int CountGreedyExcludedAscii(
+        Pcre2SingleTokenRepeatProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BytePosition start)
+    {
+        var excluded = program.GreedyExcludedAsciiByte.GetValueOrDefault();
+        var remaining = input[start.Value..];
+        var count = 1;
+        while (!remaining.IsEmpty)
+        {
+            var delimiter = remaining.IndexOf(excluded);
+            if (delimiter < 0)
+            {
+                return checked(count + 1);
+            }
+
+            if (delimiter > 0)
+            {
+                count = checked(count + 1);
+            }
+
+            count = checked(count + 1);
+            remaining = remaining[(delimiter + 1)..];
+        }
+
+        return count;
+    }
+
     internal static Pcre2CharacterMatch Match(
         Pcre2SingleTokenRepeatProgram program,
         ref Utf8ValidatedInput input,
@@ -1612,6 +1647,18 @@ internal static class Pcre2GlobalOperationDriver
         {
             result = Pcre2CharacterRunner.CountSingleCharacterClass(
                 characterProgram.Program,
+                input.Bytes,
+                start);
+            return true;
+        }
+
+        if (program is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request) &&
+            singleTokenRepeatProgram.Program.CanCountGreedyExcludedAsciiDirectly)
+        {
+            result = Pcre2SingleTokenRepeatRunner.CountGreedyExcludedAscii(
+                singleTokenRepeatProgram.Program,
                 input.Bytes,
                 start);
             return true;
