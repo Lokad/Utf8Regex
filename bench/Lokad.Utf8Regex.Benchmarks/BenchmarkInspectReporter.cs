@@ -2051,6 +2051,45 @@ internal static partial class BenchmarkInspectReporter
         Measure("DecodeThenCompiledRegex", iterations, context.ExecuteDecodeThenCompiledRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
         Measure("PredecodedCompiledRegex", iterations, context.ExecutePredecodedCompiledRegex);
+        if (context.Operation == LokadPublicBenchmarkOperation.Replace)
+        {
+            Measure(
+                "FallbackReplaceAfterApi",
+                iterations,
+                () => context.Utf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
+            Measure(
+                "CompiledFallbackReplaceAfterApi",
+                iterations,
+                () => context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
+            Measure(
+                "NativeReplaceAfterApi",
+                iterations,
+                () => context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
+            Measure(
+                "CompiledNativeReplaceAfterApi",
+                iterations,
+                () => context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
+        }
+        else if (context.Operation == LokadPublicBenchmarkOperation.Split)
+        {
+            Measure(
+                "FallbackSplitAfterApi",
+                iterations,
+                () => context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
+            Measure(
+                "CompiledFallbackSplitAfterApi",
+                iterations,
+                () => context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
+            Measure(
+                "NativeSplitAfterApi",
+                iterations,
+                () => context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
+            Measure(
+                "CompiledNativeSplitAfterApi",
+                iterations,
+                () => context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
+        }
+
         return 0;
     }
 

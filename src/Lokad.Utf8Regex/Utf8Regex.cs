@@ -1502,9 +1502,13 @@ public sealed class Utf8Regex
 
     private int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count)
     {
-        var decoded = Encoding.UTF8.GetString(input);
-        var boundaryMap = Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-        var enumerator = new Utf8ValueSplitEnumerator(input, decoded, _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, boundaryMap);
+        var subject = Utf8InputAnalyzer.Analyze(input);
+        var enumerator = new Utf8ValueSplitEnumerator(
+            input,
+            subject.GetDecodedString(),
+            _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
+            count,
+            subject.BoundaryMap);
         var splitCount = 0;
         foreach (var _ in enumerator)
         {
