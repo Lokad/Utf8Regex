@@ -10,6 +10,10 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
     [InlineData(@"\w*+", "abcde", "abcde")]
     [InlineData(@"\w{2,4}", "abcde", "abcd")]
     [InlineData(@"\w{2,4}?", "abcde", "ab")]
+    [InlineData("a+", "aaab", "aaa")]
+    [InlineData(".+", "abc\ndef", "abc")]
+    [InlineData(@"\d{2,3}", "x1234", "123")]
+    [InlineData(@"\p{L}+", "é漢!", "é漢")]
     public void DirectRepeatPreservesQuantifierPreference(
         string pattern,
         string inputText,
