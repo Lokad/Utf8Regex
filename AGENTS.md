@@ -150,7 +150,7 @@ Short-case floor rule:
   - `industry/boostdocs-*` public `IsMatch` / `Match`: minimum `5000`
   - other public `IsMatch` / `Match`: minimum `2000`
   - public `Replace` / `Split`: minimum `1000`, or `2000` for `common/*`
-  - Lokad prefix-loop drilldowns / refresh: minimum `5000`
+  - Lokad prefix-loop drilldowns / refresh: minimum `20000`
   - short replica count rows used by `--refresh-readme-case`:
     - `literal` / `literal-family` / `structural` with input `<= 128 KiB`: minimum `20000`
     - other replica count rows with input `<= 128 KiB`: minimum `10000`
