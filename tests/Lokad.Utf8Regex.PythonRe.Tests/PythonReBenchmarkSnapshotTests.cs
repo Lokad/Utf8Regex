@@ -6,13 +6,28 @@ public sealed class PythonReBenchmarkSnapshotTests
 {
     private static readonly string[] s_caseIds =
     [
-        "capture/findall",
+        "capture/search-detailed",
         "class-run/count",
-        "enumeration/findall",
         "family/count",
+        "findall/full-strings",
+        "findall/many-capture-strings",
+        "findall/many-capture-utf8",
+        "findall/one-capture-strings",
+        "findall/unicode-capture-utf8",
+        "iteration/finditer-detailed",
         "literal/ismatch",
-        "replacement/replace",
+        "literal/search",
+        "literal/search-miss",
+        "prefix/match",
+        "replacement/evaluator-string",
+        "replacement/fixed-string",
+        "replacement/fixed-utf8",
+        "replacement/subn-string",
+        "replacement/subn-utf8",
+        "split/captures",
+        "split/no-captures",
         "unicode/count",
+        "unicode/fullmatch",
         "zero-width/count",
     ];
 
@@ -21,7 +36,14 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(1, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
+
+        var corpus = root.GetProperty("Corpus");
+        Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
+        Assert.Equal("D443A4817B19A2156B70FDF90168D131823F27AF807B608744B49489BD82EAA5", corpus.GetProperty("Sha256").GetString());
+        Assert.Equal(7, corpus.GetProperty("VectorCount").GetInt32());
+        Assert.Equal("not-recorded-in-repository", corpus.GetProperty("UpstreamCpythonRevision").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(corpus.GetProperty("Limitation").GetString()));
 
         var cases = root.GetProperty("Cases");
         Assert.Equal(
