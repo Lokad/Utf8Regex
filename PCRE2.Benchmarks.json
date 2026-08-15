@@ -928,9 +928,9 @@
           "DecodeThenRegex": 18193
         },
         "industry/leipzig-twain-count": {
-          "MeasuredAtUtc": "2026-08-15T17:04:44.8967433+00:00",
+          "MeasuredAtUtc": "2026-08-15T17:22:47.8110178+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "0d893dcadd59",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -940,15 +940,15 @@
           },
           "PatternUtf8Bytes": 5,
           "InputUtf8Bytes": 16013977,
-          "EffectiveIterations": 8,
-          "ConstructionMicroseconds": 12.675,
-          "ConstructionAllocatedBytes": 54611,
+          "EffectiveIterations": 20,
+          "ConstructionMicroseconds": 39.489999999999995,
+          "ConstructionAllocatedBytes": 54825,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 3,
-          "Utf8Pcre2": 29958.4625,
-          "Utf8Regex": 3391.85,
-          "PredecodedRegex": 1292.9625,
-          "DecodeThenRegex": 6244.6625
+          "WarmAllocatedBytes": 1,
+          "Utf8Pcre2": 3353.9550000000004,
+          "Utf8Regex": 3375.2,
+          "PredecodedRegex": 1328.56,
+          "DecodeThenRegex": 6171.835
         },
         "industry/mariomka-email-count": {
           "MeasuredAtUtc": "2026-08-15T17:04:50.7445881+00:00",
@@ -3281,9 +3281,9 @@
       "Operation": "Count",
       "Points": [
         {
-          "MeasuredAtUtc": "2026-08-15T17:11:01.5838286+00:00",
+          "MeasuredAtUtc": "2026-08-15T17:23:10.8811703+00:00",
           "Environment": {
-            "SourceCommit": "bcde5d5c7eed",
+            "SourceCommit": "0d893dcadd59",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -3295,16 +3295,16 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 512,
           "EffectiveIterations": 5000,
-          "ConstructionMicroseconds": 11.625,
-          "WarmMicroseconds": 5.87464,
-          "ConstructionAllocatedBytes": 41913,
+          "ConstructionMicroseconds": 26.36875,
+          "WarmMicroseconds": 4.51906,
+          "ConstructionAllocatedBytes": 42065,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
         },
         {
-          "MeasuredAtUtc": "2026-08-15T17:11:01.9169463+00:00",
+          "MeasuredAtUtc": "2026-08-15T17:23:11.2470266+00:00",
           "Environment": {
-            "SourceCommit": "bcde5d5c7eed",
+            "SourceCommit": "0d893dcadd59",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -3316,16 +3316,16 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 1024,
           "EffectiveIterations": 5000,
-          "ConstructionMicroseconds": 10.30625,
-          "WarmMicroseconds": 8.39396,
-          "ConstructionAllocatedBytes": 41881,
+          "ConstructionMicroseconds": 33.45,
+          "WarmMicroseconds": 7.89392,
+          "ConstructionAllocatedBytes": 42065,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
         },
         {
-          "MeasuredAtUtc": "2026-08-15T17:11:02.1484908+00:00",
+          "MeasuredAtUtc": "2026-08-15T17:23:11.4707062+00:00",
           "Environment": {
-            "SourceCommit": "bcde5d5c7eed",
+            "SourceCommit": "0d893dcadd59",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -3337,16 +3337,16 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 2048,
           "EffectiveIterations": 5000,
-          "ConstructionMicroseconds": 10.18125,
-          "WarmMicroseconds": 15.50048,
-          "ConstructionAllocatedBytes": 41881,
+          "ConstructionMicroseconds": 31.84375,
+          "WarmMicroseconds": 6.15182,
+          "ConstructionAllocatedBytes": 42065,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
         },
         {
-          "MeasuredAtUtc": "2026-08-15T17:11:02.5689198+00:00",
+          "MeasuredAtUtc": "2026-08-15T17:23:11.7134467+00:00",
           "Environment": {
-            "SourceCommit": "bcde5d5c7eed",
+            "SourceCommit": "0d893dcadd59",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -3358,8 +3358,8 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 4096,
           "EffectiveIterations": 5000,
-          "ConstructionMicroseconds": 9.69375,
-          "WarmMicroseconds": 28.72662,
+          "ConstructionMicroseconds": 31.44375,
+          "WarmMicroseconds": 11.58084,
           "ConstructionAllocatedBytes": 41881,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0
