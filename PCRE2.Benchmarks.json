@@ -1089,9 +1089,9 @@
           "DecodeThenRegex": 13719.285
         },
         "industry/rust-sherlock-nonnewline-count": {
-          "MeasuredAtUtc": "2026-08-15T20:28:54.9772238+00:00",
+          "MeasuredAtUtc": "2026-08-15T20:31:50.7953634+00:00",
           "Environment": {
-            "SourceCommit": "cef416e28644",
+            "SourceCommit": "8aafc32d6db9",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1101,15 +1101,15 @@
           },
           "PatternUtf8Bytes": 6,
           "InputUtf8Bytes": 594930,
-          "EffectiveIterations": 29,
-          "ConstructionMicroseconds": 60.41034482758621,
+          "EffectiveIterations": 100,
+          "ConstructionMicroseconds": 67.89699999999999,
           "ConstructionAllocatedBytes": 44640,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1039.7413793103449,
-          "Utf8Regex": 101.05862068965517,
-          "PredecodedRegex": 582.5206896551724,
-          "DecodeThenRegex": 710.4724137931034
+          "Utf8Pcre2": 112.38600000000001,
+          "Utf8Regex": 103.51899999999999,
+          "PredecodedRegex": 585.7769999999999,
+          "DecodeThenRegex": 748.5889999999999
         },
         "industry/rust-sherlock-word-holmes-count": {
           "MeasuredAtUtc": "2026-08-15T17:32:02.9710108+00:00",
