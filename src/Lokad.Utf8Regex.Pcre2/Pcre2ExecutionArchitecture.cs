@@ -246,6 +246,7 @@ internal enum Pcre2CandidateSearchKind : byte
     LeadingRunThenLiteral = 2,
     LeadingAsciiSet = 3,
     LeadingAsciiSetWithWindow = 4,
+    BoundedLiteralWindow = 5,
 }
 
 internal readonly record struct Pcre2CandidateWindowConstraint(
@@ -306,6 +307,16 @@ internal readonly struct Pcre2CandidateSearchProgram
                 ? Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow
                 : Pcre2CandidateSearchKind.LeadingAsciiSet,
             new PreparedSearcher(PreparedByteSearch.Create(values)),
+            [],
+            windowConstraint);
+
+    internal static Pcre2CandidateSearchProgram FromBoundedLiteralWindow(
+        Pcre2CandidateWindowConstraint windowConstraint) =>
+        new(
+            Pcre2CandidateSearchKind.BoundedLiteralWindow,
+            new PreparedSearcher(
+                new PreparedSubstringSearch(windowConstraint.Literal, ignoreCase: false),
+                ignoreCase: false),
             [],
             windowConstraint);
 }
@@ -567,8 +578,13 @@ internal static class Pcre2CandidateSearchAnalyzer
             return runPlan;
         }
 
-        return TryCompileLeadingAsciiSet(root, request, out var asciiSetPlan)
-            ? asciiSetPlan
+        if (TryCompileLeadingAsciiSet(root, request, out var asciiSetPlan))
+        {
+            return asciiSetPlan;
+        }
+
+        return TryGetInitialBoundedLiteralConstraint(root, out var windowConstraint)
+            ? Pcre2CandidateSearchProgram.FromBoundedLiteralWindow(windowConstraint)
             : default;
     }
 
@@ -674,6 +690,12 @@ internal static class Pcre2CandidateSearchAnalyzer
         IPcre2BacktrackingNode root,
         out Pcre2CandidateWindowConstraint constraint)
     {
+        if (root is Pcre2SequenceBacktrackingNode directSequence &&
+            TryGetBoundedLiteralConstraint(directSequence, out constraint))
+        {
+            return true;
+        }
+
         var startNode = root is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } rootSequence
             ? rootSequence.Children[0]
             : root;
@@ -682,7 +704,20 @@ internal static class Pcre2CandidateSearchAnalyzer
             startNode = repeat.Body;
         }
 
-        if (startNode is not Pcre2SequenceBacktrackingNode sequence)
+        if (startNode is Pcre2SequenceBacktrackingNode sequence)
+        {
+            return TryGetBoundedLiteralConstraint(sequence, out constraint);
+        }
+
+        constraint = default;
+        return false;
+    }
+
+    private static bool TryGetBoundedLiteralConstraint(
+        Pcre2SequenceBacktrackingNode sequence,
+        out Pcre2CandidateWindowConstraint constraint)
+    {
+        if (sequence.Children.Length == 0)
         {
             constraint = default;
             return false;
@@ -690,15 +725,25 @@ internal static class Pcre2CandidateSearchAnalyzer
 
         var minimumOffset = 0;
         var maximumOffset = 0;
-        foreach (var child in sequence.Children)
+        for (var childIndex = 0; childIndex < sequence.Children.Length; childIndex++)
         {
+            var child = sequence.Children[childIndex];
             if (minimumOffset > 0 &&
                 child is Pcre2TokenBacktrackingNode { Token: var token } &&
                 token.Kind == Pcre2CharacterTokenKind.Literal &&
                 token.Options == Pcre2CharacterOptions.None)
             {
+                var literal = new StringBuilder();
+                for (var literalIndex = childIndex; literalIndex < sequence.Children.Length &&
+                     sequence.Children[literalIndex] is Pcre2TokenBacktrackingNode { Token: var literalToken } &&
+                     literalToken.Kind == Pcre2CharacterTokenKind.Literal &&
+                     literalToken.Options == Pcre2CharacterOptions.None; literalIndex++)
+                {
+                    literal.Append(literalToken.Literal.ToString());
+                }
+
                 constraint = new Pcre2CandidateWindowConstraint(
-                    Encoding.UTF8.GetBytes(token.Literal.ToString()),
+                    Encoding.UTF8.GetBytes(literal.ToString()),
                     minimumOffset,
                     maximumOffset);
                 return maximumOffset <= 64;
@@ -744,7 +789,9 @@ internal static class Pcre2CandidateSearchAnalyzer
         characterClass.Terms.All(static term => !term.Negated && term.Kind switch
         {
             Pcre2CharacterClassTermKind.Range => term.Range.High < 128,
-            Pcre2CharacterClassTermKind.Digit or Pcre2CharacterClassTermKind.Word => true,
+            Pcre2CharacterClassTermKind.Digit or
+                Pcre2CharacterClassTermKind.Space or
+                Pcre2CharacterClassTermKind.Word => true,
             _ => false,
         });
 

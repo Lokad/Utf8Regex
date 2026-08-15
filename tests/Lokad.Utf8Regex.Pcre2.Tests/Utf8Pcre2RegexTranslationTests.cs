@@ -312,12 +312,35 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void IpAddressPatternUsesAnAsciiLeadingSetBeforePcre2Verification()
+    public void IpAddressPatternUsesABoundedDotWindowBeforePcre2Verification()
     {
         var regex = new Utf8Pcre2Regex(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])");
 
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(2, regex.Count("x 192.168.001.010 y 999.999.999.999 z 010.020.030.040"u8));
+    }
+
+    [Fact]
+    public void BoundedRequiredLiteralWindowEnumeratesPossibleStartsInOrder()
+    {
+        var regex = new Utf8Pcre2Regex(@"\s[a-zA-Z]{0,12}ing\s");
+        var input = "x sing  bringing  going  go "u8;
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(3, regex.Count(input));
+
+        var match = regex.Match(input, 2);
+        Assert.True(match.Success);
+        Assert.Equal(" bringing ", match.GetValueString());
+    }
+
+    [Fact]
+    public void BoundedRequiredLiteralWindowSupportsWideAsciiPrefixes()
+    {
+        var regex = new Utf8Pcre2Regex(@"[\x00-\x7F]{1,2}foo");
+
+        Assert.Equal(Pcre2CandidateSearchKind.BoundedLiteralWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(2, regex.Count("xfoo yyfoo z"u8));
     }
 
     [Fact]

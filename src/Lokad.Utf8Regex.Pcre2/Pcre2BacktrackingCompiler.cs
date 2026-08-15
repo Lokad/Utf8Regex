@@ -3202,6 +3202,9 @@ internal static class Pcre2BacktrackingRunner
         var candidateState = new PreparedSearchScanState(
             candidate,
             new PreparedMultiLiteralScanState(candidate, candidate, 0));
+        var nextWindowCandidate = -1;
+        var lastWindowCandidate = -1;
+        var windowCandidateEnd = -1;
         string? lastMark = null;
         var maximumCandidate = program.MinimumByteLength > bytes.Length
             ? -1
@@ -3216,6 +3219,9 @@ internal static class Pcre2BacktrackingRunner
                         bytes,
                         start.Value,
                         ref candidateState,
+                        ref nextWindowCandidate,
+                        ref lastWindowCandidate,
+                        ref windowCandidateEnd,
                         out candidate) ||
                     candidate > maximumCandidate)
                 {
@@ -3292,8 +3298,24 @@ internal static class Pcre2BacktrackingRunner
         ReadOnlySpan<byte> input,
         int lowerBound,
         ref PreparedSearchScanState state,
+        ref int nextWindowCandidate,
+        ref int lastWindowCandidate,
+        ref int windowCandidateEnd,
         out int candidate)
     {
+        if (candidateSearch.Kind == Pcre2CandidateSearchKind.BoundedLiteralWindow)
+        {
+            return TryFindNextBoundedWindowCandidate(
+                candidateSearch,
+                input,
+                lowerBound,
+                ref state,
+                ref nextWindowCandidate,
+                ref lastWindowCandidate,
+                ref windowCandidateEnd,
+                out candidate);
+        }
+
         while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var preparedCandidate))
         {
             if (candidateSearch.Kind is Pcre2CandidateSearchKind.BranchLeadingLiterals or
@@ -3351,6 +3373,43 @@ internal static class Pcre2BacktrackingRunner
 
         candidate = -1;
         return false;
+    }
+
+    private static bool TryFindNextBoundedWindowCandidate(
+        Pcre2CandidateSearchProgram candidateSearch,
+        ReadOnlySpan<byte> input,
+        int lowerBound,
+        ref PreparedSearchScanState state,
+        ref int nextWindowCandidate,
+        ref int lastWindowCandidate,
+        ref int windowCandidateEnd,
+        out int candidate)
+    {
+        while (true)
+        {
+            while (nextWindowCandidate <= windowCandidateEnd)
+            {
+                var current = nextWindowCandidate++;
+                if (current > lastWindowCandidate &&
+                    (current == input.Length || (input[current] & 0xC0) != 0x80))
+                {
+                    lastWindowCandidate = current;
+                    candidate = current;
+                    return true;
+                }
+            }
+
+            if (!candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var requiredLiteral))
+            {
+                candidate = -1;
+                return false;
+            }
+
+            nextWindowCandidate = Math.Max(
+                Math.Max(lowerBound, lastWindowCandidate + 1),
+                requiredLiteral.Index - candidateSearch.WindowConstraint.MaximumOffset);
+            windowCandidateEnd = requiredLiteral.Index - candidateSearch.WindowConstraint.MinimumOffset;
+        }
     }
 
     private static bool MatchesCandidateWindow(
