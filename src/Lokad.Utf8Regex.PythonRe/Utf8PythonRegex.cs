@@ -874,7 +874,8 @@ public sealed class Utf8PythonRegex
     public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit = 0, int startOffsetInBytes = 0)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_splitBackend == PythonReDirectBackendKind.Utf8Regex &&
+        if (_translation.CaptureGroupCount == 0 &&
+            _splitBackend == PythonReDirectBackendKind.Utf8Regex &&
             TrySplitToStringsViaUtf8Regex(input, maxSplit, startOffsetInBytes, out var utf8Parts))
         {
             return utf8Parts;
