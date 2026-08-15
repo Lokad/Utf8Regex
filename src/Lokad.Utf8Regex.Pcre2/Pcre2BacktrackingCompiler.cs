@@ -3479,8 +3479,9 @@ internal static class Pcre2BacktrackingRunner
         var atomicCheckpoints = new Utf8PooledStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
         var markMutations = new Utf8PooledStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var markTrail = new Utf8PooledStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
-        var rentedCounts = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
-        var rentedPositions = program.RepeatCount == 0 ? null : ArrayPool<int>.Shared.Rent(program.RepeatCount);
+        var rentedRepeatState = program.RepeatCount == 0
+            ? null
+            : ArrayPool<int>.Shared.Rent(checked(program.RepeatCount * 2));
         var needsCaptureState = program.RequiresCaptureState ||
             captureMaterialization == Pcre2CaptureMaterialization.FinalSlots ||
             !initialCaptureStarts.IsEmpty;
@@ -3517,8 +3518,12 @@ internal static class Pcre2BacktrackingRunner
         var rentedRepeatRestoreSnapshots = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
             ? null
             : ArrayPool<Pcre2SubroutineRepeatSnapshot>.Shared.Rent(program.RepeatCount);
-        var counts = rentedCounts is null ? Span<int>.Empty : rentedCounts.AsSpan(0, program.RepeatCount);
-        var positions = rentedPositions is null ? Span<int>.Empty : rentedPositions.AsSpan(0, program.RepeatCount);
+        var counts = rentedRepeatState is null
+            ? Span<int>.Empty
+            : rentedRepeatState.AsSpan(0, program.RepeatCount);
+        var positions = rentedRepeatState is null
+            ? Span<int>.Empty
+            : rentedRepeatState.AsSpan(program.RepeatCount, program.RepeatCount);
         var captureStarts = rentedCaptureStarts is null
             ? Span<int>.Empty
             : rentedCaptureStarts.AsSpan(0, program.CaptureSlotCount);
@@ -4331,8 +4336,7 @@ internal static class Pcre2BacktrackingRunner
                 Math.Max(0, atomicCheckpoints.RentCount - 1) +
                 Math.Max(0, markMutations.RentCount - 1) +
                 Math.Max(0, markTrail.RentCount - 1);
-            var fixedRents = (rentedCounts is null ? 0 : 1) +
-                (rentedPositions is null ? 0 : 1) +
+            var fixedRents = (rentedRepeatState is null ? 0 : 1) +
                 (rentedCaptureStarts is null ? 0 : 1) +
                 (rentedCaptureEnds is null ? 0 : 1) +
                 (rentedCaptureOpenStarts is null ? 0 : 1) +
@@ -4353,13 +4357,9 @@ internal static class Pcre2BacktrackingRunner
             captureMutations.Dispose();
             repeatMutations.Dispose();
             frames.Dispose();
-            if (rentedCounts is not null)
+            if (rentedRepeatState is not null)
             {
-                ArrayPool<int>.Shared.Return(rentedCounts);
-            }
-            if (rentedPositions is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedPositions);
+                ArrayPool<int>.Shared.Return(rentedRepeatState);
             }
             if (rentedCaptureStarts is not null)
             {
