@@ -1331,6 +1331,73 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMeasureSmallAsciiLiteralFamilySplitControls(string? iterationsText)
+    {
+        var iterations = ParseIterations(iterationsText);
+        (string Name, string Pattern, string Seed, bool ExpectedEligible)[] controls =
+        [
+            ("three-literal-dense", "tempus|magna|semper", "vitae tempus magna semper ", true),
+            ("five-literal-dense", "Sherlock Holmes|John Watson|Mycroft Holmes|Mary Morstan|Mrs Hudson", "John Watson and Mrs Hudson met Sherlock Holmes. ", true),
+            ("prefix-overlap", "alpha|alphabet|bravo", "alphabet bravo alpha ", true),
+            ("three-literal-miss", "alpha|bravo|charlie", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx ", true),
+            ("two-short-literals", "foo|bar", "foo x bar y ", false),
+            ("seven-literals", "alpha|bravo|charlie|deltaa|echoo|foxtrot|golfx", "alpha foxtrot golfx ", false),
+            ("unicode-family", "éclair|bravo|charlie", "éclair bravo charlie ", false),
+        ];
+
+        Console.WriteLine($"Iterations        : {iterations}");
+        foreach (var control in controls)
+        {
+            var input = RepeatToLength(control.Seed, 8_192);
+            var inputBytes = Encoding.UTF8.GetBytes(input);
+            var utf8Regex = new Utf8Regex(control.Pattern);
+            var utf8Compiled = new Utf8Regex(control.Pattern, RegexOptions.Compiled);
+            var regex = new Regex(control.Pattern);
+            var compiledRegex = new Regex(control.Pattern, RegexOptions.Compiled);
+            var utf8Eligible = utf8Regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(inputBytes);
+            var compiledEligible = utf8Compiled.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(inputBytes);
+            if (utf8Eligible != control.ExpectedEligible || compiledEligible != control.ExpectedEligible)
+            {
+                throw new InvalidOperationException($"Control '{control.Name}' Split eligibility did not match its expectation.");
+            }
+
+            var literals = control.Pattern.Split('|').Select(Encoding.UTF8.GetBytes).ToArray();
+            var hasPrimitive = PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var primitive);
+            if (control.ExpectedEligible && !hasPrimitive)
+            {
+                throw new InvalidOperationException($"Control '{control.Name}' is not eligible for the prepared primitive.");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Control           : {control.Name}");
+            Console.WriteLine($"Pattern           : {control.Pattern}");
+            Console.WriteLine($"InputBytes        : {inputBytes.Length}");
+            Console.WriteLine($"Utf8Eligible      : {utf8Eligible}");
+            Console.WriteLine($"CompiledEligible  : {compiledEligible}");
+
+            Measure("Utf8Regex", 5, iterations, () => CountUtf8SplitValues(utf8Regex, inputBytes));
+            Measure("Utf8Compiled", 5, iterations, () => CountUtf8SplitValues(utf8Compiled, inputBytes));
+            if (hasPrimitive)
+            {
+                Measure("PrimitiveCount", 5, iterations, () => primitive.Count(inputBytes));
+            }
+            Measure("Utf8Fallback", 5, iterations, () => utf8Regex.Inspection.DebugCountSplitsViaFallback(inputBytes));
+            Measure("CompiledFallback", 5, iterations, () => utf8Compiled.Inspection.DebugCountSplitsViaFallback(inputBytes));
+            Measure("DecodeThenRegex", 5, iterations, () => CountRegexSplitValues(regex, Encoding.UTF8.GetString(inputBytes)));
+            Measure("DecodeThenCompiledRegex", 5, iterations, () => CountRegexSplitValues(compiledRegex, Encoding.UTF8.GetString(inputBytes)));
+            Measure("PredecodedRegex", 5, iterations, () => CountRegexSplitValues(regex, input));
+            Measure("PredecodedCompiledRegex", 5, iterations, () => CountRegexSplitValues(compiledRegex, input));
+
+            var allocationIterations = Math.Min(iterations, 1_000);
+            Console.WriteLine($"Utf8AllocatedBytes: {MeasureAllocatedBytesPerInvocation(allocationIterations, () => CountUtf8SplitValues(utf8Regex, inputBytes))}");
+            Console.WriteLine($"CompiledAllocatedBytes: {MeasureAllocatedBytesPerInvocation(allocationIterations, () => CountUtf8SplitValues(utf8Compiled, inputBytes))}");
+            Console.WriteLine($"DecodeAllocatedBytes: {MeasureAllocatedBytesPerInvocation(allocationIterations, () => CountRegexSplitValues(regex, Encoding.UTF8.GetString(inputBytes)))}");
+            Console.WriteLine($"DecodeCompiledAllocatedBytes: {MeasureAllocatedBytesPerInvocation(allocationIterations, () => CountRegexSplitValues(compiledRegex, Encoding.UTF8.GetString(inputBytes)))}");
+        }
+
+        return 0;
+    }
+
     public static int RunMeasureLokadScriptPrefixCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = LokadReplicaScriptBenchmarkCatalog.Get(caseId);
@@ -2030,6 +2097,8 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"BaselineCanUseNativeSplit : {context.Utf8Regex.Inspection.DebugCanUseNativeSplit(context.InputBytes)}");
             Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.Inspection.DebugCanUseNativeSplit(context.InputBytes)}");
+            Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(context.InputBytes)}");
+            Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(context.InputBytes)}");
             Console.WriteLine($"BaselinePreferFallbackTextOps : {context.Utf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
             Console.WriteLine($"CompiledPreferFallbackTextOps : {context.CompiledUtf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
 
@@ -4593,6 +4662,23 @@ internal static partial class BenchmarkInspectReporter
     private static void Measure(string label, int iterations, Func<int> action)
         => Measure(label, 1, iterations, action);
 
+    private static long MeasureAllocatedBytesPerInvocation(int iterations, Func<int> action)
+    {
+        _ = action();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var checksum = 0;
+        for (var i = 0; i < iterations; i++)
+        {
+            checksum ^= action();
+        }
+
+        GC.KeepAlive(checksum);
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / iterations;
+    }
+
     private static (TimeSpan Elapsed, int Sink) MeasureTimedCore(int iterations, Func<int> action)
     {
         var sink = 0;
@@ -4932,6 +5018,39 @@ internal static partial class BenchmarkInspectReporter
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var span = input.AsSpan();
         while (searcher.TryFindNextNonOverlappingLength(span, ref state, out _, out _))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static string RepeatToLength(string seed, int length)
+    {
+        var builder = new StringBuilder(length + seed.Length);
+        while (builder.Length < length)
+        {
+            builder.Append(seed);
+        }
+
+        return builder.ToString(0, length);
+    }
+
+    private static int CountUtf8SplitValues(Utf8Regex regex, byte[] input)
+    {
+        var count = 0;
+        foreach (var _ in regex.EnumerateSplits(input))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static int CountRegexSplitValues(Regex regex, string input)
+    {
+        var count = 0;
+        foreach (var _ in regex.EnumerateSplits(input))
         {
             count++;
         }

@@ -144,6 +144,11 @@ if (args.Length >= 2 && args[0].Equals("--measure-small-ascii-literal-family-fir
     return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilyFirstMatchCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--measure-small-ascii-literal-family-split-controls", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureSmallAsciiLiteralFamilySplitControls(args.Length >= 2 ? args[1] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-symmetric-window-lokad-public-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureSymmetricWindowLokadPublicCase(args[1], args.Length >= 3 ? args[2] : null);

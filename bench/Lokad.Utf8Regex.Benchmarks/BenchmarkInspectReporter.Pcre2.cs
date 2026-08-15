@@ -1121,23 +1121,6 @@ internal static partial class BenchmarkInspectReporter
         return (GC.GetAllocatedBytesForCurrentThread() - before) / instanceCount;
     }
 
-    private static long MeasureAllocatedBytesPerInvocation(int iterations, Func<int> action)
-    {
-        _ = action();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        var checksum = 0;
-        for (var i = 0; i < iterations; i++)
-        {
-            checksum ^= action();
-        }
-
-        GC.KeepAlive(checksum);
-        return (GC.GetAllocatedBytesForCurrentThread() - before) / iterations;
-    }
-
     private static int ParsePcre2SnapshotIterations(Utf8Pcre2BenchmarkCase benchmarkCase, Pcre2BenchmarkSection section, int requestedIterations)
     {
         // PCRE2 rows use their own cost envelope. Reusing README floors can

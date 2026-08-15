@@ -391,7 +391,7 @@ internal sealed class LokadPublicBenchmarkContext
             LokadPublicBenchmarkOperation.IsMatch => regex.IsMatch(input) ? 1 : 0,
             LokadPublicBenchmarkOperation.Match => MeasureMatch(regex.Match(input)),
             LokadPublicBenchmarkOperation.Replace => regex.Replace(input, Replacement).Length,
-            LokadPublicBenchmarkOperation.Split => regex.Split(input).Length,
+            LokadPublicBenchmarkOperation.Split => CountRegexSplits(regex, input),
             _ => throw new ArgumentOutOfRangeException(),
         };
     }
@@ -401,6 +401,17 @@ internal sealed class LokadPublicBenchmarkContext
     private static int MeasureMatch(Match match) => match.Success ? match.Index + match.Length : -1;
 
     private static int CountUtf8Splits(Utf8Regex regex, byte[] input)
+    {
+        var count = 0;
+        foreach (var _ in regex.EnumerateSplits(input))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static int CountRegexSplits(Regex regex, string input)
     {
         var count = 0;
         foreach (var _ in regex.EnumerateSplits(input))
