@@ -2940,6 +2940,13 @@
     "Status": "Active"
   },
   {
+    "Id": "pcre2.testinput4.unicode-math-symbols.count",
+    "Source": "pcre2:testdata/testinput4:lines-933-938",
+    "SourceFile": "testdata/testinput4",
+    "Operation": "Count",
+    "Status": "Active"
+  },
+  {
     "Id": "pcre2.testinput5.partial-soft.f-dot-star",
     "Source": "pcre2:testdata/testinput5:partial-soft-f-dot-star",
     "SourceFile": "testdata/testinput5",

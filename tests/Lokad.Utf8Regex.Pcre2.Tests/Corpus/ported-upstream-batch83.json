@@ -1,0 +1,28 @@
+[
+  {
+    "Id": "pcre2.testinput4.unicode-math-symbols.count",
+    "Pattern": "\\p{Sm}",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "+<|~¬⁄X৲",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 6,
+      "Groups": [],
+      "NameEntries": []
+    },
+    "Status": "Active",
+    "Tags": ["unicode", "property", "global-iteration"],
+    "Source": "pcre2:testdata/testinput4:lines-933-938"
+  }
+]

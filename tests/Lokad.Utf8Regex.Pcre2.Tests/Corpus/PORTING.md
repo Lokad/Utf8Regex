@@ -61,9 +61,9 @@ Do not use status as a vague parking lot. The status should answer whether the c
 
 ## Qualified inventory
 
-The 2026-08-14 profile contains 635 operation rows: 597 active, 24 out of
+The 2026-08-14 profile contains 636 operation rows: 598 active, 24 out of
 scope by specification, and 14 explicit compatibility-backlog rows. Active
-coverage comprises 16 compile, 117 match, 97 detailed-match, 39 count, 37
+coverage comprises 16 compile, 117 match, 97 detailed-match, 40 count, 37
 enumeration, 119 probe, and 172 replacement rows. The local backlog ledgers
 must contain exactly one reasoned disposition for every non-active row.
 

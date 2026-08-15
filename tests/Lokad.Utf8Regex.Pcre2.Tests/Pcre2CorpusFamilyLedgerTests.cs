@@ -44,8 +44,8 @@ public sealed class Pcre2CorpusFamilyLedgerTests
 
         Assert.Equal(
             """
-            Total=635
-            Active=597
+            Total=636
+            Active=598
             Compile.All=20
             Compile.Active=16
             Match.All=231
@@ -68,8 +68,8 @@ public sealed class Pcre2CorpusFamilyLedgerTests
             Replace.Active=172
             Probe.All=119
             Probe.Active=119
-            GlobalIteration.All=77
-            GlobalIteration.Active=76
+            GlobalIteration.All=78
+            GlobalIteration.Active=77
             Recursion.All=116
             Recursion.Active=103
             NamedCaptures.All=127

@@ -28,15 +28,15 @@ Unicode BSR, and JIT disabled. The corpus normalizer is version 1. Native PCRE2
 is used only to generate frozen vectors; it is not a build or runtime
 dependency.
 
-The qualified corpus has 635 operation rows:
+The qualified corpus has 636 operation rows:
 
 | Disposition | Rows |
 |---|---:|
-| Active and executable | 597 |
+| Active and executable | 598 |
 | Out of scope by specification | 24 |
 | Explicit compatibility backlog | 14 |
 
-The 597 active rows comprise 16 compile, 117 match, 97 detailed-match, 39
+The 598 active rows comprise 16 compile, 117 match, 97 detailed-match, 40
 count, 37 enumeration, 119 probe, and 172 replacement rows. The 14 backlog
 rows are 11 generic recursive RFC mailbox cases and three strict UTF-8 pattern
 decoding cases. The local backlog ledgers record a reason

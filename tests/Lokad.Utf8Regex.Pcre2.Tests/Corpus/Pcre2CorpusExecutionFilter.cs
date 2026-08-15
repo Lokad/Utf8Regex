@@ -198,7 +198,8 @@ public static class Pcre2CorpusExecutionFilter
             return false;
         }
 
-        return corpusCase.Pattern is "abc\\K|def\\K"
+        return corpusCase.Pattern is @"\p{Sm}"
+            or "abc\\K|def\\K"
             or @"\C"
             or "\\X"
             or "ab\\Kc|de\\Kf"
