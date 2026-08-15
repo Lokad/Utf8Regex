@@ -2383,6 +2383,7 @@ public sealed class Utf8Pcre2Regex
         if (_program.Operations.Replace is not (
             Pcre2LiteralDirectProgram or
             Pcre2CharacterDirectProgram or
+            Pcre2SingleTokenRepeatDirectProgram or
             Pcre2BacktrackingDirectProgram))
         {
             plan = default;
@@ -3011,6 +3012,7 @@ public sealed class Utf8Pcre2Regex
     private bool GenericProgramUsesCodeUnit => _program.Operations.Match switch
     {
         Pcre2CharacterDirectProgram { Program.UsesCodeUnit: true } => true,
+        Pcre2SingleTokenRepeatDirectProgram { Program.UsesCodeUnit: true } => true,
         Pcre2BacktrackingDirectProgram { Program.UsesCodeUnit: true } => true,
         _ => false,
     };

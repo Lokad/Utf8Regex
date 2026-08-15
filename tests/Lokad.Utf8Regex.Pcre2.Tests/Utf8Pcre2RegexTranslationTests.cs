@@ -444,9 +444,19 @@ public sealed class Utf8Pcre2RegexTranslationTests
     public void LongWordCountUsesUtf8RegexTranslation()
     {
         var regex = new Utf8Pcre2Regex(@"\w{10,}");
+        var input = "abcdefghij short klmnopqrst"u8;
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal(2, regex.Count("abcdefghij short klmnopqrst"u8));
+        var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.Equal(10, direct.Program.Minimum);
+        Assert.Equal(int.MaxValue, direct.Program.Maximum);
+        Assert.Null(direct.Program.LeadingAsciiByte);
+        Assert.Null(direct.Program.GreedyExcludedAsciiByte);
+        Assert.Equal(Pcre2CompileOptions.None, direct.Program.Request.Options & Pcre2CompileOptions.Anchored);
+        Assert.True(regex.Match(input, 17).Success);
+        Assert.True(regex.Match(input, 16).Success);
+        Assert.True(regex.Match(input, 10).Success);
+        Assert.Equal(2, regex.Count(input));
     }
 
     [Fact]
@@ -473,6 +483,8 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        var direct = Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.Equal((byte)'\n', direct.Program.GreedyExcludedAsciiByte);
         Assert.Equal(4, regex.Count("abc\ndef"u8));
     }
 
