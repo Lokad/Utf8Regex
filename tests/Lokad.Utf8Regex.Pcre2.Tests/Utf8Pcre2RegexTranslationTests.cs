@@ -41,14 +41,22 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void Utf8LiteralAlternationReusesCoreSearchForUnmeteredCountOnly()
+    public void Utf8LiteralAlternationReusesCoreSearchForUnmeteredValueOperations()
     {
         var regex = new Utf8Pcre2Regex("café|naïve");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2LiteralFamilyCount, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
+        Assert.True(regex.IsMatch("xxcafé yy naïve zz"u8));
         Assert.Equal(2, regex.Count("xxcafé yy naïve zz"u8));
+
+        var enumerator = regex.EnumerateMatches("xxcafé yy naïve zz"u8);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("café", enumerator.Current.GetValueString());
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("naïve", enumerator.Current.GetValueString());
+        Assert.False(enumerator.MoveNext());
 
         var first = regex.Match("xxcafé yy naïve zz"u8);
         Assert.True(first.Success);
@@ -60,7 +68,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     [InlineData("ab|a", "ab a", 2)]
     [InlineData("foo|foo", "foo foo", 2)]
     [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom x Finn x Sawyer", 3)]
-    public void LiteralFamilyCountPreservesOrderedAlternationSemantics(
+    public void LiteralFamilyValueOperationsPreserveOrderedAlternationSemantics(
         string pattern,
         string input,
         int expected)
@@ -69,8 +77,23 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(expected, regex.Count(bytes));
-        Assert.IsType<Pcre2LiteralFamilyCountDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2LiteralFamilyDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    [Theory]
+    [InlineData("a|ab", "a")]
+    [InlineData("ab|a", "ab")]
+    [InlineData("foo|foo", "foo")]
+    public void LiteralFamilyEnumerationUsesBranchOrderForSameStartTies(string pattern, string expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var enumerator = regex.EnumerateMatches("ab foo"u8);
+
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(expected, enumerator.Current.GetValueString());
     }
 
     [Fact]
@@ -82,6 +105,15 @@ public sealed class Utf8Pcre2RegexTranslationTests
         Assert.Equal(1, regex.Count(input, 4));
         Assert.Equal(0, regex.Count(input, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(1, regex.Count(input, 1, Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
+        Assert.True(regex.IsMatch(input, 1, Pcre2MatchOptions.Anchored));
+
+        var anchoredMiss = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.Anchored);
+        Assert.False(anchoredMiss.MoveNext());
+        var anchoredMatch = regex.EnumerateMatches(input, 1, Pcre2MatchOptions.Anchored);
+        Assert.True(anchoredMatch.MoveNext());
+        Assert.Equal("foo", anchoredMatch.Current.GetValueString());
+        Assert.False(anchoredMatch.MoveNext());
     }
 
     [Fact]

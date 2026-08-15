@@ -206,16 +206,19 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Program { get; }
 }
 
-internal sealed class Pcre2LiteralFamilyCountDirectProgram : IPcre2DirectProgram
+internal sealed class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
 {
-    internal Pcre2LiteralFamilyCountDirectProgram(Utf8Regex regex)
+    internal Pcre2LiteralFamilyDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
     {
         Regex = regex;
+        Fallback = fallback;
     }
 
-    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2LiteralFamilyCount;
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2LiteralFamily;
 
     internal Utf8Regex Regex { get; }
+
+    internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
 internal enum Pcre2DirectProgramKind : byte
@@ -226,7 +229,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2Literal = 3,
     Pcre2Character = 4,
     Pcre2Backtracking = 5,
-    Pcre2LiteralFamilyCount = 6,
+    Pcre2LiteralFamily = 6,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -434,12 +437,18 @@ internal static class Pcre2CompiledProgramOverlay
             Replace = direct,
         };
         if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
-            Pcre2LiteralFamilyCountAnalyzer.CanReuseCoreCount(
+            Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 syntaxTree.Root,
                 legacy.Request,
                 primary.Regex.ByteOffsetExecution.SearchPortfolioKind))
         {
-            operations = operations with { Count = new Pcre2LiteralFamilyCountDirectProgram(primary.Regex) };
+            var literalFamily = new Pcre2LiteralFamilyDirectProgram(primary.Regex, backtrackingProgram);
+            operations = operations with
+            {
+                IsMatch = literalFamily,
+                Count = literalFamily,
+                Enumerate = literalFamily,
+            };
         }
 
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(syntaxTree.Root, legacy.Request);
@@ -487,18 +496,18 @@ internal static class Pcre2ProgramInvariant
             throw new InvalidOperationException("A direct managed backend must be owned by its compiled PCRE2 program.");
         }
 
-        if (directProgram is Pcre2LiteralFamilyCountDirectProgram literalFamilyProgram &&
+        if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
              !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
         {
-            throw new InvalidOperationException("A literal-family Count backend must be owned by its compiled PCRE2 program.");
+            throw new InvalidOperationException("A literal-family backend must be owned by its compiled PCRE2 program.");
         }
     }
 }
 
-internal static class Pcre2LiteralFamilyCountAnalyzer
+internal static class Pcre2LiteralFamilyAnalyzer
 {
-    internal static bool CanReuseCoreCount(
+    internal static bool CanReuseCoreExecution(
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request,
         Utf8SearchPortfolioKind portfolioKind)
@@ -923,6 +932,26 @@ internal static class Pcre2Runner
         out bool result)
     {
         var program = compiledProgram.Operations.IsMatch;
+        if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
+        {
+            if (matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            {
+                var enumerator = literalFamilyProgram.Regex.ByteOffsetExecution.EnumerateMatches(input, start);
+                result = enumerator.MoveNext();
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                literalFamilyProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2LiteralDirectProgram literalProgram)
         {
             result = ExecuteLiteral(
@@ -1223,7 +1252,7 @@ internal static class Pcre2GlobalOperationDriver
         out int result)
     {
         var program = compiledProgram.Operations.Count;
-        if (program is Pcre2LiteralFamilyCountDirectProgram literalFamilyProgram &&
+        if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             HasUnmeteredExecution(compiledProgram.Request))
         {
@@ -1259,7 +1288,7 @@ internal static class Pcre2GlobalOperationDriver
         return false;
     }
 
-    private static bool HasUnmeteredExecution(Pcre2CompileRequest request) =>
+    internal static bool HasUnmeteredExecution(Pcre2CompileRequest request) =>
         request.MatchTimeout == Timeout.InfiniteTimeSpan &&
         request.DefaultLimits.MatchLimit == 0 &&
         request.DefaultLimits.DepthLimit == 0 &&
@@ -1272,6 +1301,21 @@ internal static class Pcre2GlobalOperationDriver
         Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor)
     {
+        if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
+        {
+            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram.Regex, input, start)
+                : Pcre2GlobalMatchCursor.CreateBacktracking(
+                    literalFamilyProgram.Fallback,
+                    compiledProgram.CandidateSearch,
+                    input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request,
+                    collectDiagnostics: false);
+            return true;
+        }
+
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralDirectProgram literalProgram)
         {
             cursor = Pcre2GlobalMatchCursor.CreateLiteral(
@@ -1307,6 +1351,7 @@ internal static class Pcre2GlobalOperationDriver
 internal ref struct Pcre2GlobalMatchCursor
 {
     private readonly Pcre2GlobalCursorKind _kind;
+    private Pcre2LiteralFamilyGlobalMatchCursor _literalFamily;
     private Pcre2LiteralGlobalMatchCursor _literal;
     private Pcre2CharacterGlobalMatchCursor _character;
     private Pcre2BacktrackingGlobalMatchCursor _backtracking;
@@ -1314,6 +1359,7 @@ internal ref struct Pcre2GlobalMatchCursor
     private Pcre2GlobalMatchCursor(Pcre2LiteralGlobalMatchCursor literal)
     {
         _kind = Pcre2GlobalCursorKind.Literal;
+        _literalFamily = default;
         _literal = literal;
         _character = default;
         _backtracking = default;
@@ -1322,6 +1368,7 @@ internal ref struct Pcre2GlobalMatchCursor
     private Pcre2GlobalMatchCursor(Pcre2CharacterGlobalMatchCursor character)
     {
         _kind = Pcre2GlobalCursorKind.Character;
+        _literalFamily = default;
         _literal = default;
         _character = character;
         _backtracking = default;
@@ -1330,13 +1377,24 @@ internal ref struct Pcre2GlobalMatchCursor
     private Pcre2GlobalMatchCursor(Pcre2BacktrackingGlobalMatchCursor backtracking)
     {
         _kind = Pcre2GlobalCursorKind.Backtracking;
+        _literalFamily = default;
         _literal = default;
         _character = default;
         _backtracking = backtracking;
     }
 
+    private Pcre2GlobalMatchCursor(Pcre2LiteralFamilyGlobalMatchCursor literalFamily)
+    {
+        _kind = Pcre2GlobalCursorKind.LiteralFamily;
+        _literalFamily = literalFamily;
+        _literal = default;
+        _character = default;
+        _backtracking = default;
+    }
+
     internal Pcre2GroupData Current => _kind switch
     {
+        Pcre2GlobalCursorKind.LiteralFamily => _literalFamily.Current,
         Pcre2GlobalCursorKind.Literal => _literal.Current,
         Pcre2GlobalCursorKind.Character => _character.Current,
         Pcre2GlobalCursorKind.Backtracking => _backtracking.Current,
@@ -1354,6 +1412,12 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request) =>
         new(new Pcre2LiteralGlobalMatchCursor(program, input, start, matchOptions, request));
+
+    internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
+        Utf8Regex regex,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start) =>
+        new(new Pcre2LiteralFamilyGlobalMatchCursor(regex, input, start));
 
     internal static Pcre2GlobalMatchCursor CreateCharacter(
         Pcre2CharacterProgram program,
@@ -1382,6 +1446,7 @@ internal ref struct Pcre2GlobalMatchCursor
 
     internal bool MoveNext() => _kind switch
     {
+        Pcre2GlobalCursorKind.LiteralFamily => _literalFamily.MoveNext(),
         Pcre2GlobalCursorKind.Literal => _literal.MoveNext(),
         Pcre2GlobalCursorKind.Character => _character.MoveNext(),
         Pcre2GlobalCursorKind.Backtracking => _backtracking.MoveNext(),
@@ -1394,6 +1459,43 @@ internal ref struct Pcre2GlobalMatchCursor
         Literal = 1,
         Character = 2,
         Backtracking = 3,
+        LiteralFamily = 4,
+    }
+}
+
+internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
+{
+    private Utf8ValueMatchEnumerator _enumerator;
+    private Utf8ValidatedInput _input;
+    private Utf8ProjectionCursor _projection;
+
+    internal Pcre2LiteralFamilyGlobalMatchCursor(
+        Utf8Regex regex,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start)
+    {
+        _enumerator = regex.ByteOffsetExecution.EnumerateMatches(input, start);
+        _input = input;
+        _projection = input.CreateProjectionCursor();
+        Current = default;
+    }
+
+    internal Pcre2GroupData Current { get; private set; }
+
+    internal bool MoveNext()
+    {
+        if (!_enumerator.MoveNext())
+        {
+            Current = default;
+            return false;
+        }
+
+        Current = Pcre2GlobalCursorProjection.Project(
+            _enumerator.Current.IndexInBytes,
+            _enumerator.Current.IndexInBytes + _enumerator.Current.LengthInBytes,
+            ref _input,
+            ref _projection);
+        return true;
     }
 }
 
