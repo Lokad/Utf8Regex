@@ -460,6 +460,12 @@ internal static partial class BenchmarkInspectReporter
                 static _ => "é",
                 static size => new string('é', size / 2)),
             CreatePcre2ScalingFamily(
+                "excluded-ascii-repeat-count",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [5120, 10240, 20480, 40960],
+                static _ => @"[^\n]*",
+                static size => string.Concat(Enumerable.Repeat("line\n", size / 5))),
+            CreatePcre2ScalingFamily(
                 "character-class-dense",
                 Utf8Pcre2BenchmarkOperation.Count,
                 [640, 1280, 2560, 5120],

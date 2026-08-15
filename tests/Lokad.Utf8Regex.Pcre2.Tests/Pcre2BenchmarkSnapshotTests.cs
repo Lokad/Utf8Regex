@@ -13,6 +13,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         "character-class-dense",
         "dense-non-ascii-coordinates",
         "dense-plus-sparse-candidate-portfolios",
+        "excluded-ascii-repeat-count",
         "long-flat-patterns",
         "replacement-growth",
         "required-literal-all-a-miss",
