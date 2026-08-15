@@ -4,6 +4,7 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
+[Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2BacktrackingCompilerTests
 {
     [Theory]
