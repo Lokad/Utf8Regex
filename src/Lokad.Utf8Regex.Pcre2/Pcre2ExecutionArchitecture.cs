@@ -756,11 +756,13 @@ internal static class Pcre2CandidateSearchAnalyzer
         }
 
         var runTokens = new List<Pcre2CharacterToken>();
+        var lastRunIsUnbounded = false;
         var childIndex = 0;
         while (childIndex < sequence.Children.Length &&
                sequence.Children[childIndex] is Pcre2RepeatBacktrackingNode
                {
                    Minimum: >= 1,
+                   Maximum: var runMaximum,
                    Body: Pcre2TokenBacktrackingNode { Token: var runToken },
                } &&
                IsRetreatableRunToken(runToken))
@@ -771,6 +773,7 @@ internal static class Pcre2CandidateSearchAnalyzer
             }
 
             runTokens.Add(runToken);
+            lastRunIsUnbounded = runMaximum == int.MaxValue;
             childIndex++;
         }
 
@@ -795,7 +798,7 @@ internal static class Pcre2CandidateSearchAnalyzer
 
         var literal = Encoding.UTF8.GetBytes(builder.ToString());
         if (Rune.DecodeFromUtf8(literal, out var firstLiteral, out _) != System.Buffers.OperationStatus.Done ||
-            TokenMatchesRune(runTokens[^1], firstLiteral, request))
+            (TokenMatchesRune(runTokens[^1], firstLiteral, request) && !lastRunIsUnbounded))
         {
             return false;
         }

@@ -269,6 +269,64 @@ public sealed class Utf8Pcre2RegexTranslationTests
         Assert.Equal(expectedCount, regex.Count(bytes));
     }
 
+    [Theory]
+    [InlineData(@"[^a]+\.[^z]+", "This regex has no delimiter", false)]
+    [InlineData(@"[^a]+\.[^z]+", "..x", true)]
+    [InlineData(@"[^a]+?\.[^z]+", "bc.de", true)]
+    [InlineData(@"[^a]++\.[^z]+", "bc.de", false)]
+    public void LeadingRunCanConsumeTheRequiredLiteralWithoutDisablingCandidateSearch(
+        string pattern,
+        string input,
+        bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Fact]
+    public void OverlappingLeadingRunCandidateSearchFeedsAllGlobalOperations()
+    {
+        var regex = new Utf8Pcre2Regex(@"[^a]+\.[^z]+");
+        var input = "bc.dzabc.ezaβ.γz"u8;
+
+        Assert.Equal(3, regex.Count(input));
+
+        var enumerator = regex.EnumerateMatches(input);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("bc.d", enumerator.Current.GetValueString());
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("bc.e", enumerator.Current.GetValueString());
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("β.γ", enumerator.Current.GetValueString());
+        Assert.False(enumerator.MoveNext());
+
+        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[3];
+        Assert.Equal(3, regex.MatchMany(input, destination, out var isMore));
+        Assert.False(isMore);
+        Assert.Equal("<bc.d>za<bc.e>za<β.γ>z", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+    }
+
+    [Fact]
+    public void OverlappingLeadingRunCandidateSearchHonorsStartAndMetering()
+    {
+        var regex = new Utf8Pcre2Regex(@"[^a]+\.[^z]+");
+        var input = "xbc.de"u8;
+
+        var match = regex.Match(input, 2);
+        Assert.True(match.Success);
+        Assert.Equal("c.de", match.GetValueString());
+
+        var metered = new Utf8Pcre2Regex(
+            @"[^a]+\.[^z]+",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+        Assert.Throws<Pcre2MatchException>(() => metered.IsMatch("no delimiter"u8));
+    }
+
     [Fact]
     public void LeadingRunCandidateSearchRespectsAStartInsideTheRun()
     {
@@ -285,6 +343,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     [Theory]
     [InlineData("Tom.{10,25}river|river.{10,25}Tom")]
     [InlineData(@"[a-z]+@[a-z]+")]
+    [InlineData(@"[^a]+\.[^z]+")]
     [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])")]
     public void CandidateSearchStillValidatesMalformedPrefixesAndSuffixes(string pattern)
     {
