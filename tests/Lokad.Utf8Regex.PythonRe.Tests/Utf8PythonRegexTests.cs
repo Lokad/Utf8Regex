@@ -608,7 +608,7 @@ public sealed class Utf8PythonRegexTests
 
         var parts = regex.SplitToStrings(":a:b::c"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSplitBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugSplitBackend);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b", "::", "c"], parts);
     }
 
@@ -619,7 +619,7 @@ public sealed class Utf8PythonRegexTests
 
         var parts = regex.SplitToStrings("xxfoobaryybar"u8);
 
-        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSplitBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugSplitBackend);
         Assert.Equal<string?[]>(["xx", "", "yy", ""], parts);
     }
 }

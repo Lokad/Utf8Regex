@@ -23,7 +23,6 @@ public sealed class Utf8PythonRegex
     private readonly PythonReDirectBackendKind _countBackend;
     private readonly PythonReDirectBackendKind _findAllBackend;
     private readonly PythonReDirectBackendKind _replaceBackend;
-    private readonly PythonReDirectBackendKind _splitBackend;
 
     public Utf8PythonRegex(string pattern)
         : this(pattern, PythonReCompileOptions.None)
@@ -79,9 +78,6 @@ public sealed class Utf8PythonRegex
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
         _replaceBackend = PythonReDirectBackendKind.ManagedRegex;
-        _splitBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
     }
 
     public static TimeSpan DefaultMatchTimeout
@@ -874,14 +870,14 @@ public sealed class Utf8PythonRegex
     public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit = 0, int startOffsetInBytes = 0)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        if (_translation.CaptureGroupCount == 0 &&
-            _splitBackend == PythonReDirectBackendKind.Utf8Regex &&
-            TrySplitToStringsViaUtf8Regex(input, maxSplit, startOffsetInBytes, out var utf8Parts))
+        var subject = Decode(input);
+        if (_translation.CaptureGroupCount == 0 && !_canMatchEmpty && startOffsetInBytes == 0)
         {
-            return utf8Parts;
+            return maxSplit == 0
+                ? _managedRegex.Split(subject)
+                : _managedRegex.Split(subject, maxSplit);
         }
 
-        var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var parts = new List<string?>();
         var lastIndex = startOffsetInUtf16;
@@ -1114,7 +1110,7 @@ public sealed class Utf8PythonRegex
 
     internal PythonReDirectBackendKind DebugReplaceBackend => _replaceBackend;
 
-    internal PythonReDirectBackendKind DebugSplitBackend => _splitBackend;
+    internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.ManagedRegex;
 
     private static Regex CreateManagedRegex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
@@ -1210,56 +1206,6 @@ public sealed class Utf8PythonRegex
                 startOffsetInUtf16),
             ReplacementCount = replacementCount,
         };
-    }
-
-    private bool TrySplitToStringsViaUtf8Regex(
-        ReadOnlySpan<byte> input,
-        int maxSplit,
-        int startOffsetInBytes,
-        out string?[] parts)
-    {
-        if (_utf8Regex is null)
-        {
-            parts = [];
-            return false;
-        }
-
-        var tail = input[startOffsetInBytes..];
-        List<string?> collected = [];
-        var lastIndexInBytes = 0;
-        var splitCount = 0;
-
-        foreach (var match in _utf8Regex.EnumerateMatches(tail))
-        {
-            if (maxSplit != 0 && splitCount >= maxSplit)
-            {
-                break;
-            }
-
-            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
-            {
-                parts = [];
-                return false;
-            }
-
-            collected.Add(Encoding.UTF8.GetString(tail.Slice(lastIndexInBytes, indexInBytes - lastIndexInBytes)));
-            if (_translation.CaptureGroupCount > 0)
-            {
-                var detailed = _utf8Regex.MatchDetailedFromUtf16Offset(tail, match.IndexInUtf16);
-                for (var i = 1; i < detailed.GroupCount; i++)
-                {
-                    var group = detailed.GetGroup(i);
-                    collected.Add(group.Success ? group.GetValueString() : null);
-                }
-            }
-
-            lastIndexInBytes = indexInBytes + lengthInBytes;
-            splitCount++;
-        }
-
-        collected.Add(Encoding.UTF8.GetString(tail[lastIndexInBytes..]));
-        parts = collected.ToArray();
-        return true;
     }
 
     private Utf8PythonMatchContext CreateMatchContext(
