@@ -2253,40 +2253,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureReadmeReplicaCase(string caseId, string? iterationsText, string? samplesText)
-    {
-        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        if (benchmarkCase.RequiresDedicatedMeasurement)
-        {
-            var envisionCase = LokadReplicaScriptBenchmarkCatalog.Get(caseId);
-            var envisionContext = new LokadReplicaScriptBenchmarkContext(envisionCase);
-            var envisionRow = MeasureReadmeCase(
-                ParseIterations(iterationsText),
-                ParseSamples(samplesText),
-                envisionContext.ExecuteUtf8Regex,
-                envisionContext.ExecuteUtf8Compiled,
-                envisionContext.ExecutePredecodedRegex,
-                envisionContext.ExecutePredecodedCompiledRegex,
-                envisionContext.ExecuteDecodeThenRegex,
-                envisionContext.ExecuteDecodeThenCompiledRegex);
-            Console.WriteLine(FormatReadmeCaseRow(envisionRow));
-            return 0;
-        }
-
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
-        var row = MeasureReadmeCase(
-            ParseIterations(iterationsText),
-            ParseSamples(samplesText),
-            () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes),
-            () => compiledUtf8Regex.Count(benchmarkCase.InputBytes),
-            benchmarkCase.CountPredecodedRegex,
-            benchmarkCase.CountPredecodedCompiledRegex,
-            benchmarkCase.CountDecodeThenRegex,
-            benchmarkCase.CountDecodeThenCompiledRegex);
-        Console.WriteLine(FormatReadmeCaseRow(row));
-        return 0;
-    }
-
     public static int RunInspectIgnoreCaseLiteralReplicaCase(string caseId)
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
