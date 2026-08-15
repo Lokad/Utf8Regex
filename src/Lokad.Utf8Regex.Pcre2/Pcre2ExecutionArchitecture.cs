@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -204,6 +205,18 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Program { get; }
 }
 
+internal sealed class Pcre2LiteralFamilyCountDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2LiteralFamilyCountDirectProgram(Utf8Regex regex)
+    {
+        Regex = regex;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2LiteralFamilyCount;
+
+    internal Utf8Regex Regex { get; }
+}
+
 internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
@@ -212,6 +225,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2Literal = 3,
     Pcre2Character = 4,
     Pcre2Backtracking = 5,
+    Pcre2LiteralFamilyCount = 6,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -349,6 +363,15 @@ internal static class Pcre2CompiledProgramOverlay
             Match = direct,
             Replace = direct,
         };
+        if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
+            Pcre2LiteralFamilyCountAnalyzer.CanReuseCoreCount(
+                syntaxTree.Root,
+                legacy.Request,
+                primary.Regex.ByteOffsetExecution.SearchPortfolioKind))
+        {
+            operations = operations with { Count = new Pcre2LiteralFamilyCountDirectProgram(primary.Regex) };
+        }
+
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
@@ -392,7 +415,55 @@ internal static class Pcre2ProgramInvariant
         {
             throw new InvalidOperationException("A direct managed backend must be owned by its compiled PCRE2 program.");
         }
+
+        if (directProgram is Pcre2LiteralFamilyCountDirectProgram literalFamilyProgram &&
+            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
+             !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
+        {
+            throw new InvalidOperationException("A literal-family Count backend must be owned by its compiled PCRE2 program.");
+        }
     }
+}
+
+internal static class Pcre2LiteralFamilyCountAnalyzer
+{
+    internal static bool CanReuseCoreCount(
+        IPcre2BacktrackingNode root,
+        Pcre2CompileRequest request,
+        Utf8SearchPortfolioKind portfolioKind)
+    {
+        if (request.Options != Pcre2CompileOptions.None ||
+            root is not Pcre2AlternationBacktrackingNode { Alternatives.Length: >= 2 } alternation ||
+            !IsExactLiteralFamilyPortfolio(portfolioKind))
+        {
+            return false;
+        }
+
+        return alternation.Alternatives.All(IsNonEmptyExactLiteral);
+    }
+
+    private static bool IsNonEmptyExactLiteral(IPcre2BacktrackingNode node)
+    {
+        if (node is Pcre2TokenBacktrackingNode token)
+        {
+            return IsExactLiteral(token.Token);
+        }
+
+        return node is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence &&
+            sequence.Children.All(static child =>
+                child is Pcre2TokenBacktrackingNode token && IsExactLiteral(token.Token));
+    }
+
+    private static bool IsExactLiteral(Pcre2CharacterToken token) =>
+        token.Kind == Pcre2CharacterTokenKind.Literal &&
+        token.Options == Pcre2CharacterOptions.None;
+
+    private static bool IsExactLiteralFamilyPortfolio(Utf8SearchPortfolioKind portfolioKind) =>
+        portfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or
+            Utf8SearchPortfolioKind.ExactTrieFamily or
+            Utf8SearchPortfolioKind.ExactAutomatonFamily or
+            Utf8SearchPortfolioKind.ExactPackedFamily or
+            Utf8SearchPortfolioKind.ExactEarliestFamily;
 }
 
 internal static class Pcre2Runner
@@ -700,6 +771,14 @@ internal static class Pcre2GlobalOperationDriver
         out int result)
     {
         var program = compiledProgram.Operations.Count;
+        if (program is Pcre2LiteralFamilyCountDirectProgram literalFamilyProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+            return true;
+        }
+
         if (TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor))
         {
             result = 0;
@@ -727,6 +806,12 @@ internal static class Pcre2GlobalOperationDriver
         result = 0;
         return false;
     }
+
+    private static bool HasUnmeteredExecution(Pcre2CompileRequest request) =>
+        request.MatchTimeout == Timeout.InfiniteTimeSpan &&
+        request.DefaultLimits.MatchLimit == 0 &&
+        request.DefaultLimits.DepthLimit == 0 &&
+        request.DefaultLimits.HeapLimitInBytes == 0;
 
     internal static bool TryCreateCursor(
         Pcre2CompiledProgram compiledProgram,

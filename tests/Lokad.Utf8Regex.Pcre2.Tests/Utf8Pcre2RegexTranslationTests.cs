@@ -41,18 +41,84 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void Utf8LiteralAlternationUsesPcre2BacktrackingProgram()
+    public void Utf8LiteralAlternationReusesCoreSearchForUnmeteredCountOnly()
     {
         var regex = new Utf8Pcre2Regex("café|naïve");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2LiteralFamilyCount, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
         Assert.Equal(2, regex.Count("xxcafé yy naïve zz"u8));
 
         var first = regex.Match("xxcafé yy naïve zz"u8);
         Assert.True(first.Success);
         Assert.Equal("café", first.GetValueString());
+    }
+
+    [Theory]
+    [InlineData("a|ab", "ab a", 2)]
+    [InlineData("ab|a", "ab a", 2)]
+    [InlineData("foo|foo", "foo foo", 2)]
+    [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom x Finn x Sawyer", 3)]
+    public void LiteralFamilyCountPreservesOrderedAlternationSemantics(
+        string pattern,
+        string input,
+        int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        Assert.Equal(expected, regex.Count(bytes));
+        Assert.IsType<Pcre2LiteralFamilyCountDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    [Fact]
+    public void LiteralFamilyCountHonorsStartOffsetsAndFallsBackForRuntimeOptions()
+    {
+        var regex = new Utf8Pcre2Regex("foo|bar");
+        var input = "xfoo bar"u8;
+
+        Assert.Equal(1, regex.Count(input, 4));
+        Assert.Equal(0, regex.Count(input, 0, Pcre2MatchOptions.Anchored));
+        Assert.Equal(1, regex.Count(input, 1, Pcre2MatchOptions.Anchored));
+    }
+
+    [Fact]
+    public void MeteredLiteralFamilyCountRetainsPcre2ResourceSemantics()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "foo|bar",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xxfoo"u8));
+        Assert.Equal("MatchLimit", exception.ErrorKind);
+    }
+
+    [Fact]
+    public void LiteralFamilyCountStillValidatesTheEntireUtf8Subject()
+    {
+        var regex = new Utf8Pcre2Regex("foo|bar");
+        var malformedAfter = new byte[] { (byte)'f', (byte)'o', (byte)'o', 0xC3, 0x28 };
+        var malformedBefore = new byte[] { 0xC3, 0x28, (byte)'f', (byte)'o', (byte)'o' };
+
+        Assert.Throws<ArgumentException>(() => regex.Count(malformedAfter));
+        Assert.Throws<ArgumentException>(() => regex.Count(malformedBefore));
+    }
+
+    [Fact]
+    public void LiteralFamilyCountLeavesEmptyAlternativesAndCompileAnchorsOnBacktracking()
+    {
+        var empty = new Utf8Pcre2Regex("foo|");
+        var anchored = new Utf8Pcre2Regex("foo|bar", Pcre2CompileOptions.Anchored);
+
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(empty.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(anchored.DebugCompiledProgram.Operations.Count);
+        Assert.Equal(3, empty.Count("xfoo"u8));
+        Assert.Equal(0, anchored.Count("xfoo"u8));
     }
 
     [Fact]
