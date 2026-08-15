@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -48,8 +49,9 @@ internal static class PythonReBenchmarkReporter
 
         var snapshot = new PythonReBenchmarkSnapshot
         {
-            SchemaVersion = 1,
+            SchemaVersion = 2,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
+            Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
         };
         var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
@@ -200,6 +202,39 @@ internal static class PythonReBenchmarkReporter
         };
     }
 
+    private static PythonReCorpusProvenance CaptureCorpusProvenance()
+    {
+        const string sourceFile = "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json";
+        var fullPath = FindRepositoryFile(sourceFile);
+        var hash = SHA256.HashData(File.ReadAllBytes(fullPath));
+        using var corpus = JsonDocument.Parse(File.ReadAllText(fullPath));
+        return new PythonReCorpusProvenance
+        {
+            SourceFile = sourceFile,
+            Sha256 = Convert.ToHexString(hash),
+            VectorCount = corpus.RootElement.GetArrayLength(),
+            UpstreamCpythonRevision = "not-recorded-in-repository",
+            Limitation = "The original upstream CPython version was not recorded; do not infer one from local vector names.",
+        };
+    }
+
+    private static string FindRepositoryFile(string relativePath)
+    {
+        var directory = new DirectoryInfo(Environment.CurrentDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(directory.FullName, relativePath);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"Could not locate repository file '{relativePath}'.");
+    }
+
     private static string? RunGit(params string[] arguments)
     {
         var startInfo = new ProcessStartInfo("git")
@@ -241,9 +276,20 @@ internal static class PythonReBenchmarkReporter
 internal enum PythonReBenchmarkOperation : byte
 {
     IsMatch = 0,
-    Count = 1,
-    FindAll = 2,
-    Replace = 3,
+    Search = 1,
+    Match = 2,
+    FullMatch = 3,
+    SearchDetailed = 4,
+    Count = 5,
+    FindAllStrings = 6,
+    FindAllUtf8 = 7,
+    FindIterDetailed = 8,
+    ReplaceString = 9,
+    ReplaceUtf8 = 10,
+    SubnString = 11,
+    SubnUtf8 = 12,
+    SubnEvaluatorString = 13,
+    SplitStrings = 14,
 }
 
 internal sealed record PythonReBenchmarkCase(
@@ -261,20 +307,46 @@ internal static class PythonReBenchmarkCatalog
     [
         new("literal/ismatch", "needle", PythonReCompileOptions.None, PythonReBenchmarkOperation.IsMatch,
             new string('x', 65_536) + "needle", string.Empty, false),
+        new("literal/search", "needle", PythonReCompileOptions.None, PythonReBenchmarkOperation.Search,
+            new string('x', 65_536) + "needle", string.Empty, false),
+        new("prefix/match", "header:[0-9]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.Match,
+            "header:12345 " + new string('x', 16_384), string.Empty, false),
+        new("unicode/fullmatch", "(?:Шерлок )+", PythonReCompileOptions.None, PythonReBenchmarkOperation.FullMatch,
+            Repeat("Шерлок ", 1_024), string.Empty, false),
+        new("capture/search-detailed", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.SearchDetailed,
+            "prefix item-123 suffix", string.Empty, true),
         new("family/count", "cat|dog|bird", PythonReCompileOptions.None, PythonReBenchmarkOperation.Count,
             Repeat("cat fox dog owl bird ", 4_096), string.Empty, false),
         new("class-run/count", "[a-z]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.Count,
             Repeat("alpha beta gamma 123 ", 4_096), string.Empty, false),
         new("unicode/count", "Шерлок", PythonReCompileOptions.None, PythonReBenchmarkOperation.Count,
             Repeat("Шерлок и Ватсон. ", 4_096), string.Empty, false),
-        new("enumeration/findall", "[a-z]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAll,
+        new("findall/full-strings", "[a-z]+", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
             Repeat("alpha beta gamma 123 ", 1_024), string.Empty, true),
-        new("capture/findall", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAll,
+        new("findall/one-capture-strings", "item-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
+            Repeat("item-12 item-345 ", 1_024), string.Empty, true),
+        new("findall/many-capture-strings", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
             Repeat("item-12 other-345 ", 1_024), string.Empty, true),
+        new("findall/many-capture-utf8", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllUtf8,
+            Repeat("item-12 other-345 ", 1_024), string.Empty, true),
+        new("iteration/finditer-detailed", "([a-z]+)-([0-9]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindIterDetailed,
+            Repeat("item-12 other-345 ", 256), string.Empty, true),
         new("zero-width/count", @"\b", PythonReCompileOptions.Ascii, PythonReBenchmarkOperation.Count,
             Repeat("alpha beta gamma ", 1_024), string.Empty, false),
-        new("replacement/replace", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.Replace,
+        new("replacement/fixed-string", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.ReplaceString,
             Repeat("cat fox cat dog ", 2_048), "tiger", true),
+        new("replacement/fixed-utf8", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.ReplaceUtf8,
+            Repeat("cat fox cat dog ", 2_048), "tiger", true),
+        new("replacement/subn-string", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.SubnString,
+            Repeat("cat fox cat dog ", 1_024), "tiger", true),
+        new("replacement/subn-utf8", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.SubnUtf8,
+            Repeat("cat fox cat dog ", 1_024), "tiger", true),
+        new("replacement/evaluator-string", "([a-z]+)", PythonReCompileOptions.None, PythonReBenchmarkOperation.SubnEvaluatorString,
+            Repeat("cat fox dog ", 512), "token", true),
+        new("split/no-captures", "[,;]", PythonReCompileOptions.None, PythonReBenchmarkOperation.SplitStrings,
+            Repeat("alpha,beta;gamma,delta;", 512), string.Empty, true),
+        new("split/captures", "([,;])", PythonReCompileOptions.None, PythonReBenchmarkOperation.SplitStrings,
+            Repeat("alpha,beta;gamma,delta;", 512), string.Empty, true),
     ];
 
     private static string Repeat(string value, int count)
@@ -294,7 +366,9 @@ internal sealed class PythonReBenchmarkContext
     private readonly PythonReBenchmarkCase _case;
     private readonly Utf8PythonRegex _pythonRegex;
     private readonly Regex _regex;
+    private readonly Regex _fullRegex;
     private readonly string _decoded;
+    private readonly int _captureCount;
 
     internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
     {
@@ -302,7 +376,10 @@ internal sealed class PythonReBenchmarkContext
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         _decoded = benchmarkCase.Input;
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
-        _regex = new Regex(benchmarkCase.Pattern, ToRegexOptions(benchmarkCase.Options), Regex.InfiniteMatchTimeout);
+        var regexOptions = ToRegexOptions(benchmarkCase.Options);
+        _regex = new Regex(benchmarkCase.Pattern, regexOptions, Regex.InfiniteMatchTimeout);
+        _fullRegex = new Regex($@"\A(?:{benchmarkCase.Pattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
+        _captureCount = _regex.GetGroupNumbers().Length - 1;
     }
 
     internal byte[] InputBytes { get; }
@@ -310,30 +387,333 @@ internal sealed class PythonReBenchmarkContext
     internal int ExecutePythonRe() => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,
+        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Search(InputBytes)),
+        PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.FullMatch(InputBytes)),
+        PythonReBenchmarkOperation.SearchDetailed => Checksum(_pythonRegex.SearchDetailedData(InputBytes)),
         PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),
-        PythonReBenchmarkOperation.FindAll => _pythonRegex.FindAll(InputBytes).Length,
-        PythonReBenchmarkOperation.Replace => _pythonRegex.Replace(InputBytes, _case.Replacement).Length,
+        PythonReBenchmarkOperation.FindAllStrings => Checksum(_pythonRegex.FindAllToStrings(InputBytes)),
+        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
+        PythonReBenchmarkOperation.FindIterDetailed => Checksum(_pythonRegex.FindIterDetailed(InputBytes)),
+        PythonReBenchmarkOperation.ReplaceString => Checksum(_pythonRegex.ReplaceToString(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnString => Checksum(_pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(
+            _pythonRegex.SubnToString(InputBytes, _case.Replacement, static (replacement, _) => replacement)),
+        PythonReBenchmarkOperation.SplitStrings => Checksum(_pythonRegex.SplitToStrings(InputBytes)),
         _ => throw new InvalidOperationException(),
     };
 
     internal int ExecuteDecodeThenRegex()
     {
         var decoded = Encoding.UTF8.GetString(InputBytes);
-        return ExecuteRegex(decoded, encodeReplacement: true);
+        return ExecuteRegex(decoded);
     }
 
-    internal int ExecutePredecodedRegex() => ExecuteRegex(_decoded, encodeReplacement: false);
+    internal int ExecutePredecodedRegex() => ExecuteRegex(_decoded);
 
-    private int ExecuteRegex(string input, bool encodeReplacement) => _case.Operation switch
+    private int ExecuteRegex(string input) => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,
+        PythonReBenchmarkOperation.Search => Checksum(_regex.Match(input)),
+        PythonReBenchmarkOperation.Match => ChecksumAtStart(_regex.Match(input)),
+        PythonReBenchmarkOperation.FullMatch => Checksum(_fullRegex.Match(input)),
+        PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, BuildUtf8Offsets(input))),
         PythonReBenchmarkOperation.Count => _regex.Count(input),
-        PythonReBenchmarkOperation.FindAll => _regex.Matches(input).Count,
-        PythonReBenchmarkOperation.Replace when encodeReplacement =>
-            Encoding.UTF8.GetByteCount(_regex.Replace(input, _case.Replacement)),
-        PythonReBenchmarkOperation.Replace => _regex.Replace(input, _case.Replacement).Length,
+        PythonReBenchmarkOperation.FindAllStrings => Checksum(MaterializeFindAllStrings(input)),
+        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(MaterializeFindAllUtf8(input)),
+        PythonReBenchmarkOperation.FindIterDetailed => Checksum(MaterializeFindIterDetailed(input)),
+        PythonReBenchmarkOperation.ReplaceString => Checksum(_regex.Replace(input, _case.Replacement)),
+        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(Encoding.UTF8.GetBytes(_regex.Replace(input, _case.Replacement))),
+        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
+        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false)),
+        PythonReBenchmarkOperation.SplitStrings => Checksum(_regex.Split(input)),
         _ => throw new InvalidOperationException(),
     };
+
+    private BclFindAllResult MaterializeFindAllStrings(string input)
+    {
+        if (_captureCount <= 1)
+        {
+            var values = new List<string>();
+            foreach (Match match in _regex.Matches(input))
+            {
+                values.Add(_captureCount == 0 ? match.Value : match.Groups[1].Value);
+            }
+
+            return new BclFindAllResult(_captureCount == 0 ? Utf8PythonFindAllShape.FullMatch : Utf8PythonFindAllShape.SingleGroup, values.ToArray(), []);
+        }
+
+        var tuples = new List<string[]>();
+        foreach (Match match in _regex.Matches(input))
+        {
+            var tuple = new string[_captureCount];
+            for (var group = 0; group < tuple.Length; group++)
+            {
+                tuple[group] = match.Groups[group + 1].Value;
+            }
+
+            tuples.Add(tuple);
+        }
+
+        return new BclFindAllResult(Utf8PythonFindAllShape.GroupTuple, [], tuples.ToArray());
+    }
+
+    private BclFindAllUtf8Result MaterializeFindAllUtf8(string input)
+    {
+        var strings = MaterializeFindAllStrings(input);
+        if (strings.Shape != Utf8PythonFindAllShape.GroupTuple)
+        {
+            var values = new byte[strings.ScalarValues.Length][];
+            for (var index = 0; index < values.Length; index++)
+            {
+                values[index] = Encoding.UTF8.GetBytes(strings.ScalarValues[index]);
+            }
+
+            return new BclFindAllUtf8Result(strings.Shape, values, []);
+        }
+
+        var tuples = new byte[strings.TupleValues.Length][][];
+        for (var match = 0; match < tuples.Length; match++)
+        {
+            tuples[match] = new byte[strings.TupleValues[match].Length][];
+            for (var group = 0; group < tuples[match].Length; group++)
+            {
+                tuples[match][group] = Encoding.UTF8.GetBytes(strings.TupleValues[match][group]);
+            }
+        }
+
+        return new BclFindAllUtf8Result(Utf8PythonFindAllShape.GroupTuple, [], tuples);
+    }
+
+    private BclDetailedMatch[] MaterializeFindIterDetailed(string input)
+    {
+        var utf8Offsets = BuildUtf8Offsets(input);
+        var matches = new List<BclDetailedMatch>();
+        for (var match = _regex.Match(input); match.Success; match = match.NextMatch())
+        {
+            matches.Add(MaterializeDetailed(match, input, utf8Offsets));
+        }
+
+        return matches.ToArray();
+    }
+
+    private BclSubnResult ReplaceAndCount(string input, bool encodeUtf8)
+    {
+        var count = 0;
+        var result = _regex.Replace(input, _ =>
+        {
+            count++;
+            return _case.Replacement;
+        });
+        return new BclSubnResult(result, encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null, count);
+    }
+
+    private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[] utf8Offsets)
+    {
+        if (!match.Success)
+        {
+            return new BclDetailedMatch([]);
+        }
+
+        var groups = new BclDetailedGroup[match.Groups.Count];
+        for (var index = 0; index < groups.Length; index++)
+        {
+            var group = match.Groups[index];
+            groups[index] = group.Success
+                ? new BclDetailedGroup(true, utf8Offsets[group.Index], utf8Offsets[group.Index + group.Length], group.Index, group.Index + group.Length, group.Value)
+                : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
+        }
+
+        return new BclDetailedMatch(groups);
+    }
+
+    private static int[] BuildUtf8Offsets(string input)
+    {
+        var offsets = new int[input.Length + 1];
+        var utf16 = 0;
+        var utf8 = 0;
+        while (utf16 < input.Length)
+        {
+            offsets[utf16] = utf8;
+            var value = input[utf16];
+            if (char.IsHighSurrogate(value) && utf16 + 1 < input.Length && char.IsLowSurrogate(input[utf16 + 1]))
+            {
+                offsets[utf16 + 1] = utf8;
+                utf16 += 2;
+                utf8 += 4;
+                offsets[utf16] = utf8;
+                continue;
+            }
+
+            utf8 += value <= 0x7f ? 1 : value <= 0x7ff ? 2 : 3;
+            utf16++;
+            offsets[utf16] = utf8;
+        }
+
+        return offsets;
+    }
+
+    private static int Checksum(Utf8PythonValueMatch match) => match.Success
+        ? Combine(1, match.StartOffsetInUtf16, match.EndOffsetInUtf16)
+        : 0;
+
+    private static int Checksum(Match match) => match.Success
+        ? Combine(1, match.Index, match.Index + match.Length)
+        : 0;
+
+    private static int ChecksumAtStart(Match match) => match.Success && match.Index == 0
+        ? Checksum(match)
+        : 0;
+
+    private static int Checksum(Utf8PythonDetailedMatchData match)
+    {
+        var checksum = match.Success ? 1 : 0;
+        foreach (var group in match.Groups ?? [])
+        {
+            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInUtf16, group.EndOffsetInUtf16, Checksum(group.ValueText));
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(BclDetailedMatch match)
+    {
+        var checksum = match.Groups.Length == 0 ? 0 : 1;
+        foreach (var group in match.Groups)
+        {
+            checksum = Combine(checksum, group.Success ? 1 : 0, group.StartOffsetInUtf16, group.EndOffsetInUtf16, Checksum(group.Value));
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(Utf8PythonDetailedMatchData[] matches)
+    {
+        var checksum = matches.Length;
+        foreach (var match in matches)
+        {
+            checksum = Combine(checksum, Checksum(match));
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(BclDetailedMatch[] matches)
+    {
+        var checksum = matches.Length;
+        foreach (var match in matches)
+        {
+            checksum = Combine(checksum, Checksum(match));
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(Utf8PythonFindAllResult result) =>
+        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
+
+    private static int Checksum(BclFindAllResult result) =>
+        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
+
+    private static int Checksum(Utf8PythonFindAllUtf8Result result) =>
+        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
+
+    private static int Checksum(BclFindAllUtf8Result result) =>
+        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
+
+    private static int Checksum(Utf8PythonFindAllShape shape, string[] scalarValues, string[][] tupleValues)
+    {
+        var checksum = (int)shape;
+        foreach (var value in scalarValues)
+        {
+            checksum = Combine(checksum, Checksum(value));
+        }
+
+        foreach (var tuple in tupleValues)
+        {
+            checksum = Combine(checksum, tuple.Length);
+            foreach (var value in tuple)
+            {
+                checksum = Combine(checksum, Checksum(value));
+            }
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(Utf8PythonFindAllShape shape, byte[][] scalarValues, byte[][][] tupleValues)
+    {
+        var checksum = (int)shape;
+        foreach (var value in scalarValues)
+        {
+            checksum = Combine(checksum, Checksum(value));
+        }
+
+        foreach (var tuple in tupleValues)
+        {
+            checksum = Combine(checksum, tuple.Length);
+            foreach (var value in tuple)
+            {
+                checksum = Combine(checksum, Checksum(value));
+            }
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(Utf8PythonSubnResult result) =>
+        Combine(Checksum(result.ResultText), result.ReplacementCount);
+
+    private static int Checksum(Utf8PythonSubnUtf8Result result) =>
+        Combine(Checksum(result.ResultBytes), result.ReplacementCount);
+
+    private static int Checksum(BclSubnResult result) => result.ResultBytes is null
+        ? Combine(Checksum(result.ResultText), result.ReplacementCount)
+        : Combine(Checksum(result.ResultBytes), result.ReplacementCount);
+
+    private static int Checksum(string?[] values)
+    {
+        var checksum = values.Length;
+        foreach (var value in values)
+        {
+            checksum = Combine(checksum, value is null ? -1 : Checksum(value));
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(string value)
+    {
+        var checksum = value.Length;
+        foreach (var character in value)
+        {
+            checksum = Combine(checksum, character);
+        }
+
+        return checksum;
+    }
+
+    private static int Checksum(byte[] value)
+    {
+        var checksum = value.Length;
+        foreach (var item in value)
+        {
+            checksum = Combine(checksum, item);
+        }
+
+        return checksum;
+    }
+
+    private static int Combine(int seed, int value) => unchecked((seed * 31) + value);
+
+    private static int Combine(int seed, int value1, int value2) =>
+        Combine(Combine(seed, value1), value2);
+
+    private static int Combine(int seed, int value1, int value2, int value3, int value4) =>
+        Combine(Combine(Combine(Combine(seed, value1), value2), value3), value4);
 
     private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
     {
@@ -363,11 +743,37 @@ internal sealed class PythonReBenchmarkContext
     }
 }
 
+internal sealed record BclFindAllResult(Utf8PythonFindAllShape Shape, string[] ScalarValues, string[][] TupleValues);
+
+internal sealed record BclFindAllUtf8Result(Utf8PythonFindAllShape Shape, byte[][] ScalarValues, byte[][][] TupleValues);
+
+internal sealed record BclDetailedMatch(BclDetailedGroup[] Groups);
+
+internal readonly record struct BclDetailedGroup(
+    bool Success,
+    int StartOffsetInBytes,
+    int EndOffsetInBytes,
+    int StartOffsetInUtf16,
+    int EndOffsetInUtf16,
+    string Value);
+
+internal sealed record BclSubnResult(string ResultText, byte[]? ResultBytes, int ReplacementCount);
+
 internal sealed class PythonReBenchmarkSnapshot
 {
     public required int SchemaVersion { get; init; }
     public required DateTimeOffset GeneratedAtUtc { get; init; }
+    public required PythonReCorpusProvenance Corpus { get; init; }
     public required SortedDictionary<string, PythonReCaseMeasurement> Cases { get; init; }
+}
+
+internal sealed class PythonReCorpusProvenance
+{
+    public required string SourceFile { get; init; }
+    public required string Sha256 { get; init; }
+    public required int VectorCount { get; init; }
+    public required string UpstreamCpythonRevision { get; init; }
+    public required string Limitation { get; init; }
 }
 
 internal sealed class PythonReCaseMeasurement
