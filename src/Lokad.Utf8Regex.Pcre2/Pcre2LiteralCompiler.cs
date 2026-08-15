@@ -40,6 +40,7 @@ internal sealed class Pcre2LiteralSyntaxTree : IPcre2SyntaxTree
 
 internal sealed class Pcre2LiteralProgram
 {
+    private const int DirectCountThresholdBytes = 1024;
     private readonly byte[] _literalUtf8;
 
     internal Pcre2LiteralProgram(
@@ -65,7 +66,8 @@ internal sealed class Pcre2LiteralProgram
 
     internal bool HasExplicitEndAssertion { get; }
 
-    internal bool CanCountDirectly =>
+    internal bool CanCountDirectly(int inputLength) =>
+        inputLength >= DirectCountThresholdBytes &&
         _literalUtf8.Length != 0 &&
         StartAnchor == Pcre2LiteralAnchor.None &&
         !EndAnchored;

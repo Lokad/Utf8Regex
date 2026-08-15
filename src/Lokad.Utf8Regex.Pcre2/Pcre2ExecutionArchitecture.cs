@@ -1310,7 +1310,7 @@ internal static class Pcre2GlobalOperationDriver
         if (program is Pcre2LiteralDirectProgram literalProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             HasUnmeteredExecution(compiledProgram.Request) &&
-            literalProgram.Program.CanCountDirectly)
+            literalProgram.Program.CanCountDirectly(input.ByteLength - start.Value))
         {
             result = literalProgram.Program.CountNonOverlapping(input.Bytes[start.Value..]);
             return true;

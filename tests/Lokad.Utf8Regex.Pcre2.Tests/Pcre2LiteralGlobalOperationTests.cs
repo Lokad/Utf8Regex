@@ -47,6 +47,15 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
+    public void DirectLiteralCountHandlesLongUnicodeInputAfterStartOffset()
+    {
+        var regex = new Utf8Pcre2Regex("é");
+        var input = Encoding.UTF8.GetBytes("x" + string.Concat(Enumerable.Repeat("é", 1024)));
+
+        Assert.Equal(1024, regex.Count(input, 1));
+    }
+
+    [Fact]
     public void EmptyLiteralProgressesAtScalarsWithoutDuplicates()
     {
         var regex = new Utf8Pcre2Regex(string.Empty);
