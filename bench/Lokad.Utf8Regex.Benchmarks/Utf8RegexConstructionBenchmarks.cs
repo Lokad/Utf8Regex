@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Benchmarks;
 
 [MemoryDiagnoser]
-public sealed class Utf8RegexConstructionBenchmarks
+public class Utf8RegexConstructionBenchmarks
 {
     [Params(
         "needle",
