@@ -437,6 +437,30 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void FindIterDetailedReusesUnicodeProjectionAfterStartOffset()
+    {
+        var regex = new Utf8PythonRegex("(é+)-(𝒜𝒜|𝒜)");
+        var input = System.Text.Encoding.UTF8.GetBytes("é-𝒜 xx éé-𝒜𝒜");
+        var startOffsetInBytes = "é-𝒜 xx "u8.Length;
+
+        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
+
+        var match = Assert.Single(matches);
+        Assert.Equal(startOffsetInBytes, match.Value.StartOffsetInBytes);
+        Assert.Equal("éé-𝒜𝒜", match.Value.ValueText);
+        Assert.Equal("éé", match.Groups[1].ValueText);
+        Assert.Equal("𝒜𝒜", match.Groups[2].ValueText);
+    }
+
+    [Fact]
+    public void FindIterDetailedKeepsGeneralEmptyMatchTraversal()
+    {
+        var matches = new Utf8PythonRegex("x*").FindIterDetailed("xx"u8);
+
+        Assert.Equal(["xx", ""], matches.Select(static match => match.Value.ValueText).ToArray());
+    }
+
+    [Fact]
     public void ReplaceUsesManagedBackendAndPythonGroupSyntax()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");

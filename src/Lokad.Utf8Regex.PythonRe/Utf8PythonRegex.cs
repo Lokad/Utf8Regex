@@ -647,6 +647,11 @@ public sealed class Utf8PythonRegex
     public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
         ValidateStartOffset(input, startOffsetInBytes);
+        if (!_canMatchEmpty)
+        {
+            return FindIterDetailedNonEmpty(input, startOffsetInBytes);
+        }
+
         List<Utf8PythonDetailedMatchData> matches = [];
         var searchOffset = startOffsetInBytes;
         while (searchOffset <= input.Length)
@@ -673,6 +678,20 @@ public sealed class Utf8PythonRegex
             }
 
             searchOffset = start + GetUtf8RuneLength(input[start]);
+        }
+
+        return matches.ToArray();
+    }
+
+    private Utf8PythonDetailedMatchData[] FindIterDetailedNonEmpty(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        var subject = Decode(input);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        List<Utf8PythonDetailedMatchData> matches = [];
+        for (var match = _managedRegex.Match(subject, startOffsetInUtf16); match.Success; match = match.NextMatch())
+        {
+            matches.Add(CreateMatchSnapshot(match, indexMap).ToDetailedData(input, _nameEntries));
         }
 
         return matches.ToArray();
