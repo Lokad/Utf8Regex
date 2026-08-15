@@ -2,8 +2,8 @@
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
 2026-08-15 snapshot has SHA-256
-`CC3FAEC536E166C4FCD8F2879100C230B723862EA71D647BF668B9C8DE376D20`.
-It contains 126 operation rows in ten top-line sections and eleven scaling
+`985D68B9EFC2FEDB5705973A2DDDEF957C573C6D04F8865B0EC18580184B23E9`.
+It contains 126 operation rows in ten top-line sections and twelve scaling
 families with four 1×/2×/4×/8× points each.
 
 ## Measurement protocol
@@ -42,6 +42,7 @@ alternative count at each point.
 | Candidate-heavy misses | 2× input | 0.47×, 1.77×, 2.03× | 0 B |
 | Branch/repeat | 2× input | 2.00×, 1.94×, 2.03× | 1 B |
 | Dense non-ASCII coordinates | 2× input | 1.99×, 1.99×, 1.97× | 0–1 B |
+| Excluded-ASCII repeat Count | 2× input | 1.98×, 2.00×, 2.05× | 0 B |
 | Dense character classes | 2× input | 1.95×, 1.99×, 1.92× | 0–1 B |
 | Zero-width iteration | 2× input | 1.99×, 1.99×, 2.09× | 0–1 B |
 | Capture rollback | approximately 2× input | 1.74×, 1.62×, 0.66× | 0 B |
