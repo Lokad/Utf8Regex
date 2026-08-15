@@ -4685,7 +4685,7 @@ internal static partial class BenchmarkInspectReporter
             return false;
         }
 
-        foreach (var line in status.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var line in status.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
         {
             var path = line.Length > 3 ? line[3..].Replace('\\', '/') : line;
             if (path is not "README.md" and not "README.Benchmarks.json" and not "PCRE2.Benchmarks.json" &&
