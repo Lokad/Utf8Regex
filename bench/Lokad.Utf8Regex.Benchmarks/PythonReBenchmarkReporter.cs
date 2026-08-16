@@ -361,7 +361,9 @@ internal static class PythonReBenchmarkReporter
         const string pattern = @"async\s+Task<";
         var prefix = new string('x', 65_536) + "é";
         var subject = prefix + "async Task<";
+        var missSubject = prefix + "async Nope<";
         var input = Encoding.UTF8.GetBytes(subject);
+        var missInput = Encoding.UTF8.GetBytes(missSubject);
         var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
         var pythonRegex = new Utf8PythonRegex(pattern);
         var managedFullRegex = new Regex(
@@ -371,8 +373,11 @@ internal static class PythonReBenchmarkReporter
         var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         var pythonMatch = pythonRegex.FullMatch(input, startOffsetInBytes);
+        var pythonDetailedMiss = pythonRegex.FullMatchDetailedData(missInput, startOffsetInBytes);
         var managedResult = managedFullRegex.IsMatch(subject.AsSpan(prefix.Length));
-        if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length || !managedResult ||
+        var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
+        if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length ||
+            pythonDetailedMiss.Success || !managedResult || managedMiss ||
             pythonRegex.DebugHasUtf8FullRegex)
         {
             throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its parity or backend precondition.");
@@ -399,6 +404,26 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("PredecodedFullMatch", MeasureOperation(
             () => managedFullRegex.IsMatch(subject.AsSpan(prefix.Length)) ? input.Length : 0,
+            iterations,
+            samples));
+        PrintOperation("PythonReFullMiss", MeasureOperation(
+            () => pythonRegex.FullMatch(missInput, startOffsetInBytes).Success ? 1 : 0,
+            iterations,
+            samples));
+        PrintOperation("PythonReDetailedMiss", MeasureOperation(
+            () => pythonRegex.FullMatchDetailedData(missInput, startOffsetInBytes).Success ? 1 : 0,
+            iterations,
+            samples));
+        PrintOperation("DecodeFullMiss", MeasureOperation(
+            () =>
+            {
+                var decoded = strictUtf8.GetString(missInput);
+                return managedFullRegex.IsMatch(decoded.AsSpan(prefix.Length)) ? 1 : 0;
+            },
+            iterations,
+            samples));
+        PrintOperation("PredecodedFullMiss", MeasureOperation(
+            () => managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length)) ? 1 : 0,
             iterations,
             samples));
         return 0;
