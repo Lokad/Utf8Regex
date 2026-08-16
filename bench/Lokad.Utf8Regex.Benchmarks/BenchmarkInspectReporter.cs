@@ -190,15 +190,12 @@ internal static partial class BenchmarkInspectReporter
                 return context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out var isMatch) && isMatch ? 1 : 0;
             });
 
-            var searchPlan = context.Utf8Regex.Inspection.SearchPlan;
-            if (!searchPlan.HasBoundaryRequirements &&
-                searchPlan.LiteralUtf8 is { Length: > 0 } leadingLiteral &&
-                searchPlan.TrailingLiteralUtf8 is { Length: > 0 } trailingLiteral &&
-                context.Utf8Regex.Inspection.ExecutionKind is
-                    NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal)
+            if (TryCreateExactCompositeTrailingSearch(
+                    context.Utf8Regex,
+                    out var compositeSearch,
+                    out _,
+                    out _))
             {
-                byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
-                var compositeSearch = new PreparedSubstringSearch(compositeLiteral, ignoreCase: false);
                 MeasureUtf8CaseLane("CompositeTrailingSearchOnly", samples, iterations, () =>
                     Utf8SearchKernel.IndexOfLiteral(context.InputBytes, compositeSearch));
                 MeasureUtf8CaseLane("ValidationPlusCompositeSearch", samples, iterations, () =>
@@ -232,6 +229,29 @@ internal static partial class BenchmarkInspectReporter
                     ? match.IndexInBytes ^ match.LengthInBytes ^ match.IndexInUtf16 ^ match.LengthInUtf16
                     : 0;
             });
+
+            if (TryCreateExactCompositeTrailingSearch(
+                    context.Utf8Regex,
+                    out var compositeSearch,
+                    out var matchByteLength,
+                    out var matchUtf16Length))
+            {
+                MeasureUtf8CaseLane("CompositeTrailingMatchOnly", samples, iterations, () =>
+                    ExecuteCompositeTrailingMatch(
+                        context.InputBytes,
+                        compositeSearch,
+                        matchByteLength,
+                        matchUtf16Length));
+                MeasureUtf8CaseLane("ValidationPlusCompositeMatch", samples, iterations, () =>
+                {
+                    Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                    return ExecuteCompositeTrailingMatch(
+                        context.InputBytes,
+                        compositeSearch,
+                        matchByteLength,
+                        matchUtf16Length);
+                });
+            }
         }
 
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
@@ -5404,6 +5424,50 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Replace => context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
             _ => 0,
         };
+    }
+
+    private static bool TryCreateExactCompositeTrailingSearch(
+        Utf8Regex regex,
+        out PreparedSubstringSearch search,
+        out int matchByteLength,
+        out int matchUtf16Length)
+    {
+        var searchPlan = regex.Inspection.SearchPlan;
+        if (searchPlan.HasBoundaryRequirements ||
+            searchPlan.LiteralUtf8 is not { Length: > 0 } leadingLiteral ||
+            searchPlan.TrailingLiteralUtf8 is not { Length: > 0 } trailingLiteral ||
+            regex.Inspection.ExecutionKind is not
+                (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal))
+        {
+            search = default;
+            matchByteLength = 0;
+            matchUtf16Length = 0;
+            return false;
+        }
+
+        byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
+        search = new PreparedSubstringSearch(compositeLiteral, ignoreCase: false);
+        matchByteLength = leadingLiteral.Length;
+        matchUtf16Length = Utf8Validation.Validate(leadingLiteral).Utf16Length;
+        return true;
+    }
+
+    private static int ExecuteCompositeTrailingMatch(
+        byte[] input,
+        PreparedSubstringSearch search,
+        int matchByteLength,
+        int matchUtf16Length)
+    {
+        var matchByteIndex = Utf8SearchKernel.IndexOfLiteral(input, search);
+        if (matchByteIndex < 0)
+        {
+            return 0;
+        }
+
+        var matchUtf16Index = matchByteIndex == 0
+            ? 0
+            : Utf8Validation.Validate(input.AsSpan(0, matchByteIndex)).Utf16Length;
+        return matchByteIndex ^ matchByteLength ^ matchUtf16Index ^ matchUtf16Length;
     }
 
     private static void MeasureUtf8CaseLane(string label, int samples, int iterations, Func<int> action)
