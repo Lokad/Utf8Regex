@@ -160,21 +160,26 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureUtf8Case(string caseId, string? iterationsText)
+    public static int RunMeasureUtf8Case(string caseId, string? iterationsText, string? samplesText)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
         var context = new Utf8RegexBenchmarkContext(benchmarkCase);
         var iterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
 
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine($"Operation         : {benchmarkCase.Operation}");
         Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
 
-        Measure("Utf8Regex", iterations, () => ExecuteUtf8(context));
-        Measure("DecodeThenRegex", iterations, () => ExecuteDecodeThenRegex(context));
-        Measure("PredecodedRegex", iterations, () => ExecutePredecodedRegex(context));
+        MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
+        MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
+        MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
+        MeasureUtf8CaseLane("DecodeThenCompiledRegex", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
+        MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
+        MeasureUtf8CaseLane("PredecodedCompiledRegex", samples, iterations, () => ExecutePredecodedCompiledRegex(context));
         return 0;
     }
 
@@ -275,7 +280,7 @@ internal static partial class BenchmarkInspectReporter
         var utf8Case = Utf8RegexBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId);
         if (utf8Case is not null)
         {
-            return RunMeasureUtf8Case(caseId, iterationsText);
+            return RunMeasureUtf8Case(caseId, iterationsText, samplesText: null);
         }
 
         var dotNetPerformanceCase = DotNetPerformanceReplicaBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId);
@@ -5286,6 +5291,26 @@ internal static partial class BenchmarkInspectReporter
         };
     }
 
+    private static void MeasureUtf8CaseLane(string label, int samples, int iterations, Func<int> action)
+    {
+        Measure(label, samples, iterations, action);
+        Console.WriteLine($"{label + "Allocated",-18}: {MeasureAllocatedBytesPerInvocation(iterations, action),10:N0} B/op");
+    }
+
+    private static int ExecuteUtf8Compiled(Utf8RegexBenchmarkContext context)
+    {
+        return context.BenchmarkCase.Operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => context.CompiledUtf8Regex.IsMatch(context.InputBytes) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Count => context.CompiledUtf8Regex.Count(context.InputBytes),
+            Utf8RegexBenchmarkOperation.Match => context.CompiledUtf8Regex.Match(context.InputBytes).IndexInUtf16,
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf8Matches(context.CompiledUtf8Regex, context.InputBytes),
+            Utf8RegexBenchmarkOperation.EnumerateSplits => SumUtf8Splits(context.CompiledUtf8Regex, context.InputBytes),
+            Utf8RegexBenchmarkOperation.Replace => context.CompiledUtf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
+            _ => 0,
+        };
+    }
+
     private static int ExecuteDecodeThenRegex(Utf8RegexBenchmarkContext context)
     {
         var decoded = Encoding.UTF8.GetString(context.InputBytes);
@@ -5311,6 +5336,35 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.Regex, context.InputString),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.Regex, context.InputString),
             Utf8RegexBenchmarkOperation.Replace => context.Regex.Replace(context.InputString, context.Replacement).Length,
+            _ => 0,
+        };
+    }
+
+    private static int ExecuteDecodeThenCompiledRegex(Utf8RegexBenchmarkContext context)
+    {
+        var decoded = Encoding.UTF8.GetString(context.InputBytes);
+        return context.BenchmarkCase.Operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => context.CompiledRegex.IsMatch(decoded) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Count => context.CompiledRegex.Count(decoded),
+            Utf8RegexBenchmarkOperation.Match => context.CompiledRegex.Match(decoded).Index,
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.CompiledRegex, decoded),
+            Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.CompiledRegex, decoded),
+            Utf8RegexBenchmarkOperation.Replace => context.CompiledRegex.Replace(decoded, context.Replacement).Length,
+            _ => 0,
+        };
+    }
+
+    private static int ExecutePredecodedCompiledRegex(Utf8RegexBenchmarkContext context)
+    {
+        return context.BenchmarkCase.Operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => context.CompiledRegex.IsMatch(context.InputString) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Count => context.CompiledRegex.Count(context.InputString),
+            Utf8RegexBenchmarkOperation.Match => context.CompiledRegex.Match(context.InputString).Index,
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.CompiledRegex, context.InputString),
+            Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.CompiledRegex, context.InputString),
+            Utf8RegexBenchmarkOperation.Replace => context.CompiledRegex.Replace(context.InputString, context.Replacement).Length,
             _ => 0,
         };
     }
@@ -5981,8 +6035,13 @@ internal static partial class BenchmarkInspectReporter
 
     private static int SumUtf8Matches(Utf8RegexBenchmarkContext context)
     {
+        return SumUtf8Matches(context.Utf8Regex, context.InputBytes);
+    }
+
+    private static int SumUtf8Matches(Utf8Regex regex, byte[] input)
+    {
         var sum = 0;
-        foreach (var match in context.Utf8Regex.EnumerateMatches(context.InputBytes))
+        foreach (var match in regex.EnumerateMatches(input))
         {
             sum += match.IndexInUtf16;
         }
@@ -5992,8 +6051,13 @@ internal static partial class BenchmarkInspectReporter
 
     private static int SumUtf8Splits(Utf8RegexBenchmarkContext context)
     {
+        return SumUtf8Splits(context.Utf8Regex, context.InputBytes);
+    }
+
+    private static int SumUtf8Splits(Utf8Regex regex, byte[] input)
+    {
         var sum = 0;
-        foreach (var split in context.Utf8Regex.EnumerateSplits(context.InputBytes))
+        foreach (var split in regex.EnumerateSplits(input))
         {
             sum += split.LengthInUtf16;
         }

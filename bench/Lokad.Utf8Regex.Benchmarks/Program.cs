@@ -26,7 +26,10 @@ if (args.Length >= 2 && args[0].Equals("--inspect-case", StringComparison.Ordina
 
 if (args.Length >= 2 && args[0].Equals("--measure-utf8-case", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureUtf8Case(args[1], args.Length >= 3 ? args[2] : null);
+    return BenchmarkInspectReporter.RunMeasureUtf8Case(
+        args[1],
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 1 && args[0].Equals("--measure-short-ascii-literal-family-count-controls", StringComparison.Ordinal))
