@@ -26,6 +26,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     private readonly PreparedSmallAsciiLiteralFamilySearch? _smallAsciiLiteralFamilyPrimitive;
     private readonly PreparedShortAsciiLiteralFamilyCounter _shortAsciiLiteralFamilyCounter;
     private readonly PreparedBmpThreeByteLiteralFamilySearch _bmpThreeByteLiteralFamilySearch;
+    private readonly CompositeTrailingLiteralSearch? _compositeTrailingLiteralSearch;
 
     private const int SmallAsciiLiteralFamilyPrimitiveProbeBytes = 16 * 1024;
 
@@ -66,6 +67,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         {
             _shortAsciiLiteralFamilyCounter = shortAsciiLiteralFamilyCounter;
         }
+
+        _compositeTrailingLiteralSearch = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -98,6 +101,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!_usesRightToLeft)
         {
+            if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
+            {
+                return compositeSearch.FindFirst(input) >= 0;
+            }
+
             if (CanUseDirectExactSingleScalar(budget))
             {
                 return FindFirstLiteralViaSearch(input, budget) >= 0;
@@ -153,10 +161,15 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!_usesRightToLeft)
         {
+            if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
+            {
+                return MatchCompositeTrailingLiteral(input, compositeSearch, validation.IsAscii);
+            }
+
             if (CanUseDirectExactSingleScalar(budget))
             {
                 return _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral
-                    ? MatchExactAsciiLiteral(input, budget, rightToLeft: false)
+                    ? MatchExactAsciiLiteral(input, budget, rightToLeft: false, validation.IsAscii)
                     : MatchExactUtf8Literal(input, budget, rightToLeft: false);
             }
 
@@ -174,7 +187,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral
-                => MatchExactAsciiLiteral(input, budget, rightToLeft: true),
+                => MatchExactAsciiLiteral(input, budget, rightToLeft: true, validation.IsAscii),
             NativeExecutionKind.ExactUtf8Literal
                 => MatchExactUtf8Literal(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCase
@@ -194,6 +207,47 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             !_regexPlan.SearchPlan.HasBoundaryRequirements &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
             _regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+    }
+
+    private static CompositeTrailingLiteralSearch? CreateCompositeTrailingLiteralSearch(
+        Utf8PreparedRegex regexPlan,
+        bool usesRightToLeft)
+    {
+        if (usesRightToLeft ||
+            regexPlan.SearchPlan.HasBoundaryRequirements ||
+            regexPlan.ExecutionKind is not
+                (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
+            regexPlan.LiteralUtf8 is not { Length: > 0 } leadingLiteral ||
+            regexPlan.SearchPlan.TrailingLiteralUtf8 is not { Length: > 0 } trailingLiteral)
+        {
+            return null;
+        }
+
+        byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
+        return new CompositeTrailingLiteralSearch(
+            new PreparedSubstringSearch(compositeLiteral, ignoreCase: false),
+            leadingLiteral.Length,
+            GetLiteralUtf16Length(leadingLiteral));
+    }
+
+    private static Utf8ValueMatch MatchCompositeTrailingLiteral(
+        ReadOnlySpan<byte> input,
+        CompositeTrailingLiteralSearch search,
+        bool inputIsAscii)
+    {
+        var indexInBytes = search.FindFirst(input);
+        if (indexInBytes < 0)
+        {
+            return Utf8ValueMatch.NoMatch;
+        }
+
+        return new Utf8ValueMatch(
+            true,
+            true,
+            inputIsAscii ? indexInBytes : GetUtf16LengthOfPrefix(input, indexInBytes),
+            search.MatchLengthInUtf16,
+            indexInBytes,
+            search.MatchLengthInBytes);
     }
 
     public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
@@ -325,7 +379,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         match = _regexPlan.ExecutionKind switch
         {
-            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
+                input,
+                Utf8ExecutionDeadline.Infinite,
+                rightToLeft: false,
+                inputIsAscii: false),
             NativeExecutionKind.ExactUtf8Literal => MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             _ => Utf8ValueMatch.NoMatch,
         };
@@ -350,9 +408,19 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private bool TryMatchAsciiDirect(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
+        if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
+        {
+            match = MatchCompositeTrailingLiteral(input, compositeSearch, inputIsAscii: true);
+            return true;
+        }
+
         match = _regexPlan.ExecutionKind switch
         {
-            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(input, budget, _usesRightToLeft),
+            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
+                input,
+                budget,
+                _usesRightToLeft,
+                inputIsAscii: true),
             NativeExecutionKind.ExactUtf8Literal when IsAllAscii(_regexPlan.LiteralUtf8)
                 => MatchAsciiAlignedExactUtf8Literal(input, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCase => MatchAsciiLiteralIgnoreCase(input, budget, _usesRightToLeft),
@@ -1238,7 +1306,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
 
-    private Utf8ValueMatch MatchExactAsciiLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
+    private Utf8ValueMatch MatchExactAsciiLiteral(
+        ReadOnlySpan<byte> input,
+        Utf8ExecutionDeadline budget,
+        bool rightToLeft,
+        bool inputIsAscii)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
@@ -1249,7 +1321,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return Utf8ValueMatch.NoMatch;
         }
 
-        return new Utf8ValueMatch(true, true, index, literal.Length, index, literal.Length);
+        var indexInUtf16 = inputIsAscii ? index : GetUtf16LengthOfPrefix(input, index);
+        return new Utf8ValueMatch(true, true, indexInUtf16, literal.Length, index, literal.Length);
     }
 
     private Utf8ValueMatch MatchExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
@@ -1593,6 +1666,18 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         index = -1;
         matchedLength = 0;
         return false;
+    }
+
+    private sealed class CompositeTrailingLiteralSearch(
+        PreparedSubstringSearch search,
+        int matchLengthInBytes,
+        int matchLengthInUtf16)
+    {
+        public int MatchLengthInBytes { get; } = matchLengthInBytes;
+
+        public int MatchLengthInUtf16 { get; } = matchLengthInUtf16;
+
+        public int FindFirst(ReadOnlySpan<byte> input) => search.IndexOf(input);
     }
 
     private static bool IsAscii(ReadOnlySpan<byte> value)

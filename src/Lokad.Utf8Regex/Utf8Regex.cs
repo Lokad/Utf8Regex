@@ -362,6 +362,12 @@ public sealed class Utf8Regex
             return true;
         }
 
+        if (MatchTimeout != Regex.InfiniteMatchTimeout)
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+
         return _compiledEngineRuntime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
     }
 

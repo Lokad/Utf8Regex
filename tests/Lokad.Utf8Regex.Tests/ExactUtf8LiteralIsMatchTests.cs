@@ -17,6 +17,7 @@ public sealed class ExactUtf8LiteralIsMatchTests
         AssertParity("café", "prefix without the literal", options);
         AssertParity("😀", "prefix 😀 suffix", options);
         AssertParity("😀", "prefix without the scalar", options);
+        AssertParity("foo", "😀foo", options);
     }
 
     [Theory]
@@ -52,6 +53,7 @@ public sealed class ExactUtf8LiteralIsMatchTests
         AssertParity("foo(?=bar)", "fooqux", options);
         AssertParity("aba(?=ba)", "ababa", options);
         AssertParity(@"\bfoo(?=bar)", "xfoobar foobar", options);
+        AssertParity("foo(?=bar)", "😀foobar", options);
         AssertParity("😀(?=🚀)", "x😀x 😀🚀", options);
         AssertParity("😀(?=🚀)", "x😀x", options);
     }
@@ -87,6 +89,8 @@ public sealed class ExactUtf8LiteralIsMatchTests
         var finiteOracle = new Regex("café", RegexOptions.CultureInvariant, timeout);
         var rightToLeftOracle = new Regex("café", rightToLeftOptions);
 
+        Assert.False(finite.Inspection.DebugTryMatchWithoutValidation(inputBytes, out _));
+        Assert.False(finiteLookahead.Inspection.DebugTryMatchWithoutValidation("fooqux foobar"u8, out _));
         Assert.Equal(finiteOracle.IsMatch(input), finite.IsMatch(inputBytes));
         AssertMatchParity(finiteOracle, finite, input, inputBytes);
         AssertParity(
