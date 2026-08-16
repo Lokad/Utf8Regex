@@ -56,4 +56,45 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         Assert.Equal(0, failures);
     }
+
+    [Fact]
+    public void ExecutionDiagnosticsPartitionVmAndWorkspaceTraffic()
+    {
+        var regex = new Utf8Pcre2Regex("(?:(?:ab|a)+c|d{2,3}e)");
+        var input = "ababc ddde nope abac"u8;
+
+        var result = regex.DebugCountWithDiagnostics(input, 0);
+        var diagnostics = result.Execution;
+
+        Assert.Equal(3, result.Count);
+        Assert.True(diagnostics.CandidateAttempts > 0);
+        Assert.True(diagnostics.BacktrackingSteps > 0);
+        Assert.Equal(
+            diagnostics.BacktrackingSteps,
+            diagnostics.VmTokenSteps +
+            diagnostics.VmBranchSteps +
+            diagnostics.VmRepeatSteps +
+            diagnostics.VmCaptureSteps +
+            diagnostics.VmAssertionSubroutineSteps +
+            diagnostics.VmControlSteps +
+            diagnostics.VmAcceptSteps);
+        Assert.Equal(
+            diagnostics.VmTokenSteps,
+            diagnostics.VmLiteralTokenSteps +
+            diagnostics.VmClassTokenSteps +
+            diagnostics.VmBoundaryAnchorTokenSteps +
+            diagnostics.VmOtherTokenSteps);
+        Assert.Equal(
+            diagnostics.VmRepeatSteps,
+            diagnostics.VmRepeatEnterSteps +
+            diagnostics.VmRepeatEndSteps +
+            diagnostics.VmRepeatExitSteps);
+        Assert.Equal(
+            diagnostics.WorkspacePoolRents,
+            diagnostics.WorkspaceFixedRents +
+            diagnostics.WorkspaceFrameRents +
+            diagnostics.WorkspaceRepeatMutationRents +
+            diagnostics.WorkspaceCaptureMutationRents +
+            diagnostics.WorkspaceControlRents);
+    }
 }
