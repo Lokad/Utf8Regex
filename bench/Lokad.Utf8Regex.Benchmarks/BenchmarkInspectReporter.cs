@@ -591,6 +591,13 @@ internal static partial class BenchmarkInspectReporter
             Regex.InfiniteMatchTimeout);
         var phaseFallbackRegex = phaseOrdinaryVerifier.FallbackCandidateVerifier.FallbackRegex;
 
+        if (phasePreparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } exactLiterals &&
+            phasePreparedRegex.SearchPlan.Kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals)
+        {
+            MeasureFixedConstruction("ExactLiteralSearchData", samples, instanceCount,
+                () => AsciiSearch.CreateExactLiteralSearchData(exactLiterals).Buckets);
+        }
+
         MeasureFixedConstruction("Utf8FrontEndCompile", samples, instanceCount,
             () => Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions));
         MeasureFixedConstruction("Utf8OrdinaryVerifier", samples, instanceCount,
