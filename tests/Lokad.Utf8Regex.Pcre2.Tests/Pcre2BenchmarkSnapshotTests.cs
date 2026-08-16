@@ -14,6 +14,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         "dense-non-ascii-coordinates",
         "dense-plus-sparse-candidate-portfolios",
         "excluded-ascii-repeat-count",
+        "literal-family-global-cursor",
         "long-flat-patterns",
         "replacement-growth",
         "required-literal-all-a-miss",

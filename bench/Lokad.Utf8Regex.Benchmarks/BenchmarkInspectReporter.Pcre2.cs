@@ -752,6 +752,13 @@ internal static partial class BenchmarkInspectReporter
                 static _ => "(a)",
                 static size => new string('a', size),
                 "$1$1"),
+            CreatePcre2ScalingFamily(
+                "literal-family-global-cursor",
+                Utf8Pcre2BenchmarkOperation.Replace,
+                [1, 2, 4, 8],
+                static _ => "tempus|magna|semper",
+                static scale => string.Concat(Enumerable.Repeat("tempus magna semper ", scale * 128)),
+                "x"),
         ];
 
     private static Pcre2ScalingFamily CreatePcre2ScalingFamily(
