@@ -59,6 +59,21 @@ internal static class Utf8CompiledRuntimeInspection
         return false;
     }
 
+    public static bool TryIsMatchLiteralFamily(
+        Utf8CompiledEngineRuntime runtime,
+        ReadOnlySpan<byte> input,
+        out bool isMatch)
+    {
+        var literal = GetLiteralRuntime(runtime);
+        if (literal is not null)
+        {
+            return literal.TryInspectIsMatchLiteralFamily(input, out isMatch);
+        }
+
+        isMatch = false;
+        return false;
+    }
+
     private static Utf8LiteralCompiledEngineRuntime? GetLiteralRuntime(Utf8CompiledEngineRuntime runtime)
     {
         return runtime switch

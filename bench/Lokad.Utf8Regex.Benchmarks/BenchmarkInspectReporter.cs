@@ -2677,6 +2677,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var regex = benchmarkCase.Utf8Regex;
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
         var iterations = ParseIterations(iterationsText);
 
         WriteReplicaCaseHeader(benchmarkCase, iterations);
@@ -2758,6 +2759,59 @@ internal static partial class BenchmarkInspectReporter
 
             return match.Success ? 1 : 0;
         });
+        Measure("CompiledUnvalidatedMatchProbe", iterations, () =>
+        {
+            var handled = compiledUtf8Regex.Inspection.DebugTryMatchWithoutValidation(benchmarkCase.InputBytes, out var match);
+            if (!handled)
+            {
+                return -1;
+            }
+
+            return match.Success ? 1 : 0;
+        });
+
+        var validation = Utf8Validation.Validate(benchmarkCase.InputBytes);
+        Measure("MatchAfterValidation", iterations, () =>
+            regex.Inspection.DebugIsMatchViaCompiledEngine(benchmarkCase.InputBytes, validation) ? 1 : 0);
+        Measure("CompiledMatchAfterValidation", iterations, () =>
+            compiledUtf8Regex.Inspection.DebugIsMatchViaCompiledEngine(benchmarkCase.InputBytes, validation) ? 1 : 0);
+        Measure("RuntimeFamilyIsMatch", iterations, () =>
+        {
+            var handled = regex.Inspection.DebugTryIsMatchLiteralFamily(benchmarkCase.InputBytes, out var isMatch);
+            if (!handled)
+            {
+                return -1;
+            }
+
+            return isMatch ? 1 : 0;
+        });
+        Measure("CompiledRuntimeFamilyIsMatch", iterations, () =>
+        {
+            var handled = compiledUtf8Regex.Inspection.DebugTryIsMatchLiteralFamily(benchmarkCase.InputBytes, out var isMatch);
+            if (!handled)
+            {
+                return -1;
+            }
+
+            return isMatch ? 1 : 0;
+        });
+        if (regex.Inspection.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+        {
+            var rightToLeft = (benchmarkCase.Options & RegexOptions.RightToLeft) != 0;
+            Measure("PreparedFamilyIsMatch", iterations, () =>
+                Utf8SearchStrategyExecutor.IsMatchLiteralFamily(
+                    regex.Inspection.SearchPlan,
+                    benchmarkCase.InputBytes,
+                    Utf8ExecutionDeadline.Infinite,
+                    rightToLeft) ? 1 : 0);
+            Measure("CompiledPreparedFamilyIsMatch", iterations, () =>
+                Utf8SearchStrategyExecutor.IsMatchLiteralFamily(
+                    compiledUtf8Regex.Inspection.SearchPlan,
+                    benchmarkCase.InputBytes,
+                    Utf8ExecutionDeadline.Infinite,
+                    rightToLeft) ? 1 : 0);
+        }
+
         Measure("CompiledDirect", iterations, () => regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
         Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
@@ -2765,8 +2819,11 @@ internal static partial class BenchmarkInspectReporter
 
         var decoded = Encoding.UTF8.GetString(benchmarkCase.InputBytes);
         Measure("Utf8IsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(benchmarkCase.InputBytes) ? 1 : 0);
+        Measure("Utf8CompiledIsMatch", iterations, () => compiledUtf8Regex.IsMatch(benchmarkCase.InputBytes) ? 1 : 0);
         Measure("DecodeIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(Encoding.UTF8.GetString(benchmarkCase.InputBytes)) ? 1 : 0);
+        Measure("DecodeCompiledIsMatch", iterations, () => benchmarkCase.CompiledRegex.IsMatch(Encoding.UTF8.GetString(benchmarkCase.InputBytes)) ? 1 : 0);
         Measure("PredecodedIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(decoded) ? 1 : 0);
+        Measure("PredecodedCompiledIsMatch", iterations, () => benchmarkCase.CompiledRegex.IsMatch(decoded) ? 1 : 0);
 
         if (benchmarkCase.Pattern.AsSpan().IndexOfAnyInRange('\u0080', char.MaxValue) < 0)
         {
