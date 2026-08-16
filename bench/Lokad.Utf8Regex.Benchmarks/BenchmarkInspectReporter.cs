@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -173,6 +174,13 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Options           : {benchmarkCase.Options}");
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
+
+        MeasureUtf8CaseLane("Utf8RegexConstruct", samples, iterations, () =>
+            RuntimeHelpers.GetHashCode(new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options)));
+        MeasureUtf8CaseLane("Utf8CompiledConstruct", samples, iterations, () =>
+            RuntimeHelpers.GetHashCode(new Utf8Regex(
+                benchmarkCase.Pattern,
+                benchmarkCase.Options | RegexOptions.Compiled)));
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.IsMatch &&
             context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out _))
