@@ -736,6 +736,19 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return primitiveCount;
         }
 
+        if (budget.IsInfinite &&
+            input.Length >= PreparedSearcherLiteralFamilyCountThresholdBytes &&
+            _smallAsciiLiteralFamily is { Length: 2 } singleByteLiteralPair &&
+            _smallAsciiLiteralFamilyFirstBytes is not null &&
+            (singleByteLiteralPair[0].Length == 1 || singleByteLiteralPair[1].Length == 1))
+        {
+            return CountSmallAsciiLiteralFamily(
+                input,
+                singleByteLiteralPair,
+                _smallAsciiLiteralFamilyFirstBytes,
+                budget);
+        }
+
         if (input.Length >= PreparedSearcherLiteralFamilyCountThresholdBytes &&
             _regexPlan.SearchPlan.PreparedSearcher.HasValue &&
             !_regexPlan.SearchPlan.HasBoundaryRequirements &&

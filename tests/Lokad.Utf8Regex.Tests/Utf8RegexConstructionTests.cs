@@ -1848,6 +1848,51 @@ public sealed class Utf8RegexConstructionTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OneByteLiteralPairCountSelectorLeavesExcludedFamiliesOnDotNetSemantics(bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        const string inputPrefix = "é ";
+        var input = inputPrefix + new string('a', 4096) +
+            " needle token alpha bravo able ax " + new string('n', 4096) + " 夏";
+        string[] patterns =
+        [
+            "alpha|needle",
+            "a|needle|token",
+            "a|able",
+            "alpha|bravo",
+            "alpha|able",
+            @"\b(?:a|needle)\b",
+            "(?:a|needle)x",
+        ];
+
+        var bytes = Encoding.UTF8.GetBytes(input);
+        foreach (var pattern in patterns)
+        {
+            var regex = new Utf8Regex(pattern, options);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            Assert.Equal(oracle.Count(input), regex.Count(bytes));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OneByteLiteralPairCountSelectorStillValidatesLargeMalformedUtf8(bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("a|needle", options);
+        var input = new byte[8192];
+        input.AsSpan().Fill((byte)'a');
+        input[^1] = 0xFF;
+
+        Assert.Throws<ArgumentException>(() => regex.Count(input));
+    }
+
     [Fact]
     public void CompiledExactAsciiLiteralFamilyMatchMatchesDotNet()
     {
