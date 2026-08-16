@@ -24,6 +24,15 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-shaping-case", StringComparison.Ordinal))
+        {
+            exitCode = MeasureShapingCase(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 7));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -136,6 +145,47 @@ internal static class PythonReBenchmarkReporter
 
         var measurement = Measure(benchmarkCase, iterations, samples);
         Print(benchmarkCase, measurement);
+        return 0;
+    }
+
+    private static int MeasureShapingCase(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.SearchDetailed and
+            not PythonReBenchmarkOperation.FindIterDetailed)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe shaping diagnostics require SearchDetailed or FindIterDetailed; '{id}' uses {benchmarkCase.Operation}.");
+            return 1;
+        }
+
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        var direct = context.ExecutePredecodedRegex();
+        var staged = context.ExecutePredecodedStagedDetailedProjection();
+        if (direct != staged)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe shaping diagnostic '{id}' produced incomparable direct/staged sinks: {direct} versus {staged}.");
+        }
+
+        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
+        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
+        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
+        Console.WriteLine($"Iterations         : {effectiveIterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        PrintOperation("PythonRePublic", MeasureOperation(context.ExecutePythonRe, effectiveIterations, samples));
+        PrintOperation("DecodeDirect", MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
+        PrintOperation("PredecodedDirect", MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples));
+        PrintOperation("DiscoveryOnly", MeasureOperation(context.ExecutePredecodedDetailedDiscovery, effectiveIterations, samples));
+        PrintOperation("PredecodedStaged", MeasureOperation(context.ExecutePredecodedStagedDetailedProjection, effectiveIterations, samples));
         return 0;
     }
 
@@ -524,6 +574,52 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecutePredecodedRegex() => ExecuteRegex(_decoded);
 
+    internal int ExecutePredecodedDetailedDiscovery()
+    {
+        if (_case.Operation == PythonReBenchmarkOperation.SearchDetailed)
+        {
+            var match = _regex.Match(_decoded);
+            return match.Success
+                ? Combine(1, match.Index, match.Length, match.Groups.Count, 0)
+                : 0;
+        }
+
+        if (_case.Operation != PythonReBenchmarkOperation.FindIterDetailed)
+        {
+            throw new InvalidOperationException($"Unsupported shaping operation {_case.Operation}.");
+        }
+
+        var checksum = 0;
+        for (var match = _regex.Match(_decoded); match.Success; match = match.NextMatch())
+        {
+            checksum = Combine(checksum, match.Index, match.Length, match.Groups.Count, 0);
+        }
+
+        return checksum;
+    }
+
+    internal int ExecutePredecodedStagedDetailedProjection()
+    {
+        var utf8Offsets = GetUtf8Offsets(_decoded);
+        if (_case.Operation == PythonReBenchmarkOperation.SearchDetailed)
+        {
+            return Checksum(MaterializeDetailedStaged(_regex.Match(_decoded), _decoded, utf8Offsets));
+        }
+
+        if (_case.Operation != PythonReBenchmarkOperation.FindIterDetailed)
+        {
+            throw new InvalidOperationException($"Unsupported shaping operation {_case.Operation}.");
+        }
+
+        var matches = new List<BclDetailedMatch>();
+        for (var match = _regex.Match(_decoded); match.Success; match = match.NextMatch())
+        {
+            matches.Add(MaterializeDetailedStaged(match, _decoded, utf8Offsets));
+        }
+
+        return Checksum(matches.ToArray());
+    }
+
     private int ExecutePythonReEvaluatorString()
     {
         _callbackChecksum = 0;
@@ -681,6 +777,45 @@ internal sealed class PythonReBenchmarkContext
                     group.Index,
                     group.Index + group.Length,
                     group.Value)
+                : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
+        }
+
+        return new BclDetailedMatch(groups);
+    }
+
+    private static BclDetailedMatch MaterializeDetailedStaged(Match match, string input, int[]? utf8Offsets)
+    {
+        if (!match.Success)
+        {
+            return new BclDetailedMatch([]);
+        }
+
+        var staged = new BclStagedDetailedGroup[match.Groups.Count];
+        for (var index = 0; index < staged.Length; index++)
+        {
+            var group = match.Groups[index];
+            staged[index] = group.Success
+                ? new BclStagedDetailedGroup(
+                    true,
+                    utf8Offsets is null ? group.Index : utf8Offsets[group.Index],
+                    utf8Offsets is null ? group.Index + group.Length : utf8Offsets[group.Index + group.Length],
+                    group.Index,
+                    group.Index + group.Length)
+                : default;
+        }
+
+        var groups = new BclDetailedGroup[staged.Length];
+        for (var index = 0; index < groups.Length; index++)
+        {
+            var group = staged[index];
+            groups[index] = group.Success
+                ? new BclDetailedGroup(
+                    true,
+                    group.StartOffsetInBytes,
+                    group.EndOffsetInBytes,
+                    group.StartOffsetInUtf16,
+                    group.EndOffsetInUtf16,
+                    input[group.StartOffsetInUtf16..group.EndOffsetInUtf16])
                 : new BclDetailedGroup(false, 0, 0, 0, 0, string.Empty);
         }
 
@@ -915,6 +1050,13 @@ internal sealed record BclFindAllResult(Utf8PythonFindAllShape Shape, string[] S
 internal sealed record BclFindAllUtf8Result(Utf8PythonFindAllShape Shape, byte[][] ScalarValues, byte[][][] TupleValues);
 
 internal sealed record BclDetailedMatch(BclDetailedGroup[] Groups);
+
+internal readonly record struct BclStagedDetailedGroup(
+    bool Success,
+    int StartOffsetInBytes,
+    int EndOffsetInBytes,
+    int StartOffsetInUtf16,
+    int EndOffsetInUtf16);
 
 internal readonly record struct BclDetailedGroup(
     bool Success,
