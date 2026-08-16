@@ -4119,6 +4119,95 @@
           "WarmAllocatedBytes": 0
         }
       ]
+    },
+    "branch-reset-coordinate-projection": {
+      "Operation": "EnumerateMatches",
+      "Points": [
+        {
+          "MeasuredAtUtc": "2026-08-16T12:18:26.3940554+00:00",
+          "Environment": {
+            "SourceCommit": "8405a2ab1137",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Scale": "64",
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 512,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 36.575,
+          "WarmMicroseconds": 23.9604,
+          "ConstructionAllocatedBytes": 40273,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "MeasuredAtUtc": "2026-08-16T12:18:27.1366958+00:00",
+          "Environment": {
+            "SourceCommit": "8405a2ab1137",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Scale": "128",
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 1024,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 41.6375,
+          "WarmMicroseconds": 44.379949999999994,
+          "ConstructionAllocatedBytes": 40273,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "MeasuredAtUtc": "2026-08-16T12:18:28.0714849+00:00",
+          "Environment": {
+            "SourceCommit": "8405a2ab1137",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Scale": "256",
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 2048,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 43.26875,
+          "WarmMicroseconds": 85.6037,
+          "ConstructionAllocatedBytes": 39465,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        },
+        {
+          "MeasuredAtUtc": "2026-08-16T12:18:29.8478078+00:00",
+          "Environment": {
+            "SourceCommit": "8405a2ab1137",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.8",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "Scale": "512",
+          "PatternUtf8Bytes": 15,
+          "InputUtf8Bytes": 4096,
+          "EffectiveIterations": 2000,
+          "ConstructionMicroseconds": 13.675,
+          "WarmMicroseconds": 166.94,
+          "ConstructionAllocatedBytes": 39465,
+          "FirstCallAllocatedBytes": 24,
+          "WarmAllocatedBytes": 0
+        }
+      ]
     }
   }
 }

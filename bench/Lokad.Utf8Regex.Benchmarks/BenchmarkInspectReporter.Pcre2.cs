@@ -760,6 +760,12 @@ internal static partial class BenchmarkInspectReporter
                 static scale => string.Concat(Enumerable.Repeat("tempus magna semper ", scale * 128)),
                 "x"),
             CreatePcre2ScalingFamily(
+                "branch-reset-coordinate-projection",
+                Utf8Pcre2BenchmarkOperation.EnumerateMatches,
+                [64, 128, 256, 512],
+                static _ => "(?|(abc)|(xyz))",
+                static scale => string.Concat(Enumerable.Repeat("abc xyz ", scale))),
+            CreatePcre2ScalingFamily(
                 "single-token-repeat-vm",
                 Utf8Pcre2BenchmarkOperation.IsMatch,
                 [512, 1024, 2048, 4096],

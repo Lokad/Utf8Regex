@@ -7,6 +7,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     private static readonly string[] s_scalingFamilies =
     [
         "branch-repeat-linear",
+        "branch-reset-coordinate-projection",
         "candidate-heavy-misses",
         "capture-rollback",
         "cartesian-literal-families",
