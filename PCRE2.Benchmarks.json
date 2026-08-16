@@ -1362,9 +1362,9 @@
     "pcre2-managed-compatible-replace": {
       "Cases": {
         "common/replace-words": {
-          "MeasuredAtUtc": "2026-08-15T17:07:03.928081+00:00",
+          "MeasuredAtUtc": "2026-08-16T05:30:00.5533384+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "17d61527c4e2",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1374,15 +1374,15 @@
           },
           "PatternUtf8Bytes": 19,
           "InputUtf8Bytes": 8208,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 39.22,
-          "ConstructionAllocatedBytes": 108273,
+          "EffectiveIterations": 377,
+          "ConstructionMicroseconds": 115.989453125,
+          "ConstructionAllocatedBytes": 108616,
           "FirstCallAllocatedBytes": 9888,
-          "WarmAllocatedBytes": 9577,
-          "Utf8Pcre2": 604.1899999999999,
-          "Utf8Regex": 66.215,
-          "PredecodedRegex": 62.795,
-          "DecodeThenRegex": 62.735
+          "WarmAllocatedBytes": 9576,
+          "Utf8Pcre2": 165.18488063660476,
+          "Utf8Regex": 103.03607427055702,
+          "PredecodedRegex": 84.257824933687,
+          "DecodeThenRegex": 46.86074270557029
         },
         "simple/ab-plus": {
           "MeasuredAtUtc": "2026-08-15T17:07:03.9923764+00:00",
