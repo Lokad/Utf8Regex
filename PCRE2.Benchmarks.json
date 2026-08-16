@@ -744,9 +744,9 @@
           "DecodeThenRegex": 108.45837563451776
         },
         "common/matches-boundary": {
-          "MeasuredAtUtc": "2026-08-16T05:04:29.2038433+00:00",
+          "MeasuredAtUtc": "2026-08-16T11:26:11.1512856+00:00",
           "Environment": {
-            "SourceCommit": "96d249a3aaa0",
+            "SourceCommit": "79b85f07f030",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -756,15 +756,15 @@
           },
           "PatternUtf8Bytes": 11,
           "InputUtf8Bytes": 8208,
-          "EffectiveIterations": 49,
-          "ConstructionMicroseconds": 78.21020408163265,
-          "ConstructionAllocatedBytes": 48800,
+          "EffectiveIterations": 500,
+          "ConstructionMicroseconds": 80.611328125,
+          "ConstructionAllocatedBytes": 47544,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 554.5795918367347,
-          "Utf8Regex": 10.465306122448979,
-          "PredecodedRegex": 267.2387755102041,
-          "DecodeThenRegex": 93.41428571428571
+          "Utf8Pcre2": 10.0196,
+          "Utf8Regex": 9.0332,
+          "PredecodedRegex": 92.596,
+          "DecodeThenRegex": 96.17580000000001
         },
         "common/matches-word": {
           "MeasuredAtUtc": "2026-08-15T17:30:53.8563769+00:00",
