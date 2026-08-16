@@ -98,6 +98,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!_usesRightToLeft)
         {
+            if (CanUseDirectExactSingleScalar(budget))
+            {
+                return FindFirstLiteralViaSearch(input, budget) >= 0;
+            }
+
             if (!_regexPlan.SearchPlan.HasBoundaryRequirements &&
                 !_regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
                 _regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
@@ -148,6 +153,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!_usesRightToLeft)
         {
+            if (CanUseDirectExactSingleScalar(budget))
+            {
+                return _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral
+                    ? MatchExactAsciiLiteral(input, budget, rightToLeft: false)
+                    : MatchExactUtf8Literal(input, budget, rightToLeft: false);
+            }
+
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 verifierRuntime: null,
@@ -173,6 +185,15 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 => MatchLiteralFamily(input, budget, rightToLeft: true),
             _ => throw UnexpectedExecutionKind(),
         };
+    }
+
+    private bool CanUseDirectExactSingleScalar(Utf8ExecutionDeadline budget)
+    {
+        return !_usesRightToLeft &&
+            budget.IsInfinite &&
+            !_regexPlan.SearchPlan.HasBoundaryRequirements &&
+            !_regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
+            _regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
     }
 
     public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
