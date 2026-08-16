@@ -1908,9 +1908,9 @@
           "Utf8Pcre2": 10.146
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-15T17:06:22.2376695+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:05:43.3750924+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "349de5f5ddb7",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1920,12 +1920,12 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 23.615000000000002,
-          "ConstructionAllocatedBytes": 38441,
+          "EffectiveIterations": 10474,
+          "ConstructionMicroseconds": 28.253515625,
+          "ConstructionAllocatedBytes": 38440,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 22.555
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 3.6637292342944434
         },
         "pcre2/grapheme-cluster": {
           "MeasuredAtUtc": "2026-08-15T17:06:23.0012571+00:00",
@@ -2172,9 +2172,9 @@
           "Utf8Pcre2": 13.972000000000001
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-15T17:07:20.1122572+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:05:44.9674844+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "349de5f5ddb7",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2184,12 +2184,12 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 25.945,
-          "ConstructionAllocatedBytes": 38441,
+          "EffectiveIterations": 17564,
+          "ConstructionMicroseconds": 27.9515625,
+          "ConstructionAllocatedBytes": 38440,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 36.945
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 10.152527897973126
         },
         "pcre2/grapheme-cluster": {
           "MeasuredAtUtc": "2026-08-15T17:07:20.8763771+00:00",
@@ -2436,9 +2436,9 @@
           "Utf8Pcre2": 4.447
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-15T17:07:21.5367334+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:05:45.4869986+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "349de5f5ddb7",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2448,12 +2448,12 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 25.225,
-          "ConstructionAllocatedBytes": 38441,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 11.705859375,
+          "ConstructionAllocatedBytes": 38224,
           "FirstCallAllocatedBytes": 24,
-          "WarmAllocatedBytes": 1,
-          "Utf8Pcre2": 4.325
+          "WarmAllocatedBytes": 0,
+          "Utf8Pcre2": 2.46653
         },
         "pcre2/grapheme-cluster": {
           "MeasuredAtUtc": "2026-08-15T17:07:22.1414979+00:00",
@@ -2700,9 +2700,9 @@
           "Utf8Pcre2": 4.263999999999999
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-15T17:07:22.6648049+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:05:45.8172783+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "349de5f5ddb7",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2712,12 +2712,12 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 20,
-          "ConstructionMicroseconds": 19.89,
-          "ConstructionAllocatedBytes": 38409,
+          "EffectiveIterations": 3507,
+          "ConstructionMicroseconds": 11.06171875,
+          "ConstructionAllocatedBytes": 38224,
           "FirstCallAllocatedBytes": 832,
-          "WarmAllocatedBytes": 529,
-          "Utf8Pcre2": 29.105
+          "WarmAllocatedBytes": 528,
+          "Utf8Pcre2": 11.777388080980897
         },
         "pcre2/grapheme-cluster": {
           "MeasuredAtUtc": "2026-08-15T17:07:23.1188919+00:00",
