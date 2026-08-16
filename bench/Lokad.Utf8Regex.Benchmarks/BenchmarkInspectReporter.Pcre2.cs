@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using global::Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
@@ -583,6 +584,16 @@ internal static partial class BenchmarkInspectReporter
                 () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             Console.WriteLine(
                 $"Pcre2PublicReplaceAllocated: {allocatedBytes,10:N0} B/op");
+            Measure(
+                "Pcre2EvaluatorReplace",
+                samples,
+                iterations,
+                () => ExecutePcre2EvaluatorReplace(context.Utf8Pcre2Regex, context.InputBytes));
+            var evaluatorAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                iterations,
+                () => ExecutePcre2EvaluatorReplace(context.Utf8Pcre2Regex, context.InputBytes));
+            Console.WriteLine(
+                $"Pcre2EvaluatorReplaceAllocated: {evaluatorAllocatedBytes,10:N0} B/op");
         }
 
         return 0;
@@ -593,6 +604,19 @@ internal static partial class BenchmarkInspectReporter
         var groups = new Pcre2GroupData[captureSlotCount];
         GC.KeepAlive(groups);
         return groups.Length;
+    }
+
+    private static int ExecutePcre2EvaluatorReplace(Utf8Pcre2Regex regex, byte[] input)
+    {
+        var result = regex.Replace(
+            input,
+            0,
+            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int matchCount) =>
+            {
+                writer.Append(match.Value.GetValueBytes());
+                matchCount++;
+            });
+        return result.Length;
     }
 
     public static int RunEmitPcre2BenchmarkJson()
