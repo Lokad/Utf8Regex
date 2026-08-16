@@ -95,7 +95,12 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--measure-pcre2-compatible-case`
   - `--measure-pcre2-special-case`
   - `--measure-literal-family-selector`
+  - `--measure-pcre2-workspace-pool-cost`
+  - `--measure-pcre2-vm-metering-cost`
 - PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
+- The workspace and VM-metering commands are attribution replays, not end-to-end
+  benchmarks. Use their same-trip-count controls to reject weak mechanisms; do
+  not treat their estimates as realizable top-line speedups.
 
 PythonRe benchmark snapshot and diagnostics:
 
