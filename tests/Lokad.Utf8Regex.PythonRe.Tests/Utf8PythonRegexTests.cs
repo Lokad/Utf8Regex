@@ -659,6 +659,8 @@ public sealed class Utf8PythonRegexTests
     public void ManagedGlobalMissesAfterUnicodeStartReturnEmptyShapes()
     {
         var regex = new Utf8PythonRegex("needle|needle-long");
+        var oneCapture = new Utf8PythonRegex("(needle|needle-long)");
+        var twoCaptures = new Utf8PythonRegex("(needle)|(needle-long)");
         var input = "é skip haystack"u8;
         var startOffsetInBytes = "é skip "u8.Length;
 
@@ -673,6 +675,8 @@ public sealed class Utf8PythonRegexTests
         Assert.Empty(utf8.ScalarValues);
         Assert.Empty(detailed);
         Assert.Equal(0, regex.Count(input, startOffsetInBytes));
+        Assert.Empty(oneCapture.FindAllToUtf8(input, startOffsetInBytes).ScalarValues);
+        Assert.Empty(twoCaptures.FindAllToUtf8(input, startOffsetInBytes).TupleValues);
     }
 
     [Fact]
