@@ -441,8 +441,13 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var tail = subject[startOffsetInUtf16..];
         var match = _managedFullRegex.Match(tail);
+        if (!match.Success)
+        {
+            return default;
+        }
+
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return match.Success ? CreateDetailedMatchData(input, match, indexMap, startOffsetInUtf16) : default;
+        return CreateDetailedMatchData(input, match, indexMap, startOffsetInUtf16);
     }
 
     public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)

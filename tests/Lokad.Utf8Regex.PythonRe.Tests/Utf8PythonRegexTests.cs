@@ -304,6 +304,7 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal("Шерлок ", word.Value.GetValueString());
         Assert.True(data.Success);
         Assert.Equal("Шерлок Шерлок ", data.Value.ValueText);
+        Assert.False(regex.FullMatchDetailedData("xxШерлок x"u8, startOffsetInBytes: 2).Success);
         Assert.Throws<ArgumentException>(() => regex.FullMatch(new byte[] { 0xC3, 0x28 }));
         Assert.Throws<ArgumentException>(() => regex.FullMatchDetailedData(new byte[] { 0xC3, 0x28 }));
     }
@@ -316,6 +317,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.Contains("FullMatch=ManagedRegex", regex.DebugDescribeExecutionPlan());
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailedData(input));
     }
 
     [Fact]
