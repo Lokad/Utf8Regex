@@ -1,22 +1,27 @@
 # Managed PCRE2 performance qualification
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
-2026-08-15 snapshot has SHA-256
-`C9911C8B96711E0D957459EEF08A05A2BAF0BB1F78BE4A8B1A8BD669005FC53C`.
-It contains 126 operation rows in ten top-line sections and twelve scaling
-families with four 1×/2×/4×/8× points each.
+2026-08-16 snapshot has SHA-256
+`2CBE983A03BDCC8E22F1ED3F3F9EB73D92AC942A3C123CE723DC992DAEB818BC`.
+It contains 126 operation rows in ten top-line sections and 66 points in 16
+scaling families. Every row and point was measured from source `c11ff939ceb6`
+with `TrackedDirty=false`.
 
 ## Measurement protocol
 
-- Release build and sequential commands. The original catalog used 20
-  requested iterations and three samples; the final selective qualification
-  used five samples for affected rows and scaling families.
-- Candidate-heavy scaling was rerun with 100 requested iterations and seven
-  samples after its shorter run exposed tiering noise.
+- Release build and sequential commands. Operation rows use 20,000 requested
+  iterations and seven samples; the calibrator lowers costly cases to keep one
+  timed sample near 250 ms. Scaling uses 20 requested iterations and five
+  samples with family-specific input floors.
+- A complete 20-iteration/five-sample operation pass was rejected before
+  publication because short PCRE2 VM rows had not reached a stable JIT tier.
+  For example, `common/email-miss` reported 34.656 us there, but a 9,375-call
+  selective rerun and the final catalog pass report 3.758 and 3.989 us. The
+  higher-cap rerun replaced every operation row coherently.
 - Every row records its effective iteration count.
 - PCRE2 refresh uses input/operation-specific maximums plus a warm pilot that
-  caps each timed sample at approximately 250 ms. Fast rows retain up to 1,000
-  iterations; the slowest whole-document rows use one.
+  caps each timed sample at approximately 250 ms. Fast rows retain enough
+  iterations to tier; the slowest whole-document rows still use one.
 - Untimed priming is twice the effective count, bounded to 1–256 calls. This
   replaces the generic helper's 65,536-call minimum, which multiplied
   millisecond-scale global operations into minutes of discarded work.
@@ -36,18 +41,22 @@ alternative count at each point.
 
 | Family | Scale ratios | Warm-time ratios | Warm allocation |
 |---|---:|---:|---:|
-| Long flat patterns | 2× pattern/input | 1.01×, 1.03×, 1.08× | 0 B |
-| Cartesian literal families | 2× alternatives | 1.71×, 1.82×, 2.87× | 0 B |
-| Dense+sparse candidates | 2× input | 1.96×, 1.78×, 2.23× | 0–1 B |
-| Candidate-heavy misses | 2× input | 0.47×, 1.77×, 2.03× | 0 B |
-| Branch/repeat | 2× input | 2.00×, 1.94×, 2.03× | 1 B |
-| Dense non-ASCII coordinates | 2× input | 1.99×, 1.99×, 1.97× | 0–1 B |
-| Excluded-ASCII repeat Count | 2× input | 1.98×, 2.00×, 2.05× | 0 B |
-| Dense character classes | 2× input | 1.95×, 1.99×, 1.92× | 0–1 B |
-| Zero-width iteration | 2× input | 1.99×, 1.99×, 2.09× | 0–1 B |
-| Capture rollback | approximately 2× input | 1.74×, 1.62×, 0.66× | 0 B |
-| Replacement growth | 2× input/output | 1.78×, 1.73×, 1.83× | 42,088 / 83,816 / 167,272 / 334,184 B |
-| Required-literal all-`a` miss | 2× input | 1.29×, 1.46×, 1.62× | 1 B |
+| Long flat patterns | 2× pattern/input | 1.02×, 1.01×, 1.04× | 0 B |
+| Cartesian literal families | 2× alternatives | 1.50×, 1.66×, 2.68× | 0 B |
+| Dense+sparse candidates | catalog density progression | 1.98×, 0.17×, 1.19×, 1.00×, 1.87× | 0–1 B |
+| Candidate-heavy misses | 2× input | 1.93×, 1.76×, 2.08× | 0–1 B |
+| Required-literal all-`a` miss | 2× input | 1.40×, 1.60×, 1.81× | 1 B |
+| Branch/repeat | 2× input | 1.72×, 1.80×, 0.83× | 1 B |
+| Dense non-ASCII coordinates | 2× input | 0.38×, 1.98×, 1.32× | 0–1 B |
+| Excluded-ASCII repeat Count | 2× input | 1.33×, 1.58×, 1.67× | 1 B |
+| Dense character classes | 2× input | 1.83×, 1.75×, 1.88× | 0–1 B |
+| Zero-width iteration | 2× input | 1.99×, 1.94×, 1.29× | 0–1 B |
+| Capture rollback | approximately 2× input | 1.73×, 1.86×, 1.94× | 0 B |
+| Replacement growth | 2× input/output | 1.88×, 1.94×, 1.93× | 34,408 / 68,456 / 136,552 / 272,744 B |
+| Literal-family global Replace | 2× input/output | 1.85×, 1.85×, 1.25× | 841 / 1,609 / 3,145 / 6,217 B |
+| Branch-reset coordinate projection | 2× input | 1.97×, 1.97×, 2.64× | 0–1 B |
+| Single-token-repeat VM | 2× input | 1.97×, 1.98×, 1.99× | 0–1 B |
+| Leading-boundary run candidates | 2× input | 1.43×, 1.08×, 1.21× | 0–1 B |
 
 No family has an unexplained quadratic curve. Candidate misses, branching,
 coordinate projection, character classes, zero-width progress, and capture
@@ -57,15 +66,32 @@ than size-dependent planner changes. Cartesian execution grows faster than its
 last alternative-count doubling but remains well below quadratic growth.
 Replacement allocation is the required returned byte array and scales with
 the doubled output, while non-result operations allocate zero bytes per warm
-invocation apart from measurement rounding of at most one byte. The first
-candidate-heavy point was measured before the process settled on its warmed
-tier, making the first ratio artificially sublinear; the subsequent doublings
-are 1.77× and 2.03× and show the relevant steady-state envelope.
+invocation apart from measurement rounding of at most one byte. The 2.64×
+final branch-reset point and 2.68× Cartesian point remain below the quadratic
+gate and are retained as future breadth sentinels rather than normalized away.
 
 Construction storage is bounded by pattern/program size. The long-flat
 construction time grows 1.15×, 1.27×, and 1.42× for successive 2× pattern growth;
 the other fixed-pattern families remain flat. Per-instance replacement plans
 are capped at 16 cache entries.
+
+## Current qualification summary
+
+Against decode-then-Regex where equivalent work exists, the current snapshot
+records 6 wins/20 losses for IsMatch with 18.318 us total positive excess,
+13 wins/10 losses for Count with 29.600 ms excess, 0 wins/5 losses for
+enumeration with 18.016 us excess, and 1 win/5 losses for Replace with 3.828 us
+excess. Count remains the only material aggregate lane; the other compatible
+operation excess totals 40.162 us.
+
+The largest PCRE2-specific operation is captured `\K` replacement at 8.009 us.
+E97 replaced two temporary capture endpoint arrays with one stack/pool staging
+buffer, and E98 projects top-level final capture slots before pooled VM state is
+returned. One-, two-, and four-slot detailed matches now allocate exactly the
+required public group arrays (56, 80, and 136 B). Positive assertions retain
+only the raw nested capture ranges required for merge; scalar conditional and
+recursive IsMatch paths remain zero-allocation. These changes are internal and
+do not alter the PCRE2 public API or managed package boundary.
 
 ## Qualified P0 result
 
