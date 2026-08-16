@@ -200,7 +200,10 @@ if (args.Length >= 2 && args[0].Equals("--measure-literal-search-case", StringCo
 
 if (args.Length >= 2 && args[0].Equals("--measure-compiled-literal-family-case", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureCompiledLiteralFamilyReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
+    return BenchmarkInspectReporter.RunMeasureCompiledLiteralFamilyReplicaCase(
+        args[1],
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-compiled-structural-case", StringComparison.Ordinal))

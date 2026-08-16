@@ -471,12 +471,16 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunMeasureCompiledLiteralFamilyReplicaCase(string caseId, string? iterationsText)
+    public static int RunMeasureCompiledLiteralFamilyReplicaCase(
+        string caseId,
+        string? iterationsText,
+        string? samplesText = null)
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var baselineRegex = benchmarkCase.Utf8Regex;
         var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
         var iterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
 
         if (!IsLiteralFamilyExecutionKind(baselineRegex.Inspection.ExecutionKind) ||
             !IsLiteralFamilyExecutionKind(compiledUtf8Regex.Inspection.ExecutionKind))
@@ -499,24 +503,34 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"BaselinePrepared  : {baselinePlan.PreparedSearcher.Kind}");
         Console.WriteLine($"CompiledPrepared  : {compiledPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"LiteralCount      : {baselinePlan.MultiLiteralSearch.Literals.Length}");
+        Console.WriteLine($"Samples           : {samples}");
+        if (baselinePlan.AlternateIgnoreCaseLiteralSearch is { } ignoreCaseSearch)
+        {
+            var candidates = CountIgnoreCaseLiteralFamilyCandidates(ignoreCaseSearch, benchmarkCase.InputBytes);
+            Console.WriteLine($"FirstByteCandidates: {candidates.FirstByte}");
+            Console.WriteLine($"PrefixCandidates  : {candidates.CorrelatedPrefix}");
+            Console.WriteLine($"PrefixLength      : {candidates.PrefixLength}");
+        }
+
         WriteCountDiagnostics("Baseline", baselineDiagnostics);
         WriteCountDiagnostics("Compiled", compiledDiagnostics);
 
-        Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(benchmarkCase.InputBytes));
-        Measure("WellFormedOnly", iterations, () =>
+        Measure("ValidationOnly", samples, iterations, () => ExecuteValidationOnly(benchmarkCase.InputBytes));
+        Measure("WellFormedOnly", samples, iterations, () =>
         {
             Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
             return benchmarkCase.InputBytes.Length;
         });
-        Measure("BaselinePreparedBoundaryCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(baselinePlan.PreparedSearcher, baselinePlan, benchmarkCase.InputBytes));
-        Measure("CompiledPreparedBoundaryCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(compiledPlan.PreparedSearcher, compiledPlan, benchmarkCase.InputBytes));
-        Measure("BaselineDirect", iterations, () => baselineRegex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
-        Measure("CompiledDirect", iterations, () => compiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
-        Measure("Utf8Regex", iterations, () => baselineRegex.Count(benchmarkCase.InputBytes));
-        Measure("Utf8Compiled", iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
-        Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
-        Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
-        Measure("CompiledRegex", iterations, benchmarkCase.CountPredecodedCompiledRegex);
+        Measure("BaselinePreparedBoundaryCount", samples, iterations, () => ExecutePreparedSearcherCountWithBoundaries(baselinePlan.PreparedSearcher, baselinePlan, benchmarkCase.InputBytes));
+        Measure("CompiledPreparedBoundaryCount", samples, iterations, () => ExecutePreparedSearcherCountWithBoundaries(compiledPlan.PreparedSearcher, compiledPlan, benchmarkCase.InputBytes));
+        Measure("BaselineDirect", samples, iterations, () => baselineRegex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
+        Measure("CompiledDirect", samples, iterations, () => compiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
+        Measure("Utf8Regex", samples, iterations, () => baselineRegex.Count(benchmarkCase.InputBytes));
+        Measure("Utf8Compiled", samples, iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
+        Measure("DecodeThenRegex", samples, iterations, benchmarkCase.CountDecodeThenRegex);
+        Measure("DecodeThenCompiledRegex", samples, iterations, benchmarkCase.CountDecodeThenCompiledRegex);
+        Measure("PredecodedRegex", samples, iterations, benchmarkCase.CountPredecodedRegex);
+        Measure("CompiledRegex", samples, iterations, benchmarkCase.CountPredecodedCompiledRegex);
         return 0;
     }
 
@@ -5056,6 +5070,67 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return count;
+    }
+
+    private static (int FirstByte, int CorrelatedPrefix, int PrefixLength) CountIgnoreCaseLiteralFamilyCandidates(
+        PreparedAsciiIgnoreCaseLiteralSetSearch search,
+        ReadOnlySpan<byte> input)
+    {
+        if (search.ShortestLength <= 0 ||
+            search.ShortestLength == int.MaxValue ||
+            input.Length < search.ShortestLength)
+        {
+            return (0, 0, 0);
+        }
+
+        var firstByteCandidates = 0;
+        var correlatedPrefixCandidates = 0;
+        var prefixLength = Math.Min(4, search.ShortestLength);
+        var maximumStart = input.Length - search.ShortestLength;
+        var start = 0;
+        while (start <= maximumStart)
+        {
+            var relative = input[start..].IndexOfAny(search.FirstByteSearchValues);
+            if (relative < 0)
+            {
+                break;
+            }
+
+            var candidate = start + relative;
+            if (candidate > maximumStart)
+            {
+                break;
+            }
+
+            firstByteCandidates++;
+            var prefix = input.Slice(candidate, prefixLength);
+            var matchesPrefix = false;
+            foreach (var bucket in search.Buckets)
+            {
+                foreach (var literal in bucket.Literals)
+                {
+                    if (AsciiSearch.MatchesFoldedIgnoreCase(prefix, literal.AsSpan(0, prefixLength)))
+                    {
+                        matchesPrefix = true;
+                        break;
+                    }
+                }
+
+                if (matchesPrefix)
+                {
+                    break;
+                }
+            }
+
+            if (matchesPrefix)
+            {
+                correlatedPrefixCandidates++;
+            }
+
+            start = candidate + 1;
+        }
+
+        return (firstByteCandidates, correlatedPrefixCandidates, prefixLength);
     }
 
     private static int CountRegexSplitValues(Regex regex, string input)

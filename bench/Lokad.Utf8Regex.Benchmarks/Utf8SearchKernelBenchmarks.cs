@@ -14,6 +14,8 @@ public class Utf8SearchKernelBenchmarks
 {
     private ReadOnlyMemory<byte> _literalInput;
     private ReadOnlyMemory<byte> _ignoreCaseInput;
+    private ReadOnlyMemory<byte> _ignoreCaseMissInput;
+    private ReadOnlyMemory<byte> _ignoreCaseDenseInput;
     private ReadOnlyMemory<byte> _longIgnoreCaseInput;
     private ReadOnlyMemory<byte> _alternationInput;
     private ReadOnlyMemory<byte> _sharedPrefixAlternationInput;
@@ -47,6 +49,8 @@ public class Utf8SearchKernelBenchmarks
 
         _literalInput = Encoding.UTF8.GetBytes(BuildInput("needle"));
         _ignoreCaseInput = Encoding.UTF8.GetBytes(BuildInput("nEeDlE"));
+        _ignoreCaseMissInput = Encoding.UTF8.GetBytes(BuildRepeated("aqqqq nqqqq oqqqq zqqqq ", 2048));
+        _ignoreCaseDenseInput = Encoding.UTF8.GetBytes(BuildRepeated("aLpHa nEeDlE oMeGa zEtA ", 2048));
         _longIgnoreCaseInput = Encoding.UTF8.GetBytes(BuildInput("nEeDlEaLpHaBeTaGaMmAdElTaSiGmA"));
         _alternationInput = Encoding.UTF8.GetBytes(BuildAlternationInput());
         _sharedPrefixAlternationInput = Encoding.UTF8.GetBytes(BuildSharedPrefixAlternationInput());
@@ -201,6 +205,26 @@ public class Utf8SearchKernelBenchmarks
     public int PreparedMultiLiteralIgnoreCaseAlternation()
     {
         return Utf8SearchKernel.IndexOfAnyLiteral(_ignoreCaseInput.Span, _ignoreCaseMultiLiteralSearch);
+    }
+
+    [Benchmark]
+    public int PreparedMultiLiteralIgnoreCaseAlternationMiss()
+    {
+        return Utf8SearchKernel.IndexOfAnyLiteral(_ignoreCaseMissInput.Span, _ignoreCaseMultiLiteralSearch);
+    }
+
+    [Benchmark]
+    public int PreparedMultiLiteralIgnoreCaseAlternationCountDense()
+    {
+        var input = _ignoreCaseDenseInput.Span;
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (_ignoreCaseMultiLiteralSearch.TryFindNextNonOverlappingMatch(input, ref state, out _, out _, out _))
+        {
+            count++;
+        }
+
+        return count;
     }
 
     [Benchmark]
