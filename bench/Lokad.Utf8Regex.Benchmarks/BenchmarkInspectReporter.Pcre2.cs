@@ -375,6 +375,10 @@ internal static partial class BenchmarkInspectReporter
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            var pcre2AllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                iterations,
+                () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            Console.WriteLine($"Pcre2IsMatchAllocated: {pcre2AllocatedBytes,10:N0} B/op");
             Measure("Utf8IsMatch", samples, iterations, () => context.Utf8Regex!.IsMatch(context.InputBytes) ? 1 : 0);
             Measure("DecodeIsMatch", samples, iterations, () => context.Regex!.IsMatch(Encoding.UTF8.GetString(context.InputBytes)) ? 1 : 0);
             Measure("PredecodedIsMatch", samples, iterations, () => context.Regex!.IsMatch(context.InputString) ? 1 : 0);
@@ -552,6 +556,10 @@ internal static partial class BenchmarkInspectReporter
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            var allocatedBytes = MeasureAllocatedBytesPerInvocation(
+                iterations,
+                () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            Console.WriteLine($"Pcre2IsMatchAllocated: {allocatedBytes,10:N0} B/op");
         }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
