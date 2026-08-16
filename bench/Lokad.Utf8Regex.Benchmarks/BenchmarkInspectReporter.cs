@@ -189,6 +189,24 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out var isMatch) && isMatch ? 1 : 0;
             });
+
+            var searchPlan = context.Utf8Regex.Inspection.SearchPlan;
+            if (!searchPlan.HasBoundaryRequirements &&
+                searchPlan.LiteralUtf8 is { Length: > 0 } leadingLiteral &&
+                searchPlan.TrailingLiteralUtf8 is { Length: > 0 } trailingLiteral &&
+                context.Utf8Regex.Inspection.ExecutionKind is
+                    NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal)
+            {
+                byte[] compositeLiteral = [.. leadingLiteral, .. trailingLiteral];
+                var compositeSearch = new PreparedSubstringSearch(compositeLiteral, ignoreCase: false);
+                MeasureUtf8CaseLane("CompositeTrailingSearchOnly", samples, iterations, () =>
+                    Utf8SearchKernel.IndexOfLiteral(context.InputBytes, compositeSearch));
+                MeasureUtf8CaseLane("ValidationPlusCompositeSearch", samples, iterations, () =>
+                {
+                    Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                    return Utf8SearchKernel.IndexOfLiteral(context.InputBytes, compositeSearch);
+                });
+            }
         }
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Match &&
