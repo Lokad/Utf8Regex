@@ -765,6 +765,12 @@ internal static partial class BenchmarkInspectReporter
                 [512, 1024, 2048, 4096],
                 static _ => "^a+z$",
                 static size => new string('a', size) + "z"),
+            CreatePcre2ScalingFamily(
+                "leading-word-boundary-run-candidates",
+                Utf8Pcre2BenchmarkOperation.Count,
+                [512, 1024, 2048, 4096],
+                static _ => @"\b\w{10,}\b",
+                static size => string.Concat(Enumerable.Repeat("short ", size / 6))),
         ];
 
     private static Pcre2ScalingFamily CreatePcre2ScalingFamily(
