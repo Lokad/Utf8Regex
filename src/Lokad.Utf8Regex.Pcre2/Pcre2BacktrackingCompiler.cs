@@ -3080,10 +3080,28 @@ internal readonly record struct Pcre2BacktrackingFailure(Pcre2BacktrackingFailur
 
 internal readonly record struct Pcre2CaptureByteRange(bool Success, int StartOffsetInBytes, int EndOffsetInBytes);
 
+internal readonly struct Pcre2BacktrackingCaptureResult
+{
+    private readonly object? _value;
+
+    private Pcre2BacktrackingCaptureResult(object value) => _value = value;
+
+    internal static Pcre2BacktrackingCaptureResult FromAssertionRanges(Pcre2CaptureByteRange[] captures) =>
+        new(captures);
+
+    internal static Pcre2BacktrackingCaptureResult FromProjectedGroups(Pcre2GroupData[] groups) =>
+        new(groups);
+
+    internal Pcre2CaptureByteRange[] AssertionRanges => _value as Pcre2CaptureByteRange[] ?? [];
+
+    internal Pcre2GroupData[] ProjectedGroups => _value as Pcre2GroupData[] ?? [];
+}
+
 internal enum Pcre2CaptureMaterialization : byte
 {
     None = 0,
-    FinalSlots = 1,
+    AssertionRanges = 1,
+    ProjectedFinalSlots = 2,
 }
 
 internal readonly record struct Pcre2BacktrackingMatch(
@@ -3093,11 +3111,11 @@ internal readonly record struct Pcre2BacktrackingMatch(
     int ConsumedStartOffsetInBytes,
     int ConsumedEndOffsetInBytes,
     bool MatchBoundaryWasReset,
-    Pcre2CaptureByteRange[] Captures,
+    Pcre2BacktrackingCaptureResult CaptureResult,
     string? Mark)
 {
     internal static Pcre2BacktrackingMatch NoMatch =>
-        new(false, 0, 0, 0, 0, false, [], null);
+        new(false, 0, 0, 0, 0, false, default, null);
 
     internal Pcre2CharacterMatch ToCharacterMatch() => Success
         ? new Pcre2CharacterMatch(
@@ -3161,7 +3179,7 @@ internal static class Pcre2BacktrackingRunner
             start,
             start,
             matchOptions,
-            Pcre2CaptureMaterialization.FinalSlots,
+            Pcre2CaptureMaterialization.ProjectedFinalSlots,
             ref budget);
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
@@ -3179,7 +3197,7 @@ internal static class Pcre2BacktrackingRunner
             searchStart,
             firstMatchingPosition,
             matchOptions,
-            Pcre2CaptureMaterialization.FinalSlots,
+            Pcre2CaptureMaterialization.ProjectedFinalSlots,
             ref budget);
 
     private static Pcre2BacktrackingMatch MatchCore(
@@ -3233,6 +3251,7 @@ internal static class Pcre2BacktrackingRunner
             if (TryMatchAt(
                     program,
                     bytes,
+                    ref input,
                     candidate,
                     firstMatchingPosition.Value,
                     matchOptions,
@@ -3289,7 +3308,7 @@ internal static class Pcre2BacktrackingRunner
             }
         }
 
-        return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, [], lastMark);
+        return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, default, lastMark);
     }
 
     private static bool TryFindNextCandidate(
@@ -3506,6 +3525,7 @@ internal static class Pcre2BacktrackingRunner
     private static bool TryMatchAt(
         Pcre2BacktrackingProgram program,
         ReadOnlySpan<byte> input,
+        ref Utf8ValidatedInput projectionInput,
         int candidate,
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
@@ -3536,7 +3556,7 @@ internal static class Pcre2BacktrackingRunner
             ? null
             : ArrayPool<int>.Shared.Rent(checked(program.RepeatCount * 2));
         var needsCaptureState = program.RequiresCaptureState ||
-            captureMaterialization == Pcre2CaptureMaterialization.FinalSlots ||
+            captureMaterialization != Pcre2CaptureMaterialization.None ||
             !initialCaptureStarts.IsEmpty;
         var rentedCaptureStarts = !needsCaptureState || program.CaptureSlotCount <= 1
             ? null
@@ -3924,6 +3944,7 @@ internal static class Pcre2BacktrackingRunner
                                 program.AssertionPrograms[instruction.AssertionProgramId],
                                 instruction.AssertionKind,
                                 input,
+                                ref projectionInput,
                                 inputIndex,
                                 firstMatchingPosition,
                                 matchOptions,
@@ -4062,6 +4083,7 @@ internal static class Pcre2BacktrackingRunner
                                 program.AssertionPrograms[condition.AssertionProgramId],
                                 condition.AssertionKind,
                                 input,
+                                ref projectionInput,
                                 inputIndex,
                                 firstMatchingPosition,
                                 matchOptions,
@@ -4213,9 +4235,14 @@ internal static class Pcre2BacktrackingRunner
                                 reportedStartOffsetInBytes,
                                 candidate,
                                 inputIndex);
-                            var acceptedCaptures = captureMaterialization == Pcre2CaptureMaterialization.FinalSlots
-                                ? MaterializeCaptures(program.CaptureSlotCount, reportedStartOffsetInBytes, inputIndex, captureStarts, captureEnds)
-                                : [];
+                            var acceptedCaptures = MaterializeCaptureResult(
+                                captureMaterialization,
+                                program.CaptureSlotCount,
+                                reportedStartOffsetInBytes,
+                                inputIndex,
+                                captureStarts,
+                                captureEnds,
+                                ref projectionInput);
                             failure = default;
                             match = new Pcre2BacktrackingMatch(
                                 true,
@@ -4312,9 +4339,14 @@ internal static class Pcre2BacktrackingRunner
                                 reportedStartOffsetInBytes,
                                 candidate,
                                 inputIndex);
-                            var captures = captureMaterialization == Pcre2CaptureMaterialization.FinalSlots
-                                ? MaterializeCaptures(program.CaptureSlotCount, reportedStartOffsetInBytes, inputIndex, captureStarts, captureEnds)
-                                : [];
+                            var captures = MaterializeCaptureResult(
+                                captureMaterialization,
+                                program.CaptureSlotCount,
+                                reportedStartOffsetInBytes,
+                                inputIndex,
+                                captureStarts,
+                                captureEnds,
+                                ref projectionInput);
                             match = new Pcre2BacktrackingMatch(
                                 true,
                                 reportedStartOffsetInBytes,
@@ -4365,7 +4397,7 @@ internal static class Pcre2BacktrackingRunner
                         0,
                         0,
                         false,
-                        [],
+                        default,
                         GetMark(program, lastEncounteredMarkId));
                     return false;
                 }
@@ -4471,6 +4503,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2BacktrackingProgram assertionProgram,
         Pcre2AssertionKind assertionKind,
         ReadOnlySpan<byte> input,
+        ref Utf8ValidatedInput projectionInput,
         int inputIndex,
         int outerFirstMatchingPosition,
         Pcre2MatchOptions outerMatchOptions,
@@ -4488,7 +4521,7 @@ internal static class Pcre2BacktrackingRunner
         var nestedOptions = outerMatchOptions & (Pcre2MatchOptions.NotBol | Pcre2MatchOptions.NotEol);
         nestedOptions |= Pcre2MatchOptions.Anchored;
         var captureMaterialization = !captureStarts.IsEmpty && assertionProgram.HasCaptureWrites
-            ? Pcre2CaptureMaterialization.FinalSlots
+            ? Pcre2CaptureMaterialization.AssertionRanges
             : Pcre2CaptureMaterialization.None;
 
         if (!isLookbehind)
@@ -4497,6 +4530,7 @@ internal static class Pcre2BacktrackingRunner
             var matched = TryMatchAt(
                 assertionProgram,
                 input,
+                ref projectionInput,
                 inputIndex,
                 outerFirstMatchingPosition,
                 nestedOptions,
@@ -4508,7 +4542,7 @@ internal static class Pcre2BacktrackingRunner
                 ref budget,
                 out var assertionMatch,
                 out _);
-            captures = matched ? assertionMatch.Captures : [];
+            captures = matched ? assertionMatch.CaptureResult.AssertionRanges : [];
             mark = matched ? assertionMatch.Mark : null;
             reportedStartOffsetInBytes = matched && !isNegative && assertionMatch.MatchBoundaryWasReset
                 ? assertionMatch.StartOffsetInBytes
@@ -4544,6 +4578,7 @@ internal static class Pcre2BacktrackingRunner
             if (TryMatchAt(
                     assertionProgram,
                     input[..inputIndex],
+                    ref projectionInput,
                     candidate,
                     outerFirstMatchingPosition,
                     nestedOptions,
@@ -4556,7 +4591,7 @@ internal static class Pcre2BacktrackingRunner
                     out var assertionMatch,
                     out _))
             {
-                captures = assertionMatch.Captures;
+                captures = assertionMatch.CaptureResult.AssertionRanges;
                 mark = assertionMatch.Mark;
                 reportedStartOffsetInBytes = !isNegative && assertionMatch.MatchBoundaryWasReset
                     ? assertionMatch.StartOffsetInBytes
@@ -5315,4 +5350,28 @@ internal static class Pcre2BacktrackingRunner
 
         return captures;
     }
+
+    private static Pcre2BacktrackingCaptureResult MaterializeCaptureResult(
+        Pcre2CaptureMaterialization materialization,
+        int captureSlotCount,
+        int matchStart,
+        int matchEnd,
+        ReadOnlySpan<int> captureStarts,
+        ReadOnlySpan<int> captureEnds,
+        ref Utf8ValidatedInput input) => materialization switch
+        {
+            Pcre2CaptureMaterialization.AssertionRanges =>
+                Pcre2BacktrackingCaptureResult.FromAssertionRanges(
+                    MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureStarts, captureEnds)),
+            Pcre2CaptureMaterialization.ProjectedFinalSlots =>
+                Pcre2BacktrackingCaptureResult.FromProjectedGroups(
+                    Pcre2Runner.ProjectCaptures(
+                        captureSlotCount,
+                        matchStart,
+                        matchEnd,
+                        captureStarts,
+                        captureEnds,
+                        ref input)),
+            _ => default,
+        };
 }
