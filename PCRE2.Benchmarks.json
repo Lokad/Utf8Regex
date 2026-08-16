@@ -1664,9 +1664,9 @@
           "Utf8Pcre2": 1.728
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-15T17:07:19.3516367+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:06:39.4706586+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "37c8ba407571",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1676,12 +1676,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 500,
-          "ConstructionMicroseconds": 36.487109375,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 32.8921875,
           "ConstructionAllocatedBytes": 33408,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.0462000000000002
+          "Utf8Pcre2": 1.8726099999999999
         }
       }
     },
@@ -1928,9 +1928,9 @@
           "Utf8Pcre2": 3.6637292342944434
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-15T17:06:23.0012571+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:06:40.3505014+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "37c8ba407571",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1940,12 +1940,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 100,
-          "ConstructionMicroseconds": 34.611,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 32.937109375,
           "ConstructionAllocatedBytes": 33408,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 15.948
+          "Utf8Pcre2": 3.615795
         }
       }
     },
@@ -2192,9 +2192,9 @@
           "Utf8Pcre2": 10.152527897973126
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-15T17:07:20.8763771+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:06:41.7607546+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "37c8ba407571",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2204,12 +2204,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 100,
-          "ConstructionMicroseconds": 32.748000000000005,
-          "ConstructionAllocatedBytes": 33408,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.831640625,
+          "ConstructionAllocatedBytes": 32456,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 24.237
+          "Utf8Pcre2": 8.559944999999999
         }
       }
     },
@@ -2456,9 +2456,9 @@
           "Utf8Pcre2": 2.46653
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-15T17:07:22.1414979+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:06:42.1965138+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "37c8ba407571",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2468,12 +2468,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 100,
-          "ConstructionMicroseconds": 28.426,
-          "ConstructionAllocatedBytes": 33408,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.305859375,
+          "ConstructionAllocatedBytes": 32456,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 7.791
+          "Utf8Pcre2": 2.1232450000000003
         }
       }
     },
@@ -2720,9 +2720,9 @@
           "Utf8Pcre2": 11.777388080980897
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-15T17:07:23.1188919+00:00",
+          "MeasuredAtUtc": "2026-08-16T00:06:42.4734562+00:00",
           "Environment": {
-            "SourceCommit": "06bb32638e77",
+            "SourceCommit": "37c8ba407571",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2732,12 +2732,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 100,
-          "ConstructionMicroseconds": 16.881,
-          "ConstructionAllocatedBytes": 32632,
+          "EffectiveIterations": 3947,
+          "ConstructionMicroseconds": 14.946484375,
+          "ConstructionAllocatedBytes": 32456,
           "FirstCallAllocatedBytes": 416,
           "WarmAllocatedBytes": 112,
-          "Utf8Pcre2": 27.339000000000002
+          "Utf8Pcre2": 6.360932353686343
         }
       }
     }
