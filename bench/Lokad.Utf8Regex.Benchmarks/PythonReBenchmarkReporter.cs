@@ -60,6 +60,14 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--measure-pythonre-empty-global-shapes", StringComparison.Ordinal))
+        {
+            exitCode = MeasureEmptyGlobalShapes(
+                Math.Min(ParsePositive(args, 1, 500), 2_000),
+                Math.Min(ParsePositive(args, 2, 9), 15));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -424,6 +432,68 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("PredecodedFullMiss", MeasureOperation(
             () => managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length)) ? 1 : 0,
+            iterations,
+            samples));
+        return 0;
+    }
+
+    private static int MeasureEmptyGlobalShapes(int iterations, int samples)
+    {
+        const string pattern = "needle|needle-long";
+        var prefix = new string('x', 65_536) + "é";
+        var subject = prefix + " no matching token";
+        var input = Encoding.UTF8.GetBytes(subject);
+        var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
+        var pythonRegex = new Utf8PythonRegex(pattern);
+        var managedRegex = new Regex(
+            pattern,
+            RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout);
+        var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        if (pythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
+            pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
+            pythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
+            pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
+            pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
+            managedRegex.Match(subject, prefix.Length).Success)
+        {
+            throw new InvalidOperationException("PythonRe empty global-shape diagnostic failed its parity or backend precondition.");
+        }
+
+        Console.WriteLine($"Pattern            : {pattern}");
+        Console.WriteLine($"InputBytes         : {input.Length}");
+        Console.WriteLine($"StartOffsetInBytes : {startOffsetInBytes}");
+        Console.WriteLine($"StartOffsetInUtf16 : {prefix.Length}");
+        Console.WriteLine($"FindAllBackend     : {pythonRegex.DebugFindAllBackend}");
+        Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
+        Console.WriteLine($"Samples            : {samples} (capped at 15)");
+        PrintOperation("FindAllEmpty", MeasureOperation(
+            () => pythonRegex.FindAll(input, startOffsetInBytes).Length,
+            iterations,
+            samples));
+        PrintOperation("FindAllStringsEmpty", MeasureOperation(
+            () => pythonRegex.FindAllToStrings(input, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("FindAllUtf8Empty", MeasureOperation(
+            () => pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("FindIterDetailedEmpty", MeasureOperation(
+            () => pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length,
+            iterations,
+            samples));
+        PrintOperation("DecodeSearchMiss", MeasureOperation(
+            () =>
+            {
+                var decoded = strictUtf8.GetString(input);
+                return managedRegex.Match(decoded, prefix.Length).Success ? 1 : 0;
+            },
+            iterations,
+            samples));
+        PrintOperation("PredecodedSearchMiss", MeasureOperation(
+            () => managedRegex.Match(subject, prefix.Length).Success ? 1 : 0,
             iterations,
             samples));
         return 0;
