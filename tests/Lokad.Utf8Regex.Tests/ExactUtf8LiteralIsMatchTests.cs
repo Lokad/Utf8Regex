@@ -32,6 +32,8 @@ public sealed class ExactUtf8LiteralIsMatchTests
 
         Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedPrefix));
         Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedSuffix));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformedPrefix));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformedSuffix));
     }
 
     [Theory]
@@ -57,15 +59,40 @@ public sealed class ExactUtf8LiteralIsMatchTests
         var rightToLeftOptions = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
         var rightToLeft = new Utf8Regex("café", rightToLeftOptions);
 
-        Assert.Equal(new Regex("café", RegexOptions.CultureInvariant, timeout).IsMatch(input), finite.IsMatch(inputBytes));
-        Assert.Equal(new Regex("café", rightToLeftOptions).IsMatch(input), rightToLeft.IsMatch(inputBytes));
+        var finiteOracle = new Regex("café", RegexOptions.CultureInvariant, timeout);
+        var rightToLeftOracle = new Regex("café", rightToLeftOptions);
+
+        Assert.Equal(finiteOracle.IsMatch(input), finite.IsMatch(inputBytes));
+        AssertMatchParity(finiteOracle, finite, input, inputBytes);
+        Assert.Equal(rightToLeftOracle.IsMatch(input), rightToLeft.IsMatch(inputBytes));
+        AssertMatchParity(rightToLeftOracle, rightToLeft, input, inputBytes);
     }
 
     private static void AssertParity(string pattern, string input, RegexOptions options)
     {
-        var expected = new Regex(pattern, options).IsMatch(input);
-        var actual = new Utf8Regex(pattern, options).IsMatch(Encoding.UTF8.GetBytes(input));
+        var oracle = new Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options);
+        var inputBytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(expected, actual);
+        Assert.Equal(oracle.IsMatch(input), regex.IsMatch(inputBytes));
+        AssertMatchParity(oracle, regex, input, inputBytes);
+    }
+
+    private static void AssertMatchParity(Regex oracle, Utf8Regex regex, string input, byte[] inputBytes)
+    {
+        var expected = oracle.Match(input);
+        var actual = regex.Match(inputBytes);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        if (!expected.Success)
+        {
+            return;
+        }
+
+        Assert.True(actual.IsByteAligned);
+        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.IndexInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), actual.LengthInBytes);
     }
 }
