@@ -790,12 +790,14 @@ internal readonly struct Utf8StructuralLinearProgram
 
 internal abstract class Utf8StructuralLinearRuntime
 {
+    private readonly Utf8StructuralLinearProgram _program;
+
     protected Utf8StructuralLinearRuntime(Utf8StructuralLinearProgram program)
     {
-        Program = program;
+        _program = program;
     }
 
-    protected Utf8StructuralLinearProgram Program { get; }
+    protected ref readonly Utf8StructuralLinearProgram Program => ref _program;
 
     /// <summary>
     /// Evaluates whether the validated complete subject contains a match. All
@@ -947,12 +949,12 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
 
 internal static class Utf8AsciiFixedTokenLinearExecutor
 {
-    public static bool SupportsInput(Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
+    public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
     {
         return validation.IsAscii || program.AllowsUtf8ByteSafe;
     }
 
-    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
+    public static int FindNext(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         return Utf8AsciiInstructionLinearExecutor.FindNext(program, input, startIndex, budget, out matchedLength);
     }
@@ -960,12 +962,12 @@ internal static class Utf8AsciiFixedTokenLinearExecutor
 
 internal static class Utf8AsciiInstructionLinearExecutor
 {
-    public static bool SupportsInput(Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
+    public static bool SupportsInput(in Utf8StructuralLinearProgram program, Utf8ValidationResult validation)
     {
         return validation.IsAscii || program.AllowsUtf8ByteSafe;
     }
 
-    public static int FindNext(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
+    public static int FindNext(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         var instructionProgram = program.InstructionProgram;
@@ -1201,7 +1203,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return -1;
     }
 
-    public static int FindNextDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
+    public static int FindNextDeterministic(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         if (!program.DeterministicProgram.HasValue)
@@ -1220,7 +1222,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
             : -1;
     }
 
-    public static int FindNextDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
+    public static int FindNextDeterministicFixedWidth(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, int startIndex, Utf8ExecutionDeadline budget, out int matchedLength)
     {
         matchedLength = 0;
         if (!program.DeterministicProgram.HasValue || program.DeterministicProgram.FixedWidthLength <= 0)
@@ -1239,7 +1241,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicRawMatch(
-        Utf8StructuralLinearProgram program,
+        in Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
         Utf8ExecutionDeadline budget,
@@ -1272,7 +1274,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicMatch(
-        Utf8StructuralLinearProgram program,
+        in Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
         Utf8ExecutionDeadline budget,
@@ -1402,7 +1404,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
     }
 
     public static bool TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-        Utf8StructuralLinearProgram program,
+        in Utf8StructuralLinearProgram program,
         ReadOnlySpan<byte> input,
         ref Utf8AsciiDeterministicScanState state,
         Utf8ExecutionDeadline budget,
@@ -1536,7 +1538,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return false;
     }
 
-    public static int CountDeterministic(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
+    public static int CountDeterministic(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!program.DeterministicProgram.HasValue)
         {
@@ -1563,7 +1565,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return count;
     }
 
-    public static int CountDeterministicFixedWidth(Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
+    public static int CountDeterministicFixedWidth(in Utf8StructuralLinearProgram program, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!program.DeterministicProgram.HasValue || program.DeterministicProgram.FixedWidthLength <= 0)
         {
@@ -1585,7 +1587,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
         return count;
     }
 
-    private static bool TryMatchAt(ReadOnlySpan<byte> input, Utf8StructuralLinearProgram program, int startIndex, out int matchedLength)
+    private static bool TryMatchAt(ReadOnlySpan<byte> input, in Utf8StructuralLinearProgram program, int startIndex, out int matchedLength)
     {
         if (program.DeterministicProgram.HasValue)
         {
