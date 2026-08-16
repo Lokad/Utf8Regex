@@ -456,6 +456,7 @@ internal static class PythonReBenchmarkReporter
             pythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
+            pythonRegex.Count(input, startOffsetInBytes) != 0 ||
             managedRegex.Match(subject, prefix.Length).Success)
         {
             throw new InvalidOperationException("PythonRe empty global-shape diagnostic failed its parity or backend precondition.");
@@ -484,6 +485,10 @@ internal static class PythonReBenchmarkReporter
             () => pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length,
             iterations,
             samples));
+        PrintOperation("CountEmpty", MeasureOperation(
+            () => pythonRegex.Count(input, startOffsetInBytes),
+            iterations,
+            samples));
         PrintOperation("DecodeSearchMiss", MeasureOperation(
             () =>
             {
@@ -494,6 +499,18 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("PredecodedSearchMiss", MeasureOperation(
             () => managedRegex.Match(subject, prefix.Length).Success ? 1 : 0,
+            iterations,
+            samples));
+        PrintOperation("DecodeCountEmpty", MeasureOperation(
+            () =>
+            {
+                var decoded = strictUtf8.GetString(input);
+                return managedRegex.Count(decoded, prefix.Length);
+            },
+            iterations,
+            samples));
+        PrintOperation("PredecodedCountEmpty", MeasureOperation(
+            () => managedRegex.Count(subject, prefix.Length),
             iterations,
             samples));
         return 0;
