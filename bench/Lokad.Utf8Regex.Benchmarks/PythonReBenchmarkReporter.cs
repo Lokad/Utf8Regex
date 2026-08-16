@@ -442,7 +442,9 @@ internal static class PythonReBenchmarkReporter
         const string pattern = "needle|needle-long";
         var prefix = new string('x', 65_536) + "é";
         var subject = prefix + " no matching token";
+        var hitSubject = prefix + string.Concat(Enumerable.Repeat(" needle-long", 256));
         var input = Encoding.UTF8.GetBytes(subject);
+        var hitInput = Encoding.UTF8.GetBytes(hitSubject);
         var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
         var pythonRegex = new Utf8PythonRegex(pattern);
         var capturedPythonRegex = new Utf8PythonRegex($"({pattern})");
@@ -461,7 +463,14 @@ internal static class PythonReBenchmarkReporter
             capturedPythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
             capturedPythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
             capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
-            managedRegex.Match(subject, prefix.Length).Success)
+            managedRegex.Match(subject, prefix.Length).Success ||
+            pythonRegex.FindAll(hitInput, startOffsetInBytes).Length != 256 ||
+            pythonRegex.FindAllToStrings(hitInput, startOffsetInBytes).Count != 256 ||
+            pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
+            pythonRegex.FindIterDetailed(hitInput, startOffsetInBytes).Length != 256 ||
+            pythonRegex.Count(hitInput, startOffsetInBytes) != 256 ||
+            capturedPythonRegex.FindAllToStrings(hitInput, startOffsetInBytes).Count != 256 ||
+            capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256)
         {
             throw new InvalidOperationException("PythonRe empty global-shape diagnostic failed its parity or backend precondition.");
         }
@@ -523,6 +532,34 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("PredecodedCountEmpty", MeasureOperation(
             () => managedRegex.Count(subject, prefix.Length),
+            iterations,
+            samples));
+        PrintOperation("FindAllHit", MeasureOperation(
+            () => pythonRegex.FindAll(hitInput, startOffsetInBytes).Length,
+            iterations,
+            samples));
+        PrintOperation("FindAllStringsHit", MeasureOperation(
+            () => pythonRegex.FindAllToStrings(hitInput, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("FindAllUtf8Hit", MeasureOperation(
+            () => pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("CapturedStringsHit", MeasureOperation(
+            () => capturedPythonRegex.FindAllToStrings(hitInput, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("CapturedUtf8Hit", MeasureOperation(
+            () => capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("FindIterDetailedHit", MeasureOperation(
+            () => pythonRegex.FindIterDetailed(hitInput, startOffsetInBytes).Length,
+            iterations,
+            samples));
+        PrintOperation("CountHit", MeasureOperation(
+            () => pythonRegex.Count(hitInput, startOffsetInBytes),
             iterations,
             samples));
         return 0;
