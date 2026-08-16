@@ -786,6 +786,39 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void CallableSubnWritersHandleEmptyAndGrowingMultibyteResults()
+    {
+        var regex = new Utf8PythonRegex("(a|bb|c)");
+        var input = "π a bb c"u8;
+        var startOffsetInBytes = "π "u8.Length;
+        var large = string.Concat(Enumerable.Repeat("𝒜", 32));
+
+        var text = regex.SubnToString(
+            input,
+            large,
+            static (largeValue, match) => match.Value.ValueText switch
+            {
+                "a" => string.Empty,
+                "bb" => largeValue,
+                _ => "x",
+            },
+            startOffsetInBytes: startOffsetInBytes);
+        Utf8PythonUtf8MatchEvaluator<string> evaluator = static (largeValue, match) =>
+            System.Text.Encoding.UTF8.GetBytes(match.Value.ValueText switch
+            {
+                "a" => string.Empty,
+                "bb" => largeValue,
+                _ => "x",
+            });
+        var utf8 = regex.Subn(input, large, evaluator, startOffsetInBytes: startOffsetInBytes);
+
+        Assert.Equal($"π  {large} x", text.ResultText);
+        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
+        Assert.Equal(3, text.ReplacementCount);
+        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
+    }
+
+    [Fact]
     public void ReplacementPreservesBackslashForNonLetterEscapes()
     {
         var regex = new Utf8PythonRegex("x");

@@ -963,7 +963,7 @@ public sealed class Utf8PythonRegex
         var subject = Decode(input);
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var builder = new StringBuilder();
+        var builder = new StringBuilder(subject.Length);
         builder.Append(subject.AsSpan(0, startOffsetInUtf16));
 
         var replaced = 0;
@@ -1794,8 +1794,10 @@ public sealed class Utf8PythonRegex
         var subject = Decode(input);
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        List<byte> builder = [];
-        builder.AddRange(input[..startOffsetInBytes].ToArray());
+        var builder = input.IsEmpty
+            ? new ArrayBufferWriter<byte>()
+            : new ArrayBufferWriter<byte>(input.Length);
+        AppendUtf8(builder, input[..startOffsetInBytes]);
 
         var replaced = 0;
         var lastIndexInBytes = startOffsetInBytes;
@@ -1812,8 +1814,8 @@ public sealed class Utf8PythonRegex
             var value = snapshot.Groups[0];
             if (count == 0 || replaced < count)
             {
-                builder.AddRange(input[lastIndexInBytes..value.StartOffsetInBytes].ToArray());
-                builder.AddRange(replacementFactory(input, snapshot, state));
+                AppendUtf8(builder, input[lastIndexInBytes..value.StartOffsetInBytes]);
+                AppendUtf8(builder, replacementFactory(input, snapshot, state));
                 lastIndexInBytes = value.EndOffsetInBytes;
                 replaced++;
             }
@@ -1833,8 +1835,8 @@ public sealed class Utf8PythonRegex
                 var nonEmptyValue = nonEmptySnapshot.Groups[0];
                 if (count == 0 || replaced < count)
                 {
-                    builder.AddRange(input[lastIndexInBytes..nonEmptyValue.StartOffsetInBytes].ToArray());
-                    builder.AddRange(replacementFactory(input, nonEmptySnapshot, state));
+                    AppendUtf8(builder, input[lastIndexInBytes..nonEmptyValue.StartOffsetInBytes]);
+                    AppendUtf8(builder, replacementFactory(input, nonEmptySnapshot, state));
                     lastIndexInBytes = nonEmptyValue.EndOffsetInBytes;
                     replaced++;
                 }
@@ -1851,12 +1853,23 @@ public sealed class Utf8PythonRegex
             searchIndex = match.Index + 1;
         }
 
-        builder.AddRange(input[lastIndexInBytes..].ToArray());
+        AppendUtf8(builder, input[lastIndexInBytes..]);
         return new Utf8PythonSubnUtf8Result
         {
-            ResultBytes = builder.ToArray(),
+            ResultBytes = builder.WrittenSpan.ToArray(),
             ReplacementCount = replaced,
         };
+    }
+
+    private static void AppendUtf8(ArrayBufferWriter<byte> builder, ReadOnlySpan<byte> value)
+    {
+        if (value.IsEmpty)
+        {
+            return;
+        }
+
+        value.CopyTo(builder.GetSpan(value.Length));
+        builder.Advance(value.Length);
     }
 }
 
