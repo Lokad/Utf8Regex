@@ -445,6 +445,7 @@ internal static class PythonReBenchmarkReporter
         var input = Encoding.UTF8.GetBytes(subject);
         var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
         var pythonRegex = new Utf8PythonRegex(pattern);
+        var capturedPythonRegex = new Utf8PythonRegex($"({pattern})");
         var managedRegex = new Regex(
             pattern,
             RegexOptions.CultureInvariant,
@@ -457,6 +458,9 @@ internal static class PythonReBenchmarkReporter
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             pythonRegex.FindIterDetailed(input, startOffsetInBytes).Length != 0 ||
             pythonRegex.Count(input, startOffsetInBytes) != 0 ||
+            capturedPythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
+            capturedPythonRegex.FindAllToStrings(input, startOffsetInBytes).Count != 0 ||
+            capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
             managedRegex.Match(subject, prefix.Length).Success)
         {
             throw new InvalidOperationException("PythonRe empty global-shape diagnostic failed its parity or backend precondition.");
@@ -479,6 +483,14 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("FindAllUtf8Empty", MeasureOperation(
             () => pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("CapturedStringsEmpty", MeasureOperation(
+            () => capturedPythonRegex.FindAllToStrings(input, startOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("CapturedUtf8Empty", MeasureOperation(
+            () => capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count,
             iterations,
             samples));
         PrintOperation("FindIterDetailedEmpty", MeasureOperation(
