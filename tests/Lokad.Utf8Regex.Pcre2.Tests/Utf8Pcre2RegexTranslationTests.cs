@@ -451,6 +451,54 @@ public sealed class Utf8Pcre2RegexTranslationTests
         });
     }
 
+    [Fact]
+    public void LeadingAsciiWordBoundaryRunSearchMatchesVmOnlyGeneratedCases()
+    {
+        string[] patterns =
+        [
+            @"\b\w{2,}\b",
+            @"\b\w{3,5}\b",
+            @"\b\w{4,}?\b",
+            @"\b\w{4,}+\b",
+            @"\b\w{3,}\B",
+        ];
+        string[] fragments = ["a", "Z", "0", "_", " ", "-", ".", "\n", "é", "😀"];
+        var random = new Random(0x5EED);
+        foreach (var pattern in patterns)
+        {
+            var candidate = new Utf8Pcre2Regex(pattern);
+            var vmOnly = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.NoAutoCapture);
+            Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, candidate.DebugCompiledProgram.CandidateSearch.Kind);
+            Assert.Equal(Pcre2CandidateSearchKind.None, vmOnly.DebugCompiledProgram.CandidateSearch.Kind);
+
+            for (var caseIndex = 0; caseIndex < 128; caseIndex++)
+            {
+                var builder = new StringBuilder();
+                var length = random.Next(64);
+                for (var i = 0; i < length; i++)
+                {
+                    builder.Append(fragments[random.Next(fragments.Length)]);
+                }
+
+                var input = Encoding.UTF8.GetBytes(builder.ToString());
+                Assert.Equal(GetRanges(vmOnly, input), GetRanges(candidate, input));
+                Assert.Equal(vmOnly.ReplaceToString(input, "<$0>"), candidate.ReplaceToString(input, "<$0>"));
+            }
+        }
+
+        static List<(int Start, int End)> GetRanges(Utf8Pcre2Regex regex, byte[] input)
+        {
+            var ranges = new List<(int Start, int End)>();
+            var enumerator = regex.EnumerateMatches(input);
+            while (enumerator.MoveNext())
+            {
+                ranges.Add((enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
+            }
+
+            return ranges;
+        }
+    }
+
     [Theory]
     [InlineData(@"(?<=x)foo")]
     [InlineData(@"foo\Kbar")]
