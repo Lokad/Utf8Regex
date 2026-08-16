@@ -2489,6 +2489,10 @@ internal struct Pcre2ResourceBudget
         WorkspacePoolRents = 0;
         WorkspaceFixedRents = 0;
         WorkspaceInitialStackRents = 0;
+        WorkspaceFrameRents = 0;
+        WorkspaceRepeatMutationRents = 0;
+        WorkspaceCaptureMutationRents = 0;
+        WorkspaceControlRents = 0;
         WorkspacePoolGrowths = 0;
     }
 
@@ -2512,6 +2516,14 @@ internal struct Pcre2ResourceBudget
 
     internal ulong WorkspaceInitialStackRents { get; private set; }
 
+    internal ulong WorkspaceFrameRents { get; private set; }
+
+    internal ulong WorkspaceRepeatMutationRents { get; private set; }
+
+    internal ulong WorkspaceCaptureMutationRents { get; private set; }
+
+    internal ulong WorkspaceControlRents { get; private set; }
+
     internal ulong WorkspacePoolGrowths { get; private set; }
 
     internal bool CollectsDiagnostics => _collectDiagnostics;
@@ -2523,6 +2535,10 @@ internal struct Pcre2ResourceBudget
         WorkspacePoolRents,
         WorkspaceFixedRents,
         WorkspaceInitialStackRents,
+        WorkspaceFrameRents,
+        WorkspaceRepeatMutationRents,
+        WorkspaceCaptureMutationRents,
+        WorkspaceControlRents,
         WorkspacePoolGrowths);
 
     internal bool RequiresCandidateMetering => !_deadline.IsInfinite || Limits.MatchLimit != 0;
@@ -2582,13 +2598,24 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void RecordWorkspacePoolTraffic(ulong stackRents, ulong fixedRents, ulong stackGrowths)
+    internal void RecordWorkspacePoolTraffic(
+        ulong fixedRents,
+        ulong frameRents,
+        ulong repeatMutationRents,
+        ulong captureMutationRents,
+        ulong controlRents,
+        ulong stackGrowths)
     {
         if (_collectDiagnostics)
         {
+            var stackRents = frameRents + repeatMutationRents + captureMutationRents + controlRents;
             WorkspacePoolRents += stackRents + fixedRents;
             WorkspaceFixedRents += fixedRents;
             WorkspaceInitialStackRents += stackRents - stackGrowths;
+            WorkspaceFrameRents += frameRents;
+            WorkspaceRepeatMutationRents += repeatMutationRents;
+            WorkspaceCaptureMutationRents += captureMutationRents;
+            WorkspaceControlRents += controlRents;
             WorkspacePoolGrowths += stackGrowths;
         }
     }
@@ -2605,6 +2632,10 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong WorkspacePoolRents,
     ulong WorkspaceFixedRents,
     ulong WorkspaceInitialStackRents,
+    ulong WorkspaceFrameRents,
+    ulong WorkspaceRepeatMutationRents,
+    ulong WorkspaceCaptureMutationRents,
+    ulong WorkspaceControlRents,
     ulong WorkspacePoolGrowths);
 
 internal readonly record struct Pcre2CountDiagnostics(int Count, Pcre2ExecutionDiagnostics Execution);

@@ -59,6 +59,10 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"WorkspaceRents    : {execution.WorkspacePoolRents}");
             Console.WriteLine($"WorkspaceFixed    : {execution.WorkspaceFixedRents}");
             Console.WriteLine($"WorkspaceInitial  : {execution.WorkspaceInitialStackRents}");
+            Console.WriteLine($"WorkspaceFrames   : {execution.WorkspaceFrameRents}");
+            Console.WriteLine($"WorkspaceRepeats  : {execution.WorkspaceRepeatMutationRents}");
+            Console.WriteLine($"WorkspaceCaptures : {execution.WorkspaceCaptureMutationRents}");
+            Console.WriteLine($"WorkspaceControls : {execution.WorkspaceControlRents}");
             Console.WriteLine($"WorkspaceGrowths  : {execution.WorkspacePoolGrowths}");
             Console.WriteLine($"ManagedAllocBytes : {allocatedBytes}");
             Console.WriteLine($"ThroughputBytes/s : {context.InputBytes.Length / seconds:F0}");
