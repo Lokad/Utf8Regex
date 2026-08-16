@@ -1423,7 +1423,8 @@ internal readonly record struct PreparedMultiLiteralLeadingUtf8SegmentBucket(byt
 internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 {
     private const int MaxMaskLen = 4;
-    private const int LaneCount = 16;
+    private const int SseLaneCount = 16;
+    private const int AvxLaneCount = 32;
 
     public PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals)
         : this(literals, asciiIgnoreCase: false)
@@ -1445,8 +1446,8 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         }
 
         MaskLength = Math.Min(MaxMaskLen, ShortestLength);
-        LowMaskVectors = new Vector128<byte>[MaskLength];
-        HighMaskVectors = new Vector128<byte>[MaskLength];
+        LowMaskVectors = new Vector256<byte>[MaskLength];
+        HighMaskVectors = new Vector256<byte>[MaskLength];
 
         Span<bool> firstSeen = stackalloc bool[256];
         Span<byte> firstBytes = stackalloc byte[256];
@@ -1469,16 +1470,18 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                 }
             }
 
-            LowMaskVectors[offset] = Vector128.Create(
+            var lowMask = Vector128.Create(
                 lowTable[0], lowTable[1], lowTable[2], lowTable[3],
                 lowTable[4], lowTable[5], lowTable[6], lowTable[7],
                 lowTable[8], lowTable[9], lowTable[10], lowTable[11],
                 lowTable[12], lowTable[13], lowTable[14], lowTable[15]);
-            HighMaskVectors[offset] = Vector128.Create(
+            var highMask = Vector128.Create(
                 highTable[0], highTable[1], highTable[2], highTable[3],
                 highTable[4], highTable[5], highTable[6], highTable[7],
                 highTable[8], highTable[9], highTable[10], highTable[11],
                 highTable[12], highTable[13], highTable[14], highTable[15]);
+            LowMaskVectors[offset] = Vector256.Create(lowMask, lowMask);
+            HighMaskVectors[offset] = Vector256.Create(highMask, highMask);
         }
 
         for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
@@ -1511,9 +1514,9 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
     public int MaskLength { get; }
 
-    public Vector128<byte>[] LowMaskVectors { get; }
+    public Vector256<byte>[] LowMaskVectors { get; }
 
-    public Vector128<byte>[] HighMaskVectors { get; }
+    public Vector256<byte>[] HighMaskVectors { get; }
 
     public PreparedByteSearch Search { get; }
 
@@ -1537,46 +1540,89 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         if (state.ScanIndex != 0)
         {
-            var pendingMask = state.ScanIndex;
-            var lane = BitOperations.TrailingZeroCount((uint)pendingMask);
+            var pendingMask = (uint)state.ScanIndex;
+            var lane = BitOperations.TrailingZeroCount(pendingMask);
             pendingMask &= pendingMask - 1;
             candidateIndex = state.AutomatonState + lane;
-            state = new PreparedMultiLiteralScanState(state.NextStart, pendingMask, state.AutomatonState);
+            state = new PreparedMultiLiteralScanState(state.NextStart, (int)pendingMask, state.AutomatonState);
             return true;
         }
 
         var maxStart = input.Length - ShortestLength;
-        var vectorLimit = maxStart - (LaneCount - 1);
         var baseIndex = state.NextStart;
-        var lowNibbleMask = Vector128.Create((byte)0x0F);
-        var highNibbleMask = Vector128.Create((byte)0xF0);
-        var zero = Vector128<byte>.Zero;
         ref var inputRef = ref MemoryMarshal.GetReference(input);
 
-        while (baseIndex <= vectorLimit)
+        if (Avx2.IsSupported)
+        {
+            var vectorLimit = maxStart - (AvxLaneCount - 1);
+            var lowNibbleMask = Vector256.Create((byte)0x0F);
+            var highNibbleMask = Vector256.Create((byte)0xF0);
+            var zero = Vector256<byte>.Zero;
+            while (baseIndex <= vectorLimit)
+            {
+                var candidates = Vector256.Create((byte)0xFF);
+                for (var offset = 0; offset < MaskLength; offset++)
+                {
+                    var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + offset));
+                    var low = Avx2.And(window, lowNibbleMask);
+                    var high = Avx2.And(
+                        Avx2.ShiftRightLogical(Avx2.And(window, highNibbleMask).AsUInt16(), 4).AsByte(),
+                        lowNibbleMask);
+                    var lowMask = Avx2.Shuffle(LowMaskVectors[offset], low);
+                    var highMask = Avx2.Shuffle(HighMaskVectors[offset], high);
+                    candidates = Avx2.And(candidates, Avx2.And(lowMask, highMask));
+                }
+
+                var zeroMask = Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
+                var matchMask = ~(uint)zeroMask;
+                if (matchMask != 0)
+                {
+                    var lane = BitOperations.TrailingZeroCount(matchMask);
+                    candidateIndex = baseIndex + lane;
+                    state = new PreparedMultiLiteralScanState(
+                        baseIndex + AvxLaneCount,
+                        (int)(matchMask & ~(1U << lane)),
+                        baseIndex);
+                    return true;
+                }
+
+                baseIndex += AvxLaneCount;
+            }
+        }
+
+        var sseVectorLimit = maxStart - (SseLaneCount - 1);
+        var sseLowNibbleMask = Vector128.Create((byte)0x0F);
+        var sseHighNibbleMask = Vector128.Create((byte)0xF0);
+        var sseZero = Vector128<byte>.Zero;
+        while (baseIndex <= sseVectorLimit)
         {
             var candidates = Vector128.Create((byte)0xFF);
             for (var offset = 0; offset < MaskLength; offset++)
             {
                 var window = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + offset));
-                var low = Sse2.And(window, lowNibbleMask);
-                var high = Sse2.And(Sse2.ShiftRightLogical(Sse2.And(window, highNibbleMask).AsUInt16(), 4).AsByte(), lowNibbleMask);
-                var lowMask = Ssse3.Shuffle(LowMaskVectors[offset], low);
-                var highMask = Ssse3.Shuffle(HighMaskVectors[offset], high);
+                var low = Sse2.And(window, sseLowNibbleMask);
+                var high = Sse2.And(
+                    Sse2.ShiftRightLogical(Sse2.And(window, sseHighNibbleMask).AsUInt16(), 4).AsByte(),
+                    sseLowNibbleMask);
+                var lowMask = Ssse3.Shuffle(LowMaskVectors[offset].GetLower(), low);
+                var highMask = Ssse3.Shuffle(HighMaskVectors[offset].GetLower(), high);
                 candidates = Sse2.And(candidates, Sse2.And(lowMask, highMask));
             }
 
-            var zeroMask = Sse2.MoveMask(Sse2.CompareEqual(candidates, zero));
+            var zeroMask = Sse2.MoveMask(Sse2.CompareEqual(candidates, sseZero));
             var matchMask = (~zeroMask) & 0xFFFF;
             if (matchMask != 0)
             {
                 var lane = BitOperations.TrailingZeroCount((uint)matchMask);
                 candidateIndex = baseIndex + lane;
-                state = new PreparedMultiLiteralScanState(baseIndex + LaneCount, matchMask & ~(1 << lane), baseIndex);
+                state = new PreparedMultiLiteralScanState(
+                    baseIndex + SseLaneCount,
+                    matchMask & ~(1 << lane),
+                    baseIndex);
                 return true;
             }
 
-            baseIndex += LaneCount;
+            baseIndex += SseLaneCount;
         }
 
         while (baseIndex <= maxStart)
@@ -1599,8 +1645,8 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             for (var offset = 0; offset < MaskLength; offset++)
             {
                 var value = input[start + offset];
-                var lowMask = LowMaskVectors[offset].GetElement(value & 0xF);
-                var highMask = HighMaskVectors[offset].GetElement(value >> 4);
+                var lowMask = LowMaskVectors[offset].GetLower().GetElement(value & 0xF);
+                var highMask = HighMaskVectors[offset].GetLower().GetElement(value >> 4);
                 candidates &= (ulong)(lowMask & highMask);
                 if (candidates == 0)
                 {
