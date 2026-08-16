@@ -42,11 +42,16 @@ public sealed class ExactUtf8LiteralIsMatchTests
     public void RequirementBearingExactUtf8LiteralsKeepRegexParity(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var denseFalseCandidates = string.Concat(Enumerable.Repeat("fooqux ", 512)) + "foobar";
 
         AssertParity(@"\bcafé\b", "xcafé café", options);
         AssertParity(@"\bcafé\b", "xcaféy", options);
         AssertParity("café(?= noir)", "café gris café noir", options);
         AssertParity("café(?= noir)", "café gris", options);
+        AssertParity("foo(?=bar)", denseFalseCandidates, options);
+        AssertParity("foo(?=bar)", "fooqux", options);
+        AssertParity("aba(?=ba)", "ababa", options);
+        AssertParity(@"\bfoo(?=bar)", "xfoobar foobar", options);
     }
 
     [Fact]
@@ -56,6 +61,7 @@ public sealed class ExactUtf8LiteralIsMatchTests
         var inputBytes = Encoding.UTF8.GetBytes(input);
         var timeout = TimeSpan.FromSeconds(1);
         var finite = new Utf8Regex("café", RegexOptions.CultureInvariant, timeout);
+        var finiteLookahead = new Utf8Regex("foo(?=bar)", RegexOptions.CultureInvariant, timeout);
         var rightToLeftOptions = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
         var rightToLeft = new Utf8Regex("café", rightToLeftOptions);
 
@@ -64,6 +70,10 @@ public sealed class ExactUtf8LiteralIsMatchTests
 
         Assert.Equal(finiteOracle.IsMatch(input), finite.IsMatch(inputBytes));
         AssertMatchParity(finiteOracle, finite, input, inputBytes);
+        AssertParity(
+            new Regex("foo(?=bar)", RegexOptions.CultureInvariant, timeout),
+            finiteLookahead,
+            "fooqux foobar");
         Assert.Equal(rightToLeftOracle.IsMatch(input), rightToLeft.IsMatch(inputBytes));
         AssertMatchParity(rightToLeftOracle, rightToLeft, input, inputBytes);
     }
@@ -72,6 +82,12 @@ public sealed class ExactUtf8LiteralIsMatchTests
     {
         var oracle = new Regex(pattern, options);
         var regex = new Utf8Regex(pattern, options);
+
+        AssertParity(oracle, regex, input);
+    }
+
+    private static void AssertParity(Regex oracle, Utf8Regex regex, string input)
+    {
         var inputBytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(oracle.IsMatch(input), regex.IsMatch(inputBytes));
