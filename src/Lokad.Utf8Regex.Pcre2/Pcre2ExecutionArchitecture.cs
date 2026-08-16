@@ -1648,10 +1648,21 @@ internal static class Pcre2GlobalOperationDriver
             HasUnmeteredExecution(compiledProgram.Request) &&
             characterProgram.Program.CanCountSingleCharacterClassDirectly)
         {
-            result = Pcre2CharacterRunner.CountSingleCharacterClass(
-                characterProgram.Program,
-                input.Bytes,
-                start);
+            if (characterProgram.Program.TryGetDirectCountCategory(out var category))
+            {
+                result = Utf8UnicodeCategoryExecutor.CountCategory(
+                    input.Bytes[start.Value..],
+                    input.Validation.ContainsSupplementaryScalars,
+                    category);
+            }
+            else
+            {
+                result = Pcre2CharacterRunner.CountSingleCharacterClass(
+                    characterProgram.Program,
+                    input.Bytes,
+                    start);
+            }
+
             return true;
         }
 

@@ -58,7 +58,10 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.UnicodeCategoryCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectUnicodeCategory);
-            count = Utf8UnicodeLetterBoundedRepeatExecutor.CountCategory(input, directFamily.UnicodeCategory, validation.ContainsSupplementaryScalars);
+            count = Utf8UnicodeCategoryExecutor.CountCategory(
+                input,
+                validation.ContainsSupplementaryScalars,
+                directFamily.UnicodeCategory);
             return true;
         }
 

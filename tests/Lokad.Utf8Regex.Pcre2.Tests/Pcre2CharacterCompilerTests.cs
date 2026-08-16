@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 using Lokad.Utf8Regex.Pcre2;
@@ -211,6 +212,92 @@ public sealed class Pcre2CharacterCompilerTests
         Assert.Equal(0, compileAnchored.Count(input));
         Assert.Equal(2, compileAnchored.Count(input, 1));
         Assert.Equal(2, regex.Count(input, 1, Pcre2MatchOptions.Anchored));
+    }
+
+    [Theory]
+    [InlineData(@"\p{Sm}", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{sm}", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{ s_m }", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Ucp)]
+    public void ExactMathSymbolPropertyAdmitsSharedCategoryCount(
+        string pattern,
+        Pcre2CompileOptions options)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options);
+        var direct = Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+
+        Assert.True(direct.Program.TryGetDirectCountCategory(out var category));
+        Assert.Equal(UnicodeCategory.MathSymbol, category);
+    }
+
+    [Theory]
+    [InlineData(@"\P{Sm}", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{^Sm}", Pcre2CompileOptions.None)]
+    [InlineData(@"[^\p{Sm}]", Pcre2CompileOptions.None)]
+    [InlineData(@"[\p{Sm}\p{Sc}]", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{S}", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{L}", Pcre2CompileOptions.None)]
+    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Caseless)]
+    [InlineData(@"\p{Sm}", Pcre2CompileOptions.Anchored)]
+    public void SharedCategoryCountRejectsBroaderSemanticShapes(
+        string pattern,
+        Pcre2CompileOptions options)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options);
+        var direct = Assert.IsType<Pcre2CharacterDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+
+        Assert.False(direct.Program.TryGetDirectCountCategory(out _));
+    }
+
+    [Fact]
+    public void SharedMathSymbolCountPreservesUnicodeStartAndRuntimeControls()
+    {
+        var regex = new Utf8Pcre2Regex(@"\p{Sm}");
+        var input = Encoding.UTF8.GetBytes("x+<|~¬⁄X৲𝛁=");
+        var suffixStart = Encoding.UTF8.GetByteCount("x+<");
+        var limited = new Utf8Pcre2Regex(
+            @"\p{Sm}",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+
+        Assert.Equal(8, regex.Count(input));
+        Assert.Equal(6, regex.Count(input, suffixStart));
+        Assert.Equal(0, regex.Count(input, 0, Pcre2MatchOptions.Anchored));
+        Assert.Throws<Pcre2MatchException>(() => limited.Count("x+"u8));
+    }
+
+    [Fact]
+    public void SharedMathSymbolCountIsAllocationFreeAndThreadSafeAfterWarmup()
+    {
+        var regex = new Utf8Pcre2Regex(@"\p{Sm}");
+        var input = Encoding.UTF8.GetBytes("--+¬𝛁--");
+        for (var warmup = 0; warmup < 128; warmup++)
+        {
+            _ = regex.Count(input);
+        }
+
+        var matched = true;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < 1_000; iteration++)
+        {
+            matched &= regex.Count(input) == 3;
+        }
+
+        Assert.True(matched);
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+
+        var failures = 0;
+        Parallel.For(0, 1_000, _ =>
+        {
+            if (regex.Count(input) != 3)
+            {
+                Interlocked.Increment(ref failures);
+            }
+        });
+
+        Assert.Equal(0, failures);
     }
 
     [Fact]

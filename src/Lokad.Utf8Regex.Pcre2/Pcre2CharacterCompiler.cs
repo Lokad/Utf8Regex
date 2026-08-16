@@ -50,6 +50,27 @@ internal sealed class Pcre2CharacterProgram
             (Pcre2CompileOptions.Anchored |
              Pcre2CompileOptions.EndAnchored |
              Pcre2CompileOptions.FirstLine)) == 0;
+
+    internal bool TryGetDirectCountCategory(out UnicodeCategory category)
+    {
+        category = default;
+        if (!CanCountSingleCharacterClassDirectly)
+        {
+            return false;
+        }
+
+        var token = Tokens[0];
+        if ((token.Options & Pcre2CharacterOptions.Caseless) != 0 ||
+            token.CharacterClass.Negated ||
+            token.CharacterClass.Terms is not
+                [{ Kind: Pcre2CharacterClassTermKind.Property, Name: "SM", Negated: false }])
+        {
+            return false;
+        }
+
+        category = UnicodeCategory.MathSymbol;
+        return true;
+    }
 }
 
 internal interface IPcre2CharacterCompileOutcome
