@@ -1998,6 +1998,36 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void ExactAutomatonLiteralFamilyIsMatchMatchesDotNet(
+        bool compiled,
+        bool finiteTimeout)
+    {
+        const string pattern =
+            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        var regex = new Utf8Regex(pattern, options, timeout);
+        var oracle = new Regex(pattern, options, timeout);
+        string[] inputs =
+        [
+            "noise Professor Moriarty tail",
+            "no member of the literal family appears here",
+            new string('x', 8_192),
+            "é Inspector Lestrade 夏",
+        ];
+
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void UnicodeLiteralFamilyIsMatchMatchesDotNet(bool compiled)

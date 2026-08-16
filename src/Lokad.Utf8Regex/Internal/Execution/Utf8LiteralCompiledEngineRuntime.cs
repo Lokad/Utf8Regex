@@ -1098,6 +1098,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return _emittedLiteralFamilyCounter.IsMatch(input);
         }
 
+        if (!rightToLeft && budget.IsInfinite && TryGetExactAutomatonDirectSearch(out var exactSearch))
+        {
+            return exactSearch.TryFindFirstMatchWithLength(input, out _, out _);
+        }
+
         return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
     }
 
@@ -1144,6 +1149,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 out _);
         }
 
+        if (!rightToLeft && budget.IsInfinite && TryGetExactAutomatonDirectSearch(out var exactSearch))
+        {
+            return exactSearch.TryFindFirstMatchWithLength(input, out var index, out var matchedLength)
+                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
+                : Utf8ValueMatch.NoMatch;
+        }
+
         if (CanProjectLiteralFamilyAsAscii(input))
         {
             if (TryFindLiteralFamilyMatch(input, budget, rightToLeft, out var directMatch))
@@ -1155,6 +1167,23 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, _regexPlan.SearchPlan.AlternateLiteralUtf16Lengths, budget, rightToLeft);
+    }
+
+    private bool TryGetExactAutomatonDirectSearch(out PreparedLiteralSetSearch search)
+    {
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+            _regexPlan.SearchPlan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton &&
+            _regexPlan.SearchPlan.AlternateLiteralSearch is
+            {
+                Strategy: PreparedLiteralSetStrategy.UniqueAnchorByte,
+            } exactSearch)
+        {
+            search = exactSearch;
+            return true;
+        }
+
+        search = default;
+        return false;
     }
 
 
