@@ -54,6 +54,15 @@ if (args.Length >= 2 && args[0].Equals("--measure-utf8-enumerator-case", StringC
     return BenchmarkInspectReporter.RunMeasureUtf8EnumeratorCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 2 && args[0].Equals("--measure-enumerator-transport-case", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureEnumeratorTransportCase(
+        args[1],
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null,
+        args.Length >= 5 ? args[4] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureReplicaCase(args[1], args.Length >= 3 ? args[2] : null);

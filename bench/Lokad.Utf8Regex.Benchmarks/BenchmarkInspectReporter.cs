@@ -183,6 +183,54 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMeasureEnumeratorTransportCase(
+        string caseId,
+        string? shortIterationsText,
+        string? fullIterationsText,
+        string? samplesText)
+    {
+        var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
+        if (benchmarkCase.Operation != Utf8RegexBenchmarkOperation.EnumerateMatches)
+        {
+            Console.Error.WriteLine($"Case '{caseId}' is not an EnumerateMatches case.");
+            return 1;
+        }
+
+        var context = new Utf8RegexBenchmarkContext(benchmarkCase);
+        var shortIterations = ParseIterations(shortIterationsText);
+        var fullIterations = ParseIterations(fullIterationsText);
+        var samples = ParseSamples(samplesText);
+        var shortCharLength = Math.Min(64, context.InputString.Length);
+        if (shortCharLength > 0 &&
+            shortCharLength < context.InputString.Length &&
+            char.IsHighSurrogate(context.InputString[shortCharLength - 1]))
+        {
+            shortCharLength--;
+        }
+
+        var shortInput = Encoding.UTF8.GetBytes(context.InputString[..shortCharLength]);
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
+        Console.WriteLine($"Options           : {benchmarkCase.Options}");
+        Console.WriteLine($"ShortInputBytes   : {shortInput.Length}");
+        Console.WriteLine($"FullInputBytes    : {context.InputBytes.Length}");
+        Console.WriteLine($"ShortIterations   : {shortIterations}");
+        Console.WriteLine($"FullIterations    : {fullIterations}");
+        Console.WriteLine($"Samples           : {samples}");
+
+        MeasureUtf8CaseLane("CreateOrdinary", samples, shortIterations, () => CreateUtf8Enumerator(context.Utf8Regex, shortInput));
+        MeasureUtf8CaseLane("CreateCompiled", samples, shortIterations, () => CreateUtf8Enumerator(context.CompiledUtf8Regex, shortInput));
+        MeasureUtf8CaseLane("FirstOrdinary", samples, shortIterations, () => FirstUtf8EnumeratorMatch(context.Utf8Regex, shortInput));
+        MeasureUtf8CaseLane("FirstCompiled", samples, shortIterations, () => FirstUtf8EnumeratorMatch(context.CompiledUtf8Regex, shortInput));
+        MeasureUtf8CaseLane("CopyFirstOrdinary", samples, shortIterations, () => FirstCopiedUtf8EnumeratorMatch(context.Utf8Regex, shortInput));
+        MeasureUtf8CaseLane("CopyFirstCompiled", samples, shortIterations, () => FirstCopiedUtf8EnumeratorMatch(context.CompiledUtf8Regex, shortInput));
+        MeasureUtf8CaseLane("ShortAllOrdinary", samples, shortIterations, () => SumUtf8Matches(context.Utf8Regex, shortInput));
+        MeasureUtf8CaseLane("ShortAllCompiled", samples, shortIterations, () => SumUtf8Matches(context.CompiledUtf8Regex, shortInput));
+        MeasureUtf8CaseLane("FullAllOrdinary", samples, fullIterations, () => SumUtf8Matches(context.Utf8Regex, context.InputBytes));
+        MeasureUtf8CaseLane("FullAllCompiled", samples, fullIterations, () => SumUtf8Matches(context.CompiledUtf8Regex, context.InputBytes));
+        return 0;
+    }
+
     public static int RunMeasureUtf8EnumeratorCase(string caseId, string? iterationsText)
     {
         var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
@@ -6047,6 +6095,25 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
+    }
+
+    private static int CreateUtf8Enumerator(Utf8Regex regex, byte[] input)
+    {
+        var enumerator = regex.EnumerateMatches(input);
+        return enumerator.Current.Success ? 1 : 0;
+    }
+
+    private static int FirstUtf8EnumeratorMatch(Utf8Regex regex, byte[] input)
+    {
+        var enumerator = regex.EnumerateMatches(input);
+        return enumerator.MoveNext() ? enumerator.Current.IndexInUtf16 : -1;
+    }
+
+    private static int FirstCopiedUtf8EnumeratorMatch(Utf8Regex regex, byte[] input)
+    {
+        var source = regex.EnumerateMatches(input);
+        var enumerator = source.GetEnumerator();
+        return enumerator.MoveNext() ? enumerator.Current.IndexInUtf16 : -1;
     }
 
     private static int SumUtf8Splits(Utf8RegexBenchmarkContext context)
