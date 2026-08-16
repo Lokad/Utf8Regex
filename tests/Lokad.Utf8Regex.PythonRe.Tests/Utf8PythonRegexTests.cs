@@ -865,6 +865,53 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void DetailedConsumersPreserveMixedOptionalCapturesAfterUnicodeByteStart()
+    {
+        var regex = new Utf8PythonRegex(@"(?P<word>[a-z]+)(?:-([0-9]+))?");
+        var input = "π skip cat dog-12"u8.ToArray();
+        var startOffsetInBytes = "π skip "u8.Length;
+
+        var matches = regex.FindIterDetailed(input, startOffsetInBytes);
+        Assert.Equal(2, matches.Length);
+        Assert.Equal("cat", Describe(matches[0]));
+        Assert.Equal("dog:12", Describe(matches[1]));
+
+        var text = regex.SubnToString(
+            input,
+            0,
+            static (_, match) => $"<{Describe(match)}>",
+            startOffsetInBytes: startOffsetInBytes);
+        Utf8PythonUtf8MatchEvaluator<int> utf8Evaluator = static (_, match) =>
+            System.Text.Encoding.UTF8.GetBytes($"<{Describe(match)}>");
+        var utf8 = regex.Subn(input, 0, utf8Evaluator, startOffsetInBytes: startOffsetInBytes);
+
+        Assert.Equal("π skip <cat> <dog:12>", text.ResultText);
+        Assert.Equal(text.ResultText, System.Text.Encoding.UTF8.GetString(utf8.ResultBytes));
+        Assert.Equal(2, text.ReplacementCount);
+        Assert.Equal(text.ReplacementCount, utf8.ReplacementCount);
+
+        Parallel.For(0, 16, _ =>
+        {
+            var result = regex.SubnToString(
+                input,
+                0,
+                static (_, match) => $"<{Describe(match)}>",
+                startOffsetInBytes: startOffsetInBytes);
+            Assert.Equal(text.ResultText, result.ResultText);
+        });
+
+        static string Describe(Utf8PythonDetailedMatchData match)
+        {
+            Assert.True(match.TryGetFirstSetGroup("word", out var word));
+            var optional = match.Groups.FirstOrDefault(group =>
+                group.Number != 0 && group.Number != word.Number && group.Success);
+            return optional.Success
+                ? $"{word.ValueText}:{optional.ValueText}"
+                : word.ValueText;
+        }
+    }
+
+    [Fact]
     public void CallableSubnPreservesLimitedEmptyMatchProgression()
     {
         var regex = new Utf8PythonRegex("");
