@@ -258,6 +258,25 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
+    public void WarmedWordBoundaryCandidateSearchAllocatesNoObjects()
+    {
+        var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("short ", 128)));
+        _ = regex.Count(input);
+
+        var sum = 0;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < 1_000; iteration++)
+        {
+            sum += regex.Count(input);
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, sum);
+        Assert.Equal(0, allocated);
+    }
+
+    [Fact]
     public void LiteralFamilyCursorSupportsConcurrentRegexReuse()
     {
         var regex = new Utf8Pcre2Regex("café|naïve|😀");

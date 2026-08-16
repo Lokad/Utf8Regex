@@ -379,6 +379,78 @@ public sealed class Utf8Pcre2RegexTranslationTests
         Assert.Equal(2, regex.Count("Tom and Becky near the river xx river beside old Tom"u8));
     }
 
+    [Fact]
+    public void LeadingAsciiWordBoundaryRunSearchPreservesPcre2WordSemantics()
+    {
+        var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
+        var input = Encoding.UTF8.GetBytes("short abcdefghij x_123456789 yyyyyyyyyy éabcdefghij");
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(4, regex.Count(input));
+        Assert.Equal(3, regex.Count(input, 8));
+        Assert.Equal("abcdefghij", regex.Match(input).GetValueString());
+
+        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
+        Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
+        Assert.True(isMore);
+        Assert.Equal(
+            "short <abcdefghij> <x_123456789> <yyyyyyyyyy> é<abcdefghij>",
+            regex.ReplaceToString(input, "<$0>"));
+
+        var diagnostics = regex.DebugCountWithDiagnostics(input, 0);
+        Assert.Equal(4, diagnostics.Count);
+        Assert.Equal(4UL, diagnostics.Execution.CandidateAttempts);
+    }
+
+    [Theory]
+    [InlineData(@"\B\w{10,}\b", Pcre2CompileOptions.None)]
+    [InlineData(@"\b\w+\b", Pcre2CompileOptions.None)]
+    [InlineData(@"(\b\w{10,}\b)", Pcre2CompileOptions.None)]
+    [InlineData(@"\b\w{10,}\b", Pcre2CompileOptions.Ucp)]
+    [InlineData(@"\b\w{10,}\b", Pcre2CompileOptions.Caseless)]
+    public void LeadingAsciiWordBoundaryRunSearchRejectsBroaderSemantics(
+        string pattern,
+        Pcre2CompileOptions options)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options);
+
+        Assert.NotEqual(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
+    }
+
+    [Fact]
+    public void LeadingAsciiWordBoundaryRunSearchFallsBackForRuntimeLimitsAndOptions()
+    {
+        var input = "abcdefghij klmnopqrst"u8.ToArray();
+        var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
+        Assert.Equal(2, regex.Count(input));
+        Assert.Equal(1, regex.Count(input, 2));
+        Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
+
+        var limited = new Utf8Pcre2Regex(
+            @"\b\w{10,}\b",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+        Assert.Equal(
+            "MatchLimit",
+            Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
+    }
+
+    [Fact]
+    public void LeadingAsciiWordBoundaryRunSearchSupportsConcurrentRegexReuse()
+    {
+        var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
+        var input = "short abcdefghij klmnopqrst"u8.ToArray();
+
+        Parallel.For(0, 256, _ =>
+        {
+            Assert.Equal(2, regex.Count(input));
+            Assert.Equal("short <abcdefghij> <klmnopqrst>", regex.ReplaceToString(input, "<$0>"));
+        });
+    }
+
     [Theory]
     [InlineData(@"(?<=x)foo")]
     [InlineData(@"foo\Kbar")]
@@ -483,6 +555,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
     [InlineData(@"[a-z]+@[a-z]+")]
     [InlineData(@"[^a]+\.[^z]+")]
     [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])")]
+    [InlineData(@"\b\w{10,}\b")]
     public void CandidateSearchStillValidatesMalformedPrefixesAndSuffixes(string pattern)
     {
         var regex = new Utf8Pcre2Regex(pattern);

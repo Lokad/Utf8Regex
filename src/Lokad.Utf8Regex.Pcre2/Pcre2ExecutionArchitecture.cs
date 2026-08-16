@@ -260,6 +260,7 @@ internal enum Pcre2CandidateSearchKind : byte
     LeadingAsciiSet = 3,
     LeadingAsciiSetWithWindow = 4,
     BoundedLiteralWindow = 5,
+    LeadingAsciiWordBoundaryRun = 6,
 }
 
 internal readonly record struct Pcre2CandidateWindowConstraint(
@@ -276,12 +277,14 @@ internal readonly struct Pcre2CandidateSearchProgram
         Pcre2CandidateSearchKind kind,
         PreparedSearcher searcher,
         Pcre2CharacterToken[] leadingRunTokens,
-        Pcre2CandidateWindowConstraint windowConstraint)
+        Pcre2CandidateWindowConstraint windowConstraint,
+        int minimumWordRunLength)
     {
         Kind = kind;
         Searcher = searcher;
         LeadingRunTokens = leadingRunTokens;
         WindowConstraint = windowConstraint;
+        MinimumWordRunLength = minimumWordRunLength;
     }
 
     internal Pcre2CandidateSearchKind Kind { get; }
@@ -292,6 +295,8 @@ internal readonly struct Pcre2CandidateSearchProgram
 
     internal Pcre2CandidateWindowConstraint WindowConstraint { get; }
 
+    internal int MinimumWordRunLength { get; }
+
     internal bool HasValue => Kind != Pcre2CandidateSearchKind.None;
 
     internal static Pcre2CandidateSearchProgram FromBranchLeadingLiterals(byte[][] literals) =>
@@ -301,7 +306,8 @@ internal readonly struct Pcre2CandidateSearchProgram
                 ? new PreparedSearcher(new PreparedSubstringSearch(literals[0], ignoreCase: false), ignoreCase: false)
                 : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false)),
             [],
-            default);
+            default,
+            0);
 
     internal static Pcre2CandidateSearchProgram FromLeadingRunThenLiteral(
         Pcre2CharacterToken[] leadingRunTokens,
@@ -310,7 +316,8 @@ internal readonly struct Pcre2CandidateSearchProgram
             Pcre2CandidateSearchKind.LeadingRunThenLiteral,
             new PreparedSearcher(new PreparedSubstringSearch(literal, ignoreCase: false), ignoreCase: false),
             leadingRunTokens,
-            default);
+            default,
+            0);
 
     internal static Pcre2CandidateSearchProgram FromLeadingAsciiSet(
         byte[] values,
@@ -321,7 +328,8 @@ internal readonly struct Pcre2CandidateSearchProgram
                 : Pcre2CandidateSearchKind.LeadingAsciiSet,
             new PreparedSearcher(PreparedByteSearch.Create(values)),
             [],
-            windowConstraint);
+            windowConstraint,
+            0);
 
     internal static Pcre2CandidateSearchProgram FromBoundedLiteralWindow(
         Pcre2CandidateWindowConstraint windowConstraint) =>
@@ -331,7 +339,16 @@ internal readonly struct Pcre2CandidateSearchProgram
                 new PreparedSubstringSearch(windowConstraint.Literal, ignoreCase: false),
                 ignoreCase: false),
             [],
-            windowConstraint);
+            windowConstraint,
+            0);
+
+    internal static Pcre2CandidateSearchProgram FromLeadingAsciiWordBoundaryRun(int minimumWordRunLength) =>
+        new(
+            Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun,
+            default,
+            [],
+            default,
+            minimumWordRunLength);
 }
 
 internal sealed class Pcre2CompiledProgram
@@ -713,6 +730,11 @@ internal static class Pcre2CandidateSearchAnalyzer
             return runPlan;
         }
 
+        if (TryCompileLeadingAsciiWordBoundaryRun(root, out var wordRunPlan))
+        {
+            return wordRunPlan;
+        }
+
         if (TryCompileLeadingAsciiSet(root, request, out var asciiSetPlan))
         {
             return asciiSetPlan;
@@ -821,6 +843,43 @@ internal static class Pcre2CandidateSearchAnalyzer
 
         _ = TryGetInitialBoundedLiteralConstraint(root, out var windowConstraint);
         plan = Pcre2CandidateSearchProgram.FromLeadingAsciiSet([.. values.Order()], windowConstraint);
+        return true;
+    }
+
+    private static bool TryCompileLeadingAsciiWordBoundaryRun(
+        IPcre2BacktrackingNode root,
+        out Pcre2CandidateSearchProgram plan)
+    {
+        if (root is not Pcre2SequenceBacktrackingNode { Children.Length: >= 2 } sequence ||
+            sequence.Children[0] is not Pcre2TokenBacktrackingNode
+            {
+                Token:
+                {
+                    Kind: Pcre2CharacterTokenKind.WordBoundary,
+                    Options: Pcre2CharacterOptions.None,
+                },
+            } ||
+            sequence.Children[1] is not Pcre2RepeatBacktrackingNode
+            {
+                Minimum: >= 2,
+                Body: Pcre2TokenBacktrackingNode { Token: var runToken },
+            } repeat ||
+            runToken.Kind != Pcre2CharacterTokenKind.CharacterClass ||
+            runToken.Options != Pcre2CharacterOptions.None ||
+            runToken.CharacterClass.Negated ||
+            runToken.CharacterClass.Terms is not
+            [
+                {
+                    Kind: Pcre2CharacterClassTermKind.Word,
+                    Negated: false,
+                },
+            ])
+        {
+            plan = default;
+            return false;
+        }
+
+        plan = Pcre2CandidateSearchProgram.FromLeadingAsciiWordBoundaryRun(repeat.Minimum);
         return true;
     }
 

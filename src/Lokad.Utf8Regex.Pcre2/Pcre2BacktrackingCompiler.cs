@@ -3303,6 +3303,16 @@ internal static class Pcre2BacktrackingRunner
         ref int windowCandidateEnd,
         out int candidate)
     {
+        if (candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun)
+        {
+            return TryFindNextLeadingAsciiWordBoundaryRun(
+                input,
+                lowerBound,
+                candidateSearch.MinimumWordRunLength,
+                ref nextWindowCandidate,
+                out candidate);
+        }
+
         if (candidateSearch.Kind == Pcre2CandidateSearchKind.BoundedLiteralWindow)
         {
             return TryFindNextBoundedWindowCandidate(
@@ -3374,6 +3384,49 @@ internal static class Pcre2BacktrackingRunner
         candidate = -1;
         return false;
     }
+
+    private static bool TryFindNextLeadingAsciiWordBoundaryRun(
+        ReadOnlySpan<byte> input,
+        int lowerBound,
+        int minimumWordRunLength,
+        ref int scanOffset,
+        out int candidate)
+    {
+        var offset = Math.Max(lowerBound, scanOffset);
+        while (offset < input.Length)
+        {
+            if (!IsAsciiWordByte(input[offset]))
+            {
+                offset++;
+                continue;
+            }
+
+            var runStart = offset;
+            do
+            {
+                offset++;
+            }
+            while (offset < input.Length && IsAsciiWordByte(input[offset]));
+
+            scanOffset = offset;
+            if ((runStart == 0 || !IsAsciiWordByte(input[runStart - 1])) &&
+                offset - runStart >= minimumWordRunLength)
+            {
+                candidate = runStart;
+                return true;
+            }
+        }
+
+        scanOffset = input.Length;
+        candidate = -1;
+        return false;
+    }
+
+    private static bool IsAsciiWordByte(byte value) =>
+        value is >= (byte)'a' and <= (byte)'z' or
+            >= (byte)'A' and <= (byte)'Z' or
+            >= (byte)'0' and <= (byte)'9' or
+            (byte)'_';
 
     private static bool TryFindNextBoundedWindowCandidate(
         Pcre2CandidateSearchProgram candidateSearch,
