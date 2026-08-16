@@ -68,6 +68,15 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--measure-pythonre-empty-progression-scaling", StringComparison.Ordinal))
+        {
+            exitCode = MeasureEmptyProgressionScaling(
+                Math.Min(ParsePositive(args, 1, 64), 1_024),
+                Math.Min(ParsePositive(args, 2, 50), 500),
+                Math.Min(ParsePositive(args, 3, 7), 15));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -598,6 +607,54 @@ internal static class PythonReBenchmarkReporter
             () => progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes),
             iterations,
             samples));
+        return 0;
+    }
+
+    private static int MeasureEmptyProgressionScaling(int baseTokenCount, int iterations, int samples)
+    {
+        const string pattern = @"\b|\w+";
+        var regex = new Utf8PythonRegex(pattern);
+        var unsupportedProgression = new Utf8PythonRegex("x*|y").FindAll("y"u8)
+            .Select(static match => match.ValueText)
+            .ToArray();
+
+        Console.WriteLine($"Pattern            : {pattern}");
+        Console.WriteLine($"BaseTokenCount     : {baseTokenCount}");
+        Console.WriteLine($"Iterations         : {iterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        Console.WriteLine($"CurrentXStarPipeY  : [{string.Join('|', unsupportedProgression)}] (CPython: [|y|])");
+
+        foreach (var multiplier in new[] { 1, 2, 4, 8 })
+        {
+            var tokenCount = checked(baseTokenCount * multiplier);
+            var subject = string.Concat(Enumerable.Repeat("y ", tokenCount));
+            var input = Encoding.UTF8.GetBytes(subject);
+            var expectedCount = checked(tokenCount * 3);
+            if (regex.Count(input) != expectedCount || regex.FindAll(input).Length != expectedCount)
+            {
+                throw new InvalidOperationException(
+                    $"PythonRe empty-progression scaling precondition failed at {tokenCount} tokens.");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Scale              : {multiplier}x");
+            Console.WriteLine($"TokenCount         : {tokenCount}");
+            Console.WriteLine($"InputBytes         : {input.Length}");
+            Console.WriteLine($"ExpectedMatches    : {expectedCount}");
+            PrintOperation("Count", MeasureOperation(
+                () => regex.Count(input),
+                iterations,
+                samples));
+            PrintOperation("FindAll", MeasureOperation(
+                () => regex.FindAll(input).Length,
+                iterations,
+                samples));
+            PrintOperation("FindAllStrings", MeasureOperation(
+                () => regex.FindAllToStrings(input).Count,
+                iterations,
+                samples));
+        }
+
         return 0;
     }
 
