@@ -10,6 +10,15 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pcre2-workspace-pool-cost", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunMeasurePcre2WorkspacePoolCost(
+                args[1],
+                args.Length >= 3 ? args[2] : null,
+                args.Length >= 4 ? args[3] : null);
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pcre2-case", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunMeasureUtf8Pcre2Case(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
