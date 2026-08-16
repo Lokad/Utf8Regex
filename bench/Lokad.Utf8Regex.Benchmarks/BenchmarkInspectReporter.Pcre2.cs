@@ -563,6 +563,11 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+            var allocatedBytes = MeasureAllocatedBytesPerInvocation(
+                iterations,
+                () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+            Console.WriteLine(
+                $"Pcre2PublicReplaceAllocated: {allocatedBytes,10:N0} B/op");
         }
 
         return 0;
