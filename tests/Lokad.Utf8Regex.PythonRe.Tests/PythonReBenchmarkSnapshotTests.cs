@@ -16,6 +16,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         "findall/one-capture-strings",
         "findall/unicode-capture-utf8",
         "iteration/finditer-detailed",
+        "literal/fullmatch",
         "literal/ismatch",
         "literal/search",
         "literal/search-miss",
@@ -69,6 +70,9 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("OperatingSystem").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Processor").GetString()));
         }
+
+        Assert.True(cases.GetProperty("capture/search-detailed").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
+        Assert.True(cases.GetProperty("literal/fullmatch").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)
