@@ -2702,6 +2702,10 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"HasLeadingScalar  : {hasLeadingScalar}");
         Console.WriteLine($"HasPreparedSearch : {hasPreparedSearch}");
         Console.WriteLine($"HasAnchorByte     : {hasAnchorByte}");
+        if (regex.Inspection.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } alternateLiterals)
+        {
+            Console.WriteLine($"SmallAsciiFamilyPrimitive: {PreparedSmallAsciiLiteralFamilySearch.TryCreate(alternateLiterals, out _)}");
+        }
 
         Measure("ThrowIfInvalidOnly", iterations, () =>
         {
@@ -2839,7 +2843,28 @@ internal static partial class BenchmarkInspectReporter
 
                 return match.Success ? 1 : 0;
             });
+            Measure("AsciiMissRuntimeFamilyIsMatch", iterations, () =>
+            {
+                var handled = regex.Inspection.DebugTryIsMatchLiteralFamily(asciiMiss, out var isMatch);
+                if (!handled)
+                {
+                    return -1;
+                }
+
+                return isMatch ? 1 : 0;
+            });
+            Measure("AsciiMissCompiledRuntimeFamilyIsMatch", iterations, () =>
+            {
+                var handled = compiledUtf8Regex.Inspection.DebugTryIsMatchLiteralFamily(asciiMiss, out var isMatch);
+                if (!handled)
+                {
+                    return -1;
+                }
+
+                return isMatch ? 1 : 0;
+            });
             Measure("AsciiMissIsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(asciiMiss) ? 1 : 0);
+            Measure("AsciiMissCompiledIsMatch", iterations, () => compiledUtf8Regex.IsMatch(asciiMiss) ? 1 : 0);
         }
 
         return 0;
