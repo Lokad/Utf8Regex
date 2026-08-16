@@ -491,6 +491,27 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void CapturedStringFindAllUsesLastCaptureAndPreservesEmptyThenNonEmptyProgression()
+    {
+        var repeated = new Utf8PythonRegex("(a)+").FindAllToStrings("aaa aa"u8);
+        Assert.Equal(Utf8PythonFindAllShape.SingleGroup, repeated.Shape);
+        Assert.Equal(["a", "a"], repeated.ScalarValues);
+
+        var progressive = new Utf8PythonRegex(@"(\b)|(\w+)").FindAllToStrings("a::bc"u8);
+        Assert.Equal(Utf8PythonFindAllShape.GroupTuple, progressive.Shape);
+        Assert.Equal(
+            [
+                ["", ""],
+                ["", "a"],
+                ["", ""],
+                ["", ""],
+                ["", "bc"],
+                ["", ""],
+            ],
+            progressive.TupleValues);
+    }
+
+    [Fact]
     public void FindAllToUtf8UsesTupleShapeForMultipleCaptures()
     {
         var regex = new Utf8PythonRegex("(a)|(x)");
@@ -522,6 +543,19 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(strings.TupleValues, utf8.TupleValues
             .Select(static tuple => tuple.Select(System.Text.Encoding.UTF8.GetString).ToArray())
             .ToArray());
+    }
+
+    [Fact]
+    public void CapturedStringFindAllHonorsByteStartAfterUnicodePrefixAndTranslatedNames()
+    {
+        var regex = new Utf8PythonRegex(@"(?P<left>é+)-(𝒜𝒜|𝒜)");
+        var input = "π skip é-𝒜 xx éé-𝒜𝒜"u8;
+        var startOffsetInBytes = "π skip é-𝒜 xx "u8.Length;
+
+        var result = regex.FindAllToStrings(input, startOffsetInBytes);
+
+        Assert.Equal(Utf8PythonFindAllShape.GroupTuple, result.Shape);
+        Assert.Equal([["éé", "𝒜𝒜"]], result.TupleValues);
     }
 
     [Fact]

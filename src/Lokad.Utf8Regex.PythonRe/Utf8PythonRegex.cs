@@ -78,6 +78,7 @@ public sealed class Utf8PythonRegex
     private readonly Regex _managedRegex;
     private readonly Regex _managedFullRegex;
     private readonly PythonReTranslation _translation;
+    private readonly int[] _managedGroupNumbersByPythonGroup;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
@@ -122,6 +123,11 @@ public sealed class Utf8PythonRegex
         _translation = PythonReTranslator.Translate(parseResult);
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
         _managedFullRegex = CreateManagedRegex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+        _managedGroupNumbersByPythonGroup = GetManagedGroupNumbersByPythonGroup(
+            _managedRegex,
+            parseResult.CaptureGroupCount,
+            parseResult.NamedGroups,
+            _translation.EmittedGroupNames);
         _groupNames = GetPublicGroupNames(_managedRegex, _translation.EmittedGroupNames);
         _nameEntries = GetManagedNameEntries(_managedRegex, _translation.EmittedGroupNames);
         _namedGroups = _nameEntries.ToDictionary(x => x.Name, x => x.Number, StringComparer.Ordinal);
@@ -539,7 +545,6 @@ public sealed class Utf8PythonRegex
         }
 
         var subject = Decode(input);
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
@@ -553,7 +558,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllScalarValue(collected, CreateMatchSnapshot(match, indexMap).ToContext(input, _nameEntries), 1);
+                AppendFindAllScalarValue(collected, match, 1);
 
                 if (match.Length > 0)
                 {
@@ -561,10 +566,14 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionManagedMatch(
+                    subject,
+                    match.Index,
+                    out var nonEmptyMatch,
+                    out var nonEmptyUtf16BaseOffset))
                 {
-                    AppendFindAllScalarValue(collected, nonEmptySnapshot.ToContext(input, _nameEntries), 1);
-                    searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
+                    AppendFindAllScalarValue(collected, nonEmptyMatch, 1);
+                    searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
                     continue;
                 }
 
@@ -595,7 +604,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                AppendFindAllTupleValue(tuples, CreateMatchSnapshot(match, indexMap).ToContext(input, _nameEntries));
+                AppendFindAllTupleValue(tuples, match);
 
                 if (match.Length > 0)
                 {
@@ -603,10 +612,14 @@ public sealed class Utf8PythonRegex
                     continue;
                 }
 
-                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
+                if (TryCreateNonEmptySamePositionManagedMatch(
+                    subject,
+                    match.Index,
+                    out var nonEmptyMatch,
+                    out var nonEmptyUtf16BaseOffset))
                 {
-                    AppendFindAllTupleValue(tuples, nonEmptySnapshot.ToContext(input, _nameEntries));
-                    searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
+                    AppendFindAllTupleValue(tuples, nonEmptyMatch);
+                    searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
                     continue;
                 }
 
@@ -1577,6 +1590,31 @@ public sealed class Utf8PythonRegex
         };
     }
 
+    private static int[] GetManagedGroupNumbersByPythonGroup(
+        Regex regex,
+        int captureGroupCount,
+        IReadOnlyDictionary<string, int> namedGroups,
+        IReadOnlyDictionary<string, string> emittedGroupNames)
+    {
+        var namesByPythonGroup = new string?[captureGroupCount + 1];
+        foreach (var pair in namedGroups)
+        {
+            namesByPythonGroup[pair.Value] = pair.Key;
+        }
+
+        var managedGroupNumbers = new int[captureGroupCount + 1];
+        var nextUnnamedManagedGroup = 1;
+        for (var pythonGroup = 1; pythonGroup <= captureGroupCount; pythonGroup++)
+        {
+            var name = namesByPythonGroup[pythonGroup];
+            managedGroupNumbers[pythonGroup] = name is null
+                ? nextUnnamedManagedGroup++
+                : regex.GroupNumberFromName(emittedGroupNames[name]);
+        }
+
+        return managedGroupNumbers;
+    }
+
     private static string[] GetPublicGroupNames(Regex regex, IReadOnlyDictionary<string, string> emittedGroupNames)
     {
         var reverseMap = emittedGroupNames.ToDictionary(x => x.Value, x => x.Key, StringComparer.Ordinal);
@@ -1657,9 +1695,9 @@ public sealed class Utf8PythonRegex
         lastIndex = absoluteEnd;
     }
 
-    private static void AppendFindAllScalarValue(List<string> values, Utf8PythonMatchContext context, int groupNumber)
+    private void AppendFindAllScalarValue(List<string> values, Match match, int groupNumber)
     {
-        values.Add(GetFindAllGroupValue(context, groupNumber));
+        values.Add(GetFindAllGroupValue(match, groupNumber));
     }
 
     private static void AppendFindAllScalarBytes(List<byte[]> values, ReadOnlySpan<byte> input, PythonReManagedMatchSnapshot snapshot, int groupNumber)
@@ -1667,12 +1705,12 @@ public sealed class Utf8PythonRegex
         values.Add(GetFindAllGroupBytes(input, snapshot.Groups, groupNumber));
     }
 
-    private void AppendFindAllTupleValue(List<string[]> tuples, Utf8PythonMatchContext context)
+    private void AppendFindAllTupleValue(List<string[]> tuples, Match match)
     {
         var tuple = new string[_translation.CaptureGroupCount];
         for (var i = 0; i < tuple.Length; i++)
         {
-            tuple[i] = GetFindAllGroupValue(context, i + 1);
+            tuple[i] = GetFindAllGroupValue(match, i + 1);
         }
 
         tuples.Add(tuple);
@@ -1689,10 +1727,11 @@ public sealed class Utf8PythonRegex
         tuples.Add(tuple);
     }
 
-    private static string GetFindAllGroupValue(Utf8PythonMatchContext context, int groupNumber)
+    private string GetFindAllGroupValue(Match match, int groupNumber)
     {
-        return context.TryGetGroup(groupNumber, out var group) && group.Success
-            ? group.Value.GetValueString()
+        var managedGroupNumber = _managedGroupNumbersByPythonGroup[groupNumber];
+        return match.Groups[managedGroupNumber].Success
+            ? match.Groups[managedGroupNumber].Value
             : string.Empty;
     }
 
