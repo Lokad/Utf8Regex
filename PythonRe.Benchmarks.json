@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 2,
-  "GeneratedAtUtc": "2026-08-16T06:33:45.3877209+00:00",
+  "GeneratedAtUtc": "2026-08-16T06:40:45.8171663+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
     "Sha256": "D443A4817B19A2156B70FDF90168D131823F27AF807B608744B49489BD82EAA5",
@@ -712,10 +712,10 @@
       "Operation": "SubnEvaluatorString",
       "InputUtf8Bytes": 6144,
       "EffectiveIterations": 2000,
-      "Samples": 7,
+      "Samples": 9,
       "IncludesResultMaterialization": true,
       "Environment": {
-        "SourceCommit": "87b0623f79e9",
+        "SourceCommit": "1636eeb82ad5",
         "TrackedDirty": false,
         "HasUntrackedFiles": true,
         "Runtime": ".NET 10.0.8",
@@ -723,28 +723,28 @@
         "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
       },
       "PythonRe": {
-        "MedianMicroseconds": 196.8313,
-        "MinimumMicroseconds": 181.41504999999998,
-        "MaximumMicroseconds": 204.04295000000002,
-        "MedianAllocatedBytes": 997832,
-        "WarmupCalls": 444,
-        "WarmupMilliseconds": 2827.8074
+        "MedianMicroseconds": 194.513,
+        "MinimumMicroseconds": 183.95270000000002,
+        "MaximumMicroseconds": 375.782,
+        "MedianAllocatedBytes": 989376,
+        "WarmupCalls": 135,
+        "WarmupMilliseconds": 3962.2526
       },
       "DecodeThenRegex": {
-        "MedianMicroseconds": 178.78754999999998,
-        "MinimumMicroseconds": 172.52710000000002,
-        "MaximumMicroseconds": 185.6093,
-        "MedianAllocatedBytes": 891096,
-        "WarmupCalls": 569,
-        "WarmupMilliseconds": 2608.6656
+        "MedianMicroseconds": 167.48575,
+        "MinimumMicroseconds": 163.48925,
+        "MaximumMicroseconds": 208.6349,
+        "MedianAllocatedBytes": 891048,
+        "WarmupCalls": 243,
+        "WarmupMilliseconds": 3206.6822
       },
       "PredecodedRegex": {
-        "MedianMicroseconds": 180.56375,
-        "MinimumMicroseconds": 172.6538,
-        "MaximumMicroseconds": 183.11275,
-        "MedianAllocatedBytes": 878784,
-        "WarmupCalls": 594,
-        "WarmupMilliseconds": 2615.352
+        "MedianMicroseconds": 166.80370000000002,
+        "MinimumMicroseconds": 163.275,
+        "MaximumMicroseconds": 172.50754999999998,
+        "MedianAllocatedBytes": 878736,
+        "WarmupCalls": 619,
+        "WarmupMilliseconds": 3117.6953
       }
     },
     "replacement/evaluator-utf8": {
@@ -753,10 +753,10 @@
       "Operation": "SubnEvaluatorUtf8",
       "InputUtf8Bytes": 6144,
       "EffectiveIterations": 2000,
-      "Samples": 7,
+      "Samples": 9,
       "IncludesResultMaterialization": true,
       "Environment": {
-        "SourceCommit": "87b0623f79e9",
+        "SourceCommit": "1636eeb82ad5",
         "TrackedDirty": false,
         "HasUntrackedFiles": true,
         "Runtime": ".NET 10.0.8",
@@ -764,28 +764,28 @@
         "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
       },
       "PythonRe": {
-        "MedianMicroseconds": 214.1757,
-        "MinimumMicroseconds": 202.25639999999999,
-        "MaximumMicroseconds": 237.82735,
-        "MedianAllocatedBytes": 1025400,
-        "WarmupCalls": 352,
-        "WarmupMilliseconds": 3134.5588
+        "MedianMicroseconds": 194.06015,
+        "MinimumMicroseconds": 188.53645,
+        "MaximumMicroseconds": 341.50745,
+        "MedianAllocatedBytes": 973952,
+        "WarmupCalls": 129,
+        "WarmupMilliseconds": 3915.4423
       },
       "DecodeThenRegex": {
-        "MedianMicroseconds": 178.60585,
-        "MinimumMicroseconds": 173.9245,
-        "MaximumMicroseconds": 182.2959,
+        "MedianMicroseconds": 164.9178,
+        "MinimumMicroseconds": 159.92595,
+        "MaximumMicroseconds": 240.26385000000002,
         "MedianAllocatedBytes": 900336,
-        "WarmupCalls": 532,
-        "WarmupMilliseconds": 2598.6399
+        "WarmupCalls": 242,
+        "WarmupMilliseconds": 3227.9603
       },
       "PredecodedRegex": {
-        "MedianMicroseconds": 177.6309,
-        "MinimumMicroseconds": 173.98775,
-        "MaximumMicroseconds": 180.5277,
+        "MedianMicroseconds": 163.20239999999998,
+        "MinimumMicroseconds": 159.24545,
+        "MaximumMicroseconds": 166.92610000000002,
         "MedianAllocatedBytes": 888024,
-        "WarmupCalls": 576,
-        "WarmupMilliseconds": 2580.7116
+        "WarmupCalls": 598,
+        "WarmupMilliseconds": 3046.9217
       }
     },
     "replacement/fixed-string": {
@@ -876,10 +876,10 @@
       "Operation": "SubnString",
       "InputUtf8Bytes": 16384,
       "EffectiveIterations": 2000,
-      "Samples": 7,
+      "Samples": 9,
       "IncludesResultMaterialization": true,
       "Environment": {
-        "SourceCommit": "87b0623f79e9",
+        "SourceCommit": "1636eeb82ad5",
         "TrackedDirty": false,
         "HasUntrackedFiles": true,
         "Runtime": ".NET 10.0.8",
@@ -887,28 +887,28 @@
         "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
       },
       "PythonRe": {
-        "MedianMicroseconds": 121.0135,
-        "MinimumMicroseconds": 120.5182,
-        "MaximumMicroseconds": 122.7983,
+        "MedianMicroseconds": 119.78775,
+        "MinimumMicroseconds": 118.0792,
+        "MaximumMicroseconds": 205.00385,
         "MedianAllocatedBytes": 74209,
-        "WarmupCalls": 816,
-        "WarmupMilliseconds": 1797.488
+        "WarmupCalls": 421,
+        "WarmupMilliseconds": 2421.8511
       },
       "DecodeThenRegex": {
-        "MedianMicroseconds": 109.41335000000001,
-        "MinimumMicroseconds": 108.06665,
-        "MaximumMicroseconds": 115.9939,
-        "MedianAllocatedBytes": 499928,
-        "WarmupCalls": 763,
-        "WarmupMilliseconds": 1665.5301
+        "MedianMicroseconds": 111.5989,
+        "MinimumMicroseconds": 110.60915,
+        "MaximumMicroseconds": 138.82485,
+        "MedianAllocatedBytes": 499880,
+        "WarmupCalls": 517,
+        "WarmupMilliseconds": 2165.5754
       },
       "PredecodedRegex": {
-        "MedianMicroseconds": 113.38364999999999,
-        "MinimumMicroseconds": 106.9,
-        "MaximumMicroseconds": 116.6669,
-        "MedianAllocatedBytes": 467136,
-        "WarmupCalls": 936,
-        "WarmupMilliseconds": 1668.9648
+        "MedianMicroseconds": 109.50710000000001,
+        "MinimumMicroseconds": 108.92869999999999,
+        "MaximumMicroseconds": 110.48455,
+        "MedianAllocatedBytes": 467088,
+        "WarmupCalls": 912,
+        "WarmupMilliseconds": 2073.0443
       }
     },
     "replacement/subn-utf8": {
@@ -917,10 +917,10 @@
       "Operation": "SubnUtf8",
       "InputUtf8Bytes": 16384,
       "EffectiveIterations": 2000,
-      "Samples": 7,
+      "Samples": 9,
       "IncludesResultMaterialization": true,
       "Environment": {
-        "SourceCommit": "87b0623f79e9",
+        "SourceCommit": "1636eeb82ad5",
         "TrackedDirty": false,
         "HasUntrackedFiles": true,
         "Runtime": ".NET 10.0.8",
@@ -928,28 +928,28 @@
         "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
       },
       "PythonRe": {
-        "MedianMicroseconds": 130.2117,
-        "MinimumMicroseconds": 125.36095,
-        "MaximumMicroseconds": 138.6354,
+        "MedianMicroseconds": 119.70519999999999,
+        "MinimumMicroseconds": 118.82785000000001,
+        "MaximumMicroseconds": 247.13575,
         "MedianAllocatedBytes": 94713,
-        "WarmupCalls": 720,
-        "WarmupMilliseconds": 1922.184
+        "WarmupCalls": 414,
+        "WarmupMilliseconds": 2522.1442
       },
       "DecodeThenRegex": {
-        "MedianMicroseconds": 118.06535000000001,
-        "MinimumMicroseconds": 115.026,
-        "MaximumMicroseconds": 124.70365,
+        "MedianMicroseconds": 111.9037,
+        "MinimumMicroseconds": 111.38244999999999,
+        "MaximumMicroseconds": 145.01254999999998,
         "MedianAllocatedBytes": 520432,
-        "WarmupCalls": 756,
-        "WarmupMilliseconds": 1770.2112
+        "WarmupCalls": 510,
+        "WarmupMilliseconds": 2192.8723
       },
       "PredecodedRegex": {
-        "MedianMicroseconds": 115.50435,
-        "MinimumMicroseconds": 112.58030000000001,
-        "MaximumMicroseconds": 116.80635000000001,
+        "MedianMicroseconds": 109.512,
+        "MinimumMicroseconds": 108.58885000000001,
+        "MaximumMicroseconds": 109.84344999999999,
         "MedianAllocatedBytes": 487640,
-        "WarmupCalls": 901,
-        "WarmupMilliseconds": 1713.3699
+        "WarmupCalls": 908,
+        "WarmupMilliseconds": 2070.1348
       }
     },
     "split/captures": {
