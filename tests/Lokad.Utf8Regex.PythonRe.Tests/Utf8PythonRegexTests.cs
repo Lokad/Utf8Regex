@@ -10,6 +10,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.True(regex.DebugHasUtf8FullRegex);
         Assert.Equal("foo", regex.DebugTranslatedPattern);
         Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
@@ -189,8 +190,13 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
+        Assert.False(conditional.DebugHasUtf8FullRegex);
+        Assert.True(lookahead.DebugHasUtf8FullRegex);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
+        Assert.True(conditional.FullMatch("foobar"u8).Success);
+        Assert.True(conditional.FullMatch("baz"u8).Success);
+        Assert.False(conditional.FullMatch("foo"u8).Success);
     }
 
     [Fact]

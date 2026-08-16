@@ -139,7 +139,10 @@ public sealed class Utf8PythonRegex
         try
         {
             _utf8Regex = new Utf8Regex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
-            _utf8FullRegex = new Utf8Regex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+            if (_utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
+            {
+                _utf8FullRegex = new Utf8Regex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+            }
         }
         catch (Exception)
         {
@@ -1290,6 +1293,8 @@ public sealed class Utf8PythonRegex
     }
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
+
+    internal bool DebugHasUtf8FullRegex => _utf8FullRegex is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
 
