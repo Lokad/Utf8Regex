@@ -52,6 +52,14 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--measure-pythonre-fullmatch-start-offset", StringComparison.Ordinal))
+        {
+            exitCode = MeasureFullMatchStartOffset(
+                Math.Min(ParsePositive(args, 1, 500), 2_000),
+                Math.Min(ParsePositive(args, 2, 9), 15));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -344,6 +352,54 @@ internal static class PythonReBenchmarkReporter
         PrintOperation("LazyCoreFullHit", MeasureOperation(
             () => lazyCoreFull.Value.Match(fullMatchInputUtf8).Success ? 1 : 0,
             reuseIterations,
+            samples));
+        return 0;
+    }
+
+    private static int MeasureFullMatchStartOffset(int iterations, int samples)
+    {
+        const string pattern = @"async\s+Task<";
+        var prefix = new string('x', 65_536) + "é";
+        var subject = prefix + "async Task<";
+        var input = Encoding.UTF8.GetBytes(subject);
+        var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
+        var pythonRegex = new Utf8PythonRegex(pattern);
+        var managedFullRegex = new Regex(
+            @"\A(?:async\s+Task<)\z",
+            RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout);
+        var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        var pythonMatch = pythonRegex.FullMatch(input, startOffsetInBytes);
+        var managedResult = managedFullRegex.IsMatch(subject.AsSpan(prefix.Length));
+        if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length || !managedResult ||
+            pythonRegex.DebugHasUtf8FullRegex)
+        {
+            throw new InvalidOperationException("PythonRe start-offset FullMatch diagnostic failed its parity or backend precondition.");
+        }
+
+        Console.WriteLine($"Pattern            : {pattern}");
+        Console.WriteLine($"InputBytes         : {input.Length}");
+        Console.WriteLine($"StartOffsetInBytes : {startOffsetInBytes}");
+        Console.WriteLine($"StartOffsetInUtf16 : {prefix.Length}");
+        Console.WriteLine($"ExecutionPlan      : {pythonRegex.DebugDescribeExecutionPlan()}");
+        Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
+        Console.WriteLine($"Samples            : {samples} (capped at 15)");
+        PrintOperation("PythonReFullMatch", MeasureOperation(
+            () => pythonRegex.FullMatch(input, startOffsetInBytes).EndOffsetInBytes,
+            iterations,
+            samples));
+        PrintOperation("DecodeFullMatch", MeasureOperation(
+            () =>
+            {
+                var decoded = strictUtf8.GetString(input);
+                return managedFullRegex.IsMatch(decoded.AsSpan(prefix.Length)) ? input.Length : 0;
+            },
+            iterations,
+            samples));
+        PrintOperation("PredecodedFullMatch", MeasureOperation(
+            () => managedFullRegex.IsMatch(subject.AsSpan(prefix.Length)) ? input.Length : 0,
+            iterations,
             samples));
         return 0;
     }
