@@ -636,6 +636,62 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void EmptyThenNonEmptyAlternativePreservesAllGlobalResultShapes()
+    {
+        var regex = new Utf8PythonRegex("x*|y");
+        string[] expected = ["", "y", ""];
+
+        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.Equal(expected, regex.FindAll("y"u8).Select(static match => match.ValueText).ToArray());
+        Assert.True(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.Equal(expected, regex.FindAllToStrings("y"u8).ScalarValues);
+        Assert.Equal(
+            expected,
+            regex.FindAllToUtf8("y"u8).ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+        Assert.Equal(expected, regex.FindIterDetailed("y"u8).Select(static match => match.Value.ValueText).ToArray());
+        Assert.Equal(3, regex.Count("y"u8));
+        Assert.Equal("---", regex.ReplaceToString("y"u8, "-"));
+
+        var subn = regex.SubnToString("y"u8, "-");
+        Assert.Equal("---", subn.ResultText);
+        Assert.Equal(3, subn.ReplacementCount);
+        Assert.Equal(new string?[] { "", "", "", "" }, regex.SplitToStrings("y"u8));
+
+        var empty = new Utf8PythonRegex("");
+        Assert.Equal(["", ""], empty.FindAll("𝒜"u8).Select(static match => match.ValueText).ToArray());
+        Assert.Equal(["", ""], empty.FindIterDetailed("𝒜"u8).Select(static match => match.Value.ValueText).ToArray());
+        Assert.Equal(2, empty.Count("𝒜"u8));
+    }
+
+    [Fact]
+    public void EmptyThenNonEmptyCompanionPreservesCapturesContextAndConcurrentReuse()
+    {
+        var captured = new Utf8PythonRegex("(?P<word>x*|y)");
+        Assert.Equal(["", "y", ""], captured.FindAllToStrings("y"u8).ScalarValues);
+
+        var lookbehind = new Utf8PythonRegex("(?<=a)(?:x*|y)");
+        Assert.Equal(
+            ["", "y"],
+            lookbehind.FindAll("ay"u8, startOffsetInBytes: 1)
+                .Select(static match => match.ValueText)
+                .ToArray());
+
+        var anchored = new Utf8PythonRegex("^x*|y");
+        Assert.Equal(["", "y"], anchored.FindAll("y"u8).Select(static match => match.ValueText).ToArray());
+
+        var unicodeInput = "éy"u8.ToArray();
+        var startOffsetInBytes = "é"u8.Length;
+        Parallel.For(0, 16, _ =>
+        {
+            Assert.Equal(
+                ["", "y", ""],
+                captured.FindAll(unicodeInput, startOffsetInBytes)
+                    .Select(static match => match.ValueText)
+                    .ToArray());
+        });
+    }
+
+    [Fact]
     public void ShapedFindAllPreservesManagedPrefixAlternationOrder()
     {
         var regex = new Utf8PythonRegex("foo|foobar");

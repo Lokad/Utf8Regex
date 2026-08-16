@@ -101,5 +101,34 @@
     },
     "Status": "Active",
     "Source": "cpython:Lib/test/test_re.py:test_ignore_spaces"
+  },
+  {
+    "Id": "pythonre.count.empty-then-nonempty-alternative",
+    "Pattern": "x*|y",
+    "CompileOptions": [],
+    "InputText": "y",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Expected": {
+      "Outcome": "Success",
+      "MatchCount": 3
+    },
+    "Status": "Active",
+    "Source": "cpython:3.13.2:re.finditer-empty-adjacent-nonempty"
+  },
+  {
+    "Id": "pythonre.replace.empty-then-nonempty-alternative",
+    "Pattern": "x*|y",
+    "CompileOptions": [],
+    "InputText": "y",
+    "ReplacementPattern": "-",
+    "StartOffsetInBytes": 0,
+    "Operation": "Replace",
+    "Expected": {
+      "Outcome": "Success",
+      "ReplacementText": "---"
+    },
+    "Status": "Active",
+    "Source": "cpython:3.13.2:re.sub-empty-adjacent-nonempty"
   }
 ]

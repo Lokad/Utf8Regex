@@ -80,6 +80,7 @@ public sealed class Utf8PythonRegex
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8Regex? _utf8Regex;
     private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
+    private readonly Lazy<Regex>? _lazyManagedNonEmptyAtSamePositionRegex;
     private readonly Regex _managedRegex;
     private readonly Regex _managedFullRegex;
     private readonly PythonReTranslation _translation;
@@ -131,6 +132,12 @@ public sealed class Utf8PythonRegex
         _translation = PythonReTranslator.Translate(parseResult);
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
         _managedFullRegex = CreateManagedRegex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+        if (_canMatchEmpty && _canMatchNonEmpty)
+        {
+            _lazyManagedNonEmptyAtSamePositionRegex = new Lazy<Regex>(
+                CreateManagedNonEmptyAtSamePositionRegex,
+                LazyThreadSafetyMode.ExecutionAndPublication);
+        }
         _managedGroupNumbersByPythonGroup = GetManagedGroupNumbersByPythonGroup(
             _managedRegex,
             parseResult.CaptureGroupCount,
@@ -253,7 +260,7 @@ public sealed class Utf8PythonRegex
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if (!_canMatchNonEmpty)
+        if (!_canMatchEmpty)
         {
             return _managedRegex.Count(subject, startOffsetInUtf16);
         }
@@ -523,7 +530,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         return matches.ToArray();
@@ -605,7 +612,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                searchIndex = match.Index + 1;
+                searchIndex = AdvancePastScalar(subject, match.Index);
             }
 
             return new Utf8PythonFindAllResult
@@ -651,7 +658,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                searchIndex = match.Index + 1;
+                searchIndex = AdvancePastScalar(subject, match.Index);
             }
         }
 
@@ -749,7 +756,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                searchIndex = match.Index + 1;
+                searchIndex = AdvancePastScalar(subject, match.Index);
             }
 
             return new Utf8PythonFindAllUtf8Result
@@ -797,7 +804,7 @@ public sealed class Utf8PythonRegex
                     break;
                 }
 
-                searchIndex = match.Index + 1;
+                searchIndex = AdvancePastScalar(subject, match.Index);
             }
         }
 
@@ -817,32 +824,48 @@ public sealed class Utf8PythonRegex
             return FindIterDetailedNonEmpty(input, startOffsetInBytes);
         }
 
-        List<Utf8PythonDetailedMatchData> matches = [];
-        var searchOffset = startOffsetInBytes;
-        while (searchOffset <= input.Length)
+        var subject = Decode(input);
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        var firstMatch = _managedRegex.Match(subject, startOffsetInUtf16);
+        if (!firstMatch.Success)
         {
-            var match = SearchDetailedData(input, searchOffset);
-            if (!match.Success)
-            {
-                break;
-            }
+            return [];
+        }
 
-            matches.Add(match);
+        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        List<Utf8PythonDetailedMatchData> matches = [];
+        var searchIndex = startOffsetInUtf16;
+        var match = firstMatch;
+        while (match.Success)
+        {
+            matches.Add(CreateDetailedMatchData(input, match, indexMap));
 
-            var start = match.Value.StartOffsetInBytes;
-            var end = match.Value.EndOffsetInBytes;
-            if (end > start)
+            if (match.Length > 0)
             {
-                searchOffset = end;
+                searchIndex = match.Index + match.Length;
+                match = _managedRegex.Match(subject, searchIndex);
                 continue;
             }
 
-            if (start >= input.Length)
+            if (TryCreateNonEmptySamePositionManagedMatch(
+                    subject,
+                    match.Index,
+                    out var nonEmptyMatch,
+                    out _))
+            {
+                matches.Add(CreateDetailedMatchData(input, nonEmptyMatch, indexMap));
+                searchIndex = nonEmptyMatch.Index + nonEmptyMatch.Length;
+                match = _managedRegex.Match(subject, searchIndex);
+                continue;
+            }
+
+            if (match.Index >= subject.Length)
             {
                 break;
             }
 
-            searchOffset = start + GetUtf8RuneLength(input[start]);
+            searchIndex = AdvancePastScalar(subject, match.Index);
+            match = _managedRegex.Match(subject, searchIndex);
         }
 
         return matches.ToArray();
@@ -955,7 +978,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         builder.Append(subject.AsSpan(lastIndex));
@@ -1070,7 +1093,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         builder.Append(subject.AsSpan(lastIndex));
@@ -1161,7 +1184,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         parts.Add(subject[lastIndex..]);
@@ -1209,7 +1232,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         parts.Add(new Utf8PythonSplitItem
@@ -1276,7 +1299,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         return count;
@@ -1288,26 +1311,22 @@ public sealed class Utf8PythonRegex
         PythonReUtf8IndexMap indexMap,
         out PythonReManagedMatchSnapshot snapshot)
     {
-        if (!_canMatchNonEmpty || (uint)utf16Position >= (uint)subject.Length)
+        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
+            (uint)utf16Position >= (uint)subject.Length)
         {
             snapshot = default;
             return false;
         }
 
-        foreach (var probe in EnumerateSamePositionNonEmptyProbes(subject, utf16Position))
+        var match = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
+        if (!match.Success || match.Index != utf16Position || match.Length == 0)
         {
-            var match = _managedRegex.Match(probe.Text, probe.StartIndex);
-            if (!match.Success || match.Index != probe.StartIndex || match.Length == 0)
-            {
-                continue;
-            }
-
-            snapshot = CreateMatchSnapshot(match, indexMap, probe.Utf16BaseOffset);
-            return true;
+            snapshot = default;
+            return false;
         }
 
-        snapshot = default;
-        return false;
+        snapshot = CreateMatchSnapshot(match, indexMap);
+        return true;
     }
 
     private bool TryCreateNonEmptySamePositionManagedMatch(
@@ -1316,43 +1335,33 @@ public sealed class Utf8PythonRegex
         out Match match,
         out int utf16BaseOffset)
     {
-        if (!_canMatchNonEmpty || (uint)utf16Position >= (uint)subject.Length)
+        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
+            (uint)utf16Position >= (uint)subject.Length)
         {
             match = System.Text.RegularExpressions.Match.Empty;
             utf16BaseOffset = 0;
             return false;
         }
 
-        foreach (var probe in EnumerateSamePositionNonEmptyProbes(subject, utf16Position))
+        var candidate = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
+        if (!candidate.Success || candidate.Index != utf16Position || candidate.Length == 0)
         {
-            var candidate = _managedRegex.Match(probe.Text, probe.StartIndex);
-            if (!candidate.Success || candidate.Index != probe.StartIndex || candidate.Length == 0)
-            {
-                continue;
-            }
-
-            match = candidate;
-            utf16BaseOffset = probe.Utf16BaseOffset;
-            return true;
+            match = System.Text.RegularExpressions.Match.Empty;
+            utf16BaseOffset = 0;
+            return false;
         }
 
-        match = System.Text.RegularExpressions.Match.Empty;
+        match = candidate;
         utf16BaseOffset = 0;
-        return false;
-    }
-
-    private static IEnumerable<PythonReSamePositionProbe> EnumerateSamePositionNonEmptyProbes(string subject, int utf16Position)
-    {
-        var tail = subject[utf16Position..];
-        yield return new PythonReSamePositionProbe(tail, 0, utf16Position);
-        yield return new PythonReSamePositionProbe("A" + tail, 1, utf16Position - 1);
-        yield return new PythonReSamePositionProbe(" " + tail, 1, utf16Position - 1);
-        yield return new PythonReSamePositionProbe("\n" + tail, 1, utf16Position - 1);
+        return true;
     }
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
     internal bool DebugIsUtf8FullRegexValueCreated => _lazyUtf8FullRegex?.IsValueCreated ?? false;
+
+    internal bool DebugIsManagedNonEmptyAtSamePositionRegexValueCreated =>
+        _lazyManagedNonEmptyAtSamePositionRegex?.IsValueCreated ?? false;
 
     internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
 
@@ -1418,6 +1427,14 @@ public sealed class Utf8PythonRegex
             throw new ArgumentException("The input must be valid UTF-8.", parameterName, ex);
         }
     }
+
+    private Regex CreateManagedNonEmptyAtSamePositionRegex() => CreateManagedRegex(
+        @"\G(?:(?:" + _translation.Pattern + @"))(?!\G)",
+        _translation.RegexOptions,
+        MatchTimeout);
+
+    private static int AdvancePastScalar(string subject, int utf16Position) =>
+        checked(utf16Position + Rune.GetRuneAt(subject, utf16Position).Utf16SequenceLength);
 
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
@@ -1979,7 +1996,7 @@ public sealed class Utf8PythonRegex
                 break;
             }
 
-            searchIndex = match.Index + 1;
+            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         AppendUtf8(builder, input[lastIndexInBytes..]);
@@ -2007,8 +2024,6 @@ internal enum PythonReDirectBackendKind
     ManagedRegex,
     Utf8Regex,
 }
-
-internal readonly record struct PythonReSamePositionProbe(string Text, int StartIndex, int Utf16BaseOffset);
 
 internal readonly record struct PythonReManagedMatchSnapshot(PythonReGroupData[] Groups)
 {
