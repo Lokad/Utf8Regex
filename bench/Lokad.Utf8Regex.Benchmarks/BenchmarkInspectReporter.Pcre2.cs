@@ -432,7 +432,7 @@ internal static partial class BenchmarkInspectReporter
             CreatePcre2ScalingFamily(
                 "dense-plus-sparse-candidate-portfolios",
                 Utf8Pcre2BenchmarkOperation.Count,
-                [512, 1024, 2048, 4096],
+                [512, 1024, 2048, 4095, 4096, 8192],
                 static _ => "(?:a|needle)",
                 static size => new string('a', size)),
             CreatePcre2ScalingFamily(
