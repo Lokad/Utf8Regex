@@ -15,6 +15,8 @@ public sealed class PythonReBenchmarkSnapshotTests
         "findall/many-capture-utf8",
         "findall/one-capture-strings",
         "findall/unicode-capture-utf8",
+        "findall/unicode-full-strings",
+        "findall/unicode-full-utf8",
         "iteration/finditer-detailed",
         "literal/fullmatch",
         "literal/ismatch",
