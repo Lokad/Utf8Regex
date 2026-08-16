@@ -33,6 +33,15 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-findall-phases", StringComparison.Ordinal))
+        {
+            exitCode = MeasureFindAllPhases(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 7));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -186,6 +195,59 @@ internal static class PythonReBenchmarkReporter
         PrintOperation("PredecodedDirect", MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples));
         PrintOperation("DiscoveryOnly", MeasureOperation(context.ExecutePredecodedDetailedDiscovery, effectiveIterations, samples));
         PrintOperation("PredecodedStaged", MeasureOperation(context.ExecutePredecodedStagedDetailedProjection, effectiveIterations, samples));
+        return 0;
+    }
+
+    private static int MeasureFindAllPhases(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.FindAllStrings and
+            not PythonReBenchmarkOperation.FindAllUtf8)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe FindAll phase diagnostics require FindAllStrings or FindAllUtf8; '{id}' uses {benchmarkCase.Operation}.");
+            return 1;
+        }
+
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        if (!context.SupportsCaptureFreeFindAllPhases)
+        {
+            Console.Error.WriteLine($"PythonRe FindAll phase diagnostics require a capture-free pattern; '{id}' has captures.");
+            return 1;
+        }
+
+        var expected = context.ExecutePythonRe();
+        var prepared = context.ExecutePreparedCoreRangeProjection();
+        var collected = context.ExecuteCoreCollectedProjection();
+        var streaming = context.ExecuteCoreStreamingProjection();
+        if (expected != prepared || expected != collected || expected != streaming)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe FindAll phase diagnostic '{id}' produced incomparable sinks: " +
+                $"public={expected}, prepared={prepared}, collected={collected}, streaming={streaming}.");
+        }
+
+        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
+        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
+        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
+        Console.WriteLine($"MatchCount         : {context.PreparedCoreRangeCount}");
+        Console.WriteLine($"Iterations         : {effectiveIterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        PrintOperation("PythonRePublic", MeasureOperation(context.ExecutePythonRe, effectiveIterations, samples));
+        PrintOperation("DecodeComparator", MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
+        PrintOperation("CoreEnumerateOnly", MeasureOperation(context.ExecuteCoreEnumerationOnly, effectiveIterations, samples));
+        PrintOperation("CoreCollectRanges", MeasureOperation(context.ExecuteCoreRangeCollectionOnly, effectiveIterations, samples));
+        PrintOperation("PreparedProjection", MeasureOperation(context.ExecutePreparedCoreRangeProjection, effectiveIterations, samples));
+        PrintOperation("CollectedProjection", MeasureOperation(context.ExecuteCoreCollectedProjection, effectiveIterations, samples));
+        PrintOperation("StreamingProjection", MeasureOperation(context.ExecuteCoreStreamingProjection, effectiveIterations, samples));
         return 0;
     }
 
@@ -525,6 +587,8 @@ internal sealed class PythonReBenchmarkContext
     private readonly Utf8PythonRegex _pythonRegex;
     private readonly Regex _regex;
     private readonly Regex _fullRegex;
+    private readonly Utf8Regex? _coreFindAllRegex;
+    private readonly PythonReBenchmarkRange[] _preparedCoreRanges;
     private readonly string _decoded;
     private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
@@ -541,9 +605,24 @@ internal sealed class PythonReBenchmarkContext
         _regex = new Regex(benchmarkCase.Pattern, regexOptions, Regex.InfiniteMatchTimeout);
         _fullRegex = new Regex($@"\A(?:{benchmarkCase.Pattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
         _captureCount = _regex.GetGroupNumbers().Length - 1;
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
+            _captureCount == 0)
+        {
+            _coreFindAllRegex = new Utf8Regex(benchmarkCase.Pattern, regexOptions);
+            _preparedCoreRanges = CollectCoreRanges().ToArray();
+        }
+        else
+        {
+            _coreFindAllRegex = null;
+            _preparedCoreRanges = [];
+        }
     }
 
     internal byte[] InputBytes { get; }
+
+    internal bool SupportsCaptureFreeFindAllPhases => _coreFindAllRegex is not null;
+
+    internal int PreparedCoreRangeCount => _preparedCoreRanges.Length;
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
@@ -619,6 +698,148 @@ internal sealed class PythonReBenchmarkContext
 
         return Checksum(matches.ToArray());
     }
+
+    internal int ExecuteCoreEnumerationOnly()
+    {
+        var checksum = 0;
+        var enumerator = GetCoreFindAllRegex().EnumerateMatches(InputBytes);
+        while (enumerator.MoveNext())
+        {
+            var match = enumerator.Current;
+            checksum = Combine(
+                checksum,
+                match.IndexInUtf16,
+                match.LengthInUtf16,
+                match.IndexInBytes,
+                match.LengthInBytes);
+        }
+
+        return checksum;
+    }
+
+    internal int ExecuteCoreRangeCollectionOnly()
+    {
+        var checksum = 0;
+        foreach (var range in CollectCoreRanges())
+        {
+            checksum = Combine(
+                checksum,
+                range.IndexInBytes,
+                range.LengthInBytes,
+                range.IndexInUtf16,
+                range.LengthInUtf16);
+        }
+
+        return checksum;
+    }
+
+    internal int ExecutePreparedCoreRangeProjection() => ProjectCoreRanges(_preparedCoreRanges);
+
+    internal int ExecuteCoreCollectedProjection()
+    {
+        var ranges = CollectCoreRanges();
+        return ProjectCoreRanges(CollectionsMarshal.AsSpan(ranges));
+    }
+
+    internal int ExecuteCoreStreamingProjection()
+    {
+        var regex = GetCoreFindAllRegex();
+        if (_case.Operation == PythonReBenchmarkOperation.FindAllStrings)
+        {
+            var values = new List<string>();
+            foreach (var match in regex.EnumerateMatches(InputBytes))
+            {
+                if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+                {
+                    throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
+                }
+
+                values.Add(Encoding.UTF8.GetString(InputBytes.AsSpan(indexInBytes, lengthInBytes)));
+            }
+
+            return Checksum(new Utf8PythonFindAllResult
+            {
+                Shape = Utf8PythonFindAllShape.FullMatch,
+                ScalarValues = values.ToArray(),
+                TupleValues = [],
+            });
+        }
+
+        var byteValues = new List<byte[]>();
+        foreach (var match in regex.EnumerateMatches(InputBytes))
+        {
+            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+            {
+                throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
+            }
+
+            byteValues.Add(InputBytes.AsSpan(indexInBytes, lengthInBytes).ToArray());
+        }
+
+        return Checksum(new Utf8PythonFindAllUtf8Result
+        {
+            Shape = Utf8PythonFindAllShape.FullMatch,
+            ScalarValues = byteValues.ToArray(),
+            TupleValues = [],
+        });
+    }
+
+    private List<PythonReBenchmarkRange> CollectCoreRanges()
+    {
+        var ranges = new List<PythonReBenchmarkRange>();
+        foreach (var match in GetCoreFindAllRegex().EnumerateMatches(InputBytes))
+        {
+            if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+            {
+                throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
+            }
+
+            ranges.Add(new PythonReBenchmarkRange(
+                indexInBytes,
+                lengthInBytes,
+                match.IndexInUtf16,
+                match.LengthInUtf16));
+        }
+
+        return ranges;
+    }
+
+    private int ProjectCoreRanges(ReadOnlySpan<PythonReBenchmarkRange> ranges)
+    {
+        if (_case.Operation == PythonReBenchmarkOperation.FindAllStrings)
+        {
+            var values = new string[ranges.Length];
+            for (var index = 0; index < values.Length; index++)
+            {
+                var range = ranges[index];
+                values[index] = Encoding.UTF8.GetString(InputBytes.AsSpan(range.IndexInBytes, range.LengthInBytes));
+            }
+
+            return Checksum(new Utf8PythonFindAllResult
+            {
+                Shape = Utf8PythonFindAllShape.FullMatch,
+                ScalarValues = values,
+                TupleValues = [],
+            });
+        }
+
+        var byteValues = new byte[ranges.Length][];
+        for (var index = 0; index < byteValues.Length; index++)
+        {
+            var range = ranges[index];
+            byteValues[index] = InputBytes.AsSpan(range.IndexInBytes, range.LengthInBytes).ToArray();
+        }
+
+        return Checksum(new Utf8PythonFindAllUtf8Result
+        {
+            Shape = Utf8PythonFindAllShape.FullMatch,
+            ScalarValues = byteValues,
+            TupleValues = [],
+        });
+    }
+
+    private Utf8Regex GetCoreFindAllRegex() => _coreFindAllRegex ??
+        throw new InvalidOperationException("Capture-free FindAll phase controls are not available for this case.");
 
     private int ExecutePythonReEvaluatorString()
     {
@@ -1057,6 +1278,12 @@ internal readonly record struct BclStagedDetailedGroup(
     int EndOffsetInBytes,
     int StartOffsetInUtf16,
     int EndOffsetInUtf16);
+
+internal readonly record struct PythonReBenchmarkRange(
+    int IndexInBytes,
+    int LengthInBytes,
+    int IndexInUtf16,
+    int LengthInUtf16);
 
 internal readonly record struct BclDetailedGroup(
     bool Success,
