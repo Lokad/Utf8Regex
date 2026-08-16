@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed class Utf8PythonRegex
 {
     private delegate byte[] Utf8ReplacementBytesFactory<TState>(ReadOnlySpan<byte> source, PythonReManagedMatchSnapshot snapshot, TState state);
+    private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8Regex? _utf8Regex;
     private readonly Utf8Regex? _utf8FullRegex;
@@ -36,7 +37,7 @@ public sealed class Utf8PythonRegex
     }
 
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout = default)
-        : this(Encoding.UTF8.GetString(patternUtf8), options, matchTimeout)
+        : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout)
     {
     }
 
@@ -1182,20 +1183,23 @@ public sealed class Utf8PythonRegex
     }
 
     private static string Decode(ReadOnlySpan<byte> input)
+        => DecodeUtf8(input, nameof(input));
+
+    private static string DecodeUtf8(ReadOnlySpan<byte> input, string parameterName)
     {
         try
         {
-            return Encoding.UTF8.GetString(input);
+            return s_strictUtf8Encoding.GetString(input);
         }
         catch (DecoderFallbackException ex)
         {
-            throw new InvalidOperationException("The input must be valid UTF-8.", ex);
+            throw new ArgumentException("The input must be valid UTF-8.", parameterName, ex);
         }
     }
 
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        return Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
+        return s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
     }
 
     private static void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -1205,7 +1209,23 @@ public sealed class Utf8PythonRegex
             throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
         }
 
-        _ = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
+        if (startOffsetInBytes < input.Length &&
+            (input[startOffsetInBytes] & 0xC0) == 0x80)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(startOffsetInBytes),
+                startOffsetInBytes,
+                "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
+        }
+
+        try
+        {
+            _ = s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw new ArgumentException("The input must be valid UTF-8.", nameof(input), ex);
+        }
     }
 
     private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8PythonMatchData[] matches)

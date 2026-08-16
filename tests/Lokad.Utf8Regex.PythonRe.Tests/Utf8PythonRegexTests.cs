@@ -760,4 +760,53 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugSplitBackend);
         Assert.Equal<string?[]>(["xx", "", "yy", ""], parts);
     }
+
+    [Fact]
+    public void Utf8PatternConstructorRejectsMalformedUtf8()
+    {
+        var malformed = new byte[] { 0xC3, 0x28 };
+
+        Assert.Throws<ArgumentException>(() => new Utf8PythonRegex(malformed));
+    }
+
+    [Fact]
+    public void ScalarGlobalAndOutputRoutesRejectMalformedUtf8()
+    {
+        var direct = new Utf8PythonRegex("x");
+        var empty = new Utf8PythonRegex("");
+        var malformedSubjects = new[]
+        {
+            new byte[] { 0xC3, 0x28, (byte)'x' },
+            new byte[] { (byte)'x', 0xF0, 0x28, 0x8C, 0xBC },
+        };
+
+        foreach (var input in malformedSubjects)
+        {
+            Assert.Throws<ArgumentException>(() => direct.Search(input));
+            Assert.Throws<ArgumentException>(() => direct.FullMatch(input));
+            Assert.Throws<ArgumentException>(() => direct.SearchDetailedData(input));
+            Assert.Throws<ArgumentException>(() => direct.FindAll(input));
+            Assert.Throws<ArgumentException>(() => empty.Count(input));
+            Assert.Throws<ArgumentException>(() => direct.ReplaceToString(input, "_"));
+            Assert.Throws<ArgumentException>(() => direct.SplitToStrings(input));
+        }
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void RoutesRejectStartOffsetsInsideUtf8Scalars(int startOffsetInBytes)
+    {
+        var direct = new Utf8PythonRegex(".");
+        var empty = new Utf8PythonRegex("");
+        var input = "aé𝒜z"u8.ToArray();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.Search(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.FullMatch(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.SearchDetailedData(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.FindAll(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => empty.Count(input, startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.ReplaceToString(input, "_", startOffsetInBytes: startOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() => direct.SplitToStrings(input, startOffsetInBytes: startOffsetInBytes));
+    }
 }
