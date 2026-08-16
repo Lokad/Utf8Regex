@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -1607,71 +1608,97 @@ internal static class Pcre2Runner
         Pcre2CaptureByteRange[] captures,
         ref Utf8ValidatedInput input)
     {
-        var endpoints = new int[captures.Length * 2];
-        var endpointCount = 0;
-        foreach (var capture in captures)
+        const int MaximumStackEndpointCount = 64;
+        var endpointCapacity = checked(captures.Length * 2);
+        var stagingLength = checked(endpointCapacity * 2);
+        int[]? rentedStaging = null;
+        try
         {
-            if (!capture.Success)
+            scoped Span<int> staging;
+            if (endpointCapacity <= MaximumStackEndpointCount)
             {
-                continue;
+                staging = stackalloc int[stagingLength];
+            }
+            else
+            {
+                rentedStaging = ArrayPool<int>.Shared.Rent(stagingLength);
+                staging = rentedStaging.AsSpan(0, stagingLength);
             }
 
-            if (input.IsScalarBoundary(new Utf8BytePosition(capture.StartOffsetInBytes)))
+            var endpoints = staging[..endpointCapacity];
+            var utf16Endpoints = staging[endpointCapacity..];
+            var endpointCount = 0;
+            foreach (var capture in captures)
             {
-                endpoints[endpointCount++] = capture.StartOffsetInBytes;
+                if (!capture.Success)
+                {
+                    continue;
+                }
+
+                if (input.IsScalarBoundary(new Utf8BytePosition(capture.StartOffsetInBytes)))
+                {
+                    endpoints[endpointCount++] = capture.StartOffsetInBytes;
+                }
+
+                if (input.IsScalarBoundary(new Utf8BytePosition(capture.EndOffsetInBytes)))
+                {
+                    endpoints[endpointCount++] = capture.EndOffsetInBytes;
+                }
             }
 
-            if (input.IsScalarBoundary(new Utf8BytePosition(capture.EndOffsetInBytes)))
+            endpoints[..endpointCount].Sort();
+            var uniqueCount = 0;
+            for (var index = 0; index < endpointCount; index++)
             {
-                endpoints[endpointCount++] = capture.EndOffsetInBytes;
+                if (uniqueCount == 0 || endpoints[index] != endpoints[uniqueCount - 1])
+                {
+                    endpoints[uniqueCount++] = endpoints[index];
+                }
+            }
+
+            var sortedEndpoints = endpoints[..uniqueCount];
+            var projection = input.CreateProjectionCursor();
+            for (var index = 0; index < uniqueCount; index++)
+            {
+                utf16Endpoints[index] = projection.Project(new Utf8BytePosition(sortedEndpoints[index])).Value;
+            }
+
+            var groups = new Pcre2GroupData[captures.Length];
+            for (var slot = 0; slot < captures.Length; slot++)
+            {
+                var capture = captures[slot];
+                if (!capture.Success)
+                {
+                    groups[slot] = new Pcre2GroupData { Number = slot, Success = false };
+                    continue;
+                }
+
+                var startIndex = sortedEndpoints.BinarySearch(capture.StartOffsetInBytes);
+                var endIndex = sortedEndpoints.BinarySearch(capture.EndOffsetInBytes);
+                var hasUtf16Projection = startIndex >= 0 && endIndex >= 0;
+                groups[slot] = new Pcre2GroupData
+                {
+                    Number = slot,
+                    Success = true,
+                    StartOffsetInBytes = capture.StartOffsetInBytes,
+                    EndOffsetInBytes = capture.EndOffsetInBytes,
+                    StartOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[startIndex] : 0,
+                    EndOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[endIndex] : 0,
+                    CoordinateFlagsSpecified = true,
+                    Utf8SliceIsWellFormed = capture.StartOffsetInBytes <= capture.EndOffsetInBytes && hasUtf16Projection,
+                    Utf16ProjectionIsExact = hasUtf16Projection,
+                };
+            }
+
+            return groups;
+        }
+        finally
+        {
+            if (rentedStaging is not null)
+            {
+                ArrayPool<int>.Shared.Return(rentedStaging);
             }
         }
-
-        Array.Sort(endpoints, 0, endpointCount);
-        var uniqueCount = 0;
-        for (var index = 0; index < endpointCount; index++)
-        {
-            if (uniqueCount == 0 || endpoints[index] != endpoints[uniqueCount - 1])
-            {
-                endpoints[uniqueCount++] = endpoints[index];
-            }
-        }
-
-        var utf16Endpoints = new int[uniqueCount];
-        var projection = input.CreateProjectionCursor();
-        for (var index = 0; index < uniqueCount; index++)
-        {
-            utf16Endpoints[index] = projection.Project(new Utf8BytePosition(endpoints[index])).Value;
-        }
-
-        var groups = new Pcre2GroupData[captures.Length];
-        for (var slot = 0; slot < captures.Length; slot++)
-        {
-            var capture = captures[slot];
-            if (!capture.Success)
-            {
-                groups[slot] = new Pcre2GroupData { Number = slot, Success = false };
-                continue;
-            }
-
-            var startIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.StartOffsetInBytes);
-            var endIndex = Array.BinarySearch(endpoints, 0, uniqueCount, capture.EndOffsetInBytes);
-            var hasUtf16Projection = startIndex >= 0 && endIndex >= 0;
-            groups[slot] = new Pcre2GroupData
-            {
-                Number = slot,
-                Success = true,
-                StartOffsetInBytes = capture.StartOffsetInBytes,
-                EndOffsetInBytes = capture.EndOffsetInBytes,
-                StartOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[startIndex] : 0,
-                EndOffsetInUtf16 = hasUtf16Projection ? utf16Endpoints[endIndex] : 0,
-                CoordinateFlagsSpecified = true,
-                Utf8SliceIsWellFormed = capture.StartOffsetInBytes <= capture.EndOffsetInBytes && hasUtf16Projection,
-                Utf16ProjectionIsExact = hasUtf16Projection,
-            };
-        }
-
-        return groups;
     }
 }
 

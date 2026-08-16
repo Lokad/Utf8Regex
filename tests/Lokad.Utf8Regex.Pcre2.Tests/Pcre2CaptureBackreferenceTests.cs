@@ -23,6 +23,48 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
+    [Fact]
+    public void DetailedMatchProjectsLargeCaptureSets()
+    {
+        const int explicitCaptureCount = 40;
+        var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", explicitCaptureCount)));
+        var text = new string('a', explicitCaptureCount);
+        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+
+        Assert.True(match.Success);
+        Assert.Equal(explicitCaptureCount + 1, match.CaptureSlotCount);
+        AssertGroup(match.GetGroup(0), text, 0, explicitCaptureCount, 0, explicitCaptureCount);
+        for (var slot = 1; slot <= explicitCaptureCount; slot++)
+        {
+            AssertGroup(match.GetGroup(slot), "a", slot - 1, slot, slot - 1, slot);
+        }
+    }
+
+    [Fact]
+    public void DetailedMatchWithLargeCaptureSetsSupportsConcurrentReuse()
+    {
+        const int explicitCaptureCount = 40;
+        var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", explicitCaptureCount)));
+        var input = Encoding.UTF8.GetBytes(new string('a', explicitCaptureCount));
+        var failures = 0;
+
+        Parallel.For(0, 256, _ =>
+        {
+            var match = regex.MatchDetailed(input);
+            var last = match.GetGroup(explicitCaptureCount);
+            if (!match.Success ||
+                match.CaptureSlotCount != explicitCaptureCount + 1 ||
+                !last.Success ||
+                last.StartOffsetInBytes != explicitCaptureCount - 1 ||
+                last.EndOffsetInBytes != explicitCaptureCount)
+            {
+                Interlocked.Increment(ref failures);
+            }
+        });
+
+        Assert.Equal(0, failures);
+    }
+
     [Theory]
     [InlineData("(a|ab)\\1", "abab", "abab")]
     [InlineData("(a)\\g{1}", "aa", "aa")]
