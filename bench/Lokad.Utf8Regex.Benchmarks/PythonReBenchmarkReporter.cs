@@ -42,6 +42,15 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-construction-pattern", StringComparison.Ordinal))
+        {
+            exitCode = MeasureConstructionPattern(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 100), 512),
+                Math.Min(ParsePositive(args, 3, 7), 15));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = RefreshCase(
@@ -248,6 +257,57 @@ internal static class PythonReBenchmarkReporter
         PrintOperation("PreparedProjection", MeasureOperation(context.ExecutePreparedCoreRangeProjection, effectiveIterations, samples));
         PrintOperation("CollectedProjection", MeasureOperation(context.ExecuteCoreCollectedProjection, effectiveIterations, samples));
         PrintOperation("StreamingProjection", MeasureOperation(context.ExecuteCoreStreamingProjection, effectiveIterations, samples));
+        return 0;
+    }
+
+    private static int MeasureConstructionPattern(string pattern, int iterations, int samples)
+    {
+        const PythonReCompileOptions options = PythonReCompileOptions.None;
+        var parseResult = new PythonReParser(pattern).Parse(options);
+        var translation = PythonReTranslator.Translate(parseResult);
+        var input = Encoding.UTF8.GetBytes("prefix item-123 foo Шерлок suffix");
+
+        Console.WriteLine($"Pattern            : {pattern}");
+        Console.WriteLine($"TranslatedPattern  : {translation.Pattern}");
+        Console.WriteLine($"InputBytes         : {input.Length}");
+        Console.WriteLine($"Iterations         : {iterations} (fixed, capped at 512)");
+        Console.WriteLine($"Samples            : {samples} (capped at 15)");
+        PrintOperation("ParseTranslate", MeasureOperation(
+            () =>
+            {
+                var parsed = new PythonReParser(pattern).Parse(options);
+                return PythonReTranslator.Translate(parsed).Pattern.Length;
+            },
+            iterations,
+            samples));
+        PrintOperation("ManagedSearch", MeasureOperation(
+            () => new Regex(translation.Pattern, translation.RegexOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
+            iterations,
+            samples));
+        PrintOperation("ManagedFull", MeasureOperation(
+            () => new Regex($@"\A(?:{translation.Pattern})\z", translation.RegexOptions, Regex.InfiniteMatchTimeout).GetHashCode(),
+            iterations,
+            samples));
+        PrintOperation("CoreSearch", MeasureOperation(
+            () => new Utf8Regex(translation.Pattern, translation.RegexOptions).GetHashCode(),
+            iterations,
+            samples));
+        PrintOperation("CoreFull", MeasureOperation(
+            () => new Utf8Regex($@"\A(?:{translation.Pattern})\z", translation.RegexOptions).GetHashCode(),
+            iterations,
+            samples));
+        PrintOperation("PythonReConstruct", MeasureOperation(
+            () => new Utf8PythonRegex(pattern, options).GetHashCode(),
+            iterations,
+            samples));
+        PrintOperation("ConstructFirstCall", MeasureOperation(
+            () =>
+            {
+                var regex = new Utf8PythonRegex(pattern, options);
+                return regex.GetHashCode() ^ (regex.IsMatch(input) ? 1 : 0);
+            },
+            iterations,
+            samples));
         return 0;
     }
 
