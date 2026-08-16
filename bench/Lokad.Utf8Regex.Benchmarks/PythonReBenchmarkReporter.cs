@@ -24,6 +24,15 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
+        {
+            exitCode = RefreshCase(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 5));
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--refresh-pythonre-benchmarks", StringComparison.Ordinal))
         {
             exitCode = Refresh(
@@ -54,11 +63,65 @@ internal static class PythonReBenchmarkReporter
             Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
         };
-        var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(SnapshotFileName, json + Environment.NewLine, new UTF8Encoding(false));
+        WriteSnapshot(snapshot);
         Console.WriteLine();
         Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
         return 0;
+    }
+
+    private static int RefreshCase(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (!File.Exists(SnapshotFileName))
+        {
+            Console.Error.WriteLine($"PythonRe snapshot '{Path.GetFullPath(SnapshotFileName)}' does not exist.");
+            return 1;
+        }
+
+        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(SnapshotFileName));
+        if (snapshot is null || snapshot.SchemaVersion != 2)
+        {
+            Console.Error.WriteLine("PythonRe snapshot is missing or has an unsupported schema version.");
+            return 1;
+        }
+
+        Console.WriteLine();
+        var measurement = Measure(benchmarkCase, iterations, samples);
+        Print(benchmarkCase, measurement);
+        snapshot.Cases[id] = measurement;
+        WriteSnapshot(new PythonReBenchmarkSnapshot
+        {
+            SchemaVersion = 2,
+            GeneratedAtUtc = DateTimeOffset.UtcNow,
+            Corpus = CaptureCorpusProvenance(),
+            Cases = snapshot.Cases,
+        });
+        Console.WriteLine();
+        Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
+        return 0;
+    }
+
+    private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot)
+    {
+        var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
+        var snapshotPath = Path.GetFullPath(SnapshotFileName);
+        var temporaryPath = snapshotPath + ".tmp";
+        try
+        {
+            File.WriteAllText(temporaryPath, json + Environment.NewLine, new UTF8Encoding(false));
+            File.Move(temporaryPath, snapshotPath, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temporaryPath);
+        }
     }
 
     private static int MeasureCase(string id, int iterations, int samples)
@@ -111,6 +174,16 @@ internal static class PythonReBenchmarkReporter
 
     private static int GetEffectiveIterations(PythonReBenchmarkCase benchmarkCase, int requestedIterations)
     {
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.IsMatch or
+                PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.Match or
+                PythonReBenchmarkOperation.FullMatch or
+                PythonReBenchmarkOperation.SearchDetailed &&
+            Encoding.UTF8.GetByteCount(benchmarkCase.Input) <= 128)
+        {
+            return Math.Max(requestedIterations, 20_000);
+        }
+
         var minimum = benchmarkCase.Operation switch
         {
             PythonReBenchmarkOperation.IsMatch or
