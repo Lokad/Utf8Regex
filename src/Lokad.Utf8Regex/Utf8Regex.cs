@@ -768,6 +768,12 @@ public sealed class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
+        if (ShouldUseRightToLeftScalarFallback())
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (TryIsMatchDirectWithoutValidation(input, out var directIsMatch))
         {
             return directIsMatch;
@@ -850,6 +856,12 @@ public sealed class Utf8Regex
     private int CountCore(ReadOnlySpan<byte> input)
     {
         if (ShouldUseKelvinSignFallback(input))
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                Utf8Validation.DecodeStrict(input));
+        }
+
+        if (ShouldUseRightToLeftScalarFallback())
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
                 Utf8Validation.DecodeStrict(input));
@@ -984,6 +996,11 @@ public sealed class Utf8Regex
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input)
     {
         if (ShouldUseKelvinSignFallback(input))
+        {
+            return MatchSemanticFallback(input);
+        }
+
+        if (ShouldUseRightToLeftScalarFallback())
         {
             return MatchSemanticFallback(input);
         }
@@ -2256,6 +2273,12 @@ public sealed class Utf8Regex
     private bool UsesRightToLeft()
     {
         return (Options & RegexOptions.RightToLeft) != 0;
+    }
+
+    private bool ShouldUseRightToLeftScalarFallback()
+    {
+        return UsesRightToLeft() &&
+            _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
     }
 
     private bool IsMatchViaCompiledExactLiteralEngine(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)

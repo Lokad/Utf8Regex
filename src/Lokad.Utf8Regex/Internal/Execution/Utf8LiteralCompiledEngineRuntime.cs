@@ -287,8 +287,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             NativeExecutionKind.ExactAsciiLiteral => true,
             NativeExecutionKind.ExactUtf8Literal => IsAllAscii(_regexPlan.LiteralUtf8),
             NativeExecutionKind.AsciiLiteralIgnoreCase => true,
-            NativeExecutionKind.ExactUtf8Literals => _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals,
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => true,
+            NativeExecutionKind.ExactUtf8Literals =>
+                _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
+                !_regexPlan.SearchPlan.HasBoundaryRequirements &&
+                !_regexPlan.SearchPlan.HasTrailingLiteralRequirement,
+            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals =>
+                !_regexPlan.SearchPlan.HasBoundaryRequirements &&
+                !_regexPlan.SearchPlan.HasTrailingLiteralRequirement,
             _ => false,
         };
 

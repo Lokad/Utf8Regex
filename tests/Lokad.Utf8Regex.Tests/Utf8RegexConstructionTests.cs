@@ -2027,15 +2027,63 @@ public sealed class Utf8RegexConstructionTests
             "xx cathouse yy",
             "dog shed",
             "DOGhouse",
+            "DOGHOUSE",
             "é cathouse 夏",
         ];
 
         Assert.Equal(
-            ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals,
+            ignoreCase ? NativeExecutionKind.FallbackRegex : NativeExecutionKind.ExactUtf8Literals,
             regex.Inspection.ExecutionKind);
         foreach (var input in inputs)
         {
-            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expectedMatch = oracle.Match(input);
+            var actualMatch = regex.Match(bytes);
+
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(bytes));
+            Assert.Equal(oracle.Count(input), regex.Count(bytes));
+            Assert.Equal(expectedMatch.Success, actualMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RightToLeftFallbackScalarOperationsMatchDotNet(bool compiled)
+    {
+        const string pattern = "alpha|alphabet|bravo|charlie|delta";
+        var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        string[] inputs =
+        [
+            string.Empty,
+            "prefix alpha xx delta suffix",
+            "é alpha xx delta 夏",
+            "xx foxtrot yy",
+        ];
+
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
+        foreach (var input in inputs)
+        {
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expectedMatch = oracle.Match(input);
+            var actualMatch = regex.Match(bytes);
+
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(bytes));
+            Assert.Equal(oracle.Count(input), regex.Count(bytes));
+            Assert.Equal(expectedMatch.Success, actualMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            }
         }
     }
 
@@ -2183,23 +2231,19 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorClassifiesInvariantIgnoreCasePositiveLiteralLookaheadAsNativeLiteral()
+    public void ConstructorKeepsInvariantIgnoreCasePositiveLiteralLookaheadOnFallback()
     {
         var regex = new Utf8Regex("foo(?=bar)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.ExactLiteral, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
 
     [Fact]
-    public void ConstructorClassifiesInvariantIgnoreCasePositiveLiteralAlternationLookaheadAsLiteralFamily()
+    public void ConstructorKeepsInvariantIgnoreCasePositiveLiteralAlternationLookaheadOnFallback()
     {
         var regex = new Utf8Regex("(?:cat|dog)(?=house)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
 
     [Fact]

@@ -84,7 +84,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 trailingBoundary: trailingBoundary);
         }
 
-        if ((executionOptions & RegexOptions.RightToLeft) == 0 &&
+        if ((executionOptions & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase)) == 0 &&
             TryExtractLiteralWithPositiveLiteralLookaheadTree(semanticRegex, out var lookaheadLiteral, out var trailingLiteralUtf8))
         {
             return TryCreateLiteralAnalyzedRegex(semanticRegex, lookaheadLiteral, executionOptions, out analyzedRegex, trailingLiteralUtf8: trailingLiteralUtf8);
@@ -95,7 +95,7 @@ internal static class Utf8NativeExecutionAnalyzer
             return TryCreateLiteralAnalyzedRegex(semanticRegex, capturedLiteral, executionOptions, out analyzedRegex);
         }
 
-        if ((executionOptions & RegexOptions.RightToLeft) == 0 &&
+        if ((executionOptions & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase)) == 0 &&
             TryExtractLiteralAlternationWithPositiveLiteralLookaheadTree(semanticRegex, executionOptions, out var lookaheadAlternates, out var alternationTrailingLiteralUtf8, out var lookaheadAlternationExecutionKind, out var lookaheadAlternationSearchKind))
         {
             analyzedRegex = Utf8RegexAnalysis.Create(
