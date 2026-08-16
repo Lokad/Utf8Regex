@@ -63,6 +63,9 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
   comparative catalog exposed both losses.
 - Made PythonRe reject malformed UTF-8 patterns and subjects consistently
   across direct and managed routes, including byte starts inside a scalar.
+- Corrected invariant ignore-case ASCII literal and literal-family matching
+  for the Kelvin sign (`U+212A`), including matching, enumeration, splitting,
+  and replacement, without penalizing subjects that do not contain it.
 - Routed PythonRe full-match patterns that would use the core's managed
   fallback directly through the already-prepared PythonRe regex, avoiding a
   duplicate fallback layer and scalar match projection.

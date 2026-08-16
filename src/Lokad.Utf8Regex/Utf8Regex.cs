@@ -17,6 +17,7 @@ public sealed class Utf8Regex
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
+    private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     public Utf8Regex(string pattern)
@@ -39,6 +40,7 @@ public sealed class Utf8Regex
         MatchTimeout = matchTimeout;
 
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
+        _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
     }
 
     public static TimeSpan DefaultMatchTimeout
@@ -595,6 +597,11 @@ public sealed class Utf8Regex
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
+        if (ShouldUseKelvinSignFallback(remaining))
+        {
+            return CountAtByteOffset(input, start);
+        }
+
         if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
         {
             return CountViaCompiledEngine(remaining, default, CreateExecutionBudget());
@@ -624,7 +631,7 @@ public sealed class Utf8Regex
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
-        if (UsesRightToLeft())
+        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining))
         {
             var startInUtf16 = input.Project(start);
             return new Utf8ValueMatchEnumerator(
@@ -750,6 +757,12 @@ public sealed class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (TryIsMatchDirectWithoutValidation(input, out var directIsMatch))
         {
             return directIsMatch;
@@ -831,6 +844,12 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.Count(input);
@@ -959,6 +978,11 @@ public sealed class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return MatchSemanticFallback(input);
+        }
+
         if (TryMatchDirectWithoutValidation(input, out var directMatch))
         {
             return directMatch;
@@ -1097,7 +1121,7 @@ public sealed class Utf8Regex
             return twin.EnumerateSplits(input, count).WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        if (UsesRightToLeft())
+        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
             var subject = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
@@ -1178,6 +1202,13 @@ public sealed class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Encoding.UTF8.GetString(input),
+                Encoding.UTF8.GetString(replacementPatternUtf8)));
+        }
+
         if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -1348,6 +1379,16 @@ public sealed class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Encoding.UTF8.GetString(input),
+                Encoding.UTF8.GetString(replacementPatternUtf8));
+            return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
+                ? OperationStatus.Done
+                : OperationStatus.DestinationTooSmall;
+        }
+
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten);
@@ -1627,6 +1668,13 @@ public sealed class Utf8Regex
         string replacementText,
         Utf8AnalyzedReplacement replacement)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Utf8Validation.DecodeStrict(input),
+                replacementText));
+        }
+
         if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
@@ -1765,6 +1813,13 @@ public sealed class Utf8Regex
 
     private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Utf8Validation.DecodeStrict(input),
+                replacement.OriginalText);
+        }
+
         if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
@@ -1814,6 +1869,16 @@ public sealed class Utf8Regex
         Span<byte> destination,
         out int bytesWritten)
     {
+        if (ShouldUseKelvinSignFallback(input))
+        {
+            var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
+                Utf8Validation.DecodeStrict(input),
+                replacementText);
+            return TryEncodeUtf8ToDestination(replaced, destination, out bytesWritten)
+                ? OperationStatus.Done
+                : OperationStatus.DestinationTooSmall;
+        }
+
         if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
@@ -2437,6 +2502,14 @@ public sealed class Utf8Regex
 
     private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input) => MatchFallback(input, null);
 
+    private Utf8ValueMatch MatchSemanticFallback(ReadOnlySpan<byte> input)
+    {
+        var analysis = Utf8InputAnalyzer.Analyze(input);
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
+            analysis.GetDecodedString());
+        return Utf8ProjectionExecutor.ProjectFallbackRegexMatch(input, match, analysis.BoundaryMap);
+    }
+
     private Utf8ValueMatch MatchFallback(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap)
     {
         if (RejectsByRequiredPrefilter(input))
@@ -2736,6 +2809,57 @@ public sealed class Utf8Regex
 
     private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation) =>
         ShouldUseFallbackForNonAsciiSimplePattern(validation, false);
+
+    private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
+        => _requiresKelvinSignFallback && ContainsKelvinSign(input);
+
+    private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
+    {
+        while (input.Length >= 3)
+        {
+            var index = input.IndexOf((byte)0xE2);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            input = input[index..];
+            if (input[1] == 0x84 && input[2] == 0xAA)
+            {
+                return true;
+            }
+
+            input = input[1..];
+        }
+
+        return false;
+    }
+
+    private static bool RequiresKelvinSignFallback(Utf8PreparedRegex preparedRegex)
+    {
+        if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase)
+        {
+            return ContainsAsciiK(preparedRegex.LiteralUtf8);
+        }
+
+        if (preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+        {
+            return false;
+        }
+
+        foreach (var literal in preparedRegex.SearchPlan.AlternateLiteralsUtf8 ?? [])
+        {
+            if (ContainsAsciiK(literal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsAsciiK(byte[]? literal)
+        => literal is not null && literal.AsSpan().IndexOfAny((byte)'K', (byte)'k') >= 0;
 
     private bool ShouldUseFallbackForNonAsciiSimplePattern(Utf8ValidationResult validation, bool allowByteSafeStructuralLinear)
     {
