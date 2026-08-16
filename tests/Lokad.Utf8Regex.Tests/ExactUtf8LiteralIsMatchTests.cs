@@ -52,6 +52,25 @@ public sealed class ExactUtf8LiteralIsMatchTests
         AssertParity("foo(?=bar)", "fooqux", options);
         AssertParity("aba(?=ba)", "ababa", options);
         AssertParity(@"\bfoo(?=bar)", "xfoobar foobar", options);
+        AssertParity("😀(?=🚀)", "x😀x 😀🚀", options);
+        AssertParity("😀(?=🚀)", "x😀x", options);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RequirementBearingExactLiteralsStillRejectMalformedBytes(bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("😀(?=🚀)", options);
+        var compositeLiteral = Encoding.UTF8.GetBytes("😀🚀");
+        byte[] malformedPrefix = [0xFF, .. compositeLiteral];
+        byte[] malformedSuffix = [.. compositeLiteral, 0xFF];
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedPrefix));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformedSuffix));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformedPrefix));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformedSuffix));
     }
 
     [Fact]
