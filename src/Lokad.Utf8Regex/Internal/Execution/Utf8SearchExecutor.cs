@@ -132,6 +132,11 @@ internal static class Utf8SearchExecutor
             return -1;
         }
 
+        if (CanUseDirectLiteralBoundarySearch(in plan))
+        {
+            return FindLiteralWithBoundaries(in plan, input, startIndex, ignoreCase);
+        }
+
         if (plan.HasStructuralCandidates &&
             plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
@@ -154,6 +159,15 @@ internal static class Utf8SearchExecutor
         return plan.HasBoundaryRequirements
             ? FindLiteralWithBoundaries(plan, input, startIndex, ignoreCase)
             : FindLiteralWithTrailingRequirement(plan, input, startIndex, ignoreCase);
+    }
+
+    private static bool CanUseDirectLiteralBoundarySearch(in Utf8SearchPlan plan)
+    {
+        return plan.HasBoundaryRequirements &&
+            !plan.HasTrailingLiteralRequirement &&
+            !plan.FallbackStartTransform.HasValue &&
+            plan.ExactRequiredLength is null &&
+            plan.MaxPossibleLength is null;
     }
 
     private static int FindFilteredLastLiteralStart(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, bool ignoreCase)
