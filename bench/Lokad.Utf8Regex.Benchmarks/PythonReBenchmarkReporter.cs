@@ -443,16 +443,28 @@ internal static class PythonReBenchmarkReporter
         var prefix = new string('x', 65_536) + "é";
         var subject = prefix + " no matching token";
         var hitSubject = prefix + string.Concat(Enumerable.Repeat(" needle-long", 256));
+        var progressivePrefix = prefix + " ";
+        var progressiveSubject = progressivePrefix + "y";
         var input = Encoding.UTF8.GetBytes(subject);
         var hitInput = Encoding.UTF8.GetBytes(hitSubject);
+        var progressiveInput = Encoding.UTF8.GetBytes(progressiveSubject);
         var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
+        var progressiveStartOffsetInBytes = Encoding.UTF8.GetByteCount(progressivePrefix);
         var pythonRegex = new Utf8PythonRegex(pattern);
         var capturedPythonRegex = new Utf8PythonRegex($"({pattern})");
+        var progressivePythonRegex = new Utf8PythonRegex(@"\b|\w+");
         var managedRegex = new Regex(
             pattern,
             RegexOptions.CultureInvariant,
             Regex.InfiniteMatchTimeout);
         var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        string[] expectedProgression = [string.Empty, "y", string.Empty];
+        var progressiveStructural = progressivePythonRegex.FindAll(progressiveInput, progressiveStartOffsetInBytes)
+            .Select(static match => match.ValueText).ToArray();
+        var progressiveStrings = progressivePythonRegex.FindAllToStrings(progressiveInput, progressiveStartOffsetInBytes).ScalarValues;
+        var progressiveUtf8 = progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)
+            .ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
+        var progressiveCount = progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes);
 
         if (pythonRegex.DebugFindAllBackend != PythonReDirectBackendKind.ManagedRegex ||
             pythonRegex.FindAll(input, startOffsetInBytes).Length != 0 ||
@@ -470,9 +482,17 @@ internal static class PythonReBenchmarkReporter
             pythonRegex.FindIterDetailed(hitInput, startOffsetInBytes).Length != 256 ||
             pythonRegex.Count(hitInput, startOffsetInBytes) != 256 ||
             capturedPythonRegex.FindAllToStrings(hitInput, startOffsetInBytes).Count != 256 ||
-            capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256)
+            capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
+            !progressiveStructural.SequenceEqual(expectedProgression) ||
+            !progressiveStrings.SequenceEqual(expectedProgression) ||
+            !progressiveUtf8.SequenceEqual(expectedProgression) ||
+            progressiveCount != 3)
         {
-            throw new InvalidOperationException("PythonRe empty global-shape diagnostic failed its parity or backend precondition.");
+            throw new InvalidOperationException(
+                "PythonRe empty global-shape diagnostic failed its parity or backend precondition. " +
+                $"Progressive structural=[{string.Join('|', progressiveStructural)}], " +
+                $"strings=[{string.Join('|', progressiveStrings)}], " +
+                $"utf8=[{string.Join('|', progressiveUtf8)}], count={progressiveCount}.");
         }
 
         Console.WriteLine($"Pattern            : {pattern}");
@@ -560,6 +580,22 @@ internal static class PythonReBenchmarkReporter
             samples));
         PrintOperation("CountHit", MeasureOperation(
             () => pythonRegex.Count(hitInput, startOffsetInBytes),
+            iterations,
+            samples));
+        PrintOperation("ProgressiveFindAll", MeasureOperation(
+            () => progressivePythonRegex.FindAll(progressiveInput, progressiveStartOffsetInBytes).Length,
+            iterations,
+            samples));
+        PrintOperation("ProgressiveStrings", MeasureOperation(
+            () => progressivePythonRegex.FindAllToStrings(progressiveInput, progressiveStartOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("ProgressiveUtf8", MeasureOperation(
+            () => progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes).Count,
+            iterations,
+            samples));
+        PrintOperation("ProgressiveCount", MeasureOperation(
+            () => progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes),
             iterations,
             samples));
         return 0;
