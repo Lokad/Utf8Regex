@@ -1,5 +1,7 @@
 using System.Text;
 
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -94,6 +96,46 @@ public sealed class Utf8Pcre2RegexTranslationTests
 
         Assert.True(enumerator.MoveNext());
         Assert.Equal(expected, enumerator.Current.GetValueString());
+    }
+
+    [Theory]
+    [InlineData("a|ab", "ab a", 0)]
+    [InlineData("ab|a", "ab a", 0)]
+    [InlineData("foo|foo", "foo foo", 0)]
+    [InlineData("café|naïve", "é café naïve café", 3)]
+    [InlineData("é|😀", "x é 😀 é", 0)]
+    public void DirectPreparedLiteralFamilyRangesMatchThePublicPcre2Cursor(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var inputBytes = Encoding.UTF8.GetBytes(inputText);
+        var input = Utf8ValidatedInput.Create(inputBytes);
+        var start = input.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var program = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(
+            regex.DebugCompiledProgram.Operations.Enumerate);
+        var searcher = program.Regex.Inspection.SearchPlan.PreparedSearcher;
+        Assert.Equal(PreparedSearcherKind.MultiLiteral, searcher.Kind);
+        var state = new PreparedMultiLiteralScanState(start.Value, start.Value, 0);
+        var preparedRanges = new List<(int Start, int End)>();
+        while (searcher.TryFindNextNonOverlappingLength(
+            input.Bytes,
+            ref state,
+            out var preparedStart,
+            out var preparedLength))
+        {
+            preparedRanges.Add((preparedStart, preparedStart + preparedLength));
+        }
+
+        var current = regex.EnumerateMatches(inputBytes, startOffsetInBytes);
+        var currentRanges = new List<(int Start, int End)>();
+        while (current.MoveNext())
+        {
+            currentRanges.Add((current.Current.StartOffsetInBytes, current.Current.EndOffsetInBytes));
+        }
+
+        Assert.Equal(currentRanges, preparedRanges);
     }
 
     [Fact]

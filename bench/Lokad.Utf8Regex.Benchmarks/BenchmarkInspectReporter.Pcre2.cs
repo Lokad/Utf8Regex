@@ -329,8 +329,13 @@ internal static partial class BenchmarkInspectReporter
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
             Measure("ReplacementCursorCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
-            Measure("ReplacementPreparedEnumerate", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyIndexSum(context));
-            Measure("ReplacementPreparedProject", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyProjectionSum(context));
+            if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram)
+            {
+                ValidatePcre2DirectLiteralFamilyRanges(context);
+                Measure("ReplacementDirectFamilyEnumerate", samples, iterations, () => ExecutePcre2DirectLiteralFamilyIndexSum(context));
+                Measure("ReplacementDirectFamilyProject", samples, iterations, () => ExecutePcre2DirectLiteralFamilyProjectionSum(context));
+            }
+
             Measure("ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
@@ -401,8 +406,13 @@ internal static partial class BenchmarkInspectReporter
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
             Measure("Pcre2ReplacementCursorCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
-            Measure("Pcre2ReplacementPreparedEnumerate", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyIndexSum(context));
-            Measure("Pcre2ReplacementPreparedProject", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyProjectionSum(context));
+            if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram)
+            {
+                ValidatePcre2DirectLiteralFamilyRanges(context);
+                Measure("Pcre2ReplacementDirectFamilyEnumerate", samples, iterations, () => ExecutePcre2DirectLiteralFamilyIndexSum(context));
+                Measure("Pcre2ReplacementDirectFamilyProject", samples, iterations, () => ExecutePcre2DirectLiteralFamilyProjectionSum(context));
+            }
+
             Measure("Pcre2ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
@@ -414,46 +424,86 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    private static int ExecutePcre2PreparedLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)
+    private static int ExecutePcre2DirectLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)
     {
-        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is not Pcre2LiteralFamilyDirectProgram program)
-        {
-            return 0;
-        }
-
+        var searcher = GetPcre2DirectLiteralFamilySearcher(context);
         var input = Utf8ValidatedInput.Create(context.InputBytes);
-        var enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, new Utf8BytePosition(0));
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
-        while (enumerator.MoveNext())
+        while (searcher.TryFindNextNonOverlappingLength(
+            input.Bytes,
+            ref state,
+            out var matchStart,
+            out var matchLength))
         {
-            sum = unchecked(sum + enumerator.StartOffsetInBytes + enumerator.EndOffsetInBytes);
+            sum = unchecked(sum + matchStart + matchStart + matchLength);
         }
 
         return sum;
     }
 
-    private static int ExecutePcre2PreparedLiteralFamilyProjectionSum(Utf8Pcre2BenchmarkContext context)
+    private static int ExecutePcre2DirectLiteralFamilyProjectionSum(Utf8Pcre2BenchmarkContext context)
     {
-        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is not Pcre2LiteralFamilyDirectProgram program)
-        {
-            return 0;
-        }
-
+        var searcher = GetPcre2DirectLiteralFamilySearcher(context);
         var input = Utf8ValidatedInput.Create(context.InputBytes);
         var projection = input.CreateProjectionCursor();
-        var enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, new Utf8BytePosition(0));
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
-        while (enumerator.MoveNext())
+        while (searcher.TryFindNextNonOverlappingLength(
+            input.Bytes,
+            ref state,
+            out var matchStart,
+            out var matchLength))
         {
             var match = Pcre2GlobalCursorProjection.Project(
-                enumerator.StartOffsetInBytes,
-                enumerator.EndOffsetInBytes,
+                matchStart,
+                matchStart + matchLength,
                 ref input,
                 ref projection);
             sum = unchecked(sum + match.StartOffsetInBytes + match.StartOffsetInUtf16);
         }
 
         return sum;
+    }
+
+    private static PreparedSearcher GetPcre2DirectLiteralFamilySearcher(Utf8Pcre2BenchmarkContext context)
+    {
+        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is not Pcre2LiteralFamilyDirectProgram program ||
+            program.Regex.Inspection.SearchPlan.PreparedSearcher.Kind != PreparedSearcherKind.MultiLiteral)
+        {
+            throw new InvalidOperationException(
+                $"Case '{context.BenchmarkCase.Id}' does not expose the expected prepared multi-literal searcher.");
+        }
+
+        return program.Regex.Inspection.SearchPlan.PreparedSearcher;
+    }
+
+    private static void ValidatePcre2DirectLiteralFamilyRanges(Utf8Pcre2BenchmarkContext context)
+    {
+        var searcher = GetPcre2DirectLiteralFamilySearcher(context);
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var current = context.Utf8Pcre2Regex.EnumerateMatches(context.InputBytes);
+
+        while (searcher.TryFindNextNonOverlappingLength(
+            context.InputBytes,
+            ref state,
+            out var directStart,
+            out var directLength))
+        {
+            if (!current.MoveNext() ||
+                current.Current.StartOffsetInBytes != directStart ||
+                current.Current.EndOffsetInBytes != directStart + directLength)
+            {
+                throw new InvalidOperationException(
+                    $"Case '{context.BenchmarkCase.Id}' direct literal-family ranges differ from the public PCRE2 cursor.");
+            }
+        }
+
+        if (current.MoveNext())
+        {
+            throw new InvalidOperationException(
+                $"Case '{context.BenchmarkCase.Id}' direct literal-family range count differs from the public PCRE2 cursor.");
+        }
     }
 
     public static int RunMeasureUtf8Pcre2SpecialCase(string caseId, string? iterationsText, string? samplesText)
