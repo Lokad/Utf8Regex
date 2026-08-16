@@ -637,6 +637,8 @@ internal static partial class BenchmarkInspectReporter
         var compiledDiagnostics = compiledUtf8Regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
         var baselinePlan = baselineRegex.Inspection.SearchPlan;
         var compiledPlan = compiledUtf8Regex.Inspection.SearchPlan;
+        var correlatedPrefilter = default(PreparedMultiLiteralPackedNibbleSimdPrefilter);
+        PreparedAsciiIgnoreCaseLiteralSetSearch? ignoreCaseLiteralSearch = null;
 
         WriteReplicaCaseHeader(benchmarkCase, iterations);
         Console.WriteLine($"BaselineEngine    : {baselineRegex.Inspection.CompiledEngineKind}");
@@ -647,6 +649,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Samples           : {samples}");
         if (baselinePlan.AlternateIgnoreCaseLiteralSearch is { } ignoreCaseSearch)
         {
+            ignoreCaseLiteralSearch = ignoreCaseSearch;
+            correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(
+                ignoreCaseSearch.Buckets.SelectMany(static bucket => bucket.Literals).ToArray());
             var candidates = CountIgnoreCaseLiteralFamilyCandidates(ignoreCaseSearch, benchmarkCase.InputBytes);
             Console.WriteLine($"FirstByteCandidates: {candidates.FirstByte}");
             Console.WriteLine($"PrefixCandidates  : {candidates.CorrelatedPrefix}");
@@ -662,6 +667,17 @@ internal static partial class BenchmarkInspectReporter
             Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
             return benchmarkCase.InputBytes.Length;
         });
+        if (ignoreCaseLiteralSearch is { } directSearch && correlatedPrefilter.HasValue)
+        {
+            Measure("CorrelatedCandidates", samples, iterations, () =>
+                ExecuteCorrelatedCandidateCount(correlatedPrefilter, benchmarkCase.InputBytes));
+            Measure("CorrelatedBoundaryCount", samples, iterations, () =>
+                ExecuteIgnoreCaseCorrelatedCountWithBoundaries(
+                    correlatedPrefilter,
+                    directSearch,
+                    baselinePlan,
+                    benchmarkCase.InputBytes));
+        }
         Measure("BaselinePreparedBoundaryCount", samples, iterations, () => ExecutePreparedSearcherCountWithBoundaries(baselinePlan.PreparedSearcher, baselinePlan, benchmarkCase.InputBytes));
         Measure("CompiledPreparedBoundaryCount", samples, iterations, () => ExecutePreparedSearcherCountWithBoundaries(compiledPlan.PreparedSearcher, compiledPlan, benchmarkCase.InputBytes));
         Measure("BaselineDirect", samples, iterations, () => baselineRegex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
@@ -6644,6 +6660,47 @@ internal static partial class BenchmarkInspectReporter
         {
             count++;
             startIndex = matchIndex + Math.Max(matchedLength, 1);
+        }
+
+        return count;
+    }
+
+    private static int ExecuteCorrelatedCandidateCount(
+        PreparedMultiLiteralPackedNibbleSimdPrefilter prefilter,
+        byte[] input)
+    {
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (prefilter.TryFindNextCandidate(input, ref state, out _))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static int ExecuteIgnoreCaseCorrelatedCountWithBoundaries(
+        PreparedMultiLiteralPackedNibbleSimdPrefilter prefilter,
+        PreparedAsciiIgnoreCaseLiteralSetSearch search,
+        Utf8SearchPlan plan,
+        byte[] input)
+    {
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var span = input.AsSpan();
+        while (prefilter.TryFindNextCandidate(span, ref state, out var candidate))
+        {
+            if (!search.TryGetMatchedLiteralLength(span, candidate, out var matchedLength))
+            {
+                continue;
+            }
+
+            if (Utf8SearchExecutor.MatchesBoundaryRequirements(plan, span, candidate, matchedLength))
+            {
+                count++;
+            }
+
+            state = new PreparedMultiLiteralScanState(candidate + matchedLength, 0, 0);
         }
 
         return count;
