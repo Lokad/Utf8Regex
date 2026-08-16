@@ -1911,7 +1911,7 @@ internal ref struct Pcre2GlobalMatchCursor
 
 internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 {
-    private Utf8ValueMatchEnumerator _enumerator;
+    private Utf8PreparedValueMatchEnumerator _enumerator;
     private Utf8ValidatedInput _input;
     private Utf8ProjectionCursor _projection;
 
@@ -1920,7 +1920,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start)
     {
-        _enumerator = regex.ByteOffsetExecution.EnumerateMatches(input, start);
+        _enumerator = regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
         _projection = input.CreateProjectionCursor();
         Current = default;
@@ -1937,8 +1937,8 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         }
 
         Current = Pcre2GlobalCursorProjection.Project(
-            _enumerator.Current.IndexInBytes,
-            _enumerator.Current.IndexInBytes + _enumerator.Current.LengthInBytes,
+            _enumerator.StartOffsetInBytes,
+            _enumerator.EndOffsetInBytes,
             ref _input,
             ref _projection);
         return true;

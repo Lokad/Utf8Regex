@@ -694,6 +694,7 @@ public sealed class Utf8Regex
         public Utf8ValueMatchEnumerator EnumerateMatches(Utf8ValidatedInput input, Utf8BytePosition start)
             => _owner.EnumerateMatchesAtByteOffset(input, start);
 
+        // PCRE2-INTEGRATION-POINT: flavor-neutral prepared byte-range iteration.
         public Utf8PreparedValueMatchEnumerator EnumeratePreparedMatches(
             Utf8ValidatedInput input,
             Utf8BytePosition start)

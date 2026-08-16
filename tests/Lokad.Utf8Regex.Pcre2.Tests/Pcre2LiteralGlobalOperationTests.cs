@@ -229,6 +229,57 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
+    public void WarmedLiteralFamilyCountAndEnumerationAllocateNoObjectsPerResult()
+    {
+        var regex = new Utf8Pcre2Regex("alpha|amber|bravo");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha amber bravo ", 128)));
+        _ = regex.Count(input);
+        var warm = regex.EnumerateMatches(input);
+        while (warm.MoveNext())
+        {
+            _ = warm.Current.StartOffsetInUtf16;
+        }
+
+        var sum = 0;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < 100; iteration++)
+        {
+            sum += regex.Count(input);
+            var enumerator = regex.EnumerateMatches(input);
+            while (enumerator.MoveNext())
+            {
+                sum += enumerator.Current.StartOffsetInUtf16;
+            }
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(sum > 0);
+        Assert.Equal(0, allocated);
+    }
+
+    [Fact]
+    public void LiteralFamilyCursorSupportsConcurrentRegexReuse()
+    {
+        var regex = new Utf8Pcre2Regex("café|naïve|😀");
+        var input = "x café naïve 😀 café"u8.ToArray();
+
+        Parallel.For(0, 256, _ =>
+        {
+            Assert.Equal(4, regex.Count(input));
+            var count = 0;
+            var enumerator = regex.EnumerateMatches(input);
+            while (enumerator.MoveNext())
+            {
+                Assert.True(enumerator.Current.HasUtf16Projection);
+                count++;
+            }
+
+            Assert.Equal(4, count);
+            Assert.Equal("x <café> <naïve> <😀> <café>", regex.ReplaceToString(input, "<$0>"));
+        });
+    }
+
+    [Fact]
     public void GenericGlobalDriverHasNoCompletePatternDispatchOrNullableArrayAssertion()
     {
         var root = FindRepositoryDirectory();

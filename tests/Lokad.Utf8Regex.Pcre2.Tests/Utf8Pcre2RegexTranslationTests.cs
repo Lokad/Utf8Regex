@@ -1,5 +1,7 @@
+using System.Buffers;
 using System.Text;
 
+using global::Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
@@ -128,6 +130,13 @@ public sealed class Utf8Pcre2RegexTranslationTests
             preparedRanges.Add((preparedStart, preparedStart + preparedLength));
         }
 
+        var core = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
+        var coreRanges = new List<(int Start, int End)>();
+        while (core.MoveNext())
+        {
+            coreRanges.Add((core.StartOffsetInBytes, core.EndOffsetInBytes));
+        }
+
         var current = regex.EnumerateMatches(inputBytes, startOffsetInBytes);
         var currentRanges = new List<(int Start, int End)>();
         while (current.MoveNext())
@@ -135,7 +144,94 @@ public sealed class Utf8Pcre2RegexTranslationTests
             currentRanges.Add((current.Current.StartOffsetInBytes, current.Current.EndOffsetInBytes));
         }
 
+        Assert.Equal(preparedRanges, coreRanges);
         Assert.Equal(currentRanges, preparedRanges);
+    }
+
+    [Theory]
+    [InlineData("a|ab", "ab a", "ExactDirectFamily", 2)]
+    [InlineData("alpha|amber|bravo", "alpha amber bravo", "ExactTrieFamily", 3)]
+    [InlineData("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", "Sherlock Holmes x Professor Moriarty", "ExactAutomatonFamily", 2)]
+    [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯 x 莫里亚蒂教授", "ExactPackedFamily", 2)]
+    [InlineData("Task|ValueTask|IAsyncEnumerable", "Task ValueTask IAsyncEnumerable", "ExactEarliestFamily", 3)]
+    public void PreparedLiteralFamilyCursorCoversEveryCorePortfolio(
+        string pattern,
+        string input,
+        string expectedPortfolio,
+        int expectedCount)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+        var program = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(
+            regex.DebugCompiledProgram.Operations.Enumerate);
+
+        Assert.Equal(expectedPortfolio, program.Regex.ByteOffsetExecution.SearchPortfolioKind.ToString());
+        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(input));
+        var count = 0;
+        while (enumerator.MoveNext())
+        {
+            Assert.True(enumerator.Current.HasContiguousByteRange);
+            Assert.True(enumerator.Current.IsUtf8SliceWellFormed);
+            Assert.True(enumerator.Current.HasUtf16Projection);
+            count++;
+        }
+
+        Assert.Equal(expectedCount, count);
+    }
+
+    [Fact]
+    public void LiteralFamilyCursorFeedsMatchManyAndEveryReplacementShape()
+    {
+        var regex = new Utf8Pcre2Regex("tempus|magna|semper");
+        var input = "é tempus magna semper tempus"u8;
+
+        Assert.Equal(4, regex.Count(input));
+        var enumerator = regex.EnumerateMatches(input);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(3, enumerator.Current.StartOffsetInBytes);
+        Assert.Equal(2, enumerator.Current.StartOffsetInUtf16);
+
+        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
+        Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
+        Assert.True(isMore);
+        Assert.Equal(16, matches[2].StartOffsetInBytes);
+
+        const string expected = "é <tempus> <magna> <semper> <tempus>";
+        Assert.Equal(expected, regex.ReplaceToString(input, "<$0>"));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
+        Assert.Equal(
+            expected,
+            regex.ReplaceToString(
+                input,
+                0,
+                static (in Utf8Pcre2MatchContext match, ref int _) => $"<{match.GetValueString()}>"));
+
+        var evaluatorBytes = regex.Replace(
+            input,
+            0,
+            static (in Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref int _) =>
+            {
+                writer.AppendAsciiByte((byte)'<');
+                writer.Append(match.Value.GetValueBytes());
+                writer.AppendAsciiByte((byte)'>');
+            });
+        Assert.Equal(expected, Encoding.UTF8.GetString(evaluatorBytes));
+
+        var expectedFixed = "é x x x x"u8;
+        Span<byte> destination = stackalloc byte[expectedFixed.Length];
+        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "x"u8, destination, out var bytesWritten));
+        Assert.Equal(expectedFixed.Length, bytesWritten);
+        Assert.True(destination.SequenceEqual(expectedFixed));
+
+        Span<byte> tooSmall = stackalloc byte[expectedFixed.Length - 1];
+        Assert.Equal(
+            OperationStatus.DestinationTooSmall,
+            regex.TryReplace(
+                input,
+                "x"u8,
+                tooSmall,
+                out bytesWritten,
+                Pcre2SubstitutionOptions.SubstituteOverflowLength));
+        Assert.Equal(expectedFixed.Length, bytesWritten);
     }
 
     [Fact]
