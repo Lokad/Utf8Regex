@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8ConfirmationExecutor
 {
     public static bool IsMatch(
-        Utf8SearchPlan plan,
+        in Utf8SearchPlan plan,
         Utf8ConfirmationPlan confirmation,
         ReadOnlySpan<byte> input,
         int startIndex,
@@ -16,13 +16,13 @@ internal static class Utf8ConfirmationExecutor
         {
             Utf8ConfirmationKind.None => true,
             Utf8ConfirmationKind.BoundaryRequirements or Utf8ConfirmationKind.BoundaryAndTrailingLiteral
-                => MatchesBoundaryRequirementsFast(plan, input, startIndex, literalLength),
+                => MatchesBoundaryRequirementsFast(in plan, input, startIndex, literalLength),
             Utf8ConfirmationKind.FallbackVerifier => true,
             _ => false,
         };
     }
 
-    private static bool MatchesBoundaryRequirementsFast(Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)
+    private static bool MatchesBoundaryRequirementsFast(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)
     {
         if (plan.TrailingLiteralUtf8 is null &&
             plan.LeadingBoundary == Utf8BoundaryRequirement.Boundary &&
@@ -41,7 +41,7 @@ internal static class Utf8ConfirmationExecutor
                 trailingBoundaryMatch;
         }
 
-        return Utf8SearchExecutor.MatchesBoundaryRequirements(plan, input, startIndex, literalLength);
+        return Utf8SearchExecutor.MatchesBoundaryRequirements(in plan, input, startIndex, literalLength);
     }
 
     private static bool TryMatchesBoundaryRequirementAscii(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset, out bool isMatch)

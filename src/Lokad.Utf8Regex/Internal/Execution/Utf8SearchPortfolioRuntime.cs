@@ -13,8 +13,8 @@ internal static class Utf8SearchPortfolioRuntime
     private const int LargeAutomatonHybridMinSkippedWindows = 4;
 
     public static bool TryFindNextLiteralFamilyMatch(
-        Utf8SearchPlan plan,
-        Utf8SearchOperationPlan program,
+        in Utf8SearchPlan plan,
+        in Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
         Utf8ExecutionDeadline budget,
@@ -40,7 +40,7 @@ internal static class Utf8SearchPortfolioRuntime
                 return true;
             }
 
-            if (Utf8ConfirmationExecutor.IsMatch(plan, program.Confirmation, input, match.Index, match.Length))
+            if (Utf8ConfirmationExecutor.IsMatch(in plan, program.Confirmation, input, match.Index, match.Length))
             {
                 return true;
             }

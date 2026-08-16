@@ -110,15 +110,16 @@ internal static class Utf8SearchStrategyExecutor
     }
 
     public static bool TryFindNextLiteralFamilyMatch(
-        Utf8SearchPlan plan,
+        in Utf8SearchPlan plan,
+        in Utf8SearchOperationPlan operation,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
         Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
         return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
-            plan,
-            plan.EnumerationOperation,
+            in plan,
+            in operation,
             input,
             ref state,
             budget,

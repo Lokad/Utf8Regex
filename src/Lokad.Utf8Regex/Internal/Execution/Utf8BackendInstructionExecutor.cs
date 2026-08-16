@@ -52,16 +52,16 @@ internal static class Utf8BackendInstructionExecutor
     }
 
     public static bool TryFindNextLiteralFamilyMatch(
-        Utf8SearchPlan plan,
-        Utf8SearchOperationPlan program,
+        in Utf8SearchPlan plan,
+        in Utf8SearchOperationPlan program,
         ReadOnlySpan<byte> input,
         ref PreparedMultiLiteralScanState state,
         Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
         return Utf8SearchPortfolioRuntime.TryFindNextLiteralFamilyMatch(
-            plan,
-            program,
+            in plan,
+            in program,
             input,
             ref state,
             budget,

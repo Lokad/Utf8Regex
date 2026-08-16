@@ -467,7 +467,7 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         _budget.Step();
-        var index = Utf8SearchExecutor.FindFirst(_searchPlan, _remaining);
+        var index = Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
         if (index < 0)
         {
             return false;
@@ -496,7 +496,7 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         _budget.Step();
-        var index = Utf8SearchExecutor.FindFirst(_searchPlan, _remaining);
+        var index = Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
         if (index < 0)
         {
             return false;
@@ -529,14 +529,14 @@ internal ref struct Utf8OperationMatchCursor
             !_hasBoundaryRequirements &&
             !_hasTrailingLiteralRequirement
             ? literalSearch.IndexOf(_remaining)
-            : Utf8SearchExecutor.FindFirst(_searchPlan, _remaining);
+            : Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
         if (index < 0)
         {
             return false;
         }
 
         _current = Utf8ProjectionExecutor.ProjectMatch(
-            _program,
+            _projectionPlan,
             _input,
             _consumed,
             _consumedUtf16,
@@ -551,13 +551,19 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextExactUtf8Literals()
     {
-        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(_searchPlan, _input, ref _multiLiteralScanState, _budget, out var match))
+        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
+                in _searchPlan,
+                in _program,
+                _input,
+                ref _multiLiteralScanState,
+                _budget,
+                out var match))
         {
             return false;
         }
 
         _current = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
-            _program,
+            _projectionPlan,
             _input,
             _alternateLiteralUtf16Lengths,
             _consumed,
@@ -571,13 +577,19 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiIgnoreCaseLiterals()
     {
-        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(_searchPlan, _input, ref _multiLiteralScanState, _budget, out var match))
+        if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
+                in _searchPlan,
+                in _program,
+                _input,
+                ref _multiLiteralScanState,
+                _budget,
+                out var match))
         {
             return false;
         }
 
         _current = Utf8ProjectionExecutor.ProjectMatch(
-            _program,
+            _projectionPlan,
             _input,
             _consumed,
             _consumedUtf16,
