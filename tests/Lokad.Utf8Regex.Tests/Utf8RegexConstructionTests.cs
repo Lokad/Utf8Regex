@@ -1815,6 +1815,39 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void DistinctFirstByteLiteralFamilyCountMatchesDotNetAcrossSelectorBoundary(
+        bool compiled,
+        bool finiteTimeout)
+    {
+        const string pattern = "a|needle";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        var regex = new Utf8Regex(pattern, options, timeout);
+        var oracle = new Regex(pattern, options, timeout);
+        string[] inputs =
+        [
+            new('a', 4095),
+            new('a', 4096),
+            new('a', 8192),
+            new('n', 8192),
+            new string('x', 5000) + "needle" + new string('x', 4000),
+            "needle" + new string('a', 8192),
+            new string('x', 8190) + "need",
+        ];
+
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
     [Fact]
     public void CompiledExactAsciiLiteralFamilyMatchMatchesDotNet()
     {
