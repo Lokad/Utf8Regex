@@ -1504,9 +1504,9 @@
     "pcre2-special-ismatch": {
       "Cases": {
         "pcre2/backslash-c-literal": {
-          "MeasuredAtUtc": "2026-08-16T00:10:05.8299571+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:22.9048789+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1517,16 +1517,16 @@
           "PatternUtf8Bytes": 6,
           "InputUtf8Bytes": 5,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 28.96015625,
-          "ConstructionAllocatedBytes": 33232,
+          "ConstructionMicroseconds": 25.753515625,
+          "ConstructionAllocatedBytes": 32344,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 0.296145
+          "Utf8Pcre2": 0.28794000000000003
         },
         "pcre2/branch-reset-backref": {
-          "MeasuredAtUtc": "2026-08-16T00:09:04.4416157+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:23.3642168+00:00",
           "Environment": {
-            "SourceCommit": "c9d577936ab5",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1537,16 +1537,16 @@
           "PatternUtf8Bytes": 17,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 50.681640625,
-          "ConstructionAllocatedBytes": 40576,
+          "ConstructionMicroseconds": 41.813671875,
+          "ConstructionAllocatedBytes": 39688,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.431015
+          "Utf8Pcre2": 1.685925
         },
         "pcre2/conditional-accept-negative-lookahead": {
-          "MeasuredAtUtc": "2026-08-16T00:10:17.0624334+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:23.6029027+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1557,16 +1557,16 @@
           "PatternUtf8Bytes": 27,
           "InputUtf8Bytes": 3,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 51.710546875,
-          "ConstructionAllocatedBytes": 47200,
+          "ConstructionMicroseconds": 48.95625,
+          "ConstructionAllocatedBytes": 46312,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.24708
+          "Utf8Pcre2": 0.33701
         },
         "pcre2/conditional-lookahead": {
-          "MeasuredAtUtc": "2026-08-16T00:10:17.8969377+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:23.8606591+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1577,16 +1577,16 @@
           "PatternUtf8Bytes": 18,
           "InputUtf8Bytes": 3,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 71.144921875,
-          "ConstructionAllocatedBytes": 57664,
+          "ConstructionMicroseconds": 63.89609375,
+          "ConstructionAllocatedBytes": 56632,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.250925
+          "Utf8Pcre2": 0.31568
         },
         "pcre2/conditional-negative-lookahead": {
-          "MeasuredAtUtc": "2026-08-16T00:10:18.7880477+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:24.1755964+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1597,16 +1597,16 @@
           "PatternUtf8Bytes": 18,
           "InputUtf8Bytes": 3,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 69.128125,
-          "ConstructionAllocatedBytes": 57704,
+          "ConstructionMicroseconds": 50.9984375,
+          "ConstructionAllocatedBytes": 56672,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.27908
+          "Utf8Pcre2": 0.31345
         },
         "pcre2/recursive-optional": {
-          "MeasuredAtUtc": "2026-08-16T00:10:40.0330097+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:05:15.3089783+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1616,17 +1616,17 @@
           },
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 6,
-          "EffectiveIterations": 17321,
-          "ConstructionMicroseconds": 52.941015625,
-          "ConstructionAllocatedBytes": 51632,
+          "EffectiveIterations": 18159,
+          "ConstructionMicroseconds": 51.578125,
+          "ConstructionAllocatedBytes": 50744,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.9145199468852838
+          "Utf8Pcre2": 1.9972135029461975
         },
         "pcre2/recursive-palindrome": {
-          "MeasuredAtUtc": "2026-08-16T00:10:41.0817524+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:25.7043643+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1637,16 +1637,16 @@
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 6,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 53.51328125,
-          "ConstructionAllocatedBytes": 51264,
+          "ConstructionMicroseconds": 20.141015625,
+          "ConstructionAllocatedBytes": 49424,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.78371
+          "Utf8Pcre2": 1.753895
         },
         "pcre2/subroutine-prefix-digits": {
-          "MeasuredAtUtc": "2026-08-16T00:10:45.2657839+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:25.866531+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1657,16 +1657,16 @@
           "PatternUtf8Bytes": 13,
           "InputUtf8Bytes": 5,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 49.246875,
-          "ConstructionAllocatedBytes": 43216,
+          "ConstructionMicroseconds": 18.2578125,
+          "ConstructionAllocatedBytes": 41280,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.5642049999999998
+          "Utf8Pcre2": 0.441075
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-16T00:06:39.4706586+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:24.6432764+00:00",
           "Environment": {
-            "SourceCommit": "37c8ba407571",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1677,20 +1677,20 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 32.8921875,
-          "ConstructionAllocatedBytes": 33408,
+          "ConstructionMicroseconds": 30.54140625,
+          "ConstructionAllocatedBytes": 32430,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.8726099999999999
+          "Utf8Pcre2": 1.71702
         }
       }
     },
     "pcre2-special-count": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "MeasuredAtUtc": "2026-08-16T00:09:05.3538941+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:26.7594643+00:00",
           "Environment": {
-            "SourceCommit": "c9d577936ab5",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1701,16 +1701,16 @@
           "PatternUtf8Bytes": 17,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 52.3796875,
-          "ConstructionAllocatedBytes": 40576,
+          "ConstructionMicroseconds": 15.313671875,
+          "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.851205
+          "Utf8Pcre2": 2.37698
         },
         "pcre2/branch-reset-basic": {
-          "MeasuredAtUtc": "2026-08-16T00:10:06.8508199+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:26.9966401+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1721,16 +1721,16 @@
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 43.96015625,
-          "ConstructionAllocatedBytes": 41160,
+          "ConstructionMicroseconds": 15.38828125,
+          "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.529715
+          "Utf8Pcre2": 1.103715
         },
         "pcre2/branch-reset-followup": {
-          "MeasuredAtUtc": "2026-08-16T00:10:10.3832454+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:27.4079323+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1740,17 +1740,17 @@
           },
           "PatternUtf8Bytes": 36,
           "InputUtf8Bytes": 31,
-          "EffectiveIterations": 19685,
-          "ConstructionMicroseconds": 53.056640625,
-          "ConstructionAllocatedBytes": 45536,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.476171875,
+          "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.9698552197104395
+          "Utf8Pcre2": 2.350295
         },
         "pcre2/branch-reset-nested": {
-          "MeasuredAtUtc": "2026-08-16T00:10:14.1193685+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:27.6493575+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1761,16 +1761,16 @@
           "PatternUtf8Bytes": 21,
           "InputUtf8Bytes": 22,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 54.72890625,
-          "ConstructionAllocatedBytes": 45176,
+          "ConstructionMicroseconds": 15.79609375,
+          "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.58855
+          "Utf8Pcre2": 1.077595
         },
         "pcre2/duplicate-names": {
-          "MeasuredAtUtc": "2026-08-16T00:10:20.1950574+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:28.0526661+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1781,16 +1781,16 @@
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 101.01171875,
-          "ConstructionAllocatedBytes": 85456,
+          "ConstructionMicroseconds": 27.509765625,
+          "ConstructionAllocatedBytes": 83276,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.7503349999999998
+          "Utf8Pcre2": 2.27872
         },
         "pcre2/kreset-atomic-alt": {
-          "MeasuredAtUtc": "2026-08-16T00:10:24.2617339+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:28.7583588+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1801,16 +1801,16 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 13,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 40.655859375,
-          "ConstructionAllocatedBytes": 38592,
+          "ConstructionMicroseconds": 14.3625,
+          "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.25093
+          "Utf8Pcre2": 0.9964200000000001
         },
         "pcre2/kreset-bar-or-baz": {
-          "MeasuredAtUtc": "2026-08-16T00:10:27.2758377+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:28.9519794+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1821,16 +1821,16 @@
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 45.94375,
-          "ConstructionAllocatedBytes": 43568,
+          "ConstructionMicroseconds": 15.499609375,
+          "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.16059
+          "Utf8Pcre2": 0.8421200000000001
         },
         "pcre2/kreset-captured-repeat": {
-          "MeasuredAtUtc": "2026-08-16T11:09:59.5315125+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:29.3330175+00:00",
           "Environment": {
-            "SourceCommit": "bdb84a553ddd",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1841,16 +1841,16 @@
           "PatternUtf8Bytes": 7,
           "InputUtf8Bytes": 14,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 36.61640625,
-          "ConstructionAllocatedBytes": 36504,
+          "ConstructionMicroseconds": 14.057421875,
+          "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 1.829105
+          "Utf8Pcre2": 2.08822
         },
         "pcre2/kreset-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:33.8960396+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:29.5084193+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1861,16 +1861,16 @@
           "PatternUtf8Bytes": 8,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 36.23984375,
-          "ConstructionAllocatedBytes": 37216,
+          "ConstructionMicroseconds": 14.5078125,
+          "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.04547
+          "Utf8Pcre2": 0.698995
         },
         "pcre2/kreset-repeat": {
-          "MeasuredAtUtc": "2026-08-16T00:10:36.7872754+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:29.8694261+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1880,17 +1880,17 @@
           },
           "PatternUtf8Bytes": 9,
           "InputUtf8Bytes": 14,
-          "EffectiveIterations": 17564,
-          "ConstructionMicroseconds": 36.203125,
-          "ConstructionAllocatedBytes": 35856,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.1578125,
+          "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.109781370986108
+          "Utf8Pcre2": 2.051185
         },
         "pcre2/same-start-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:42.2529098+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:30.2428954+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1900,17 +1900,17 @@
           },
           "PatternUtf8Bytes": 14,
           "InputUtf8Bytes": 9,
-          "EffectiveIterations": 19582,
-          "ConstructionMicroseconds": 45.291796875,
-          "ConstructionAllocatedBytes": 45608,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 13.9359375,
+          "ConstructionAllocatedBytes": 44352,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.8919262588091104
+          "Utf8Pcre2": 2.2775849999999997
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-16T00:05:43.3750924+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:26.3570925+00:00",
           "Environment": {
-            "SourceCommit": "349de5f5ddb7",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1920,17 +1920,17 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 10474,
-          "ConstructionMicroseconds": 28.253515625,
-          "ConstructionAllocatedBytes": 38440,
+          "EffectiveIterations": 13636,
+          "ConstructionMicroseconds": 12.48125,
+          "ConstructionAllocatedBytes": 37192,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.6637292342944434
+          "Utf8Pcre2": 2.1104209445585216
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-16T00:06:40.3505014+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:28.5335555+00:00",
           "Environment": {
-            "SourceCommit": "37c8ba407571",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1940,21 +1940,21 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 32.937109375,
-          "ConstructionAllocatedBytes": 33408,
+          "EffectiveIterations": 10176,
+          "ConstructionMicroseconds": 14.6796875,
+          "ConstructionAllocatedBytes": 31568,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.615795
+          "Utf8Pcre2": 2.0570263364779873
         }
       }
     },
     "pcre2-special-enumerate": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "MeasuredAtUtc": "2026-08-16T00:09:06.9117234+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:32.1847784+00:00",
           "Environment": {
-            "SourceCommit": "c9d577936ab5",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1965,16 +1965,16 @@
           "PatternUtf8Bytes": 17,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 14.295703125,
-          "ConstructionAllocatedBytes": 39800,
+          "ConstructionMicroseconds": 14.1453125,
+          "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 10.044145
+          "Utf8Pcre2": 5.601425
         },
         "pcre2/branch-reset-basic": {
-          "MeasuredAtUtc": "2026-08-16T00:10:08.2902756+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:32.8768042+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -1985,16 +1985,16 @@
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 49.44765625,
-          "ConstructionAllocatedBytes": 41160,
+          "ConstructionMicroseconds": 14.27578125,
+          "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.628615
+          "Utf8Pcre2": 4.21825
         },
         "pcre2/branch-reset-followup": {
-          "MeasuredAtUtc": "2026-08-16T00:10:12.0905489+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:33.7674725+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2005,16 +2005,16 @@
           "PatternUtf8Bytes": 36,
           "InputUtf8Bytes": 31,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 55.134765625,
-          "ConstructionAllocatedBytes": 45536,
+          "ConstructionMicroseconds": 16.4234375,
+          "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 10.05225
+          "Utf8Pcre2": 5.62487
         },
         "pcre2/branch-reset-nested": {
-          "MeasuredAtUtc": "2026-08-16T00:10:15.5308381+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:34.4748335+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2025,16 +2025,16 @@
           "PatternUtf8Bytes": 21,
           "InputUtf8Bytes": 22,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 58.04765625,
-          "ConstructionAllocatedBytes": 45176,
+          "ConstructionMicroseconds": 15.90078125,
+          "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.14458
+          "Utf8Pcre2": 4.30235
         },
         "pcre2/duplicate-names": {
-          "MeasuredAtUtc": "2026-08-16T00:10:22.068968+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:35.3521811+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2045,16 +2045,16 @@
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 94.17421875,
-          "ConstructionAllocatedBytes": 85040,
+          "ConstructionMicroseconds": 20.933203125,
+          "ConstructionAllocatedBytes": 83240,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 9.84952
+          "Utf8Pcre2": 5.54051
         },
         "pcre2/kreset-atomic-alt": {
-          "MeasuredAtUtc": "2026-08-16T00:10:25.6365928+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:36.9144548+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2065,16 +2065,16 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 13,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 42.2359375,
-          "ConstructionAllocatedBytes": 38592,
+          "ConstructionMicroseconds": 14.97421875,
+          "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.237325
+          "Utf8Pcre2": 4.1969449999999995
         },
         "pcre2/kreset-bar-or-baz": {
-          "MeasuredAtUtc": "2026-08-16T00:10:28.5908389+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:37.5770188+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2085,16 +2085,16 @@
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 50.813671875,
-          "ConstructionAllocatedBytes": 43568,
+          "ConstructionMicroseconds": 14.835546875,
+          "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 7.725645
+          "Utf8Pcre2": 4.073455
         },
         "pcre2/kreset-captured-repeat": {
-          "MeasuredAtUtc": "2026-08-16T11:10:00.4173664+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:38.4154797+00:00",
           "Environment": {
-            "SourceCommit": "bdb84a553ddd",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2105,16 +2105,16 @@
           "PatternUtf8Bytes": 7,
           "InputUtf8Bytes": 14,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 35.9890625,
-          "ConstructionAllocatedBytes": 36504,
+          "ConstructionMicroseconds": 14.114453125,
+          "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 4.091069999999999
+          "Utf8Pcre2": 5.2788900000000005
         },
         "pcre2/kreset-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:35.1369473+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:39.06331+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2125,16 +2125,16 @@
           "PatternUtf8Bytes": 8,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 39.45,
-          "ConstructionAllocatedBytes": 37216,
+          "ConstructionMicroseconds": 14.89921875,
+          "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 7.8502350000000005
+          "Utf8Pcre2": 3.916865
         },
         "pcre2/kreset-repeat": {
-          "MeasuredAtUtc": "2026-08-16T00:10:38.2462837+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:39.9065823+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2145,16 +2145,16 @@
           "PatternUtf8Bytes": 9,
           "InputUtf8Bytes": 14,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 37.65859375,
-          "ConstructionAllocatedBytes": 35856,
+          "ConstructionMicroseconds": 14.08359375,
+          "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.998339999999999
+          "Utf8Pcre2": 5.35954
         },
         "pcre2/same-start-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:43.7174746+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:40.7112376+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2165,16 +2165,16 @@
           "PatternUtf8Bytes": 14,
           "InputUtf8Bytes": 9,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 48.30859375,
-          "ConstructionAllocatedBytes": 45608,
+          "ConstructionMicroseconds": 14.401171875,
+          "ConstructionAllocatedBytes": 44352,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.729460000000001
+          "Utf8Pcre2": 5.06361
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-16T00:05:44.9674844+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:31.3105788+00:00",
           "Environment": {
-            "SourceCommit": "349de5f5ddb7",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2184,17 +2184,17 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 17564,
-          "ConstructionMicroseconds": 27.9515625,
-          "ConstructionAllocatedBytes": 38440,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 9.84296875,
+          "ConstructionAllocatedBytes": 37192,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 10.152527897973126
+          "Utf8Pcre2": 6.40567
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-16T00:06:41.7607546+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:36.2239552+00:00",
           "Environment": {
-            "SourceCommit": "37c8ba407571",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2205,20 +2205,20 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 15.831640625,
-          "ConstructionAllocatedBytes": 32456,
+          "ConstructionMicroseconds": 15.428515625,
+          "ConstructionAllocatedBytes": 31568,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 8.559944999999999
+          "Utf8Pcre2": 5.272765
         }
       }
     },
     "pcre2-special-matchmany": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "MeasuredAtUtc": "2026-08-16T00:09:07.5764496+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:41.2919458+00:00",
           "Environment": {
-            "SourceCommit": "c9d577936ab5",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2229,16 +2229,16 @@
           "PatternUtf8Bytes": 17,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 16.862890625,
-          "ConstructionAllocatedBytes": 39800,
+          "ConstructionMicroseconds": 14.292578125,
+          "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.70137
+          "Utf8Pcre2": 2.33271
         },
         "pcre2/branch-reset-basic": {
-          "MeasuredAtUtc": "2026-08-16T00:10:08.9470021+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:41.4996688+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2249,16 +2249,16 @@
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 20.572265625,
-          "ConstructionAllocatedBytes": 40384,
+          "ConstructionMicroseconds": 13.89140625,
+          "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.89681
+          "Utf8Pcre2": 0.904745
         },
         "pcre2/branch-reset-followup": {
-          "MeasuredAtUtc": "2026-08-16T00:10:12.9682104+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:41.9142082+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2269,16 +2269,16 @@
           "PatternUtf8Bytes": 36,
           "InputUtf8Bytes": 31,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 16.071875,
-          "ConstructionAllocatedBytes": 44760,
+          "ConstructionMicroseconds": 15.4796875,
+          "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 4.28664
+          "Utf8Pcre2": 2.413125
         },
         "pcre2/branch-reset-nested": {
-          "MeasuredAtUtc": "2026-08-16T00:10:16.2106383+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:42.1486238+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2289,16 +2289,16 @@
           "PatternUtf8Bytes": 21,
           "InputUtf8Bytes": 22,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 18.155859375,
-          "ConstructionAllocatedBytes": 44224,
+          "ConstructionMicroseconds": 15.123828125,
+          "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.91357
+          "Utf8Pcre2": 1.047185
         },
         "pcre2/duplicate-names": {
-          "MeasuredAtUtc": "2026-08-16T00:10:23.0971783+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:42.5562788+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2309,16 +2309,16 @@
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 23,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 20.924609375,
-          "ConstructionAllocatedBytes": 84632,
+          "ConstructionMicroseconds": 20.4875,
+          "ConstructionAllocatedBytes": 83240,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 4.038825
+          "Utf8Pcre2": 2.3340400000000003
         },
         "pcre2/kreset-atomic-alt": {
-          "MeasuredAtUtc": "2026-08-16T00:10:26.2364454+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:42.9851974+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2329,16 +2329,16 @@
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 13,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 15.957421875,
-          "ConstructionAllocatedBytes": 37816,
+          "ConstructionMicroseconds": 13.908984375,
+          "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.6343
+          "Utf8Pcre2": 0.92248
         },
         "pcre2/kreset-bar-or-baz": {
-          "MeasuredAtUtc": "2026-08-16T00:10:29.1925074+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:43.1846597+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2349,16 +2349,16 @@
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 26.637109375,
-          "ConstructionAllocatedBytes": 43344,
+          "ConstructionMicroseconds": 16.125390625,
+          "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.5489349999999997
+          "Utf8Pcre2": 0.8895049999999999
         },
         "pcre2/kreset-captured-repeat": {
-          "MeasuredAtUtc": "2026-08-16T11:10:00.8924151+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:43.5655641+00:00",
           "Environment": {
-            "SourceCommit": "bdb84a553ddd",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2369,16 +2369,16 @@
           "PatternUtf8Bytes": 7,
           "InputUtf8Bytes": 14,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 23.062890625,
-          "ConstructionAllocatedBytes": 36384,
+          "ConstructionMicroseconds": 13.9203125,
+          "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.094005
+          "Utf8Pcre2": 2.148375
         },
         "pcre2/kreset-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:35.6701421+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:43.7501244+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2389,16 +2389,16 @@
           "PatternUtf8Bytes": 8,
           "InputUtf8Bytes": 26,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 14.07109375,
-          "ConstructionAllocatedBytes": 36264,
+          "ConstructionMicroseconds": 14.610546875,
+          "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.390305
+          "Utf8Pcre2": 0.770435
         },
         "pcre2/kreset-repeat": {
-          "MeasuredAtUtc": "2026-08-16T00:10:38.9392591+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:44.1189928+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2409,16 +2409,16 @@
           "PatternUtf8Bytes": 9,
           "InputUtf8Bytes": 14,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 14.37578125,
-          "ConstructionAllocatedBytes": 35080,
+          "ConstructionMicroseconds": 13.026171875,
+          "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.6368650000000002
+          "Utf8Pcre2": 2.0904
         },
         "pcre2/same-start-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:44.4134512+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:44.4407525+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2429,16 +2429,16 @@
           "PatternUtf8Bytes": 14,
           "InputUtf8Bytes": 9,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 15.61015625,
-          "ConstructionAllocatedBytes": 45384,
+          "ConstructionMicroseconds": 14.25625,
+          "ConstructionAllocatedBytes": 44352,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 3.2694799999999997
+          "Utf8Pcre2": 1.7585
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-16T00:05:45.4869986+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:40.9051274+00:00",
           "Environment": {
-            "SourceCommit": "349de5f5ddb7",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2449,16 +2449,16 @@
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 11.705859375,
-          "ConstructionAllocatedBytes": 38224,
+          "ConstructionMicroseconds": 9.6359375,
+          "ConstructionAllocatedBytes": 37192,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.46653
+          "Utf8Pcre2": 0.73568
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-16T00:06:42.1965138+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:42.7775595+00:00",
           "Environment": {
-            "SourceCommit": "37c8ba407571",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2469,20 +2469,20 @@
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
           "EffectiveIterations": 20000,
-          "ConstructionMicroseconds": 15.305859375,
-          "ConstructionAllocatedBytes": 32456,
+          "ConstructionMicroseconds": 14.92109375,
+          "ConstructionAllocatedBytes": 31568,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "Utf8Pcre2": 2.1232450000000003
+          "Utf8Pcre2": 0.81989
         }
       }
     },
     "pcre2-special-replace": {
       "Cases": {
         "pcre2/branch-reset-backref": {
-          "MeasuredAtUtc": "2026-08-16T00:09:07.8250639+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:45.2065494+00:00",
           "Environment": {
-            "SourceCommit": "c9d577936ab5",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2492,17 +2492,17 @@
           },
           "PatternUtf8Bytes": 17,
           "InputUtf8Bytes": 23,
-          "EffectiveIterations": 4320,
-          "ConstructionMicroseconds": 14.014453125,
-          "ConstructionAllocatedBytes": 39800,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.51484375,
+          "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 4.451527777777778
+          "Utf8Pcre2": 2.4670900000000002
         },
         "pcre2/branch-reset-basic": {
-          "MeasuredAtUtc": "2026-08-16T00:10:09.1420599+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:45.4266247+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2512,17 +2512,17 @@
           },
           "PatternUtf8Bytes": 15,
           "InputUtf8Bytes": 17,
-          "EffectiveIterations": 3418,
-          "ConstructionMicroseconds": 23.990625,
-          "ConstructionAllocatedBytes": 40384,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.38984375,
+          "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 3.0485371562317143
+          "Utf8Pcre2": 0.9945299999999999
         },
         "pcre2/branch-reset-followup": {
-          "MeasuredAtUtc": "2026-08-16T00:10:13.2212886+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:45.8520684+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2532,17 +2532,17 @@
           },
           "PatternUtf8Bytes": 36,
           "InputUtf8Bytes": 31,
-          "EffectiveIterations": 4352,
-          "ConstructionMicroseconds": 16.43203125,
-          "ConstructionAllocatedBytes": 44760,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 16.41953125,
+          "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 4.858249080882352
+          "Utf8Pcre2": 2.482355
         },
         "pcre2/branch-reset-nested": {
-          "MeasuredAtUtc": "2026-08-16T00:10:16.4052725+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:46.0986946+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2552,17 +2552,17 @@
           },
           "PatternUtf8Bytes": 21,
           "InputUtf8Bytes": 22,
-          "EffectiveIterations": 4069,
-          "ConstructionMicroseconds": 18.10859375,
-          "ConstructionAllocatedBytes": 44192,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.61953125,
+          "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 3.026615876136643
+          "Utf8Pcre2": 1.132015
         },
         "pcre2/duplicate-names": {
-          "MeasuredAtUtc": "2026-08-16T00:10:23.3660357+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:46.5202599+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2572,17 +2572,17 @@
           },
           "PatternUtf8Bytes": 28,
           "InputUtf8Bytes": 23,
-          "EffectiveIterations": 4414,
-          "ConstructionMicroseconds": 19.849609375,
-          "ConstructionAllocatedBytes": 84632,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 19.4953125,
+          "ConstructionAllocatedBytes": 83240,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 4.334956955142728
+          "Utf8Pcre2": 2.394125
         },
         "pcre2/kreset-atomic-alt": {
-          "MeasuredAtUtc": "2026-08-16T00:10:26.416386+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:47.2353861+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2592,17 +2592,17 @@
           },
           "PatternUtf8Bytes": 12,
           "InputUtf8Bytes": 13,
-          "EffectiveIterations": 4093,
-          "ConstructionMicroseconds": 15.577734375,
-          "ConstructionAllocatedBytes": 37816,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.138671875,
+          "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 392,
           "WarmAllocatedBytes": 88,
-          "Utf8Pcre2": 3.021133642804789
+          "Utf8Pcre2": 1.00019
         },
         "pcre2/kreset-bar-or-baz": {
-          "MeasuredAtUtc": "2026-08-16T00:10:29.4132612+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:47.444163+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2612,17 +2612,17 @@
           },
           "PatternUtf8Bytes": 16,
           "InputUtf8Bytes": 26,
-          "EffectiveIterations": 4098,
-          "ConstructionMicroseconds": 28.18359375,
-          "ConstructionAllocatedBytes": 43344,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.71640625,
+          "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 392,
           "WarmAllocatedBytes": 88,
-          "Utf8Pcre2": 2.9110541727672037
+          "Utf8Pcre2": 0.9619
         },
         "pcre2/kreset-captured-repeat": {
-          "MeasuredAtUtc": "2026-08-16T11:10:01.3673048+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:48.6546914+00:00",
           "Environment": {
-            "SourceCommit": "bdb84a553ddd",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2632,17 +2632,17 @@
           },
           "PatternUtf8Bytes": 7,
           "InputUtf8Bytes": 14,
-          "EffectiveIterations": 3583,
-          "ConstructionMicroseconds": 14.4125,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.209765625,
           "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 3576,
           "WarmAllocatedBytes": 3272,
-          "Utf8Pcre2": 13.105107451855986
+          "Utf8Pcre2": 7.5537149999999995
         },
         "pcre2/kreset-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:35.844092+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:48.874386+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2652,17 +2652,17 @@
           },
           "PatternUtf8Bytes": 8,
           "InputUtf8Bytes": 26,
-          "EffectiveIterations": 4445,
-          "ConstructionMicroseconds": 15.815625,
-          "ConstructionAllocatedBytes": 36264,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 13.52421875,
+          "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
-          "Utf8Pcre2": 2.742902137232846
+          "Utf8Pcre2": 0.82519
         },
         "pcre2/kreset-repeat": {
-          "MeasuredAtUtc": "2026-08-16T00:10:39.2137737+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:49.5272826+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2672,17 +2672,17 @@
           },
           "PatternUtf8Bytes": 9,
           "InputUtf8Bytes": 14,
-          "EffectiveIterations": 3939,
-          "ConstructionMicroseconds": 13.791796875,
-          "ConstructionAllocatedBytes": 35080,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 13.2359375,
+          "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 3072,
           "WarmAllocatedBytes": 2768,
-          "Utf8Pcre2": 6.136176694592536
+          "Utf8Pcre2": 4.116075
         },
         "pcre2/same-start-global": {
-          "MeasuredAtUtc": "2026-08-16T00:10:44.6240914+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:49.8779464+00:00",
           "Environment": {
-            "SourceCommit": "b02aed26127a",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2692,17 +2692,17 @@
           },
           "PatternUtf8Bytes": 14,
           "InputUtf8Bytes": 9,
-          "EffectiveIterations": 4345,
-          "ConstructionMicroseconds": 15.022265625,
-          "ConstructionAllocatedBytes": 45384,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 14.188671875,
+          "ConstructionAllocatedBytes": 44352,
           "FirstCallAllocatedBytes": 672,
           "WarmAllocatedBytes": 88,
-          "Utf8Pcre2": 3.7244188722669738
+          "Utf8Pcre2": 1.888785
         },
         "literal/empty-unicode": {
-          "MeasuredAtUtc": "2026-08-16T00:05:45.8172783+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:44.7734095+00:00",
           "Environment": {
-            "SourceCommit": "349de5f5ddb7",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2712,17 +2712,17 @@
           },
           "PatternUtf8Bytes": 0,
           "InputUtf8Bytes": 320,
-          "EffectiveIterations": 3507,
-          "ConstructionMicroseconds": 11.06171875,
-          "ConstructionAllocatedBytes": 38224,
+          "EffectiveIterations": 3672,
+          "ConstructionMicroseconds": 9.7171875,
+          "ConstructionAllocatedBytes": 37192,
           "FirstCallAllocatedBytes": 832,
           "WarmAllocatedBytes": 528,
-          "Utf8Pcre2": 11.777388080980897
+          "Utf8Pcre2": 9.904656862745098
         },
         "pcre2/grapheme-cluster": {
-          "MeasuredAtUtc": "2026-08-16T00:06:42.4734562+00:00",
+          "MeasuredAtUtc": "2026-08-16T12:04:47.0093082+00:00",
           "Environment": {
-            "SourceCommit": "37c8ba407571",
+            "SourceCommit": "83aa73a68e8e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.8",
@@ -2732,12 +2732,12 @@
           },
           "PatternUtf8Bytes": 2,
           "InputUtf8Bytes": 248,
-          "EffectiveIterations": 3947,
-          "ConstructionMicroseconds": 14.946484375,
-          "ConstructionAllocatedBytes": 32456,
+          "EffectiveIterations": 20000,
+          "ConstructionMicroseconds": 15.176953125,
+          "ConstructionAllocatedBytes": 31568,
           "FirstCallAllocatedBytes": 416,
           "WarmAllocatedBytes": 112,
-          "Utf8Pcre2": 6.360932353686343
+          "Utf8Pcre2": 2.733795
         }
       }
     }
