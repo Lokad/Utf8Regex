@@ -66,6 +66,9 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 - Routed PythonRe full-match patterns that would use the core's managed
   fallback directly through the already-prepared PythonRe regex, avoiding a
   duplicate fallback layer and scalar match projection.
+- Materialized capture-free PythonRe find-all string and UTF-8 results from
+  one shared core range pass, removing an intermediate match-data array and
+  discarded string decoding.
 - Removed preventable temporary allocation from warmed non-result PCRE2
   operations and bounded pooled invocation state and replacement-plan caches.
 - Kept candidate search, Unicode coordinate projection, zero-width progress,

@@ -411,6 +411,36 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void DirectShapedFindAllProjectsUnicodeAndOwnsReturnedBytes()
+    {
+        var regex = new Utf8PythonRegex("é+");
+        var input = "xéé yé"u8.ToArray();
+
+        var structural = regex.FindAll(input);
+        var strings = regex.FindAllToStrings(input);
+        var utf8 = regex.FindAllToUtf8(input);
+
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
+        Assert.Equal(["éé", "é"], structural.Select(static match => match.ValueText).ToArray());
+        Assert.Equal(["éé", "é"], strings.ScalarValues);
+        Assert.Equal(["éé", "é"], utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+
+        input.AsSpan().Clear();
+        Assert.Equal(["éé", "é"], utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+    }
+
+    [Fact]
+    public void DirectShapedFindAllHonorsTimeout()
+    {
+        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugFindAllBackend);
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToUtf8(input));
+    }
+
+    [Fact]
     public void FindAllToStringsUsesSingleGroupShapeWithEmptyStringForUnsetOptionalGroups()
     {
         var regex = new Utf8PythonRegex("(a)?b");
@@ -835,6 +865,8 @@ public sealed class Utf8PythonRegexTests
             Assert.Throws<ArgumentException>(() => direct.FullMatch(input));
             Assert.Throws<ArgumentException>(() => direct.SearchDetailedData(input));
             Assert.Throws<ArgumentException>(() => direct.FindAll(input));
+            Assert.Throws<ArgumentException>(() => direct.FindAllToStrings(input));
+            Assert.Throws<ArgumentException>(() => direct.FindAllToUtf8(input));
             Assert.Throws<ArgumentException>(() => empty.Count(input));
             Assert.Throws<ArgumentException>(() => direct.ReplaceToString(input, "_"));
             Assert.Throws<ArgumentException>(() => direct.SplitToStrings(input));

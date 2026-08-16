@@ -7,6 +7,12 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed class Utf8PythonRegex
 {
     private delegate byte[] Utf8ReplacementBytesFactory<TState>(ReadOnlySpan<byte> source, PythonReManagedMatchSnapshot snapshot, TState state);
+    private readonly record struct PythonReUtf8MatchRange(
+        int IndexInBytes,
+        int LengthInBytes,
+        int IndexInUtf16,
+        int LengthInUtf16);
+
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8Regex? _utf8Regex;
@@ -441,6 +447,23 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
         {
+            if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+            {
+                var values = new string[ranges.Count];
+                for (var i = 0; i < values.Length; i++)
+                {
+                    var range = ranges[i];
+                    values[i] = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes));
+                }
+
+                return new Utf8PythonFindAllResult
+                {
+                    Shape = Utf8PythonFindAllShape.FullMatch,
+                    ScalarValues = values,
+                    TupleValues = [],
+                };
+            }
+
             var matches = FindAll(input, startOffsetInBytes);
             return new Utf8PythonFindAllResult
             {
@@ -544,6 +567,23 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
         {
+            if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
+            {
+                var directValues = new byte[ranges.Count][];
+                for (var i = 0; i < directValues.Length; i++)
+                {
+                    var range = ranges[i];
+                    directValues[i] = input.Slice(range.IndexInBytes, range.LengthInBytes).ToArray();
+                }
+
+                return new Utf8PythonFindAllUtf8Result
+                {
+                    Shape = Utf8PythonFindAllShape.FullMatch,
+                    ScalarValues = directValues,
+                    TupleValues = [],
+                };
+            }
+
             var matches = FindAll(input, startOffsetInBytes);
             var values = new byte[matches.Length][];
             for (var i = 0; i < matches.Length; i++)
@@ -1254,13 +1294,42 @@ public sealed class Utf8PythonRegex
 
     private bool TryFindAllViaUtf8Regex(ReadOnlySpan<byte> input, int startOffsetInBytes, out Utf8PythonMatchData[] matches)
     {
-        if (_utf8Regex is null)
+        if (!TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
         {
             matches = [];
             return false;
         }
 
-        List<Utf8PythonMatchData> collected = [];
+        matches = new Utf8PythonMatchData[ranges.Count];
+        for (var i = 0; i < matches.Length; i++)
+        {
+            var range = ranges[i];
+            matches[i] = new Utf8PythonMatchData
+            {
+                Success = true,
+                StartOffsetInBytes = range.IndexInBytes,
+                EndOffsetInBytes = range.IndexInBytes + range.LengthInBytes,
+                StartOffsetInUtf16 = range.IndexInUtf16,
+                EndOffsetInUtf16 = range.IndexInUtf16 + range.LengthInUtf16,
+                ValueText = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes)),
+            };
+        }
+
+        return true;
+    }
+
+    private bool TryCollectUtf8MatchRanges(
+        ReadOnlySpan<byte> input,
+        int startOffsetInBytes,
+        out List<PythonReUtf8MatchRange> ranges)
+    {
+        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null)
+        {
+            ranges = [];
+            return false;
+        }
+
+        ranges = [];
         var enumerator = startOffsetInBytes == 0
             ? _utf8Regex.EnumerateMatches(input)
             : _utf8Regex.EnumerateMatchesFromUtf16Offset(input, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
@@ -1269,22 +1338,17 @@ public sealed class Utf8PythonRegex
         {
             if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
             {
-                matches = [];
+                ranges = [];
                 return false;
             }
 
-            collected.Add(new Utf8PythonMatchData
-            {
-                Success = true,
-                StartOffsetInBytes = indexInBytes,
-                EndOffsetInBytes = indexInBytes + lengthInBytes,
-                StartOffsetInUtf16 = match.IndexInUtf16,
-                EndOffsetInUtf16 = match.IndexInUtf16 + match.LengthInUtf16,
-                ValueText = Encoding.UTF8.GetString(input.Slice(indexInBytes, lengthInBytes)),
-            });
+            ranges.Add(new PythonReUtf8MatchRange(
+                indexInBytes,
+                lengthInBytes,
+                match.IndexInUtf16,
+                match.LengthInUtf16));
         }
 
-        matches = collected.ToArray();
         return true;
     }
 
