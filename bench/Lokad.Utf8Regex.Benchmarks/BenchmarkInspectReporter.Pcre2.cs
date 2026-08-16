@@ -57,6 +57,8 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"VmSteps           : {execution.BacktrackingSteps}");
             Console.WriteLine($"ResultProjections : {execution.ResultProjections}");
             Console.WriteLine($"WorkspaceRents    : {execution.WorkspacePoolRents}");
+            Console.WriteLine($"WorkspaceFixed    : {execution.WorkspaceFixedRents}");
+            Console.WriteLine($"WorkspaceInitial  : {execution.WorkspaceInitialStackRents}");
             Console.WriteLine($"WorkspaceGrowths  : {execution.WorkspacePoolGrowths}");
             Console.WriteLine($"ManagedAllocBytes : {allocatedBytes}");
             Console.WriteLine($"ThroughputBytes/s : {context.InputBytes.Length / seconds:F0}");

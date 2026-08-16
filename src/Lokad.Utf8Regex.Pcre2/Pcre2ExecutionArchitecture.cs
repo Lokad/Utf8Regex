@@ -2487,6 +2487,8 @@ internal struct Pcre2ResourceBudget
         HeapBytes = 0;
         ResultProjections = 0;
         WorkspacePoolRents = 0;
+        WorkspaceFixedRents = 0;
+        WorkspaceInitialStackRents = 0;
         WorkspacePoolGrowths = 0;
     }
 
@@ -2506,6 +2508,10 @@ internal struct Pcre2ResourceBudget
 
     internal ulong WorkspacePoolRents { get; private set; }
 
+    internal ulong WorkspaceFixedRents { get; private set; }
+
+    internal ulong WorkspaceInitialStackRents { get; private set; }
+
     internal ulong WorkspacePoolGrowths { get; private set; }
 
     internal bool CollectsDiagnostics => _collectDiagnostics;
@@ -2515,6 +2521,8 @@ internal struct Pcre2ResourceBudget
         BacktrackingSteps,
         ResultProjections,
         WorkspacePoolRents,
+        WorkspaceFixedRents,
+        WorkspaceInitialStackRents,
         WorkspacePoolGrowths);
 
     internal bool RequiresCandidateMetering => !_deadline.IsInfinite || Limits.MatchLimit != 0;
@@ -2574,12 +2582,14 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void RecordWorkspacePoolTraffic(ulong rents, ulong growths)
+    internal void RecordWorkspacePoolTraffic(ulong stackRents, ulong fixedRents, ulong stackGrowths)
     {
         if (_collectDiagnostics)
         {
-            WorkspacePoolRents += rents;
-            WorkspacePoolGrowths += growths;
+            WorkspacePoolRents += stackRents + fixedRents;
+            WorkspaceFixedRents += fixedRents;
+            WorkspaceInitialStackRents += stackRents - stackGrowths;
+            WorkspacePoolGrowths += stackGrowths;
         }
     }
 
@@ -2593,6 +2603,8 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong BacktrackingSteps,
     ulong ResultProjections,
     ulong WorkspacePoolRents,
+    ulong WorkspaceFixedRents,
+    ulong WorkspaceInitialStackRents,
     ulong WorkspacePoolGrowths);
 
 internal readonly record struct Pcre2CountDiagnostics(int Count, Pcre2ExecutionDiagnostics Execution);

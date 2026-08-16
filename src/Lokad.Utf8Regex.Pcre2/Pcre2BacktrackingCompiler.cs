@@ -4348,7 +4348,7 @@ internal static class Pcre2BacktrackingRunner
                 (rentedRepeatRestoreGenerations is null ? 0 : 1) +
                 (rentedRepeatRestoreIds is null ? 0 : 1) +
                 (rentedRepeatRestoreSnapshots is null ? 0 : 1);
-            budget.RecordWorkspacePoolTraffic((ulong)(stackRents + fixedRents), (ulong)stackGrowths);
+            budget.RecordWorkspacePoolTraffic((ulong)stackRents, (ulong)fixedRents, (ulong)stackGrowths);
             markTrail.Dispose();
             markMutations.Dispose();
             atomicCheckpoints.Dispose();
