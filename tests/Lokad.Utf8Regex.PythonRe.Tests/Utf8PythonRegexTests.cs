@@ -430,6 +430,29 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void DirectShapedFindAllSupportsConcurrentGrowingRangeBuffers()
+    {
+        var regex = new Utf8PythonRegex("token");
+        var input = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("token ", 2_048)));
+        var expectedBytes = "token"u8.ToArray();
+
+        Parallel.For(0, 16, iteration =>
+        {
+            if ((iteration & 1) == 0)
+            {
+                var strings = regex.FindAllToStrings(input);
+                Assert.Equal(2_048, strings.ScalarValues.Length);
+                Assert.All(strings.ScalarValues, static value => Assert.Equal("token", value));
+                return;
+            }
+
+            var utf8 = regex.FindAllToUtf8(input);
+            Assert.Equal(2_048, utf8.ScalarValues.Length);
+            Assert.All(utf8.ScalarValues, value => Assert.Equal(expectedBytes, value));
+        });
+    }
+
+    [Fact]
     public void DirectShapedFindAllHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
