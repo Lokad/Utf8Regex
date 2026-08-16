@@ -298,7 +298,12 @@ internal static partial class BenchmarkInspectReporter
                 return RunMeasureStructuralLinearRebarCase(caseId, iterationsText);
             }
 
-            if (IsExactLiteralFamilyExecutionKind(analysis.ExecutionKind))
+            if (analysis.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+            {
+                return RunMeasureCompiledLiteralFamilyReplicaCase(caseId, iterationsText);
+            }
+
+            if (analysis.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
             {
                 return RunMeasureExactLiteralFamilyReplicaCase(caseId, iterationsText);
             }
@@ -322,7 +327,12 @@ internal static partial class BenchmarkInspectReporter
                 return RunMeasureStructuralFamilyLokadCodeCase(caseId, iterationsText);
             }
 
-            if (IsExactLiteralFamilyExecutionKind(analysis.ExecutionKind))
+            if (analysis.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+            {
+                return RunMeasureCompiledLiteralFamilyReplicaCase(caseId, iterationsText);
+            }
+
+            if (analysis.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
             {
                 return RunMeasureExactLiteralFamilyReplicaCase(caseId, iterationsText);
             }
@@ -468,13 +478,13 @@ internal static partial class BenchmarkInspectReporter
         var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
         var iterations = ParseIterations(iterationsText);
 
-        if (baselineRegex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
-            compiledUtf8Regex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literals)
+        if (!IsLiteralFamilyExecutionKind(baselineRegex.Inspection.ExecutionKind) ||
+            !IsLiteralFamilyExecutionKind(compiledUtf8Regex.Inspection.ExecutionKind))
         {
             Console.WriteLine($"CaseId            : {caseId}");
             Console.WriteLine($"BaselineKind      : {baselineRegex.Inspection.ExecutionKind}");
             Console.WriteLine($"CompiledKind      : {compiledUtf8Regex.Inspection.ExecutionKind}");
-            Console.WriteLine("LiteralFamily     : case is not on ExactUtf8Literals for both routes");
+            Console.WriteLine("LiteralFamily     : case is not on a supported literal family for both routes");
             return 1;
         }
 
@@ -3729,7 +3739,7 @@ internal static partial class BenchmarkInspectReporter
         return false;
     }
 
-    private static bool IsExactLiteralFamilyExecutionKind(NativeExecutionKind executionKind)
+    private static bool IsLiteralFamilyExecutionKind(NativeExecutionKind executionKind)
         => executionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
 
     private static void WriteGeneratedRegexDump(string? caseId, string origin, string pattern, RegexOptions options)
