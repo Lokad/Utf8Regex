@@ -2554,6 +2554,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("Utf8IsValid", iterations, () => Utf8.IsValid(benchmarkCase.InputBytes) ? benchmarkCase.InputBytes.Length : 0);
         Measure("ValidateOnly", iterations, () => Utf8Validation.Validate(benchmarkCase.InputBytes).Utf16Length);
         Measure("StrictDecodeOnly", iterations, () => Utf8Validation.DecodeStrict(benchmarkCase.InputBytes).Length);
+        Measure("DefaultDecodeOnly", iterations, () => Encoding.UTF8.GetString(benchmarkCase.InputBytes).Length);
 
         if (hasValidatedThreeByte)
         {
