@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -327,6 +328,10 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
+            Measure("ReplacementCursorCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
+            Measure("ReplacementPreparedEnumerate", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyIndexSum(context));
+            Measure("ReplacementPreparedProject", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyProjectionSum(context));
+            Measure("ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
         }
@@ -395,6 +400,10 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
+            Measure("Pcre2ReplacementCursorCount", samples, iterations, () => context.Utf8Pcre2Regex.Count(context.InputBytes));
+            Measure("Pcre2ReplacementPreparedEnumerate", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyIndexSum(context));
+            Measure("Pcre2ReplacementPreparedProject", samples, iterations, () => ExecutePcre2PreparedLiteralFamilyProjectionSum(context));
+            Measure("Pcre2ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorIndexSum(context.Utf8Pcre2Regex, context.InputBytes));
             Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             Measure("Utf8Replace", samples, iterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length);
@@ -403,6 +412,48 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return 0;
+    }
+
+    private static int ExecutePcre2PreparedLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)
+    {
+        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is not Pcre2LiteralFamilyDirectProgram program)
+        {
+            return 0;
+        }
+
+        var input = Utf8ValidatedInput.Create(context.InputBytes);
+        var enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, new Utf8BytePosition(0));
+        var sum = 0;
+        while (enumerator.MoveNext())
+        {
+            sum = unchecked(sum + enumerator.StartOffsetInBytes + enumerator.EndOffsetInBytes);
+        }
+
+        return sum;
+    }
+
+    private static int ExecutePcre2PreparedLiteralFamilyProjectionSum(Utf8Pcre2BenchmarkContext context)
+    {
+        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Enumerate is not Pcre2LiteralFamilyDirectProgram program)
+        {
+            return 0;
+        }
+
+        var input = Utf8ValidatedInput.Create(context.InputBytes);
+        var projection = input.CreateProjectionCursor();
+        var enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, new Utf8BytePosition(0));
+        var sum = 0;
+        while (enumerator.MoveNext())
+        {
+            var match = Pcre2GlobalCursorProjection.Project(
+                enumerator.StartOffsetInBytes,
+                enumerator.EndOffsetInBytes,
+                ref input,
+                ref projection);
+            sum = unchecked(sum + match.StartOffsetInBytes + match.StartOffsetInUtf16);
+        }
+
+        return sum;
     }
 
     public static int RunMeasureUtf8Pcre2SpecialCase(string caseId, string? iterationsText, string? samplesText)
