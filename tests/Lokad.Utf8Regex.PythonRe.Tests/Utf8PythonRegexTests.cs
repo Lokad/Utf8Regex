@@ -116,7 +116,7 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?m)^foo$", PythonReCompileOptions.Multiline);
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
-        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=ManagedRegex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.Search("bar\nfoo\nbaz"u8).Success);
     }
 
@@ -224,6 +224,55 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.FullMatch("foo"u8).Success);
         Assert.False(regex.FullMatch("foo xx"u8).Success);
+    }
+
+    [Fact]
+    public void FullMatchUsesManagedRegexWhenCoreWouldFallBack()
+    {
+        var regex = new Utf8PythonRegex("(?:Шерлок )+");
+        var input = "xxШерлок Шерлок "u8.ToArray();
+
+        var match = regex.FullMatch(input, startOffsetInBytes: 2);
+
+        Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=ManagedRegex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
+        Assert.True(match.Success);
+        Assert.True(match.HasContiguousByteRange);
+        Assert.Equal(2, match.StartOffsetInBytes);
+        Assert.Equal(input.Length, match.EndOffsetInBytes);
+        Assert.Equal(2, match.StartOffsetInUtf16);
+        Assert.Equal("xxШерлок Шерлок ".Length, match.EndOffsetInUtf16);
+        Assert.Equal("Шерлок Шерлок ", match.GetValueString());
+        Assert.False(regex.FullMatch("xxШерлок x"u8, startOffsetInBytes: 2).Success);
+    }
+
+    [Fact]
+    public void ManagedFallbackFullMatchPreservesDetailedCapturesAndInputContracts()
+    {
+        var regex = new Utf8PythonRegex("(?P<word>Шерлок )+");
+        var input = "xxШерлок Шерлок "u8.ToArray();
+
+        var detailed = regex.FullMatchDetailed(input, startOffsetInBytes: 2);
+        var data = regex.FullMatchDetailedData(input, startOffsetInBytes: 2);
+
+        Assert.Contains("FullMatch=ManagedRegex", regex.DebugDescribeExecutionPlan());
+        Assert.True(detailed.Success);
+        Assert.Equal("Шерлок Шерлок ", detailed.Value.GetValueString());
+        Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
+        Assert.Equal("Шерлок ", word.Value.GetValueString());
+        Assert.True(data.Success);
+        Assert.Equal("Шерлок Шерлок ", data.Value.ValueText);
+        Assert.Throws<ArgumentException>(() => regex.FullMatch(new byte[] { 0xC3, 0x28 }));
+        Assert.Throws<ArgumentException>(() => regex.FullMatchDetailedData(new byte[] { 0xC3, 0x28 }));
+    }
+
+    [Fact]
+    public void ManagedFallbackFullMatchHonorsTimeout()
+    {
+        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+
+        Assert.Contains("FullMatch=ManagedRegex", regex.DebugDescribeExecutionPlan());
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
     }
 
     [Fact]

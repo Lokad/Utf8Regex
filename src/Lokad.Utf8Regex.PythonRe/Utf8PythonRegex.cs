@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -73,7 +74,10 @@ public sealed class Utf8PythonRegex
 
         _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-        _fullMatchBackend = _utf8FullRegex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
+        _fullMatchBackend = _utf8FullRegex is not null &&
+            _utf8FullRegex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex
+                ? PythonReDirectBackendKind.Utf8Regex
+                : PythonReDirectBackendKind.ManagedRegex;
         _countBackend = _utf8Regex is not null && !_canMatchEmpty
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
@@ -136,7 +140,7 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_utf8FullRegex is not null)
+        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var tail = input[startOffsetInBytes..];
@@ -150,8 +154,7 @@ public sealed class Utf8PythonRegex
             return Utf8PythonValueMatchFromUtf8Regex(input, match, startOffsetInBytes, utf16BaseOffset);
         }
 
-        var context = FullMatchDetailed(input, startOffsetInBytes);
-        return context.Value;
+        return FullMatchViaManagedRegex(input, startOffsetInBytes);
     }
 
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
@@ -248,7 +251,7 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_utf8FullRegex is not null)
+        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var utf8Tail = input[startOffsetInBytes..];
@@ -342,7 +345,7 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_utf8FullRegex is not null)
+        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var utf8Tail = input[startOffsetInBytes..];
@@ -1200,6 +1203,27 @@ public sealed class Utf8PythonRegex
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         return s_strictUtf8Encoding.GetCharCount(input[..startOffsetInBytes]);
+    }
+
+    private Utf8PythonValueMatch FullMatchViaManagedRegex(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        ValidateStartOffset(input, startOffsetInBytes);
+        var subject = Decode(input);
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (!_managedFullRegex.IsMatch(subject.AsSpan(startOffsetInUtf16)))
+        {
+            return default;
+        }
+
+        return Utf8PythonValueMatch.Create(input, new PythonReGroupData
+        {
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = startOffsetInBytes,
+            EndOffsetInBytes = input.Length,
+            StartOffsetInUtf16 = startOffsetInUtf16,
+            EndOffsetInUtf16 = subject.Length,
+        });
     }
 
     private static void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)

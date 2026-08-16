@@ -61,6 +61,11 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 - Removed PythonRe's quadratic pure-zero-width suffix probes and reranked
   non-empty replacement through its translated managed regex after the new
   comparative catalog exposed both losses.
+- Made PythonRe reject malformed UTF-8 patterns and subjects consistently
+  across direct and managed routes, including byte starts inside a scalar.
+- Routed PythonRe full-match patterns that would use the core's managed
+  fallback directly through the already-prepared PythonRe regex, avoiding a
+  duplicate fallback layer and scalar match projection.
 - Removed preventable temporary allocation from warmed non-result PCRE2
   operations and bounded pooled invocation state and replacement-plan caches.
 - Kept candidate search, Unicode coordinate projection, zero-width progress,
