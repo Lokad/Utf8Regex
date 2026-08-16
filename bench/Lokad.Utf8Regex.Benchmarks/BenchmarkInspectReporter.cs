@@ -340,6 +340,22 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
+        if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
+        {
+            var plan = regex.Inspection.SearchPlan;
+            var expectedCount = ExecutePublicEnumeratorMoveNextCount(regex, context.InputBytes);
+            var expectedIndexSum = ExecutePublicEnumeratorIndexSum(regex, context.InputBytes);
+            if (ExecutePreparedSearcherCountWithBoundaries(plan.PreparedSearcher, plan, context.InputBytes) != expectedCount ||
+                ExecuteExactUtf8LiteralFamilyConfirmedCount(plan, context.InputBytes, pollDeadline: false) != expectedCount ||
+                ExecuteExactUtf8LiteralFamilyConfirmedCount(plan, context.InputBytes, pollDeadline: true) != expectedCount ||
+                ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(plan, context.InputBytes) != expectedIndexSum ||
+                ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(plan, context.InputBytes, pollDeadline: false) != expectedIndexSum ||
+                ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(plan, context.InputBytes, pollDeadline: true) != expectedIndexSum)
+            {
+                throw new InvalidOperationException("Exact UTF-8 literal-family diagnostic phases disagree with the public enumerator.");
+            }
+        }
+
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, context.InputBytes));
         Measure("PublicIndexSum", iterations, () => ExecutePublicEnumeratorIndexSum(regex, context.InputBytes));
         Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(context.InputBytes));
@@ -361,14 +377,69 @@ internal static partial class BenchmarkInspectReporter
         else if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
         {
             Measure("SearchOnlyCount", iterations, () => ExecuteExactUtf8LiteralFamilySearchCount(regex.Inspection.SearchPlan, context.InputBytes));
+            Measure("BoundaryFilteredCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(regex.Inspection.SearchPlan.PreparedSearcher, regex.Inspection.SearchPlan, context.InputBytes));
+            Measure("ConfirmedCount", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedCount(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: false));
+            Measure("BudgetedConfirmedCount", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedCount(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: true));
             Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("DirectFamilyIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
+            Measure("BoundaryFilteredIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
+            Measure("ConfirmedIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: false));
+            Measure("BudgetedConfirmedIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: true));
             Measure("BoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryMapIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
         }
 
         Measure("DecodeThenRegex", iterations, () => ExecuteDecodeThenRegex(context));
         Measure("PredecodedRegex", iterations, () => ExecutePredecodedRegex(context));
+        return 0;
+    }
+
+    public static int RunMeasureUtf8SplitCase(string caseId, string? iterationsText, string? samplesText)
+    {
+        var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
+        if (benchmarkCase.Operation != Utf8RegexBenchmarkOperation.EnumerateSplits)
+        {
+            Console.Error.WriteLine($"Case '{caseId}' is not an EnumerateSplits case.");
+            return 1;
+        }
+
+        var context = new Utf8RegexBenchmarkContext(benchmarkCase);
+        var iterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
+        Console.WriteLine($"Options           : {benchmarkCase.Options}");
+        Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
+        Console.WriteLine($"CompiledKind      : {context.CompiledUtf8Regex.Inspection.ExecutionKind}");
+        Console.WriteLine($"CanUseNative      : {context.Utf8Regex.Inspection.DebugCanUseNativeSplit(context.InputBytes)}");
+        Console.WriteLine($"CompiledCanUseNative: {context.CompiledUtf8Regex.Inspection.DebugCanUseNativeSplit(context.InputBytes)}");
+
+        var expectedSplitCount = CountUtf8Splits(context.Utf8Regex, context.InputBytes);
+        if (context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes) != expectedSplitCount ||
+            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes) != expectedSplitCount ||
+            context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes) != expectedSplitCount ||
+            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes) != expectedSplitCount)
+        {
+            throw new InvalidOperationException("UTF-8 Split diagnostic routes disagree on the number of returned values.");
+        }
+
+        MeasureUtf8CaseLane("NativeCountOrdinary", samples, iterations, () =>
+            context.Utf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
+        MeasureUtf8CaseLane("NativeCountCompiled", samples, iterations, () =>
+            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaCompiledEngine(context.InputBytes));
+        MeasureUtf8CaseLane("FallbackCountOrdinary", samples, iterations, () =>
+            context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
+        MeasureUtf8CaseLane("FallbackCountCompiled", samples, iterations, () =>
+            context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
+        MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
+        MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
+        MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
+        MeasureUtf8CaseLane("DecodeThenCompiled", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
+        MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
+        MeasureUtf8CaseLane("PredecodedCompiled", samples, iterations, () => ExecutePredecodedCompiledRegex(context));
         return 0;
     }
 
@@ -6730,6 +6801,119 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
+    }
+
+    private static int CountUtf8Splits(Utf8Regex regex, byte[] input)
+    {
+        var count = 0;
+        foreach (var _ in regex.EnumerateSplits(input))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static int ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(Utf8SearchPlan plan, byte[] input)
+    {
+        var sum = 0;
+        var consumedBytes = 0;
+        var consumedUtf16 = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var span = input.AsSpan();
+        while (plan.PreparedSearcher.TryFindNextNonOverlappingMatch(span, ref state, out var match))
+        {
+            if (!Utf8SearchExecutor.MatchesBoundaryRequirements(plan, span, match.Index, match.Length))
+            {
+                continue;
+            }
+
+            var valueMatch = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
+                plan.EnumerationOperation.Projection,
+                span,
+                plan.AlternateLiteralUtf16Lengths,
+                consumedBytes,
+                consumedUtf16,
+                match,
+                out consumedBytes,
+                out consumedUtf16);
+            sum += valueMatch.IndexInUtf16;
+        }
+
+        return sum;
+    }
+
+    private static int ExecuteExactUtf8LiteralFamilyConfirmedCount(Utf8SearchPlan plan, byte[] input, bool pollDeadline)
+    {
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var span = input.AsSpan();
+        var budget = Utf8ExecutionDeadline.Infinite;
+        while (true)
+        {
+            if (pollDeadline)
+            {
+                budget.Step();
+            }
+
+            if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(span, ref state, out var match))
+            {
+                return count;
+            }
+
+            if (Utf8ConfirmationExecutor.IsMatch(
+                    in plan,
+                    plan.EnumerationOperation.Confirmation,
+                    span,
+                    match.Index,
+                    match.Length))
+            {
+                count++;
+            }
+        }
+    }
+
+    private static int ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(Utf8SearchPlan plan, byte[] input, bool pollDeadline)
+    {
+        var sum = 0;
+        var consumedBytes = 0;
+        var consumedUtf16 = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var span = input.AsSpan();
+        var budget = Utf8ExecutionDeadline.Infinite;
+        while (true)
+        {
+            if (pollDeadline)
+            {
+                budget.Step();
+            }
+
+            if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(span, ref state, out var match))
+            {
+                return sum;
+            }
+
+            if (!Utf8ConfirmationExecutor.IsMatch(
+                    in plan,
+                    plan.EnumerationOperation.Confirmation,
+                    span,
+                    match.Index,
+                    match.Length))
+            {
+                continue;
+            }
+
+            var valueMatch = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
+                plan.EnumerationOperation.Projection,
+                span,
+                plan.AlternateLiteralUtf16Lengths,
+                consumedBytes,
+                consumedUtf16,
+                match,
+                out consumedBytes,
+                out consumedUtf16);
+            sum += valueMatch.IndexInUtf16;
+        }
     }
 
     private static int ExecuteStructuralFamilyNativeCount(
