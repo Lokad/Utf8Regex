@@ -3605,6 +3605,7 @@ internal static partial class BenchmarkInspectReporter
         var verifierRuntime = Utf8VerifierRuntime.Create(analysis, benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         var linearRuntime = Utf8StructuralLinearRuntime.Create(program);
         var structuralFamilyRuntime = linearRuntime as Utf8AsciiStructuralFamilyLinearRuntime;
+        _ = Utf8EmittedKernelMatcher.TryCreate(analysis, out var emittedKernelMatcher);
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -3613,6 +3614,12 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"ProgramKind       : {program.Kind}");
 
+        if (emittedKernelMatcher is not null)
+        {
+            Measure("EmittedCount", iterations, () => emittedKernelMatcher.Count(input));
+            Measure("EmittedFindNextCount", iterations, () => ExecuteEmittedKernelFindNextCount(emittedKernelMatcher, input));
+            Measure("EmittedFindNextSum", iterations, () => ExecuteEmittedKernelFindNextIndexSum(emittedKernelMatcher, input));
+        }
         Measure("NativeCount", iterations, () => ExecuteStructuralFamilyNativeCount(linearRuntime, verifierRuntime, input, validation));
         Measure("NativeFindNextCount", iterations, () => ExecuteStructuralFamilyFindNextCount(linearRuntime, verifierRuntime, input, validation));
         Measure("NativeFindNextSum", iterations, () => ExecuteStructuralFamilyFindNextIndexSum(linearRuntime, verifierRuntime, input, validation));
@@ -6508,6 +6515,32 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return count;
+    }
+
+    private static int ExecuteEmittedKernelFindNextCount(Utf8EmittedKernelMatcher matcher, byte[] input)
+    {
+        var count = 0;
+        var startIndex = 0;
+        while (matcher.FindNext(input, startIndex, out var matchedLength) is var matchIndex && matchIndex >= 0)
+        {
+            count++;
+            startIndex = matchIndex + Math.Max(matchedLength, 1);
+        }
+
+        return count;
+    }
+
+    private static int ExecuteEmittedKernelFindNextIndexSum(Utf8EmittedKernelMatcher matcher, byte[] input)
+    {
+        var sum = 0;
+        var startIndex = 0;
+        while (matcher.FindNext(input, startIndex, out var matchedLength) is var matchIndex && matchIndex >= 0)
+        {
+            sum += matchIndex;
+            startIndex = matchIndex + Math.Max(matchedLength, 1);
+        }
+
+        return sum;
     }
 
     private static int ExecuteStructuralFamilyNativeCount(
