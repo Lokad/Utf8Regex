@@ -883,7 +883,32 @@ public sealed class Utf8PythonRegexTests
         var parts = regex.SplitToStrings(":a:b::c"u8);
 
         Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugSplitBackend);
+        Assert.True(regex.DebugUsesManagedSplitFastPath);
         Assert.Equal<string?[]>(["", ":", "a", ":", "b", "::", "c"], parts);
+    }
+
+    [Fact]
+    public void ManagedSplitFastPathRequiresMandatoryUnnamedCaptures()
+    {
+        var mandatory = new Utf8PythonRegex(@"(:+)");
+        Assert.True(mandatory.DebugUsesManagedSplitFastPath);
+        Assert.Equal<string?[]>(["", ":", "a", ":", "b::c"], mandatory.SplitToStrings(":a:b::c"u8, maxSplit: 2));
+        Assert.Equal<string?[]>(["", ":", "a", ":", "b"], mandatory.SplitToStrings("π :a:b"u8, startOffsetInBytes: "π "u8.Length));
+
+        var nestedMandatory = new Utf8PythonRegex(@"((?:a|b)+)-([0-9]+)");
+        Assert.True(nestedMandatory.DebugUsesManagedSplitFastPath);
+        Assert.Equal<string?[]>(["x", "ab", "12", "y"], nestedMandatory.SplitToStrings("xab-12y"u8));
+
+        var optional = new Utf8PythonRegex(@"(a)?b");
+        Assert.False(optional.DebugUsesManagedSplitFastPath);
+        Assert.Equal<string?[]>(["", null, " ", "a", ""], optional.SplitToStrings("b ab"u8));
+
+        var alternated = new Utf8PythonRegex(@"(b)|(:+)");
+        Assert.False(alternated.DebugUsesManagedSplitFastPath);
+        Assert.Equal<string?[]>(["", null, ":", "a", "b", null, ""], alternated.SplitToStrings(":ab"u8));
+
+        Assert.False(new Utf8PythonRegex(@"(?P<separator>:+)").DebugUsesManagedSplitFastPath);
+        Assert.False(new Utf8PythonRegex(@"(:*)").DebugUsesManagedSplitFastPath);
     }
 
     [Fact]

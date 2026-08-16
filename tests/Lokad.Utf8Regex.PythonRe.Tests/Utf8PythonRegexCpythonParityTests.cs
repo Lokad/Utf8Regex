@@ -144,6 +144,8 @@ public sealed class Utf8PythonRegexCpythonParityTests
         AssertSplit(["", "a", "", "", "bc", ""], new Utf8PythonRegex(@"\b|:+").SplitToStrings("a::bc"u8));
         AssertSplit(["", ":a", ":b", ":", ":c"], new Utf8PythonRegex(@"(?=:)").SplitToStrings(":a:b::c"u8));
         AssertSplit([":", "a:", "b:", ":", "c"], new Utf8PythonRegex(@"(?<=:)").SplitToStrings(":a:b::c"u8));
+        AssertSplit(["", "a", "b::c"], new Utf8PythonRegex(":").SplitToStrings(":a:b::c"u8, maxSplit: 2));
+        AssertSplit([":a:b::c"], new Utf8PythonRegex(":").SplitToStrings(":a:b::c"u8, maxSplit: -1));
     }
 
     [Fact]

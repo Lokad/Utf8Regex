@@ -19,6 +19,8 @@ internal static class PythonReTranslator
 
     public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
 
+    public static bool CanUseManagedSplitFastPath(PythonReNode node) => CapturesAreMandatory(node);
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
@@ -30,6 +32,56 @@ internal static class PythonReTranslator
             ToRegexOptions(parseResult.Options),
             parseResult.CaptureGroupCount,
             emittedGroupNames);
+    }
+
+    private static bool CapturesAreMandatory(PythonReNode node)
+    {
+        switch (node)
+        {
+            case PythonReAlternationNode alternation:
+                return !ContainsCapture(alternation);
+            case PythonReSequenceNode sequence:
+                return sequence.Elements.All(CapturesAreMandatory);
+            case PythonReQuantifierNode quantifier:
+                return (quantifier.Min > 0 || !ContainsCapture(quantifier.Inner)) &&
+                    CapturesAreMandatory(quantifier.Inner);
+            case PythonReGroupNode group when group.Kind is
+                PythonReGroupKind.Capturing or
+                PythonReGroupKind.NamedCapturing or
+                PythonReGroupKind.NonCapturing or
+                PythonReGroupKind.Atomic or
+                PythonReGroupKind.ScopedFlags:
+                return CapturesAreMandatory(group.Inner);
+            case PythonReGroupNode group:
+                return !ContainsCapture(group.Inner);
+            case PythonReConditionalNode conditional:
+                return !ContainsCapture(conditional);
+            default:
+                return true;
+        }
+    }
+
+    private static bool ContainsCapture(PythonReNode node)
+    {
+        switch (node)
+        {
+            case PythonReAlternationNode alternation:
+                return alternation.Branches.Any(ContainsCapture);
+            case PythonReSequenceNode sequence:
+                return sequence.Elements.Any(ContainsCapture);
+            case PythonReQuantifierNode quantifier:
+                return ContainsCapture(quantifier.Inner);
+            case PythonReGroupNode group when group.Kind is
+                PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing:
+                return true;
+            case PythonReGroupNode group:
+                return ContainsCapture(group.Inner);
+            case PythonReConditionalNode conditional:
+                return ContainsCapture(conditional.YesBranch) ||
+                    conditional.NoBranch is not null && ContainsCapture(conditional.NoBranch);
+            default:
+                return false;
+        }
     }
 
     private static void ValidateReferences(

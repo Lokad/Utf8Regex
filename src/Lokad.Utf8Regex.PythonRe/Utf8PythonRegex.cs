@@ -84,6 +84,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canMatchEmpty;
     private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
+    private readonly bool _canUseManagedSplitFastPath;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly PythonReDirectBackendKind _searchBackend;
     private readonly PythonReDirectBackendKind _matchBackend;
@@ -119,6 +120,9 @@ public sealed class Utf8PythonRegex
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root);
         _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
+        _canUseManagedSplitFastPath = !_canMatchEmpty &&
+            (parseResult.CaptureGroupCount == 0 ||
+                parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root));
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
@@ -1057,11 +1061,11 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
-        if (_translation.CaptureGroupCount == 0 && !_canMatchEmpty && startOffsetInBytes == 0)
+        if (_canUseManagedSplitFastPath && startOffsetInBytes == 0 && maxSplit >= 0)
         {
-            return maxSplit == 0
+            return maxSplit is 0 or int.MaxValue
                 ? _managedRegex.Split(subject)
-                : _managedRegex.Split(subject, maxSplit);
+                : _managedRegex.Split(subject, maxSplit + 1);
         }
 
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
@@ -1297,6 +1301,8 @@ public sealed class Utf8PythonRegex
     internal PythonReDirectBackendKind DebugReplaceBackend => _replaceBackend;
 
     internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.ManagedRegex;
+
+    internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
 
     private static Regex CreateManagedRegex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
