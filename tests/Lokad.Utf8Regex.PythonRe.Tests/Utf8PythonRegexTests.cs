@@ -10,7 +10,9 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.False(regex.DebugIsUtf8FullRegexValueCreated);
         Assert.True(regex.DebugHasUtf8FullRegex);
+        Assert.True(regex.DebugIsUtf8FullRegexValueCreated);
         Assert.Equal("foo", regex.DebugTranslatedPattern);
         Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
@@ -191,12 +193,47 @@ public sealed class Utf8PythonRegexTests
         Assert.True(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
         Assert.False(conditional.DebugHasUtf8FullRegex);
+        Assert.False(conditional.DebugIsUtf8FullRegexValueCreated);
+        Assert.False(lookahead.DebugIsUtf8FullRegexValueCreated);
         Assert.True(lookahead.DebugHasUtf8FullRegex);
+        Assert.True(lookahead.DebugIsUtf8FullRegexValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);
         Assert.True(conditional.FullMatch("foobar"u8).Success);
         Assert.True(conditional.FullMatch("baz"u8).Success);
         Assert.False(conditional.FullMatch("foo"u8).Success);
+    }
+
+    [Fact]
+    public void LazyUtf8FullMatcherSupportsConcurrentFirstUseAndCachesFallback()
+    {
+        var native = new Utf8PythonRegex("ab[0-9]{2}");
+        Assert.False(native.DebugIsUtf8FullRegexValueCreated);
+
+        Parallel.For(0, 32, iteration =>
+        {
+            switch (iteration % 3)
+            {
+                case 0:
+                    Assert.True(native.FullMatch("ab12"u8).Success);
+                    break;
+                case 1:
+                    Assert.True(native.FullMatchDetailed("ab12"u8).Success);
+                    break;
+                default:
+                    Assert.True(native.FullMatchDetailedData("ab12"u8).Success);
+                    break;
+            }
+        });
+
+        Assert.True(native.DebugIsUtf8FullRegexValueCreated);
+        Assert.True(native.DebugHasUtf8FullRegex);
+
+        var managed = new Utf8PythonRegex(@"async\s+Task<");
+        Assert.False(managed.DebugIsUtf8FullRegexValueCreated);
+        Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("async Task<"u8).Success));
+        Assert.True(managed.DebugIsUtf8FullRegexValueCreated);
+        Assert.False(managed.DebugHasUtf8FullRegex);
     }
 
     [Fact]

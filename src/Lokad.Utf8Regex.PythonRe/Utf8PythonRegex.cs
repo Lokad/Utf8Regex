@@ -74,7 +74,7 @@ public sealed class Utf8PythonRegex
     private static readonly UTF8Encoding s_strictUtf8Encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8Regex? _utf8Regex;
-    private readonly Utf8Regex? _utf8FullRegex;
+    private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
     private readonly Regex _managedRegex;
     private readonly Regex _managedFullRegex;
     private readonly PythonReTranslation _translation;
@@ -88,7 +88,6 @@ public sealed class Utf8PythonRegex
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly PythonReDirectBackendKind _searchBackend;
     private readonly PythonReDirectBackendKind _matchBackend;
-    private readonly PythonReDirectBackendKind _fullMatchBackend;
     private readonly PythonReDirectBackendKind _countBackend;
     private readonly PythonReDirectBackendKind _findAllBackend;
     private readonly PythonReDirectBackendKind _replaceBackend;
@@ -141,7 +140,9 @@ public sealed class Utf8PythonRegex
             _utf8Regex = new Utf8Regex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
             if (_utf8Regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex)
             {
-                _utf8FullRegex = new Utf8Regex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+                _lazyUtf8FullRegex = new Lazy<Utf8Regex?>(
+                    CreateUtf8FullRegex,
+                    LazyThreadSafetyMode.ExecutionAndPublication);
             }
         }
         catch (Exception)
@@ -151,10 +152,6 @@ public sealed class Utf8PythonRegex
 
         _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-        _fullMatchBackend = _utf8FullRegex is not null &&
-            _utf8FullRegex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex
-                ? PythonReDirectBackendKind.Utf8Regex
-                : PythonReDirectBackendKind.ManagedRegex;
         _countBackend = _utf8Regex is not null && !_canMatchEmpty
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
@@ -217,11 +214,12 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
+        ValidateStartOffset(input, startOffsetInBytes);
+        var utf8FullRegex = GetUtf8FullRegex();
+        if (utf8FullRegex is not null)
         {
-            ValidateStartOffset(input, startOffsetInBytes);
             var tail = input[startOffsetInBytes..];
-            var match = _utf8FullRegex.Match(tail);
+            var match = utf8FullRegex.Match(tail);
             if (!match.Success)
             {
                 return default;
@@ -328,11 +326,12 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
+        ValidateStartOffset(input, startOffsetInBytes);
+        var utf8FullRegex = GetUtf8FullRegex();
+        if (utf8FullRegex is not null)
         {
-            ValidateStartOffset(input, startOffsetInBytes);
             var utf8Tail = input[startOffsetInBytes..];
-            var utf8Match = _utf8FullRegex.MatchDetailed(utf8Tail);
+            var utf8Match = utf8FullRegex.MatchDetailed(utf8Tail);
             if (!utf8Match.Success)
             {
                 return default;
@@ -422,11 +421,12 @@ public sealed class Utf8PythonRegex
 
     public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
     {
-        if (_fullMatchBackend == PythonReDirectBackendKind.Utf8Regex && _utf8FullRegex is not null)
+        ValidateStartOffset(input, startOffsetInBytes);
+        var utf8FullRegex = GetUtf8FullRegex();
+        if (utf8FullRegex is not null)
         {
-            ValidateStartOffset(input, startOffsetInBytes);
             var utf8Tail = input[startOffsetInBytes..];
-            var utf8Match = _utf8FullRegex.MatchDetailed(utf8Tail);
+            var utf8Match = utf8FullRegex.MatchDetailed(utf8Tail);
             if (!utf8Match.Success)
             {
                 return default;
@@ -1294,12 +1294,19 @@ public sealed class Utf8PythonRegex
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
-    internal bool DebugHasUtf8FullRegex => _utf8FullRegex is not null;
+    internal bool DebugIsUtf8FullRegexValueCreated => _lazyUtf8FullRegex?.IsValueCreated ?? false;
+
+    internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
 
     internal string DebugDescribeExecutionPlan()
-        => $"Search={_searchBackend}, Match={_matchBackend}, FullMatch={_fullMatchBackend}, Count={_countBackend}";
+    {
+        var fullMatchBackend = GetUtf8FullRegex() is not null
+            ? PythonReDirectBackendKind.Utf8Regex
+            : PythonReDirectBackendKind.ManagedRegex;
+        return $"Search={_searchBackend}, Match={_matchBackend}, FullMatch={fullMatchBackend}, Count={_countBackend}";
+    }
 
     internal PythonReDirectBackendKind DebugFindAllBackend => _findAllBackend;
 
@@ -1308,6 +1315,24 @@ public sealed class Utf8PythonRegex
     internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.ManagedRegex;
 
     internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
+
+    private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
+
+    private Utf8Regex? CreateUtf8FullRegex()
+    {
+        try
+        {
+            var regex = new Utf8Regex(
+                @"\A(?:" + _translation.Pattern + @")\z",
+                _translation.RegexOptions,
+                MatchTimeout);
+            return regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     private static Regex CreateManagedRegex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
