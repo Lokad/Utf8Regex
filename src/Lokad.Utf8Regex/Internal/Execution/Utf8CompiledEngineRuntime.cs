@@ -77,6 +77,10 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool UsesEmittedAnchoredValidatorMatcher => Capabilities.UsesEmittedAnchoredValidatorMatcher;
     public bool UsesEmittedKernelMatcher => Capabilities.UsesEmittedKernelMatcher;
 
+    internal virtual Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
+        Utf8ValidationResult validation,
+        Utf8ExecutionDeadline budget) => null;
+
     public bool TryMatchAsciiWellFormedOnly(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         if (this is IUtf8AsciiWellFormedMatchRuntime runtime)
@@ -666,6 +670,18 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         SkipRequiredPrefilterForCount: false,
         UsesEmittedAnchoredValidatorMatcher: false,
         UsesEmittedKernelMatcher: _emittedKernelMatcher is not null);
+
+    internal override Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
+        Utf8ValidationResult validation,
+        Utf8ExecutionDeadline budget)
+    {
+        return _regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+            _regexPlan.Features.CaptureCount <= 1 &&
+            validation.IsAscii &&
+            budget.IsInfinite
+                ? _emittedKernelMatcher
+                : null;
+    }
 
     public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {

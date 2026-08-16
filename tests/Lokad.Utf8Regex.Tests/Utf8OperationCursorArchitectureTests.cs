@@ -57,6 +57,8 @@ public sealed class Utf8OperationCursorArchitectureTests
     [InlineData("", "abc", false)]
     [InlineData("(a)(b)", "xxabyyab", false)]
     [InlineData("ab.*cd", "ab12cd xx ab34cd", false)]
+    [InlineData(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", "LogError( skip LogDebug( LogInformation (", false)]
+    [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "class lower record Customer struct Worker_State", false)]
     [InlineData("ab", "xxabyyab", true)]
     public void CompiledAndInterpretedOperationAdaptersRemainEquivalent(
         string pattern,

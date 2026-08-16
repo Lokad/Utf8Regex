@@ -79,6 +79,26 @@ public sealed class Utf8RegexStartAtTests
     }
 
     [Fact]
+    public void CompiledStructuralFamilyEnumerationStartAtPreservesBaseOffsets()
+    {
+        var regex = new Utf8Regex(
+            @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        var enumerator = regex.EnumerateMatchesFromUtf16Offset("é LogError( xx LogWarning ("u8, 12);
+        Assert.True(enumerator.MoveNext());
+
+        var match = enumerator.Current;
+        Assert.True(match.Success);
+        Assert.True(match.IsByteAligned);
+        Assert.Equal(15, match.IndexInUtf16);
+        Assert.Equal(12, match.LengthInUtf16);
+        Assert.Equal(16, match.IndexInBytes);
+        Assert.Equal(12, match.LengthInBytes);
+        Assert.False(enumerator.MoveNext());
+    }
+
+    [Fact]
     public void EnumerateMatchesStartAtFallsBackWhenUtf16StartSplitsSurrogatePair()
     {
         var regex = new Utf8Regex("a", RegexOptions.CultureInvariant);

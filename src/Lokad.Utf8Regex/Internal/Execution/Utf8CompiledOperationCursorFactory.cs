@@ -7,12 +7,22 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal static class Utf8CompiledOperationCursorFactory
 {
     public static Utf8ValueMatchEnumerator CreateMatchEnumerator(
+        Utf8CompiledEngineRuntime compiledRuntime,
         Utf8PreparedRegex regexPlan,
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget)
-        => new(CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget));
+    {
+        if (compiledRuntime.GetGlobalMatchKernel(validation, budget) is { } kernelMatcher)
+        {
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, kernelMatcher, budget));
+        }
+
+        return new Utf8ValueMatchEnumerator(
+            CreateMatchCursor(regexPlan, verifierRuntime, input, validation, budget));
+    }
 
     public static Utf8OperationMatchCursor CreateMatchCursor(
         Utf8PreparedRegex regexPlan,

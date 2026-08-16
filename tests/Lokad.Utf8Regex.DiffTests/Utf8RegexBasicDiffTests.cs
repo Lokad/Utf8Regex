@@ -243,12 +243,15 @@ public sealed class Utf8RegexIsMatchDiffTests
         Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public void EnumerateMatchesMatchesRuntimeForAsciiLoggingInvocationFamily()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerateMatchesMatchesRuntimeForAsciiLoggingInvocationFamily(bool compiled)
     {
         const string pattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
         const string input = "LogError(\"bad\"); LogDebug(\"skip\"); LogInformation (\"ok\");";
-        var options = RegexOptions.CultureInvariant;
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var utf8Regex = new Utf8Regex(pattern, options);
 
         var expected = new List<(int Index, int Length)>();
@@ -261,6 +264,45 @@ public sealed class Utf8RegexIsMatchDiffTests
         foreach (var match in utf8Regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
         {
             actual.Add((match.IndexInUtf16, match.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("é LogError(\"bad\");", false, false)]
+    [InlineData("LogError(\"bad\"); LogWarning (\"warn\");", true, false)]
+    [InlineData("LogError(\"bad\"); LogWarning (\"warn\");", false, true)]
+    public void CompiledLoggingEnumerationFallbackControlsMatchRuntime(
+        string input,
+        bool captured,
+        bool finiteTimeout)
+    {
+        const string basePattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
+        var pattern = captured ? $"({basePattern})" : basePattern;
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        var utf8Regex = finiteTimeout
+            ? new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10))
+            : new Utf8Regex(pattern, options);
+
+        var expected = new List<(int IndexInUtf16, int LengthInUtf16, int IndexInBytes, int LengthInBytes)>();
+        foreach (var match in Regex.EnumerateMatches(input, pattern, options))
+        {
+            expected.Add((
+                match.Index,
+                match.Length,
+                Encoding.UTF8.GetByteCount(input.AsSpan(0, match.Index)),
+                Encoding.UTF8.GetByteCount(input.AsSpan(match.Index, match.Length))));
+        }
+
+        var actual = new List<(int IndexInUtf16, int LengthInUtf16, int IndexInBytes, int LengthInBytes)>();
+        foreach (var match in utf8Regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
+        {
+            actual.Add((
+                match.IndexInUtf16,
+                match.LengthInUtf16,
+                match.IndexInBytes,
+                match.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);

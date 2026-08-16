@@ -2505,6 +2505,7 @@ public sealed class Utf8Regex
         }
 
         return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(
+            _compiledEngineRuntime,
             _preparedRegex,
             _verifierRuntime,
             input,
