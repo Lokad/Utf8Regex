@@ -533,6 +533,21 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {context.Utf8Pcre2Regex.DebugExecutionKindName}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
 
+        Measure(
+            "Pcre2DetailedMatch",
+            samples,
+            iterations,
+            () => context.Utf8Pcre2Regex.MatchDetailed(context.InputBytes).CaptureSlotCount);
+        var captureSlotCount = context.Utf8Pcre2Regex.MatchDetailed(context.InputBytes).CaptureSlotCount;
+        var detailedMatchAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+            iterations,
+            () => context.Utf8Pcre2Regex.MatchDetailed(context.InputBytes).CaptureSlotCount);
+        var requiredGroupAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+            iterations,
+            () => AllocatePcre2RequiredGroupArray(captureSlotCount));
+        Console.WriteLine($"Pcre2DetailedMatchAllocated : {detailedMatchAllocatedBytes,10:N0} B/op");
+        Console.WriteLine($"Pcre2RequiredGroupsAllocated: {requiredGroupAllocatedBytes,10:N0} B/op");
+
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
@@ -571,6 +586,13 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return 0;
+    }
+
+    private static int AllocatePcre2RequiredGroupArray(int captureSlotCount)
+    {
+        var groups = new Pcre2GroupData[captureSlotCount];
+        GC.KeepAlive(groups);
+        return groups.Length;
     }
 
     public static int RunEmitPcre2BenchmarkJson()
