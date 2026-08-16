@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -42,6 +43,13 @@ internal static partial class BenchmarkInspectReporter
             stopwatch.Stop();
             var seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
             var execution = count.Execution;
+            var candidateSearch = context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch;
+            var rawCandidateHits = CountPcre2PreparedCandidateHits(candidateSearch, context.InputBytes);
+            var windowLiteralHits = CountPcre2WindowLiteralHits(candidateSearch, context.InputBytes);
+            var runFilterChecks = CountPcre2LeadingRunFilterChecks(
+                candidateSearch,
+                context.Utf8Pcre2Regex.DebugCompiledProgram.Request,
+                context.InputBytes);
             Console.WriteLine($"CountResult       : {count.Count}");
             if (context.Utf8Regex is not null)
             {
@@ -54,6 +62,14 @@ internal static partial class BenchmarkInspectReporter
             }
 
             Console.WriteLine($"CandidateAttempts : {execution.CandidateAttempts}");
+            Console.WriteLine($"CandidateRawHits  : {rawCandidateHits}");
+            Console.WriteLine($"CandidateRunChecks: {runFilterChecks}");
+            if (candidateSearch.WindowConstraint.HasValue)
+            {
+                Console.WriteLine($"CandidateWindow   : {Encoding.UTF8.GetString(candidateSearch.WindowConstraint.Literal)} " +
+                    $"@ {candidateSearch.WindowConstraint.MinimumOffset}..{candidateSearch.WindowConstraint.MaximumOffset}");
+                Console.WriteLine($"CandidateWinHits  : {windowLiteralHits}");
+            }
             Console.WriteLine($"VmSteps           : {execution.BacktrackingSteps}");
             Console.WriteLine($"VmTokens          : {execution.VmTokenSteps}");
             Console.WriteLine($"VmLiteralTokens   : {execution.VmLiteralTokenSteps}");
@@ -84,6 +100,121 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"VmStepPassEq      : {(double)execution.BacktrackingSteps / Math.Max(1, context.InputBytes.Length):F3}");
         }
         return 0;
+    }
+
+    private static ulong CountPcre2PreparedCandidateHits(
+        Pcre2CandidateSearchProgram candidateSearch,
+        ReadOnlySpan<byte> input)
+    {
+        if (!candidateSearch.HasValue)
+        {
+            return 0;
+        }
+
+        var state = new PreparedSearchScanState(
+            0,
+            new PreparedMultiLiteralScanState(0, 0, 0));
+        ulong count = 0;
+        while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out _))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static ulong CountPcre2LeadingRunFilterChecks(
+        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CompileRequest request,
+        ReadOnlySpan<byte> input)
+    {
+        if (candidateSearch.Kind != Pcre2CandidateSearchKind.LeadingRunThenLiteral)
+        {
+            return 0;
+        }
+
+        var state = new PreparedSearchScanState(
+            0,
+            new PreparedMultiLiteralScanState(0, 0, 0));
+        ulong checks = 0;
+        while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var hit))
+        {
+            var runStart = hit.Index;
+            for (var i = candidateSearch.LeadingRunTokens.Length - 1; i >= 0; i--)
+            {
+                var consumed = false;
+                while (TryRetreatPcre2Scalar(input, runStart, out var previous))
+                {
+                    checks++;
+                    if (!Pcre2CharacterRunner.TryMatchToken(
+                            candidateSearch.LeadingRunTokens[i],
+                            request,
+                            input,
+                            previous,
+                            0,
+                            Pcre2MatchOptions.None,
+                            out var next) ||
+                        next != runStart)
+                    {
+                        break;
+                    }
+
+                    runStart = previous;
+                    consumed = true;
+                }
+
+                if (!consumed)
+                {
+                    break;
+                }
+            }
+        }
+
+        return checks;
+    }
+
+    private static bool TryRetreatPcre2Scalar(ReadOnlySpan<byte> input, int position, out int previous)
+    {
+        if (position == 0)
+        {
+            previous = 0;
+            return false;
+        }
+
+        previous = position - 1;
+        while (previous > 0 && (input[previous] & 0xC0) == 0x80)
+        {
+            previous--;
+        }
+
+        return true;
+    }
+
+    private static ulong CountPcre2WindowLiteralHits(
+        Pcre2CandidateSearchProgram candidateSearch,
+        ReadOnlySpan<byte> input)
+    {
+        var literal = candidateSearch.WindowConstraint.Literal;
+        if (literal is not { Length: > 0 })
+        {
+            return 0;
+        }
+
+        ulong count = 0;
+        var nextStart = 0;
+        while (nextStart <= input.Length - literal.Length)
+        {
+            var relative = input[nextStart..].IndexOf(literal);
+            if (relative < 0)
+            {
+                break;
+            }
+
+            count++;
+            nextStart += relative + 1;
+        }
+
+        return count;
     }
 
     public static int RunEmitPcre2TranslationReport()
