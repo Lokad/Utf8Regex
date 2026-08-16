@@ -759,6 +759,12 @@ internal static partial class BenchmarkInspectReporter
                 static _ => "tempus|magna|semper",
                 static scale => string.Concat(Enumerable.Repeat("tempus magna semper ", scale * 128)),
                 "x"),
+            CreatePcre2ScalingFamily(
+                "single-token-repeat-vm",
+                Utf8Pcre2BenchmarkOperation.IsMatch,
+                [512, 1024, 2048, 4096],
+                static _ => "^a+z$",
+                static size => new string('a', size) + "z"),
         ];
 
     private static Pcre2ScalingFamily CreatePcre2ScalingFamily(

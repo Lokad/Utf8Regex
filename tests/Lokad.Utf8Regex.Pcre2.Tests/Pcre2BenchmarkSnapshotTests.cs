@@ -18,6 +18,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         "long-flat-patterns",
         "replacement-growth",
         "required-literal-all-a-miss",
+        "single-token-repeat-vm",
         "zero-width-iteration",
     ];
 
