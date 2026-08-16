@@ -191,6 +191,31 @@ internal static partial class BenchmarkInspectReporter
             });
         }
 
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Match &&
+            context.Utf8Regex.Inspection.DebugTryMatchExactLiteral(context.InputBytes, out _))
+        {
+            MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return context.InputBytes.Length;
+            });
+            MeasureUtf8CaseLane("ExactLiteralMatchOnly", samples, iterations, () =>
+            {
+                context.Utf8Regex.Inspection.DebugTryMatchExactLiteral(context.InputBytes, out var match);
+                return match.Success
+                    ? match.IndexInBytes ^ match.LengthInBytes ^ match.IndexInUtf16 ^ match.LengthInUtf16
+                    : 0;
+            });
+            MeasureUtf8CaseLane("ValidationPlusExactMatch", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                context.Utf8Regex.Inspection.DebugTryMatchExactLiteral(context.InputBytes, out var match);
+                return match.Success
+                    ? match.IndexInBytes ^ match.LengthInBytes ^ match.IndexInUtf16 ^ match.LengthInUtf16
+                    : 0;
+            });
+        }
+
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
         MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));

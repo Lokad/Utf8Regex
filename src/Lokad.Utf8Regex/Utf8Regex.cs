@@ -249,6 +249,11 @@ public sealed class Utf8Regex
         return _compiledEngineRuntime.TryDebugIsMatchExactLiteral(input, out isMatch);
     }
 
+    private bool DebugTryMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    {
+        return _compiledEngineRuntime.TryDebugMatchExactLiteral(input, out match);
+    }
+
     private int DebugCountFallbackCandidates(ReadOnlySpan<byte> input)
     {
         return CountFallbackCandidates(input, requireScalarBoundary: false);
@@ -3147,6 +3152,9 @@ public sealed class Utf8Regex
 
         public bool DebugTryIsMatchExactLiteral(ReadOnlySpan<byte> input, out bool isMatch) =>
             _owner.DebugTryIsMatchExactLiteral(input, out isMatch);
+
+        public bool DebugTryMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match) =>
+            _owner.DebugTryMatchExactLiteral(input, out match);
 
         public int DebugCountFallbackCandidates(ReadOnlySpan<byte> input) =>
             _owner.DebugCountFallbackCandidates(input);

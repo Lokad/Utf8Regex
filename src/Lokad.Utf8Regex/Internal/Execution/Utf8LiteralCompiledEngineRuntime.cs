@@ -294,6 +294,23 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return true;
     }
 
+    internal bool TryInspectMatchExactLiteral(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    {
+        if (_usesRightToLeft)
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+
+        match = _regexPlan.ExecutionKind switch
+        {
+            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            NativeExecutionKind.ExactUtf8Literal => MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            _ => Utf8ValueMatch.NoMatch,
+        };
+        return _regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+    }
+
     private bool SupportsAsciiDirectMatch =>
         _regexPlan.ExecutionKind switch
         {
