@@ -47,7 +47,8 @@ internal static class PythonReBenchmarkReporter
             exitCode = MeasureConstructionPattern(
                 args[1],
                 Math.Min(ParsePositive(args, 2, 100), 512),
-                Math.Min(ParsePositive(args, 3, 7), 15));
+                Math.Min(ParsePositive(args, 3, 7), 15),
+                args.Length >= 5 ? args[4] : args[1]);
             return true;
         }
 
@@ -260,17 +261,29 @@ internal static class PythonReBenchmarkReporter
         return 0;
     }
 
-    private static int MeasureConstructionPattern(string pattern, int iterations, int samples)
+    private static int MeasureConstructionPattern(string pattern, int iterations, int samples, string fullMatchInput)
     {
         const PythonReCompileOptions options = PythonReCompileOptions.None;
         var parseResult = new PythonReParser(pattern).Parse(options);
         var translation = PythonReTranslator.Translate(parseResult);
         var input = Encoding.UTF8.GetBytes("prefix item-123 foo Шерлок suffix");
+        var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
+        var fullMatchMissUtf8 = "__pythonre_fullmatch_miss__"u8.ToArray();
+        var prepared = new Utf8PythonRegex(pattern, options);
+        var coreFullPattern = $@"\A(?:{translation.Pattern})\z";
+        var preparedCoreFull = new Utf8Regex(coreFullPattern, translation.RegexOptions);
+        var lazyCoreFull = new Lazy<Utf8Regex>(
+            () => new Utf8Regex(coreFullPattern, translation.RegexOptions),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+        _ = lazyCoreFull.Value;
+        var reuseIterations = Math.Max(iterations, 5_000);
 
         Console.WriteLine($"Pattern            : {pattern}");
         Console.WriteLine($"TranslatedPattern  : {translation.Pattern}");
         Console.WriteLine($"InputBytes         : {input.Length}");
+        Console.WriteLine($"FullMatchInputBytes: {fullMatchInputUtf8.Length}");
         Console.WriteLine($"Iterations         : {iterations} (fixed, capped at 512)");
+        Console.WriteLine($"ReuseIterations    : {reuseIterations} (minimum 5000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
         PrintOperation("ParseTranslate", MeasureOperation(
             () =>
@@ -307,6 +320,30 @@ internal static class PythonReBenchmarkReporter
                 return regex.GetHashCode() ^ (regex.IsMatch(input) ? 1 : 0);
             },
             iterations,
+            samples));
+        PrintOperation("ConstructFirstFull", MeasureOperation(
+            () =>
+            {
+                var regex = new Utf8PythonRegex(pattern, options);
+                return regex.GetHashCode() ^ (regex.FullMatch(fullMatchInputUtf8).Success ? 1 : 0);
+            },
+            iterations,
+            samples));
+        PrintOperation("PreparedFullHit", MeasureOperation(
+            () => prepared.FullMatch(fullMatchInputUtf8).Success ? 1 : 0,
+            reuseIterations,
+            samples));
+        PrintOperation("PreparedFullMiss", MeasureOperation(
+            () => prepared.FullMatch(fullMatchMissUtf8).Success ? 1 : 0,
+            reuseIterations,
+            samples));
+        PrintOperation("DirectCoreFullHit", MeasureOperation(
+            () => preparedCoreFull.Match(fullMatchInputUtf8).Success ? 1 : 0,
+            reuseIterations,
+            samples));
+        PrintOperation("LazyCoreFullHit", MeasureOperation(
+            () => lazyCoreFull.Value.Match(fullMatchInputUtf8).Success ? 1 : 0,
+            reuseIterations,
             samples));
         return 0;
     }
