@@ -29,6 +29,13 @@ if (args.Length >= 2 && args[0].Equals("--measure-utf8-case", StringComparison.O
     return BenchmarkInspectReporter.RunMeasureUtf8Case(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--measure-short-ascii-literal-family-count-controls", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureShortAsciiLiteralFamilyCountControls(
+        args.Length >= 2 ? args[1] : null,
+        args.Length >= 3 ? args[2] : null);
+}
+
 if (BenchmarkProgramRouter.TryHandlePcre2Command(args, out var pcre2ExitCode))
 {
     return pcre2ExitCode;
