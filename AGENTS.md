@@ -106,6 +106,8 @@ PythonRe benchmark snapshot and diagnostics:
 
 - `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
 - Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
+- Use `--measure-pythonre-shaping-case <id> [iterations] [samples]` to split
+  detailed-match discovery, direct public projection, and staged projection.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete eight-case catalog.
 - The managed UTF-8 adapter, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
 
