@@ -128,6 +128,54 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.Equal("aqqq ".Length, search.IndexOf(input));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(14)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(30)]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(33)]
+    [InlineData(47)]
+    [InlineData(48)]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(127)]
+    [InlineData(128)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(480)]
+    [InlineData(509)]
+    public void PackedIgnoreCasePrefilterRetainsCandidatesAcrossVectorAndTailLanes(int candidateIndex)
+    {
+        var prefilter = CreatePackedIgnoreCasePrefilter();
+        var input = Enumerable.Repeat((byte)'x', 513).ToArray();
+        "JoHn"u8.CopyTo(input.AsSpan(candidateIndex));
+
+        var actual = CollectCandidates(prefilter, input);
+
+        Assert.Equal([candidateIndex], actual);
+    }
+
+    [Fact]
+    public void PackedIgnoreCasePrefilterRetainsEveryPendingCandidateInOneVector()
+    {
+        var prefilter = CreatePackedIgnoreCasePrefilter();
+        var input = Enumerable.Repeat((byte)'x', 96).ToArray();
+        int[] expected = [0, 4, 8, 12, 16, 20, 24, 28];
+        foreach (var candidateIndex in expected)
+        {
+            "jOhN"u8.CopyTo(input.AsSpan(candidateIndex));
+        }
+
+        var actual = CollectCandidates(prefilter, input);
+
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void PreparedMultiLiteralSearchPromotesLargeExactSetsToAutomatonBackend()
     {
@@ -772,5 +820,32 @@ public sealed class PreparedSearchPrimitivesTests
         var input = Encoding.UTF8.GetBytes("'ab12' xx \"xy99\"");
 
         Assert.Equal(10, search.LastIndexOf(input));
+    }
+
+    private static PreparedMultiLiteralPackedNibbleSimdPrefilter CreatePackedIgnoreCasePrefilter()
+    {
+        byte[][] literals =
+        [
+            "sherlock"u8.ToArray(),
+            "john"u8.ToArray(),
+            "irene"u8.ToArray(),
+            "inspector"u8.ToArray(),
+            "professor"u8.ToArray(),
+        ];
+        return PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals);
+    }
+
+    private static int[] CollectCandidates(
+        PreparedMultiLiteralPackedNibbleSimdPrefilter prefilter,
+        ReadOnlySpan<byte> input)
+    {
+        var candidates = new List<int>();
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (prefilter.TryFindNextCandidate(input, ref state, out var candidateIndex))
+        {
+            candidates.Add(candidateIndex);
+        }
+
+        return [.. candidates];
     }
 }
