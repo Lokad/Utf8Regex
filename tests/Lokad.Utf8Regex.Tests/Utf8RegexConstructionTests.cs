@@ -1850,6 +1850,24 @@ public sealed class Utf8RegexConstructionTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
+    public void ThreeByteAsciiLiteralFamilyCountMatchesDotNet(bool compiled, bool finiteTimeout)
+    {
+        const string pattern = "cat|dog|yak";
+        const string input = "cat caq dog yakcat xdog yak é cat";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        var regex = new Utf8Regex(pattern, options, timeout);
+        var oracle = new Regex(pattern, options, timeout);
+
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void DistinctFirstByteLiteralFamilyCountMatchesDotNetAcrossSelectorBoundary(
         bool compiled,
         bool finiteTimeout)

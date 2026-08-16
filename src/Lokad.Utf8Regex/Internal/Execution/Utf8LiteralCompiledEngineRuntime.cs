@@ -1764,7 +1764,7 @@ internal readonly struct PreparedShortAsciiLiteralFamilyCounter
         for (var i = 0; i < literals.Length; i++)
         {
             var literal = literals[i];
-            if (literal.Length is < 4 or > 8 || !Utf8InputAnalyzer.IsAscii(literal))
+            if (literal.Length is < 3 or > 8 || !Utf8InputAnalyzer.IsAscii(literal))
             {
                 return false;
             }

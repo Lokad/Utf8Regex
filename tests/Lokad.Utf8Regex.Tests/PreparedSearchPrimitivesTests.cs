@@ -510,6 +510,34 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PreparedShortAsciiLiteralFamilyCounterCountsThreeByteLiterals()
+    {
+        byte[][] literals =
+        [
+            "cat"u8.ToArray(),
+            "dog"u8.ToArray(),
+            "yak"u8.ToArray(),
+        ];
+        var input = "cat caq dog yakcat xdog yak"u8;
+
+        Assert.True(PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out var counter));
+        Assert.Equal(6, counter.Count(input));
+    }
+
+    [Fact]
+    public void PreparedShortAsciiLiteralFamilyCounterRejectsTwoByteLiterals()
+    {
+        byte[][] literals =
+        [
+            "go"u8.ToArray(),
+            "up"u8.ToArray(),
+            "no"u8.ToArray(),
+        ];
+
+        Assert.False(PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out _));
+    }
+
+    [Fact]
     public void PreparedShortAsciiLiteralFamilyCounterCountsTwoLiteralFamily()
     {
         byte[][] literals =
