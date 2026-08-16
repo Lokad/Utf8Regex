@@ -98,6 +98,13 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!_usesRightToLeft)
         {
+            if (!_regexPlan.SearchPlan.HasBoundaryRequirements &&
+                !_regexPlan.SearchPlan.HasTrailingLiteralRequirement &&
+                _regexPlan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
+            {
+                return IsMatchLiteralFamily(input, budget, rightToLeft: false);
+            }
+
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 verifierRuntime: null,

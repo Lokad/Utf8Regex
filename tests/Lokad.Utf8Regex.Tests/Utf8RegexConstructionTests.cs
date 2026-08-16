@@ -1936,6 +1936,153 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Regex.Match(input, pattern).Value, Encoding.UTF8.GetString(bytes.AsSpan(match.IndexInBytes, match.LengthInBytes)));
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    public void LiteralFamilyIsMatchMatchesDotNetAcrossExecutionModes(
+        bool ignoreCase,
+        bool compiled,
+        bool finiteTimeout)
+    {
+        const string pattern = "alpha|alphabet|bravo|charlie|delta";
+        var options = RegexOptions.CultureInvariant |
+            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        var regex = new Utf8Regex(pattern, options, timeout);
+        var oracle = new Regex(pattern, options, timeout);
+        string[] inputs =
+        [
+            string.Empty,
+            "alpha",
+            "xx alphabet yy",
+            "xx ALPHA yy",
+            "é xx bravo yy 夏",
+            "xx charlie",
+            "delt",
+            "alphab",
+            "xx foxtrot yy",
+        ];
+
+        Assert.Equal(
+            ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals,
+            regex.Inspection.ExecutionKind);
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnicodeLiteralFamilyIsMatchMatchesDotNet(bool compiled)
+    {
+        const string pattern = "кошка|собака|лисица|медведь|волк";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        string[] inputs =
+        [
+            string.Empty,
+            "кот",
+            "ёж и лисица",
+            "кошка у окна",
+            "медвед",
+            "犬と猫",
+        ];
+
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void LiteralFamilyIsMatchPreservesTrailingLookahead(
+        bool ignoreCase,
+        bool compiled)
+    {
+        const string pattern = "(?:cat|dog)(?=house)";
+        var options = RegexOptions.CultureInvariant |
+            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        string[] inputs =
+        [
+            "doghouse",
+            "xx cathouse yy",
+            "dog shed",
+            "DOGhouse",
+            "é cathouse 夏",
+        ];
+
+        Assert.Equal(
+            ignoreCase ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals,
+            regex.Inspection.ExecutionKind);
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LiteralFamilyIsMatchDoesNotAllocatePerCall(bool compiled)
+    {
+        const string pattern = "alpha|alphabet|bravo|charlie|delta";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options);
+        var input = Encoding.UTF8.GetBytes("é " + new string('x', 32_768) + " 夏");
+        var sink = false;
+
+        for (var i = 0; i < 64; i++)
+        {
+            sink ^= regex.IsMatch(input);
+        }
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 256; i++)
+        {
+            sink ^= regex.IsMatch(input);
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        GC.KeepAlive(sink);
+        Assert.InRange(allocated, 0, 512);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void LiteralFamilyIsMatchStillRejectsMalformedUtf8(bool ignoreCase, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant |
+            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options);
+        byte[] malformed = [(byte)'x', 0xC3, 0x28, (byte)'a'];
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
+    }
+
     [Fact]
     public void CompiledExactAsciiLiteralFamilyCanMatchWithoutValidation()
     {
