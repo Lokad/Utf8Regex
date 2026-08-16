@@ -1556,6 +1556,36 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
     }
 
+    [Theory]
+    [InlineData(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", "été@example.org alpha@example.org")]
+    [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "é://host.example/path https://atlas.example/path")]
+    [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "https://hôte.example/路径 https://atlas.example/path")]
+    [InlineData(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "١١/١٨/٢٠١٩ 11/18/2019")]
+    [InlineData(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "é11/18/2019é 11/18/2019")]
+    public void AsciiDirectFamilyCountFallsBackForUnicodeSensitiveMixedInput(string pattern, string input)
+    {
+        var bytes = Encoding.UTF8.GetBytes(input);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            Assert.Equal(oracle.Count(input), regex.Count(bytes));
+        }
+    }
+
+    [Fact]
+    public void ExplicitAsciiStructuredTokenCountRemainsEligibleOnMixedInput()
+    {
+        const string pattern = @"[A-Za-z]+://[A-Za-z0-9.]+[A-Za-z0-9/]+";
+        const string input = "é https://atlas.example/path 夏";
+        var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+
+        Assert.Equal(
+            nameof(Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount),
+            regex.Inspection.DebugFallbackDirectFamilyKind);
+        Assert.Equal(Regex.Count(input, pattern), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
     [Fact]
     public void CompiledAsciiUriTokenMatchMatchesDotNetForAsciiInput()
     {

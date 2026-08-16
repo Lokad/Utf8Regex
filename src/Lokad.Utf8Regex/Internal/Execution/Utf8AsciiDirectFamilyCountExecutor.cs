@@ -14,7 +14,7 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
         out int count,
         out Utf8ExecutionRoute diagnosticsRoute)
     {
-        if (emittedTokenFamilyMatcher is not null)
+        if (emittedTokenFamilyMatcher is not null && isAscii)
         {
             count = emittedTokenFamilyMatcher.Count(input);
             diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiEmittedTokenFamily;
@@ -56,6 +56,11 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
 
         if (Utf8FallbackDirectFamilyCategories.IsPreparedTokenCountFamily(plan.Kind))
         {
+            if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount && !isAscii)
+            {
+                return false;
+            }
+
             diagnosticsRoute = plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount
                 ? Utf8ExecutionRoute.FallbackDirectAsciiDelimitedToken
                 : Utf8ExecutionRoute.FallbackDirectAsciiLiteralStructuredToken;

@@ -87,12 +87,12 @@ internal static class Utf8AsciiTokenFamilyExecutor
                 count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.AsciiUriToken:
+            case Utf8FallbackDirectFamilyKind.AsciiUriToken when isAscii:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiUriToken;
                 count = Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input);
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken:
+            case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken when isAscii:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiBoundedDateToken;
                 count = Utf8AsciiBoundedDateTokenExecutor.CountAsciiBoundedDateTokens(input, plan);
                 return true;
