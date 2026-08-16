@@ -534,6 +534,138 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMeasureCompiledConstructionReplicaCase(
+        string caseId,
+        string? instancesText,
+        string? samplesText)
+    {
+        var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
+        var instanceCount = string.IsNullOrWhiteSpace(instancesText)
+            ? 4
+            : Math.Clamp(ParseIterations(instancesText), 1, 16);
+        var samples = Math.Clamp(ParseSamples(samplesText), 1, 9);
+        var ordinaryOptions = benchmarkCase.Options & ~RegexOptions.Compiled;
+        var compiledOptions = benchmarkCase.Options | RegexOptions.Compiled;
+        var decoded = Encoding.UTF8.GetString(benchmarkCase.InputBytes);
+
+        Console.WriteLine($"CaseId            : {benchmarkCase.Id}");
+        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
+        Console.WriteLine($"BaseOptions       : {ordinaryOptions}");
+        Console.WriteLine($"Instances         : {instanceCount}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"InputBytes        : {benchmarkCase.InputBytes.Length}");
+
+        // Prime shared JIT and dynamic backends outside every timed sample.
+        // The first-call rows below intentionally isolate per-instance work;
+        // process-cold qualification requires separate process launches.
+        const int sharedTierPrimeCalls = 64;
+        var warmUtf8Ordinary = new Utf8Regex(benchmarkCase.Pattern, ordinaryOptions);
+        var warmUtf8Compiled = new Utf8Regex(benchmarkCase.Pattern, compiledOptions);
+        var warmRegexOrdinary = new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout);
+        var warmRegexCompiled = new Regex(benchmarkCase.Pattern, compiledOptions, Regex.InfiniteMatchTimeout);
+        var primeSink = 0;
+        for (var i = 0; i < sharedTierPrimeCalls; i++)
+        {
+            primeSink ^= warmUtf8Ordinary.Count(benchmarkCase.InputBytes);
+            primeSink ^= warmUtf8Compiled.Count(benchmarkCase.InputBytes);
+            primeSink ^= warmRegexOrdinary.Count(decoded);
+            primeSink ^= warmRegexCompiled.Count(decoded);
+        }
+
+        GC.KeepAlive(primeSink);
+        Console.WriteLine($"SharedTierPrimeCalls: {sharedTierPrimeCalls}");
+
+        var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(ordinaryOptions);
+        var phasePreparedRegex = Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions);
+        var phaseOrdinaryEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: false);
+        var phaseCompiledEngine = Utf8CompiledEngineSelector.Select(phasePreparedRegex, preferCompiled: true);
+        var phaseOrdinaryVerifier = Utf8VerifierRuntime.Create(
+            phasePreparedRegex,
+            benchmarkCase.Pattern,
+            ordinaryOptions,
+            Regex.InfiniteMatchTimeout);
+        var phaseCompiledVerifier = Utf8VerifierRuntime.Create(
+            phasePreparedRegex,
+            benchmarkCase.Pattern,
+            compiledOptions,
+            Regex.InfiniteMatchTimeout);
+        var phaseFallbackRegex = phaseOrdinaryVerifier.FallbackCandidateVerifier.FallbackRegex;
+
+        MeasureFixedConstruction("Utf8FrontEndCompile", samples, instanceCount,
+            () => Utf8FrontEnd.Compile(benchmarkCase.Pattern, effectiveOptions));
+        MeasureFixedConstruction("Utf8OrdinaryVerifier", samples, instanceCount,
+            () => Utf8VerifierRuntime.Create(
+                phasePreparedRegex,
+                benchmarkCase.Pattern,
+                ordinaryOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("Utf8CompiledVerifier", samples, instanceCount,
+            () => Utf8VerifierRuntime.Create(
+                phasePreparedRegex,
+                benchmarkCase.Pattern,
+                compiledOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("Utf8OrdinaryRuntime", samples, instanceCount,
+            () => Utf8CompiledEngineRuntime.Create(
+                phaseOrdinaryEngine,
+                phasePreparedRegex,
+                phaseOrdinaryVerifier,
+                ordinaryOptions));
+        MeasureFixedConstruction("Utf8CompiledRuntime", samples, instanceCount,
+            () => Utf8CompiledEngineRuntime.Create(
+                phaseCompiledEngine,
+                phasePreparedRegex,
+                phaseCompiledVerifier,
+                compiledOptions));
+        MeasureFixedConstruction("Utf8OrdinaryProgram", samples, instanceCount,
+            () => Utf8RegexProgram.Compile(
+                benchmarkCase.Pattern,
+                ordinaryOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("Utf8CompiledProgram", samples, instanceCount,
+            () => Utf8RegexProgram.Compile(
+                benchmarkCase.Pattern,
+                compiledOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("RegexOrdinaryAnchored", samples, instanceCount,
+            () => new Regex(
+                @"\G(?:" + benchmarkCase.Pattern + ")",
+                ordinaryOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("RegexCompiledAnchored", samples, instanceCount,
+            () => new Regex(
+                @"\G(?:" + benchmarkCase.Pattern + ")",
+                compiledOptions,
+                Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("RegexGroupNumbers", samples, instanceCount,
+            phaseFallbackRegex.GetGroupNumbers);
+        MeasureFixedConstruction("RegexGroupNames", samples, instanceCount,
+            phaseFallbackRegex.GetGroupNames);
+
+        MeasureFixedConstruction("Utf8OrdinaryConstruct", samples, instanceCount,
+            () => new Utf8Regex(benchmarkCase.Pattern, ordinaryOptions));
+        MeasureFixedConstruction("Utf8CompiledConstruct", samples, instanceCount,
+            () => new Utf8Regex(benchmarkCase.Pattern, compiledOptions));
+        MeasureFixedConstruction("RegexOrdinaryConstruct", samples, instanceCount,
+            () => new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout));
+        MeasureFixedConstruction("RegexCompiledConstruct", samples, instanceCount,
+            () => new Regex(benchmarkCase.Pattern, compiledOptions, Regex.InfiniteMatchTimeout));
+
+        MeasureFixedFirstCall("Utf8OrdinaryFirstCountPrimed", samples, instanceCount,
+            () => new Utf8Regex(benchmarkCase.Pattern, ordinaryOptions),
+            regex => regex.Count(benchmarkCase.InputBytes));
+        MeasureFixedFirstCall("Utf8CompiledFirstCountPrimed", samples, instanceCount,
+            () => new Utf8Regex(benchmarkCase.Pattern, compiledOptions),
+            regex => regex.Count(benchmarkCase.InputBytes));
+        MeasureFixedFirstCall("RegexOrdinaryFirstCountPrimed", samples, instanceCount,
+            () => new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout),
+            regex => regex.Count(decoded));
+        MeasureFixedFirstCall("RegexCompiledFirstCountPrimed", samples, instanceCount,
+            () => new Regex(benchmarkCase.Pattern, compiledOptions, Regex.InfiniteMatchTimeout),
+            regex => regex.Count(decoded));
+        return 0;
+    }
+
     public static int RunMeasureSmallAsciiLiteralFamilyPrimitiveCase(string caseId, string? iterationsText)
     {
         try
@@ -4702,6 +4834,90 @@ internal static partial class BenchmarkInspectReporter
 
         GC.KeepAlive(checksum);
         return (GC.GetAllocatedBytesForCurrentThread() - before) / iterations;
+    }
+
+    private static void MeasureFixedConstruction<T>(
+        string label,
+        int samples,
+        int instanceCount,
+        Func<T> factory)
+        where T : class
+    {
+        MeasureFixedInstances(label, samples, instanceCount, factory, firstCall: null);
+    }
+
+    private static void MeasureFixedFirstCall<T>(
+        string label,
+        int samples,
+        int instanceCount,
+        Func<T> factory,
+        Func<T, int> firstCall)
+        where T : class
+    {
+        MeasureFixedInstances(label, samples, instanceCount, factory, firstCall);
+    }
+
+    private static void MeasureFixedInstances<T>(
+        string label,
+        int samples,
+        int instanceCount,
+        Func<T> factory,
+        Func<T, int>? firstCall)
+        where T : class
+    {
+        WriteMeasurementEnvironment();
+        var elapsed = new TimeSpan[samples];
+        var allocatedBytes = new long[samples];
+        var sink = 0;
+        for (var sample = 0; sample < samples; sample++)
+        {
+            var instances = new T[instanceCount];
+            if (firstCall is not null)
+            {
+                for (var i = 0; i < instances.Length; i++)
+                {
+                    instances[i] = factory();
+                }
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var start = Stopwatch.GetTimestamp();
+            if (firstCall is null)
+            {
+                for (var i = 0; i < instances.Length; i++)
+                {
+                    instances[i] = factory();
+                }
+            }
+            else
+            {
+                for (var i = 0; i < instances.Length; i++)
+                {
+                    sink ^= firstCall(instances[i]);
+                }
+            }
+
+            elapsed[sample] = Stopwatch.GetElapsedTime(start);
+            allocatedBytes[sample] = GC.GetAllocatedBytesForCurrentThread() - before;
+            GC.KeepAlive(instances);
+        }
+
+        Array.Sort(elapsed);
+        Array.Sort(allocatedBytes);
+        var medianElapsed = elapsed[elapsed.Length / 2].TotalMicroseconds / instanceCount;
+        var minimumElapsed = elapsed[0].TotalMicroseconds / instanceCount;
+        var maximumElapsed = elapsed[^1].TotalMicroseconds / instanceCount;
+        var medianAllocated = allocatedBytes[allocatedBytes.Length / 2] / instanceCount;
+        var minimumAllocated = allocatedBytes[0] / instanceCount;
+        var maximumAllocated = allocatedBytes[^1] / instanceCount;
+        Console.WriteLine(
+            $"{label,-28}: {medianElapsed,10:F3} us/op | " +
+            $"range={minimumElapsed:F3}..{maximumElapsed:F3} us/op | " +
+            $"allocated={medianAllocated:N0} B/op range={minimumAllocated:N0}..{maximumAllocated:N0} | " +
+            $"instances={instanceCount} samples={samples} sink={sink}");
     }
 
     private static (TimeSpan Elapsed, int Sink) MeasureTimedCore(int iterations, Func<int> action)

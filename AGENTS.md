@@ -134,6 +134,11 @@ Current intended uses:
 - --measure-compiled-microcost-case
   - benchmark the compiled path with a backend/runtime microcost breakdown
   - works across public cases, Lokad script cases, and replica count cases
+- --measure-compiled-construction-case
+  - benchmark ordinary/compiled construction and first Count separately for
+    one replica case
+  - uses an explicit fixed instance count (capped at 16); do not replace this
+    with a self-calibrating loop that constructs dynamic compiled code
 - --emit-readme-benchmark-markdown
   - emit generated README benchmark markdown preview for one or more sections: dotnet-performance, dotnet-performance-compiled, lokad, lokad-compiled
 - --refresh-readme-case
@@ -170,6 +175,7 @@ Custom CLI invocation rule:
 `powershell
 dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-case-deep common/match-word 20
 dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-compiled-microcost-case lokad/imports/module-imports 20
+dotnet .\bench\Lokad.Utf8Regex.Benchmarks\bin\Release\net10.0\Lokad.Utf8Regex.Benchmarks.dll --measure-compiled-construction-case literal-alternate/sherlock-casei-en 4 7
 `
 
 ## PCRE2 isolation rule
