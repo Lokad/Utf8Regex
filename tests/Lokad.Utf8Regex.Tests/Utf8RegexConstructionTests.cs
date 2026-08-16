@@ -1975,6 +1975,42 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void AsciiLiteralFamilyCanReportDefinitiveUnvalidatedMiss(bool ignoreCase, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant |
+            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("tempus|magna|semper", options);
+
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx nihil yyy"u8, out var match);
+
+        Assert.True(handled);
+        Assert.False(match.Success);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void LargerAsciiLiteralFamilyCanReportDefinitiveUnvalidatedMiss(bool ignoreCase, bool compiled)
+    {
+        var options = RegexOptions.CultureInvariant |
+            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options);
+
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation("xxx foxtrot yyy"u8, out var match);
+
+        Assert.True(handled);
+        Assert.False(match.Success);
+    }
+
+    [Theory]
     [InlineData(@"(?<word>ab)\k<word>", "unsupported_backreference")]
     [InlineData("(?!ab)ab", "unsupported_lookaround")]
     [InlineData("(?>ab)c", "unsupported_atomic")]

@@ -2748,6 +2748,16 @@ internal static partial class BenchmarkInspectReporter
             });
         }
 
+        Measure("UnvalidatedMatchProbe", iterations, () =>
+        {
+            var handled = regex.Inspection.DebugTryMatchWithoutValidation(benchmarkCase.InputBytes, out var match);
+            if (!handled)
+            {
+                return -1;
+            }
+
+            return match.Success ? 1 : 0;
+        });
         Measure("CompiledDirect", iterations, () => regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
         Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
@@ -2757,6 +2767,23 @@ internal static partial class BenchmarkInspectReporter
         Measure("Utf8IsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(benchmarkCase.InputBytes) ? 1 : 0);
         Measure("DecodeIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(Encoding.UTF8.GetString(benchmarkCase.InputBytes)) ? 1 : 0);
         Measure("PredecodedIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(decoded) ? 1 : 0);
+
+        if (benchmarkCase.Pattern.AsSpan().IndexOfAnyInRange('\u0080', char.MaxValue) < 0)
+        {
+            var asciiMiss = new byte[benchmarkCase.InputBytes.Length];
+            asciiMiss.AsSpan().Fill((byte)'x');
+            Measure("AsciiMissUnvalidatedProbe", iterations, () =>
+            {
+                var handled = regex.Inspection.DebugTryMatchWithoutValidation(asciiMiss, out var match);
+                if (!handled)
+                {
+                    return -1;
+                }
+
+                return match.Success ? 1 : 0;
+            });
+            Measure("AsciiMissIsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(asciiMiss) ? 1 : 0);
+        }
 
         return 0;
     }

@@ -53,7 +53,9 @@ internal ref struct Utf8OperationMatchCursor
         _boundaryMap = null;
         _budget = budget;
         _literalUtf16Length = literal.Length;
-        _totalUtf16Length = input.Length;
+        // This nonempty-literal mode projects incrementally and never uses the
+        // whole-subject UTF-16 length owned by the empty-literal mode.
+        _totalUtf16Length = 0;
         _projectionPlan = default;
         _program = default;
         _fallbackEnumerator = default;
@@ -281,7 +283,7 @@ internal ref struct Utf8OperationMatchCursor
         _boundaryMap = null;
         _budget = budget;
         _literalUtf16Length = literalUtf16Length;
-        _totalUtf16Length = literalUtf16Length == literal.Length ? input.Length : Utf8Validation.Validate(input).Utf16Length;
+        _totalUtf16Length = input.Length;
         _projectionPlan = searchPlan.EnumerationOperation.Projection;
         _program = searchPlan.EnumerationOperation;
         _fallbackEnumerator = default;

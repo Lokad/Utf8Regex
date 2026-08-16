@@ -170,10 +170,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
-        if (_smallAsciiLiteralFamilyPrimitive is { } primitive &&
-            primitive.TryFindFirst(input, out var index, out var matchedLength))
+        if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
-            match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            match = primitive.TryFindFirst(input, out var index, out var matchedLength)
+                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
+                : Utf8ValueMatch.NoMatch;
             return true;
         }
 
@@ -188,24 +189,23 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
-        if (budget.IsInfinite &&
-            _smallAsciiLiteralFamilyPrimitive is { } primitive &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0 &&
-            primitive.TryFindFirst(input, out var index, out var matchedLength))
+        if (!budget.IsInfinite ||
+            (_smallAsciiLiteralFamilyPrimitive is null && !SupportsAsciiDirectMatch) ||
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
         {
-            match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+
+        if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
+        {
+            match = primitive.TryFindFirst(input, out var index, out var matchedLength)
+                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
+                : Utf8ValueMatch.NoMatch;
             return true;
         }
 
-        if (budget.IsInfinite &&
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0 &&
-            TryMatchAsciiDirect(input, budget, out match))
-        {
-            return true;
-        }
-
-        match = Utf8ValueMatch.NoMatch;
-        return false;
+        return TryMatchAsciiDirect(input, budget, out match);
     }
 
     internal bool TryInspectMatchAsciiLiteralFamily(ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
@@ -1080,26 +1080,32 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     {
         if (!rightToLeft &&
             budget.IsInfinite &&
-            _smallAsciiLiteralFamilyPrimitive is { } primitive &&
-            primitive.TryFindFirst(input, out var primitiveIndex, out var primitiveLength))
+            _smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
-            return new Utf8ValueMatch(true, true, primitiveIndex, primitiveLength, primitiveIndex, primitiveLength);
+            return primitive.TryFindFirst(input, out var primitiveIndex, out var primitiveLength)
+                ? new Utf8ValueMatch(true, true, primitiveIndex, primitiveLength, primitiveIndex, primitiveLength)
+                : Utf8ValueMatch.NoMatch;
         }
 
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
-            _smallAsciiLiteralFamilyFirstBytes is not null &&
-            TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out var directLength))
+            _smallAsciiLiteralFamilyFirstBytes is not null)
         {
-            return new Utf8ValueMatch(true, true, directIndex, directLength, directIndex, directLength);
+            return TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out var directLength)
+                ? new Utf8ValueMatch(true, true, directIndex, directLength, directIndex, directLength)
+                : Utf8ValueMatch.NoMatch;
         }
 
         if (!rightToLeft &&
             budget.IsInfinite &&
-            _emittedLiteralFamilyCounter is not null &&
-            _emittedLiteralFamilyCounter.TryMatch(input, out var index, out var matchedByteLength))
+            _emittedLiteralFamilyCounter is not null)
         {
+            if (!_emittedLiteralFamilyCounter.TryMatch(input, out var index, out var matchedByteLength))
+            {
+                return Utf8ValueMatch.NoMatch;
+            }
+
             var matchedUtf16Length = Utf8Validation.Validate(input.Slice(index, matchedByteLength)).Utf16Length;
             return Utf8BackendInstructionExecutor.ProjectMatch(
                 _firstMatchProgram,
