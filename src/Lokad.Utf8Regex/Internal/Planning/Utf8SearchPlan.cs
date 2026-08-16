@@ -48,13 +48,13 @@ internal readonly struct Utf8SearchPlan
         AlternateLiteralUtf16Lengths = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.ExactUtf8Literals
             ? [.. alternateLiteralsUtf8.Select(static literal => Utf8Validation.Validate(literal).Utf16Length)]
             : null;
-        AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 }
+        AlternateLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind != Utf8SearchKind.AsciiFoldedByteLiterals
             ? new PreparedLiteralSetSearch(alternateLiteralsUtf8)
             : null;
-        AlternateIgnoreCaseLiteralSearch = alternateLiteralsUtf8 is { Length: > 0 } && kind == Utf8SearchKind.AsciiFoldedByteLiterals
-            ? new PreparedAsciiIgnoreCaseLiteralSetSearch(alternateLiteralsUtf8)
-            : null;
         MultiLiteralSearch = CreateMultiLiteralSearch(kind, alternateLiteralsUtf8);
+        AlternateIgnoreCaseLiteralSearch = MultiLiteralSearch.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase
+            ? MultiLiteralSearch.IgnoreCaseSearch
+            : null;
         PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, MultiLiteralSearch);
         PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher, MultiLiteralSearch);
         RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteralUtf8;

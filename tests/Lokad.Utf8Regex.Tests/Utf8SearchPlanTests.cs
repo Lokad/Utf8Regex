@@ -43,7 +43,14 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily, regex.Inspection.SearchPortfolioKind);
         Assert.True(regex.Inspection.SearchPlan.HasAlternateLiterals);
         Assert.True(regex.Inspection.SearchPlan.AlternateIgnoreCaseLiteralSearch.HasValue);
+        Assert.False(regex.Inspection.SearchPlan.AlternateLiteralSearch.HasValue);
         Assert.Equal(PreparedSearcherKind.MultiLiteral, regex.Inspection.SearchPlan.PreparedSearcher.Kind);
+
+        var alternate = regex.Inspection.SearchPlan.AlternateIgnoreCaseLiteralSearch.Value;
+        var prepared = regex.Inspection.SearchPlan.MultiLiteralSearch.IgnoreCaseSearch;
+        Assert.Same(alternate.FirstByteSearchValues, prepared.FirstByteSearchValues);
+        Assert.Same(alternate.Buckets, prepared.Buckets);
+        Assert.Same(alternate.BucketIndexMap, prepared.BucketIndexMap);
     }
 
     [Fact]
