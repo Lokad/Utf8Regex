@@ -73,6 +73,14 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--measure-literal-family-selector", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunMeasureLiteralFamilySelector(
+                args.Length >= 2 ? args[1] : null,
+                args.Length >= 3 ? args[2] : null);
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-priority-report", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunEmitPcre2PriorityReport();

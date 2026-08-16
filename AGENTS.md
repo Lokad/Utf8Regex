@@ -94,6 +94,7 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--inspect-pcre2-case`
   - `--measure-pcre2-compatible-case`
   - `--measure-pcre2-special-case`
+  - `--measure-literal-family-selector`
 - PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
 
 PythonRe benchmark snapshot and diagnostics:
