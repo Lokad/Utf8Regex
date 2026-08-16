@@ -640,14 +640,59 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("foo|foobar");
 
+        var matches = regex.FindAll("foobar foo"u8);
         var strings = regex.FindAllToStrings("foobar foo"u8);
         var utf8 = regex.FindAllToUtf8("foobar foo"u8);
+        var detailed = regex.FindIterDetailed("foobar foo"u8);
 
         Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Equal(["foo", "foo"], matches.Select(static match => match.ValueText).ToArray());
         Assert.Equal(["foo", "foo"], strings.ScalarValues);
         Assert.Equal(
             strings.ScalarValues,
             utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+        Assert.Equal(["foo", "foo"], detailed.Select(static match => match.Value.ValueText).ToArray());
+        Assert.Equal(2, regex.Count("foobar foo"u8));
+    }
+
+    [Fact]
+    public void ManagedGlobalMissesAfterUnicodeStartReturnEmptyShapes()
+    {
+        var regex = new Utf8PythonRegex("needle|needle-long");
+        var input = "é skip haystack"u8;
+        var startOffsetInBytes = "é skip "u8.Length;
+
+        var matches = regex.FindAll(input, startOffsetInBytes);
+        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
+        var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
+        var detailed = regex.FindIterDetailed(input, startOffsetInBytes);
+
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Empty(matches);
+        Assert.Empty(strings.ScalarValues);
+        Assert.Empty(utf8.ScalarValues);
+        Assert.Empty(detailed);
+        Assert.Equal(0, regex.Count(input, startOffsetInBytes));
+    }
+
+    [Fact]
+    public void ManagedGlobalShapesPreserveQualifiedProgressionAfterUnicodeStart()
+    {
+        var regex = new Utf8PythonRegex(@"\b|\w+");
+        var input = "é skip y"u8;
+        var startOffsetInBytes = "é skip "u8.Length;
+        string[] expected = ["", "y", ""];
+
+        var matches = regex.FindAll(input, startOffsetInBytes);
+        var strings = regex.FindAllToStrings(input, startOffsetInBytes);
+        var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
+
+        Assert.Equal(expected, matches.Select(static match => match.ValueText).ToArray());
+        Assert.Equal(expected, strings.ScalarValues);
+        Assert.Equal(
+            expected,
+            utf8.ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+        Assert.Equal(3, regex.Count(input, startOffsetInBytes));
     }
 
     [Fact]
