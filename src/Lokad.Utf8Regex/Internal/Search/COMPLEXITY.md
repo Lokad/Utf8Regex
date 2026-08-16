@@ -11,7 +11,7 @@ once per compiled regex; scan state is retained by operation cursors.
 | `PreparedByteSearch` | `O(k)` | `O(n)` | `SearchValues<byte>` is retained only for sets larger than three bytes. |
 | `PreparedSubstringSearch` | `O(m + alphabet)` | `O(n * m)` worst case; vector/Boyer-Moore tiers are sublinear on favorable input | Shift tables and selected comparison offsets are prepared once. |
 | `PreparedQuotedAsciiRunSearch` | `O(1)` | `O(n)` | No candidate revisits an earlier opening quote. |
-| `PreparedAsciiIgnoreCaseLiteralSetSearch` | `O(L + alphabet)` | `O(n * max(m))` worst case | Folded buckets and `SearchValues<byte>` instances are retained. |
+| `PreparedAsciiIgnoreCaseLiteralSetSearch` | `O(L + alphabet)` | `O(n * max(m))` worst case | One immutable data owner retains the folded buckets, first-byte search, and optional four-offset packed folded masks; after the first rejected candidate, both scalar and correlated scans advance monotonically. |
 | `PreparedSmallAsciiLiteralFamilySearch` | `O(L + alphabet)` | `O(n * k * max(m))` worst case | Anchor filters and pair/triple dispatch are prepared once; rejected candidates advance by at least one byte. |
 | `PreparedLiteralSetSearch` | `O(L + alphabet)` | `O(n * k * max(m))` worst case | Packed, unique-anchor, and prefix-discriminator states are mutually exclusive prepared strategies. |
 | `PreparedMultiLiteralSearch` packed/prefilter tiers | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | Every prefilter advances monotonically; selected offsets, masks, and buckets are retained. |

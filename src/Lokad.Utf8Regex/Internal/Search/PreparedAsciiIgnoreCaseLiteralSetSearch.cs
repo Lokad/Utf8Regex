@@ -1,10 +1,13 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 {
     private const int PrefixProbeLength = 8;
+    private const int CorrelatedPromotionTailLength = 256;
+    private readonly PreparedAsciiIgnoreCaseLiteralSetSearchData _data;
 
     public PreparedAsciiIgnoreCaseLiteralSetSearch(byte[][] literals)
     {
@@ -12,10 +15,13 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
         if (literals.Length == 0)
         {
-            FirstByteSearchValues = SearchValues.Create(Array.Empty<byte>());
-            Buckets = [];
-            BucketIndexMap = CreateBucketIndexMap([]);
-            ShortestLength = int.MaxValue;
+            var emptyBuckets = Array.Empty<AsciiIgnoreCaseLiteralBucket>();
+            _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
+                SearchValues.Create(Array.Empty<byte>()),
+                emptyBuckets,
+                CreateBucketIndexMap(emptyBuckets),
+                int.MaxValue,
+                default);
             return;
         }
 
@@ -28,10 +34,14 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
         {
             if (literal.Length == 0)
             {
-                FirstByteSearchValues = SearchValues.Create(Array.Empty<byte>());
-                Buckets = [new AsciiIgnoreCaseLiteralBucket(0, [Array.Empty<byte>()])];
-                BucketIndexMap = CreateBucketIndexMap(Buckets);
-                ShortestLength = 0;
+                AsciiIgnoreCaseLiteralBucket[] emptyLiteralBuckets =
+                    [new AsciiIgnoreCaseLiteralBucket(0, [Array.Empty<byte>()])];
+                _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
+                    SearchValues.Create(Array.Empty<byte>()),
+                    emptyLiteralBuckets,
+                    CreateBucketIndexMap(emptyLiteralBuckets),
+                    0,
+                    default);
                 return;
             }
 
@@ -64,20 +74,27 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
             buckets[i] = new AsciiIgnoreCaseLiteralBucket(firstByte, [.. bucket]);
         }
 
-        FirstByteSearchValues = SearchValues.Create(searchBytes);
-        Buckets = buckets;
-        BucketIndexMap = CreateBucketIndexMap(buckets);
-        ShortestLength = shortestLength;
+        var correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(
+            buckets.SelectMany(static bucket => bucket.Literals).ToArray());
+        _data = new PreparedAsciiIgnoreCaseLiteralSetSearchData(
+            SearchValues.Create(searchBytes),
+            buckets,
+            CreateBucketIndexMap(buckets),
+            shortestLength,
+            correlatedPrefilter);
     }
 
-    public SearchValues<byte> FirstByteSearchValues { get; }
+    public SearchValues<byte> FirstByteSearchValues => _data.FirstByteSearchValues;
 
-    public AsciiIgnoreCaseLiteralBucket[] Buckets { get; }
+    public AsciiIgnoreCaseLiteralBucket[] Buckets => _data.Buckets;
 
-    public int[] BucketIndexMap { get; }
+    public int[] BucketIndexMap => _data.BucketIndexMap;
 
-    public int ShortestLength { get; }
+    public int ShortestLength => _data.ShortestLength;
 
+    private PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter => _data.CorrelatedPrefilter;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IndexOf(ReadOnlySpan<byte> input)
     {
         if (ShortestLength == int.MaxValue)
@@ -90,25 +107,96 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
             return 0;
         }
 
-        var index = 0;
-        while (index <= input.Length - ShortestLength)
+        var candidate = input.IndexOfAny(FirstByteSearchValues);
+        if (candidate < 0 || candidate > input.Length - ShortestLength)
         {
-            var relative = input[index..].IndexOfAny(FirstByteSearchValues);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            index += relative;
-            if (TryGetMatchedLiteralLength(input, index, out _))
-            {
-                return index;
-            }
-
-            index++;
+            return -1;
         }
 
-        return -1;
+        if (TryGetMatchedLiteralLength(input, candidate, out _))
+        {
+            return candidate;
+        }
+
+        return TryFindAfterFailedCandidate(input, candidate + 1, out var index, out _)
+            ? index
+            : -1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool TryFindFirstMatchWithLength(ReadOnlySpan<byte> input, out int index, out int matchedLength)
+    {
+        index = -1;
+        matchedLength = 0;
+        if (ShortestLength == int.MaxValue)
+        {
+            return false;
+        }
+
+        if (ShortestLength == 0)
+        {
+            index = 0;
+            return true;
+        }
+
+        var candidate = input.IndexOfAny(FirstByteSearchValues);
+        if (candidate < 0 || candidate > input.Length - ShortestLength)
+        {
+            return false;
+        }
+
+        if (TryGetMatchedLiteralLength(input, candidate, out matchedLength))
+        {
+            index = candidate;
+            return true;
+        }
+
+        return TryFindAfterFailedCandidate(input, candidate + 1, out index, out matchedLength);
+    }
+
+    private bool TryFindAfterFailedCandidate(
+        ReadOnlySpan<byte> input,
+        int searchIndex,
+        out int index,
+        out int matchedLength)
+    {
+        index = -1;
+        matchedLength = 0;
+        var correlatedPrefilter = CorrelatedPrefilter;
+        if (correlatedPrefilter.HasValue && input.Length - searchIndex >= CorrelatedPromotionTailLength)
+        {
+            var state = new PreparedMultiLiteralScanState(searchIndex, 0, 0);
+            while (correlatedPrefilter.TryFindNextCandidate(input, ref state, out var candidate))
+            {
+                if (TryGetMatchedLiteralLength(input, candidate, out matchedLength))
+                {
+                    index = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        while (searchIndex <= input.Length - ShortestLength)
+        {
+            var relative = input[searchIndex..].IndexOfAny(FirstByteSearchValues);
+            if (relative < 0)
+            {
+                return false;
+            }
+
+            var candidate = searchIndex + relative;
+            if (TryGetMatchedLiteralLength(input, candidate, out matchedLength))
+            {
+                index = candidate;
+                return true;
+            }
+
+            searchIndex = candidate + 1;
+        }
+
+        return false;
     }
 
     public int LastIndexOf(ReadOnlySpan<byte> input)
@@ -218,6 +306,33 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
         return map;
     }
+}
+
+internal sealed class PreparedAsciiIgnoreCaseLiteralSetSearchData
+{
+    public PreparedAsciiIgnoreCaseLiteralSetSearchData(
+        SearchValues<byte> firstByteSearchValues,
+        AsciiIgnoreCaseLiteralBucket[] buckets,
+        int[] bucketIndexMap,
+        int shortestLength,
+        PreparedMultiLiteralPackedNibbleSimdPrefilter correlatedPrefilter)
+    {
+        FirstByteSearchValues = firstByteSearchValues;
+        Buckets = buckets;
+        BucketIndexMap = bucketIndexMap;
+        ShortestLength = shortestLength;
+        CorrelatedPrefilter = correlatedPrefilter;
+    }
+
+    public SearchValues<byte> FirstByteSearchValues { get; }
+
+    public AsciiIgnoreCaseLiteralBucket[] Buckets { get; }
+
+    public int[] BucketIndexMap { get; }
+
+    public int ShortestLength { get; }
+
+    public PreparedMultiLiteralPackedNibbleSimdPrefilter CorrelatedPrefilter { get; }
 }
 
 internal readonly struct AsciiIgnoreCaseLiteralBucket

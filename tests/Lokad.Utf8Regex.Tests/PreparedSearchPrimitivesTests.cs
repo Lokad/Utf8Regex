@@ -82,6 +82,53 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PreparedMultiLiteralIgnoreCaseSearchCorrelatesMixedCaseCandidatesAfterLongFalsePrefix()
+    {
+        var search = new PreparedMultiLiteralSearch(
+        [
+            Encoding.UTF8.GetBytes("Alpha"),
+            Encoding.UTF8.GetBytes("Needle"),
+            Encoding.UTF8.GetBytes("Omega"),
+            Encoding.UTF8.GetBytes("Zeta"),
+        ], ignoreCase: true);
+        var falsePrefix = string.Concat(Enumerable.Repeat("aqqq nqqq oqqq zqqq ", 32));
+        var input = Encoding.UTF8.GetBytes($"{falsePrefix}nEeDlE aqqq OMEGA");
+        var firstIndex = Encoding.UTF8.GetByteCount(falsePrefix);
+        var secondIndex = firstIndex + "nEeDlE aqqq ".Length;
+
+        Assert.Equal(firstIndex, search.IndexOf(input));
+        Assert.Equal(secondIndex, search.LastIndexOf(input));
+        Assert.True(search.TryFindFirstMatch(input, out var matchIndex, out var matchLength, out var literalId));
+        Assert.Equal(firstIndex, matchIndex);
+        Assert.Equal("Needle".Length, matchLength);
+        Assert.Equal(1, literalId);
+
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        Assert.True(search.TryFindNextNonOverlappingLength(input, ref state, out matchIndex, out matchLength));
+        Assert.Equal(firstIndex, matchIndex);
+        Assert.Equal("Needle".Length, matchLength);
+        Assert.True(search.TryFindNextNonOverlappingLength(input, ref state, out matchIndex, out matchLength));
+        Assert.Equal(secondIndex, matchIndex);
+        Assert.Equal("Omega".Length, matchLength);
+        Assert.False(search.TryFindNextNonOverlappingLength(input, ref state, out _, out _));
+    }
+
+    [Fact]
+    public void PreparedMultiLiteralIgnoreCaseSearchRetainsShortTailPath()
+    {
+        var search = new PreparedMultiLiteralSearch(
+        [
+            Encoding.UTF8.GetBytes("Alpha"),
+            Encoding.UTF8.GetBytes("Needle"),
+            Encoding.UTF8.GetBytes("Omega"),
+            Encoding.UTF8.GetBytes("Zeta"),
+        ], ignoreCase: true);
+        var input = Encoding.UTF8.GetBytes("aqqq nEeDlE");
+
+        Assert.Equal("aqqq ".Length, search.IndexOf(input));
+    }
+
+    [Fact]
     public void PreparedMultiLiteralSearchPromotesLargeExactSetsToAutomatonBackend()
     {
         var search = new PreparedMultiLiteralSearch(

@@ -113,6 +113,52 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "X"));
     }
 
+    [Theory]
+    [InlineData("alpha|needle|omega|zeta", false)]
+    [InlineData("alpha|needle|omega|zeta", true)]
+    [InlineData(@"\b(?:alpha|needle|omega|zeta)\b", false)]
+    [InlineData(@"\b(?:alpha|needle|omega|zeta)\b", true)]
+    public void CorrelatedLiteralFamiliesPreserveGlobalAndOutputSemantics(
+        string pattern,
+        bool compiled)
+    {
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var falsePrefix = string.Concat(Enumerable.Repeat("aqqq nqqq oqqq zqqq ", 32));
+        var subject = $"{falsePrefix}nEeDlE aqqq OMEGA";
+        var input = Encoding.UTF8.GetBytes(subject);
+        var expected = new Regex(pattern, options, TimeSpan.FromSeconds(1));
+        var actual = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+
+        Assert.Equal(expected.IsMatch(subject), actual.IsMatch(input));
+        Assert.Equal(expected.Count(subject), actual.Count(input));
+
+        var expectedMatch = expected.Match(subject);
+        var actualMatch = actual.Match(input);
+        Assert.Equal(expectedMatch.Success, actualMatch.Success);
+        Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+        Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+
+        var expectedRanges = expected.Matches(subject)
+            .Select(static match => (match.Index, match.Length))
+            .ToArray();
+        var actualRanges = new List<(int Index, int Length)>();
+        foreach (var match in actual.EnumerateMatches(input))
+        {
+            actualRanges.Add((match.IndexInUtf16, match.LengthInUtf16));
+        }
+
+        Assert.Equal(expectedRanges, actualRanges);
+        Assert.Equal(expected.Replace(subject, "X"), actual.ReplaceToString(input, "X"));
+        var actualSplits = new List<string>();
+        foreach (var split in actual.EnumerateSplits(input))
+        {
+            actualSplits.Add(split.GetValueString());
+        }
+
+        Assert.Equal(expected.Split(subject), actualSplits);
+    }
+
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)
     {
         foreach (var _ in regex.EnumerateMatches(input))

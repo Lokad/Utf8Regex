@@ -313,12 +313,20 @@ internal readonly struct PreparedMultiLiteralSearch
             return true;
         }
 
+        if (Kind == PreparedMultiLiteralKind.AsciiIgnoreCase &&
+            IgnoreCaseSearch.TryFindFirstMatchWithLength(input[state.NextStart..], out var foldedRelative, out matchedLength))
+        {
+            index = state.NextStart + foldedRelative;
+            state = new PreparedMultiLiteralScanState(index + matchedLength, index + matchedLength, 0);
+            return true;
+        }
+
         if (Kind == PreparedMultiLiteralKind.ExactEarliest)
         {
             return EarliestSearch.TryFindNextNonOverlappingLength(input, ref state, out index, out matchedLength);
         }
 
-        if (Kind == PreparedMultiLiteralKind.ExactDirect)
+        if (Kind is PreparedMultiLiteralKind.ExactDirect or PreparedMultiLiteralKind.AsciiIgnoreCase)
         {
             state = new PreparedMultiLiteralScanState(input.Length, input.Length, 0);
             return false;
@@ -1418,6 +1426,11 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     private const int LaneCount = 16;
 
     public PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals)
+        : this(literals, asciiIgnoreCase: false)
+    {
+    }
+
+    private PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals, bool asciiIgnoreCase)
     {
         ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
@@ -1449,8 +1462,11 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             {
                 var bit = (byte)(1 << literalIndex);
                 var value = literals[literalIndex][offset];
-                lowTable[value & 0xF] |= bit;
-                highTable[value >> 4] |= bit;
+                AddMaskValue(lowTable, highTable, value, bit);
+                if (asciiIgnoreCase && IsFoldedAsciiLetter(value))
+                {
+                    AddMaskValue(lowTable, highTable, (byte)(value - ('a' - 'A')), bit);
+                }
             }
 
             LowMaskVectors[offset] = Vector128.Create(
@@ -1473,10 +1489,23 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                 firstSeen[first] = true;
                 firstBytes[firstCount++] = first;
             }
+
+            if (asciiIgnoreCase && IsFoldedAsciiLetter(first))
+            {
+                var upper = (byte)(first - ('a' - 'A'));
+                if (!firstSeen[upper])
+                {
+                    firstSeen[upper] = true;
+                    firstBytes[firstCount++] = upper;
+                }
+            }
         }
 
         Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount].ToArray());
     }
+
+    public static PreparedMultiLiteralPackedNibbleSimdPrefilter CreateAsciiIgnoreCase(byte[][] foldedLiterals)
+        => new(foldedLiterals, asciiIgnoreCase: true);
 
     public int ShortestLength { get; }
 
@@ -1489,6 +1518,14 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     public PreparedByteSearch Search { get; }
 
     public bool HasValue => Search.Count > 0;
+
+    private static bool IsFoldedAsciiLetter(byte value) => (uint)(value - (byte)'a') <= 'z' - 'a';
+
+    private static void AddMaskValue(Span<byte> lowTable, Span<byte> highTable, byte value, byte bit)
+    {
+        lowTable[value & 0xF] |= bit;
+        highTable[value >> 4] |= bit;
+    }
 
     public bool TryFindNextCandidate(ReadOnlySpan<byte> input, ref PreparedMultiLiteralScanState state, out int candidateIndex)
     {
