@@ -43,6 +43,16 @@ internal static partial class BenchmarkInspectReporter
             var seconds = Math.Max(stopwatch.Elapsed.TotalSeconds, double.Epsilon);
             var execution = count.Execution;
             Console.WriteLine($"CountResult       : {count.Count}");
+            if (context.Utf8Regex is not null)
+            {
+                Console.WriteLine($"Utf8CountResult   : {context.Utf8Regex.Count(context.InputBytes)}");
+            }
+
+            if (context.Regex is not null)
+            {
+                Console.WriteLine($"RegexCountResult  : {context.Regex.Count(context.InputString)}");
+            }
+
             Console.WriteLine($"CandidateAttempts : {execution.CandidateAttempts}");
             Console.WriteLine($"VmSteps           : {execution.BacktrackingSteps}");
             Console.WriteLine($"ResultProjections : {execution.ResultProjections}");
