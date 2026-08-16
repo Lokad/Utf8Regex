@@ -2483,6 +2483,20 @@ internal struct Pcre2ResourceBudget
         _collectDiagnostics = collectDiagnostics;
         CandidateSteps = 0;
         BacktrackingSteps = 0;
+        VmTokenSteps = 0;
+        VmLiteralTokenSteps = 0;
+        VmClassTokenSteps = 0;
+        VmBoundaryAnchorTokenSteps = 0;
+        VmOtherTokenSteps = 0;
+        VmBranchSteps = 0;
+        VmRepeatSteps = 0;
+        VmRepeatEnterSteps = 0;
+        VmRepeatEndSteps = 0;
+        VmRepeatExitSteps = 0;
+        VmCaptureSteps = 0;
+        VmAssertionSubroutineSteps = 0;
+        VmControlSteps = 0;
+        VmAcceptSteps = 0;
         Depth = 0;
         HeapBytes = 0;
         ResultProjections = 0;
@@ -2503,6 +2517,34 @@ internal struct Pcre2ResourceBudget
     internal ulong CandidateSteps { get; private set; }
 
     internal ulong BacktrackingSteps { get; private set; }
+
+    internal ulong VmTokenSteps { get; private set; }
+
+    internal ulong VmLiteralTokenSteps { get; private set; }
+
+    internal ulong VmClassTokenSteps { get; private set; }
+
+    internal ulong VmBoundaryAnchorTokenSteps { get; private set; }
+
+    internal ulong VmOtherTokenSteps { get; private set; }
+
+    internal ulong VmBranchSteps { get; private set; }
+
+    internal ulong VmRepeatSteps { get; private set; }
+
+    internal ulong VmRepeatEnterSteps { get; private set; }
+
+    internal ulong VmRepeatEndSteps { get; private set; }
+
+    internal ulong VmRepeatExitSteps { get; private set; }
+
+    internal ulong VmCaptureSteps { get; private set; }
+
+    internal ulong VmAssertionSubroutineSteps { get; private set; }
+
+    internal ulong VmControlSteps { get; private set; }
+
+    internal ulong VmAcceptSteps { get; private set; }
 
     internal uint Depth { get; private set; }
 
@@ -2531,6 +2573,20 @@ internal struct Pcre2ResourceBudget
     internal Pcre2ExecutionDiagnostics Diagnostics => new(
         CandidateSteps,
         BacktrackingSteps,
+        VmTokenSteps,
+        VmLiteralTokenSteps,
+        VmClassTokenSteps,
+        VmBoundaryAnchorTokenSteps,
+        VmOtherTokenSteps,
+        VmBranchSteps,
+        VmRepeatSteps,
+        VmRepeatEnterSteps,
+        VmRepeatEndSteps,
+        VmRepeatExitSteps,
+        VmCaptureSteps,
+        VmAssertionSubroutineSteps,
+        VmControlSteps,
+        VmAcceptSteps,
         ResultProjections,
         WorkspacePoolRents,
         WorkspaceFixedRents,
@@ -2559,9 +2615,76 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void ChargeBacktracking()
+    internal void ChargeBacktracking(
+        Pcre2BacktrackingInstructionKind instructionKind,
+        Pcre2CharacterTokenKind tokenKind)
     {
         BacktrackingSteps++;
+        if (_collectDiagnostics)
+        {
+            switch (instructionKind)
+            {
+                case Pcre2BacktrackingInstructionKind.Token:
+                    VmTokenSteps++;
+                    switch (tokenKind)
+                    {
+                        case Pcre2CharacterTokenKind.Literal:
+                            VmLiteralTokenSteps++;
+                            break;
+                        case Pcre2CharacterTokenKind.CharacterClass:
+                            VmClassTokenSteps++;
+                            break;
+                        case Pcre2CharacterTokenKind.BeginningOfLine:
+                        case Pcre2CharacterTokenKind.EndOfLine:
+                        case Pcre2CharacterTokenKind.BeginningOfSubject:
+                        case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
+                        case Pcre2CharacterTokenKind.EndOfSubject:
+                        case Pcre2CharacterTokenKind.FirstMatchingPosition:
+                        case Pcre2CharacterTokenKind.WordBoundary:
+                        case Pcre2CharacterTokenKind.NonWordBoundary:
+                            VmBoundaryAnchorTokenSteps++;
+                            break;
+                        default:
+                            VmOtherTokenSteps++;
+                            break;
+                    }
+                    break;
+                case Pcre2BacktrackingInstructionKind.Split:
+                case Pcre2BacktrackingInstructionKind.Jump:
+                    VmBranchSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.Repeat:
+                    VmRepeatSteps++;
+                    VmRepeatEnterSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.RepeatEnd:
+                    VmRepeatSteps++;
+                    VmRepeatEndSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.RepeatExit:
+                    VmRepeatSteps++;
+                    VmRepeatExitSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.CaptureStart:
+                case Pcre2BacktrackingInstructionKind.CaptureEnd:
+                case Pcre2BacktrackingInstructionKind.Backreference:
+                case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
+                    VmCaptureSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.Assertion:
+                case Pcre2BacktrackingInstructionKind.SubroutineCall:
+                case Pcre2BacktrackingInstructionKind.SubroutineReturn:
+                    VmAssertionSubroutineSteps++;
+                    break;
+                case Pcre2BacktrackingInstructionKind.Accept:
+                    VmAcceptSteps++;
+                    break;
+                default:
+                    VmControlSteps++;
+                    break;
+            }
+        }
+
         _deadline.Step();
         if (Limits.MatchLimit != 0 &&
             (CandidateSteps > Limits.MatchLimit || BacktrackingSteps > Limits.MatchLimit - CandidateSteps))
@@ -2628,6 +2751,20 @@ internal struct Pcre2ResourceBudget
 internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong CandidateAttempts,
     ulong BacktrackingSteps,
+    ulong VmTokenSteps,
+    ulong VmLiteralTokenSteps,
+    ulong VmClassTokenSteps,
+    ulong VmBoundaryAnchorTokenSteps,
+    ulong VmOtherTokenSteps,
+    ulong VmBranchSteps,
+    ulong VmRepeatSteps,
+    ulong VmRepeatEnterSteps,
+    ulong VmRepeatEndSteps,
+    ulong VmRepeatExitSteps,
+    ulong VmCaptureSteps,
+    ulong VmAssertionSubroutineSteps,
+    ulong VmControlSteps,
+    ulong VmAcceptSteps,
     ulong ResultProjections,
     ulong WorkspacePoolRents,
     ulong WorkspaceFixedRents,

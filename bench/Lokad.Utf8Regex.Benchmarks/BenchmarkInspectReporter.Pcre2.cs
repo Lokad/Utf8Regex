@@ -55,6 +55,20 @@ internal static partial class BenchmarkInspectReporter
 
             Console.WriteLine($"CandidateAttempts : {execution.CandidateAttempts}");
             Console.WriteLine($"VmSteps           : {execution.BacktrackingSteps}");
+            Console.WriteLine($"VmTokens          : {execution.VmTokenSteps}");
+            Console.WriteLine($"VmLiteralTokens   : {execution.VmLiteralTokenSteps}");
+            Console.WriteLine($"VmClassTokens     : {execution.VmClassTokenSteps}");
+            Console.WriteLine($"VmBoundaryTokens  : {execution.VmBoundaryAnchorTokenSteps}");
+            Console.WriteLine($"VmOtherTokens     : {execution.VmOtherTokenSteps}");
+            Console.WriteLine($"VmBranches        : {execution.VmBranchSteps}");
+            Console.WriteLine($"VmRepeats         : {execution.VmRepeatSteps}");
+            Console.WriteLine($"VmRepeatEnter     : {execution.VmRepeatEnterSteps}");
+            Console.WriteLine($"VmRepeatEnd       : {execution.VmRepeatEndSteps}");
+            Console.WriteLine($"VmRepeatExit      : {execution.VmRepeatExitSteps}");
+            Console.WriteLine($"VmCaptures        : {execution.VmCaptureSteps}");
+            Console.WriteLine($"VmAssertions      : {execution.VmAssertionSubroutineSteps}");
+            Console.WriteLine($"VmControls        : {execution.VmControlSteps}");
+            Console.WriteLine($"VmAccepts         : {execution.VmAcceptSteps}");
             Console.WriteLine($"ResultProjections : {execution.ResultProjections}");
             Console.WriteLine($"WorkspaceRents    : {execution.WorkspacePoolRents}");
             Console.WriteLine($"WorkspaceFixed    : {execution.WorkspaceFixedRents}");

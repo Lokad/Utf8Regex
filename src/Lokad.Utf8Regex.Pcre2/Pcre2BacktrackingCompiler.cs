@@ -3596,8 +3596,8 @@ internal static class Pcre2BacktrackingRunner
             var lastEncounteredMarkId = -1;
             while (true)
             {
-                budget.ChargeBacktracking();
                 var instruction = program.Instructions[instructionIndex];
+                budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
                 switch (instruction.Kind)
                 {
                     case Pcre2BacktrackingInstructionKind.Token:
