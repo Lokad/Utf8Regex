@@ -509,6 +509,17 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void EmptyThenNonEmptyCompanionHonorsTimeout()
+    {
+        var regex = new Utf8PythonRegex("x*|(?:(a+)+$)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+
+        Assert.False(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAll(input));
+        Assert.True(regex.DebugIsManagedNonEmptyAtSamePositionRegexValueCreated);
+    }
+
+    [Fact]
     public void FindAllToStringsUsesSingleGroupShapeWithEmptyStringForUnsetOptionalGroups()
     {
         var regex = new Utf8PythonRegex("(a)?b");
