@@ -258,7 +258,10 @@ if (args.Length >= 2 && args[0].Equals("--measure-utf8-validation-case", StringC
 
 if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-backends-case", StringComparison.Ordinal))
 {
-    return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyBackendsReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
+    return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyBackendsReplicaCase(
+        args[1],
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-case", StringComparison.Ordinal))

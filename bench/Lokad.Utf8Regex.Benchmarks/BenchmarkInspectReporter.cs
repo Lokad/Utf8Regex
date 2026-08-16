@@ -2917,7 +2917,10 @@ internal static partial class BenchmarkInspectReporter
         return 1;
     }
 
-    public static int RunMeasureExactLiteralFamilyBackendsReplicaCase(string caseId, string? iterationsText)
+    public static int RunMeasureExactLiteralFamilyBackendsReplicaCase(
+        string caseId,
+        string? iterationsText,
+        string? inputModeText = null)
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var regex = benchmarkCase.Utf8Regex;
@@ -2937,8 +2940,25 @@ internal static partial class BenchmarkInspectReporter
         var packed = PreparedMultiLiteralPackedSearch.TryCreate(literals, out var packedSearch) ? packedSearch : default;
         var trie = PreparedMultiLiteralTrieSearch.Create(literals);
         var automaton = PreparedMultiLiteralAutomatonSearch.Create(literals);
+        var input = inputModeText switch
+        {
+            null or "original" => benchmarkCase.InputBytes,
+            "ascii-miss" => new byte[benchmarkCase.InputBytes.Length],
+            _ => throw new ArgumentException($"Unsupported input mode '{inputModeText}'.", nameof(inputModeText)),
+        };
+        if (inputModeText == "ascii-miss")
+        {
+            input.AsSpan().Fill((byte)'x');
+        }
+
+        var decoded = Encoding.UTF8.GetString(input);
+        var expected = benchmarkCase.Regex.Count(decoded);
+        AssertSelectorResult(caseId, "Utf8Regex", expected, regex.Count(input));
 
         WriteReplicaCaseHeader(benchmarkCase, iterations);
+        Console.WriteLine($"InputMode         : {inputModeText ?? "original"}");
+        Console.WriteLine($"EffectiveInputBytes: {input.Length}");
+        Console.WriteLine($"ExpectedCount      : {expected}");
         Console.WriteLine($"LiteralCount      : {literals.Length}");
         Console.WriteLine($"PreparedKind      : {regex.Inspection.SearchPlan.MultiLiteralSearch.Kind}");
         Console.WriteLine($"PackedAvailable   : {packed.ShortestLength != 0}");
@@ -2946,21 +2966,32 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"AutomatonRootFanout: {automaton.RootFanout}");
         Console.WriteLine($"AutomatonOutputs  : {automaton.OutputStateCount}");
 
-        Measure("ExactDirect", iterations, () => ExecuteExactLiteralSetCount(direct, benchmarkCase.InputBytes));
-        Measure("RootByte", iterations, () => ExecuteCandidatePrefilterCount(rootByte, benchmarkCase.InputBytes));
-        Measure("EarliestExact", iterations, () => ExecuteCandidatePrefilterCount(earliest, benchmarkCase.InputBytes));
+        Measure("ExactDirect", iterations, () => ExecuteExactLiteralSetCount(direct, input));
+        Measure("RootByte", iterations, () => ExecuteCandidatePrefilterCount(rootByte, input));
+        Measure("EarliestExact", iterations, () => ExecuteCandidatePrefilterCount(earliest, input));
         if (packed.ShortestLength != 0)
         {
-            Measure("Packed", iterations, () => ExecutePackedLiteralSetCount(packed, benchmarkCase.InputBytes));
+            Measure("Packed", iterations, () => ExecutePackedLiteralSetCount(packed, input));
         }
-        Measure("Trie", iterations, () => ExecuteTrieLiteralSetCount(trie, benchmarkCase.InputBytes));
-        Measure("Automaton", iterations, () => ExecuteAutomatonLiteralSetCount(automaton, benchmarkCase.InputBytes));
-        Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
-        Measure(benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex", iterations, benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? benchmarkCase.CountPredecodedRegex : benchmarkCase.CountDecodeThenRegex);
+        Measure("Trie", iterations, () => ExecuteTrieLiteralSetCount(trie, input));
+        Measure("Automaton", iterations, () => ExecuteAutomatonLiteralSetCount(automaton, input));
+        Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(input));
+        Measure(
+            benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex",
+            iterations,
+            benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance
+                ? () => benchmarkCase.Regex.Count(decoded)
+                : () => benchmarkCase.Regex.Count(Encoding.UTF8.GetString(input)));
         if (benchmarkCase.Source == ReplicaBenchmarkSource.Lokad)
         {
-            Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
+            Measure("PredecodedRegex", iterations, () => benchmarkCase.Regex.Count(decoded));
         }
+
+        Measure("ExactDirectIsMatch", iterations, () =>
+            direct.TryFindFirstMatchWithLength(input, out _, out _) ? 1 : 0);
+        Measure("RootByteIsMatch", iterations, () => ExecuteCandidatePrefilterIsMatch(rootByte, input));
+        Measure("Utf8IsMatch", iterations, () => regex.IsMatch(input) ? 1 : 0);
+        Measure("DotNetIsMatch", iterations, () => benchmarkCase.Regex.IsMatch(decoded) ? 1 : 0);
         return 0;
     }
 
@@ -5552,6 +5583,23 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return count;
+    }
+
+    private static int ExecuteCandidatePrefilterIsMatch(
+        PreparedMultiLiteralCandidatePrefilter search,
+        byte[] input)
+    {
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var span = input.AsSpan();
+        while (search.TryFindNextCandidate(span, ref state, out var candidateIndex))
+        {
+            if (search.TryGetMatchedLength(span, candidateIndex, out _))
+            {
+                return 1;
+            }
+        }
+
+        return 0;
     }
 
     private static int ExecuteAutomatonLiteralSetCount(PreparedMultiLiteralAutomatonSearch search, byte[] input)
