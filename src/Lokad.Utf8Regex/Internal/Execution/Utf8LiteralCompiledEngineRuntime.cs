@@ -281,6 +281,19 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return true;
     }
 
+    internal bool TryInspectIsMatchExactLiteral(ReadOnlySpan<byte> input, out bool isMatch)
+    {
+        if (_usesRightToLeft ||
+            _regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal))
+        {
+            isMatch = false;
+            return false;
+        }
+
+        isMatch = FindFirstLiteralViaSearch(input, Utf8ExecutionDeadline.Infinite) >= 0;
+        return true;
+    }
+
     private bool SupportsAsciiDirectMatch =>
         _regexPlan.ExecutionKind switch
         {

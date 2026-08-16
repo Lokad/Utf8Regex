@@ -174,6 +174,23 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
 
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.IsMatch &&
+            context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out _))
+        {
+            MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return context.InputBytes.Length;
+            });
+            MeasureUtf8CaseLane("ExactLiteralSearchOnly", samples, iterations, () =>
+                context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out var isMatch) && isMatch ? 1 : 0);
+            MeasureUtf8CaseLane("ValidationPlusExactSearch", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out var isMatch) && isMatch ? 1 : 0;
+            });
+        }
+
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
         MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
