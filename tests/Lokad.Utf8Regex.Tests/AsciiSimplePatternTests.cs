@@ -247,6 +247,145 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
+    [InlineData("ab[0-9]d", "ab1d-ab2d-xx-ab9d-ab0d-abXd-ab4d-ab5d-ab6d-ab7d-")]
+    [InlineData("x[A-Za-z]y", "xAy-xzy-x0y-xBy-x_y-xCy-xdy-xEy-xfy-xGy-xhy-")]
+    [InlineData("u[A-Za-z0-9]v", "uAv-u0v-u_v-uzv-u9v-u-v-uBv-u3v-uCv-u7v-")]
+    [InlineData("q[0-9A-Fa-f]z", "q0z-qAz-qgz-qfz-q9z-qFz-q-z-qbz-qCz-q8z-")]
+    [InlineData("a[A-Za-z]a", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public void VectorizedFixedWidthCountMatchesDotNet(string pattern, string input)
+    {
+        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+        {
+            return;
+        }
+
+        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+
+        Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            analysis.StructuralLinearProgram,
+            inputBytes,
+            Utf8ExecutionDeadline.Infinite,
+            out var actual));
+        Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), actual);
+    }
+
+    [Fact]
+    public void VectorizedFixedWidthCountMatchesDotNetAcrossVectorBoundaries()
+    {
+        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+        {
+            return;
+        }
+
+        var patterns = new (string Pattern, string DensePrefix)[]
+        {
+            ("ab[0-9]d", "ab1d-ab2d-"),
+            ("x[A-Za-z]y", "xAy-xzy-"),
+            ("u[A-Za-z0-9]v", "uAv-u7v-"),
+            ("q[0-9A-Fa-f]z", "qAz-q8z-"),
+        };
+        var alphabet = "abdxuyqz01239AFaf_G-";
+        var random = new Random(1729);
+        foreach (var patternCase in patterns)
+        {
+            var analysis = Utf8FrontEnd.Compile(patternCase.Pattern, RegexOptions.CultureInvariant);
+            for (var length = 35; length <= 257; length++)
+            {
+                var chars = new char[length];
+                for (var i = 0; i < chars.Length; i++)
+                {
+                    chars[i] = alphabet[random.Next(alphabet.Length)];
+                }
+                patternCase.DensePrefix.AsSpan().CopyTo(chars);
+
+                var input = new string(chars);
+                var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+                Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+                    analysis.StructuralLinearProgram,
+                    inputBytes,
+                    Utf8ExecutionDeadline.Infinite,
+                    out var actual));
+                Assert.Equal(Regex.Count(input, patternCase.Pattern, RegexOptions.CultureInvariant), actual);
+            }
+        }
+    }
+
+    [Fact]
+    public void VectorizedFixedWidthCountHandsLongBarrenSuffixToScalarSearch()
+    {
+        if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+        {
+            return;
+        }
+
+        const string pattern = "ab[0-9]d";
+        var input = string.Concat(
+            "ab1d-ab2d-ab3d-ab4d-",
+            new string('x', 512),
+            "-ab7d");
+        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
+        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+
+        Assert.True(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            analysis.StructuralLinearProgram,
+            inputBytes,
+            Utf8ExecutionDeadline.Infinite,
+            out var actual));
+        Assert.Equal(Regex.Count(input, pattern, RegexOptions.CultureInvariant), actual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PublicFixedWidthCountMatchesDotNetAcrossAsciiAndUnicode(bool compiled)
+    {
+        const string pattern = "ab[0-9]d";
+        var input = "é-ab1d-Ж-ab2d-😀-abXd-" + new string('x', 64) + "-ab9d";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+
+        Assert.Equal(
+            Regex.Count(input, pattern, options),
+            new Utf8Regex(pattern, options).Count(inputBytes));
+        Assert.Equal(
+            Regex.Count(input, pattern, options, TimeSpan.FromSeconds(10)),
+            new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)).Count(inputBytes));
+    }
+
+    [Theory]
+    [InlineData("^ab[0-9]d", RegexOptions.CultureInvariant)]
+    [InlineData("ab[0-9]d$", RegexOptions.CultureInvariant)]
+    [InlineData("ab[0-9]d", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    [InlineData("ab.d", RegexOptions.CultureInvariant)]
+    [InlineData("ab[02468]d", RegexOptions.CultureInvariant)]
+    public void VectorizedFixedWidthCountRejectsUnqualifiedPlans(string pattern, RegexOptions options)
+    {
+        var analysis = Utf8FrontEnd.Compile(pattern, options);
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 64) + "ab2d");
+
+        Assert.False(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            analysis.StructuralLinearProgram,
+            input,
+            Utf8ExecutionDeadline.Infinite,
+            out _));
+    }
+
+    [Fact]
+    public void VectorizedFixedWidthCountRejectsFiniteDeadline()
+    {
+        var analysis = Utf8FrontEnd.Compile("ab[0-9]d", RegexOptions.CultureInvariant);
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 64) + "ab2d");
+
+        Assert.False(Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            analysis.StructuralLinearProgram,
+            input,
+            Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(10)),
+            out _));
+    }
+
+    [Theory]
     [InlineData("cat|dog")]
     [InlineData("cat|horse")]
     [InlineData("(?:cat|horse)")]

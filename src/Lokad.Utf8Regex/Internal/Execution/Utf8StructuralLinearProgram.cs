@@ -896,6 +896,11 @@ internal sealed class Utf8AsciiInstructionLinearRuntime : Utf8StructuralLinearRu
         Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearAutomaton);
         if (Program.DeterministicProgram.HasValue)
         {
+            if (Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(Program, input, budget, out var vectorizedCount))
+            {
+                return vectorizedCount;
+            }
+
             return Utf8AsciiInstructionLinearExecutor.CountDeterministic(Program, input, budget);
         }
 
