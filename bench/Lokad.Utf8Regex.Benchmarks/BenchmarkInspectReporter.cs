@@ -7061,17 +7061,21 @@ internal static partial class BenchmarkInspectReporter
 
     private static int SumUtf8MatchCoordinates(Utf8Regex regex, byte[] input)
     {
+        var boundaryMap = Utf8BoundaryMap.Create(input);
         var checksum = 0;
         foreach (var match in regex.EnumerateMatches(input))
         {
-            var start = match.IsByteAligned
-                ? Utf16Boundary.ScalarBoundary(match.IndexInBytes, match.IndexInUtf16)
-                : Utf16Boundary.SurrogateSplitBoundary(0, match.IndexInUtf16);
-            var end = match.IsByteAligned
-                ? Utf16Boundary.ScalarBoundary(
-                    match.IndexInBytes + match.LengthInBytes,
-                    match.IndexInUtf16 + match.LengthInUtf16)
-                : Utf16Boundary.SurrogateSplitBoundary(0, match.IndexInUtf16 + match.LengthInUtf16);
+            var start = boundaryMap.Resolve(match.IndexInUtf16);
+            var end = boundaryMap.Resolve(match.IndexInUtf16 + match.LengthInUtf16);
+            var expectedAligned = start.IsScalarBoundary && end.IsScalarBoundary;
+            if (match.IsByteAligned != expectedAligned ||
+                (expectedAligned &&
+                 (match.IndexInBytes != start.ByteOffset ||
+                  match.LengthInBytes != end.ByteOffset - start.ByteOffset)))
+            {
+                throw new InvalidOperationException("Utf8Regex match coordinates disagree with the validated boundary map.");
+            }
+
             checksum = AddMatchCoordinates(
                 checksum,
                 match.IndexInUtf16,
