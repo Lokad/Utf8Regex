@@ -358,6 +358,37 @@ internal static partial class BenchmarkInspectReporter
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
         {
             EnsureEquivalentReplaceResults(context);
+            var destinationLength = context.Utf8Regex.Replace(
+                context.InputBytes,
+                context.ReplacementUtf8).Length;
+            var ordinaryStringDestination = new byte[destinationLength];
+            var compiledStringDestination = new byte[destinationLength];
+            var ordinaryUtf8Destination = new byte[destinationLength];
+            var compiledUtf8Destination = new byte[destinationLength];
+            MeasureUtf8CaseLane("DestinationStringOrdinary", samples, iterations, () =>
+                ExecuteTryReplace(
+                    context.Utf8Regex,
+                    context.InputBytes,
+                    context.Replacement,
+                    ordinaryStringDestination));
+            MeasureUtf8CaseLane("DestinationStringCompiled", samples, iterations, () =>
+                ExecuteTryReplace(
+                    context.CompiledUtf8Regex,
+                    context.InputBytes,
+                    context.Replacement,
+                    compiledStringDestination));
+            MeasureUtf8CaseLane("DestinationUtf8Ordinary", samples, iterations, () =>
+                ExecuteTryReplace(
+                    context.Utf8Regex,
+                    context.InputBytes,
+                    context.ReplacementUtf8,
+                    ordinaryUtf8Destination));
+            MeasureUtf8CaseLane("DestinationUtf8Compiled", samples, iterations, () =>
+                ExecuteTryReplace(
+                    context.CompiledUtf8Regex,
+                    context.InputBytes,
+                    context.ReplacementUtf8,
+                    compiledUtf8Destination));
         }
 
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
@@ -7198,6 +7229,36 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
+    }
+
+    private static int ExecuteTryReplace(
+        Utf8Regex regex,
+        byte[] input,
+        string replacement,
+        byte[] destination)
+    {
+        var status = regex.TryReplace(input, replacement, destination, out var bytesWritten);
+        if (status != OperationStatus.Done)
+        {
+            throw new InvalidOperationException($"Destination string replacement returned {status}.");
+        }
+
+        return bytesWritten;
+    }
+
+    private static int ExecuteTryReplace(
+        Utf8Regex regex,
+        byte[] input,
+        byte[] replacement,
+        byte[] destination)
+    {
+        var status = regex.TryReplace(input, replacement, destination, out var bytesWritten);
+        if (status != OperationStatus.Done)
+        {
+            throw new InvalidOperationException($"Destination UTF-8 replacement returned {status}.");
+        }
+
+        return bytesWritten;
     }
 
     private static int SumRegexMatches(Regex regex, string input)
