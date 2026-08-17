@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -151,6 +152,11 @@ public sealed class PreparedSearchPrimitivesTests
     [InlineData(509)]
     public void PackedIgnoreCasePrefilterRetainsCandidatesAcrossVectorAndTailLanes(int candidateIndex)
     {
+        if (!Ssse3.IsSupported || !Sse2.IsSupported)
+        {
+            return;
+        }
+
         var prefilter = CreatePackedIgnoreCasePrefilter();
         var input = Enumerable.Repeat((byte)'x', 513).ToArray();
         "JoHn"u8.CopyTo(input.AsSpan(candidateIndex));
@@ -163,6 +169,11 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PackedIgnoreCasePrefilterRetainsEveryPendingCandidateInOneVector()
     {
+        if (!Ssse3.IsSupported || !Sse2.IsSupported)
+        {
+            return;
+        }
+
         var prefilter = CreatePackedIgnoreCasePrefilter();
         var input = Enumerable.Repeat((byte)'x', 96).ToArray();
         int[] expected = [0, 4, 8, 12, 16, 20, 24, 28];
