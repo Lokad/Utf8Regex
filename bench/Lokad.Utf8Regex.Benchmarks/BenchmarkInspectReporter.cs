@@ -288,7 +288,12 @@ internal static partial class BenchmarkInspectReporter
             var expectedCoordinates = SumUtf8MatchCoordinates(context.Utf8Regex, context.InputBytes);
             var ordinaryCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes);
             var compiledCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes);
-            if (ordinaryCoordinates != expectedCoordinates || compiledCoordinates != expectedCoordinates)
+            var ordinaryUtf16Coordinates = ExecuteValidatedReverseUtf16ProjectionEnumeration(context.Regex, context.InputBytes);
+            var compiledUtf16Coordinates = ExecuteValidatedReverseUtf16ProjectionEnumeration(context.CompiledRegex, context.InputBytes);
+            if (ordinaryCoordinates != expectedCoordinates ||
+                compiledCoordinates != expectedCoordinates ||
+                ordinaryUtf16Coordinates != expectedCoordinates ||
+                compiledUtf16Coordinates != expectedCoordinates)
             {
                 throw new InvalidOperationException("Reverse-projection diagnostics do not preserve UTF-8 match coordinates.");
             }
@@ -297,6 +302,10 @@ internal static partial class BenchmarkInspectReporter
                 ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes));
             MeasureUtf8CaseLane("ValidatedReverseProjectionCompiled", samples, iterations, () =>
                 ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes));
+            MeasureUtf8CaseLane("ValidatedReverseUtf16ProjectionOrdinary", samples, iterations, () =>
+                ExecuteValidatedReverseUtf16ProjectionEnumeration(context.Regex, context.InputBytes));
+            MeasureUtf8CaseLane("ValidatedReverseUtf16ProjectionCompiled", samples, iterations, () =>
+                ExecuteValidatedReverseUtf16ProjectionEnumeration(context.CompiledRegex, context.InputBytes));
         }
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
@@ -6937,6 +6946,78 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return checksum;
+    }
+
+    private static int ExecuteValidatedReverseUtf16ProjectionEnumeration(Regex regex, byte[] input)
+    {
+        _ = Utf8InputAnalyzer.ValidateOnly(input);
+        var decoded = Encoding.UTF8.GetString(input);
+        var byteOffset = input.Length;
+        var utf16Offset = decoded.Length;
+        var lastSplitUtf16Offset = -1;
+        var lastSplitByteOffset = -1;
+        var checksum = 0;
+        foreach (var match in regex.EnumerateMatches(decoded))
+        {
+            var end = ProjectReverseUtf16Boundary(
+                decoded,
+                match.Index + match.Length,
+                ref byteOffset,
+                ref utf16Offset,
+                ref lastSplitUtf16Offset,
+                ref lastSplitByteOffset);
+            var start = ProjectReverseUtf16Boundary(
+                decoded,
+                match.Index,
+                ref byteOffset,
+                ref utf16Offset,
+                ref lastSplitUtf16Offset,
+                ref lastSplitByteOffset);
+            checksum = AddMatchCoordinates(
+                checksum,
+                match.Index,
+                match.Length,
+                start,
+                end);
+        }
+
+        return checksum;
+    }
+
+    private static Utf16Boundary ProjectReverseUtf16Boundary(
+        string decoded,
+        int targetUtf16Offset,
+        ref int byteOffset,
+        ref int utf16Offset,
+        ref int lastSplitUtf16Offset,
+        ref int lastSplitByteOffset)
+    {
+        if (targetUtf16Offset == lastSplitUtf16Offset)
+        {
+            return Utf16Boundary.SurrogateSplitBoundary(lastSplitByteOffset, targetUtf16Offset);
+        }
+
+        if (targetUtf16Offset > utf16Offset)
+        {
+            throw new InvalidOperationException("RTL match ranges were not returned in descending order.");
+        }
+
+        if (targetUtf16Offset > 0 &&
+            targetUtf16Offset < decoded.Length &&
+            char.IsSurrogatePair(decoded[targetUtf16Offset - 1], decoded[targetUtf16Offset]))
+        {
+            var scalarStart = targetUtf16Offset - 1;
+            byteOffset -= Encoding.UTF8.GetByteCount(decoded.AsSpan(scalarStart, utf16Offset - scalarStart));
+            utf16Offset = scalarStart;
+            lastSplitUtf16Offset = targetUtf16Offset;
+            lastSplitByteOffset = byteOffset;
+            return Utf16Boundary.SurrogateSplitBoundary(byteOffset, targetUtf16Offset);
+        }
+
+        byteOffset -= Encoding.UTF8.GetByteCount(
+            decoded.AsSpan(targetUtf16Offset, utf16Offset - targetUtf16Offset));
+        utf16Offset = targetUtf16Offset;
+        return Utf16Boundary.ScalarBoundary(byteOffset, utf16Offset);
     }
 
     private static Utf16Boundary ProjectReverseBoundary(
