@@ -3993,6 +3993,7 @@ internal static partial class BenchmarkInspectReporter
         var input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var program = analysis.StructuralLinearProgram;
         var regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
+        _ = Utf8EmittedDeterministicMatcher.TryCreate(program, out var emittedMatcher);
         var iterations = ParseIterations(iterationsText);
 
         Console.WriteLine($"CaseId            : {caseId}");
@@ -4002,6 +4003,10 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ProgramKind       : {program.Kind}");
         Console.WriteLine($"Deterministic     : {program.DeterministicProgram.HasValue}");
 
+        if (emittedMatcher is not null)
+        {
+            Measure("EmittedCount", iterations, () => emittedMatcher.Count(input));
+        }
         Measure("StructuralCount", iterations, () => ExecuteStructuralLinearCount(program, input));
         Measure("FixedWidthIndexSum", iterations, () => ExecuteStructuralLinearFixedWidthIndexSum(program, input));
         Measure("RawStructuralCount", iterations, () => ExecuteStructuralLinearRawCount(program, input));
