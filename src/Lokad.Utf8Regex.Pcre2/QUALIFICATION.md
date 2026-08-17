@@ -1,13 +1,15 @@
 # Managed PCRE2 profile qualification
 
-This ledger records the 2026-08-14 qualification of
+This ledger records the 2026-08-17 qualification of
 `Lokad.Utf8Regex.Pcre2` 0.2.0. It describes the selected managed profile; it is
 not a claim of complete upstream PCRE2 compatibility.
 
 ## Qualified baseline
 
-- Core ownership baseline: `686fd07` (`Finish core replacement and verifier cleanup`).
-- Qualified package source: `686fd072cce78501898a64a28d17e9326a77ff23`.
+- Qualified tracked source: `36fb5db0` (`Refresh performance qualification snapshots`).
+- Runtime and benchmark measurement source: `9f3e6bcfb29d`
+  (`Document retained performance kernels`). Subsequent commits changed only
+  benchmark snapshots and qualification documentation.
 - Target: `net10.0`.
 - Public API snapshot: 188 lines, SHA-256
   `DA79944F41BC2B47A0A67FFD79C83D224116B20B600A00A4C40CFE9059CE4AEB`.
@@ -48,33 +50,39 @@ promise that every normally matchable pattern supports partial probing.
 
 ## Repository and package verification
 
-The standard repository run passed 2,856 tests:
+The standard repository run passed 3,243 tests:
 
 | Project | Passed |
 |---|---:|
-| `Lokad.Utf8Regex.Tests` | 755 |
-| `Lokad.Utf8Regex.DiffTests` | 375 |
-| `Lokad.Utf8Regex.Pcre2.Tests` | 1,562 |
-| `Lokad.Utf8Regex.PythonRe.Tests` | 164 |
+| `Lokad.Utf8Regex.Tests` | 994 |
+| `Lokad.Utf8Regex.DiffTests` | 379 |
+| `Lokad.Utf8Regex.Pcre2.Tests` | 1,666 |
+| `Lokad.Utf8Regex.PythonRe.Tests` | 204 |
 
-The Release solution build completed with no warnings or errors apart from the
-SDK's informational preview-support message. Public API snapshot tests,
-corpus completion tests, bootstrap/source guards, pool-return tests, cache
-bounds, resource-limit tests, concurrency tests, and benchmark-snapshot tests
-are part of that run.
+The Release solution build completed with no warnings or errors. Public API
+snapshot tests, corpus completion tests, bootstrap/source guards, pool-return
+tests, cache bounds, resource-limit tests, concurrency tests, and
+benchmark-snapshot tests are part of that run.
 
 The qualified `Lokad.Utf8Regex.Pcre2.0.2.0.nupkg` contains only package
-metadata, license/readme/icon assets, and
+metadata, changelog/license/readme/icon assets, and
 `lib/net10.0/Lokad.Utf8Regex.Pcre2.dll`. Its nuspec has one implementation
 dependency: `Lokad.Utf8Regex` 0.2.0. There are no RID folders, native assets,
 external executables, or sibling project references in the consumer graph.
-PE metadata inspection reports zero P/Invoke methods. The reproducible
-`test-packaged-pcre2.ps1` qualification replaces both sibling project
-references in a copied PCRE2 test project with package references, restores
-through a fresh isolated package cache, and passes all 1,562 PCRE2 tests
+PE metadata inspection reports 213 types, 26 public types, 1,597 methods, zero
+P/Invoke methods, and references only the core package plus BCL assemblies.
+The reproducible `test-packaged-pcre2.ps1` qualification replaces both sibling
+project references in a copied PCRE2 test project with package references, restores
+through a fresh isolated package cache, and passes all 1,666 PCRE2 tests
 against the packed binaries. Packages with the same prerelease version must
 be consumed as a version-coherent pair; a stale global cache can otherwise
 combine assemblies from different source commits.
+
+The qualified package SHA-256 values are
+`B9A86967E9C6A5A573468F1245849311B24E5354B77E12C688D21DD901A9B35D`
+for `Lokad.Utf8Regex.0.2.0.nupkg` and
+`57C55E99C9E765657860AD7B6F232EEE25EDAC1953B1E3CC4639EC6ABB21D796`
+for `Lokad.Utf8Regex.Pcre2.0.2.0.nupkg`.
 
 ## Reviewed core integration points
 
@@ -83,9 +91,11 @@ combine assemblies from different source commits.
 | Core friendship to the companion | Gives the removable package access to internal flavor-neutral mechanics without making them public. |
 | Core friendship to PCRE2 tests | Verifies those internal mechanics and the isolation boundary; it is declared in source, not a project file. |
 | `Utf8Regex.ByteOffsetExecution` | Executes the proven common subset while preserving UTF-8 byte coordinates. |
+| Prepared byte-range iteration | Lets a flavor-neutral prepared core program expose match ranges without public projection or PCRE2 policy. |
 | `Utf8ExecutionDeadline` | One monotonic timeout poller is used by both managed matchers. |
 | `Utf8PooledStateStack<T>` | One bounded, disposable invocation-stack primitive serves core and PCRE2 backtracking. |
 | `Utf8ScalarNeighbors` | One validated adjacent-scalar decoder supports flavor-owned boundary semantics. |
+| `Utf8UnicodeCategoryExecutor` | Reuses flavor-neutral category counting over already-validated UTF-8 while the companion retains PCRE2 category semantics. |
 
 Every hook is tagged `PCRE2-INTEGRATION-POINT`. None carries PCRE2 syntax,
 options, error kinds, Unicode policy, capture rules, or replacement semantics.
@@ -213,18 +223,19 @@ operations. Its scaling families vary pattern length, Cartesian alternatives,
 dense/sparse candidates, candidate-heavy misses, branching, non-ASCII
 projection, character classes, zero-width progress, capture rollback, and
 replacement growth at four sizes. The accepted snapshot contains 126
-operation rows and 40 scaling points; its SHA-256 is
-`A8B039A5FA785D8664DA7CAD2BF6E92577DA745020060AC8BE6F4A467CD993A7`.
+operation rows and 66 scaling points in 16 families; its SHA-256 is
+`A565BD95D4B152CF1CFB07F02C88576DAAD557EE2DC33E0EAEAE98669AE2BA25`.
 
-Across the four 1×/2×/4×/8× scaling points, candidate misses, branch/repeat,
+Across each family's scaling points, candidate misses, branch/repeat,
 coordinate projection, character classes, zero-width iteration, capture
 rollback, and replacement track input/output growth approximately linearly.
 Non-result warm allocation is zero (or one byte from integer rounding), while
 replacement allocation scales with the required returned array. The accepted
-priority report also records large constant-factor gaps on complex
-whole-document compatible `Count` cases—up to seconds per call and thousands
-of times slower than predecoded Regex. Those are explicit future
-semantic-search/delegation priorities; 0.2.0 does not claim throughput parity.
+priority report still records constant-factor gaps on several complex
+whole-document compatible `Count` cases. Residual inspection attributes the
+largest URI, river-window, and email gaps to generic VM work rather than
+validation, projection, or wrapper allocation. They remain explicit future
+semantic-search priorities; 0.2.0 does not claim throughput parity.
 Detailed ratios and the adaptive warm-measurement protocol are in
 [`Pcre2PerfLedger.md`](../../bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md).
 

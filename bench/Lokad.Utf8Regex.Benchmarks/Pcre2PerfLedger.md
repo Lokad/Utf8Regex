@@ -1,10 +1,10 @@
 # Managed PCRE2 performance qualification
 
 `PCRE2.Benchmarks.json` is the authoritative snapshot. The accepted
-2026-08-16 snapshot has SHA-256
-`2CBE983A03BDCC8E22F1ED3F3F9EB73D92AC942A3C123CE723DC992DAEB818BC`.
+2026-08-17 snapshot has SHA-256
+`A565BD95D4B152CF1CFB07F02C88576DAAD557EE2DC33E0EAEAE98669AE2BA25`.
 It contains 126 operation rows in ten top-line sections and 66 points in 16
-scaling families. Every row and point was measured from source `c11ff939ceb6`
+scaling families. Every row and point was measured from source `9f3e6bcfb29d`
 with `TrackedDirty=false`.
 
 ## Measurement protocol
@@ -41,22 +41,22 @@ alternative count at each point.
 
 | Family | Scale ratios | Warm-time ratios | Warm allocation |
 |---|---:|---:|---:|
-| Long flat patterns | 2× pattern/input | 1.02×, 1.01×, 1.04× | 0 B |
-| Cartesian literal families | 2× alternatives | 1.50×, 1.66×, 2.68× | 0 B |
-| Dense+sparse candidates | catalog density progression | 1.98×, 0.17×, 1.19×, 1.00×, 1.87× | 0–1 B |
-| Candidate-heavy misses | 2× input | 1.93×, 1.76×, 2.08× | 0–1 B |
-| Required-literal all-`a` miss | 2× input | 1.40×, 1.60×, 1.81× | 1 B |
-| Branch/repeat | 2× input | 1.72×, 1.80×, 0.83× | 1 B |
-| Dense non-ASCII coordinates | 2× input | 0.38×, 1.98×, 1.32× | 0–1 B |
-| Excluded-ASCII repeat Count | 2× input | 1.33×, 1.58×, 1.67× | 1 B |
-| Dense character classes | 2× input | 1.83×, 1.75×, 1.88× | 0–1 B |
-| Zero-width iteration | 2× input | 1.99×, 1.94×, 1.29× | 0–1 B |
-| Capture rollback | approximately 2× input | 1.73×, 1.86×, 1.94× | 0 B |
-| Replacement growth | 2× input/output | 1.88×, 1.94×, 1.93× | 34,408 / 68,456 / 136,552 / 272,744 B |
-| Literal-family global Replace | 2× input/output | 1.85×, 1.85×, 1.25× | 841 / 1,609 / 3,145 / 6,217 B |
-| Branch-reset coordinate projection | 2× input | 1.97×, 1.97×, 2.64× | 0–1 B |
-| Single-token-repeat VM | 2× input | 1.97×, 1.98×, 1.99× | 0–1 B |
-| Leading-boundary run candidates | 2× input | 1.43×, 1.08×, 1.21× | 0–1 B |
+| Long flat patterns | 2× pattern/input | 1.03×, 1.02×, 1.03× | 0 / 0 / 0 / 0 B |
+| Cartesian literal families | 2× alternatives | 1.43×, 1.82×, 2.45× | 0 / 0 / 0 / 0 B |
+| Dense+sparse candidates | catalog density progression | 2.04×, 1.03×, 2.43×, 1.00×, 0.28× | 0 / 0 / 1 / 1 / 1 / 1 B |
+| Candidate-heavy misses | 2× input | 1.89×, 1.74×, 2.05× | 0 / 0 / 1 / 1 B |
+| Required-literal all-`a` miss | 2× input | 1.28×, 1.51×, 1.79× | 1 / 1 / 1 / 1 B |
+| Branch/repeat | 2× input | 1.78×, 1.82×, 0.78× | 1 / 1 / 1 / 1 B |
+| Dense non-ASCII coordinates | 2× input | 0.36×, 1.95×, 1.33× | 0 / 0 / 1 / 1 B |
+| Excluded-ASCII repeat Count | 2× input | 1.32×, 1.51×, 1.76× | 1 / 1 / 1 / 1 B |
+| Dense character classes | 2× input | 1.69×, 1.71×, 1.77× | 0 / 1 / 1 / 1 B |
+| Zero-width iteration | 2× input | 2.00×, 1.80×, 1.45× | 0 / 0 / 1 / 1 B |
+| Capture rollback | approximately 2× input | 1.73×, 1.90×, 1.90× | 0 / 0 / 0 / 0 B |
+| Replacement growth | 2× input/output | 1.96×, 1.81×, 1.91× | 34,408 / 68,456 / 136,552 / 272,744 B |
+| Literal-family global Replace | 2× input/output | 1.82×, 1.92×, 1.85× | 841 / 1,609 / 3,145 / 6,217 B |
+| Branch-reset coordinate projection | 2× input | 1.95×, 1.98×, 1.98× | 0 / 0 / 1 / 0 B |
+| Single-token-repeat VM | 2× input | 1.91×, 2.20×, 1.80× | 0 / 0 / 0 / 0 B |
+| Leading-boundary run candidates | 2× input | 1.48×, 1.07×, 1.18× | 0 / 0 / 0 / 0 B |
 
 No family has an unexplained quadratic curve. Candidate misses, branching,
 coordinate projection, character classes, zero-width progress, and capture
@@ -66,25 +66,44 @@ than size-dependent planner changes. Cartesian execution grows faster than its
 last alternative-count doubling but remains well below quadratic growth.
 Replacement allocation is the required returned byte array and scales with
 the doubled output, while non-result operations allocate zero bytes per warm
-invocation apart from measurement rounding of at most one byte. The 2.64×
-final branch-reset point and 2.68× Cartesian point remain below the quadratic
-gate and are retained as future breadth sentinels rather than normalized away.
+invocation apart from measurement rounding of at most one byte. The 2.45×
+final Cartesian point and 2.20× middle single-token point remain
+subquadratic; they are retained as tiering and breadth sentinels rather than
+normalized away.
 
 Construction storage is bounded by pattern/program size. The long-flat
-construction time grows 1.15×, 1.27×, and 1.42× for successive 2× pattern growth;
+construction time grows 1.14×, 1.29×, and 1.47× for successive 2× pattern growth;
 the other fixed-pattern families remain flat. Per-instance replacement plans
 are capped at 16 cache entries.
 
 ## Current qualification summary
 
 Against decode-then-Regex where equivalent work exists, the current snapshot
-records 6 wins/20 losses for IsMatch with 18.318 us total positive excess,
-13 wins/10 losses for Count with 29.600 ms excess, 0 wins/5 losses for
-enumeration with 18.016 us excess, and 1 win/5 losses for Replace with 3.828 us
-excess. Count remains the only material aggregate lane; the other compatible
-operation excess totals 40.162 us.
+records 6 wins/20 losses for IsMatch with 18.650 us total positive excess,
+12 wins/11 losses for Count with 35.180 ms excess and -24.454 ms net time,
+0 wins/5 losses for enumeration with 24.150 us excess, 0 wins/5 losses for
+`MatchMany` with 5.030 us excess, and 1 win/5 losses for Replace with 4.110 us
+excess. Count remains the only material aggregate lane; compatible non-Count
+positive excess totals 51.940 us.
 
-The largest PCRE2-specific operation is captured `\K` replacement at 8.009 us.
+Against the initial P0 snapshot, compatible positive excess fell from 82.464
+ms to 35.232 ms (-57.3%). IsMatch fell from 90.423 us to 18.650 us (-79.4%),
+Count from 81.773 ms to 35.180 ms (-57.0%), enumeration from 29.179 us to
+24.150 us (-17.2%), `MatchMany` from 14.740 us to 5.030 us (-65.9%), and
+Replace from 556.882 us to 4.110 us (-99.3%). Count wins increased from 8 to
+12 of 23 cases and its net time moved from +43.984 ms to -24.454 ms.
+
+The largest remaining compatible Count losses are generic VM work, not facade
+overhead. URI accepts 5,301 matches through 700,575 VM steps and 33,959
+workspace rents; river-window accepts 2 through 309,161 steps and 12,950
+rents; email accepts 92 through 15,924 steps and 991 rents. Direct workspace
+replay is 453.2 us for URI and 58.17 us for river-window, while resource
+metering contributes only 0.13 us and 0 us respectively. Further progress on
+these rows therefore requires a reusable semantic-search mechanism, not
+another wrapper or pooling adjustment.
+
+The largest PCRE2-specific operation is captured-repeat `\K` replacement at
+8.216 us, down from the initial special-operation maximum of 36.945 us.
 E97 replaced two temporary capture endpoint arrays with one stack/pool staging
 buffer, and E98 projects top-level final capture slots before pooled VM state is
 returned. One-, two-, and four-slot detailed matches now allocate exactly the
@@ -92,6 +111,10 @@ required public group arrays (56, 80, and 136 B). Positive assertions retain
 only the raw nested capture ranges required for merge; scalar conditional and
 recursive IsMatch paths remain zero-allocation. These changes are internal and
 do not alter the PCRE2 public API or managed package boundary.
+
+The sections below retain the chronological checkpoint evidence that led to
+the current snapshot. Their per-case values and test totals are historical,
+not replacements for the qualified summary above.
 
 ## Qualified P0 result
 
