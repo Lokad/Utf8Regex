@@ -252,6 +252,10 @@ public sealed class AsciiSimplePatternTests
     [InlineData("u[A-Za-z0-9]v", "uAv-u0v-u_v-uzv-u9v-u-v-uBv-u3v-uCv-u7v-")]
     [InlineData("q[0-9A-Fa-f]z", "q0z-qAz-qgz-qfz-q9z-qFz-q-z-qbz-qCz-q8z-")]
     [InlineData("a[A-Za-z]a", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("ab[0-9]cd", "ab1cd-ab2cd-ab3cd-ab4cd-ab5cd-ab6cd-ab7cd-")]
+    [InlineData("ab[0-9]cde", "ab1cde-ab2cde-ab3cde-ab4cde-ab5cde-ab6cde-")]
+    [InlineData("abc[0-9]def", "abc1def-abc2def-abc3def-abc4def-abc5def-")]
+    [InlineData("abc[0-9]defg", "abc1defg-abc2defg-abc3defg-abc4defg-abc5defg-")]
     public void VectorizedFixedWidthCountMatchesDotNet(string pattern, string input)
     {
         if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
@@ -360,6 +364,8 @@ public sealed class AsciiSimplePatternTests
     [InlineData("ab[0-9]d", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
     [InlineData("ab.d", RegexOptions.CultureInvariant)]
     [InlineData("ab[02468]d", RegexOptions.CultureInvariant)]
+    [InlineData("a[0-9]", RegexOptions.CultureInvariant)]
+    [InlineData("abcd[0-9]efgh", RegexOptions.CultureInvariant)]
     public void VectorizedFixedWidthCountRejectsUnqualifiedPlans(string pattern, RegexOptions options)
     {
         var analysis = Utf8FrontEnd.Compile(pattern, options);
