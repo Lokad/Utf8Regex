@@ -134,6 +134,18 @@ public class ShortPublicMatchMicroCostBenchmarks
     }
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
+    public int Utf8Compiled()
+    {
+        var total = 0;
+        for (var i = 0; i < RepeatCount; i++)
+        {
+            total += _context.ExecuteUtf8Compiled();
+        }
+
+        return total;
+    }
+
+    [Benchmark(OperationsPerInvoke = RepeatCount)]
     public int PredecodedRegex()
     {
         var total = 0;
