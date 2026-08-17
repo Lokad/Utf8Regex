@@ -660,7 +660,7 @@ public sealed class Utf8Regex
                 _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
                 input.GetDecodedString(),
                 startInUtf16.Value,
-                input.BoundaryMap);
+                input.Utf16ProjectionMap);
         }
 
         if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
@@ -1150,7 +1150,7 @@ public sealed class Utf8Regex
             _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
             decoded,
             startInUtf16.Value,
-            analysis.BoundaryMap)
+            analysis.Utf16ProjectionMap)
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
 
@@ -2519,7 +2519,7 @@ public sealed class Utf8Regex
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
-            return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.BoundaryMap);
+            return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, analysis.Utf16ProjectionMap);
         }
 
         return Utf8CompiledOperationCursorFactory.CreateMatchEnumerator(

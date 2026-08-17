@@ -120,7 +120,7 @@ internal static class Utf8CompiledOperationCursorFactory
             input,
             subject.GetDecodedString(),
             verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            subject.BoundaryMap);
+            subject.Utf16ProjectionMap);
     }
 
     private static Utf8ValueSplitEnumerator CreateFallbackSplitEnumerator(

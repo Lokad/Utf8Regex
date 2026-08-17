@@ -273,6 +273,15 @@ internal static partial class BenchmarkInspectReporter
         MeasureUtf8CaseLane("DecodeThenCompiledRegex", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
         MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
         MeasureUtf8CaseLane("PredecodedCompiledRegex", samples, iterations, () => ExecutePredecodedCompiledRegex(context));
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.EnumerateMatches &&
+            Utf8InputAnalyzer.IsAscii(context.InputBytes))
+        {
+            MeasureUtf8CaseLane("ValidatedAsciiDirectOrdinary", samples, iterations, () =>
+                ExecuteValidatedAsciiDirectEnumeration(context.Regex, context.InputBytes));
+            MeasureUtf8CaseLane("ValidatedAsciiDirectCompiled", samples, iterations, () =>
+                ExecuteValidatedAsciiDirectEnumeration(context.CompiledRegex, context.InputBytes));
+        }
+
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
         {
             MeasureUtf8CaseLane("FallbackOrdinary", samples, iterations, () =>
@@ -6868,6 +6877,13 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
+    }
+
+    private static int ExecuteValidatedAsciiDirectEnumeration(Regex regex, byte[] input)
+    {
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        var decoded = Encoding.UTF8.GetString(input);
+        return SumRegexMatches(regex, decoded);
     }
 
     private static int CountUtf8Splits(Utf8Regex regex, byte[] input)

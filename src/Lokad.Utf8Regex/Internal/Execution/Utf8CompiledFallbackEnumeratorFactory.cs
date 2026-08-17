@@ -8,7 +8,7 @@ internal static class Utf8CompiledFallbackEnumeratorFactory
     public static Utf8ValueMatchEnumerator CreateMatchEnumerator(ReadOnlySpan<byte> input, Regex regex)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), regex, analysis.BoundaryMap);
+        return new Utf8ValueMatchEnumerator(input, Encoding.UTF8.GetString(input), regex, analysis.Utf16ProjectionMap);
     }
 
     public static Utf8ValueSplitEnumerator CreateSplitEnumerator(ReadOnlySpan<byte> input, Regex regex, int count)

@@ -91,7 +91,7 @@ internal sealed class Utf8AsciiCultureInvariantStrategy
             input,
             subject.GetDecodedString(),
             _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
-            subject.BoundaryMap);
+            subject.Utf16ProjectionMap);
     }
 
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count)

@@ -47,10 +47,14 @@ public sealed class Utf8RegexStartAtTests
         Assert.Equal(7, match.IndexInUtf16);
     }
 
-    [Fact]
-    public void EnumerateMatchesStartAtHonorsRightToLeftStartPosition()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerateMatchesStartAtHonorsRightToLeftStartPosition(bool compiled)
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
+        var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var regex = new Utf8Regex("abc", options);
 
         var enumerator = regex.EnumerateMatchesFromUtf16Offset("xxabcxxabc"u8, 6);
         Assert.True(enumerator.MoveNext());

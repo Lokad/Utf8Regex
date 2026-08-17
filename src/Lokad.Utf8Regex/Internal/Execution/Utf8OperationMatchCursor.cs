@@ -78,7 +78,7 @@ internal ref struct Utf8OperationMatchCursor
         };
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap boundaryMap)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap? boundaryMap)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -94,8 +94,10 @@ internal ref struct Utf8OperationMatchCursor
         _boundaryMap = boundaryMap;
         _budget = Utf8ExecutionDeadline.Infinite;
         _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap.Utf16Length;
-        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
+        _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
+        _projectionPlan = boundaryMap is null
+            ? default
+            : new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _fallbackEnumerator = regex.EnumerateMatches(decoded);
         _remaining = default;
@@ -108,10 +110,12 @@ internal ref struct Utf8OperationMatchCursor
         _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
-        _mode = EnumeratorMode.FallbackRegex;
+        _mode = boundaryMap is null
+            ? EnumeratorMode.FallbackRegexAscii
+            : EnumeratorMode.FallbackRegex;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap boundaryMap)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap? boundaryMap)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -127,8 +131,10 @@ internal ref struct Utf8OperationMatchCursor
         _boundaryMap = boundaryMap;
         _budget = Utf8ExecutionDeadline.Infinite;
         _literalUtf16Length = 0;
-        _totalUtf16Length = boundaryMap.Utf16Length;
-        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
+        _totalUtf16Length = boundaryMap?.Utf16Length ?? input.Length;
+        _projectionPlan = boundaryMap is null
+            ? default
+            : new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
         _program = default;
         _fallbackEnumerator = regex.EnumerateMatches(decoded.AsSpan(), startAt);
         _remaining = default;
@@ -141,7 +147,9 @@ internal ref struct Utf8OperationMatchCursor
         _asciiFixedTokenMatchLength = 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
-        _mode = EnumeratorMode.FallbackRegex;
+        _mode = boundaryMap is null
+            ? EnumeratorMode.FallbackRegexAscii
+            : EnumeratorMode.FallbackRegex;
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionDeadline budget)
@@ -210,9 +218,8 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.AsciiSimplePattern;
     }
 
-    public Utf8OperationMatch Current
-        => new(
-            _mode == EnumeratorMode.AsciiFixedTokenPattern && _asciiFixedTokenCurrentIndex >= 0
+    public Utf8ValueMatch CurrentValueMatch
+        => _mode == EnumeratorMode.AsciiFixedTokenPattern && _asciiFixedTokenCurrentIndex >= 0
             ? new Utf8ValueMatch(
                 success: true,
                 isByteAligned: true,
@@ -220,9 +227,10 @@ internal ref struct Utf8OperationMatchCursor
                 lengthInUtf16: _asciiFixedTokenMatchLength,
                 indexInBytes: _baseByteOffset + _asciiFixedTokenCurrentIndex,
                 lengthInBytes: _asciiFixedTokenMatchLength)
-            : ApplyBaseOffsets(_current),
-            branchId: 0,
-            captureSlots: null);
+            : ApplyBaseOffsets(_current);
+
+    public Utf8OperationMatch Current
+        => new(CurrentValueMatch, branchId: 0, captureSlots: null);
 
     public bool MoveNext()
     {
@@ -240,6 +248,7 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.EmittedKernelPattern => MoveNextEmittedKernelPattern(),
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
             EnumeratorMode.FallbackRegex => MoveNextFallback(),
+            EnumeratorMode.FallbackRegexAscii => MoveNextFallbackAscii(),
             _ => false,
         };
     }
@@ -682,6 +691,24 @@ internal ref struct Utf8OperationMatchCursor
         return true;
     }
 
+    private bool MoveNextFallbackAscii()
+    {
+        if (!_fallbackEnumerator.MoveNext())
+        {
+            return false;
+        }
+
+        var valueMatch = _fallbackEnumerator.Current;
+        _current = new Utf8ValueMatch(
+            success: true,
+            isByteAligned: true,
+            indexInUtf16: valueMatch.Index,
+            lengthInUtf16: valueMatch.Length,
+            indexInBytes: valueMatch.Index,
+            lengthInBytes: valueMatch.Length);
+        return true;
+    }
+
     private bool MoveNextAsciiSimplePattern()
     {
         var relative = Utf8ExecutionInterpreter.FindNextSimplePattern(_remaining, _executionProgram, _searchPlan, _simplePatternPlan, 0, captures: null, _budget, out var matchLength);
@@ -808,5 +835,6 @@ internal ref struct Utf8OperationMatchCursor
         EmptyLiteral = 10,
         SmallAsciiLiteralFamily = 11,
         EmittedKernelPattern = 12,
+        FallbackRegexAscii = 13,
     }
 }

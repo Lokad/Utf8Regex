@@ -61,24 +61,28 @@ public sealed class RightToLeftEnumerationTests
     {
         const string pattern = @"(?:café|niño|résumé)";
         const string input = "café niño résumé café";
-        var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
-        var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
-        var bytes = Encoding.UTF8.GetBytes(input);
-        var expectedMatches = new List<(int Index, int Length)>();
-        var actualMatches = new List<(int Index, int Length)>();
-
-        foreach (var match in expected.EnumerateMatches(input, utf16Offset))
+        foreach (var compiled in new[] { false, true })
         {
-            expectedMatches.Add((match.Index, match.Length));
-        }
+            var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
+                (compiled ? RegexOptions.Compiled : RegexOptions.None);
+            var expected = new Regex(pattern, options);
+            var actual = new Utf8Regex(pattern, options);
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expectedMatches = new List<(int Index, int Length)>();
+            var actualMatches = new List<(int Index, int Length)>();
 
-        foreach (var match in actual.EnumerateMatchesFromUtf16Offset(bytes, utf16Offset))
-        {
-            actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
-        }
+            foreach (var match in expected.EnumerateMatches(input, utf16Offset))
+            {
+                expectedMatches.Add((match.Index, match.Length));
+            }
 
-        Assert.Equal(expectedMatches, actualMatches);
+            foreach (var match in actual.EnumerateMatchesFromUtf16Offset(bytes, utf16Offset))
+            {
+                actualMatches.Add((match.IndexInUtf16, match.LengthInUtf16));
+            }
+
+            Assert.Equal(expectedMatches, actualMatches);
+        }
     }
 
     private static void AssertParity(

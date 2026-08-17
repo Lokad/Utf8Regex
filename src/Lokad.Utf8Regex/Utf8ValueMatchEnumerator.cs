@@ -35,7 +35,7 @@ public ref struct Utf8ValueMatchEnumerator
         ReadOnlySpan<byte> input,
         string decoded,
         Regex regex,
-        Utf8BoundaryMap boundaryMap)
+        Utf8BoundaryMap? boundaryMap)
         : this(new Utf8OperationMatchCursor(input, decoded, regex, boundaryMap))
     {
     }
@@ -45,7 +45,7 @@ public ref struct Utf8ValueMatchEnumerator
         Regex regex,
         string decoded,
         int startAt,
-        Utf8BoundaryMap boundaryMap)
+        Utf8BoundaryMap? boundaryMap)
         : this(new Utf8OperationMatchCursor(input, regex, decoded, startAt, boundaryMap))
     {
     }
@@ -112,11 +112,16 @@ public ref struct Utf8ValueMatchEnumerator
     {
     }
 
-    public Utf8ValueMatch Current => _cursor.Current.ToValueMatch();
+    public Utf8ValueMatch Current => _cursor.CurrentValueMatch;
 
     public Utf8ValueMatchEnumerator GetEnumerator() => this;
 
     public bool MoveNext()
+        => _timeoutPattern is null
+            ? _cursor.MoveNext()
+            : MoveNextWithTimeoutMapping();
+
+    private bool MoveNextWithTimeoutMapping()
     {
         try
         {
@@ -142,6 +147,11 @@ public ref struct Utf8ValueMatchEnumerator
         string pattern,
         TimeSpan timeout)
     {
+        if (timeout == Regex.InfiniteMatchTimeout)
+        {
+            return this;
+        }
+
         _timeoutInput = input;
         _timeoutPattern = pattern;
         _timeout = timeout;

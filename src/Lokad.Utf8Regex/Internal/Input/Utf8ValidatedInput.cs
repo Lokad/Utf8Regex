@@ -34,6 +34,10 @@ internal ref struct Utf8ValidatedInput
 
     public Utf8BoundaryMap BoundaryMap => GetRandomAccessMap();
 
+    // ASCII byte and UTF-16 coordinates are identical, so consumers can use
+    // a null map as the direct-projection representation.
+    public Utf8BoundaryMap? Utf16ProjectionMap => IsAscii ? null : GetRandomAccessMap();
+
     public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input)
         => new(input, Utf8InputAnalyzer.ValidateOnly(input));
 
