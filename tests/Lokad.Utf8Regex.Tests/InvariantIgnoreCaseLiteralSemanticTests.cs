@@ -1,6 +1,10 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -157,6 +161,116 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expected.Split(subject), actualSplits);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void MixedUtf8LiteralFamiliesPreserveUtf16Coordinates(bool compiled, bool finiteTimeout)
+    {
+        const string pattern = "alpha|bravo|charlie";
+        const string subject = "é 😀 ALPHA bravo 夏 CHARLIE";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        var expected = new Regex(pattern, options, timeout);
+        var actual = new Utf8Regex(pattern, options, timeout);
+        var input = Encoding.UTF8.GetBytes(subject);
+
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, actual.Inspection.ExecutionKind);
+        Assert.Equal(expected.IsMatch(subject), actual.IsMatch(input));
+        Assert.Equal(expected.Count(subject), actual.Count(input));
+
+        var expectedFirst = expected.Match(subject);
+        var actualFirst = actual.Match(input);
+        Assert.Equal(expectedFirst.Index, actualFirst.IndexInUtf16);
+        Assert.Equal(expectedFirst.Length, actualFirst.LengthInUtf16);
+        Assert.Equal(
+            Encoding.UTF8.GetByteCount(subject.AsSpan(0, expectedFirst.Index)),
+            actualFirst.IndexInBytes);
+
+        var expectedRanges = expected.Matches(subject)
+            .Select(match => (
+                Utf16Index: match.Index,
+                Utf16Length: match.Length,
+                ByteIndex: Encoding.UTF8.GetByteCount(subject.AsSpan(0, match.Index)),
+                ByteLength: Encoding.UTF8.GetByteCount(subject.AsSpan(match.Index, match.Length))))
+            .ToArray();
+        var actualRanges = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength)>();
+        foreach (var match in actual.EnumerateMatches(input))
+        {
+            actualRanges.Add((
+                match.IndexInUtf16,
+                match.LengthInUtf16,
+                match.IndexInBytes,
+                match.LengthInBytes));
+        }
+
+        Assert.Equal(expectedRanges, actualRanges);
+        Assert.Equal(expected.Replace(subject, "X"), actual.ReplaceToString(input, "X"));
+
+        var actualSplits = new List<string>();
+        foreach (var split in actual.EnumerateSplits(input))
+        {
+            actualSplits.Add(split.GetValueString());
+        }
+
+        Assert.Equal(expected.Split(subject), actualSplits);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MixedUtf8LiteralFamilyForcedNativeSplitPreservesUtf16Coordinates(bool compiled)
+    {
+        const string pattern = "alpha|bravo|charlie";
+        const string subject = "é 😀 ALPHA bravo 夏 CHARLIE";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var expected = new Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options);
+        var analysis = Utf8FrontEnd.Compile(pattern, options);
+        var verifierRuntime = Utf8VerifierRuntime.Create(
+            analysis,
+            pattern,
+            options,
+            Regex.InfiniteMatchTimeout);
+        var input = Encoding.UTF8.GetBytes(subject);
+        var validation = Utf8Validation.Validate(input);
+        var splits = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
+            actual.Inspection.PreparedRegex,
+            verifierRuntime,
+            input,
+            validation,
+            validation.Utf16Length,
+            int.MaxValue,
+            Utf8ExecutionDeadline.Infinite);
+
+        var expectedSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        foreach (var split in expected.EnumerateSplits(subject))
+        {
+            var (index, length) = split.GetOffsetAndLength(subject.Length);
+            expectedSplits.Add((
+                index,
+                length,
+                Encoding.UTF8.GetByteCount(subject.AsSpan(0, index)),
+                Encoding.UTF8.GetByteCount(subject.AsSpan(index, length)),
+                subject.Substring(index, length)));
+        }
+        var actualSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        foreach (var split in splits)
+        {
+            actualSplits.Add((
+                split.IndexInUtf16,
+                split.LengthInUtf16,
+                split.IndexInBytes,
+                split.LengthInBytes,
+                split.GetValueString()));
+        }
+
+        Assert.Equal(expectedSplits, actualSplits);
     }
 
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)

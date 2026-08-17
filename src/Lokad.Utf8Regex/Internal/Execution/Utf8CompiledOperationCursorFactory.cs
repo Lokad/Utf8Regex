@@ -51,7 +51,12 @@ internal static class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.ExactUtf8Literals
                 => new Utf8OperationMatchCursor(input, regexPlan.SearchPlan, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => new Utf8OperationMatchCursor(input, regexPlan.SearchPlan, regexPlan.ExecutionKind, budget),
+                => new Utf8OperationMatchCursor(
+                    input,
+                    regexPlan.SearchPlan,
+                    regexPlan.ExecutionKind,
+                    validation.IsAscii,
+                    budget),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
@@ -95,7 +100,14 @@ internal static class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.ExactUtf8Literals
                 => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, totalUtf16Length, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, regexPlan.ExecutionKind, budget),
+                => new Utf8ValueSplitEnumerator(
+                    input,
+                    regexPlan.SearchPlan,
+                    count,
+                    regexPlan.ExecutionKind,
+                    totalUtf16Length,
+                    totalUtf16Length == input.Length,
+                    budget),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)

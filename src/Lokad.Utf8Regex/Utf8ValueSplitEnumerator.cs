@@ -80,14 +80,14 @@ public ref struct Utf8ValueSplitEnumerator
         Utf8SearchPlan searchPlan,
         int count,
         NativeExecutionKind executionKind,
+        int totalUtf16Length,
+        bool inputIsAscii,
         Utf8ExecutionDeadline budget)
         : this(
             input,
-            new Utf8OperationMatchCursor(input, searchPlan, executionKind, budget),
+            new Utf8OperationMatchCursor(input, searchPlan, executionKind, inputIsAscii, budget),
             count,
-            executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-                ? input.Length
-                : Utf8Validation.Validate(input).Utf16Length)
+            totalUtf16Length)
     {
     }
 

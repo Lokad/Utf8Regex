@@ -315,6 +315,16 @@ internal ref struct Utf8OperationMatchCursor
     }
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+        : this(input, searchPlan, executionKind, Utf8InputAnalyzer.IsAscii(input), budget)
+    {
+    }
+
+    public Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input,
+        Utf8SearchPlan searchPlan,
+        NativeExecutionKind executionKind,
+        bool inputIsAscii,
+        Utf8ExecutionDeadline budget)
     {
         _simplePatternPlan = default;
         _structuralLinearProgram = default;
@@ -331,10 +341,12 @@ internal ref struct Utf8OperationMatchCursor
         _budget = budget;
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
-        _projectionPlan = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
+        var useByteOnlyProjection = inputIsAscii &&
+            executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
+        _projectionPlan = useByteOnlyProjection
             ? new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly)
             : searchPlan.EnumerationOperation.Projection;
-        _program = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
+        _program = useByteOnlyProjection
             ? searchPlan.EnumerationOperation.WithProjection(
                 new Utf8ProjectionPlan(Utf8ProjectionKind.ByteOnly))
             : searchPlan.EnumerationOperation;
