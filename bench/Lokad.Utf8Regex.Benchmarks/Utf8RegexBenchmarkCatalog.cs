@@ -598,6 +598,16 @@ internal static class Utf8RegexBenchmarkCatalog
             expectedSupport: "Fallback",
             notes: "Unicode negative control that retains boundary-map projection."),
         new(
+            "enumerate_rtl_utf8_literal_short",
+            "RightToLeft",
+            Utf8RegexBenchmarkOperation.EnumerateMatches,
+            "café",
+            "x café y",
+            RegexOptions.CultureInvariant | RegexOptions.RightToLeft,
+            replacement: null,
+            expectedSupport: "Fallback",
+            notes: "Short Unicode RTL projection regression control."),
+        new(
             "enumerate_rtl_utf8_literal_sparse",
             "RightToLeft",
             Utf8RegexBenchmarkOperation.EnumerateMatches,
