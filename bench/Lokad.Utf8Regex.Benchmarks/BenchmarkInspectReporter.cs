@@ -4036,6 +4036,9 @@ internal static partial class BenchmarkInspectReporter
         var controls = new (string Name, string Pattern, string Input)[]
         {
             ("digit-dense", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 20_480)),
+            ("digit-dense-scaling-1x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 2_560)),
+            ("digit-dense-scaling-2x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 5_120)),
+            ("digit-dense-scaling-4x", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 10_240)),
             ("digit-width-five-dense", "ab[0-9]cd", RepeatToLength("ab1cd-ab7cd-", 20_480)),
             ("digit-width-eight-dense", "abc[0-9]defg", RepeatToLength("abc1defg-abc7defg-", 20_480)),
             ("letter-dense", "x[A-Za-z]y", RepeatToLength("xAy-xzy-", 20_480)),
