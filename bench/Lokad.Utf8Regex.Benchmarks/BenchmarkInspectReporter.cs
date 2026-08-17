@@ -1400,15 +1400,32 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadReadmeBenchmarkSnapshot();
+        var sections = ParseReadmeSections(sectionsText);
+        var remainingSections = sections.ToHashSet();
 
-        foreach (var section in ParseReadmeSections(sectionsText))
+        RefreshReadmeSnapshotSectionPairIfRequested(
+            snapshot,
+            remainingSections,
+            ReadmeBenchmarkSection.DotNetPerformance,
+            ReadmeBenchmarkSection.DotNetPerformanceCompiled,
+            iterations,
+            samples);
+        RefreshReadmeSnapshotSectionPairIfRequested(
+            snapshot,
+            remainingSections,
+            ReadmeBenchmarkSection.Lokad,
+            ReadmeBenchmarkSection.LokadCompiled,
+            iterations,
+            samples);
+
+        foreach (var section in sections.Where(remainingSections.Contains))
         {
             RefreshReadmeSnapshotSection(snapshot, section, iterations, samples);
         }
 
         SaveReadmeBenchmarkSnapshot(snapshot);
         RewriteReadmeFromSnapshot(snapshot);
-        Console.WriteLine($"Updated README sections: {string.Join(", ", ParseReadmeSections(sectionsText).Select(static s => s.ToString()))}");
+        Console.WriteLine($"Updated README sections: {string.Join(", ", sections.Select(static s => s.ToString()))}");
         return 0;
     }
 
@@ -1582,7 +1599,14 @@ internal static partial class BenchmarkInspectReporter
     private static void RefreshReadmeSnapshotSection(ReadmeBenchmarkSnapshot snapshot, ReadmeBenchmarkSection section, int iterations, int samples)
     {
         var sectionSnapshot = GetOrAddSnapshotSection(snapshot, section);
-        sectionSnapshot.Cases.Clear();
+        var expectedCaseIds = new HashSet<string>(StringComparer.Ordinal);
+
+        void Record(string caseId, ReadmeCaseMeasurement measurement)
+        {
+            expectedCaseIds.Add(caseId);
+            sectionSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
+            SaveReadmeBenchmarkSnapshot(snapshot);
+        }
 
         switch (section)
         {
@@ -1590,12 +1614,16 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.DotNetPerformanceCompiled:
                 foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
                 {
-                    sectionSnapshot.Cases[benchmarkCase.Id] = ReadmeCaseMeasurementJson.FromMeasurement(MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                    Record(
+                        benchmarkCase.Id,
+                        MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
                 }
 
                 foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
                 {
-                    sectionSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(MeasureReadmeCaseOutOfProcess("--measure-readme-public-case", caseId, iterations, samples));
+                    Record(
+                        caseId,
+                        MeasureReadmeCaseOutOfProcess("--measure-readme-public-case", caseId, iterations, samples));
                 }
                 break;
 
@@ -1603,12 +1631,89 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.LokadCompiled:
                 foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
                 {
-                    sectionSnapshot.Cases[benchmarkCase.Id] = ReadmeCaseMeasurementJson.FromMeasurement(MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                    Record(
+                        benchmarkCase.Id,
+                        MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
                 }
                 break;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(section));
+        }
+
+        RemoveUnexpectedReadmeCases(sectionSnapshot, expectedCaseIds);
+        SaveReadmeBenchmarkSnapshot(snapshot);
+    }
+
+    private static void RefreshReadmeSnapshotSectionPairIfRequested(
+        ReadmeBenchmarkSnapshot snapshot,
+        HashSet<ReadmeBenchmarkSection> remainingSections,
+        ReadmeBenchmarkSection firstSection,
+        ReadmeBenchmarkSection secondSection,
+        int iterations,
+        int samples)
+    {
+        if (!remainingSections.Contains(firstSection) || !remainingSections.Contains(secondSection))
+        {
+            return;
+        }
+
+        var firstSnapshot = GetOrAddSnapshotSection(snapshot, firstSection);
+        var secondSnapshot = GetOrAddSnapshotSection(snapshot, secondSection);
+        var expectedCaseIds = new HashSet<string>(StringComparer.Ordinal);
+
+        void Record(string caseId, ReadmeCaseMeasurement measurement)
+        {
+            expectedCaseIds.Add(caseId);
+            firstSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
+            secondSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
+            SaveReadmeBenchmarkSnapshot(snapshot);
+        }
+
+        if (firstSection == ReadmeBenchmarkSection.DotNetPerformance)
+        {
+            foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
+            {
+                Record(
+                    benchmarkCase.Id,
+                    MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+            }
+
+            foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
+            {
+                Record(
+                    caseId,
+                    MeasureReadmeCaseOutOfProcess("--measure-readme-public-case", caseId, iterations, samples));
+            }
+        }
+        else if (firstSection == ReadmeBenchmarkSection.Lokad)
+        {
+            foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
+            {
+                Record(
+                    benchmarkCase.Id,
+                    MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+            }
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(firstSection));
+        }
+
+        RemoveUnexpectedReadmeCases(firstSnapshot, expectedCaseIds);
+        RemoveUnexpectedReadmeCases(secondSnapshot, expectedCaseIds);
+        SaveReadmeBenchmarkSnapshot(snapshot);
+        remainingSections.Remove(firstSection);
+        remainingSections.Remove(secondSection);
+    }
+
+    private static void RemoveUnexpectedReadmeCases(
+        ReadmeBenchmarkSectionJson section,
+        HashSet<string> expectedCaseIds)
+    {
+        foreach (var caseId in section.Cases.Keys.Where(caseId => !expectedCaseIds.Contains(caseId)).ToArray())
+        {
+            section.Cases.Remove(caseId);
         }
     }
 
