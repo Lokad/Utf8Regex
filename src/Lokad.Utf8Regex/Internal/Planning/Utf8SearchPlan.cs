@@ -41,6 +41,13 @@ internal readonly struct Utf8SearchPlan
         Kind = kind;
         LiteralUtf8 = literalUtf8;
         CanGuideFallbackStarts = canGuideFallbackStarts;
+        AlternateLiteralOverlap =
+            kind is Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals &&
+            (leadingBoundary != Utf8BoundaryRequirement.None ||
+             trailingBoundary != Utf8BoundaryRequirement.None ||
+             trailingLiteralUtf8 is not null)
+            ? GetLiteralOverlap(alternateLiteralsUtf8)
+            : Utf8AlternateLiteralOverlapKind.None;
         LiteralSearch = literalUtf8 is not null
             ? new PreparedSubstringSearch(literalUtf8, kind == Utf8SearchKind.AsciiFoldedByteLiteral)
             : null;
@@ -147,6 +154,8 @@ internal readonly struct Utf8SearchPlan
 
     public bool CanGuideFallbackStarts { get; }
 
+    private Utf8AlternateLiteralOverlapKind AlternateLiteralOverlap { get; }
+
     public PreparedSubstringSearch? LiteralSearch { get; }
 
     public byte[][]? AlternateLiteralsUtf8 { get; }
@@ -232,6 +241,12 @@ internal readonly struct Utf8SearchPlan
     public bool HasStructuralCandidates => StructuralSearchPlan.HasValue;
 
     public bool HasAlternateLiterals => AlternateLiteralsUtf8 is { Length: > 0 };
+
+    public bool HasAlternateLiteralPrefixOverlap =>
+        (AlternateLiteralOverlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) != 0;
+
+    public bool HasAlternateLiteralProperStartOverlap =>
+        (AlternateLiteralOverlap & Utf8AlternateLiteralOverlapKind.ProperStart) != 0;
 
     public bool HasFixedDistanceSets => FixedDistanceSets is { Length: > 0 };
 
@@ -478,6 +493,59 @@ internal readonly struct Utf8SearchPlan
             ? requiredWindowPrefilterPlans
             : null;
     }
+
+    private static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)
+    {
+        if (literals is not { Length: > 1 })
+        {
+            return Utf8AlternateLiteralOverlapKind.None;
+        }
+
+        var overlap = Utf8AlternateLiteralOverlapKind.None;
+        for (var i = 0; i < literals.Length; i++)
+        {
+            var candidate = literals[i];
+            for (var j = 0; j < literals.Length; j++)
+            {
+                var alternate = literals[j];
+                if ((overlap & Utf8AlternateLiteralOverlapKind.SameStartPrefix) == 0 &&
+                    i != j &&
+                    candidate.Length != alternate.Length &&
+                    (candidate.AsSpan().StartsWith(alternate) || alternate.AsSpan().StartsWith(candidate)))
+                {
+                    overlap |= Utf8AlternateLiteralOverlapKind.SameStartPrefix;
+                }
+
+                if ((overlap & Utf8AlternateLiteralOverlapKind.ProperStart) == 0)
+                {
+                    for (var offset = 1; offset < candidate.Length; offset++)
+                    {
+                        var suffix = candidate.AsSpan(offset);
+                        if (suffix.StartsWith(alternate) || alternate.AsSpan().StartsWith(suffix))
+                        {
+                            overlap |= Utf8AlternateLiteralOverlapKind.ProperStart;
+                            break;
+                        }
+                    }
+                }
+
+                if (overlap == (Utf8AlternateLiteralOverlapKind.SameStartPrefix | Utf8AlternateLiteralOverlapKind.ProperStart))
+                {
+                    return overlap;
+                }
+            }
+        }
+
+        return overlap;
+    }
+}
+
+[Flags]
+internal enum Utf8AlternateLiteralOverlapKind : byte
+{
+    None = 0,
+    SameStartPrefix = 1,
+    ProperStart = 2,
 }
 
 internal readonly struct Utf8FixedDistanceSet

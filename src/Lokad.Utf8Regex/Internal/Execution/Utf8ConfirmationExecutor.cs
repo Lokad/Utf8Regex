@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -20,6 +21,35 @@ internal static class Utf8ConfirmationExecutor
             Utf8ConfirmationKind.FallbackVerifier => true,
             _ => false,
         };
+    }
+
+    public static bool TryFindConfirmedAlternateAtSameStart(
+        in Utf8SearchPlan plan,
+        Utf8ConfirmationPlan confirmation,
+        ReadOnlySpan<byte> input,
+        in PreparedSearchMatch rejectedMatch,
+        out PreparedSearchMatch confirmedMatch)
+    {
+        confirmedMatch = default;
+        if (!plan.HasAlternateLiteralPrefixOverlap ||
+            plan.AlternateLiteralsUtf8 is not { Length: > 1 } literals)
+        {
+            return false;
+        }
+
+        var remaining = input[rejectedMatch.Index..];
+        for (var literalId = 0; literalId < literals.Length; literalId++)
+        {
+            var literal = literals[literalId];
+            if (remaining.StartsWith(literal) &&
+                IsMatch(in plan, confirmation, input, rejectedMatch.Index, literal.Length))
+            {
+                confirmedMatch = new PreparedSearchMatch(rejectedMatch.Index, literal.Length, literalId);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool MatchesBoundaryRequirementsFast(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)

@@ -126,6 +126,7 @@ internal static class Utf8CompiledSearchAnalyzer
 
         if (regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
             canPromoteFallbackExecution &&
+            !regexPlan.SearchPlan.HasAlternateLiteralPrefixOverlap &&
             regexPlan.SearchPlan.FallbackSearch.CandidatePlans is { Length: > 0 } candidatePlans &&
             (regexPlan.SearchPlan.CanGuideFallbackStarts ||
              regexPlan.SearchPlan.FallbackStartTransform.HasValue ||

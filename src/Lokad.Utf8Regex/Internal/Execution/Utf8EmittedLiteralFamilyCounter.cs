@@ -36,6 +36,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmAsciiBoundaryOnly), BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ConfirmAsciiBoundaryOnly));
 
+    private static readonly MethodInfo s_resetAfterRejectedCandidateMethod =
+        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ResetAfterRejectedCandidate), BindingFlags.Static | BindingFlags.NonPublic)
+        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ResetAfterRejectedCandidate));
+
     private static readonly MethodInfo s_findNextCandidate2Method =
         typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(FindNextCandidate2), BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(FindNextCandidate2));
@@ -87,6 +91,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return plan.HasPreparedSearcher &&
             plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             !plan.HasTrailingLiteralRequirement &&
+            (!plan.HasAlternateLiteralPrefixOverlap ||
+             (!countProgram.Confirmation.HasValue && !firstMatchProgram.Confirmation.HasValue)) &&
             countProgram.HasValue &&
             firstMatchProgram.HasValue;
     }
@@ -113,9 +119,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             countProgram,
             firstMatchProgram,
             canUseFastConfirmation,
-            CompileCount(canUseFastConfirmation, singleLiteralBuckets, singleBucketPrefixFamily),
-            CompileIsMatch(canUseFastConfirmation, singleLiteralBuckets, singleBucketPrefixFamily),
-            CompileTryMatch(canUseFastConfirmation, singleLiteralBuckets, singleBucketPrefixFamily));
+            CompileCount(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily),
+            CompileIsMatch(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily),
+            CompileTryMatch(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily));
         return true;
     }
 
@@ -154,6 +160,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         }
 
         return leadingMatch && trailingMatch;
+    }
+
+    private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
+    {
+        var nextStart = candidateIndex + 1;
+        state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
     }
 
     private static int FindNextCandidate2(ReadOnlySpan<byte> input, int startIndex, byte firstByte0, byte firstByte1)
@@ -302,6 +314,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static CountDelegate CompileCount(
         bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
         (byte[] CommonPrefix, byte[][] Literals)? singleBucketPrefixFamily)
     {
@@ -315,11 +328,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixCount(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericCount(useAsciiBoundaryOnlyFastConfirmation);
+        return CompileGenericCount(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
     private static IsMatchDelegate CompileIsMatch(
         bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
         (byte[] CommonPrefix, byte[][] Literals)? singleBucketPrefixFamily)
     {
@@ -333,11 +347,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixIsMatch(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericIsMatch(useAsciiBoundaryOnlyFastConfirmation);
+        return CompileGenericIsMatch(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
     private static TryMatchDelegate CompileTryMatch(
         bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
         (byte[] CommonPrefix, byte[][] Literals)? singleBucketPrefixFamily)
     {
@@ -351,10 +366,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixTryMatch(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericTryMatch(useAsciiBoundaryOnlyFastConfirmation);
+        return CompileGenericTryMatch(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
-    private static CountDelegate CompileGenericCount(bool useAsciiBoundaryOnlyFastConfirmation)
+    private static CountDelegate CompileGenericCount(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyCount",
@@ -397,6 +412,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Ldloc, matchedLengthLocal);
         il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
         il.Emit(OpCodes.Brtrue, incrementLabel);
+        if (retryOverlappingAfterRejection)
+        {
+            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldloc, indexLocal);
+            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+        }
         il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(incrementLabel);
@@ -413,7 +434,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return dynamicMethod.CreateDelegate<CountDelegate>();
     }
 
-    private static IsMatchDelegate CompileGenericIsMatch(bool useAsciiBoundaryOnlyFastConfirmation)
+    private static IsMatchDelegate CompileGenericIsMatch(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyIsMatch",
@@ -452,6 +473,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Ldloc, matchedLengthLocal);
         il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod);
         il.Emit(OpCodes.Brtrue, successLabel);
+        if (retryOverlappingAfterRejection)
+        {
+            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldloc, indexLocal);
+            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+        }
         il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(successLabel);
@@ -465,7 +492,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return dynamicMethod.CreateDelegate<IsMatchDelegate>();
     }
 
-    private static TryMatchDelegate CompileGenericTryMatch(bool useAsciiBoundaryOnlyFastConfirmation)
+    private static TryMatchDelegate CompileGenericTryMatch(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyTryMatch",
@@ -504,6 +531,12 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Ldloc, matchedLengthLocal);
         il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
         il.Emit(OpCodes.Brtrue, successLabel);
+        if (retryOverlappingAfterRejection)
+        {
+            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldloc, indexLocal);
+            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+        }
         il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(successLabel);

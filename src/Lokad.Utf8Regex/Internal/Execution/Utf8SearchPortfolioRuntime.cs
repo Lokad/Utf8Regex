@@ -47,6 +47,62 @@ internal static class Utf8SearchPortfolioRuntime
         }
     }
 
+    public static bool TryFindNextOverlappingLiteralFamilyMatch(
+        in Utf8SearchPlan plan,
+        in Utf8SearchOperationPlan program,
+        ReadOnlySpan<byte> input,
+        ref PreparedMultiLiteralScanState state,
+        Utf8ExecutionDeadline budget,
+        out PreparedSearchMatch match)
+    {
+        match = default;
+        if (!plan.HasPreparedSearcher)
+        {
+            return false;
+        }
+
+        while (true)
+        {
+            budget.Step();
+            if (!plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out match))
+            {
+                return false;
+            }
+
+            if (program.Confirmation.Kind == Utf8ConfirmationKind.None &&
+                program.Kind is Utf8SearchOperationKind.DirectSearch or Utf8SearchOperationKind.HybridSearch)
+            {
+                return true;
+            }
+
+            if (Utf8ConfirmationExecutor.IsMatch(in plan, program.Confirmation, input, match.Index, match.Length))
+            {
+                return true;
+            }
+
+            if (plan.HasAlternateLiteralPrefixOverlap &&
+                Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                    in plan,
+                    program.Confirmation,
+                    input,
+                    in match,
+                    out var confirmedMatch))
+            {
+                match = confirmedMatch;
+                state = new PreparedMultiLiteralScanState(
+                    match.Index + match.Length,
+                    match.Index + match.Length,
+                    0);
+                return true;
+            }
+
+            if (plan.HasAlternateLiteralProperStartOverlap)
+            {
+                ResetAfterRejectedCandidate(ref state, match.Index);
+            }
+        }
+    }
+
     public static bool IsMatchLiteralFamily(
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan program,
@@ -82,6 +138,17 @@ internal static class Utf8SearchPortfolioRuntime
             }
 
             if (Utf8ConfirmationExecutor.IsMatch(plan, program.Confirmation, input, match.Index, match.Length))
+            {
+                return true;
+            }
+
+            if (plan.HasAlternateLiteralPrefixOverlap &&
+                Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                    in plan,
+                    program.Confirmation,
+                    input,
+                    in match,
+                    out _))
             {
                 return true;
             }
@@ -125,7 +192,9 @@ internal static class Utf8SearchPortfolioRuntime
             }
         }
 
-        if (plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral)
+        if (plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
+            !plan.HasAlternateLiteralPrefixOverlap &&
+            !plan.HasAlternateLiteralProperStartOverlap)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsLengthOnly);
             return budget.IsInfinite
@@ -154,6 +223,28 @@ internal static class Utf8SearchPortfolioRuntime
             if (Utf8ConfirmationExecutor.IsMatch(plan, confirmation, input, match.Index, match.Length))
             {
                 count++;
+                continue;
+            }
+
+            if (plan.HasAlternateLiteralPrefixOverlap &&
+                Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                    in plan,
+                    confirmation,
+                    input,
+                    in match,
+                    out var confirmedMatch))
+            {
+                state = new PreparedMultiLiteralScanState(
+                    confirmedMatch.Index + confirmedMatch.Length,
+                    confirmedMatch.Index + confirmedMatch.Length,
+                    0);
+                count++;
+                continue;
+            }
+
+            if (plan.HasAlternateLiteralProperStartOverlap)
+            {
+                ResetAfterRejectedCandidate(ref state, match.Index);
             }
         }
     }
@@ -209,8 +300,36 @@ internal static class Utf8SearchPortfolioRuntime
             if (Utf8ConfirmationExecutor.IsMatch(plan, confirmation, input, match.Index, match.Length))
             {
                 count++;
+                continue;
+            }
+
+            if (plan.HasAlternateLiteralPrefixOverlap &&
+                Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                    in plan,
+                    confirmation,
+                    input,
+                    in match,
+                    out var confirmedMatch))
+            {
+                state = new PreparedMultiLiteralScanState(
+                    confirmedMatch.Index + confirmedMatch.Length,
+                    confirmedMatch.Index + confirmedMatch.Length,
+                    0);
+                count++;
+                continue;
+            }
+
+            if (plan.HasAlternateLiteralProperStartOverlap)
+            {
+                ResetAfterRejectedCandidate(ref state, match.Index);
             }
         }
+    }
+
+    private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
+    {
+        var nextStart = candidateIndex + 1;
+        state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
     }
 
     private static int CountLargeAutomatonFamilyViaEarliestHybrid(

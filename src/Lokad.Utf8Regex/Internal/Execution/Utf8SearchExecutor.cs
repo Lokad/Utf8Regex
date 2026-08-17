@@ -220,6 +220,7 @@ internal static class Utf8SearchExecutor
         }
 
         if (plan.HasStructuralCandidates &&
+            !plan.HasAlternateLiteralPrefixOverlap &&
             plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
@@ -282,6 +283,19 @@ internal static class Utf8SearchExecutor
                     return true;
                 }
 
+                if (plan.HasAlternateLiteralPrefixOverlap &&
+                    Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                        in plan,
+                        plan.ConfirmationPlan,
+                        input,
+                        in match,
+                        out var confirmedMatch))
+                {
+                    match = confirmedMatch;
+                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+                    return true;
+                }
+
                 searchIndex = match.Index + 1;
             }
         }
@@ -299,6 +313,7 @@ internal static class Utf8SearchExecutor
         }
 
         if (plan.HasStructuralCandidates &&
+            !plan.HasAlternateLiteralPrefixOverlap &&
             plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
@@ -347,6 +362,19 @@ internal static class Utf8SearchExecutor
                 if ((!plan.HasBoundaryRequirements || MatchesBoundaryRequirements(plan, input, match.Index, match.Length)) &&
                     (!plan.HasTrailingLiteralRequirement || MatchesTrailingLiteralRequirement(plan, input, match.Index + match.Length)))
                 {
+                    Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+                    return true;
+                }
+
+                if (plan.HasAlternateLiteralPrefixOverlap &&
+                    Utf8ConfirmationExecutor.TryFindConfirmedAlternateAtSameStart(
+                        in plan,
+                        plan.ConfirmationPlan,
+                        input,
+                        in match,
+                        out var confirmedMatch))
+                {
+                    match = confirmedMatch;
                     Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                     return true;
                 }

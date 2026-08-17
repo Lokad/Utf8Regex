@@ -149,10 +149,22 @@ internal sealed class Utf8EmittedSearchGuidedFallback
                 matchedLength))
             {
                 count++;
+                continue;
+            }
+
+            if (backend._searchPlan.HasAlternateLiteralProperStartOverlap)
+            {
+                ResetAfterRejectedCandidate(ref state, index);
             }
         }
 
         return count;
+    }
+
+    private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
+    {
+        var nextStart = candidateIndex + 1;
+        state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
     }
 
     private static IsMatchDelegate CompileIsMatch()

@@ -46,6 +46,7 @@ internal static class Utf8CompiledBackendCapability
             searchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
             searchPlan.HasPreparedSearcher &&
             searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
+            !searchPlan.HasAlternateLiteralPrefixOverlap &&
             searchPlan.HasBoundaryRequirements &&
             !searchPlan.HasTrailingLiteralRequirement &&
             searchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&

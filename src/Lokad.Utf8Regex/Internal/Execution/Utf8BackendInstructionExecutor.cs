@@ -59,6 +59,17 @@ internal static class Utf8BackendInstructionExecutor
         Utf8ExecutionDeadline budget,
         out PreparedSearchMatch match)
     {
+        if (plan.HasAlternateLiteralPrefixOverlap || plan.HasAlternateLiteralProperStartOverlap)
+        {
+            return Utf8SearchPortfolioRuntime.TryFindNextOverlappingLiteralFamilyMatch(
+                in plan,
+                in program,
+                input,
+                ref state,
+                budget,
+                out match);
+        }
+
         return Utf8SearchPortfolioRuntime.TryFindNextLiteralFamilyMatch(
             in plan,
             in program,
