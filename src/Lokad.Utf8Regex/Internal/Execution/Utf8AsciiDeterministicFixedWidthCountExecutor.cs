@@ -86,28 +86,51 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
         }
 
         return true;
-    }
 
-    private static bool AreVectorizable(Utf8AsciiDeterministicFixedWidthCheck[] checks)
-    {
-        var literalCount = 0;
-        for (var i = 0; i < checks.Length; i++)
+        static bool AreVectorizable(Utf8AsciiDeterministicFixedWidthCheck[] checks)
         {
-            var check = checks[i];
-            if (check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.Literal)
+            var literalCount = 0;
+            for (var i = 0; i < checks.Length; i++)
             {
-                literalCount++;
-                continue;
+                var check = checks[i];
+                if (check.Kind == Utf8AsciiDeterministicFixedWidthCheckKind.Literal)
+                {
+                    literalCount++;
+                    continue;
+                }
+
+                if (check.Kind != Utf8AsciiDeterministicFixedWidthCheckKind.CharClass ||
+                    !check.CharClass.TryGetKnownPredicateKind(out _))
+                {
+                    return false;
+                }
             }
 
-            if (check.Kind != Utf8AsciiDeterministicFixedWidthCheckKind.CharClass ||
-                !check.CharClass.TryGetKnownPredicateKind(out _))
-            {
-                return false;
-            }
+            return literalCount >= 2;
         }
 
-        return literalCount >= 2;
+        static int CountScalarSuffix(
+            in Utf8StructuralLinearProgram program,
+            ReadOnlySpan<byte> input,
+            int startIndex,
+            Utf8ExecutionDeadline budget)
+        {
+            var count = 0;
+            var state = new Utf8AsciiDeterministicScanState(
+                startIndex,
+                startIndex + program.DeterministicProgram.SearchLiteralOffset);
+            while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicFixedWidthMatch(
+                program,
+                input,
+                ref state,
+                budget,
+                out _))
+            {
+                count++;
+            }
+
+            return count;
+        }
     }
 
     private static uint CreateMatchMask(
@@ -139,69 +162,49 @@ internal static class Utf8AsciiDeterministicFixedWidthCountExecutor
 
         literalMask = unchecked((uint)Avx2.MoveMask(literalCandidates.AsSByte()));
         return unchecked((uint)Avx2.MoveMask(candidates.AsSByte()));
-    }
 
-    private static int CountScalarSuffix(
-        in Utf8StructuralLinearProgram program,
-        ReadOnlySpan<byte> input,
-        int startIndex,
-        Utf8ExecutionDeadline budget)
-    {
-        var count = 0;
-        var state = new Utf8AsciiDeterministicScanState(
-            startIndex,
-            startIndex + program.DeterministicProgram.SearchLiteralOffset);
-        while (Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-            program,
-            input,
-            ref state,
-            budget,
-            out _))
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector256<byte> MatchKnownClass(
+            Vector256<byte> values,
+            AsciiCharClassPredicateKind predicateKind)
         {
-            count++;
+            return predicateKind switch
+            {
+                AsciiCharClassPredicateKind.Digit
+                    => MatchRange(values, (byte)'0', (byte)'9'),
+                AsciiCharClassPredicateKind.AsciiLetter
+                    => MatchAsciiLetter(values),
+                AsciiCharClassPredicateKind.AsciiLetterOrDigit
+                    => Avx2.Or(MatchAsciiLetter(values), MatchRange(values, (byte)'0', (byte)'9')),
+                AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore
+                    => Avx2.Or(
+                        Avx2.Or(MatchAsciiLetter(values), MatchRange(values, (byte)'0', (byte)'9')),
+                        Avx2.CompareEqual(values, Vector256.Create((byte)'_'))),
+                AsciiCharClassPredicateKind.AsciiHexDigit
+                    => Avx2.Or(
+                        MatchRange(values, (byte)'0', (byte)'9'),
+                        Avx2.Or(
+                            MatchRange(values, (byte)'A', (byte)'F'),
+                            MatchRange(values, (byte)'a', (byte)'f'))),
+                _ => Vector256<byte>.Zero,
+            };
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<byte> MatchAsciiLetter(Vector256<byte> values)
+            {
+                return Avx2.Or(
+                    MatchRange(values, (byte)'A', (byte)'Z'),
+                    MatchRange(values, (byte)'a', (byte)'z'));
+            }
         }
 
-        return count;
-    }
-
-    private static Vector256<byte> MatchKnownClass(
-        Vector256<byte> values,
-        AsciiCharClassPredicateKind predicateKind)
-    {
-        return predicateKind switch
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector256<byte> MatchRange(Vector256<byte> values, byte low, byte high)
         {
-            AsciiCharClassPredicateKind.Digit
-                => MatchRange(values, (byte)'0', (byte)'9'),
-            AsciiCharClassPredicateKind.AsciiLetter
-                => MatchAsciiLetter(values),
-            AsciiCharClassPredicateKind.AsciiLetterOrDigit
-                => Avx2.Or(MatchAsciiLetter(values), MatchRange(values, (byte)'0', (byte)'9')),
-            AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore
-                => Avx2.Or(
-                    Avx2.Or(MatchAsciiLetter(values), MatchRange(values, (byte)'0', (byte)'9')),
-                    Avx2.CompareEqual(values, Vector256.Create((byte)'_'))),
-            AsciiCharClassPredicateKind.AsciiHexDigit
-                => Avx2.Or(
-                    MatchRange(values, (byte)'0', (byte)'9'),
-                    Avx2.Or(
-                        MatchRange(values, (byte)'A', (byte)'F'),
-                        MatchRange(values, (byte)'a', (byte)'f'))),
-            _ => Vector256<byte>.Zero,
-        };
-    }
-
-    private static Vector256<byte> MatchAsciiLetter(Vector256<byte> values)
-    {
-        return Avx2.Or(
-            MatchRange(values, (byte)'A', (byte)'Z'),
-            MatchRange(values, (byte)'a', (byte)'z'));
-    }
-
-    private static Vector256<byte> MatchRange(Vector256<byte> values, byte low, byte high)
-    {
-        var atLeastLow = Avx2.CompareEqual(Avx2.Max(values, Vector256.Create(low)), values);
-        var atMostHigh = Avx2.CompareEqual(Avx2.Min(values, Vector256.Create(high)), values);
-        return Avx2.And(atLeastLow, atMostHigh);
+            var atLeastLow = Avx2.CompareEqual(Avx2.Max(values, Vector256.Create(low)), values);
+            var atMostHigh = Avx2.CompareEqual(Avx2.Min(values, Vector256.Create(high)), values);
+            return Avx2.And(atLeastLow, atMostHigh);
+        }
     }
 
     private static void CountNonOverlappingMatches(
