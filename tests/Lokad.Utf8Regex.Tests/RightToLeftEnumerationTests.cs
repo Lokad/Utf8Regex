@@ -20,6 +20,14 @@ public sealed class RightToLeftEnumerationTests
         { @"(?:cat|dog|horse)", string.Empty, RegexOptions.None },
     };
 
+    public static TheoryData<string, string> SurrogateSplitCases => new()
+    {
+        { "high-surrogate", "\uD83D" },
+        { "low-surrogate", "\uDE00" },
+        { "supplementary-scalar", "\uD83D\uDE00" },
+        { "zero-width-low-surrogate", "(?=\uDE00)" },
+    };
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void EnumerationMatchesDotNet(
@@ -85,6 +93,59 @@ public sealed class RightToLeftEnumerationTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(SurrogateSplitCases))]
+    public void EnumerationPreservesSurrogateSplitBoundaries(string caseName, string pattern)
+    {
+        _ = caseName;
+        const string input = "x😀y😀z";
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
+                (compiled ? RegexOptions.Compiled : RegexOptions.None);
+            var expected = new Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var actual = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expectedMatches = new List<(int Index, int Length)>();
+            var actualMatches = new List<Utf8ValueMatch>();
+            foreach (var match in expected.EnumerateMatches(input))
+            {
+                expectedMatches.Add((match.Index, match.Length));
+            }
+
+            foreach (var match in actual.EnumerateMatches(bytes))
+            {
+                actualMatches.Add(match);
+            }
+
+            Assert.Equal(expectedMatches.Count, actualMatches.Count);
+            for (var i = 0; i < expectedMatches.Count; i++)
+            {
+                var expectedMatch = expectedMatches[i];
+                var actualMatch = actualMatches[i];
+                var expectedAligned = IsScalarBoundary(input, expectedMatch.Index) &&
+                    IsScalarBoundary(input, expectedMatch.Index + expectedMatch.Length);
+
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+                Assert.Equal(expectedAligned, actualMatch.IsByteAligned);
+                if (expectedAligned)
+                {
+                    Assert.Equal(
+                        Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)),
+                        actualMatch.IndexInBytes);
+                    Assert.Equal(
+                        Encoding.UTF8.GetByteCount(input.AsSpan(expectedMatch.Index, expectedMatch.Length)),
+                        actualMatch.LengthInBytes);
+                }
+                else
+                {
+                    Assert.False(actualMatch.TryGetByteRange(out _, out _));
+                }
+            }
+        }
+    }
+
     private static void AssertParity(
         string pattern,
         string input,
@@ -142,4 +203,9 @@ public sealed class RightToLeftEnumerationTests
             expected.Replace(input, "<$&>"),
             Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>")));
     }
+
+    private static bool IsScalarBoundary(string input, int utf16Offset)
+        => utf16Offset == 0 ||
+           utf16Offset == input.Length ||
+           !char.IsSurrogatePair(input[utf16Offset - 1], input[utf16Offset]);
 }
