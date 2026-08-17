@@ -53,6 +53,18 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
   the final matcher.
 - Added a shared zero-allocation core split cursor for eligible capture-free
   patterns and applied it consistently to ordinary and compiled execution.
+- Shared immutable prepared data across copied ignore-case literal-family
+  plans, correlated rejected candidates with AVX2/SSE/scalar prefilters, and
+  reused the same prepared ranges and emitted kernels during global ordinary
+  and compiled execution.
+- Added guarded vector counting for dense deterministic ASCII patterns of
+  width three through eight. Ordinary and compiled `Count` share the same
+  selector and retain scalar execution for sparse, short, finite-timeout, and
+  unsupported-hardware cases.
+- Used direct byte search for eligible exact scalar matches, literal
+  boundaries, trailing literals, and composite literal lookahead, avoiding a
+  full enumerator or verifier pass when the requested result is only a boolean
+  or first match.
 - Admitted ASCII inputs to native simple-pattern plans for Unicode-category
   intersections, with explicit Unicode fallback guards across matching and
   output operations.
@@ -72,8 +84,19 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 - Materialized capture-free PythonRe find-all string and UTF-8 results from
   one shared core range pass, removing an intermediate match-data array and
   discarded string decoding.
+- Reduced PythonRe result shaping with pooled capture-free ranges, direct
+  captured/detailed projection, lazy full-match preparation, evaluator output
+  writers, and late UTF-8 coordinate-map construction; required public result
+  storage remains explicit.
+- Removed copied search-plan and structural-program state from core
+  enumeration, projected eligible ASCII fallback and right-to-left matches
+  directly, and reused already-validated subject lengths in exact UTF-8 split
+  output.
 - Removed preventable temporary allocation from warmed non-result PCRE2
   operations and bounded pooled invocation state and replacement-plan caches.
+- Reused prepared literal-family ranges for PCRE2 global/output operations,
+  pruned leading word-boundary candidates, and projected final capture slots
+  without redundant endpoint arrays or public match materialization.
 - Kept candidate search, Unicode coordinate projection, zero-width progress,
   capture rollback, and replacement growth linear across the qualified
   scaling workloads.
