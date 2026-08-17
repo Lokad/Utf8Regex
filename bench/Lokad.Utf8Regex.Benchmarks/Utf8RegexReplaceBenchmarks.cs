@@ -28,12 +28,12 @@ public class Utf8RegexReplaceBenchmarks
     public int DecodeThenRegex()
     {
         var decoded = System.Text.Encoding.UTF8.GetString(_context.InputBytes);
-        return System.Text.Encoding.UTF8.GetBytes(_context.Regex.Replace(decoded, _context.Replacement)).Length;
+        return RegexBenchmarkResult.ReplaceUtf8Length(_context.Regex, decoded, _context.Replacement);
     }
 
     [Benchmark]
     public int PredecodedRegex()
     {
-        return _context.Regex.Replace(_context.InputString, _context.Replacement).Length;
+        return RegexBenchmarkResult.ReplaceUtf8Length(_context.Regex, _context.InputString, _context.Replacement);
     }
 }

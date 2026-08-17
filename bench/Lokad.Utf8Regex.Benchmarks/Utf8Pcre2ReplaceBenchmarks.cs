@@ -31,14 +31,17 @@ public class Utf8Pcre2ReplaceBenchmarks
     }
 
     [Benchmark]
-    public string DecodeThenRegex()
+    public byte[] DecodeThenRegex()
     {
-        return _context.Regex!.Replace(System.Text.Encoding.UTF8.GetString(_context.InputBytes), _context.Replacement);
+        return RegexBenchmarkResult.ReplaceUtf8(
+            _context.Regex!,
+            System.Text.Encoding.UTF8.GetString(_context.InputBytes),
+            _context.Replacement);
     }
 
     [Benchmark]
-    public string PredecodedRegex()
+    public byte[] PredecodedRegex()
     {
-        return _context.Regex!.Replace(_context.InputString, _context.Replacement);
+        return RegexBenchmarkResult.ReplaceUtf8(_context.Regex!, _context.InputString, _context.Replacement);
     }
 }

@@ -262,12 +262,39 @@ internal static partial class BenchmarkInspectReporter
             }
         }
 
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
+        {
+            EnsureEquivalentReplaceResults(context);
+        }
+
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
         MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
         MeasureUtf8CaseLane("DecodeThenCompiledRegex", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
         MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
         MeasureUtf8CaseLane("PredecodedCompiledRegex", samples, iterations, () => ExecutePredecodedCompiledRegex(context));
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
+        {
+            MeasureUtf8CaseLane("FallbackOrdinary", samples, iterations, () =>
+                context.Utf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
+            MeasureUtf8CaseLane("FallbackCompiled", samples, iterations, () =>
+                context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(context.InputBytes, context.Replacement));
+
+            var nativeOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
+                context.InputBytes,
+                context.Replacement);
+            var nativeCompiledLength = context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
+                context.InputBytes,
+                context.Replacement);
+            if (nativeOrdinaryLength >= 0 && nativeCompiledLength >= 0)
+            {
+                MeasureUtf8CaseLane("NativeOrdinary", samples, iterations, () =>
+                    context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
+                MeasureUtf8CaseLane("NativeCompiled", samples, iterations, () =>
+                    context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(context.InputBytes, context.Replacement));
+            }
+        }
+
         return 0;
     }
 
@@ -5507,6 +5534,46 @@ internal static partial class BenchmarkInspectReporter
     private static double MeasureMicroseconds(int samples, int iterations, Func<int> action)
         => MeasureMedianCore(samples, iterations, action).Elapsed.TotalMicroseconds / iterations;
 
+    private static void EnsureEquivalentReplaceResults(Utf8RegexBenchmarkContext context)
+    {
+        var expected = context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8);
+        var compiled = context.CompiledUtf8Regex.Replace(context.InputBytes, context.ReplacementUtf8);
+        var decoded = Encoding.UTF8.GetString(context.InputBytes);
+        var decodeThenRegex = RegexBenchmarkResult.ReplaceUtf8(context.Regex, decoded, context.Replacement);
+        var decodeThenCompiled = RegexBenchmarkResult.ReplaceUtf8(context.CompiledRegex, decoded, context.Replacement);
+        var predecodedRegex = RegexBenchmarkResult.ReplaceUtf8(context.Regex, context.InputString, context.Replacement);
+        var predecodedCompiled = RegexBenchmarkResult.ReplaceUtf8(context.CompiledRegex, context.InputString, context.Replacement);
+
+        if (!expected.AsSpan().SequenceEqual(compiled) ||
+            !expected.AsSpan().SequenceEqual(decodeThenRegex) ||
+            !expected.AsSpan().SequenceEqual(decodeThenCompiled) ||
+            !expected.AsSpan().SequenceEqual(predecodedRegex) ||
+            !expected.AsSpan().SequenceEqual(predecodedCompiled))
+        {
+            throw new InvalidOperationException("Replace benchmark routes do not produce equivalent UTF-8 output.");
+        }
+
+        var fallbackOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaFallback(
+            context.InputBytes,
+            context.Replacement);
+        var fallbackCompiledLength = context.CompiledUtf8Regex.Inspection.DebugReplaceViaFallback(
+            context.InputBytes,
+            context.Replacement);
+        var nativeOrdinaryLength = context.Utf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
+            context.InputBytes,
+            context.Replacement);
+        var nativeCompiledLength = context.CompiledUtf8Regex.Inspection.DebugReplaceViaNativeTextOperations(
+            context.InputBytes,
+            context.Replacement);
+        if (fallbackOrdinaryLength != expected.Length ||
+            fallbackCompiledLength != expected.Length ||
+            (nativeOrdinaryLength >= 0 && nativeOrdinaryLength != expected.Length) ||
+            (nativeCompiledLength >= 0 && nativeCompiledLength != expected.Length))
+        {
+            throw new InvalidOperationException("Replace benchmark diagnostic routes do not produce equivalent UTF-8 output lengths.");
+        }
+    }
+
     private static int ExecuteUtf8(Utf8RegexBenchmarkContext context)
     {
         return context.BenchmarkCase.Operation switch
@@ -5595,7 +5662,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Match => context.Regex.Match(decoded).Index,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.Regex, decoded),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.Regex, decoded),
-            Utf8RegexBenchmarkOperation.Replace => context.Regex.Replace(decoded, context.Replacement).Length,
+            Utf8RegexBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex, decoded, context.Replacement),
             _ => 0,
         };
     }
@@ -5609,7 +5676,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Match => context.Regex.Match(context.InputString).Index,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.Regex, context.InputString),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.Regex, context.InputString),
-            Utf8RegexBenchmarkOperation.Replace => context.Regex.Replace(context.InputString, context.Replacement).Length,
+            Utf8RegexBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex, context.InputString, context.Replacement),
             _ => 0,
         };
     }
@@ -5624,7 +5691,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Match => context.CompiledRegex.Match(decoded).Index,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.CompiledRegex, decoded),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.CompiledRegex, decoded),
-            Utf8RegexBenchmarkOperation.Replace => context.CompiledRegex.Replace(decoded, context.Replacement).Length,
+            Utf8RegexBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(context.CompiledRegex, decoded, context.Replacement),
             _ => 0,
         };
     }
@@ -5638,7 +5705,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Match => context.CompiledRegex.Match(context.InputString).Index,
             Utf8RegexBenchmarkOperation.EnumerateMatches => SumRegexMatches(context.CompiledRegex, context.InputString),
             Utf8RegexBenchmarkOperation.EnumerateSplits => SumRegexSplits(context.CompiledRegex, context.InputString),
-            Utf8RegexBenchmarkOperation.Replace => context.CompiledRegex.Replace(context.InputString, context.Replacement).Length,
+            Utf8RegexBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(context.CompiledRegex, context.InputString, context.Replacement),
             _ => 0,
         };
     }

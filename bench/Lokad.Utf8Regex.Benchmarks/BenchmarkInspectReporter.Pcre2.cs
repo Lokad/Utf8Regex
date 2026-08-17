@@ -422,8 +422,8 @@ internal static partial class BenchmarkInspectReporter
             Measure("Pcre2ReplacementOnly", samples, iterations, () => context.Utf8Pcre2Regex.DebugEvaluateFirstReplacementOnly(context.InputBytes, context.Replacement, Pcre2SubstitutionOptions.None, 0));
             Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             Measure("Utf8Replace", samples, iterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length);
-            Measure("DecodeReplace", samples, iterations, () => context.Regex!.Replace(Encoding.UTF8.GetString(context.InputBytes), context.Replacement).Length);
-            Measure("PredecodedReplace", samples, iterations, () => context.Regex!.Replace(context.InputString, context.Replacement).Length);
+            Measure("DecodeReplace", samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, Encoding.UTF8.GetString(context.InputBytes), context.Replacement));
+            Measure("PredecodedReplace", samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, context.InputString, context.Replacement));
         }
 
         return 0;
@@ -1000,8 +1000,8 @@ internal static partial class BenchmarkInspectReporter
             var predecodedEnumerate = MeasureMicroseconds(samples, iterations, () => ExecuteUtf8Pcre2PredecodedEnumerateIndexSum(context));
             var pcre2Replace = MeasureMicroseconds(samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
             var utf8Replace = MeasureMicroseconds(samples, iterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length);
-            var decodeReplace = MeasureMicroseconds(samples, iterations, () => context.Regex!.Replace(Encoding.UTF8.GetString(context.InputBytes), context.Replacement).Length);
-            var predecodedReplace = MeasureMicroseconds(samples, iterations, () => context.Regex!.Replace(context.InputString, context.Replacement).Length);
+            var decodeReplace = MeasureMicroseconds(samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, Encoding.UTF8.GetString(context.InputBytes), context.Replacement));
+            var predecodedReplace = MeasureMicroseconds(samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, context.InputString, context.Replacement));
 
             Console.WriteLine(
                 $"| {caseId} | `{context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}` | {FormatLedgerValue(pcre2Count)} | {FormatLedgerValue(utf8Count)} | {FormatLedgerValue(decodeCount)} | {FormatLedgerValue(predecodedCount)} | {FormatLedgerValue(pcre2Enumerate)} | {FormatLedgerValue(utf8Enumerate)} | {FormatLedgerValue(decodeEnumerate)} | {FormatLedgerValue(predecodedEnumerate)} | {FormatLedgerValue(pcre2Replace)} | {FormatLedgerValue(utf8Replace)} | {FormatLedgerValue(decodeReplace)} | {FormatLedgerValue(predecodedReplace)} |");
@@ -1315,7 +1315,7 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(context.InputString) ? 1 : 0),
                 Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(context.InputString)),
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2PredecodedEnumerateIndexSum(context)),
-                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(context.InputString, context.Replacement).Length),
+                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, context.InputString, context.Replacement)),
                 _ => null,
             };
         }
@@ -1327,7 +1327,7 @@ internal static partial class BenchmarkInspectReporter
                 Utf8Pcre2BenchmarkOperation.IsMatch => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.IsMatch(Encoding.UTF8.GetString(context.InputBytes)) ? 1 : 0),
                 Utf8Pcre2BenchmarkOperation.Count => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Count(Encoding.UTF8.GetString(context.InputBytes))),
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => ExecuteUtf8Pcre2DecodeEnumerateIndexSum(context)),
-                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => context.Regex!.Replace(Encoding.UTF8.GetString(context.InputBytes), context.Replacement).Length),
+                Utf8Pcre2BenchmarkOperation.Replace => MeasurePcre2SnapshotMicroseconds(samples, effectiveIterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, Encoding.UTF8.GetString(context.InputBytes), context.Replacement)),
                 _ => null,
             };
         }

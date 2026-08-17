@@ -1618,10 +1618,11 @@ public sealed class Utf8Regex
 
     private int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
     {
-        return Encoding.UTF8.GetByteCount(
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        return Encoding.UTF8.GetBytes(
             _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
-                replacement));
+                replacement)).Length;
     }
 
     private int DebugReplaceViaNativeTextOperations(ReadOnlySpan<byte> input, string replacementText)

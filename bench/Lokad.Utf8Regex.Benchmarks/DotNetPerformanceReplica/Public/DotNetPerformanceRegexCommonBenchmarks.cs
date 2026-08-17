@@ -102,7 +102,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
     {
         return CaseId switch
         {
-            "replace-words" => regex.Replace(text, _replacement).Length,
+            "replace-words" => RegexBenchmarkResult.ReplaceUtf8Length(regex, text, _replacement),
             "split-words" => regex.Split(text).Length,
             "match-word" => MeasureMatch(regex.Match(text)),
             "backtracking" or "one-node-backtracking" or "email-match" or "email-miss" or "date-match" or "date-miss" or "ip-match" or "ip-miss" or "uri-match" or "uri-miss"

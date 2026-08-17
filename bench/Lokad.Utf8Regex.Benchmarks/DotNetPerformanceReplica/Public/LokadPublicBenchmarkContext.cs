@@ -390,7 +390,7 @@ internal sealed class LokadPublicBenchmarkContext
             LokadPublicBenchmarkOperation.Count => regex.Count(input),
             LokadPublicBenchmarkOperation.IsMatch => regex.IsMatch(input) ? 1 : 0,
             LokadPublicBenchmarkOperation.Match => MeasureMatch(regex.Match(input)),
-            LokadPublicBenchmarkOperation.Replace => regex.Replace(input, Replacement).Length,
+            LokadPublicBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(regex, input, Replacement),
             LokadPublicBenchmarkOperation.Split => CountRegexSplits(regex, input),
             _ => throw new ArgumentOutOfRangeException(),
         };
