@@ -4007,6 +4007,14 @@ internal static partial class BenchmarkInspectReporter
         {
             Measure("EmittedCount", iterations, () => emittedMatcher.Count(input));
         }
+        if (Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            program,
+            input,
+            Utf8ExecutionDeadline.Infinite,
+            out _))
+        {
+            Measure("VectorizedCount", iterations, () => ExecuteStructuralLinearVectorizedCount(program, input));
+        }
         Measure("StructuralCount", iterations, () => ExecuteStructuralLinearCount(program, input));
         Measure("FixedWidthIndexSum", iterations, () => ExecuteStructuralLinearFixedWidthIndexSum(program, input));
         Measure("RawStructuralCount", iterations, () => ExecuteStructuralLinearRawCount(program, input));
@@ -4016,6 +4024,89 @@ internal static partial class BenchmarkInspectReporter
         Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(input));
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, input));
         Measure("PublicIndexSum", iterations, () => ExecutePublicEnumeratorIndexSum(regex, input));
+        return 0;
+    }
+
+    public static int RunMeasureFixedWidthCountControls(
+        string? iterationsText,
+        string? samplesText)
+    {
+        var iterations = iterationsText is null ? 2_000 : ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+        var controls = new (string Name, string Pattern, string Input)[]
+        {
+            ("digit-dense", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 20_480)),
+            ("letter-dense", "x[A-Za-z]y", RepeatToLength("xAy-xzy-", 20_480)),
+            ("alphanumeric-dense", "u[A-Za-z0-9]v", RepeatToLength("uAv-u7v-", 20_480)),
+            ("word-dense", "m[A-Za-z0-9_]n", RepeatToLength("m_n-m9n-man-", 20_480)),
+            ("hex-dense", "q[0-9A-Fa-f]z", RepeatToLength("qAz-q8z-qfz-", 20_480)),
+            ("digit-false-candidates", "ab[0-9]d", RepeatToLength("abXd-ab-d-ab_d-", 20_480)),
+            ("digit-dense-prefix-long-gap", "ab[0-9]d", RepeatToLength("ab1d-ab7d-", 256) + new string('x', 20_224)),
+            ("digit-miss", "ab[0-9]d", new string('x', 20_480)),
+            ("digit-sparse", "ab[0-9]d", new string('x', 20_476) + "ab7d"),
+            ("digit-short", "ab[0-9]d", "ab1d-ab2d"),
+        };
+
+        WriteMeasurementEnvironment();
+        Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
+        foreach (var control in controls)
+        {
+            var input = Encoding.UTF8.GetBytes(control.Input);
+            var analysis = Utf8FrontEnd.Compile(control.Pattern, RegexOptions.CultureInvariant);
+            var ordinary = new Utf8Regex(control.Pattern, RegexOptions.CultureInvariant);
+            var compiled = new Utf8Regex(
+                control.Pattern,
+                RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            var regex = new Regex(
+                control.Pattern,
+                RegexOptions.CultureInvariant,
+                Regex.InfiniteMatchTimeout);
+            var compiledRegex = new Regex(
+                control.Pattern,
+                RegexOptions.CultureInvariant | RegexOptions.Compiled,
+                Regex.InfiniteMatchTimeout);
+            var expected = regex.Count(control.Input);
+            var vectorEligible = Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+                analysis.StructuralLinearProgram,
+                input,
+                Utf8ExecutionDeadline.Infinite,
+                out var vectorCount);
+            if (ordinary.Count(input) != expected ||
+                compiled.Count(input) != expected ||
+                (vectorEligible && vectorCount != expected))
+            {
+                throw new InvalidOperationException($"Fixed-width Count control '{control.Name}' is not equivalent.");
+            }
+
+            var effectiveIterations = input.Length <= 128
+                ? Math.Max(iterations, 20_000)
+                : iterations;
+            Console.WriteLine();
+            Console.WriteLine($"Case              : {control.Name}");
+            Console.WriteLine($"Pattern           : {control.Pattern}");
+            Console.WriteLine($"InputBytes        : {input.Length}");
+            Console.WriteLine($"ExpectedCount     : {expected}");
+            Console.WriteLine($"VectorEligible    : {vectorEligible}");
+            Console.WriteLine($"EffectiveIterations: {effectiveIterations}");
+            if (vectorEligible)
+            {
+                Measure("VectorizedCount", samples, effectiveIterations, () =>
+                    ExecuteStructuralLinearVectorizedCount(analysis.StructuralLinearProgram, input));
+            }
+            Measure("ScalarCount", samples, effectiveIterations, () =>
+                ExecuteStructuralLinearCount(analysis.StructuralLinearProgram, input));
+            Measure("Ordinary", samples, effectiveIterations, () => ordinary.Count(input));
+            Measure("Compiled", samples, effectiveIterations, () => compiled.Count(input));
+            Measure("DecodeThenRegex", samples, effectiveIterations, () => regex.Count(Encoding.UTF8.GetString(input)));
+            Measure("DecodeThenCompiledRegex", samples, effectiveIterations, () => compiledRegex.Count(Encoding.UTF8.GetString(input)));
+            Measure("PredecodedRegex", samples, effectiveIterations, () => regex.Count(control.Input));
+            Measure("PredecodedCompiledRegex", samples, effectiveIterations, () => compiledRegex.Count(control.Input));
+            Console.WriteLine(
+                $"Warm allocation   : ordinary={MeasureAllocatedBytesPerInvocation(Math.Min(effectiveIterations, 1_000), () => ordinary.Count(input))} B, " +
+                $"compiled={MeasureAllocatedBytesPerInvocation(Math.Min(effectiveIterations, 1_000), () => compiled.Count(input))} B");
+        }
+
         return 0;
     }
 
@@ -7096,6 +7187,17 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecuteStructuralLinearCount(Utf8StructuralLinearProgram program, byte[] input)
     {
         return Utf8AsciiInstructionLinearExecutor.CountDeterministic(program, input, budget: Utf8ExecutionDeadline.Infinite);
+    }
+
+    private static int ExecuteStructuralLinearVectorizedCount(Utf8StructuralLinearProgram program, byte[] input)
+    {
+        return Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+            program,
+            input,
+            Utf8ExecutionDeadline.Infinite,
+            out var count)
+                ? count
+                : 0;
     }
 
     private static int ExecuteStructuralLinearFixedWidthIndexSum(Utf8StructuralLinearProgram program, byte[] input)
