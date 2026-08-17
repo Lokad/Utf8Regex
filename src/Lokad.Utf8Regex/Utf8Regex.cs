@@ -1123,7 +1123,8 @@ public sealed class Utf8Regex
         }
 
         var subject = Utf8ValidatedInput.Create(input);
-        var start = subject.GetBytePosition(0, "startOffsetInBytes");
+        var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
+        var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
         return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
