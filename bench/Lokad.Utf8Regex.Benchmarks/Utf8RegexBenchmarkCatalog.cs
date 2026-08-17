@@ -838,6 +838,16 @@ internal static class Utf8RegexBenchmarkCatalog
             expectedSupport: "Native",
             notes: "Dense BMP UTF-8 literal split on the native literal path."),
         new(
+            "split_utf8_literal_short",
+            "Split",
+            Utf8RegexBenchmarkOperation.EnumerateSplits,
+            "café",
+            "left café right café",
+            RegexOptions.CultureInvariant,
+            replacement: null,
+            expectedSupport: "Native",
+            notes: "Short BMP UTF-8 literal split control for native setup costs."),
+        new(
             "split_utf8_emoji_dense",
             "Split",
             Utf8RegexBenchmarkOperation.EnumerateSplits,
