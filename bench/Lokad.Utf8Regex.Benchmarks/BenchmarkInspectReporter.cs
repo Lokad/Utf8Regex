@@ -276,11 +276,69 @@ internal static partial class BenchmarkInspectReporter
                 throw new InvalidOperationException("Direct literal-family Match diagnostic is not equivalent to the public result.");
             }
 
+            var confirmedMatch = ExecuteConfirmedLiteralFamilySearch(context.Utf8Regex, context.InputBytes);
+            var compiledConfirmedMatch = ExecuteConfirmedLiteralFamilySearch(context.CompiledUtf8Regex, context.InputBytes);
+            var shortCircuitConfirmedMatch = ExecuteShortCircuitBoundaryFamilySearch(context.Utf8Regex, context.InputBytes);
+            var literalBoundaryWordKinds = CreateLiteralBoundaryWordKinds(
+                context.Utf8Regex.Inspection.SearchPlan.AlternateLiteralsUtf8);
+            var literalEdgeConfirmedMatch = ExecuteLiteralEdgeBoundaryFamilySearch(
+                context.Utf8Regex,
+                context.InputBytes,
+                literalBoundaryWordKinds);
+            if (context.Utf8Regex.Inspection.SearchPlan.HasBoundaryRequirements &&
+                (confirmedMatch.Index != shortCircuitConfirmedMatch.Index ||
+                 confirmedMatch.Length != shortCircuitConfirmedMatch.Length ||
+                 confirmedMatch.LiteralId != shortCircuitConfirmedMatch.LiteralId ||
+                 confirmedMatch.Index != literalEdgeConfirmedMatch.Index ||
+                 confirmedMatch.Length != literalEdgeConfirmedMatch.Length ||
+                 confirmedMatch.LiteralId != literalEdgeConfirmedMatch.LiteralId))
+            {
+                throw new InvalidOperationException("Boundary confirmation diagnostics are not equivalent.");
+            }
+            var rawCandidateCount = CountRawLiteralFamilyCandidatesThrough(
+                context.Utf8Regex,
+                context.InputBytes,
+                confirmedMatch);
+            Console.WriteLine($"RawCandidatesThroughMatch: {rawCandidateCount:N0}");
+
             MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
             {
                 Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
                 return context.InputBytes.Length;
             });
+            MeasureUtf8CaseLane("RawFamilyCandidatesThroughMatch", samples, iterations, () =>
+                CountRawLiteralFamilyCandidatesThrough(context.Utf8Regex, context.InputBytes, confirmedMatch));
+            MeasureUtf8CaseLane("ConfirmedFamilySearchOnly", samples, iterations, () =>
+                EncodePreparedSearchMatch(ExecuteConfirmedLiteralFamilySearch(context.Utf8Regex, context.InputBytes)));
+            MeasureUtf8CaseLane("CompiledConfirmedFamilySearchOnly", samples, iterations, () =>
+                EncodePreparedSearchMatch(ExecuteConfirmedLiteralFamilySearch(context.CompiledUtf8Regex, context.InputBytes)));
+            if (context.Utf8Regex.Inspection.SearchPlan.HasBoundaryRequirements &&
+                !context.Utf8Regex.Inspection.SearchPlan.HasAlternateLiteralPrefixOverlap &&
+                !context.Utf8Regex.Inspection.SearchPlan.HasAlternateLiteralProperStartOverlap)
+            {
+                MeasureUtf8CaseLane("ShortCircuitBoundarySearchOnly", samples, iterations, () =>
+                    EncodePreparedSearchMatch(ExecuteShortCircuitBoundaryFamilySearch(context.Utf8Regex, context.InputBytes)));
+                MeasureUtf8CaseLane("CompiledShortCircuitBoundarySearchOnly", samples, iterations, () =>
+                    EncodePreparedSearchMatch(ExecuteShortCircuitBoundaryFamilySearch(context.CompiledUtf8Regex, context.InputBytes)));
+                MeasureUtf8CaseLane("LiteralEdgeBoundarySearchOnly", samples, iterations, () =>
+                    EncodePreparedSearchMatch(ExecuteLiteralEdgeBoundaryFamilySearch(
+                        context.Utf8Regex,
+                        context.InputBytes,
+                        literalBoundaryWordKinds)));
+                MeasureUtf8CaseLane("CompiledLiteralEdgeBoundarySearchOnly", samples, iterations, () =>
+                    EncodePreparedSearchMatch(ExecuteLiteralEdgeBoundaryFamilySearch(
+                        context.CompiledUtf8Regex,
+                        context.InputBytes,
+                        literalBoundaryWordKinds)));
+                MeasureUtf8CaseLane("Utf8IsMatchControl", samples, iterations, () =>
+                    context.Utf8Regex.IsMatch(context.InputBytes) ? 1 : 0);
+                MeasureUtf8CaseLane("CompiledUtf8IsMatchControl", samples, iterations, () =>
+                    context.CompiledUtf8Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            }
+            MeasureUtf8CaseLane("FamilyProjectionOnly", samples, iterations, () =>
+                EncodeValueMatch(ProjectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes, confirmedMatch)));
+            MeasureUtf8CaseLane("CompiledFamilyProjectionOnly", samples, iterations, () =>
+                EncodeValueMatch(ProjectLiteralFamilyMatch(context.CompiledUtf8Regex, context.InputBytes, compiledConfirmedMatch)));
             MeasureUtf8CaseLane("DirectEnumerationFamilyMatchOnly", samples, iterations, () =>
                 EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes)));
             MeasureUtf8CaseLane("CompiledDirectEnumerationFamilyMatchOnly", samples, iterations, () =>
@@ -5732,6 +5790,271 @@ internal static partial class BenchmarkInspectReporter
             plan.AlternateLiteralUtf16Lengths,
             Utf8ExecutionDeadline.Infinite,
             (regex.Options & RegexOptions.RightToLeft) != 0);
+    }
+
+    private static PreparedSearchMatch ExecuteConfirmedLiteralFamilySearch(Utf8Regex regex, ReadOnlySpan<byte> input)
+    {
+        var plan = regex.Inspection.SearchPlan;
+        var program = plan.EnumerationOperation;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
+            in plan,
+            in program,
+            input,
+            ref state,
+            Utf8ExecutionDeadline.Infinite,
+            out var match)
+                ? match
+                : default;
+    }
+
+    private static int CountRawLiteralFamilyCandidatesThrough(
+        Utf8Regex regex,
+        ReadOnlySpan<byte> input,
+        PreparedSearchMatch terminalMatch)
+    {
+        var searcher = regex.Inspection.SearchPlan.PreparedSearcher;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var count = 0;
+        while (searcher.TryFindNextNonOverlappingMatch(input, ref state, out var match))
+        {
+            count++;
+            if (match.Index == terminalMatch.Index &&
+                match.Length == terminalMatch.Length &&
+                match.LiteralId == terminalMatch.LiteralId)
+            {
+                return count;
+            }
+        }
+
+        return -count;
+    }
+
+    private static PreparedSearchMatch ExecuteShortCircuitBoundaryFamilySearch(
+        Utf8Regex regex,
+        ReadOnlySpan<byte> input)
+    {
+        var plan = regex.Inspection.SearchPlan;
+        if (plan.HasAlternateLiteralPrefixOverlap || plan.HasAlternateLiteralProperStartOverlap)
+        {
+            return default;
+        }
+
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out var match))
+        {
+            if (MatchesBoundaryRequirementsShortCircuit(in plan, input, match.Index, match.Length))
+            {
+                return match;
+            }
+        }
+
+        return default;
+    }
+
+    private static bool MatchesBoundaryRequirementsShortCircuit(
+        in Utf8SearchPlan plan,
+        ReadOnlySpan<byte> input,
+        int startIndex,
+        int literalLength)
+    {
+        if (!MatchesBoundaryRequirementShortCircuit(plan.LeadingBoundary, input, startIndex))
+        {
+            return false;
+        }
+
+        var endIndex = startIndex + literalLength;
+        return (plan.TrailingLiteralUtf8 is null || input[endIndex..].StartsWith(plan.TrailingLiteralUtf8)) &&
+            MatchesBoundaryRequirementShortCircuit(plan.TrailingBoundary, input, endIndex);
+    }
+
+    private static bool MatchesBoundaryRequirementShortCircuit(
+        Utf8BoundaryRequirement requirement,
+        ReadOnlySpan<byte> input,
+        int byteOffset)
+    {
+        if (requirement == Utf8BoundaryRequirement.None)
+        {
+            return true;
+        }
+
+        var isBoundary = DotNetUtf8WordBoundary.TryGetAsciiBoundary(input, byteOffset, out var asciiBoundary)
+            ? asciiBoundary
+            : DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
+        return requirement == Utf8BoundaryRequirement.Boundary
+            ? isBoundary
+            : requirement == Utf8BoundaryRequirement.NonBoundary && !isBoundary;
+    }
+
+    private static byte[] CreateLiteralBoundaryWordKinds(byte[][]? literals)
+    {
+        if (literals is not { Length: > 0 })
+        {
+            return [];
+        }
+
+        var kinds = new byte[literals.Length];
+        for (var i = 0; i < literals.Length; i++)
+        {
+            var literal = literals[i];
+            var hasFirst = Utf8ScalarNeighbors.TryGetNext(literal, 0, out var first);
+            var hasLast = Utf8ScalarNeighbors.TryGetPrevious(literal, literal.Length, out var last);
+            if (hasFirst && IsBoundaryWordRune(first))
+            {
+                kinds[i] |= 1;
+            }
+
+            if (hasLast && IsBoundaryWordRune(last))
+            {
+                kinds[i] |= 2;
+            }
+        }
+
+        return kinds;
+    }
+
+    private static PreparedSearchMatch ExecuteLiteralEdgeBoundaryFamilySearch(
+        Utf8Regex regex,
+        ReadOnlySpan<byte> input,
+        byte[] literalBoundaryWordKinds)
+    {
+        var plan = regex.Inspection.SearchPlan;
+        if (plan.HasAlternateLiteralPrefixOverlap || plan.HasAlternateLiteralProperStartOverlap)
+        {
+            return default;
+        }
+
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (plan.PreparedSearcher.TryFindNextNonOverlappingMatch(input, ref state, out var match))
+        {
+            if ((uint)match.LiteralId < (uint)literalBoundaryWordKinds.Length &&
+                MatchesBoundaryRequirementsWithLiteralEdges(
+                    in plan,
+                    input,
+                    match.Index,
+                    match.Length,
+                    literalBoundaryWordKinds[match.LiteralId]))
+            {
+                return match;
+            }
+        }
+
+        return default;
+    }
+
+    private static bool MatchesBoundaryRequirementsWithLiteralEdges(
+        in Utf8SearchPlan plan,
+        ReadOnlySpan<byte> input,
+        int startIndex,
+        int literalLength,
+        byte literalBoundaryWordKind)
+    {
+        var firstIsWord = (literalBoundaryWordKind & 1) != 0;
+        if (!MatchesKnownNextBoundaryRequirement(plan.LeadingBoundary, input, startIndex, firstIsWord))
+        {
+            return false;
+        }
+
+        var endIndex = startIndex + literalLength;
+        if (plan.TrailingLiteralUtf8 is not null && !input[endIndex..].StartsWith(plan.TrailingLiteralUtf8))
+        {
+            return false;
+        }
+
+        var lastIsWord = (literalBoundaryWordKind & 2) != 0;
+        return MatchesKnownPreviousBoundaryRequirement(plan.TrailingBoundary, input, endIndex, lastIsWord);
+    }
+
+    private static bool MatchesKnownNextBoundaryRequirement(
+        Utf8BoundaryRequirement requirement,
+        ReadOnlySpan<byte> input,
+        int byteOffset,
+        bool nextIsWord)
+    {
+        if (requirement == Utf8BoundaryRequirement.None)
+        {
+            return true;
+        }
+
+        var previousIsWord = IsPreviousBoundaryWord(input, byteOffset);
+        return MatchesBoundaryRequirement(requirement, previousIsWord != nextIsWord);
+    }
+
+    private static bool MatchesKnownPreviousBoundaryRequirement(
+        Utf8BoundaryRequirement requirement,
+        ReadOnlySpan<byte> input,
+        int byteOffset,
+        bool previousIsWord)
+    {
+        if (requirement == Utf8BoundaryRequirement.None)
+        {
+            return true;
+        }
+
+        var nextIsWord = IsNextBoundaryWord(input, byteOffset);
+        return MatchesBoundaryRequirement(requirement, previousIsWord != nextIsWord);
+    }
+
+    private static bool IsPreviousBoundaryWord(ReadOnlySpan<byte> input, int byteOffset)
+    {
+        if (byteOffset == 0)
+        {
+            return false;
+        }
+
+        var previousByte = input[byteOffset - 1];
+        return previousByte < 0x80
+            ? Utf8AsciiBytePredicates.IsWord(previousByte)
+            : Utf8ScalarNeighbors.TryGetPrevious(input, byteOffset, out var previous) &&
+              IsBoundaryWordRune(previous);
+    }
+
+    private static bool IsNextBoundaryWord(ReadOnlySpan<byte> input, int byteOffset)
+    {
+        if (byteOffset == input.Length)
+        {
+            return false;
+        }
+
+        var nextByte = input[byteOffset];
+        return nextByte < 0x80
+            ? Utf8AsciiBytePredicates.IsWord(nextByte)
+            : Utf8ScalarNeighbors.TryGetNext(input, byteOffset, out var next) &&
+              IsBoundaryWordRune(next);
+    }
+
+    private static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, bool isBoundary)
+    {
+        return requirement == Utf8BoundaryRequirement.Boundary
+            ? isBoundary
+            : requirement == Utf8BoundaryRequirement.NonBoundary && !isBoundary;
+    }
+
+    private static bool IsBoundaryWordRune(Rune value)
+    {
+        return value.IsBmp && RegexCharClass.IsBoundaryWordChar((char)value.Value);
+    }
+
+    private static Utf8ValueMatch ProjectLiteralFamilyMatch(
+        Utf8Regex regex,
+        ReadOnlySpan<byte> input,
+        PreparedSearchMatch match)
+    {
+        var plan = regex.Inspection.SearchPlan;
+        return Utf8BackendInstructionExecutor.ProjectLiteralFamilyMatch(
+            plan.EnumerationOperation,
+            input,
+            plan.AlternateLiteralUtf16Lengths,
+            consumedBytes: 0,
+            consumedUtf16: 0,
+            in match,
+            out _,
+            out _);
+    }
+
+    private static int EncodePreparedSearchMatch(PreparedSearchMatch match)
+    {
+        return HashCode.Combine(match.Index, match.Length, match.LiteralId);
     }
 
     private static bool MatchesExactly(Utf8ValueMatch left, Utf8ValueMatch right)

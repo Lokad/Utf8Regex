@@ -49,6 +49,14 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             @"\b(?:a-b|b|niño)\b",
             "xa-b a-b b niño"
         },
+        {
+            @"\b(?:-a|a-|𐐀|café)\b",
+            "-a a- x-a a-x 𐐀 x𐐀x café xcafé caféx"
+        },
+        {
+            @"\B(?:-a|a-|𐐀|café)\B",
+            "-a a- x-a a-x 𐐀 x𐐀x café xcafé caféx"
+        },
     };
 
     [Theory]
