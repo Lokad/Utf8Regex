@@ -74,6 +74,7 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8VerifierRuntime verifierRuntime,
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
+        int totalUtf16Length,
         int count,
         Utf8ExecutionDeadline budget)
     {
@@ -89,10 +90,10 @@ internal static class Utf8CompiledOperationCursorFactory
                     literal,
                     regexPlan.ExecutionKind,
                     count,
-                    boundaryMap: null,
+                    totalUtf16Length,
                     budget),
             NativeExecutionKind.ExactUtf8Literals
-                => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, budget),
+                => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, totalUtf16Length, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, regexPlan.ExecutionKind, budget),
             NativeExecutionKind.AsciiSimplePattern when

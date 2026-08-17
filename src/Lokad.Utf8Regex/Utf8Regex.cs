@@ -1185,12 +1185,16 @@ public sealed class Utf8Regex
         }
 
         var budget = CreateExecutionBudget();
-        var validation = TryUseAsciiInputValidationShortcut(input)
+        var usesAsciiValidationShortcut = TryUseAsciiInputValidationShortcut(input);
+        var validation = usesAsciiValidationShortcut
             ? default
             : Utf8Validation.Validate(input);
+        var totalUtf16Length = usesAsciiValidationShortcut
+            ? input.Length
+            : validation.Utf16Length;
         if (count > 0 && CanUseNativeSplit(validation))
         {
-            return CreateSplitEnumeratorViaCompiledEngine(input, validation, count, budget)
+            return CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count, budget)
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
@@ -1579,11 +1583,15 @@ public sealed class Utf8Regex
 
     private int DebugCountSplitsViaCompiledEngine(ReadOnlySpan<byte> input, int count)
     {
-        var validation = TryUseAsciiInputValidationShortcut(input)
+        var usesAsciiValidationShortcut = TryUseAsciiInputValidationShortcut(input);
+        var validation = usesAsciiValidationShortcut
             ? default
             : Utf8Validation.Validate(input);
+        var totalUtf16Length = usesAsciiValidationShortcut
+            ? input.Length
+            : validation.Utf16Length;
         var budget = CreateExecutionBudget();
-        var enumerator = CreateSplitEnumeratorViaCompiledEngine(input, validation, count, budget);
+        var enumerator = CreateSplitEnumeratorViaCompiledEngine(input, validation, totalUtf16Length, count, budget);
         var splitCount = 0;
         foreach (var _ in enumerator)
         {
@@ -2531,7 +2539,12 @@ public sealed class Utf8Regex
             budget);
     }
 
-    private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline budget)
+    private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
+        ReadOnlySpan<byte> input,
+        Utf8ValidationResult validation,
+        int totalUtf16Length,
+        int count,
+        Utf8ExecutionDeadline budget)
     {
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
@@ -2544,6 +2557,7 @@ public sealed class Utf8Regex
             _verifierRuntime,
             input,
             validation,
+            totalUtf16Length,
             count,
             budget);
     }

@@ -53,31 +53,14 @@ public ref struct Utf8ValueSplitEnumerator
         byte[] literal,
         NativeExecutionKind executionKind,
         int count,
+        int totalUtf16Length,
         Utf8ExecutionDeadline budget)
         : this(
             input,
             CreateLiteralCursor(input, searchPlan, literal, executionKind, budget),
             count,
             executionKind == NativeExecutionKind.ExactUtf8Literal
-                ? Utf8Validation.Validate(input).Utf16Length
-                : input.Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        byte[] literal,
-        NativeExecutionKind executionKind,
-        int count,
-        Utf8BoundaryMap? boundaryMap,
-        Utf8ExecutionDeadline budget)
-        : this(
-            input,
-            CreateLiteralCursor(input, searchPlan, literal, executionKind, budget),
-            count,
-            executionKind == NativeExecutionKind.ExactUtf8Literal
-                ? boundaryMap?.Utf16Length ?? Utf8Validation.Validate(input).Utf16Length
+                ? totalUtf16Length
                 : input.Length)
     {
     }
@@ -86,8 +69,9 @@ public ref struct Utf8ValueSplitEnumerator
         ReadOnlySpan<byte> input,
         Utf8SearchPlan searchPlan,
         int count,
+        int totalUtf16Length,
         Utf8ExecutionDeadline budget)
-        : this(input, new Utf8OperationMatchCursor(input, searchPlan, budget), count, Utf8Validation.Validate(input).Utf16Length)
+        : this(input, new Utf8OperationMatchCursor(input, searchPlan, budget), count, totalUtf16Length)
     {
     }
 

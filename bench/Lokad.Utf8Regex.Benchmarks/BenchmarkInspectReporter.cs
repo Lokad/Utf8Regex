@@ -496,13 +496,28 @@ internal static partial class BenchmarkInspectReporter
             context.Utf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
         MeasureUtf8CaseLane("FallbackCountCompiled", samples, iterations, () =>
             context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
+        MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
+            ExecuteValidationOnly(context.InputBytes));
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
+        MeasureUtf8CaseLane("LegacyDuplicateValidationOrdinary", samples, iterations, () =>
+            ExecuteUtf8AfterDuplicateValidation(context, compiled: false));
+        MeasureUtf8CaseLane("LegacyDuplicateValidationCompiled", samples, iterations, () =>
+            ExecuteUtf8AfterDuplicateValidation(context, compiled: true));
         MeasureUtf8CaseLane("DecodeThenRegex", samples, iterations, () => ExecuteDecodeThenRegex(context));
         MeasureUtf8CaseLane("DecodeThenCompiled", samples, iterations, () => ExecuteDecodeThenCompiledRegex(context));
         MeasureUtf8CaseLane("PredecodedRegex", samples, iterations, () => ExecutePredecodedRegex(context));
         MeasureUtf8CaseLane("PredecodedCompiled", samples, iterations, () => ExecutePredecodedCompiledRegex(context));
         return 0;
+    }
+
+    private static int ExecuteUtf8AfterDuplicateValidation(Utf8RegexBenchmarkContext context, bool compiled)
+    {
+        var utf16Length = Utf8Validation.Validate(context.InputBytes).Utf16Length;
+        var result = compiled
+            ? ExecuteUtf8Compiled(context)
+            : ExecuteUtf8(context);
+        return utf16Length ^ result;
     }
 
     public static int RunMeasureReplicaCase(string caseId, string? iterationsText)
