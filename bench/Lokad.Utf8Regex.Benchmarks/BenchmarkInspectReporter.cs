@@ -498,6 +498,12 @@ internal static partial class BenchmarkInspectReporter
             context.CompiledUtf8Regex.Inspection.DebugCountSplitsViaFallback(context.InputBytes));
         MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
             ExecuteValidationOnly(context.InputBytes));
+        if (context.Utf8Regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } literal)
+        {
+            MeasureUtf8CaseLane("PatternLiteralValidationOnly", samples, iterations, () =>
+                ExecuteValidationOnly(literal));
+        }
+
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
         MeasureUtf8CaseLane("LegacyDuplicateValidationOrdinary", samples, iterations, () =>
