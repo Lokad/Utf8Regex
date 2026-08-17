@@ -684,6 +684,44 @@ internal static partial class BenchmarkInspectReporter
 
         MeasureUtf8CaseLane("Utf8Regex", samples, iterations, () => ExecuteUtf8(context));
         MeasureUtf8CaseLane("Utf8Compiled", samples, iterations, () => ExecuteUtf8Compiled(context));
+        MeasureUtf8CaseLane("Utf8ManualOrdinary", samples, iterations, () =>
+            SumUtf8SplitsManual(context.Utf8Regex, context.InputBytes));
+        MeasureUtf8CaseLane("Utf8ManualCompiled", samples, iterations, () =>
+            SumUtf8SplitsManual(context.CompiledUtf8Regex, context.InputBytes));
+        if (context.Utf8Regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } splitLiteral &&
+            context.Utf8Regex.Inspection.SearchPlan.LiteralSearch is { } splitLiteralSearch)
+        {
+            var literalUtf16Length = Utf8Validation.Validate(splitLiteral).Utf16Length;
+            var currentProjection = ExecuteExactUtf8LiteralDirectIncrementalIndexSum(
+                splitLiteralSearch,
+                splitLiteral,
+                context.InputBytes,
+                literalUtf16Length);
+            var trustedProjection = ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(
+                splitLiteralSearch,
+                splitLiteral,
+                context.InputBytes,
+                literalUtf16Length);
+            if (currentProjection != trustedProjection)
+            {
+                throw new InvalidOperationException("Trusted-valid UTF-16 projection disagrees with current incremental projection.");
+            }
+
+            MeasureUtf8CaseLane("SearchOnlyCount", samples, iterations, () =>
+                ExecutePreparedSubstringCount(splitLiteralSearch, context.InputBytes));
+            MeasureUtf8CaseLane("CurrentIncrementalIndexSum", samples, iterations, () =>
+                ExecuteExactUtf8LiteralDirectIncrementalIndexSum(
+                    splitLiteralSearch,
+                    splitLiteral,
+                    context.InputBytes,
+                    literalUtf16Length));
+            MeasureUtf8CaseLane("TrustedIncrementalIndexSum", samples, iterations, () =>
+                ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(
+                    splitLiteralSearch,
+                    splitLiteral,
+                    context.InputBytes,
+                    literalUtf16Length));
+        }
         MeasureUtf8CaseLane("LegacyDuplicateValidationOrdinary", samples, iterations, () =>
             ExecuteUtf8AfterDuplicateValidation(context, compiled: false));
         MeasureUtf8CaseLane("LegacyDuplicateValidationCompiled", samples, iterations, () =>
@@ -7150,6 +7188,18 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
+    private static int SumUtf8SplitsManual(Utf8Regex regex, byte[] input)
+    {
+        var sum = 0;
+        var enumerator = regex.EnumerateSplits(input);
+        while (enumerator.MoveNext())
+        {
+            sum += enumerator.Current.LengthInUtf16;
+        }
+
+        return sum;
+    }
+
     private static int SumRegexMatches(Regex regex, string input)
     {
         var sum = 0;
@@ -7448,6 +7498,63 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return sum;
+    }
+
+    private static int ExecuteExactUtf8LiteralTrustedIncrementalIndexSum(PreparedSubstringSearch search, byte[] literal, byte[] input, int literalUtf16Length)
+    {
+        var sum = 0;
+        var span = input.AsSpan();
+        var remaining = span;
+        var consumedBytes = 0;
+        var consumedUtf16 = 0;
+        while (consumedBytes <= span.Length - literal.Length)
+        {
+            var found = search.IndexOf(remaining);
+            if (found < 0)
+            {
+                return sum;
+            }
+
+            var relativeUtf16Index = found == 0 ? 0 : GetTrustedUtf16Length(remaining[..found]);
+            sum += consumedUtf16 + relativeUtf16Index;
+            var advance = found + literal.Length;
+            remaining = remaining[advance..];
+            consumedBytes += advance;
+            consumedUtf16 += relativeUtf16Index + literalUtf16Length;
+        }
+
+        return sum;
+    }
+
+    private static int GetTrustedUtf16Length(ReadOnlySpan<byte> input)
+    {
+        var utf16Length = 0;
+        for (var index = 0; index < input.Length;)
+        {
+            var leadingByte = input[index];
+            if (leadingByte < 0x80)
+            {
+                index++;
+                utf16Length++;
+            }
+            else if (leadingByte < 0xE0)
+            {
+                index += 2;
+                utf16Length++;
+            }
+            else if (leadingByte < 0xF0)
+            {
+                index += 3;
+                utf16Length++;
+            }
+            else
+            {
+                index += 4;
+                utf16Length += 2;
+            }
+        }
+
+        return utf16Length;
     }
 
     private static int ExecuteExactUtf8LiteralFamilySearchCount(Utf8SearchPlan plan, byte[] input)
