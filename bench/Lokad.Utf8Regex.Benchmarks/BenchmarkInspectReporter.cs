@@ -263,6 +263,40 @@ internal static partial class BenchmarkInspectReporter
             }
         }
 
+        if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Match &&
+            context.Utf8Regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
+        {
+            var directMatch = ExecuteDirectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes);
+            var compiledDirectMatch = ExecuteDirectLiteralFamilyMatch(context.CompiledUtf8Regex, context.InputBytes);
+            var publicMatch = context.Utf8Regex.Match(context.InputBytes);
+            var compiledPublicMatch = context.CompiledUtf8Regex.Match(context.InputBytes);
+            if (!MatchesExactly(publicMatch, directMatch) ||
+                !MatchesExactly(compiledPublicMatch, compiledDirectMatch))
+            {
+                throw new InvalidOperationException("Direct literal-family Match diagnostic is not equivalent to the public result.");
+            }
+
+            MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return context.InputBytes.Length;
+            });
+            MeasureUtf8CaseLane("DirectEnumerationFamilyMatchOnly", samples, iterations, () =>
+                EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes)));
+            MeasureUtf8CaseLane("CompiledDirectEnumerationFamilyMatchOnly", samples, iterations, () =>
+                EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.CompiledUtf8Regex, context.InputBytes)));
+            MeasureUtf8CaseLane("ValidationPlusDirectEnumerationFamilyMatch", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.Utf8Regex, context.InputBytes));
+            });
+            MeasureUtf8CaseLane("CompiledValidationPlusDirectEnumerationFamilyMatch", samples, iterations, () =>
+            {
+                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
+                return EncodeValueMatch(ExecuteDirectLiteralFamilyMatch(context.CompiledUtf8Regex, context.InputBytes));
+            });
+        }
+
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
         {
             EnsureEquivalentReplaceResults(context);
@@ -5686,6 +5720,40 @@ internal static partial class BenchmarkInspectReporter
             ? 0
             : Utf8Validation.Validate(input.AsSpan(0, matchByteIndex)).Utf16Length;
         return matchByteIndex ^ matchByteLength ^ matchUtf16Index ^ matchUtf16Length;
+    }
+
+    private static Utf8ValueMatch ExecuteDirectLiteralFamilyMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
+    {
+        var plan = regex.Inspection.SearchPlan;
+        return Utf8BackendInstructionExecutor.MatchLiteralFamily(
+            plan,
+            plan.EnumerationOperation,
+            input,
+            plan.AlternateLiteralUtf16Lengths,
+            Utf8ExecutionDeadline.Infinite,
+            (regex.Options & RegexOptions.RightToLeft) != 0);
+    }
+
+    private static bool MatchesExactly(Utf8ValueMatch left, Utf8ValueMatch right)
+    {
+        return left.Success == right.Success &&
+            left.IsByteAligned == right.IsByteAligned &&
+            left.IndexInUtf16 == right.IndexInUtf16 &&
+            left.LengthInUtf16 == right.LengthInUtf16 &&
+            left.IndexInBytes == right.IndexInBytes &&
+            left.LengthInBytes == right.LengthInBytes;
+    }
+
+    private static int EncodeValueMatch(Utf8ValueMatch match)
+    {
+        return match.Success
+            ? HashCode.Combine(
+                match.IsByteAligned,
+                match.IndexInUtf16,
+                match.LengthInUtf16,
+                match.IndexInBytes,
+                match.LengthInBytes)
+            : 0;
     }
 
     private static void MeasureUtf8CaseLane(string label, int samples, int iterations, Func<int> action)
