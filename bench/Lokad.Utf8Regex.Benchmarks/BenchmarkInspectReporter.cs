@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -280,6 +281,22 @@ internal static partial class BenchmarkInspectReporter
                 ExecuteValidatedAsciiDirectEnumeration(context.Regex, context.InputBytes));
             MeasureUtf8CaseLane("ValidatedAsciiDirectCompiled", samples, iterations, () =>
                 ExecuteValidatedAsciiDirectEnumeration(context.CompiledRegex, context.InputBytes));
+        }
+        else if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.EnumerateMatches &&
+                 (benchmarkCase.Options & RegexOptions.RightToLeft) != 0)
+        {
+            var expectedCoordinates = SumUtf8MatchCoordinates(context.Utf8Regex, context.InputBytes);
+            var ordinaryCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes);
+            var compiledCoordinates = ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes);
+            if (ordinaryCoordinates != expectedCoordinates || compiledCoordinates != expectedCoordinates)
+            {
+                throw new InvalidOperationException("Reverse-projection diagnostics do not preserve UTF-8 match coordinates.");
+            }
+
+            MeasureUtf8CaseLane("ValidatedReverseProjectionOrdinary", samples, iterations, () =>
+                ExecuteValidatedReverseProjectionEnumeration(context.Regex, context.InputBytes));
+            MeasureUtf8CaseLane("ValidatedReverseProjectionCompiled", samples, iterations, () =>
+                ExecuteValidatedReverseProjectionEnumeration(context.CompiledRegex, context.InputBytes));
         }
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.Replace)
@@ -6884,6 +6901,119 @@ internal static partial class BenchmarkInspectReporter
         Utf8Validation.ThrowIfInvalidOnly(input);
         var decoded = Encoding.UTF8.GetString(input);
         return SumRegexMatches(regex, decoded);
+    }
+
+    private static int ExecuteValidatedReverseProjectionEnumeration(Regex regex, byte[] input)
+    {
+        var validation = Utf8InputAnalyzer.ValidateOnly(input);
+        var decoded = Encoding.UTF8.GetString(input);
+        var byteOffset = input.Length;
+        var utf16Offset = validation.Utf16Length;
+        var lastSplitUtf16Offset = -1;
+        var lastSplitByteOffset = -1;
+        var checksum = 0;
+        foreach (var match in regex.EnumerateMatches(decoded))
+        {
+            var end = ProjectReverseBoundary(
+                input,
+                match.Index + match.Length,
+                ref byteOffset,
+                ref utf16Offset,
+                ref lastSplitUtf16Offset,
+                ref lastSplitByteOffset);
+            var start = ProjectReverseBoundary(
+                input,
+                match.Index,
+                ref byteOffset,
+                ref utf16Offset,
+                ref lastSplitUtf16Offset,
+                ref lastSplitByteOffset);
+            checksum = AddMatchCoordinates(
+                checksum,
+                match.Index,
+                match.Length,
+                start,
+                end);
+        }
+
+        return checksum;
+    }
+
+    private static Utf16Boundary ProjectReverseBoundary(
+        byte[] input,
+        int targetUtf16Offset,
+        ref int byteOffset,
+        ref int utf16Offset,
+        ref int lastSplitUtf16Offset,
+        ref int lastSplitByteOffset)
+    {
+        if (targetUtf16Offset == lastSplitUtf16Offset)
+        {
+            return Utf16Boundary.SurrogateSplitBoundary(lastSplitByteOffset, targetUtf16Offset);
+        }
+
+        while (utf16Offset > targetUtf16Offset)
+        {
+            var status = Rune.DecodeLastFromUtf8(input.AsSpan(0, byteOffset), out var rune, out var consumed);
+            if (status != OperationStatus.Done)
+            {
+                throw new InvalidOperationException("Validated UTF-8 input could not be reverse-projected.");
+            }
+
+            byteOffset -= consumed;
+            utf16Offset -= rune.Utf16SequenceLength;
+            if (rune.Utf16SequenceLength == 2 && targetUtf16Offset == utf16Offset + 1)
+            {
+                lastSplitUtf16Offset = targetUtf16Offset;
+                lastSplitByteOffset = byteOffset;
+                return Utf16Boundary.SurrogateSplitBoundary(byteOffset, targetUtf16Offset);
+            }
+        }
+
+        if (utf16Offset != targetUtf16Offset)
+        {
+            throw new InvalidOperationException("RTL match ranges were not returned in descending order.");
+        }
+
+        return Utf16Boundary.ScalarBoundary(byteOffset, utf16Offset);
+    }
+
+    private static int SumUtf8MatchCoordinates(Utf8Regex regex, byte[] input)
+    {
+        var checksum = 0;
+        foreach (var match in regex.EnumerateMatches(input))
+        {
+            var start = match.IsByteAligned
+                ? Utf16Boundary.ScalarBoundary(match.IndexInBytes, match.IndexInUtf16)
+                : Utf16Boundary.SurrogateSplitBoundary(0, match.IndexInUtf16);
+            var end = match.IsByteAligned
+                ? Utf16Boundary.ScalarBoundary(
+                    match.IndexInBytes + match.LengthInBytes,
+                    match.IndexInUtf16 + match.LengthInUtf16)
+                : Utf16Boundary.SurrogateSplitBoundary(0, match.IndexInUtf16 + match.LengthInUtf16);
+            checksum = AddMatchCoordinates(
+                checksum,
+                match.IndexInUtf16,
+                match.LengthInUtf16,
+                start,
+                end);
+        }
+
+        return checksum;
+    }
+
+    private static int AddMatchCoordinates(
+        int checksum,
+        int indexInUtf16,
+        int lengthInUtf16,
+        Utf16Boundary start,
+        Utf16Boundary end)
+    {
+        checksum = unchecked((checksum * 31) + indexInUtf16);
+        checksum = unchecked((checksum * 31) + lengthInUtf16);
+        checksum = unchecked((checksum * 31) + (start.IsScalarBoundary ? start.ByteOffset : -1));
+        checksum = unchecked((checksum * 31) + (end.IsScalarBoundary ? end.ByteOffset - start.ByteOffset : -1));
+        return checksum;
     }
 
     private static int CountUtf8Splits(Utf8Regex regex, byte[] input)
