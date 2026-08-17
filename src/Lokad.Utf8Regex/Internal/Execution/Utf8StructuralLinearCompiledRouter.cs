@@ -163,6 +163,15 @@ internal static class Utf8StructuralLinearCompiledRouter
         if (CanUseEmittedDeterministicMatcher(regexPlan, emitEnabled, emittedDeterministicMatcher, validation, budget) &&
             emittedDeterministicMatcher is { } deterministicMatcher)
         {
+            if (Utf8AsciiDeterministicFixedWidthCountExecutor.TryCount(
+                regexPlan.StructuralLinearProgram,
+                input,
+                budget,
+                out count))
+            {
+                return true;
+            }
+
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralLinearEmit);
             count = deterministicMatcher.Count(input);
             return true;

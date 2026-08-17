@@ -359,6 +359,22 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
+    [InlineData("ab[0-9]d", "ab1d-")]
+    [InlineData("ab[0-9]cd", "ab1cd-")]
+    [InlineData("abc[0-9]defg", "abc1defg-")]
+    public void CompiledFixedWidthCountMatchesDotNetWhenVectorRouteIsEligible(
+        string pattern,
+        string segment)
+    {
+        var input = string.Concat(segment, segment, segment, segment, segment, segment, segment, segment);
+        var options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+
+        Assert.Equal(
+            Regex.Count(input, pattern, options),
+            new Utf8Regex(pattern, options).Count(System.Text.Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
     [InlineData("^ab[0-9]d", RegexOptions.CultureInvariant)]
     [InlineData("ab[0-9]d$", RegexOptions.CultureInvariant)]
     [InlineData("ab[0-9]d", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
