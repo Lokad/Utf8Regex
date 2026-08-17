@@ -425,6 +425,92 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMeasureUtf8OffsetCase(
+        string caseId,
+        string utf16OffsetText,
+        string? iterationsText,
+        string? samplesText)
+    {
+        var benchmarkCase = Utf8RegexBenchmarkCatalog.Get(caseId);
+        if (benchmarkCase.Operation is not
+            (Utf8RegexBenchmarkOperation.IsMatch or
+             Utf8RegexBenchmarkOperation.Match or
+             Utf8RegexBenchmarkOperation.Count or
+             Utf8RegexBenchmarkOperation.EnumerateMatches))
+        {
+            Console.Error.WriteLine($"Case '{caseId}' does not have an offset-capable operation.");
+            return 1;
+        }
+
+        if (!int.TryParse(utf16OffsetText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var utf16Offset))
+        {
+            Console.Error.WriteLine($"Invalid UTF-16 offset '{utf16OffsetText}'.");
+            return 1;
+        }
+
+        var context = new Utf8RegexBenchmarkContext(benchmarkCase);
+        var validated = Utf8ValidatedInput.Create(context.InputBytes);
+        var position = validated.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        var boundary = validated.BoundaryMap.Resolve(position.Value);
+        if (!boundary.IsScalarBoundary)
+        {
+            Console.Error.WriteLine($"UTF-16 offset {utf16Offset} is not a scalar boundary for case '{caseId}'.");
+            return 1;
+        }
+
+        var iterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+        var decoded = context.InputString;
+        var expected = ExecuteRegexOffset(context.Regex, decoded, utf16Offset, benchmarkCase.Operation);
+        var compiledExpected = ExecuteRegexOffset(context.CompiledRegex, decoded, utf16Offset, benchmarkCase.Operation);
+        var publicResult = ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
+        var compiledPublicResult = ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
+        var directResult = ExecuteValidatedByteOffset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
+        var compiledDirectResult = ExecuteValidatedByteOffset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation);
+        if (publicResult != expected ||
+            compiledPublicResult != compiledExpected ||
+            directResult != expected ||
+            compiledDirectResult != compiledExpected)
+        {
+            throw new InvalidOperationException("UTF-16 offset benchmark routes are not equivalent.");
+        }
+
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Operation         : {benchmarkCase.Operation}");
+        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
+        Console.WriteLine($"Options           : {benchmarkCase.Options}");
+        Console.WriteLine($"Utf16Offset       : {utf16Offset}");
+        Console.WriteLine($"ByteOffset        : {boundary.ByteOffset}");
+        Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
+
+        MeasureUtf8CaseLane("Utf8Offset", samples, iterations, () =>
+            ExecuteUtf8Offset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+        MeasureUtf8CaseLane("CompiledUtf8Offset", samples, iterations, () =>
+            ExecuteUtf8Offset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+        MeasureUtf8CaseLane("ValidatedByteOffset", samples, iterations, () =>
+            ExecuteValidatedByteOffset(context.Utf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+        MeasureUtf8CaseLane("CompiledValidatedByteOffset", samples, iterations, () =>
+            ExecuteValidatedByteOffset(context.CompiledUtf8Regex, context.InputBytes, utf16Offset, benchmarkCase.Operation));
+        MeasureUtf8CaseLane("DecodeThenRegexOffset", samples, iterations, () =>
+            ExecuteRegexOffset(
+                context.Regex,
+                Encoding.UTF8.GetString(context.InputBytes),
+                utf16Offset,
+                benchmarkCase.Operation));
+        MeasureUtf8CaseLane("DecodeThenCompiledRegexOffset", samples, iterations, () =>
+            ExecuteRegexOffset(
+                context.CompiledRegex,
+                Encoding.UTF8.GetString(context.InputBytes),
+                utf16Offset,
+                benchmarkCase.Operation));
+        MeasureUtf8CaseLane("PredecodedRegexOffset", samples, iterations, () =>
+            ExecuteRegexOffset(context.Regex, decoded, utf16Offset, benchmarkCase.Operation));
+        MeasureUtf8CaseLane("PredecodedCompiledRegexOffset", samples, iterations, () =>
+            ExecuteRegexOffset(context.CompiledRegex, decoded, utf16Offset, benchmarkCase.Operation));
+        return 0;
+    }
+
     public static int RunMeasureEnumeratorTransportCase(
         string caseId,
         string? shortIterationsText,
@@ -5734,6 +5820,97 @@ internal static partial class BenchmarkInspectReporter
             Utf8RegexBenchmarkOperation.Replace => context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
             _ => 0,
         };
+    }
+
+    private static int ExecuteUtf8Offset(
+        Utf8Regex regex,
+        byte[] input,
+        int utf16Offset,
+        Utf8RegexBenchmarkOperation operation)
+    {
+        return operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => regex.IsMatchFromUtf16Offset(input, utf16Offset) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(regex.MatchFromUtf16Offset(input, utf16Offset)),
+            Utf8RegexBenchmarkOperation.Count => regex.CountFromUtf16Offset(input, utf16Offset),
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(
+                regex.EnumerateMatchesFromUtf16Offset(input, utf16Offset)),
+            _ => throw new InvalidOperationException($"Operation '{operation}' does not support an offset diagnostic."),
+        };
+    }
+
+    private static int ExecuteValidatedByteOffset(
+        Utf8Regex regex,
+        byte[] input,
+        int utf16Offset,
+        Utf8RegexBenchmarkOperation operation)
+    {
+        var validated = Utf8ValidatedInput.Create(input);
+        var utf16Position = validated.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        var boundary = validated.BoundaryMap.Resolve(utf16Position.Value);
+        if (!boundary.IsScalarBoundary)
+        {
+            throw new InvalidOperationException("Validated byte-offset diagnostic requires a scalar-aligned UTF-16 offset.");
+        }
+
+        var bytePosition = validated.GetBytePosition(boundary.ByteOffset, nameof(utf16Offset));
+        var execution = regex.ByteOffsetExecution;
+        return operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => execution.IsMatch(validated, bytePosition) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(execution.Match(validated, bytePosition)),
+            Utf8RegexBenchmarkOperation.Count => execution.Count(validated, bytePosition),
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(execution.EnumerateMatches(validated, bytePosition)),
+            _ => throw new InvalidOperationException($"Operation '{operation}' does not support an offset diagnostic."),
+        };
+    }
+
+    private static int ExecuteRegexOffset(
+        Regex regex,
+        string input,
+        int utf16Offset,
+        Utf8RegexBenchmarkOperation operation)
+    {
+        return operation switch
+        {
+            Utf8RegexBenchmarkOperation.IsMatch => regex.IsMatch(input, utf16Offset) ? 1 : 0,
+            Utf8RegexBenchmarkOperation.Match => EncodeUtf16Match(regex.Match(input, utf16Offset)),
+            Utf8RegexBenchmarkOperation.Count => regex.Count(input, utf16Offset),
+            Utf8RegexBenchmarkOperation.EnumerateMatches => SumUtf16Matches(regex.EnumerateMatches(input.AsSpan(), utf16Offset)),
+            _ => throw new InvalidOperationException($"Operation '{operation}' does not support an offset diagnostic."),
+        };
+    }
+
+    private static int EncodeUtf16Match(Utf8ValueMatch match)
+    {
+        return match.Success ? HashCode.Combine(match.IndexInUtf16, match.LengthInUtf16) : 0;
+    }
+
+    private static int EncodeUtf16Match(Match match)
+    {
+        return match.Success ? HashCode.Combine(match.Index, match.Length) : 0;
+    }
+
+    private static int SumUtf16Matches(Utf8ValueMatchEnumerator matches)
+    {
+        var checksum = 0;
+        foreach (var match in matches)
+        {
+            checksum = HashCode.Combine(checksum, match.IndexInUtf16, match.LengthInUtf16);
+        }
+
+        return checksum;
+    }
+
+    private static int SumUtf16Matches(Regex.ValueMatchEnumerator matches)
+    {
+        var checksum = 0;
+        foreach (var match in matches)
+        {
+            checksum = HashCode.Combine(checksum, match.Index, match.Length);
+        }
+
+        return checksum;
     }
 
     private static bool TryCreateExactCompositeTrailingSearch(
