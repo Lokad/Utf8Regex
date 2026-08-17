@@ -65,6 +65,78 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.Throws<ArgumentException>(() => regex.Replace(malformed, "<$&>"));
     }
 
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, 1)]
+    [InlineData(false, 2)]
+    [InlineData(false, 3)]
+    [InlineData(false, int.MaxValue)]
+    [InlineData(true, 0)]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    [InlineData(true, 3)]
+    [InlineData(true, int.MaxValue)]
+    public void BoundaryLiteralFamilyFallbackSplitHonorsResultCount(bool compiled, int count)
+    {
+        const string pattern = @"\b(?:café|niño|résumé)\b";
+        const string input = "café xcafé caféx niño résumé 😀café😀";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var expected = new Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var actualValues = new List<string>();
+
+        foreach (var split in actual.EnumerateSplits(bytes, count))
+        {
+            actualValues.Add(split.GetValueString());
+        }
+
+        Assert.False(actual.Inspection.DebugCanUseNativeSplit(bytes));
+        Assert.Equal(expected.Split(input, count), actualValues);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BoundaryLiteralFamilySplitSelectorExcludesUnsupportedShapes(bool compiled)
+    {
+        const string input = "café niño résumé café noir";
+        var options = RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        (string Pattern, RegexOptions ExtraOptions)[] cases =
+        [
+            (@"\b(café|niño|résumé)\b", RegexOptions.None),
+            (@"(?:café|niño|résumé)(?= noir)", RegexOptions.None),
+            (@"café|niño|résumé", RegexOptions.None),
+            (@"\b(?:café|niño|résumé)\b", RegexOptions.RightToLeft),
+        ];
+
+        foreach (var testCase in cases)
+        {
+            var caseOptions = options | testCase.ExtraOptions;
+            var expected = new Regex(testCase.Pattern, caseOptions);
+            var actual = new Utf8Regex(testCase.Pattern, caseOptions);
+            var actualValues = new List<string>();
+
+            Assert.False(actual.Inspection.DebugCanUseNativeSplit(bytes));
+            foreach (var split in actual.EnumerateSplits(bytes))
+            {
+                actualValues.Add(split.GetValueString());
+            }
+
+            var expectedValues = new List<string>();
+            foreach (var split in expected.EnumerateSplits(input))
+            {
+                var (index, length) = split.GetOffsetAndLength(input.Length);
+                expectedValues.Add(input.Substring(index, length));
+            }
+
+            Assert.Equal(expectedValues, actualValues);
+        }
+    }
+
     private static void AssertGlobalParity(
         string pattern,
         string input,
@@ -99,11 +171,24 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
 
         Assert.Equal(expectedMatches, actualMatches);
 
-        var expectedSplits = expected.Split(input);
-        var actualSplits = new List<string>();
+        var expectedSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
+        foreach (var split in expected.EnumerateSplits(input))
+        {
+            var (index, length) = split.GetOffsetAndLength(input.Length);
+            var byteIndex = Encoding.UTF8.GetByteCount(input.AsSpan(0, index));
+            var byteLength = Encoding.UTF8.GetByteCount(input.AsSpan(index, length));
+            expectedSplits.Add((index, length, byteIndex, byteLength, input.Substring(index, length)));
+        }
+
+        var actualSplits = new List<(int Utf16Index, int Utf16Length, int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in actual.EnumerateSplits(bytes))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add((
+                split.IndexInUtf16,
+                split.LengthInUtf16,
+                split.IndexInBytes,
+                split.LengthInBytes,
+                split.GetValueString()));
         }
 
         Assert.Equal(expectedSplits, actualSplits);
