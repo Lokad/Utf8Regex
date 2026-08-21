@@ -919,7 +919,8 @@ public sealed class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount)
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount ||
+            Utf8FallbackDirectFamilyCategories.IsTokenCountFamily(_fallbackDirectFamily.Kind))
         {
             if (!Utf8InputAnalyzer.IsAscii(input))
             {

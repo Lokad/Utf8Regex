@@ -105,6 +105,18 @@ Keep mailto://ops?bad and ssh://edge-node/control?mode=full#tail in scope.
     }
 
     [Fact]
+    public void UriCountMatchesDotNetWithUnicodeWordCharacters()
+    {
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        const string input = "Open δοκιμή://παράδειγμα.gr/διαδρομή and https://example.net/café.";
+
+        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Fact]
     public void IpPatternClassifiesAsAsciiDottedDecimalQuadCount()
     {
         var analysis = Utf8FrontEnd.Compile(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None);
