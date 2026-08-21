@@ -59,7 +59,7 @@ internal static partial class BenchmarkInspectReporter
                     section,
                     caseId,
                     GetRequiredSnapshotMeasurement(sectionSnapshot, caseId),
-                    snapshot.SchemaVersion >= 4));
+                    snapshot.SchemaVersion >= 5));
             }
         }
 
@@ -107,7 +107,7 @@ internal static partial class BenchmarkInspectReporter
         ReadmeBenchmarkSection section,
         string caseId,
         ReadmeCaseMeasurementJson measurement,
-        bool snapshotHasAllocations)
+        bool snapshotHasCurrentProtocol)
     {
         var compiled = section is ReadmeBenchmarkSection.DotNetPerformanceCompiled or ReadmeBenchmarkSection.LokadCompiled;
         var utf8Microseconds = compiled ? measurement.Utf8Compiled : measurement.Utf8Regex;
@@ -116,8 +116,9 @@ internal static partial class BenchmarkInspectReporter
         var utf8AllocatedBytes = compiled ? measurement.Utf8CompiledAllocatedBytes : measurement.Utf8RegexAllocatedBytes;
         var predecodedAllocatedBytes = compiled ? measurement.CompiledRegexAllocatedBytes : measurement.PredecodedRegexAllocatedBytes;
         var decodeAllocatedBytes = compiled ? measurement.DecodeThenCompiledRegexAllocatedBytes : measurement.DecodeThenRegexAllocatedBytes;
-        var qualified = snapshotHasAllocations &&
+        var qualified = snapshotHasCurrentProtocol &&
             measurement.Environment is { TrackedDirty: false } &&
+            measurement.MeasurementProtocol == ReadmeMeasurementProtocol &&
             measurement.RequestedIterations > 0 &&
             measurement.EffectiveIterations >= measurement.RequestedIterations &&
             measurement.Samples >= 5 &&
@@ -144,6 +145,7 @@ internal static partial class BenchmarkInspectReporter
             Operation = GetReadmeOperation(caseId),
             Mode = compiled ? "Compiled" : "Ordinary",
             Status = status,
+            MeasurementProtocol = measurement.MeasurementProtocol,
             Utf8Microseconds = utf8Microseconds,
             PredecodedRegexMicroseconds = predecodedMicroseconds,
             DecodeThenRegexMicroseconds = decodeMicroseconds,
@@ -202,6 +204,8 @@ internal static partial class BenchmarkInspectReporter
         public required string Mode { get; set; }
 
         public required string Status { get; set; }
+
+        public string? MeasurementProtocol { get; set; }
 
         public double Utf8Microseconds { get; set; }
 

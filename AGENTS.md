@@ -92,8 +92,9 @@ README benchmark snapshot model:
   skips only rows whose paired measurements, requested iterations, samples,
   clean source revision, runtime, OS, processor, and tiering mode all match.
 - README refresh calibrates one shared effective iteration count from all six
-  target/baseline lanes, records that count in the snapshot, checkpoints after
-  every case, and caps each child case at 120 seconds.
+  target/baseline lanes, alternates lane order sample-by-sample, records the
+  protocol and count in the snapshot, checkpoints after every case, and caps
+  each child case at 120 seconds.
 - Use bulk section refresh sparingly; it is slower and more likely to leave unrelated rows stale while you are iterating.
 
 PCRE2 benchmark snapshot and diagnostics:

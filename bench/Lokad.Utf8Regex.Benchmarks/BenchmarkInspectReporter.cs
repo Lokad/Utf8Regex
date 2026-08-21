@@ -1550,6 +1550,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private const string ReadmeBenchmarkSnapshotFileName = "README.Benchmarks.json";
+    private const string ReadmeMeasurementProtocol = "AlternatingSixLaneV1";
 
     private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot()
     {
@@ -1560,7 +1561,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = 5;
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
@@ -1769,6 +1770,7 @@ internal static partial class BenchmarkInspectReporter
         return !current.TrackedDirty &&
             measured is not null &&
             !measured.TrackedDirty &&
+            measurement.MeasurementProtocol == ReadmeMeasurementProtocol &&
             measurement.RequestedIterations == requestedIterations &&
             measurement.EffectiveIterations >= requestedIterations &&
             measurement.Samples == samples &&
@@ -1788,7 +1790,8 @@ internal static partial class BenchmarkInspectReporter
     private static bool HaveSameReadmeMeasurement(
         ReadmeCaseMeasurementJson first,
         ReadmeCaseMeasurementJson second)
-        => first.RequestedIterations == second.RequestedIterations &&
+        => first.MeasurementProtocol == second.MeasurementProtocol &&
+            first.RequestedIterations == second.RequestedIterations &&
             first.EffectiveIterations == second.EffectiveIterations &&
             first.Samples == second.Samples &&
             first.Utf8Regex == second.Utf8Regex &&
@@ -5612,18 +5615,15 @@ internal static partial class BenchmarkInspectReporter
             iterationTarget,
             samples,
             actions);
-        var measurements = new double[actions.Length];
+        var measurements = MeasureReadmeAlternatingMedianMicroseconds(
+            samples,
+            effectiveIterations,
+            actions,
+            reverseMeasurementOrder);
         var allocatedBytes = new double[actions.Length];
-        var measurementOrder = reverseMeasurementOrder
-            ? Enumerable.Range(0, actions.Length).Reverse()
-            : Enumerable.Range(0, actions.Length);
-        foreach (var index in measurementOrder)
+        for (var position = 0; position < actions.Length; position++)
         {
-            measurements[index] = MeasureMedianMicroseconds(samples, effectiveIterations, actions[index]);
-        }
-
-        foreach (var index in measurementOrder)
-        {
+            var index = reverseMeasurementOrder ? actions.Length - position - 1 : position;
             allocatedBytes[index] = MeasureAllocatedBytesPerOperation(effectiveIterations, actions[index]);
         }
 
@@ -5643,6 +5643,50 @@ internal static partial class BenchmarkInspectReporter
             requestedIterations,
             effectiveIterations,
             samples);
+    }
+
+    private static double[] MeasureReadmeAlternatingMedianMicroseconds(
+        int samples,
+        int iterations,
+        IReadOnlyList<Func<int>> actions,
+        bool reverseFirstSample)
+    {
+        var sink = 0;
+        foreach (var action in actions)
+        {
+            sink ^= WarmupCore(action).Sink;
+        }
+
+        var elapsedByAction = new TimeSpan[actions.Count][];
+        for (var index = 0; index < elapsedByAction.Length; index++)
+        {
+            elapsedByAction[index] = new TimeSpan[samples];
+        }
+
+        for (var sample = 0; sample < samples; sample++)
+        {
+            var reverse = reverseFirstSample ^ ((sample & 1) != 0);
+            for (var position = 0; position < actions.Count; position++)
+            {
+                var index = reverse ? actions.Count - position - 1 : position;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                var measurement = MeasureTimedCore(iterations, actions[index]);
+                elapsedByAction[index][sample] = measurement.Elapsed;
+                sink ^= measurement.Sink;
+            }
+        }
+
+        var medians = new double[actions.Count];
+        for (var index = 0; index < elapsedByAction.Length; index++)
+        {
+            Array.Sort(elapsedByAction[index]);
+            medians[index] = elapsedByAction[index][samples / 2].TotalMicroseconds / iterations;
+        }
+
+        GC.KeepAlive(sink);
+        return medians;
     }
 
     private static double MeasureAllocatedBytesPerOperation(int iterations, Func<int> action)
@@ -5878,7 +5922,7 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class ReadmeBenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 4;
+        public int SchemaVersion { get; set; } = 5;
 
         public Dictionary<string, ReadmeBenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
     }
@@ -5893,6 +5937,8 @@ internal static partial class BenchmarkInspectReporter
         public DateTimeOffset? MeasuredAtUtc { get; set; }
 
         public BenchmarkEnvironmentJson? Environment { get; set; }
+
+        public string? MeasurementProtocol { get; set; }
 
         public int RequestedIterations { get; set; }
 
@@ -5929,6 +5975,7 @@ internal static partial class BenchmarkInspectReporter
             {
                 MeasuredAtUtc = DateTimeOffset.UtcNow,
                 Environment = CaptureBenchmarkEnvironment(),
+                MeasurementProtocol = ReadmeMeasurementProtocol,
                 RequestedIterations = measurement.RequestedIterations,
                 EffectiveIterations = measurement.EffectiveIterations,
                 Samples = measurement.Samples,
