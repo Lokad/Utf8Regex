@@ -5,6 +5,15 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class Utf8PythonRegexCpythonParityTests
 {
     [Fact]
+    public void TopLevelAsciiAndUnicodeFlagsAreIncompatibleLikeCpython()
+    {
+        var exception = Assert.Throws<PythonRePatternException>(() =>
+            new Utf8PythonRegex("abc", PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode));
+
+        Assert.Contains("ASCII and UNICODE flags are incompatible", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SearchAndMatchFollowCpythonStarPlusSemantics()
     {
         Assert.Equal((0, 0), GetSpan(new Utf8PythonRegex("x*").Search("axx"u8)));

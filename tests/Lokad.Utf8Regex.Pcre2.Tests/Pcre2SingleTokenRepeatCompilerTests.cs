@@ -96,7 +96,7 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(graphemes.DebugCompiledProgram.Operations.Match);
         Assert.Equal("a\u0301🇫🇷", graphemes.Match(Encoding.UTF8.GetBytes("a\u0301🇫🇷")).GetValueString());

@@ -160,7 +160,7 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern) =>
-        new(pattern, Pcre2CompileOptions.None, s_allowBackslashC, default, default);
+        new(pattern, Pcre2CompileOptions.None, s_allowBackslashC, default, Utf8Pcre2Regex.DefaultMatchTimeout);
 
     private static void GetSplitValueString() => Create(@"\C").Match("é"u8).GetValueString();
 

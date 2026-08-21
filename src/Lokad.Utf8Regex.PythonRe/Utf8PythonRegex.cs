@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -108,17 +109,35 @@ public sealed class Utf8PythonRegex
     {
     }
 
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout = default)
+    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern using the process-wide default timeout.</summary>
+    /// <param name="patternUtf8">The pattern encoded as UTF-8.</param>
+    /// <param name="options">The Python-compatible compile options.</param>
+    /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8, the options are incompatible, or the pattern is invalid.</exception>
+    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options)
+        : this(patternUtf8, options, DefaultMatchTimeout)
+    {
+    }
+
+    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout)
         : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout)
     {
     }
 
-    public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout = default)
+    /// <summary>Creates a Python-compatible expression using the process-wide default timeout.</summary>
+    /// <param name="pattern">The pattern in UTF-16 text.</param>
+    /// <param name="options">The Python-compatible compile options.</param>
+    /// <exception cref="ArgumentException">The options are incompatible or the pattern is invalid.</exception>
+    public Utf8PythonRegex(string pattern, PythonReCompileOptions options)
+        : this(pattern, options, DefaultMatchTimeout)
+    {
+    }
+
+    public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
     {
         PythonReCompileValidator.Validate(pattern, options);
         Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         Options = options;
-        MatchTimeout = matchTimeout == default ? DefaultMatchTimeout : matchTimeout;
+        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
 
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(options);
@@ -157,7 +176,7 @@ public sealed class Utf8PythonRegex
                     LazyThreadSafetyMode.ExecutionAndPublication);
             }
         }
-        catch (Exception)
+        catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
         {
             // Fall back to managed Regex if the translated pattern cannot be executed by Utf8Regex.
         }
@@ -176,7 +195,7 @@ public sealed class Utf8PythonRegex
     public static TimeSpan DefaultMatchTimeout
     {
         get => s_defaultMatchTimeout;
-        set => s_defaultMatchTimeout = value;
+        set => s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
     }
 
     private readonly string[] _groupNames;
@@ -1395,11 +1414,14 @@ public sealed class Utf8PythonRegex
                 MatchTimeout);
             return regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
         }
-        catch (Exception)
+        catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
         {
             return null;
         }
     }
+
+    internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
+        => exception is ArgumentException or NotSupportedException;
 
     private static Regex CreateManagedRegex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {

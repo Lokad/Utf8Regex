@@ -33,7 +33,7 @@ public sealed class Utf8Regex
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        _ = new Regex(string.Empty, RegexOptions.None, matchTimeout);
+        Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
         Pattern = pattern;
         Options = options;
@@ -48,8 +48,7 @@ public sealed class Utf8Regex
         get => s_defaultMatchTimeout;
         set
         {
-            _ = new Regex(string.Empty, RegexOptions.None, value);
-            s_defaultMatchTimeout = value;
+            s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
         }
     }
 

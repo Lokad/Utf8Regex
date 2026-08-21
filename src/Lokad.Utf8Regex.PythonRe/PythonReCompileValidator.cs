@@ -11,5 +11,10 @@ internal static class PythonReCompileValidator
             throw new PythonRePatternException("LOCALE mode is intentionally unsupported; this profile is culture-invariant.");
         }
 
+        if ((options & (PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode)) ==
+            (PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode))
+        {
+            throw new PythonRePatternException("ASCII and UNICODE flags are incompatible");
+        }
     }
 }

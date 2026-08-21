@@ -23,7 +23,7 @@ internal static class Pcre2Compiler
     {
         ArgumentNullException.ThrowIfNull(request.Pattern);
         ArgumentNullException.ThrowIfNull(foundationProgramFactory);
-        Pcre2CompileValidator.Validate(request.Pattern, request.Settings);
+        Pcre2CompileValidator.Validate(request.Pattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
             var literalProgram = foundationProgramFactory(request);

@@ -2,8 +2,53 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
+[Collection(PythonReGlobalSettingsCollection.Name)]
 public sealed class Utf8PythonRegexTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    [InlineData(int.MaxValue)]
+    public void ConstructorRejectsInvalidExplicitMatchTimeout(int milliseconds)
+    {
+        var timeout = TimeSpan.FromMilliseconds(milliseconds);
+
+        var stringException = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8PythonRegex("abc", PythonReCompileOptions.None, timeout));
+        var utf8Exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Utf8PythonRegex("abc"u8, PythonReCompileOptions.None, timeout));
+
+        Assert.Equal("matchTimeout", stringException.ParamName);
+        Assert.Equal("matchTimeout", utf8Exception.ParamName);
+    }
+
+    [Fact]
+    public void DefaultMatchTimeoutRejectsInvalidValueWithoutMutation()
+    {
+        var previous = Utf8PythonRegex.DefaultMatchTimeout;
+        try
+        {
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                Utf8PythonRegex.DefaultMatchTimeout = TimeSpan.Zero);
+
+            Assert.Equal("value", exception.ParamName);
+            Assert.Equal(previous, Utf8PythonRegex.DefaultMatchTimeout);
+        }
+        finally
+        {
+            Utf8PythonRegex.DefaultMatchTimeout = previous;
+        }
+    }
+
+    [Fact]
+    public void OptionalUtf8BackendFallbackIsLimitedToExpectedConstructionFailures()
+    {
+        Assert.True(Utf8PythonRegex.IsOptionalUtf8BackendUnavailableException(new ArgumentException()));
+        Assert.True(Utf8PythonRegex.IsOptionalUtf8BackendUnavailableException(new NotSupportedException()));
+        Assert.False(Utf8PythonRegex.IsOptionalUtf8BackendUnavailableException(new InvalidOperationException()));
+        Assert.False(Utf8PythonRegex.IsOptionalUtf8BackendUnavailableException(new OutOfMemoryException()));
+    }
+
     [Fact]
     public void ExactLiteralUsesUtf8RegexBackend()
     {

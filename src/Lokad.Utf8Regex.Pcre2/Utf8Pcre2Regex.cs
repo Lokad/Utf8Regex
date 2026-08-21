@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Replacement;
 
@@ -20,7 +21,7 @@ public sealed class Utf8Pcre2Regex
     }
 
     public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options)
-        : this(pattern, options, default, default, default)
+        : this(pattern, options, default, default, DefaultMatchTimeout)
     {
     }
 
@@ -37,7 +38,7 @@ public sealed class Utf8Pcre2Regex
             options,
             compileSettings,
             defaultExecutionLimits,
-            matchTimeout == default ? DefaultMatchTimeout : matchTimeout);
+            Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout)));
         _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
     }
 
@@ -86,7 +87,7 @@ public sealed class Utf8Pcre2Regex
     }
 
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options)
-        : this(patternUtf8, options, default, default, default)
+        : this(patternUtf8, options, default, default, DefaultMatchTimeout)
     {
     }
 
@@ -103,7 +104,7 @@ public sealed class Utf8Pcre2Regex
     public static TimeSpan DefaultMatchTimeout
     {
         get => s_defaultMatchTimeout;
-        set => s_defaultMatchTimeout = value;
+        set => s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
     }
 
     public string Pattern => _program.Request.Pattern;
@@ -765,10 +766,10 @@ public sealed class Utf8Pcre2Regex
     }
 
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern)
-        => IsMatch(input, pattern, Pcre2CompileOptions.None, default, default, default, 0);
+        => IsMatch(input, pattern, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0);
 
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options)
-        => IsMatch(input, pattern, options, default, default, default, 0);
+        => IsMatch(input, pattern, options, default, default, DefaultMatchTimeout, 0);
 
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes)
     {
@@ -776,10 +777,10 @@ public sealed class Utf8Pcre2Regex
     }
 
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern)
-        => Match(input, pattern, Pcre2CompileOptions.None, default, default, default, 0);
+        => Match(input, pattern, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0);
 
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options)
-        => Match(input, pattern, options, default, default, default, 0);
+        => Match(input, pattern, options, default, default, DefaultMatchTimeout, 0);
 
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes)
     {
@@ -787,10 +788,10 @@ public sealed class Utf8Pcre2Regex
     }
 
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement)
-        => Replace(input, pattern, replacement, Pcre2CompileOptions.None, default, default, default, 0, Pcre2SubstitutionOptions.None);
+        => Replace(input, pattern, replacement, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0, Pcre2SubstitutionOptions.None);
 
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options)
-        => Replace(input, pattern, replacement, options, default, default, default, 0, Pcre2SubstitutionOptions.None);
+        => Replace(input, pattern, replacement, options, default, default, DefaultMatchTimeout, 0, Pcre2SubstitutionOptions.None);
 
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
     {

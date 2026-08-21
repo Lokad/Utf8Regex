@@ -80,7 +80,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
         var match = regex.Match("aa"u8);
         var detailed = regex.MatchDetailed("aa"u8);
 
@@ -104,7 +104,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
         var analysis = regex.Analyze();
 
         Assert.True(analysis.IsFullyNative);

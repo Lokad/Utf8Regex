@@ -19,7 +19,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var match = regex.Match("ab"u8);
 
@@ -39,7 +39,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var match = regex.MatchDetailed("ab"u8);
 
@@ -58,7 +58,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         Assert.Throws<NotSupportedException>(() => regex.Count("ab"u8));
         Assert.Throws<NotSupportedException>(() => regex.EnumerateMatches("ab"u8));
@@ -72,7 +72,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("ab"u8, "<$0>"));
     }
@@ -85,7 +85,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         Assert.Throws<NotSupportedException>(() => regex.ReplaceToString("a"u8, "<$0>"));
     }
@@ -148,7 +148,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
         _ = regex.Match(input).GetValueBytes();
     }
 
@@ -159,7 +159,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
         _ = regex.MatchDetailed(input).Value.GetValueBytes();
     }
 

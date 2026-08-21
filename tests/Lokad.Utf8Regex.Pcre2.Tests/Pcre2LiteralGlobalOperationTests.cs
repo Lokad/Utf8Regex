@@ -86,7 +86,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Crlf },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var starts = new List<int>();
         var enumerator = regex.EnumerateMatches("\r\nx"u8);

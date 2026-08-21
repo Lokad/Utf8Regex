@@ -325,7 +325,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var actual = regex.ReplaceToString(
             "foofoo barbar"u8,
@@ -355,7 +355,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var actual = regex.ReplaceToString(
             "aaaccccaaa bccccb"u8,

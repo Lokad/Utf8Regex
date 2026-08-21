@@ -2,27 +2,76 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 internal static class Pcre2CompileValidator
 {
-    public static void Validate(string pattern, Utf8Pcre2CompileSettings settings)
+    private const Pcre2CompileOptions SupportedOptions =
+        Pcre2CompileOptions.Caseless |
+        Pcre2CompileOptions.Multiline |
+        Pcre2CompileOptions.DotAll |
+        Pcre2CompileOptions.Extended |
+        Pcre2CompileOptions.ExtendedMore |
+        Pcre2CompileOptions.Anchored |
+        Pcre2CompileOptions.EndAnchored |
+        Pcre2CompileOptions.DollarEndOnly |
+        Pcre2CompileOptions.Ungreedy |
+        Pcre2CompileOptions.NoAutoCapture |
+        Pcre2CompileOptions.Ucp |
+        Pcre2CompileOptions.FirstLine;
+
+    public static void Validate(
+        string pattern,
+        Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings)
     {
         ArgumentNullException.ThrowIfNull(pattern);
+
+        if ((options & ~SupportedOptions) != Pcre2CompileOptions.None)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "The value contains an unknown PCRE2 compile-option bit.");
+        }
+
+        if (compileSettings.Newline is not (
+            Pcre2NewlineConvention.Default or
+            Pcre2NewlineConvention.Cr or
+            Pcre2NewlineConvention.Lf or
+            Pcre2NewlineConvention.Crlf or
+            Pcre2NewlineConvention.Any or
+            Pcre2NewlineConvention.AnyCrlf or
+            Pcre2NewlineConvention.Nul))
+        {
+            throw new ArgumentOutOfRangeException(nameof(compileSettings), "The newline convention is not defined.");
+        }
+
+        if (compileSettings.Bsr is not (
+            Pcre2BsrConvention.Default or
+            Pcre2BsrConvention.AnyCrlf or
+            Pcre2BsrConvention.Unicode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(compileSettings), "The BSR convention is not defined.");
+        }
+
+        if (compileSettings.BackslashC is not (
+            Pcre2BackslashCPolicy.Forbid or
+            Pcre2BackslashCPolicy.Allow))
+        {
+            throw new ArgumentOutOfRangeException(nameof(compileSettings), "The backslash-C policy is not defined.");
+        }
 
         if (pattern.Contains("(?C", StringComparison.Ordinal))
         {
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
         }
 
-        if (settings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false))
+        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Forbid && ContainsBackslashC(pattern, false))
         {
             throw new Pcre2CompileException(@"Using \C is disabled by this library profile.", Pcre2ErrorKind.BackslashCDisabled);
         }
 
-        if (settings.BackslashC == Pcre2BackslashCPolicy.Allow &&
+        if (compileSettings.BackslashC == Pcre2BackslashCPolicy.Allow &&
             ContainsBackslashC(pattern, true))
         {
             throw new Pcre2CompileException(@"\C is not allowed in UTF lookbehind.", Pcre2ErrorKind.BackslashCInUtfLookbehind);
         }
 
-        if (!settings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern))
+        if (!compileSettings.AllowLookaroundBackslashK && ContainsLookaroundBackslashK(pattern))
         {
             throw new Pcre2CompileException(@"\K is not allowed in lookarounds (but see PCRE2_EXTRA_ALLOW_LOOKAROUND_BSK)", Pcre2ErrorKind.LookaroundBackslashKDisabled);
         }
