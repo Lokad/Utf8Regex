@@ -5,12 +5,12 @@ This ledger records the 2026-08-21 qualification of
 not a claim of complete upstream PCRE2 compatibility.
 
 The qualified files are frozen under
-`artifacts/package-qualification/archive/2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94/`.
+`artifacts/package-qualification/archive/e02af985a3bb5bcbb42dfecc04e40f931e58e1c4/`.
 The archive command refuses a dirty tracked worktree and refuses to overwrite
 an existing revision directory. Verify all four archived artifacts with:
 
 ```powershell
-./verify-pcre2-qualification.ps1 -QualificationId 2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94
+./verify-pcre2-qualification.ps1 -QualificationId e02af985a3bb5bcbb42dfecc04e40f931e58e1c4
 ```
 
 Generic paths such as `artifacts/nuget/*.nupkg` and
@@ -22,13 +22,13 @@ all-case performance claim.
 
 ## Qualified baseline
 
-- Qualified package/runtime source: `2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94`
-  (`Archive immutable PCRE2 qualification evidence`).
+- Qualified package/runtime source: `e02af985a3bb5bcbb42dfecc04e40f931e58e1c4`
+  (`Repair snapshot IDs after local history rewrite`).
 - The subsequent qualification-ledger commit changes documentation only and
   does not alter the archived packages, API snapshot, or benchmark snapshot.
 - Target: `net10.0`.
 - Public API snapshot: 171 lines, SHA-256
-  `922AB9DB8C2C0D7FA00DFB37251FFD6CEA9EBDDF51E75CF0A700C3AE0303A38A`.
+  `95DE836850E9E37C5E9D5ABAEA501A40231BCA0D7ADA7C72217F6F7E34562083`.
 - Bootstrap closure: `legacy-specific-count = 0` and
   `bootstrap-specific-method-count = 0`.
 
@@ -95,9 +95,9 @@ be consumed as a version-coherent pair; a stale global cache can otherwise
 combine assemblies from different source commits.
 
 The qualified package SHA-256 values are
-`84085DC39C6F2DB0B44CC1502353007B465042A74FC661D02374900A3AC8D948`
+`0E6E989BCE08E57ED9E83FB297C8FAB5AEDF1D6C2D6E4AA079F0E9F7C8F32CBE`
 for `Lokad.Utf8Regex.0.2.0.nupkg` and
-`5BD8791B4CB036A95F85E9CD9925BCC936DCBC8C78807245DBF0C44AD28FFAD3`
+`E4D3C3B3CEFA97F72F13F478A26ED4F9094034BE7F274CC8E491039E11CA9208`
 for `Lokad.Utf8Regex.Pcre2.0.2.0.nupkg`.
 
 ## Reviewed core integration points
