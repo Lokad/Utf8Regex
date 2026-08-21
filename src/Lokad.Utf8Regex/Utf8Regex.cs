@@ -22,6 +22,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AnchoredAsciiLeadingDigitsTail = 5,
     CompiledRepeatedDigitGroup = 6,
     AnchoredAsciiSignedDecimalWhole = 7,
+    AnchoredAsciiOptionalFieldWhole = 8,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -86,6 +87,11 @@ public sealed class Utf8Regex
                 {
                     return Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup;
                 }
+            }
+
+            if (preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.CanUseShortAsciiWholeMatcher)
+            {
+                return Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole;
             }
 
             return preparedRegex.FallbackDirectFamily.Kind switch
@@ -3147,6 +3153,21 @@ public sealed class Utf8Regex
                 }
 
                 return input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
+
+            case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole:
+                var matched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
+                    input,
+                    _anchoredOptionalFieldPlan,
+                    _allowsTrailingNewlineBeforeEnd,
+                    out _,
+                    out var needsValidation);
+                if (needsValidation)
+                {
+                    return false;
+                }
+
+                isMatch = matched;
+                return true;
 
             default:
                 return false;

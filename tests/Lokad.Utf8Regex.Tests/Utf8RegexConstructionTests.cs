@@ -597,6 +597,17 @@ public sealed class Utf8RegexConstructionTests
         var plan = regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan;
 
         Assert.True(plan.HasValue);
+        Assert.True(plan.CanUseShortAsciiWholeMatcher);
+        Assert.False(new AsciiSimplePatternAnchoredOptionalFieldPlan(
+            plan.HeadClass,
+            plan.HeadMinCount,
+            plan.HeadMaxCount,
+            plan.FirstRequiredClass,
+            plan.OptionalClass,
+            optionalLiteral: (byte)'A',
+            plan.SecondRequiredClass,
+            plan.TailClass,
+            plan.TailCount).CanUseShortAsciiWholeMatcher);
         Assert.True(Utf8EmittedWholeMatcher.TryCreate(
             plan,
             allowTrailingNewline: true,

@@ -51,6 +51,48 @@ internal static class Utf8AsciiAnchoredOptionalFieldExecutor
             return TryMatchSuffix(input, index, plan);
         }
 
+        static bool TryMatchShortAsciiCore(
+            ReadOnlySpan<byte> input,
+            AsciiSimplePatternAnchoredOptionalFieldPlan plan)
+        {
+            if (input.Length is < 5 or > 8 ||
+                !Utf8AsciiBytePredicates.IsLetter(input[^1]) ||
+                !Utf8AsciiBytePredicates.IsLetter(input[^2]) ||
+                !Utf8AsciiBytePredicates.IsDigit(input[^3]))
+            {
+                return false;
+            }
+
+            var prefixLength = input.Length - 3;
+            if (prefixLength > 0 && input[prefixLength - 1] == plan.OptionalLiteral)
+            {
+                prefixLength--;
+            }
+
+            var index = 0;
+            if (!Utf8AsciiBytePredicates.IsLetter(input[index++]))
+            {
+                return false;
+            }
+
+            if (index < prefixLength && Utf8AsciiBytePredicates.IsLetter(input[index]))
+            {
+                index++;
+            }
+
+            if (index >= prefixLength || !Utf8AsciiBytePredicates.IsDigit(input[index++]))
+            {
+                return false;
+            }
+
+            if (index < prefixLength && Utf8AsciiBytePredicates.IsLetterOrDigit(input[index]))
+            {
+                index++;
+            }
+
+            return index == prefixLength;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool TryMatchSuffix(
             ReadOnlySpan<byte> input,
@@ -88,6 +130,27 @@ internal static class Utf8AsciiAnchoredOptionalFieldExecutor
         needsValidation = false;
         if (!plan.HasValue)
         {
+            return false;
+        }
+
+        if (plan.CanUseShortAsciiWholeMatcher)
+        {
+            if (TryMatchShortAsciiCore(input, plan))
+            {
+                matchedLength = input.Length;
+                return true;
+            }
+
+            if (allowTrailingNewline &&
+                input.Length > 0 &&
+                input[^1] == (byte)'\n' &&
+                TryMatchShortAsciiCore(input[..^1], plan))
+            {
+                matchedLength = input.Length - 1;
+                return true;
+            }
+
+            needsValidation = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0;
             return false;
         }
 

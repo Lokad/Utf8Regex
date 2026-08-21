@@ -419,6 +419,21 @@ internal readonly struct AsciiSimplePatternAnchoredOptionalFieldPlan
         SecondRequiredClass = secondRequiredClass;
         TailClass = tailClass;
         TailCount = tailCount;
+        CanUseShortAsciiWholeMatcher =
+            headMinCount == 1 &&
+            headMaxCount == 2 &&
+            tailCount == 2 &&
+            HasPredicate(headClass, AsciiCharClassPredicateKind.AsciiLetter) &&
+            HasPredicate(firstRequiredClass, AsciiCharClassPredicateKind.Digit) &&
+            HasPredicate(optionalClass, AsciiCharClassPredicateKind.AsciiLetterOrDigit) &&
+            !optionalClass.Contains(optionalLiteral) &&
+            HasPredicate(secondRequiredClass, AsciiCharClassPredicateKind.Digit) &&
+            HasPredicate(tailClass, AsciiCharClassPredicateKind.AsciiLetter);
+
+        static bool HasPredicate(AsciiCharClass charClass, AsciiCharClassPredicateKind expected)
+        {
+            return charClass.TryGetKnownPredicateKind(out var actual) && actual == expected;
+        }
     }
 
     public AsciiCharClass HeadClass { get; }
@@ -438,6 +453,8 @@ internal readonly struct AsciiSimplePatternAnchoredOptionalFieldPlan
     public AsciiCharClass TailClass { get; }
 
     public byte TailCount { get; }
+
+    public bool CanUseShortAsciiWholeMatcher { get; }
 
     public bool HasValue => HeadMinCount > 0 &&
         HeadMaxCount >= HeadMinCount &&
