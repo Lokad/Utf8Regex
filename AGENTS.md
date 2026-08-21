@@ -67,6 +67,8 @@ Examples:
 ./bench.ps1 -CommandArgs "--measure-line-family-case","lokad/imports/module-imports","20"
 ./bench.ps1 -CommandArgs "--refresh-readme-case","common/email-match","20","5"
 ./bench.ps1 -CommandArgs "--emit-readme-benchmark-markdown","dotnet-performance,lokad","20","5"
+./bench.ps1 -CommandArgs "--emit-readme-parity-report"
+./bench.ps1 -CommandArgs "--verify-readme-parity-report"
 ./bench.ps1 -CommandArgs "--refresh-readme-benchmarks","dotnet-performance,lokad","20","5"
 ./bench.ps1 -CommandArgs "--resume-readme-benchmarks","dotnet-performance,dotnet-performance-compiled","20","7" -MaxWallTimeSeconds 0
 `
@@ -74,6 +76,9 @@ Examples:
 README benchmark snapshot model:
 
 - `README.Benchmarks.json` is the source of truth for published benchmark numbers.
+- `README.Parity.json` is generated from that snapshot and classifies every
+  ordinary/compiled lane against decode and predecoded baselines, including
+  allocations and measurement provenance.
 - `README.md` is regenerated from that JSON snapshot.
 - Benchmark refresh flow is:
   - benchmark CLI measures selected cases or sections
@@ -168,6 +173,10 @@ Current intended uses:
     with a self-calibrating loop that constructs dynamic compiled code
 - --emit-readme-benchmark-markdown
   - emit generated README benchmark markdown preview for one or more sections: dotnet-performance, dotnet-performance-compiled, lokad, lokad-compiled
+- --emit-readme-parity-report
+  - emit the generated machine-readable parity report from `README.Benchmarks.json`
+- --verify-readme-parity-report
+  - fail when `README.Parity.json` does not exactly match its benchmark snapshot
 - --refresh-readme-case
   - measure one case, update `README.Benchmarks.json`, then regenerate the affected README output
 - --refresh-readme-benchmarks

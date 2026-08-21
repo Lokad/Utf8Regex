@@ -1537,10 +1537,11 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
-        snapshot.SchemaVersion = 3;
+        snapshot.SchemaVersion = 4;
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
-        File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
+        WriteReadmeParityReport(snapshot, path);
     }
 
     private static string FindRepoFile(string fileName)
@@ -1772,7 +1773,13 @@ internal static partial class BenchmarkInspectReporter
             first.PredecodedRegex == second.PredecodedRegex &&
             first.CompiledRegex == second.CompiledRegex &&
             first.DecodeThenRegex == second.DecodeThenRegex &&
-            first.DecodeThenCompiledRegex == second.DecodeThenCompiledRegex;
+            first.DecodeThenCompiledRegex == second.DecodeThenCompiledRegex &&
+            first.Utf8RegexAllocatedBytes == second.Utf8RegexAllocatedBytes &&
+            first.Utf8CompiledAllocatedBytes == second.Utf8CompiledAllocatedBytes &&
+            first.PredecodedRegexAllocatedBytes == second.PredecodedRegexAllocatedBytes &&
+            first.CompiledRegexAllocatedBytes == second.CompiledRegexAllocatedBytes &&
+            first.DecodeThenRegexAllocatedBytes == second.DecodeThenRegexAllocatedBytes &&
+            first.DecodeThenCompiledRegexAllocatedBytes == second.DecodeThenCompiledRegexAllocatedBytes;
 
     private static void RemoveUnexpectedReadmeCases(
         ReadmeBenchmarkSectionJson section,
@@ -5581,16 +5588,45 @@ internal static partial class BenchmarkInspectReporter
             iterationTarget,
             samples,
             actions);
+        var utf8Microseconds = MeasureMedianMicroseconds(samples, effectiveIterations, utf8);
+        var utf8CompiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, utf8Compiled);
+        var predecodedMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, predecoded);
+        var compiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, compiledRegex);
+        var decodeMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenRegex);
+        var decodeCompiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenCompiledRegex);
         return new ReadmeCaseMeasurement(
-            MeasureMedianMicroseconds(samples, effectiveIterations, utf8),
-            MeasureMedianMicroseconds(samples, effectiveIterations, utf8Compiled),
-            MeasureMedianMicroseconds(samples, effectiveIterations, predecoded),
-            MeasureMedianMicroseconds(samples, effectiveIterations, compiledRegex),
-            MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenRegex),
-            MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenCompiledRegex),
+            utf8Microseconds,
+            utf8CompiledMicroseconds,
+            predecodedMicroseconds,
+            compiledMicroseconds,
+            decodeMicroseconds,
+            decodeCompiledMicroseconds,
+            MeasureAllocatedBytesPerOperation(effectiveIterations, utf8),
+            MeasureAllocatedBytesPerOperation(effectiveIterations, utf8Compiled),
+            MeasureAllocatedBytesPerOperation(effectiveIterations, predecoded),
+            MeasureAllocatedBytesPerOperation(effectiveIterations, compiledRegex),
+            MeasureAllocatedBytesPerOperation(effectiveIterations, decodeThenRegex),
+            MeasureAllocatedBytesPerOperation(effectiveIterations, decodeThenCompiledRegex),
             requestedIterations,
             effectiveIterations,
             samples);
+    }
+
+    private static double MeasureAllocatedBytesPerOperation(int iterations, Func<int> action)
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var sink = 0;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < iterations; iteration++)
+        {
+            sink ^= action();
+        }
+
+        var allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        GC.KeepAlive(sink);
+        return (double)allocatedBytes / iterations;
     }
 
     private static int CalibrateReadmeIterations(
@@ -5697,7 +5733,7 @@ internal static partial class BenchmarkInspectReporter
     private static string FormatReadmeCaseRow(ReadmeCaseMeasurement row)
         => string.Create(
             CultureInfo.InvariantCulture,
-            $"RequestedIterations={row.RequestedIterations};EffectiveIterations={row.EffectiveIterations};Samples={row.Samples};Utf8Regex={row.Utf8Regex:F3};Utf8Compiled={row.Utf8Compiled:F3};PredecodedRegex={row.PredecodedRegex:F3};CompiledRegex={row.CompiledRegex:F3};DecodeThenRegex={row.DecodeThenRegex:F3};DecodeThenCompiledRegex={row.DecodeThenCompiledRegex:F3}");
+            $"RequestedIterations={row.RequestedIterations};EffectiveIterations={row.EffectiveIterations};Samples={row.Samples};Utf8Regex={row.Utf8Regex:F3};Utf8Compiled={row.Utf8Compiled:F3};PredecodedRegex={row.PredecodedRegex:F3};CompiledRegex={row.CompiledRegex:F3};DecodeThenRegex={row.DecodeThenRegex:F3};DecodeThenCompiledRegex={row.DecodeThenCompiledRegex:F3};Utf8RegexAllocatedBytes={row.Utf8RegexAllocatedBytes:F3};Utf8CompiledAllocatedBytes={row.Utf8CompiledAllocatedBytes:F3};PredecodedRegexAllocatedBytes={row.PredecodedRegexAllocatedBytes:F3};CompiledRegexAllocatedBytes={row.CompiledRegexAllocatedBytes:F3};DecodeThenRegexAllocatedBytes={row.DecodeThenRegexAllocatedBytes:F3};DecodeThenCompiledRegexAllocatedBytes={row.DecodeThenCompiledRegexAllocatedBytes:F3}");
 
     private static ReadmeCaseMeasurement ParseReadmeCaseRow(string text)
     {
@@ -5707,6 +5743,12 @@ internal static partial class BenchmarkInspectReporter
         double compiledRegex = 0;
         double decode = 0;
         double decodeCompiled = 0;
+        double utf8Allocated = -1;
+        double utf8CompiledAllocated = -1;
+        double predecodedAllocated = -1;
+        double compiledAllocated = -1;
+        double decodeAllocated = -1;
+        double decodeCompiledAllocated = -1;
         var requestedIterations = 0;
         var effectiveIterations = 0;
         var samples = 0;
@@ -5748,11 +5790,31 @@ internal static partial class BenchmarkInspectReporter
                 case "DecodeThenCompiledRegex":
                     decodeCompiled = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
+                case "Utf8RegexAllocatedBytes":
+                    utf8Allocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "Utf8CompiledAllocatedBytes":
+                    utf8CompiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "PredecodedRegexAllocatedBytes":
+                    predecodedAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "CompiledRegexAllocatedBytes":
+                    compiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "DecodeThenRegexAllocatedBytes":
+                    decodeAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "DecodeThenCompiledRegexAllocatedBytes":
+                    decodeCompiledAllocated = double.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
             }
         }
 
         if (requestedIterations <= 0 || effectiveIterations < requestedIterations || samples <= 0 ||
-            utf8 <= 0 || utf8Compiled <= 0 || predecoded <= 0 || compiledRegex <= 0 || decode <= 0 || decodeCompiled <= 0)
+            utf8 <= 0 || utf8Compiled <= 0 || predecoded <= 0 || compiledRegex <= 0 || decode <= 0 || decodeCompiled <= 0 ||
+            utf8Allocated < 0 || utf8CompiledAllocated < 0 || predecodedAllocated < 0 || compiledAllocated < 0 ||
+            decodeAllocated < 0 || decodeCompiledAllocated < 0)
         {
             throw new InvalidOperationException($"Child process returned an incomplete README benchmark row: {text}");
         }
@@ -5764,6 +5826,12 @@ internal static partial class BenchmarkInspectReporter
             compiledRegex,
             decode,
             decodeCompiled,
+            utf8Allocated,
+            utf8CompiledAllocated,
+            predecodedAllocated,
+            compiledAllocated,
+            decodeAllocated,
+            decodeCompiledAllocated,
             requestedIterations,
             effectiveIterations,
             samples);
@@ -5777,7 +5845,7 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class ReadmeBenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 3;
+        public int SchemaVersion { get; set; } = 4;
 
         public Dictionary<string, ReadmeBenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
     }
@@ -5811,6 +5879,18 @@ internal static partial class BenchmarkInspectReporter
 
         public double DecodeThenCompiledRegex { get; set; }
 
+        public double Utf8RegexAllocatedBytes { get; set; }
+
+        public double Utf8CompiledAllocatedBytes { get; set; }
+
+        public double PredecodedRegexAllocatedBytes { get; set; }
+
+        public double CompiledRegexAllocatedBytes { get; set; }
+
+        public double DecodeThenRegexAllocatedBytes { get; set; }
+
+        public double DecodeThenCompiledRegexAllocatedBytes { get; set; }
+
         public static ReadmeCaseMeasurementJson FromMeasurement(ReadmeCaseMeasurement measurement)
             => new()
             {
@@ -5825,6 +5905,12 @@ internal static partial class BenchmarkInspectReporter
                 CompiledRegex = measurement.CompiledRegex,
                 DecodeThenRegex = measurement.DecodeThenRegex,
                 DecodeThenCompiledRegex = measurement.DecodeThenCompiledRegex,
+                Utf8RegexAllocatedBytes = measurement.Utf8RegexAllocatedBytes,
+                Utf8CompiledAllocatedBytes = measurement.Utf8CompiledAllocatedBytes,
+                PredecodedRegexAllocatedBytes = measurement.PredecodedRegexAllocatedBytes,
+                CompiledRegexAllocatedBytes = measurement.CompiledRegexAllocatedBytes,
+                DecodeThenRegexAllocatedBytes = measurement.DecodeThenRegexAllocatedBytes,
+                DecodeThenCompiledRegexAllocatedBytes = measurement.DecodeThenCompiledRegexAllocatedBytes,
             };
 
         public ReadmeCaseMeasurement ToMeasurement()
@@ -5835,6 +5921,12 @@ internal static partial class BenchmarkInspectReporter
                 CompiledRegex,
                 DecodeThenRegex,
                 DecodeThenCompiledRegex,
+                Utf8RegexAllocatedBytes,
+                Utf8CompiledAllocatedBytes,
+                PredecodedRegexAllocatedBytes,
+                CompiledRegexAllocatedBytes,
+                DecodeThenRegexAllocatedBytes,
+                DecodeThenCompiledRegexAllocatedBytes,
                 RequestedIterations,
                 EffectiveIterations,
                 Samples);
@@ -5847,6 +5939,12 @@ internal static partial class BenchmarkInspectReporter
         double CompiledRegex,
         double DecodeThenRegex,
         double DecodeThenCompiledRegex,
+        double Utf8RegexAllocatedBytes,
+        double Utf8CompiledAllocatedBytes,
+        double PredecodedRegexAllocatedBytes,
+        double CompiledRegexAllocatedBytes,
+        double DecodeThenRegexAllocatedBytes,
+        double DecodeThenCompiledRegexAllocatedBytes,
         int RequestedIterations,
         int EffectiveIterations,
         int Samples);
