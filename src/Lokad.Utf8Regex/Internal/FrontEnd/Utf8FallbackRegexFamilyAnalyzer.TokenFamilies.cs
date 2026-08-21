@@ -13,14 +13,6 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             HasExactChars(tailClass, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
     }
 
-    public static bool IsAsciiDottedDecimalQuadCount(string pattern, RegexOptions options)
-    {
-        options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-        const string octet = "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-        return options == RegexOptions.None &&
-            pattern == $"(?:{octet}\\.){{3}}{octet}";
-    }
-
     public static bool TryParseAsciiDelimitedTokenCount(
         string pattern,
         RegexOptions options,

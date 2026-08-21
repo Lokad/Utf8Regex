@@ -1642,7 +1642,7 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledAsciiIpv4TokenCountMatchesDotNet()
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-        const string input = "bad 999.0.0.1 ok 012.200.033.199 and 255.10.0.2 end";
+        const string input = "bad 1.2.3.4 then 25.26.27.28 and 999.0.0.1 ok 012.200.033.199 and 255.10.0.2 end";
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 

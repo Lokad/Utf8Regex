@@ -73,10 +73,14 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
-    [Fact]
-    public void CommonIpMatchUsesAsciiDirectFamilyForMatch()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void CommonIpMatchUsesAsciiDirectFamilyForMatch(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None);
+        const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
@@ -84,6 +88,38 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+
+        string[] inputs =
+        [
+            "012.200.033.199",
+            "012.200.033.19A",
+            "01.02.03.04",
+            "1.2.3.4",
+            "25.26.27.28",
+            "255.249.199.000",
+            "256.200.033.199",
+            "999.999.999.999",
+            "prefix 012.200.033.199 suffix",
+            "é 012.200.033.199",
+            "012.200.033.199é",
+            "٠١٢.٢٠٠.٠٣٣.١٩٩",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        for (var value = 0; value < 300; value++)
+        {
+            var firstOctet = $"{value:D3}.200.033.199";
+            Assert.Equal(oracle.IsMatch(firstOctet), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(firstOctet)));
+
+            var finalOctet = $"012.200.033.{value:D3}";
+            Assert.Equal(oracle.IsMatch(finalOctet), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(finalOctet)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'0', (byte)'1', (byte)'2', (byte)'.', (byte)'2', (byte)'0', (byte)'0', (byte)'.', (byte)'0', (byte)'3', (byte)'3', (byte)'.', (byte)'1', (byte)'9', 0xFF]));
     }
 
     [Theory]

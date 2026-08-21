@@ -45,7 +45,7 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
 
             case Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiDottedDecimalQuad;
-                count = Utf8AsciiDottedDecimalQuadExecutor.Count(input);
+                count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount:

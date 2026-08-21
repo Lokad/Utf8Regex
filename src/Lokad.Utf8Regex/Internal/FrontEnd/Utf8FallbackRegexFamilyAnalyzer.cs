@@ -239,13 +239,12 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
                 [.. (optionalTailCharSetUtf8 ?? []), 0, .. (finalTailCharSetUtf8 ?? [])]);
         }
 
-        if (IsAsciiDottedDecimalQuadCount(executionPattern, options))
+        if (TryParseAsciiIpv4Token(executionPattern, options))
         {
             return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount);
         }
 
-        if (TryParseAsciiIpv4Token(executionPattern, options) ||
-            TryParseAsciiIpv4Token(semanticPattern, options))
+        if (TryParseAsciiIpv4Token(semanticPattern, options))
         {
             return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiIpv4Token, Utf8FallbackFindModeKind.FindToken);
         }

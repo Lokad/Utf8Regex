@@ -24,6 +24,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AnchoredAsciiSignedDecimalWhole = 7,
     AnchoredAsciiOptionalFieldWhole = 8,
     AsciiUriToken = 9,
+    AsciiIpv4Token = 10,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -101,6 +102,10 @@ public sealed class Utf8Regex
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
                 Utf8FallbackDirectFamilyKind.AsciiUriToken =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
+                Utf8FallbackDirectFamilyKind.AsciiIpv4Token =>
+                    Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
+                Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount =>
+                    Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
                 Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken,
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail =>
@@ -3191,6 +3196,30 @@ public sealed class Utf8Regex
                 }
 
                 isMatch = uriMatched;
+                return true;
+
+            case Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token:
+                var ipv4Matched = Utf8AsciiIpv4TokenExecutor.TryFindAsciiIpv4Token(
+                    input,
+                    0,
+                    out var ipv4MatchIndex,
+                    out var ipv4MatchedLength);
+
+                if (ipv4Matched &&
+                    ipv4MatchIndex == 0 &&
+                    (ipv4MatchedLength == input.Length ||
+                     ipv4MatchedLength == input.Length - 1 && input[^1] < 0x80))
+                {
+                    isMatch = true;
+                    return true;
+                }
+
+                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+                {
+                    return false;
+                }
+
+                isMatch = ipv4Matched;
                 return true;
 
             default:

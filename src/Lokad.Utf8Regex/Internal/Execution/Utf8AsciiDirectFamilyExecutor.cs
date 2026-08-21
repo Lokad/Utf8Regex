@@ -59,7 +59,7 @@ internal static class Utf8AsciiDirectFamilyExecutor
 
         if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount)
         {
-            return Utf8AsciiDottedDecimalQuadExecutor.TryFindNext(input, 0, out matchIndex, out matchedLength);
+            return Utf8AsciiIpv4TokenExecutor.TryFindAsciiIpv4Token(input, 0, out matchIndex, out matchedLength);
         }
 
         if (plan.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&

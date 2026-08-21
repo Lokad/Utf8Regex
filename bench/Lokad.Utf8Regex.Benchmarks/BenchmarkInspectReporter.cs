@@ -2739,7 +2739,7 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("CompiledWholeMatcherEmittedDirect", iterations, context.ExecuteEmittedWholeDirectOnly);
                     }
-                    if (context.CaseId == "common/uri-miss" ||
+                    if (context.CaseId is "common/ip-match" or "common/ip-miss" or "common/uri-miss" ||
                         context.Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(context.InputBytes, out _, out _))
                     {
                         Measure("DirectFallbackTokenRaw", iterations, context.ExecuteDirectFallbackTokenRawOnly);
