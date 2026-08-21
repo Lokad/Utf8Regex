@@ -278,6 +278,17 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+        Assert.True(regex.Inspection.DebugTryMatchWithoutValidation(
+            "Today is 11/18/2019."u8,
+            out var match));
+        Assert.True(match.Success);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+            "Today is 11/18/2019."u8,
+            out var isMatch));
+        Assert.True(isMatch);
+        Assert.False(regex.Inspection.DebugTryMatchWithoutValidation(
+            "Today is 11/18/2019. \xC3"u8,
+            out _));
     }
 
     [Fact]

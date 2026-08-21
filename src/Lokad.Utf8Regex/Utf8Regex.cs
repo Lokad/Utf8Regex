@@ -384,6 +384,12 @@ public sealed class Utf8Regex
 
     private bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
+        if (_hasDirectFallbackTokenFamilyWithoutValidation &&
+            TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
+        {
+            return true;
+        }
+
         if (TryIsMatchAnchoredHeadTailWithoutValidation(input, out isMatch))
         {
             return true;
@@ -394,7 +400,8 @@ public sealed class Utf8Regex
             return true;
         }
 
-        if (TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
+        if (!_hasDirectFallbackTokenFamilyWithoutValidation &&
+            TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
         {
             return true;
         }
@@ -2921,7 +2928,20 @@ public sealed class Utf8Regex
 
         if (_hasDirectFallbackTokenFamilyWithoutValidation)
         {
-            return false;
+            var directResult = Utf8AsciiTokenFamilyExecutor.TryFindTokenWithoutValidation(
+                input,
+                0,
+                _fallbackDirectFamily,
+                out _,
+                out var matchedLength);
+            if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
+            {
+                return false;
+            }
+
+            isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match &&
+                matchedLength > 0;
+            return true;
         }
 
         if (!_hasDirectFallbackAsciiFamilyWithoutValidation)
