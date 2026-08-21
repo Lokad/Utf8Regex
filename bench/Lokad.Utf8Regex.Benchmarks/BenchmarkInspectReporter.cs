@@ -2739,7 +2739,7 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("DirectFallbackTokenRaw", iterations, context.ExecuteDirectFallbackTokenRawOnly);
                     }
-                    if (context.CaseId == "common/date-match")
+                    if (context.CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
                     {
                         Measure("DateTokenWhole", iterations, context.ExecuteDateTokenWholeOnly);
                     }

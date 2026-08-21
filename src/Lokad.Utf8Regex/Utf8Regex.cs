@@ -803,9 +803,9 @@ public sealed class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input)
     {
-        if (TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(input, out var trailingLiteralIsMatch))
+        if (TryIsMatchPrioritizedBooleanFamilyWithoutValidation(input, out var prioritizedIsMatch))
         {
-            return trailingLiteralIsMatch;
+            return prioritizedIsMatch;
         }
 
         if (ShouldUseKelvinSignFallback(input))
@@ -2818,20 +2818,8 @@ public sealed class Utf8Regex
             return false;
         }
 
-        if (_anchoredBoundedDatePlan.HasValue)
+        if (TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch))
         {
-            var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
-                input,
-                _anchoredBoundedDatePlan,
-                _allowsTrailingNewlineBeforeEnd,
-                out _,
-                out var dateNeedsValidation);
-            if (dateNeedsValidation)
-            {
-                return false;
-            }
-
-            isMatch = matched;
             return true;
         }
 
@@ -2864,6 +2852,31 @@ public sealed class Utf8Regex
         }
 
         isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
+        return true;
+    }
+
+    private bool TryIsMatchAnchoredBoundedDateWithoutValidation(
+        ReadOnlySpan<byte> input,
+        out bool isMatch)
+    {
+        isMatch = false;
+        if (!_anchoredBoundedDatePlan.HasValue)
+        {
+            return false;
+        }
+
+        var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
+            input,
+            _anchoredBoundedDatePlan,
+            _allowsTrailingNewlineBeforeEnd,
+            out _,
+            out var needsValidation);
+        if (needsValidation)
+        {
+            return false;
+        }
+
+        isMatch = matched;
         return true;
     }
 
@@ -2950,7 +2963,8 @@ public sealed class Utf8Regex
             return true;
         }
 
-        if (TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(input, out isMatch))
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
+            TryIsMatchPrioritizedBooleanFamilyWithoutValidation(input, out isMatch))
         {
             return true;
         }
@@ -2993,20 +3007,24 @@ public sealed class Utf8Regex
         return true;
     }
 
-    private bool TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(
+    private bool TryIsMatchPrioritizedBooleanFamilyWithoutValidation(
         ReadOnlySpan<byte> input,
         out bool isMatch)
     {
         isMatch = false;
-        if (_fallbackDirectFamily.Kind != Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral ||
-            _fallbackDirectFamily.LiteralUtf8 is not { Length: > 0 } trailingLiteralUtf8 ||
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } trailingLiteralUtf8)
         {
-            return false;
+            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            {
+                return false;
+            }
+
+            isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
+            return true;
         }
 
-        isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
-        return true;
+        return TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch);
     }
 
     private bool ShouldFallbackForTrailingNewlineAnchoredValidator(ReadOnlySpan<byte> input, Utf8ValidationResult validation)

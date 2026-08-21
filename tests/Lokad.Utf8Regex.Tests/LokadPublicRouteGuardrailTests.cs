@@ -86,6 +86,36 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoostDateMatchUsesPrioritizedBoundedDateBooleanFamily(RegexOptions options)
+    {
+        const string pattern = @"^\d{1,2}/\d{1,2}/\d{4}$";
+        var regex = new Utf8Regex(pattern, options);
+
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("12/12/2001"u8, out var directMatch));
+        Assert.True(directMatch);
+
+        string[] inputs =
+        [
+            "1/2/2001",
+            "12/2/2001",
+            "12/12/2001",
+            "12/12/2001\n",
+            "12/123/2001",
+            "12-12-2001",
+            "١٢/١٢/٢٠٠١",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'1', (byte)'2', (byte)'/', 0xFF]));
+    }
+
     [Fact]
     public void CommonUriMatchUsesStructuredTokenDirectFamilyForMatch()
     {
