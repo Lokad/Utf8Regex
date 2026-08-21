@@ -2733,7 +2733,11 @@ internal static partial class BenchmarkInspectReporter
                         Measure("AnchoredValidatorFirstBounded", iterations, context.ExecuteAnchoredValidatorFirstBoundedSegmentOnly);
                         Measure("AnchoredValidatorSuffixAfterFirstBounded", iterations, context.ExecuteAnchoredValidatorSuffixAfterFirstBoundedOnly);
                         Measure("AnchoredValidatorNativeWhole", iterations, context.ExecuteAnchoredValidatorNativeWholeOnly);
-                        Measure("CompiledAnchoredValidatorDirect", iterations, context.ExecuteCompiledAnchoredValidatorDirectOnly);
+                        Measure("CompiledAnchoredValidatorNativeDirect", iterations, context.ExecuteCompiledAnchoredValidatorDirectOnly);
+                        if (context.CompiledUtf8Regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher)
+                        {
+                            Measure("CompiledAnchoredValidatorEmittedDirect", iterations, context.ExecuteEmittedAnchoredValidatorDirectOnly);
+                        }
                     }
                     if (context.Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(context.InputBytes, out _, out _))
                     {

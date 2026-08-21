@@ -340,6 +340,15 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
                 ? boundedDateMatcher
                 : null;
         }
+        else if (_regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue)
+        {
+            _emittedAnchoredValidatorMatcher = Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+                _regexPlan.SimplePatternPlan.AnchoredOptionalFieldPlan,
+                _anchoredValidatorAllowsTrailingNewline,
+                out var optionalFieldMatcher)
+                ? optionalFieldMatcher
+                : null;
+        }
         else
         {
             _emittedAnchoredValidatorMatcher =

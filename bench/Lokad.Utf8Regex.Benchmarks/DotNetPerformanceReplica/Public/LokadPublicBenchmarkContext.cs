@@ -296,6 +296,13 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
+    public int ExecuteEmittedAnchoredValidatorDirectOnly()
+    {
+        return CompiledUtf8Regex.Inspection.DebugTryMatchEmittedAnchoredValidator(InputBytes, out var matchedLength)
+            ? matchedLength
+            : 0;
+    }
+
     public int ExecuteDirectFallbackTokenRawOnly()
     {
         return Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(InputBytes, out var matchIndex, out var matchedLength)

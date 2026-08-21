@@ -12,6 +12,15 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
+internal enum Utf8PrioritizedBooleanFamilyKind : byte
+{
+    None = 0,
+    LeadingAnyRunTrailingAsciiLiteral = 1,
+    AnchoredBoundedDate = 2,
+    CompiledAnchoredOptionalField = 3,
+    AsciiBoundedDateToken = 4,
+}
+
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
 /// <remarks>Patterns and coordinates use .NET UTF-16 semantics; value APIs additionally expose scalar-aligned ranges in the original bytes.</remarks>
 public sealed class Utf8Regex
@@ -19,6 +28,7 @@ public sealed class Utf8Regex
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
+    private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -44,6 +54,16 @@ public sealed class Utf8Regex
         MatchTimeout = matchTimeout;
 
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
+        var preparedRegex = _program.PreparedRegex;
+        _prioritizedBooleanFamilyKind = preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral
+            ? Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral
+            : preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue
+                ? Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate
+                : (options & RegexOptions.Compiled) != 0 && preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue
+                    ? Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField
+                    : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken
+                        ? Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken
+                        : Utf8PrioritizedBooleanFamilyKind.None;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
     }
 
@@ -3020,40 +3040,48 @@ public sealed class Utf8Regex
         out bool isMatch)
     {
         isMatch = false;
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } trailingLiteralUtf8)
+        switch (_prioritizedBooleanFamilyKind)
         {
-            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            {
+            case Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral:
+                if (_fallbackDirectFamily.LiteralUtf8 is not { Length: > 0 } trailingLiteralUtf8 ||
+                    input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+                {
+                    return false;
+                }
+
+                isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
+                return true;
+
+            case Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate:
+                return TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch);
+
+            case Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField:
+                if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
+                    compiledRuntime.TryMatchEmittedAnchoredValidator(input, out _))
+                {
+                    isMatch = true;
+                    return true;
+                }
+
                 return false;
-            }
 
-            isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
-            return true;
-        }
+            case Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken:
+                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+                {
+                    return false;
+                }
 
-        if (TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch))
-        {
-            return true;
-        }
+                isMatch = Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
+                    input,
+                    0,
+                    _fallbackDirectFamily,
+                    out _,
+                    out _);
+                return true;
 
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
-        {
-            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            {
+            default:
                 return false;
-            }
-
-            isMatch = Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
-                input,
-                0,
-                _fallbackDirectFamily,
-                out _,
-                out _);
-            return true;
         }
-
-        return false;
     }
 
     private bool ShouldFallbackForTrailingNewlineAnchoredValidator(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
@@ -3542,6 +3570,19 @@ public sealed class Utf8Regex
             ReadOnlySpan<byte> input,
             out int matchedLength) =>
             _owner.DebugTryMatchCompiledAnchoredValidatorWithoutValidation(input, out matchedLength);
+
+        public bool DebugTryMatchEmittedAnchoredValidator(
+            ReadOnlySpan<byte> input,
+            out int matchedLength)
+        {
+            if (_owner._compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime)
+            {
+                return compiledRuntime.TryMatchEmittedAnchoredValidator(input, out matchedLength);
+            }
+
+            matchedLength = 0;
+            return false;
+        }
 
         public bool DebugTryFindDirectFallbackTokenWithoutValidation(
             ReadOnlySpan<byte> input,

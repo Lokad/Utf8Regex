@@ -532,7 +532,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
-        Assert.False(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
         Assert.Equal(6, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
         Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
         Assert.True(
@@ -541,6 +541,62 @@ public sealed class Utf8RegexConstructionTests
                 segment.MinLength == 0 &&
                 segment.MaxLength == 1) >= 2);
         Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 2 && segment.MaxLength == 2);
+    }
+
+    [Fact]
+    public void EmittedAnchoredOptionalFieldMatchesNativeAcrossCompleteShapeProduct()
+    {
+        var regex = new Utf8Regex("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.Compiled);
+        var plan = regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan;
+
+        Assert.True(plan.HasValue);
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+            plan,
+            allowTrailingNewline: true,
+            out var matcher));
+        Assert.NotNull(matcher);
+        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+            new AsciiSimplePatternAnchoredOptionalFieldPlan(
+                plan.HeadClass,
+                plan.HeadMinCount,
+                9,
+                plan.FirstRequiredClass,
+                plan.OptionalClass,
+                plan.OptionalLiteral,
+                plan.SecondRequiredClass,
+                plan.TailClass,
+                plan.TailCount),
+            allowTrailingNewline: false,
+            out _));
+
+        byte[][] inputs =
+        [
+            "A01ZZ"u8.ToArray(),
+            "A0 1ZZ"u8.ToArray(),
+            "A0Z1ZZ"u8.ToArray(),
+            "A0Z 1ZZ"u8.ToArray(),
+            "AB01ZZ"u8.ToArray(),
+            "AB0 1ZZ"u8.ToArray(),
+            "AB0Z1ZZ"u8.ToArray(),
+            "AB0Z 1ZZ"u8.ToArray(),
+            "AB0Z 1ZZ\n"u8.ToArray(),
+            "ABC0Z 1ZZ"u8.ToArray(),
+            "AB0Z 1Z9"u8.ToArray(),
+            "éB0Z 1ZZ"u8.ToArray(),
+        ];
+        foreach (var input in inputs)
+        {
+            var nativeMatch = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
+                input,
+                plan,
+                allowTrailingNewline: true,
+                out var nativeLength,
+                out _);
+            var emittedLength = matcher!.MatchWhole(input);
+
+            Assert.Equal(nativeMatch, emittedLength >= 0);
+            Assert.Equal(nativeMatch ? nativeLength : -1, emittedLength);
+        }
     }
 
     [Fact]

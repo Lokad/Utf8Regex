@@ -375,6 +375,42 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(match.Success);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoostdocsPostcodeMatchPreservesOptionalShapeSemantics(RegexOptions options)
+    {
+        const string pattern = "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$";
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
+        Assert.Equal(
+            (options & RegexOptions.Compiled) != 0,
+            regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+
+        string[] inputs =
+        [
+            "A01ZZ",
+            "A0 1ZZ",
+            "A0Z1ZZ",
+            "A0Z 1ZZ",
+            "AB01ZZ",
+            "AB0 1ZZ",
+            "AB0Z1ZZ",
+            "AB0Z 1ZZ",
+            "AB0Z 1ZZ\n",
+            "ABC0Z 1ZZ",
+            "AB0Z 1Z9",
+            "éB0Z 1ZZ",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'A', (byte)'B', (byte)'0', (byte)'Z', (byte)' ', (byte)'1', (byte)'Z', (byte)'Z', 0xFF]));
+    }
+
     [Fact]
     public void BoostdocsFloatMatchUsesNoValidationSignedDecimalFastPath()
     {
