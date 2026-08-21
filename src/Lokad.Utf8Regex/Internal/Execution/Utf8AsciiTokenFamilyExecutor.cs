@@ -58,14 +58,15 @@ internal static class Utf8AsciiTokenFamilyExecutor
         matchIndex = -1;
         matchedLength = 0;
 
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
+        if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiUriToken or
+            Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
             {
                 return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation;
             }
 
-            return Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
+            return TryFindToken(
                 input,
                 startIndex,
                 plan,

@@ -97,6 +97,13 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+            "https://example.com/path?q=1"u8,
+            out var isMatch));
+        Assert.True(isMatch);
+        Assert.False(regex.Inspection.DebugTryIsMatchWithoutValidation(
+            "https://example.com/caf\u00E9"u8,
+            out _));
     }
 
     [Fact]
