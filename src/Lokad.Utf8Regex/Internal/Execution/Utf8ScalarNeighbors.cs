@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Planning;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -53,6 +54,24 @@ internal static class Utf8ScalarNeighbors // PCRE2-INTEGRATION-POINT
 
 internal static class DotNetUtf8WordBoundary
 {
+    /// <summary>
+    /// Applies a planned boundary requirement using the single .NET-compatible UTF-8 word-boundary policy.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool MatchesRequirement(
+        Utf8BoundaryRequirement requirement,
+        ReadOnlySpan<byte> input,
+        int byteOffset)
+    {
+        return requirement switch
+        {
+            Utf8BoundaryRequirement.None => true,
+            Utf8BoundaryRequirement.Boundary => IsBoundary(input, byteOffset),
+            Utf8BoundaryRequirement.NonBoundary => !IsBoundary(input, byteOffset),
+            _ => false,
+        };
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsBoundary(ReadOnlySpan<byte> input, int byteOffset)
     {

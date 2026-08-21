@@ -385,7 +385,7 @@ internal readonly struct PreparedMultiLiteralSearch
         }
 
         index = state.NextStart + relativeIndex;
-        state = new PreparedMultiLiteralScanState(index + 1, index + 1, 0);
+        state = PreparedMultiLiteralScanState.AfterOverlappingMatch(index);
         return true;
     }
 
@@ -905,7 +905,7 @@ internal readonly struct PreparedMultiLiteralPackedSearch
         }
 
         index = state.NextStart + relativeIndex;
-        state = new PreparedMultiLiteralScanState(index + 1, index + 1, 0);
+        state = PreparedMultiLiteralScanState.AfterOverlappingMatch(index);
         return true;
     }
 
@@ -2477,7 +2477,7 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
         }
 
         index = state.NextStart + relativeIndex;
-        state = new PreparedMultiLiteralScanState(index + 1, index + 1, 0);
+        state = PreparedMultiLiteralScanState.AfterOverlappingMatch(index);
         return true;
     }
 
@@ -2541,7 +2541,15 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
     }
 }
 
-internal readonly record struct PreparedMultiLiteralScanState(int NextStart, int ScanIndex, int AutomatonState);
+internal readonly record struct PreparedMultiLiteralScanState(int NextStart, int ScanIndex, int AutomatonState)
+{
+    /// <summary>
+    /// Advances one byte from the match start, rather than from its end, and resets backend scan state.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static PreparedMultiLiteralScanState AfterOverlappingMatch(int matchIndex) =>
+        new(matchIndex + 1, matchIndex + 1, 0);
+}
 
 internal sealed class MutablePreparedMultiLiteralAutomatonNode
 {

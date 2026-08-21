@@ -340,7 +340,7 @@ internal static class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
-                    if (!MatchesBoundaryRequirement(stage.BoundaryRequirement, input, startIndex))
+                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex))
                     {
                         return false;
                     }
@@ -348,7 +348,7 @@ internal static class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!MatchesBoundaryRequirement(stage.BoundaryRequirement, input, startIndex + matchLength))
+                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex + matchLength))
                     {
                         return false;
                     }
@@ -412,14 +412,14 @@ internal static class Utf8StructuralSearchExecutor
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
-                    if (!MatchesBoundaryRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
+                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Leading.Index))
                     {
                         return false;
                     }
                     break;
 
                 case Utf8StructuralSearchStageKind.RequireTrailingBoundary:
-                    if (!MatchesBoundaryRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
+                    if (!DotNetUtf8WordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, window.Trailing.Index + window.Trailing.Length))
                     {
                         return false;
                     }
@@ -458,22 +458,6 @@ internal static class Utf8StructuralSearchExecutor
         }
 
         return true;
-    }
-
-    private static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return requirement switch
-        {
-            Utf8BoundaryRequirement.None => true,
-            Utf8BoundaryRequirement.Boundary => IsWordBoundary(input, byteOffset),
-            Utf8BoundaryRequirement.NonBoundary => !IsWordBoundary(input, byteOffset),
-            _ => false,
-        };
-    }
-
-    private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
     }
 
     private static int GetRequirementBaseIndex(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackStartTransform startTransform)

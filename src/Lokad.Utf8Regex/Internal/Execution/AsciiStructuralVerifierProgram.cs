@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Planning;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -292,14 +291,14 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
             switch (instruction.Kind)
             {
                 case AsciiStructuralLinearVerifierInstructionKind.ConsumeSetLoop:
-                    if (!TryConsumeSetLoop(input, ref index, instruction.Set, instruction.CharClass, instruction.MinCount))
+                    if (!AsciiStructuralSuffixMatcher.TryConsumeSetLoop(input, ref index, instruction.Set, instruction.CharClass, instruction.MinCount))
                     {
                         return false;
                     }
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.RequireSetByte:
-                    if ((uint)index >= (uint)input.Length || !MatchesSet(input[index], instruction.Set, instruction.CharClass))
+                    if ((uint)index >= (uint)input.Length || !AsciiStructuralSuffixMatcher.MatchesSet(input[index], instruction.Set, instruction.CharClass))
                     {
                         return false;
                     }
@@ -312,7 +311,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                 case AsciiStructuralLinearVerifierInstructionKind.ConsumeSetTail:
                     var consumed = 0;
                     while ((uint)index < (uint)input.Length &&
-                           MatchesSet(input[index], instruction.Set, instruction.CharClass) &&
+                           AsciiStructuralSuffixMatcher.MatchesSet(input[index], instruction.Set, instruction.CharClass) &&
                            consumed < instruction.MaxCount)
                     {
                         index++;
@@ -327,7 +326,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.MatchSuffixAtCurrent:
-                    if (!TryMatchSuffixParts(input, index, instruction.SuffixParts, out index))
+                    if (!AsciiStructuralSuffixMatcher.TryMatch(input, index, instruction.SuffixParts, out index))
                     {
                         return false;
                     }
@@ -339,14 +338,14 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
                         return false;
                     }
 
-                    if (!TryMatchSuffixPartsAfterTail(input, tailStart + instruction.MinCount, tailEnd, instruction.SuffixParts, out index))
+                    if (!AsciiStructuralSuffixMatcher.TryMatchAfterTail(input, tailStart + instruction.MinCount, tailEnd, instruction.SuffixParts, out index))
                     {
                         return false;
                     }
                     break;
 
                 case AsciiStructuralLinearVerifierInstructionKind.RequireBoundary:
-                    if (!MatchesBoundaryRequirement(instruction.BoundaryRequirement, input, index))
+                    if (!DotNetUtf8WordBoundary.MatchesRequirement(instruction.BoundaryRequirement, input, index))
                     {
                         return false;
                     }
@@ -359,93 +358,6 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         }
 
         return false;
-    }
-
-    private static bool TryConsumeSetLoop(ReadOnlySpan<byte> input, ref int index, string set, AsciiCharClass charClass, int minCount)
-    {
-        var count = 0;
-        while ((uint)index < (uint)input.Length && MatchesSet(input[index], set, charClass))
-        {
-            index++;
-            count++;
-        }
-
-        return count >= minCount;
-    }
-
-    private static bool TryMatchSuffixParts(ReadOnlySpan<byte> input, int startIndex, ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts, out int endIndex)
-    {
-        endIndex = startIndex;
-        var index = startIndex;
-
-        for (var i = 0; i < suffixParts.Length; i++)
-        {
-            var part = suffixParts[i];
-            if (part.IsSeparator)
-            {
-                if (!TryConsumeSetLoop(input, ref index, part.SeparatorSet, part.SeparatorCharClass, part.SeparatorMinCount))
-                {
-                    return false;
-                }
-
-                continue;
-            }
-
-            var literal = part.LiteralUtf8;
-            if (literal.Length == 0 ||
-                input.Length - index < literal.Length ||
-                !input.Slice(index, literal.Length).SequenceEqual(literal))
-            {
-                return false;
-            }
-
-            index += literal.Length;
-        }
-
-        endIndex = index;
-        return true;
-    }
-
-    private static bool TryMatchSuffixPartsAfterTail(
-        ReadOnlySpan<byte> input,
-        int searchStart,
-        int tailEnd,
-        ReadOnlySpan<AsciiStructuralCompiledSuffixPart> suffixParts,
-        out int endIndex)
-    {
-        endIndex = tailEnd;
-        if (suffixParts.Length == 0)
-        {
-            return false;
-        }
-
-        if (suffixParts[0].IsSeparator)
-        {
-            return TryMatchSuffixParts(input, tailEnd, suffixParts, out endIndex);
-        }
-
-        var firstLiteral = suffixParts[0].LiteralUtf8;
-        if (firstLiteral.Length == 0)
-        {
-            return false;
-        }
-
-        for (var start = tailEnd - firstLiteral.Length; start >= searchStart; start--)
-        {
-            if (TryMatchSuffixParts(input, start, suffixParts, out endIndex))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool MatchesSet(byte value, string runtimeSet, AsciiCharClass charClass)
-    {
-        return !charClass.IsEmpty
-            ? charClass.Contains(value)
-            : value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet);
     }
 
     private static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
@@ -468,16 +380,5 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
     private static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
     {
         return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
-    }
-
-    private static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return requirement switch
-        {
-            Utf8BoundaryRequirement.None => true,
-            Utf8BoundaryRequirement.Boundary => DotNetUtf8WordBoundary.IsBoundary(input, byteOffset),
-            Utf8BoundaryRequirement.NonBoundary => !DotNetUtf8WordBoundary.IsBoundary(input, byteOffset),
-            _ => false,
-        };
     }
 }

@@ -895,30 +895,14 @@ internal static class Utf8SearchExecutor
 
     internal static bool MatchesBoundaryRequirements(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int startIndex, int literalLength)
     {
-        return MatchesBoundaryRequirement(plan.LeadingBoundary, input, startIndex) &&
+        return DotNetUtf8WordBoundary.MatchesRequirement(plan.LeadingBoundary, input, startIndex) &&
             MatchesTrailingLiteralRequirement(in plan, input, startIndex + literalLength) &&
-            MatchesBoundaryRequirement(plan.TrailingBoundary, input, startIndex + literalLength);
+            DotNetUtf8WordBoundary.MatchesRequirement(plan.TrailingBoundary, input, startIndex + literalLength);
     }
 
     private static bool MatchesTrailingLiteralRequirement(in Utf8SearchPlan plan, ReadOnlySpan<byte> input, int byteOffset)
     {
         var trailingLiteral = plan.TrailingLiteralUtf8;
         return trailingLiteral is null || input[byteOffset..].StartsWith(trailingLiteral);
-    }
-
-    private static bool MatchesBoundaryRequirement(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return requirement switch
-        {
-            Utf8BoundaryRequirement.None => true,
-            Utf8BoundaryRequirement.Boundary => IsWordBoundary(input, byteOffset),
-            Utf8BoundaryRequirement.NonBoundary => !IsWordBoundary(input, byteOffset),
-            _ => false,
-        };
-    }
-
-    private static bool IsWordBoundary(ReadOnlySpan<byte> input, int byteOffset)
-    {
-        return DotNetUtf8WordBoundary.IsBoundary(input, byteOffset);
     }
 }

@@ -334,6 +334,45 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PreparedMultiLiteralBackendsShareOverlappingProgression()
+    {
+        var direct = new PreparedMultiLiteralSearch(
+        [
+            Encoding.UTF8.GetBytes("aba"),
+            Encoding.UTF8.GetBytes("ba"),
+        ], ignoreCase: false);
+        Assert.Equal(PreparedMultiLiteralKind.ExactDirect, direct.Kind);
+        var directState = new PreparedMultiLiteralScanState(0, 0, 0);
+        Assert.True(direct.TryFindNextOverlappingMatch("ababa"u8, ref directState, out var directIndex, out _, out _));
+        AssertProgression(directIndex, directState);
+
+        byte[][] packedLiterals =
+        [
+            Encoding.UTF8.GetBytes("LogTrace"),
+            Encoding.UTF8.GetBytes("LogDebug"),
+            Encoding.UTF8.GetBytes("LogInformation"),
+            Encoding.UTF8.GetBytes("LogWarning"),
+            Encoding.UTF8.GetBytes("LogError"),
+        ];
+        Assert.True(PreparedMultiLiteralPackedSearch.TryCreate(packedLiterals, out var packed));
+        var packedState = new PreparedMultiLiteralScanState(0, 0, 0);
+        Assert.True(packed.TryFindNextOverlappingMatch("x LogWarning"u8, ref packedState, out var packedIndex, out _, out _));
+        AssertProgression(packedIndex, packedState);
+
+        var automaton = PreparedMultiLiteralAutomatonSearch.Create(packedLiterals);
+        var automatonState = new PreparedMultiLiteralScanState(0, 0, 0);
+        Assert.True(automaton.TryFindNextOverlappingMatch("x LogWarning"u8, ref automatonState, out var automatonIndex, out _, out _));
+        AssertProgression(automatonIndex, automatonState);
+
+        static void AssertProgression(int matchIndex, PreparedMultiLiteralScanState state)
+        {
+            Assert.Equal(matchIndex + 1, state.NextStart);
+            Assert.Equal(matchIndex + 1, state.ScanIndex);
+            Assert.Equal(0, state.AutomatonState);
+        }
+    }
+
+    [Fact]
     public void PreparedAsciiFindPlanCanFindLiteralFamilyAnchors()
     {
         var plan = PreparedAsciiFindPlan.CreateLiteralFamily(
