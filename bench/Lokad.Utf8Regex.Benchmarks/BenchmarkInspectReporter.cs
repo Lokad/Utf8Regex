@@ -6326,6 +6326,7 @@ internal static partial class BenchmarkInspectReporter
                 ".",
                 ":(exclude)README.md",
                 ":(exclude)README.Benchmarks.json",
+                ":(exclude)README.Parity.json",
                 ":(exclude)PCRE2.Benchmarks.json",
                 ":(exclude)bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md")),
             HasUntrackedFiles = !string.IsNullOrWhiteSpace(RunGit("ls-files", "--others", "--exclude-standard")),
