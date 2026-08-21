@@ -10,7 +10,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
 
         var sections = root.GetProperty("Sections");
         AssertSection(sections, "dotnet-performance", 55);
@@ -56,6 +56,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
         Assert.All(rows, row =>
         {
             Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap" });
+            Assert.Equal("AlternatingSixLaneV1", row.GetProperty("MeasurementProtocol").GetString());
             Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
             Assert.True(row.GetProperty("RatioToPredecoded").GetDouble() > 0);
             Assert.True(row.GetProperty("Utf8AllocatedBytes").GetDouble() >= 0);
@@ -101,6 +102,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
         {
             var measurement = benchmarkCase.Value;
             var requestedIterations = measurement.GetProperty("RequestedIterations").GetInt32();
+            Assert.Equal("AlternatingSixLaneV1", measurement.GetProperty("MeasurementProtocol").GetString());
             Assert.True(requestedIterations > 0, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("EffectiveIterations").GetInt32() >= requestedIterations, benchmarkCase.Name);
             Assert.True(measurement.GetProperty("Samples").GetInt32() >= 5, benchmarkCase.Name);
