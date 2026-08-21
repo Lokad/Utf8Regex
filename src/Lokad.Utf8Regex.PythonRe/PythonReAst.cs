@@ -23,9 +23,20 @@ internal sealed record PythonReQuantifierNode(
 internal sealed record PythonReGroupNode(
     PythonReGroupKind Kind,
     PythonReNode Inner,
-    string? Name = null,
-    PythonReCompileOptions AddOptions = PythonReCompileOptions.None,
-    PythonReCompileOptions RemoveOptions = PythonReCompileOptions.None) : PythonReNode;
+    string? Name,
+    PythonReCompileOptions AddOptions,
+    PythonReCompileOptions RemoveOptions) : PythonReNode
+{
+    internal PythonReGroupNode(PythonReGroupKind kind, PythonReNode inner)
+        : this(kind, inner, null, PythonReCompileOptions.None, PythonReCompileOptions.None)
+    {
+    }
+
+    internal PythonReGroupNode(PythonReGroupKind kind, PythonReNode inner, string name)
+        : this(kind, inner, name, PythonReCompileOptions.None, PythonReCompileOptions.None)
+    {
+    }
+}
 
 internal sealed record PythonReNamedBackreferenceNode(string Name) : PythonReNode;
 

@@ -84,8 +84,13 @@ internal readonly struct PythonReGroupData
     public static PythonReGroupData FromUtf16(
         int number,
         Group group,
+        PythonReUtf8IndexMap indexMap) => FromUtf16(number, group, indexMap, 0);
+
+    public static PythonReGroupData FromUtf16(
+        int number,
+        Group group,
         PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset = 0)
+        int utf16BaseOffset)
     {
         if (!group.Success)
         {
@@ -109,7 +114,14 @@ internal readonly struct PythonReGroupData
         };
     }
 
-    public static PythonReGroupData FromUtf8Group(int number, Utf8GroupContext group, int byteBaseOffset = 0, int utf16BaseOffset = 0)
+    public static PythonReGroupData FromUtf8Group(int number, Utf8GroupContext group) =>
+        FromUtf8Group(number, group, 0, 0);
+
+    public static PythonReGroupData FromUtf8Group(
+        int number,
+        Utf8GroupContext group,
+        int byteBaseOffset,
+        int utf16BaseOffset)
     {
         if (!group.Success)
         {
@@ -132,7 +144,12 @@ internal readonly struct PythonReGroupData
         };
     }
 
-    public static PythonReGroupData FromUtf8Match(Utf8ValueMatch match, int byteBaseOffset = 0, int utf16BaseOffset = 0)
+    public static PythonReGroupData FromUtf8Match(Utf8ValueMatch match) => FromUtf8Match(match, 0, 0);
+
+    public static PythonReGroupData FromUtf8Match(
+        Utf8ValueMatch match,
+        int byteBaseOffset,
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {

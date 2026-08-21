@@ -86,7 +86,8 @@ public sealed class Utf8Regex
     public Utf8ValueMatch Match(ReadOnlySpan<byte> input);
     public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input);
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input);
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count = int.MaxValue);
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input);
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count);
 
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement);
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8);
@@ -112,43 +113,34 @@ public sealed class Utf8Regex
     public string[] GetGroupNames();
     public int[] GetGroupNumbers();
 
-    public static bool IsMatch(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, RegexOptions options);
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, RegexOptions options, TimeSpan matchTimeout);
 
-    public static int Count(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static int Count(ReadOnlySpan<byte> input, string pattern);
+    public static int Count(ReadOnlySpan<byte> input, string pattern, RegexOptions options);
+    public static int Count(ReadOnlySpan<byte> input, string pattern, RegexOptions options, TimeSpan matchTimeout);
 
-    public static Utf8ValueMatchEnumerator EnumerateMatches(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, string pattern);
+    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, string pattern, RegexOptions options);
+    public static Utf8ValueMatch Match(ReadOnlySpan<byte> input, string pattern, RegexOptions options, TimeSpan matchTimeout);
 
-    public static Utf8MatchContext MatchDetailed(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, string pattern);
+    public static Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, string pattern, RegexOptions options);
+    public static Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, string pattern, RegexOptions options, TimeSpan matchTimeout);
 
-    public static Utf8ValueSplitEnumerator EnumerateSplits(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        int count = int.MaxValue,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, string pattern);
+    public static Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, string pattern, RegexOptions options);
+    public static Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, string pattern, RegexOptions options, TimeSpan matchTimeout);
 
-    public static byte[] Replace(
-        ReadOnlySpan<byte> input,
-        string pattern,
-        string replacement,
-        RegexOptions options = RegexOptions.None,
-        TimeSpan matchTimeout = default);
+    public static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, string pattern);
+    public static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, string pattern, int count);
+    public static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, string pattern, int count, RegexOptions options);
+    public static Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, string pattern, int count, RegexOptions options, TimeSpan matchTimeout);
+
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement);
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, RegexOptions options);
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout);
 }
 
 public readonly struct Utf8ValueMatch

@@ -12,8 +12,8 @@ internal sealed class RegexTree
         Hashtable? captureNameToNumberMapping,
         Hashtable? captureNumberSparseMapping,
         RegexOptions options,
-        CultureInfo? culture = null,
-        RegexFindOptimizations? findOptimizations = null)
+        CultureInfo? culture,
+        RegexFindOptimizations? findOptimizations)
     {
         Root = root;
         CaptureCount = captureCount;

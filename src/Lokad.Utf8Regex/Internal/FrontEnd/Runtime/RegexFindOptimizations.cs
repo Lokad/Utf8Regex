@@ -10,7 +10,12 @@ internal sealed class RegexFindOptimizations
     private readonly (string Literal, int Distance)? _fixedDistanceLiteral;
     private readonly FixedDistanceSet[]? _fixedDistanceSets;
 
-    public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo? culture = null)
+    public RegexFindOptimizations(RegexNode root, RegexOptions options)
+        : this(root, options, null)
+    {
+    }
+
+    public RegexFindOptimizations(RegexNode root, RegexOptions options, CultureInfo? culture)
     {
         Root = root;
         Options = options;

@@ -188,7 +188,7 @@ internal sealed class RegexCharClass
         AddCaseEquivalenceRange(first, last, culture);
     }
 
-    public void AddCaseEquivalenceRange(char first, char last, CultureInfo? culture = null)
+    public void AddCaseEquivalenceRange(char first, char last, CultureInfo? culture)
     {
         _ = _caseBehavior;
         AddRange(first, last);

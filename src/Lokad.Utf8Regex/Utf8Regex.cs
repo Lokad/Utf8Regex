@@ -1153,7 +1153,12 @@ public sealed class Utf8Regex
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
 
-    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count = int.MaxValue)
+    /// <summary>Enumerates all split segments, including the final tail.</summary>
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input) =>
+        EnumerateSplits(input, int.MaxValue);
+
+    /// <summary>Enumerates at most the requested number of split segments.</summary>
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count)
     {
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
@@ -1442,10 +1447,15 @@ public sealed class Utf8Regex
         return TryReplaceCore(input, replacementPattern, replacementText, destination, out bytesWritten);
     }
 
+    /// <summary>Tests UTF-8 input with a cached culture-invariant regular expression.</summary>
+    public static bool IsMatch(
+        ReadOnlySpan<byte> input,
+        string pattern) => IsMatch(input, pattern, RegexOptions.CultureInvariant);
+
     public static bool IsMatch(
         ReadOnlySpan<byte> input,
         string pattern,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).IsMatch(input);
     }
@@ -1459,10 +1469,15 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options, matchTimeout).IsMatch(input);
     }
 
+    /// <summary>Counts matches in UTF-8 input with a cached culture-invariant expression.</summary>
+    public static int Count(
+        ReadOnlySpan<byte> input,
+        string pattern) => Count(input, pattern, RegexOptions.CultureInvariant);
+
     public static int Count(
         ReadOnlySpan<byte> input,
         string pattern,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).Count(input);
     }
@@ -1476,10 +1491,15 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options, matchTimeout).Count(input);
     }
 
+    /// <summary>Finds the first match with a cached culture-invariant expression.</summary>
+    public static Utf8ValueMatch Match(
+        ReadOnlySpan<byte> input,
+        string pattern) => Match(input, pattern, RegexOptions.CultureInvariant);
+
     public static Utf8ValueMatch Match(
         ReadOnlySpan<byte> input,
         string pattern,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).Match(input);
     }
@@ -1493,10 +1513,15 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options, matchTimeout).Match(input);
     }
 
+    /// <summary>Finds the first match and capture context with a cached expression.</summary>
+    public static Utf8MatchContext MatchDetailed(
+        ReadOnlySpan<byte> input,
+        string pattern) => MatchDetailed(input, pattern, RegexOptions.CultureInvariant);
+
     public static Utf8MatchContext MatchDetailed(
         ReadOnlySpan<byte> input,
         string pattern,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).MatchDetailed(input);
     }
@@ -1656,10 +1681,15 @@ public sealed class Utf8Regex
         return -1;
     }
 
+    /// <summary>Enumerates matches with a cached culture-invariant expression.</summary>
+    public static Utf8ValueMatchEnumerator EnumerateMatches(
+        ReadOnlySpan<byte> input,
+        string pattern) => EnumerateMatches(input, pattern, RegexOptions.CultureInvariant);
+
     public static Utf8ValueMatchEnumerator EnumerateMatches(
         ReadOnlySpan<byte> input,
         string pattern,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).EnumerateMatches(input);
     }
@@ -1673,11 +1703,22 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options, matchTimeout).EnumerateMatches(input);
     }
 
+    /// <summary>Enumerates all split segments with a cached culture-invariant expression.</summary>
+    public static Utf8ValueSplitEnumerator EnumerateSplits(
+        ReadOnlySpan<byte> input,
+        string pattern) => EnumerateSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
+
+    /// <summary>Enumerates a bounded number of split segments with a cached expression.</summary>
     public static Utf8ValueSplitEnumerator EnumerateSplits(
         ReadOnlySpan<byte> input,
         string pattern,
-        int count = int.MaxValue,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        int count) => EnumerateSplits(input, pattern, count, RegexOptions.CultureInvariant);
+
+    public static Utf8ValueSplitEnumerator EnumerateSplits(
+        ReadOnlySpan<byte> input,
+        string pattern,
+        int count,
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).EnumerateSplits(input, count);
     }
@@ -1692,11 +1733,17 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options, matchTimeout).EnumerateSplits(input, count);
     }
 
+    /// <summary>Replaces matches with a cached culture-invariant expression.</summary>
+    public static byte[] Replace(
+        ReadOnlySpan<byte> input,
+        string pattern,
+        string replacement) => Replace(input, pattern, replacement, RegexOptions.CultureInvariant);
+
     public static byte[] Replace(
         ReadOnlySpan<byte> input,
         string pattern,
         string replacement,
-        RegexOptions options = RegexOptions.CultureInvariant)
+        RegexOptions options)
     {
         return Utf8RegexCache.GetOrAdd(pattern, options).Replace(input, replacement);
     }

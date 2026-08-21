@@ -208,12 +208,20 @@ public sealed class Utf8PythonRegex
 
     public string[] GetGroupNames() => _groupNames;
 
-    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Tests whether the UTF-8 input contains a match.</summary>
+    public bool IsMatch(ReadOnlySpan<byte> input) => IsMatch(input, 0);
+
+    /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset.</summary>
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         return Search(input, startOffsetInBytes).Success;
     }
 
-    public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Finds the first match in the UTF-8 input.</summary>
+    public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input) => Search(input, 0);
+
+    /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -224,7 +232,11 @@ public sealed class Utf8PythonRegex
         return SearchViaManagedRegex(input, startOffsetInBytes);
     }
 
-    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches at the beginning of the UTF-8 input.</summary>
+    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input) => Match(input, 0);
+
+    /// <summary>Matches exactly at a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -243,7 +255,11 @@ public sealed class Utf8PythonRegex
         return context.Value;
     }
 
-    public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches the complete UTF-8 input.</summary>
+    public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input) => FullMatch(input, 0);
+
+    /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset.</summary>
+    public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var utf8FullRegex = GetUtf8FullRegex();
@@ -263,7 +279,11 @@ public sealed class Utf8PythonRegex
         return FullMatchViaManagedRegex(input, startOffsetInBytes);
     }
 
-    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Counts non-overlapping Python-style matches in the UTF-8 input.</summary>
+    public int Count(ReadOnlySpan<byte> input) => Count(input, 0);
+
+    /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset.</summary>
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan)
@@ -308,7 +328,11 @@ public sealed class Utf8PythonRegex
     private static bool IsAsciiWord(char value) =>
         char.IsAsciiLetterOrDigit(value) || value == '_';
 
-    public Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Finds the first match and exposes its capture context.</summary>
+    public Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<byte> input) => SearchDetailed(input, 0);
+
+    /// <summary>Finds the first capture context at or after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -326,7 +350,11 @@ public sealed class Utf8PythonRegex
         return CreateMatchContext(input, match, indexMap);
     }
 
-    public Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches at the beginning of the input and exposes its capture context.</summary>
+    public Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<byte> input) => MatchDetailed(input, 0);
+
+    /// <summary>Matches at a zero-based UTF-8 byte offset and exposes its capture context.</summary>
+    public Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -354,7 +382,11 @@ public sealed class Utf8PythonRegex
         return CreateMatchContext(input, match, indexMap);
     }
 
-    public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches the complete input and exposes its capture context.</summary>
+    public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input) => FullMatchDetailed(input, 0);
+
+    /// <summary>Matches the complete UTF-8 suffix and exposes its capture context.</summary>
+    public Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var utf8FullRegex = GetUtf8FullRegex();
@@ -385,25 +417,41 @@ public sealed class Utf8PythonRegex
         return CreateMatchContext(input, match, indexMap, startOffsetInUtf16);
     }
 
-    public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Returns the first matched value as a string, or <see langword="null"/>.</summary>
+    public string? SearchToString(ReadOnlySpan<byte> input) => SearchToString(input, 0);
+
+    /// <summary>Returns the first matched value after a UTF-8 byte offset, or <see langword="null"/>.</summary>
+    public string? SearchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var match = Search(input, startOffsetInBytes);
         return match.Success ? match.GetValueString() : null;
     }
 
-    public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Returns the prefix match as a string, or <see langword="null"/>.</summary>
+    public string? MatchToString(ReadOnlySpan<byte> input) => MatchToString(input, 0);
+
+    /// <summary>Returns the match at a UTF-8 byte offset as a string, or <see langword="null"/>.</summary>
+    public string? MatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var match = Match(input, startOffsetInBytes);
         return match.Success ? match.GetValueString() : null;
     }
 
-    public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Returns the complete-input match as a string, or <see langword="null"/>.</summary>
+    public string? FullMatchToString(ReadOnlySpan<byte> input) => FullMatchToString(input, 0);
+
+    /// <summary>Returns the complete-suffix match as a string, or <see langword="null"/>.</summary>
+    public string? FullMatchToString(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var match = FullMatch(input, startOffsetInBytes);
         return match.Success ? match.GetValueString() : null;
     }
 
-    public Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Finds and materializes the first match and all capture data.</summary>
+    public Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<byte> input) => SearchDetailedData(input, 0);
+
+    /// <summary>Finds and materializes capture data after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -421,7 +469,11 @@ public sealed class Utf8PythonRegex
         return CreateDetailedMatchData(input, match, indexMap);
     }
 
-    public Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches at the beginning and materializes all capture data.</summary>
+    public Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<byte> input) => MatchDetailedData(input, 0);
+
+    /// <summary>Matches at a zero-based UTF-8 byte offset and materializes all capture data.</summary>
+    public Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         if (_utf8Regex is not null)
         {
@@ -449,7 +501,11 @@ public sealed class Utf8PythonRegex
         return CreateDetailedMatchData(input, match, indexMap);
     }
 
-    public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Matches the complete input and materializes all capture data.</summary>
+    public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input) => FullMatchDetailedData(input, 0);
+
+    /// <summary>Matches the complete UTF-8 suffix and materializes all capture data.</summary>
+    public Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var utf8FullRegex = GetUtf8FullRegex();
@@ -480,7 +536,11 @@ public sealed class Utf8PythonRegex
         return CreateDetailedMatchData(input, match, indexMap, startOffsetInUtf16);
     }
 
-    public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Materializes all non-overlapping matches.</summary>
+    public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input) => FindAll(input, 0);
+
+    /// <summary>Materializes all matches at or after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_findAllBackend == PythonReDirectBackendKind.Utf8Regex &&
@@ -555,7 +615,11 @@ public sealed class Utf8PythonRegex
         return matches.ToArray();
     }
 
-    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Returns Python <c>findall</c> string values using capture-dependent shaping.</summary>
+    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input) => FindAllToStrings(input, 0);
+
+    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
@@ -689,7 +753,11 @@ public sealed class Utf8PythonRegex
         };
     }
 
-    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Returns Python <c>findall</c> values as owned UTF-8 byte arrays.</summary>
+    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input) => FindAllToUtf8(input, 0);
+
+    /// <summary>Returns shaped UTF-8 <c>findall</c> values after a byte offset.</summary>
+    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
@@ -835,7 +903,11 @@ public sealed class Utf8PythonRegex
         };
     }
 
-    public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0)
+    /// <summary>Materializes detailed data for every non-overlapping match.</summary>
+    public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input) => FindIterDetailed(input, 0);
+
+    /// <summary>Materializes detailed matches after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (!_canMatchEmpty)
@@ -910,12 +982,29 @@ public sealed class Utf8PythonRegex
         return matches.ToArray();
     }
 
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches and returns owned UTF-8 bytes.</summary>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement) => Replace(input, replacement, 0, 0);
+
+    /// <summary>Replaces at most the requested number of matches and returns owned UTF-8 bytes.</summary>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count) =>
+        Replace(input, replacement, count, 0);
+
+    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
         return Encoding.UTF8.GetBytes(ReplaceToString(input, replacement, count, startOffsetInBytes));
     }
 
-    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches and returns a string.</summary>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement) =>
+        ReplaceToString(input, replacement, 0, 0);
+
+    /// <summary>Replaces at most the requested number of matches and returns a string.</summary>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count) =>
+        ReplaceToString(input, replacement, count, 0);
+
+    /// <summary>Replaces matches after a byte offset and returns a string.</summary>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
         if (!_canMatchEmpty)
         {
@@ -929,7 +1018,20 @@ public sealed class Utf8PythonRegex
         return SubnToString(input, replacement, count, startOffsetInBytes).ResultText;
     }
 
-    public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches and returns the string plus replacement count.</summary>
+    public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement) =>
+        SubnToString(input, replacement, 0, 0);
+
+    /// <summary>Replaces a bounded number of matches and returns the string plus count.</summary>
+    public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement, int count) =>
+        SubnToString(input, replacement, count, 0);
+
+    /// <summary>Replaces matches after a byte offset and returns the string plus count.</summary>
+    public Utf8PythonSubnResult SubnToString(
+        ReadOnlySpan<byte> input,
+        string replacement,
+        int count,
+        int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
@@ -1008,7 +1110,20 @@ public sealed class Utf8PythonRegex
         };
     }
 
-    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches and returns UTF-8 bytes plus replacement count.</summary>
+    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement) =>
+        Subn(input, replacement, 0, 0);
+
+    /// <summary>Replaces a bounded number of matches and returns UTF-8 bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count) =>
+        Subn(input, replacement, count, 0);
+
+    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn(
+        ReadOnlySpan<byte> input,
+        string replacement,
+        int count,
+        int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
@@ -1031,17 +1146,74 @@ public sealed class Utf8PythonRegex
             plan);
     }
 
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches with a stateful string evaluator and returns UTF-8 bytes.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator) => Replace(input, state, evaluator, 0, 0);
+
+    /// <summary>Replaces a bounded number of matches with a stateful string evaluator.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count) => Replace(input, state, evaluator, count, 0);
+
+    /// <summary>Replaces matches after a byte offset with a stateful string evaluator.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
     }
 
-    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches with a stateful evaluator and returns a string.</summary>
+    public string ReplaceToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator) => ReplaceToString(input, state, evaluator, 0, 0);
+
+    /// <summary>Replaces a bounded number of matches with a stateful evaluator.</summary>
+    public string ReplaceToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count) => ReplaceToString(input, state, evaluator, count, 0);
+
+    /// <summary>Replaces matches after a byte offset with a stateful evaluator.</summary>
+    public string ReplaceToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         return SubnToString(input, state, evaluator, count, startOffsetInBytes).ResultText;
     }
 
-    public Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Evaluates all replacements and returns the string plus replacement count.</summary>
+    public Utf8PythonSubnResult SubnToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator) => SubnToString(input, state, evaluator, 0, 0);
+
+    /// <summary>Evaluates a bounded number of replacements and returns the string plus count.</summary>
+    public Utf8PythonSubnResult SubnToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count) => SubnToString(input, state, evaluator, count, 0);
+
+    /// <summary>Evaluates replacements after a byte offset and returns the string plus count.</summary>
+    public Utf8PythonSubnResult SubnToString<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         ArgumentNullException.ThrowIfNull(evaluator);
         ValidateStartOffset(input, startOffsetInBytes);
@@ -1123,7 +1295,26 @@ public sealed class Utf8PythonRegex
         };
     }
 
-    public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Evaluates all string replacements and returns UTF-8 bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator) => Subn(input, state, evaluator, 0, 0);
+
+    /// <summary>Evaluates a bounded number of string replacements and returns UTF-8 bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count) => Subn(input, state, evaluator, count, 0);
+
+    /// <summary>Evaluates string replacements after a byte offset and returns UTF-8 bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         ArgumentNullException.ThrowIfNull(evaluator);
         return SubnManagedUtf8(
@@ -1137,12 +1328,50 @@ public sealed class Utf8PythonRegex
             (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
     }
 
-    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Replaces all matches with a stateful UTF-8 evaluator.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator) => Replace(input, state, evaluator, 0, 0);
+
+    /// <summary>Replaces a bounded number of matches with a stateful UTF-8 evaluator.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator,
+        int count) => Replace(input, state, evaluator, count, 0);
+
+    /// <summary>Replaces matches after a byte offset with a stateful UTF-8 evaluator.</summary>
+    public byte[] Replace<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
     }
 
-    public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count = 0, int startOffsetInBytes = 0)
+    /// <summary>Evaluates all UTF-8 replacements and returns bytes plus replacement count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator) => Subn(input, state, evaluator, 0, 0);
+
+    /// <summary>Evaluates a bounded number of UTF-8 replacements and returns bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator,
+        int count) => Subn(input, state, evaluator, count, 0);
+
+    /// <summary>Evaluates UTF-8 replacements after a byte offset and returns bytes plus count.</summary>
+    public Utf8PythonSubnUtf8Result Subn<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes)
     {
         ArgumentNullException.ThrowIfNull(evaluator);
         return SubnManagedUtf8(
@@ -1155,7 +1384,15 @@ public sealed class Utf8PythonRegex
             (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
     }
 
-    public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit = 0, int startOffsetInBytes = 0)
+    /// <summary>Splits the complete input with unlimited Python-style splits.</summary>
+    public string?[] SplitToStrings(ReadOnlySpan<byte> input) => SplitToStrings(input, 0, 0);
+
+    /// <summary>Splits the input at most the requested number of times.</summary>
+    public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit) =>
+        SplitToStrings(input, maxSplit, 0);
+
+    /// <summary>Splits after a zero-based UTF-8 byte offset and returns strings and captures.</summary>
+    public string?[] SplitToStrings(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
@@ -1210,7 +1447,15 @@ public sealed class Utf8PythonRegex
         return parts.ToArray();
     }
 
-    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit = 0, int startOffsetInBytes = 0)
+    /// <summary>Splits the complete input and describes values and captured separators.</summary>
+    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input) => SplitDetailed(input, 0, 0);
+
+    /// <summary>Performs a bounded detailed split.</summary>
+    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit) =>
+        SplitDetailed(input, maxSplit, 0);
+
+    /// <summary>Performs a detailed split after a zero-based UTF-8 byte offset.</summary>
+    public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input, int maxSplit, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
@@ -1621,8 +1866,13 @@ public sealed class Utf8PythonRegex
     private Utf8PythonMatchContext CreateMatchContext(
         ReadOnlySpan<byte> input,
         Match match,
+        PythonReUtf8IndexMap indexMap) => CreateMatchContext(input, match, indexMap, 0);
+
+    private Utf8PythonMatchContext CreateMatchContext(
+        ReadOnlySpan<byte> input,
+        Match match,
         PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset = 0)
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1635,8 +1885,13 @@ public sealed class Utf8PythonRegex
     private Utf8PythonDetailedMatchData CreateDetailedMatchData(
         ReadOnlySpan<byte> input,
         Match match,
+        PythonReUtf8IndexMap indexMap) => CreateDetailedMatchData(input, match, indexMap, 0);
+
+    private Utf8PythonDetailedMatchData CreateDetailedMatchData(
+        ReadOnlySpan<byte> input,
+        Match match,
         PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset = 0)
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1650,8 +1905,14 @@ public sealed class Utf8PythonRegex
         ReadOnlySpan<byte> input,
         Match match,
         PythonReUtf8IndexMap indexMap,
+        PythonReNameEntry[] nameEntries) => CreateDetailedMatchData(input, match, indexMap, nameEntries, 0);
+
+    private static Utf8PythonDetailedMatchData CreateDetailedMatchData(
+        ReadOnlySpan<byte> input,
+        Match match,
+        PythonReUtf8IndexMap indexMap,
         PythonReNameEntry[] nameEntries,
-        int utf16BaseOffset = 0)
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1675,9 +1936,13 @@ public sealed class Utf8PythonRegex
 
     private Utf8PythonMatchContext CreateMatchContextFromUtf8(
         ReadOnlySpan<byte> input,
+        Utf8MatchContext match) => CreateMatchContextFromUtf8(input, match, 0, 0);
+
+    private Utf8PythonMatchContext CreateMatchContextFromUtf8(
+        ReadOnlySpan<byte> input,
         Utf8MatchContext match,
-        int byteBaseOffset = 0,
-        int utf16BaseOffset = 0)
+        int byteBaseOffset,
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1695,9 +1960,13 @@ public sealed class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData CreateDetailedMatchDataFromUtf8(
         ReadOnlySpan<byte> input,
+        Utf8MatchContext match) => CreateDetailedMatchDataFromUtf8(input, match, 0, 0);
+
+    private Utf8PythonDetailedMatchData CreateDetailedMatchDataFromUtf8(
+        ReadOnlySpan<byte> input,
         Utf8MatchContext match,
-        int byteBaseOffset = 0,
-        int utf16BaseOffset = 0)
+        int byteBaseOffset,
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1715,8 +1984,12 @@ public sealed class Utf8PythonRegex
 
     private static PythonReManagedMatchSnapshot CreateMatchSnapshot(
         Match match,
+        PythonReUtf8IndexMap indexMap) => CreateMatchSnapshot(match, indexMap, 0);
+
+    private static PythonReManagedMatchSnapshot CreateMatchSnapshot(
+        Match match,
         PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset = 0)
+        int utf16BaseOffset)
     {
         var groups = new PythonReGroupData[match.Groups.Count];
         for (var i = 0; i < match.Groups.Count; i++)
@@ -1807,9 +2080,13 @@ public sealed class Utf8PythonRegex
 
     private static Utf8PythonValueMatch Utf8PythonValueMatchFromUtf8Regex(
         ReadOnlySpan<byte> input,
+        Utf8ValueMatch match) => Utf8PythonValueMatchFromUtf8Regex(input, match, 0, 0);
+
+    private static Utf8PythonValueMatch Utf8PythonValueMatchFromUtf8Regex(
+        ReadOnlySpan<byte> input,
         Utf8ValueMatch match,
-        int byteBaseOffset = 0,
-        int utf16BaseOffset = 0)
+        int byteBaseOffset,
+        int utf16BaseOffset)
     {
         if (!match.Success)
         {
@@ -1819,7 +2096,17 @@ public sealed class Utf8PythonRegex
         return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf8Match(match, byteBaseOffset, utf16BaseOffset));
     }
 
-    private static void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex, int utf16BaseOffset = 0)
+    private static void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex)
+    {
+        AppendSplitMatch(parts, subject, match, ref lastIndex, 0);
+    }
+
+    private static void AppendSplitMatch(
+        List<string?> parts,
+        string subject,
+        Match match,
+        ref int lastIndex,
+        int utf16BaseOffset)
     {
         var absoluteStart = utf16BaseOffset + match.Index;
         var absoluteEnd = absoluteStart + match.Length;
@@ -1832,7 +2119,21 @@ public sealed class Utf8PythonRegex
         lastIndex = absoluteEnd;
     }
 
-    private static void AppendSplitDetailedMatch(List<Utf8PythonSplitItem> parts, string subject, Match match, ref int lastIndex, int utf16BaseOffset = 0)
+    private static void AppendSplitDetailedMatch(
+        List<Utf8PythonSplitItem> parts,
+        string subject,
+        Match match,
+        ref int lastIndex)
+    {
+        AppendSplitDetailedMatch(parts, subject, match, ref lastIndex, 0);
+    }
+
+    private static void AppendSplitDetailedMatch(
+        List<Utf8PythonSplitItem> parts,
+        string subject,
+        Match match,
+        ref int lastIndex,
+        int utf16BaseOffset)
     {
         var absoluteStart = utf16BaseOffset + match.Index;
         var absoluteEnd = absoluteStart + match.Length;

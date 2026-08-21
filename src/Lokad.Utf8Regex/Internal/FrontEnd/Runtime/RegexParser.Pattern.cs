@@ -400,16 +400,53 @@ internal sealed partial class RegexParser
         bool IsNonCapturing,
         RegexOptions GroupOptions,
         RegexNodeKind GroupKind,
-        string? CaptureName = null,
-        string? BalanceCaptureName = null,
-        RegexNode? GroupNode = null,
-        RegexNode? ImmediateNode = null,
-        bool ContinueWithoutUnit = false);
+        string? CaptureName,
+        string? BalanceCaptureName,
+        RegexNode? GroupNode,
+        RegexNode? ImmediateNode,
+        bool ContinueWithoutUnit)
+    {
+        internal GroupConstructScanResult(
+            bool success,
+            bool isNonCapturing,
+            RegexOptions groupOptions,
+            RegexNodeKind groupKind)
+            : this(success, isNonCapturing, groupOptions, groupKind, null, null, null, null, false)
+        {
+        }
+
+        internal GroupConstructScanResult(
+            bool success,
+            bool isNonCapturing,
+            RegexOptions groupOptions,
+            RegexNodeKind groupKind,
+            string? captureName,
+            string? balanceCaptureName)
+            : this(success, isNonCapturing, groupOptions, groupKind, captureName, balanceCaptureName, null, null, false)
+        {
+        }
+
+        internal GroupConstructScanResult(
+            bool success,
+            bool isNonCapturing,
+            RegexOptions groupOptions,
+            RegexNodeKind groupKind,
+            bool continueWithoutUnit)
+            : this(success, isNonCapturing, groupOptions, groupKind, null, null, null, null, continueWithoutUnit)
+        {
+        }
+    }
 
     private readonly record struct GroupOpenScanResult(
         bool Success,
-        RegexNode? Node = null,
-        bool ContinueWithoutUnit = false);
+        RegexNode? Node,
+        bool ContinueWithoutUnit)
+    {
+        internal GroupOpenScanResult(bool success, bool continueWithoutUnit)
+            : this(success, null, continueWithoutUnit)
+        {
+        }
+    }
 
     private GroupOpenScanResult ScanGroupOpen()
     {
@@ -430,7 +467,7 @@ internal sealed partial class RegexParser
 
         if (construct.GroupNode is null && construct.ContinueWithoutUnit)
         {
-            return new GroupOpenScanResult(Success: true, ContinueWithoutUnit: true);
+            return new GroupOpenScanResult(true, true);
         }
 
         var group = construct.GroupNode ?? BuildGroupNode(
@@ -447,7 +484,7 @@ internal sealed partial class RegexParser
         PushGroup();
         StartGroup(group);
         PushOptions(construct.GroupOptions);
-        return new GroupOpenScanResult(Success: true, ContinueWithoutUnit: true);
+        return new GroupOpenScanResult(true, true);
     }
 
     private GroupConstructScanResult ScanGroupConstruct(RegexOptions currentOptions)
@@ -455,10 +492,10 @@ internal sealed partial class RegexParser
         if (_pos >= _scanPattern.Length || _scanPattern[_pos] != '?')
         {
             return new GroupConstructScanResult(
-                Success: true,
-                IsNonCapturing: (currentOptions & RegexOptions.ExplicitCapture) != 0,
-                GroupOptions: currentOptions,
-                GroupKind: RegexNodeKind.Group);
+                true,
+                (currentOptions & RegexOptions.ExplicitCapture) != 0,
+                currentOptions,
+                RegexNodeKind.Group);
         }
 
         if (_pos + 1 >= _scanPattern.Length)
@@ -473,6 +510,9 @@ internal sealed partial class RegexParser
                 IsNonCapturing: true,
                 GroupOptions: currentOptions,
                 GroupKind: RegexNodeKind.Group,
+                CaptureName: null,
+                BalanceCaptureName: null,
+                GroupNode: null,
                 ImmediateNode: immediateNode,
                 ContinueWithoutUnit: immediateNode is not null);
         }
@@ -533,7 +573,10 @@ internal sealed partial class RegexParser
                 IsNonCapturing: true,
                 GroupOptions: groupOptions,
                 GroupKind: groupKind,
+                CaptureName: null,
+                BalanceCaptureName: null,
                 GroupNode: conditionalGroup,
+                ImmediateNode: null,
                 ContinueWithoutUnit: true);
         }
 
@@ -555,12 +598,7 @@ internal sealed partial class RegexParser
             }
 
             _currentOptions = groupOptions;
-            return new GroupConstructScanResult(
-                Success: true,
-                IsNonCapturing: true,
-                GroupOptions: groupOptions,
-                GroupKind: groupKind,
-                ContinueWithoutUnit: true);
+            return new GroupConstructScanResult(true, true, groupOptions, groupKind, true);
         }
 
         isNonCapturing = true;

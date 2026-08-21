@@ -2,11 +2,37 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal readonly struct RegexReplacementToken
 {
+    public RegexReplacementToken(RegexReplacementTokenKind kind)
+        : this(kind, null, -1, false)
+    {
+    }
+
+    public RegexReplacementToken(RegexReplacementTokenKind kind, string? literal)
+        : this(kind, literal, -1, false)
+    {
+    }
+
     public RegexReplacementToken(
         RegexReplacementTokenKind kind,
-        string? literal = null,
-        int groupNumber = -1,
-        bool isBraceEnclosed = false)
+        string? literal,
+        bool isBraceEnclosed)
+        : this(kind, literal, -1, isBraceEnclosed)
+    {
+    }
+
+    public RegexReplacementToken(
+        RegexReplacementTokenKind kind,
+        int groupNumber,
+        bool isBraceEnclosed)
+        : this(kind, null, groupNumber, isBraceEnclosed)
+    {
+    }
+
+    public RegexReplacementToken(
+        RegexReplacementTokenKind kind,
+        string? literal,
+        int groupNumber,
+        bool isBraceEnclosed)
     {
         Kind = kind;
         Literal = literal;

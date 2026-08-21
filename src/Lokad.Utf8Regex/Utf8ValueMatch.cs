@@ -5,13 +5,23 @@ public readonly struct Utf8ValueMatch
     private readonly long _utf16Range;
     private readonly long _byteRange;
 
+    /// <summary>Creates a match without a contiguous UTF-8 byte range.</summary>
+    public Utf8ValueMatch(
+        bool success,
+        bool isByteAligned,
+        int indexInUtf16,
+        int lengthInUtf16)
+        : this(success, isByteAligned, indexInUtf16, lengthInUtf16, 0, 0)
+    {
+    }
+
     public Utf8ValueMatch(
         bool success,
         bool isByteAligned,
         int indexInUtf16,
         int lengthInUtf16,
-        int indexInBytes = 0,
-        int lengthInBytes = 0)
+        int indexInBytes,
+        int lengthInBytes)
     {
         _utf16Range = success ? PackRange(indexInUtf16, lengthInUtf16) : -1;
         _byteRange = success && isByteAligned ? PackRange(indexInBytes, lengthInBytes) : -1;

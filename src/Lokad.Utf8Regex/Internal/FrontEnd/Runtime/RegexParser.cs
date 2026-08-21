@@ -29,10 +29,30 @@ internal sealed partial class RegexParser
     private readonly record struct ReplacementScanResult(
         bool Success,
         int NextPosition,
-        RegexReplacementToken? Token = null,
-        bool LiteralizeOriginalText = false,
-        int LiteralStart = -1,
-        string? LiteralText = null);
+        RegexReplacementToken? Token,
+        bool LiteralizeOriginalText,
+        int LiteralStart,
+        string? LiteralText)
+    {
+        internal ReplacementScanResult(bool success, int nextPosition, string literalText)
+            : this(success, nextPosition, null, false, -1, literalText)
+        {
+        }
+
+        internal ReplacementScanResult(bool success, int nextPosition, RegexReplacementToken? token)
+            : this(success, nextPosition, token, false, -1, null)
+        {
+        }
+
+        internal ReplacementScanResult(
+            bool success,
+            int nextPosition,
+            bool literalizeOriginalText,
+            int literalStart)
+            : this(success, nextPosition, null, literalizeOriginalText, literalStart, null)
+        {
+        }
+    }
 
     private RegexParser(string pattern, RegexOptions options, CultureInfo culture)
     {
@@ -481,18 +501,12 @@ internal sealed partial class RegexParser
         var tokenStart = _pos;
         if (++_pos >= _pattern.Length)
         {
-            return new ReplacementScanResult(
-                Success: true,
-                NextPosition: tokenStart + 1,
-                LiteralText: "$");
+            return new ReplacementScanResult(true, tokenStart + 1, "$");
         }
 
         if (_pattern[_pos] == '$')
         {
-            return new ReplacementScanResult(
-                Success: true,
-                NextPosition: tokenStart + 2,
-                LiteralText: "$");
+            return new ReplacementScanResult(true, tokenStart + 2, "$");
         }
 
         var result = TryScanReplacementToken(tokenStart);
@@ -501,10 +515,7 @@ internal sealed partial class RegexParser
             return result;
         }
 
-        return new ReplacementScanResult(
-            Success: true,
-            NextPosition: _pos,
-            LiteralText: "$");
+        return new ReplacementScanResult(true, _pos, "$");
     }
 
     private ReplacementScanResult TryScanReplacementToken(int tokenStart)
@@ -512,9 +523,9 @@ internal sealed partial class RegexParser
         if (TryParseSpecialReplacementToken(_pattern[_pos], out var specialKind))
         {
             return new ReplacementScanResult(
-                Success: true,
-                NextPosition: tokenStart + 2,
-                Token: new RegexReplacementToken(specialKind));
+                true,
+                tokenStart + 2,
+                new RegexReplacementToken(specialKind));
         }
 
         var numeric = TryScanNumericReplacement(tokenStart);
@@ -558,17 +569,13 @@ internal sealed partial class RegexParser
 
         if (_resolveReplacementGroups && !Contains(_replacementGroupNumbers, groupNumber))
         {
-            return new ReplacementScanResult(
-                Success: true,
-                NextPosition: scan,
-                LiteralizeOriginalText: true,
-                LiteralStart: tokenStart);
+            return new ReplacementScanResult(true, scan, true, tokenStart);
         }
 
         return new ReplacementScanResult(
-            Success: true,
-            NextPosition: scan,
-            Token: new RegexReplacementToken(RegexReplacementTokenKind.Group, groupNumber: groupNumber, isBraceEnclosed: isBraced));
+            true,
+            scan,
+            new RegexReplacementToken(RegexReplacementTokenKind.Group, groupNumber: groupNumber, isBraceEnclosed: isBraced));
     }
 
     private ReplacementScanResult TryScanNamedReplacement(int tokenStart)
@@ -597,22 +604,18 @@ internal sealed partial class RegexParser
             if (resolvedGroupNumber >= 0)
             {
                 return new ReplacementScanResult(
-                    Success: true,
-                    NextPosition: endBrace + 1,
-                    Token: new RegexReplacementToken(RegexReplacementTokenKind.Group, groupNumber: resolvedGroupNumber, isBraceEnclosed: true));
+                    true,
+                    endBrace + 1,
+                    new RegexReplacementToken(RegexReplacementTokenKind.Group, groupNumber: resolvedGroupNumber, isBraceEnclosed: true));
             }
 
-            return new ReplacementScanResult(
-                Success: true,
-                NextPosition: endBrace + 1,
-                LiteralizeOriginalText: true,
-                LiteralStart: tokenStart);
+            return new ReplacementScanResult(true, endBrace + 1, true, tokenStart);
         }
 
         return new ReplacementScanResult(
-            Success: true,
-            NextPosition: endBrace + 1,
-            Token: new RegexReplacementToken(RegexReplacementTokenKind.Group, literal: groupName, isBraceEnclosed: true));
+            true,
+            endBrace + 1,
+            new RegexReplacementToken(RegexReplacementTokenKind.Group, literal: groupName, isBraceEnclosed: true));
     }
 
     private bool TryScanReplacementBracePrefix(ref int scan)
