@@ -91,6 +91,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             anchoredBoundedDatePlan: TryExtractAnchoredBoundedDatePlan(branches, isStartAnchored, isEndAnchored, out var anchoredBoundedDatePlan)
                 ? anchoredBoundedDatePlan
                 : default,
+            anchoredOptionalFieldPlan: TryExtractAnchoredOptionalFieldPlan(branches, isStartAnchored, isEndAnchored, ignoreCase, out var anchoredOptionalFieldPlan)
+                ? anchoredOptionalFieldPlan
+                : default,
             repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
                 : default,

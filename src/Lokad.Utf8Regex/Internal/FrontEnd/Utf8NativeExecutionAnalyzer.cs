@@ -380,6 +380,7 @@ internal static class Utf8NativeExecutionAnalyzer
             ],
             ignoreCase: (executionOptions & RegexOptions.IgnoreCase) != 0),
             anchoredBoundedDatePlan: default,
+            anchoredOptionalFieldPlan: default,
             repeatedDigitGroupPlan: default,
             boundedSuffixLiteralPlan: default,
             symmetricLiteralWindowPlan: default);

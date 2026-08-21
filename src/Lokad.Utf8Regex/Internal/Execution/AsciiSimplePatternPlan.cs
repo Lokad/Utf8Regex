@@ -19,6 +19,7 @@ internal readonly struct AsciiSimplePatternPlan
         AsciiSimplePatternAnchoredHeadTailRunPlan anchoredHeadTailRunPlan,
         AsciiSimplePatternAnchoredValidatorPlan anchoredValidatorPlan,
         AsciiSimplePatternAnchoredBoundedDatePlan anchoredBoundedDatePlan,
+        AsciiSimplePatternAnchoredOptionalFieldPlan anchoredOptionalFieldPlan,
         AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
         AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
         AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan)
@@ -55,6 +56,7 @@ internal readonly struct AsciiSimplePatternPlan
         AnchoredHeadTailRunPlan = anchoredHeadTailRunPlan;
         AnchoredValidatorPlan = anchoredValidatorPlan;
         AnchoredBoundedDatePlan = anchoredBoundedDatePlan;
+        AnchoredOptionalFieldPlan = anchoredOptionalFieldPlan;
         RepeatedDigitGroupPlan = repeatedDigitGroupPlan;
         BoundedSuffixLiteralPlan = boundedSuffixLiteralPlan;
         SymmetricLiteralWindowPlan = symmetricLiteralWindowPlan;
@@ -91,6 +93,8 @@ internal readonly struct AsciiSimplePatternPlan
     public AsciiSimplePatternAnchoredValidatorPlan AnchoredValidatorPlan { get; }
 
     public AsciiSimplePatternAnchoredBoundedDatePlan AnchoredBoundedDatePlan { get; }
+
+    public AsciiSimplePatternAnchoredOptionalFieldPlan AnchoredOptionalFieldPlan { get; }
 
     public AsciiSimplePatternRepeatedDigitGroupPlan RepeatedDigitGroupPlan { get; }
 
@@ -391,6 +395,58 @@ internal readonly struct AsciiSimplePatternAnchoredBoundedDatePlan
     public byte SecondSeparatorByte { get; }
 
     public bool HasValue => FirstFieldMinCount > 0;
+}
+
+internal readonly struct AsciiSimplePatternAnchoredOptionalFieldPlan
+{
+    public AsciiSimplePatternAnchoredOptionalFieldPlan(
+        AsciiCharClass headClass,
+        byte headMinCount,
+        byte headMaxCount,
+        AsciiCharClass firstRequiredClass,
+        AsciiCharClass optionalClass,
+        byte optionalLiteral,
+        AsciiCharClass secondRequiredClass,
+        AsciiCharClass tailClass,
+        byte tailCount)
+    {
+        HeadClass = headClass;
+        HeadMinCount = headMinCount;
+        HeadMaxCount = headMaxCount;
+        FirstRequiredClass = firstRequiredClass;
+        OptionalClass = optionalClass;
+        OptionalLiteral = optionalLiteral;
+        SecondRequiredClass = secondRequiredClass;
+        TailClass = tailClass;
+        TailCount = tailCount;
+    }
+
+    public AsciiCharClass HeadClass { get; }
+
+    public byte HeadMinCount { get; }
+
+    public byte HeadMaxCount { get; }
+
+    public AsciiCharClass FirstRequiredClass { get; }
+
+    public AsciiCharClass OptionalClass { get; }
+
+    public byte OptionalLiteral { get; }
+
+    public AsciiCharClass SecondRequiredClass { get; }
+
+    public AsciiCharClass TailClass { get; }
+
+    public byte TailCount { get; }
+
+    public bool HasValue => HeadMinCount > 0 &&
+        HeadMaxCount >= HeadMinCount &&
+        !HeadClass.IsEmpty &&
+        !FirstRequiredClass.IsEmpty &&
+        !OptionalClass.IsEmpty &&
+        !SecondRequiredClass.IsEmpty &&
+        !TailClass.IsEmpty &&
+        TailCount > 0;
 }
 
 internal readonly struct AsciiSimplePatternRepeatedDigitGroupPlan

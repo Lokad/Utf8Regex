@@ -531,6 +531,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$", RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
         Assert.False(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
         Assert.Equal(6, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
         Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
@@ -540,6 +541,16 @@ public sealed class Utf8RegexConstructionTests
                 segment.MinLength == 0 &&
                 segment.MaxLength == 1) >= 2);
         Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 2 && segment.MaxLength == 2);
+    }
+
+    [Fact]
+    public void AnchoredOptionalFieldPlanRejectsIncompleteBranchProduct()
+    {
+        var regex = new Utf8Regex(
+            "^(?:[A-Z][0-9][0-9][A-Z]{2}|[A-Z][0-9][A-Z0-9][0-9][A-Z]{2}|[A-Z][0-9] [0-9][A-Z]{2}|[A-Z]{2}[0-9][A-Z0-9] [0-9][A-Z]{2})$",
+            RegexOptions.Compiled);
+
+        Assert.False(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
     }
 
     [Fact]

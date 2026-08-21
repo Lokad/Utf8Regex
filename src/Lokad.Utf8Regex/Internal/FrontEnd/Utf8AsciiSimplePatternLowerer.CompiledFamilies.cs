@@ -314,6 +314,267 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return plan.HasValue;
     }
 
+    /// <summary>
+    /// Extracts the bounded optional-field execution family from a complete
+    /// set of expanded, anchored simple-pattern branches.
+    /// </summary>
+    public static bool TryExtractAnchoredOptionalFieldPlan(
+        AsciiSimplePatternToken[][] branches,
+        bool isStartAnchored,
+        bool isEndAnchored,
+        bool ignoreCase,
+        out AsciiSimplePatternAnchoredOptionalFieldPlan plan)
+    {
+        static bool TryParseTemplate(
+            AsciiSimplePatternToken[] branch,
+            out AsciiCharClass headClass,
+            out int headCount,
+            out AsciiCharClass firstRequiredClass,
+            out AsciiCharClass optionalClass,
+            out byte optionalLiteral,
+            out AsciiCharClass secondRequiredClass,
+            out AsciiCharClass tailClass,
+            out int tailCount)
+        {
+            headClass = default;
+            headCount = 0;
+            firstRequiredClass = default;
+            optionalClass = default;
+            optionalLiteral = 0;
+            secondRequiredClass = default;
+            tailClass = default;
+            tailCount = 0;
+            if (branch.Length < 7 || !TryGetPositiveCharClass(branch[0], out headClass))
+            {
+                return false;
+            }
+
+            var index = 0;
+            while (index < branch.Length &&
+                TryGetPositiveCharClass(branch[index], out var candidateHeadClass) &&
+                headClass.HasSameDefinition(candidateHeadClass))
+            {
+                headCount++;
+                index++;
+            }
+
+            if (!TryConsumePositiveCharClass(branch, ref index, out firstRequiredClass) ||
+                !TryConsumePositiveCharClass(branch, ref index, out optionalClass) ||
+                !TryConsumeLiteralByte(branch, ref index, out optionalLiteral) ||
+                !TryConsumePositiveCharClass(branch, ref index, out secondRequiredClass) ||
+                !TryConsumePositiveCharClass(branch, ref index, out tailClass))
+            {
+                return false;
+            }
+
+            tailCount = 1;
+            while (index < branch.Length &&
+                TryGetPositiveCharClass(branch[index], out var candidateTailClass) &&
+                tailClass.HasSameDefinition(candidateTailClass))
+            {
+                tailCount++;
+                index++;
+            }
+
+            return index == branch.Length &&
+                headCount > 0 &&
+                tailCount > 0 &&
+                !headClass.HasSameDefinition(firstRequiredClass) &&
+                !firstRequiredClass.HasSameDefinition(optionalClass) &&
+                !secondRequiredClass.HasSameDefinition(tailClass);
+        }
+
+        static bool TryParseBranch(
+            AsciiSimplePatternToken[] branch,
+            AsciiCharClass headClass,
+            AsciiCharClass firstRequiredClass,
+            AsciiCharClass optionalClass,
+            byte optionalLiteral,
+            AsciiCharClass secondRequiredClass,
+            AsciiCharClass tailClass,
+            int tailCount,
+            out int headCount,
+            out bool hasOptionalClass,
+            out bool hasOptionalLiteral)
+        {
+            headCount = 0;
+            hasOptionalClass = false;
+            hasOptionalLiteral = false;
+            var index = 0;
+            while (index < branch.Length &&
+                TryGetPositiveCharClass(branch[index], out var candidateHeadClass) &&
+                headClass.HasSameDefinition(candidateHeadClass))
+            {
+                headCount++;
+                index++;
+            }
+
+            if (headCount == 0 ||
+                !TryConsumeExpectedCharClass(branch, ref index, firstRequiredClass))
+            {
+                return false;
+            }
+
+            if (TryConsumeExpectedCharClass(branch, ref index, optionalClass))
+            {
+                hasOptionalClass = true;
+            }
+
+            if ((uint)index < (uint)branch.Length &&
+                branch[index].Kind == AsciiSimplePatternTokenKind.Literal &&
+                branch[index].Literal == optionalLiteral)
+            {
+                hasOptionalLiteral = true;
+                index++;
+            }
+
+            if (!TryConsumeExpectedCharClass(branch, ref index, secondRequiredClass))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < tailCount; i++)
+            {
+                if (!TryConsumeExpectedCharClass(branch, ref index, tailClass))
+                {
+                    return false;
+                }
+            }
+
+            return index == branch.Length;
+        }
+
+        static bool TryConsumePositiveCharClass(
+            AsciiSimplePatternToken[] tokens,
+            ref int index,
+            out AsciiCharClass charClass)
+        {
+            charClass = default;
+            if ((uint)index >= (uint)tokens.Length ||
+                !TryGetPositiveCharClass(tokens[index], out charClass))
+            {
+                return false;
+            }
+
+            index++;
+            return true;
+        }
+
+        static bool TryConsumeExpectedCharClass(
+            AsciiSimplePatternToken[] tokens,
+            ref int index,
+            AsciiCharClass expected)
+        {
+            if ((uint)index >= (uint)tokens.Length ||
+                !TryGetPositiveCharClass(tokens[index], out var actual) ||
+                !expected.HasSameDefinition(actual))
+            {
+                return false;
+            }
+
+            index++;
+            return true;
+        }
+
+        static bool TryGetPositiveCharClass(AsciiSimplePatternToken token, out AsciiCharClass charClass)
+        {
+            charClass = token.CharClass;
+            return token.Kind == AsciiSimplePatternTokenKind.CharClass &&
+                !charClass.IsEmpty &&
+                !charClass.Negated;
+        }
+
+        plan = default;
+        if (!isStartAnchored ||
+            !isEndAnchored ||
+            ignoreCase ||
+            branches.Length is < 4 or > 32)
+        {
+            return false;
+        }
+
+        var longest = branches[0];
+        foreach (var branch in branches)
+        {
+            if (branch.Length > longest.Length)
+            {
+                longest = branch;
+            }
+        }
+
+        if (!TryParseTemplate(
+            longest,
+            out var headClass,
+            out var headMaxCount,
+            out var firstRequiredClass,
+            out var optionalClass,
+            out var optionalLiteral,
+            out var secondRequiredClass,
+            out var tailClass,
+            out var tailCount) ||
+            !headClass.IsDisjoint(firstRequiredClass) ||
+            !AsciiCharClass.ForByte(optionalLiteral).IsDisjoint(secondRequiredClass))
+        {
+            return false;
+        }
+
+        var headMinCount = int.MaxValue;
+        var combinations = new HashSet<(int HeadCount, bool HasOptionalClass, bool HasOptionalLiteral)>();
+        foreach (var branch in branches)
+        {
+            if (!TryParseBranch(
+                branch,
+                headClass,
+                firstRequiredClass,
+                optionalClass,
+                optionalLiteral,
+                secondRequiredClass,
+                tailClass,
+                tailCount,
+                out var headCount,
+                out var hasOptionalClass,
+                out var hasOptionalLiteral) ||
+                !combinations.Add((headCount, hasOptionalClass, hasOptionalLiteral)))
+            {
+                return false;
+            }
+
+            headMinCount = Math.Min(headMinCount, headCount);
+            headMaxCount = Math.Max(headMaxCount, headCount);
+        }
+
+        if (headMinCount <= 0 ||
+            headMaxCount > byte.MaxValue ||
+            tailCount > byte.MaxValue ||
+            combinations.Count != (headMaxCount - headMinCount + 1) * 4)
+        {
+            return false;
+        }
+
+        for (var headCount = headMinCount; headCount <= headMaxCount; headCount++)
+        {
+            if (!combinations.Contains((headCount, false, false)) ||
+                !combinations.Contains((headCount, false, true)) ||
+                !combinations.Contains((headCount, true, false)) ||
+                !combinations.Contains((headCount, true, true)))
+            {
+                return false;
+            }
+        }
+
+        plan = new AsciiSimplePatternAnchoredOptionalFieldPlan(
+            headClass,
+            (byte)headMinCount,
+            (byte)headMaxCount,
+            firstRequiredClass,
+            optionalClass,
+            optionalLiteral,
+            secondRequiredClass,
+            tailClass,
+            (byte)tailCount);
+        return plan.HasValue;
+    }
+
     private static bool TryExtractRepeatedDigitGroupPlan(
         AsciiSimplePatternToken[][] branches,
         bool ignoreCase,

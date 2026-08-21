@@ -99,6 +99,9 @@ public sealed class Utf8Regex
     private AsciiSimplePatternAnchoredBoundedDatePlan _anchoredBoundedDatePlan =>
         _preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan;
 
+    private AsciiSimplePatternAnchoredOptionalFieldPlan _anchoredOptionalFieldPlan =>
+        _preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan;
+
     private Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
         _preparedRegex.FallbackDirectFamily;
 
@@ -2719,6 +2722,27 @@ public sealed class Utf8Regex
             return true;
         }
 
+        if (_anchoredOptionalFieldPlan.HasValue)
+        {
+            var matched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
+                input,
+                _anchoredOptionalFieldPlan,
+                _allowsTrailingNewlineBeforeEnd,
+                out var optionalFieldLength,
+                out var optionalFieldNeedsValidation);
+            if (optionalFieldNeedsValidation)
+            {
+                return false;
+            }
+
+            if (matched)
+            {
+                match = new Utf8ValueMatch(true, true, 0, optionalFieldLength, 0, optionalFieldLength);
+            }
+
+            return true;
+        }
+
         var directResult = Utf8AsciiAnchoredValidatorExecutor.TryMatchWholeWithoutValidation(
             input,
             _anchoredValidatorPlan,
@@ -2772,6 +2796,23 @@ public sealed class Utf8Regex
                 out _,
                 out var dateNeedsValidation);
             if (dateNeedsValidation)
+            {
+                return false;
+            }
+
+            isMatch = matched;
+            return true;
+        }
+
+        if (_anchoredOptionalFieldPlan.HasValue)
+        {
+            var matched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
+                input,
+                _anchoredOptionalFieldPlan,
+                _allowsTrailingNewlineBeforeEnd,
+                out _,
+                out var optionalFieldNeedsValidation);
+            if (optionalFieldNeedsValidation)
             {
                 return false;
             }
