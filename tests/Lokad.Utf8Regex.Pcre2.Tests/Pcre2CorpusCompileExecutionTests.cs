@@ -11,16 +11,16 @@ public sealed class Pcre2CorpusCompileExecutionTests
     {
         void Compile()
         {
-            var options = ParseCompileOptions(corpusCase.CompileOptions);
-            var settings = CreateSettings(corpusCase.CompileSettings);
+            var options = Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions);
+            var settings = Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings);
             if (corpusCase.PatternBytesBase64 is { } patternBytesBase64)
             {
                 var patternBytes = Convert.FromBase64String(patternBytesBase64);
-                _ = new Utf8Pcre2Regex(patternBytes, options, settings, default, default);
+                _ = new Utf8Pcre2Regex(patternBytes, options, settings, default, Utf8Pcre2Regex.DefaultMatchTimeout);
                 return;
             }
 
-            _ = new Utf8Pcre2Regex(corpusCase.Pattern, options, settings, default, default);
+            _ = new Utf8Pcre2Regex(corpusCase.Pattern, options, settings, default, Utf8Pcre2Regex.DefaultMatchTimeout);
         }
 
         Action action = Compile;
@@ -36,30 +36,4 @@ public sealed class Pcre2CorpusCompileExecutionTests
         }
     }
 
-    private static Pcre2CompileOptions ParseCompileOptions(string[] options)
-    {
-        var result = Pcre2CompileOptions.None;
-        foreach (var option in options)
-        {
-            result |= option switch
-            {
-                "IgnoreCase" => Pcre2CompileOptions.Caseless,
-                _ => Enum.Parse<Pcre2CompileOptions>(option, ignoreCase: false),
-            };
-        }
-
-        return result;
-    }
-
-    private static Utf8Pcre2CompileSettings CreateSettings(Pcre2CorpusCompileSettings settings)
-    {
-        return new Utf8Pcre2CompileSettings
-        {
-            AllowDuplicateNames = settings.AllowDuplicateNames,
-            BackslashC = Enum.Parse<Pcre2BackslashCPolicy>(settings.BackslashC, ignoreCase: false),
-            AllowLookaroundBackslashK = settings.AllowLookaroundBackslashK,
-            Newline = Enum.Parse<Pcre2NewlineConvention>(settings.Newline, ignoreCase: false),
-            Bsr = Enum.Parse<Pcre2BsrConvention>(settings.Bsr, ignoreCase: false),
-        };
-    }
 }

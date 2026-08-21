@@ -12,10 +12,10 @@ public sealed class Pcre2CorpusReplaceExecutionTests
     {
         var regex = new Utf8Pcre2Regex(
             corpusCase.Pattern,
-            ParseCompileOptions(corpusCase.CompileOptions),
-            CreateSettings(corpusCase.CompileSettings),
+            Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions),
+            Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings),
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);
         var replacementOptions = ParseSubstitutionOptions(corpusCase.SubstitutionOptions);
@@ -31,21 +31,6 @@ public sealed class Pcre2CorpusReplaceExecutionTests
         Assert.Equal(corpusCase.Expected.ReplacementText, Encoding.UTF8.GetString(output));
     }
 
-    private static Pcre2CompileOptions ParseCompileOptions(string[] options)
-    {
-        var result = Pcre2CompileOptions.None;
-        foreach (var option in options)
-        {
-            result |= option switch
-            {
-                "IgnoreCase" => Pcre2CompileOptions.Caseless,
-                _ => Enum.Parse<Pcre2CompileOptions>(option, ignoreCase: false),
-            };
-        }
-
-        return result;
-    }
-
     private static Pcre2SubstitutionOptions ParseSubstitutionOptions(string[] options)
     {
         var result = Pcre2SubstitutionOptions.None;
@@ -57,15 +42,4 @@ public sealed class Pcre2CorpusReplaceExecutionTests
         return result;
     }
 
-    private static Utf8Pcre2CompileSettings CreateSettings(Pcre2CorpusCompileSettings settings)
-    {
-        return new Utf8Pcre2CompileSettings
-        {
-            AllowDuplicateNames = settings.AllowDuplicateNames,
-            BackslashC = Enum.Parse<Pcre2BackslashCPolicy>(settings.BackslashC, ignoreCase: false),
-            AllowLookaroundBackslashK = settings.AllowLookaroundBackslashK,
-            Newline = Enum.Parse<Pcre2NewlineConvention>(settings.Newline, ignoreCase: false),
-            Bsr = Enum.Parse<Pcre2BsrConvention>(settings.Bsr, ignoreCase: false),
-        };
-    }
 }
