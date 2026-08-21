@@ -885,6 +885,19 @@ public sealed class Utf8Regex
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
+        if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole)
+        {
+            if (Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input, out _))
+            {
+                return true;
+            }
+
+            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0)
+            {
+                return false;
+            }
+        }
+
         try
         {
             return IsMatchCore(input);
