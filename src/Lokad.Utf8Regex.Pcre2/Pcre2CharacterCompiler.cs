@@ -110,6 +110,20 @@ internal enum Pcre2CharacterOptions : byte
     ExtendedMore = 16,
 }
 
+internal static class Pcre2CharacterOptionsFactory
+{
+    internal static Pcre2CharacterOptions FromCompileOptions(Pcre2CompileOptions options)
+    {
+        var result = Pcre2CharacterOptions.None;
+        result |= (options & Pcre2CompileOptions.Caseless) != 0 ? Pcre2CharacterOptions.Caseless : 0;
+        result |= (options & Pcre2CompileOptions.Multiline) != 0 ? Pcre2CharacterOptions.Multiline : 0;
+        result |= (options & Pcre2CompileOptions.DotAll) != 0 ? Pcre2CharacterOptions.DotAll : 0;
+        result |= (options & Pcre2CompileOptions.Extended) != 0 ? Pcre2CharacterOptions.Extended : 0;
+        result |= (options & Pcre2CompileOptions.ExtendedMore) != 0 ? Pcre2CharacterOptions.ExtendedMore : 0;
+        return result;
+    }
+}
+
 internal enum Pcre2CharacterTokenKind : byte
 {
     Literal = 0,
@@ -345,7 +359,7 @@ internal sealed class Pcre2CharacterParser
     private bool _requiresCharacterProgram;
 
     internal Pcre2CharacterParser(Pcre2CompileRequest request)
-        : this(request, 0, GetInitialOptions(request.Options))
+        : this(request, 0, Pcre2CharacterOptionsFactory.FromCompileOptions(request.Options))
     {
     }
 
@@ -1316,16 +1330,6 @@ internal sealed class Pcre2CharacterParser
         return false;
     }
 
-    private static Pcre2CharacterOptions GetInitialOptions(Pcre2CompileOptions options)
-    {
-        var result = Pcre2CharacterOptions.None;
-        result |= (options & Pcre2CompileOptions.Caseless) != 0 ? Pcre2CharacterOptions.Caseless : 0;
-        result |= (options & Pcre2CompileOptions.Multiline) != 0 ? Pcre2CharacterOptions.Multiline : 0;
-        result |= (options & Pcre2CompileOptions.DotAll) != 0 ? Pcre2CharacterOptions.DotAll : 0;
-        result |= (options & Pcre2CompileOptions.Extended) != 0 ? Pcre2CharacterOptions.Extended : 0;
-        result |= (options & Pcre2CompileOptions.ExtendedMore) != 0 ? Pcre2CharacterOptions.ExtendedMore : 0;
-        return result;
-    }
 }
 
 internal readonly record struct Pcre2CharacterMatch(

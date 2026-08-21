@@ -673,7 +673,7 @@ internal sealed class Pcre2BacktrackingParser
     {
         _request = request;
         _pattern = request.Pattern;
-        _options = GetInitialOptions(request.Options);
+        _options = Pcre2CharacterOptionsFactory.FromCompileOptions(request.Options);
         _ungreedy = (request.Options & Pcre2CompileOptions.Ungreedy) != 0;
         _noAutoCapture = (request.Options & Pcre2CompileOptions.NoAutoCapture) != 0;
         _allowDuplicateNames = request.Settings.AllowDuplicateNames;
@@ -2123,16 +2123,6 @@ internal sealed class Pcre2BacktrackingParser
 
     private static bool IsQuantifierStart(char value) => value is '*' or '+' or '?' or '{';
 
-    private static Pcre2CharacterOptions GetInitialOptions(Pcre2CompileOptions options)
-    {
-        var result = Pcre2CharacterOptions.None;
-        result |= (options & Pcre2CompileOptions.Caseless) != 0 ? Pcre2CharacterOptions.Caseless : 0;
-        result |= (options & Pcre2CompileOptions.Multiline) != 0 ? Pcre2CharacterOptions.Multiline : 0;
-        result |= (options & Pcre2CompileOptions.DotAll) != 0 ? Pcre2CharacterOptions.DotAll : 0;
-        result |= (options & Pcre2CompileOptions.Extended) != 0 ? Pcre2CharacterOptions.Extended : 0;
-        result |= (options & Pcre2CompileOptions.ExtendedMore) != 0 ? Pcre2CharacterOptions.ExtendedMore : 0;
-        return result;
-    }
 }
 
 internal sealed class Pcre2BacktrackingLowerer
