@@ -919,6 +919,22 @@ public sealed class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount)
+        {
+            if (!Utf8InputAnalyzer.IsAscii(input))
+            {
+                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                    Utf8Validation.DecodeStrict(input));
+            }
+
+            var asciiValidation = new Utf8ValidationResult(
+                input.Length,
+                input.Length,
+                isAscii: true,
+                containsSupplementaryScalars: false);
+            return CountViaCompiledEngine(input, asciiValidation, CreateExecutionBudget());
+        }
+
         if (CanUseFusedCompiledAsciiLiteralFamilyCount())
         {
             if (!TryUseAsciiInputValidationShortcut(input))

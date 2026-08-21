@@ -43,6 +43,18 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
     }
 
+    [Fact]
+    public void EmailCountMatchesDotNetWithUnicodeWordCharacters()
+    {
+        const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
+        const string input = "Reach équipe@exemple.fr and δοκιμή@παράδειγμα.gr.";
+
+        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
     [Theory]
     [InlineData("ops.dispatch@northwind-control.net")]
     [InlineData("ops.dispatch@[192.168.001.]42]")]
