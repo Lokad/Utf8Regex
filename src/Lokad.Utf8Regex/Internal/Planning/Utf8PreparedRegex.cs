@@ -9,6 +9,8 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 /// </summary>
 internal sealed class Utf8PreparedRegex
 {
+    private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
+
     public Utf8PreparedRegex(
         Utf8SemanticRegex semanticRegex,
         Utf8RegexFeatures features,
@@ -58,7 +60,7 @@ internal sealed class Utf8PreparedRegex
         OrderedLiteralWindowPlan = orderedLiteralWindowPlan;
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
-        FallbackDirectFamily = fallbackDirectFamily;
+        _fallbackDirectFamily = fallbackDirectFamily;
     }
 
     public Utf8SemanticRegex SemanticRegex { get; }
@@ -107,5 +109,5 @@ internal sealed class Utf8PreparedRegex
 
     public string? FallbackReason { get; }
 
-    public Utf8FallbackDirectFamilyPlan FallbackDirectFamily { get; }
+    public ref readonly Utf8FallbackDirectFamilyPlan FallbackDirectFamily => ref _fallbackDirectFamily;
 }

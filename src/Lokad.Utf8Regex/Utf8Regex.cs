@@ -102,8 +102,8 @@ public sealed class Utf8Regex
     private AsciiSimplePatternAnchoredOptionalFieldPlan _anchoredOptionalFieldPlan =>
         _preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan;
 
-    private Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
-        _preparedRegex.FallbackDirectFamily;
+    private ref readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily =>
+        ref _preparedRegex.FallbackDirectFamily;
 
     private bool _hasDirectAnchoredHeadTailWithoutValidation =>
         _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
@@ -384,7 +384,9 @@ public sealed class Utf8Regex
 
     private bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
-        if (_hasDirectFallbackTokenFamilyWithoutValidation &&
+        var prioritizeFallbackFamily = _hasDirectFallbackTokenFamilyWithoutValidation ||
+            _fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
+        if (prioritizeFallbackFamily &&
             TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
         {
             return true;
@@ -400,7 +402,7 @@ public sealed class Utf8Regex
             return true;
         }
 
-        if (!_hasDirectFallbackTokenFamilyWithoutValidation &&
+        if (!prioritizeFallbackFamily &&
             TryIsMatchDirectFallbackFamilyWithoutValidation(input, out isMatch))
         {
             return true;
@@ -801,6 +803,11 @@ public sealed class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input)
     {
+        if (TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(input, out var trailingLiteralIsMatch))
+        {
+            return trailingLiteralIsMatch;
+        }
+
         if (ShouldUseKelvinSignFallback(input))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
@@ -2943,19 +2950,8 @@ public sealed class Utf8Regex
             return true;
         }
 
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
-            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } trailingLiteralUtf8)
+        if (TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(input, out isMatch))
         {
-            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-            {
-                return false;
-            }
-
-            isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.TryFindMatch(
-                input,
-                trailingLiteralUtf8,
-                out _,
-                out _);
             return true;
         }
 
@@ -2994,6 +2990,22 @@ public sealed class Utf8Regex
             default,
             out _,
             out _);
+        return true;
+    }
+
+    private bool TryIsMatchLeadingAnyRunTrailingAsciiLiteralWithoutValidation(
+        ReadOnlySpan<byte> input,
+        out bool isMatch)
+    {
+        isMatch = false;
+        if (_fallbackDirectFamily.Kind != Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral ||
+            _fallbackDirectFamily.LiteralUtf8 is not { Length: > 0 } trailingLiteralUtf8 ||
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+        {
+            return false;
+        }
+
+        isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.IsMatch(input, trailingLiteralUtf8);
         return true;
     }
 

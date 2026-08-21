@@ -147,6 +147,16 @@ public sealed class LokadPublicRouteGuardrailTests
             "Essential services are provided by regular exprs."u8,
             out var isMatch));
         Assert.True(isMatch);
+        Assert.True(regex.IsMatch("ss at the start"u8));
+        Assert.True(regex.IsMatch("at the end ss"u8));
+        Assert.True(regex.IsMatch("before a newline\nss"u8));
+        Assert.True(regex.IsMatch("café ss"u8));
+        Assert.False(regex.IsMatch("s\ns"u8));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'s', 0xFF, (byte)'s']));
+
+        var noncapturing = new Utf8Regex(@".*(?:needle)", RegexOptions.Compiled);
+        Assert.True(noncapturing.IsMatch("a needle in text"u8));
+        Assert.False(noncapturing.IsMatch("no match"u8));
     }
 
     [Fact]
