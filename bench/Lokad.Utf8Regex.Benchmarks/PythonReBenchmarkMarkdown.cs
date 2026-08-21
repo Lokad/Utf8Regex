@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 }
+        return snapshot is { SchemaVersion: 2 or 3 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -62,11 +62,16 @@ internal static partial class PythonReBenchmarkReporter
     {
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var rows = snapshot.Cases.ToArray();
+        var hasCompleteCpythonBaseline = rows.All(static row => row.Value.Cpython is not null);
         var comparableRows = rows
-            .Where(static row => row.Value.DecodeThenRegex.MedianMicroseconds > 0)
+            .Where(row => hasCompleteCpythonBaseline
+                ? row.Value.Cpython is { } cpython && cpython.DecodeThenRe.MedianMicroseconds > 0
+                : row.Value.DecodeThenRegex.MedianMicroseconds > 0)
             .ToArray();
-        var parityCount = comparableRows.Count(static row =>
-            row.Value.PythonRe.MedianMicroseconds <= row.Value.DecodeThenRegex.MedianMicroseconds);
+        var parityCount = comparableRows.Count(row =>
+            row.Value.PythonRe.MedianMicroseconds <= (hasCompleteCpythonBaseline
+                ? (row.Value.Cpython ?? throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.")).DecodeThenRe.MedianMicroseconds
+                : row.Value.DecodeThenRegex.MedianMicroseconds));
         var environments = rows
             .Select(static row => row.Value.Environment)
             .DistinctBy(static environment => new
@@ -82,25 +87,53 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         writer.WriteLine("# Lokad.Utf8Regex.PythonRe benchmarks");
         writer.WriteLine();
-        writer.WriteLine("This page is the self-contained performance snapshot for the optional Python `re` adapter. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.");
+        writer.WriteLine("This page is the self-contained performance regression snapshot for the optional Python `re` adapter. It is not a second regex-engine scoreboard: compatible patterns intentionally reuse the managed `Utf8Regex` core, while this catalog measures the Python-facing operation and its required result shaping. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.");
         writer.WriteLine();
         writer.WriteLine("The comparison is deliberately limited to cases where the requested work has equivalent managed semantics:");
         writer.WriteLine();
         writer.WriteLine("- `PythonRe`: `Utf8PythonRegex` over UTF-8 input.");
+        if (hasCompleteCpythonBaseline)
+        {
+            writer.WriteLine("- `CPython predecoded`: the official CPython `re` engine over an already-decoded `str`.");
+            writer.WriteLine("- `CPython + decode`: strict UTF-8 decoding on every operation followed by the precompiled CPython `re.Pattern`; this is the primary Python-oracle baseline.");
+        }
         writer.WriteLine("- `.NET predecoded`: `System.Text.RegularExpressions.Regex` over an already-decoded `string`.");
-        writer.WriteLine("- `.NET + decode`: strict UTF-8 decoding on every operation followed by `.NET Regex`; this is the primary end-to-end baseline.");
+        writer.WriteLine("- `.NET + decode`: strict UTF-8 decoding on every operation followed by `.NET Regex`; this is retained as managed-core context.");
         writer.WriteLine();
-        writer.WriteLine("Enumeration, split, and replacement rows include the result materialization needed by the public operation. The predecoded column is a matcher/runtime lower bound, not an end-to-end parity requirement. CPython process startup or interop is intentionally not benchmarked because it would not be an equivalent in-process operation.");
+        writer.WriteLine(hasCompleteCpythonBaseline
+            ? "Enumeration, split, and replacement rows include the result materialization needed by the public operation. These rows answer whether Python-compatible API semantics add acceptable cost. CPython is measured inside its own long-lived process because `_sre` is a CPython core module, not a standalone engine API; interpreter startup and pattern compilation are excluded. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements. Use the PCRE2 page for the separate native PCRE2 engine comparison."
+            : "Enumeration, split, and replacement rows include the result materialization needed by the public operation. This legacy schema-2 snapshot predates the direct CPython baseline; the next complete refresh migrates it to schema 3 with official CPython `re` measurements. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements.");
         writer.WriteLine();
         writer.WriteLine("## Snapshot summary");
         writer.WriteLine();
         writer.WriteLine($"- Generated: `{snapshot.GeneratedAtUtc.ToUniversalTime():O}`");
         writer.WriteLine($"- Snapshot SHA-256: `{ComputePythonReSnapshotSha256()}`");
         writer.WriteLine($"- Cases: `{rows.Length}`");
-        writer.WriteLine($"- At or below the decode-then-.NET median: `{parityCount}/{comparableRows.Length}`");
+        writer.WriteLine(hasCompleteCpythonBaseline
+            ? $"- At or below the decode-then-CPython median: `{parityCount}/{comparableRows.Length}`"
+            : $"- At or below the decode-then-.NET median: `{parityCount}/{comparableRows.Length}`");
         writer.WriteLine($"- Measurement environments represented: `{environments.Length}`");
         writer.WriteLine($"- Corpus: [`{snapshot.Corpus.SourceFile}`](../../{snapshot.Corpus.SourceFile}) (`{snapshot.Corpus.VectorCount}` vectors, SHA-256 `{snapshot.Corpus.Sha256}`)");
         writer.WriteLine($"- Corpus provenance limitation: {snapshot.Corpus.Limitation}");
+        if (hasCompleteCpythonBaseline)
+        {
+            var cpythonEnvironments = rows
+                .Select(static row => (row.Value.Cpython ??
+                    throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.")).Environment)
+                .DistinctBy(static environment => new
+                {
+                    environment.Implementation,
+                    environment.Version,
+                    environment.Executable,
+                    environment.Platform,
+                })
+                .ToArray();
+            writer.WriteLine($"- CPython environments represented: `{cpythonEnvironments.Length}`");
+            foreach (var environment in cpythonEnvironments)
+            {
+                writer.WriteLine($"- CPython baseline: `{environment.Implementation} {environment.Version}` at `{environment.Executable}` on {environment.Platform}");
+            }
+        }
         writer.WriteLine();
 
         if (environments.Length == 1)
@@ -116,19 +149,43 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         writer.WriteLine("## Results");
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `PythonRe / .NET + decode`; lower is better, and `1.00x` is exact median parity. Times are medians in microseconds per public operation.");
-        writer.WriteLine();
-        writer.WriteLine("| Case | Operation | Input | PythonRe CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | PythonRe alloc | .NET + decode alloc |");
-        writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
-        foreach (var (caseId, measurement) in rows)
+        if (hasCompleteCpythonBaseline)
         {
-            writer.WriteLine(
-                $"| `{caseId}` | `{measurement.Operation}` | {measurement.InputUtf8Bytes:N0} B | " +
-                $"{FormatPythonReMicroseconds(measurement.PythonRe.MedianMicroseconds)} | " +
-                $"{FormatPythonReMicroseconds(measurement.PredecodedRegex.MedianMicroseconds)} | " +
-                $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
-                $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, measurement.DecodeThenRegex.MedianMicroseconds)} | " +
-                $"{measurement.PythonRe.MedianAllocatedBytes:N0} B | {measurement.DecodeThenRegex.MedianAllocatedBytes:N0} B |");
+            writer.WriteLine("`vs CPython` is `PythonRe / CPython + decode`; lower is better, and `1.00x` is exact median parity. The CPython runner times inside the interpreter after startup and pattern compilation, and calibrates each CPython sample toward 100 ms up to the row's .NET iteration ceiling. Times are medians in microseconds per public operation.");
+            writer.WriteLine();
+            writer.WriteLine("| Case | Operation | Input | PythonRe CPU | CPython predecoded CPU | CPython + decode CPU | vs CPython | .NET + decode CPU | vs .NET | PythonRe alloc |");
+            writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|");
+            foreach (var (caseId, measurement) in rows)
+            {
+                var cpython = measurement.Cpython ??
+                    throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.");
+                writer.WriteLine(
+                    $"| `{caseId}` | `{measurement.Operation}` | {measurement.InputUtf8Bytes:N0} B | " +
+                    $"{FormatPythonReMicroseconds(measurement.PythonRe.MedianMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(cpython.PredecodedRe.MedianMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(cpython.DecodeThenRe.MedianMicroseconds)} | " +
+                    $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, cpython.DecodeThenRe.MedianMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
+                    $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, measurement.DecodeThenRegex.MedianMicroseconds)} | " +
+                    $"{measurement.PythonRe.MedianAllocatedBytes:N0} B |");
+            }
+        }
+        else
+        {
+            writer.WriteLine("`vs decode` is `PythonRe / .NET + decode`; lower is better, and `1.00x` is exact median parity. Times are medians in microseconds per public operation.");
+            writer.WriteLine();
+            writer.WriteLine("| Case | Operation | Input | PythonRe CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | PythonRe alloc | .NET + decode alloc |");
+            writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
+            foreach (var (caseId, measurement) in rows)
+            {
+                writer.WriteLine(
+                    $"| `{caseId}` | `{measurement.Operation}` | {measurement.InputUtf8Bytes:N0} B | " +
+                    $"{FormatPythonReMicroseconds(measurement.PythonRe.MedianMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(measurement.PredecodedRegex.MedianMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
+                    $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, measurement.DecodeThenRegex.MedianMicroseconds)} | " +
+                    $"{measurement.PythonRe.MedianAllocatedBytes:N0} B | {measurement.DecodeThenRegex.MedianAllocatedBytes:N0} B |");
+            }
         }
 
         writer.WriteLine();

@@ -11,6 +11,8 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
+    private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
+    private const int CpythonProtocolVersion = 1;
     private static int s_sink;
 
     internal static bool TryHandleCommand(string[] args, out int exitCode)
@@ -129,7 +131,7 @@ internal static partial class PythonReBenchmarkReporter
 
         var snapshot = new PythonReBenchmarkSnapshot
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
@@ -157,9 +159,11 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(SnapshotFileName));
-        if (snapshot is null || snapshot.SchemaVersion != 2)
+        if (snapshot is null || snapshot.SchemaVersion != 3)
         {
-            Console.Error.WriteLine("PythonRe snapshot is missing or has an unsupported schema version.");
+            Console.Error.WriteLine(
+                "PythonRe selective refresh requires a schema-3 snapshot with CPython baselines. " +
+                "Run --refresh-pythonre-benchmarks once to migrate the complete catalog.");
             return 1;
         }
 
@@ -169,7 +173,7 @@ internal static partial class PythonReBenchmarkReporter
         snapshot.Cases[id] = measurement;
         WriteSnapshot(new PythonReBenchmarkSnapshot
         {
-            SchemaVersion = 2,
+            SchemaVersion = 3,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
@@ -686,6 +690,14 @@ internal static partial class PythonReBenchmarkReporter
                 $"PythonRe={pythonResult}, decode={decodeResult}, predecoded={predecodedResult}.");
         }
 
+        var cpython = MeasureCpython(benchmarkCase, context.InputBytes, effectiveIterations, samples);
+        if (pythonResult != cpython.Checksum)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe benchmark '{benchmarkCase.Id}' disagrees with CPython: " +
+                $"PythonRe={pythonResult}, CPython={cpython.Checksum}.");
+        }
+
         return new PythonReCaseMeasurement
         {
             Pattern = benchmarkCase.Pattern,
@@ -699,7 +711,66 @@ internal static partial class PythonReBenchmarkReporter
             PythonRe = MeasureOperation(context.ExecutePythonRe, effectiveIterations, samples),
             DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
             PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples),
+            Cpython = cpython,
         };
+    }
+
+    private static CpythonBenchmarkMeasurement MeasureCpython(
+        PythonReBenchmarkCase benchmarkCase,
+        byte[] inputBytes,
+        int iterations,
+        int samples)
+    {
+        var executable = Environment.GetEnvironmentVariable("UTF8REGEX_CPYTHON");
+        if (string.IsNullOrWhiteSpace(executable))
+        {
+            executable = "python";
+        }
+
+        var startInfo = new ProcessStartInfo(executable)
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-I");
+        startInfo.ArgumentList.Add(FindRepositoryFile(CpythonRunnerRelativePath));
+
+        using var process = Process.Start(startInfo) ??
+            throw new InvalidOperationException($"Could not start CPython executable '{executable}'.");
+        var request = new CpythonBenchmarkRequest
+        {
+            ProtocolVersion = CpythonProtocolVersion,
+            Pattern = benchmarkCase.Pattern,
+            Options = (int)benchmarkCase.Options,
+            Operation = benchmarkCase.Operation.ToString(),
+            InputBase64 = Convert.ToBase64String(inputBytes),
+            Replacement = benchmarkCase.Replacement,
+            Iterations = iterations,
+            Samples = samples,
+        };
+        process.StandardInput.Write(JsonSerializer.Serialize(request));
+        process.StandardInput.Close();
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"CPython baseline failed for '{benchmarkCase.Id}' with exit code {process.ExitCode}: " +
+                error.Trim());
+        }
+
+        var measurement = JsonSerializer.Deserialize<CpythonBenchmarkMeasurement>(output);
+        if (measurement is null || measurement.ProtocolVersion != CpythonProtocolVersion)
+        {
+            throw new InvalidOperationException(
+                $"CPython baseline returned an unsupported response for '{benchmarkCase.Id}'.");
+        }
+
+        return measurement;
     }
 
     private static int GetEffectiveIterations(PythonReBenchmarkCase benchmarkCase, int requestedIterations)
@@ -788,6 +859,11 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("PythonRe", measurement.PythonRe);
         PrintOperation("DecodeThenRegex", measurement.DecodeThenRegex);
         PrintOperation("PredecodedRegex", measurement.PredecodedRegex);
+        if (measurement.Cpython is { } cpython)
+        {
+            PrintOperation("CPythonDecode", cpython.DecodeThenRe);
+            PrintOperation("CPythonPredecoded", cpython.PredecodedRe);
+        }
     }
 
     private static void PrintOperation(string name, PythonReOperationMeasurement measurement)
@@ -796,6 +872,15 @@ internal static partial class PythonReBenchmarkReporter
             $"{name,-19}: {measurement.MedianMicroseconds,10:F3} us/op | " +
             $"range={measurement.MinimumMicroseconds:F3}..{measurement.MaximumMicroseconds:F3} | " +
             $"alloc={measurement.MedianAllocatedBytes} B/op | " +
+            $"warmup={measurement.WarmupCalls} calls/{measurement.WarmupMilliseconds:F1} ms");
+    }
+
+    private static void PrintOperation(string name, CpythonOperationMeasurement measurement)
+    {
+        Console.WriteLine(
+            $"{name,-19}: {measurement.MedianMicroseconds,10:F3} us/op | " +
+            $"range={measurement.MinimumMicroseconds:F3}..{measurement.MaximumMicroseconds:F3} | " +
+            $"iterations={measurement.EffectiveIterations} | " +
             $"warmup={measurement.WarmupCalls} calls/{measurement.WarmupMilliseconds:F1} ms");
     }
 
@@ -1747,6 +1832,7 @@ internal sealed class PythonReCaseMeasurement
     public required PythonReOperationMeasurement PythonRe { get; init; }
     public required PythonReOperationMeasurement DecodeThenRegex { get; init; }
     public required PythonReOperationMeasurement PredecodedRegex { get; init; }
+    public CpythonBenchmarkMeasurement? Cpython { get; init; }
 }
 
 internal sealed class PythonReOperationMeasurement
@@ -1757,6 +1843,45 @@ internal sealed class PythonReOperationMeasurement
     public required long MedianAllocatedBytes { get; init; }
     public required int WarmupCalls { get; init; }
     public required double WarmupMilliseconds { get; init; }
+}
+
+internal sealed class CpythonBenchmarkRequest
+{
+    public required int ProtocolVersion { get; init; }
+    public required string Pattern { get; init; }
+    public required int Options { get; init; }
+    public required string Operation { get; init; }
+    public required string InputBase64 { get; init; }
+    public required string Replacement { get; init; }
+    public required int Iterations { get; init; }
+    public required int Samples { get; init; }
+}
+
+internal sealed class CpythonBenchmarkMeasurement
+{
+    public required int ProtocolVersion { get; init; }
+    public required CpythonBenchmarkEnvironment Environment { get; init; }
+    public required int Checksum { get; init; }
+    public required CpythonOperationMeasurement PredecodedRe { get; init; }
+    public required CpythonOperationMeasurement DecodeThenRe { get; init; }
+}
+
+internal sealed class CpythonOperationMeasurement
+{
+    public required double MedianMicroseconds { get; init; }
+    public required double MinimumMicroseconds { get; init; }
+    public required double MaximumMicroseconds { get; init; }
+    public required int EffectiveIterations { get; init; }
+    public required int WarmupCalls { get; init; }
+    public required double WarmupMilliseconds { get; init; }
+}
+
+internal sealed class CpythonBenchmarkEnvironment
+{
+    public required string Implementation { get; init; }
+    public required string Version { get; init; }
+    public required string Executable { get; init; }
+    public required string Platform { get; init; }
 }
 
 internal sealed class PythonReBenchmarkEnvironment

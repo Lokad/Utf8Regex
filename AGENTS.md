@@ -117,9 +117,11 @@ PythonRe benchmark snapshot and diagnostics:
   detailed-match discovery, direct public projection, and staged projection.
 - Use `--measure-pythonre-findall-phases <id> [iterations] [samples]` to split
   capture-free core enumeration, range collection, and returned-value shaping.
-- Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete eight-case catalog.
+- Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
-- The managed UTF-8 adapter, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
+- PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
+- Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
+- The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
 
 Current intended uses:
 

@@ -2,15 +2,15 @@
 
 # Lokad.Utf8Regex.PythonRe benchmarks
 
-This page is the self-contained performance snapshot for the optional Python `re` adapter. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.
+This page is the self-contained performance regression snapshot for the optional Python `re` adapter. It is not a second regex-engine scoreboard: compatible patterns intentionally reuse the managed `Utf8Regex` core, while this catalog measures the Python-facing operation and its required result shaping. The source of truth is [`PythonRe.Benchmarks.json`](../../PythonRe.Benchmarks.json); `--refresh-pythonre-benchmarks` and `--refresh-pythonre-benchmark-case` update the JSON and regenerate this page.
 
 The comparison is deliberately limited to cases where the requested work has equivalent managed semantics:
 
 - `PythonRe`: `Utf8PythonRegex` over UTF-8 input.
 - `.NET predecoded`: `System.Text.RegularExpressions.Regex` over an already-decoded `string`.
-- `.NET + decode`: strict UTF-8 decoding on every operation followed by `.NET Regex`; this is the primary end-to-end baseline.
+- `.NET + decode`: strict UTF-8 decoding on every operation followed by `.NET Regex`; this is retained as managed-core context.
 
-Enumeration, split, and replacement rows include the result materialization needed by the public operation. The predecoded column is a matcher/runtime lower bound, not an end-to-end parity requirement. CPython process startup or interop is intentionally not benchmarked because it would not be an equivalent in-process operation.
+Enumeration, split, and replacement rows include the result materialization needed by the public operation. This legacy schema-2 snapshot predates the direct CPython baseline; the next complete refresh migrates it to schema 3 with official CPython `re` measurements. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements.
 
 ## Snapshot summary
 
