@@ -4,6 +4,14 @@ This ledger records the 2026-08-17 qualification of
 `Lokad.Utf8Regex.Pcre2` 0.2.0. It describes the selected managed profile; it is
 not a claim of complete upstream PCRE2 compatibility.
 
+> **Historical frozen record:** the hashes and test counts below identify the
+> 2026-08-17 outputs only. The generic paths `artifacts/nuget/*.nupkg` and
+> `PCRE2.Benchmarks.json` are mutable working outputs and have since been
+> superseded; files currently found there are not qualified by this ledger.
+> The live benchmark page verifies its current JSON snapshot independently.
+> A future qualification must archive its packages and snapshot under an
+> immutable source/hash-qualified location before this banner can be removed.
+
 ## Qualified baseline
 
 - Qualified tracked source: `36fb5db0` (`Refresh performance qualification snapshots`).
@@ -78,7 +86,7 @@ against the packed binaries. Packages with the same prerelease version must
 be consumed as a version-coherent pair; a stale global cache can otherwise
 combine assemblies from different source commits.
 
-The qualified package SHA-256 values are
+The historical qualified package SHA-256 values were
 `B9A86967E9C6A5A573468F1245849311B24E5354B77E12C688D21DD901A9B35D`
 for `Lokad.Utf8Regex.0.2.0.nupkg` and
 `57C55E99C9E765657860AD7B6F232EEE25EDAC1953B1E3CC4639EC6ABB21D796`
@@ -217,7 +225,7 @@ and trimmed to 16 entries. `IsMatch` and `Count` do not construct detailed
 public match results; `MatchMany` writes caller-owned storage and reports
 truncation.
 
-`PCRE2.Benchmarks.json` separates construction, first-call allocation, warm
+The historically qualified `PCRE2.Benchmarks.json` separated construction, first-call allocation, warm
 temporary allocation, and warm throughput for compatible and PCRE2-specific
 operations. Its scaling families vary pattern length, Cartesian alternatives,
 dense/sparse candidates, candidate-heavy misses, branching, non-ASCII
