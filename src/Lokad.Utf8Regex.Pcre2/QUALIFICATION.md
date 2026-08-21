@@ -5,12 +5,12 @@ This ledger records the 2026-08-21 qualification of
 not a claim of complete upstream PCRE2 compatibility.
 
 The qualified files are frozen under
-`artifacts/package-qualification/archive/cd9de80859db3f77d8784f5034eb6c57afc69b45/`.
+`artifacts/package-qualification/archive/2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94/`.
 The archive command refuses a dirty tracked worktree and refuses to overwrite
 an existing revision directory. Verify all four archived artifacts with:
 
 ```powershell
-./verify-pcre2-qualification.ps1 -QualificationId cd9de80859db3f77d8784f5034eb6c57afc69b45
+./verify-pcre2-qualification.ps1 -QualificationId 2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94
 ```
 
 Generic paths such as `artifacts/nuget/*.nupkg` and
@@ -22,7 +22,7 @@ all-case performance claim.
 
 ## Qualified baseline
 
-- Qualified package/runtime source: `cd9de80859db3f77d8784f5034eb6c57afc69b45`
+- Qualified package/runtime source: `2496aa1dbadd4f98ed2a2d41166b7025ebc3fb94`
   (`Archive immutable PCRE2 qualification evidence`).
 - The subsequent qualification-ledger commit changes documentation only and
   does not alter the archived packages, API snapshot, or benchmark snapshot.

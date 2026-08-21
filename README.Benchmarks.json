@@ -6,7 +6,7 @@
         "literal/sherlock-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:19.3863363+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -34,7 +34,7 @@
         "literal/sherlock-casei-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:22.7301726+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -62,7 +62,7 @@
         "literal/sherlock-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:27.5618426+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -90,7 +90,7 @@
         "literal/sherlock-casei-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:32.2392825+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -118,7 +118,7 @@
         "literal/sherlock-zh": {
           "MeasuredAtUtc": "2026-08-21T14:34:35.3271704+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -146,7 +146,7 @@
         "literal-alternate/sherlock-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:38.5227851+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -174,7 +174,7 @@
         "literal-alternate/sherlock-en-nomatch": {
           "MeasuredAtUtc": "2026-08-21T14:34:41.3544762+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -202,7 +202,7 @@
         "literal-alternate/sherlock-en-mixed": {
           "MeasuredAtUtc": "2026-08-21T14:34:44.131694+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -230,7 +230,7 @@
         "literal-alternate/sherlock-casei-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:49.2374471+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -258,7 +258,7 @@
         "literal-alternate/sherlock-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:55.3156893+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -286,7 +286,7 @@
         "literal-alternate/sherlock-casei-ru": {
           "MeasuredAtUtc": "2026-08-21T14:35:07.6708841+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -314,7 +314,7 @@
         "literal-alternate/sherlock-zh": {
           "MeasuredAtUtc": "2026-08-21T14:35:10.9424805+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -342,7 +342,7 @@
         "bounded-repeat/letters-en": {
           "MeasuredAtUtc": "2026-08-21T14:35:14.6258806+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -370,7 +370,7 @@
         "bounded-repeat/letters-ru": {
           "MeasuredAtUtc": "2026-08-21T14:35:19.4931196+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -398,7 +398,7 @@
         "bounded-repeat/context": {
           "MeasuredAtUtc": "2026-08-21T14:36:24.5679305+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -426,7 +426,7 @@
         "bounded-repeat/capitals": {
           "MeasuredAtUtc": "2026-08-21T14:36:39.8789167+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -454,7 +454,7 @@
         "dictionary/single": {
           "MeasuredAtUtc": "2026-08-21T14:37:08.5547905+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -482,7 +482,7 @@
         "aws-keys/full": {
           "MeasuredAtUtc": "2026-08-21T14:37:37.9676537+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -510,7 +510,7 @@
         "aws-keys/quick": {
           "MeasuredAtUtc": "2026-08-21T14:37:49.0537159+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -538,7 +538,7 @@
         "ruff-noqa/real": {
           "MeasuredAtUtc": "2026-08-21T14:38:15.8572804+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -566,7 +566,7 @@
         "ruff-noqa/tweaked": {
           "MeasuredAtUtc": "2026-08-21T14:38:27.954312+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -594,7 +594,7 @@
         "common/email-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:29.4128405+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -622,7 +622,7 @@
         "common/email-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:30.9996478+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -650,7 +650,7 @@
         "common/date-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:32.3126393+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -678,7 +678,7 @@
         "common/date-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:34.2183176+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -706,7 +706,7 @@
         "common/ip-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:35.478654+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -734,7 +734,7 @@
         "common/ip-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:36.7194719+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -762,7 +762,7 @@
         "common/uri-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:38.1148747+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -790,7 +790,7 @@
         "common/uri-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:39.5272668+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -818,7 +818,7 @@
         "common/matches-set": {
           "MeasuredAtUtc": "2026-08-21T14:38:42.3452813+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -846,7 +846,7 @@
         "common/matches-boundary": {
           "MeasuredAtUtc": "2026-08-21T14:38:45.1391463+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -874,7 +874,7 @@
         "common/matches-word": {
           "MeasuredAtUtc": "2026-08-21T14:38:47.5910044+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -902,7 +902,7 @@
         "common/matches-words": {
           "MeasuredAtUtc": "2026-08-21T14:38:50.8637484+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -930,7 +930,7 @@
         "common/match-word": {
           "MeasuredAtUtc": "2026-08-21T14:38:53.7097105+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -958,7 +958,7 @@
         "common/replace-words": {
           "MeasuredAtUtc": "2026-08-21T14:38:57.9338657+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -986,7 +986,7 @@
         "common/split-words": {
           "MeasuredAtUtc": "2026-08-21T14:39:02.0404443+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1014,7 +1014,7 @@
         "common/backtracking": {
           "MeasuredAtUtc": "2026-08-21T14:39:03.6420083+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1042,7 +1042,7 @@
         "common/one-node-backtracking": {
           "MeasuredAtUtc": "2026-08-21T14:39:05.2532394+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1070,7 +1070,7 @@
         "industry/mariomka-email-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:12.2458803+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1098,7 +1098,7 @@
         "industry/mariomka-uri-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:19.9818799+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1126,7 +1126,7 @@
         "industry/mariomka-ip-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:29.2844473+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1154,7 +1154,7 @@
         "industry/rust-sherlock-letter-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:38.1250701+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1182,7 +1182,7 @@
         "industry/rust-sherlock-holmes-window-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:42.3940406+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1210,7 +1210,7 @@
         "industry/rust-sherlock-ing-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:50.0942606+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1238,7 +1238,7 @@
         "industry/rust-sherlock-word-holmes-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:55.2819246+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1266,7 +1266,7 @@
         "industry/rust-sherlock-nonnewline-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:59.7659696+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1294,7 +1294,7 @@
         "industry/leipzig-twain-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:06.3710529+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1322,7 +1322,7 @@
         "industry/leipzig-name-family-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:15.8953899+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1350,7 +1350,7 @@
         "industry/leipzig-river-window-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:32.3633309+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1378,7 +1378,7 @@
         "industry/leipzig-symbol-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:42.6507975+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1406,7 +1406,7 @@
         "industry/boostdocs-ftp-line-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:43.7890136+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1434,7 +1434,7 @@
         "industry/boostdocs-credit-card-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:44.9239216+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1462,7 +1462,7 @@
         "industry/boostdocs-postcode-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:46.2204152+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1490,7 +1490,7 @@
         "industry/boostdocs-date-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:47.3464732+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1518,7 +1518,7 @@
         "industry/boostdocs-float-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:48.385868+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1550,7 +1550,7 @@
         "literal/sherlock-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:19.386659+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1578,7 +1578,7 @@
         "literal/sherlock-casei-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:22.7301866+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1606,7 +1606,7 @@
         "literal/sherlock-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:27.5618451+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1634,7 +1634,7 @@
         "literal/sherlock-casei-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:32.2392847+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1662,7 +1662,7 @@
         "literal/sherlock-zh": {
           "MeasuredAtUtc": "2026-08-21T14:34:35.3271732+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1690,7 +1690,7 @@
         "literal-alternate/sherlock-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:38.5227872+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1718,7 +1718,7 @@
         "literal-alternate/sherlock-en-nomatch": {
           "MeasuredAtUtc": "2026-08-21T14:34:41.3544788+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1746,7 +1746,7 @@
         "literal-alternate/sherlock-en-mixed": {
           "MeasuredAtUtc": "2026-08-21T14:34:44.1316967+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1774,7 +1774,7 @@
         "literal-alternate/sherlock-casei-en": {
           "MeasuredAtUtc": "2026-08-21T14:34:49.2374496+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1802,7 +1802,7 @@
         "literal-alternate/sherlock-ru": {
           "MeasuredAtUtc": "2026-08-21T14:34:55.3156919+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1830,7 +1830,7 @@
         "literal-alternate/sherlock-casei-ru": {
           "MeasuredAtUtc": "2026-08-21T14:35:07.6708865+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1858,7 +1858,7 @@
         "literal-alternate/sherlock-zh": {
           "MeasuredAtUtc": "2026-08-21T14:35:10.9424825+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1886,7 +1886,7 @@
         "bounded-repeat/letters-en": {
           "MeasuredAtUtc": "2026-08-21T14:35:14.6258832+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1914,7 +1914,7 @@
         "bounded-repeat/letters-ru": {
           "MeasuredAtUtc": "2026-08-21T14:35:19.4931221+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1942,7 +1942,7 @@
         "bounded-repeat/context": {
           "MeasuredAtUtc": "2026-08-21T14:36:24.567935+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1970,7 +1970,7 @@
         "bounded-repeat/capitals": {
           "MeasuredAtUtc": "2026-08-21T14:36:39.8789242+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1998,7 +1998,7 @@
         "dictionary/single": {
           "MeasuredAtUtc": "2026-08-21T14:37:08.5547926+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2026,7 +2026,7 @@
         "aws-keys/full": {
           "MeasuredAtUtc": "2026-08-21T14:37:37.9676597+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2054,7 +2054,7 @@
         "aws-keys/quick": {
           "MeasuredAtUtc": "2026-08-21T14:37:49.053718+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2082,7 +2082,7 @@
         "ruff-noqa/real": {
           "MeasuredAtUtc": "2026-08-21T14:38:15.8572832+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2110,7 +2110,7 @@
         "ruff-noqa/tweaked": {
           "MeasuredAtUtc": "2026-08-21T14:38:27.9543143+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2138,7 +2138,7 @@
         "common/email-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:29.4128421+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2166,7 +2166,7 @@
         "common/email-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:30.9996496+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2194,7 +2194,7 @@
         "common/date-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:32.312641+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2222,7 +2222,7 @@
         "common/date-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:34.2183193+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2250,7 +2250,7 @@
         "common/ip-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:35.4786558+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2278,7 +2278,7 @@
         "common/ip-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:36.7194736+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2306,7 +2306,7 @@
         "common/uri-match": {
           "MeasuredAtUtc": "2026-08-21T14:38:38.114877+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2334,7 +2334,7 @@
         "common/uri-miss": {
           "MeasuredAtUtc": "2026-08-21T14:38:39.5272685+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2362,7 +2362,7 @@
         "common/matches-set": {
           "MeasuredAtUtc": "2026-08-21T14:38:42.3452833+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2390,7 +2390,7 @@
         "common/matches-boundary": {
           "MeasuredAtUtc": "2026-08-21T14:38:45.1391509+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2418,7 +2418,7 @@
         "common/matches-word": {
           "MeasuredAtUtc": "2026-08-21T14:38:47.5910054+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2446,7 +2446,7 @@
         "common/matches-words": {
           "MeasuredAtUtc": "2026-08-21T14:38:50.8637495+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2474,7 +2474,7 @@
         "common/match-word": {
           "MeasuredAtUtc": "2026-08-21T14:38:53.7097116+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2502,7 +2502,7 @@
         "common/replace-words": {
           "MeasuredAtUtc": "2026-08-21T14:38:57.9338668+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2530,7 +2530,7 @@
         "common/split-words": {
           "MeasuredAtUtc": "2026-08-21T14:39:02.0404454+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2558,7 +2558,7 @@
         "common/backtracking": {
           "MeasuredAtUtc": "2026-08-21T14:39:03.6420094+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2586,7 +2586,7 @@
         "common/one-node-backtracking": {
           "MeasuredAtUtc": "2026-08-21T14:39:05.2532405+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2614,7 +2614,7 @@
         "industry/mariomka-email-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:12.2458813+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2642,7 +2642,7 @@
         "industry/mariomka-uri-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:19.9818868+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2670,7 +2670,7 @@
         "industry/mariomka-ip-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:29.2844484+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2698,7 +2698,7 @@
         "industry/rust-sherlock-letter-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:38.1250708+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2726,7 +2726,7 @@
         "industry/rust-sherlock-holmes-window-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:42.3940424+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2754,7 +2754,7 @@
         "industry/rust-sherlock-ing-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:50.0942616+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2782,7 +2782,7 @@
         "industry/rust-sherlock-word-holmes-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:55.2819255+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2810,7 +2810,7 @@
         "industry/rust-sherlock-nonnewline-count": {
           "MeasuredAtUtc": "2026-08-21T14:39:59.7659705+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2838,7 +2838,7 @@
         "industry/leipzig-twain-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:06.3710543+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2866,7 +2866,7 @@
         "industry/leipzig-name-family-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:15.8953912+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2894,7 +2894,7 @@
         "industry/leipzig-river-window-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:32.3633333+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2922,7 +2922,7 @@
         "industry/leipzig-symbol-count": {
           "MeasuredAtUtc": "2026-08-21T14:40:42.6507985+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2950,7 +2950,7 @@
         "industry/boostdocs-ftp-line-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:43.7890145+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -2978,7 +2978,7 @@
         "industry/boostdocs-credit-card-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:44.9239226+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3006,7 +3006,7 @@
         "industry/boostdocs-postcode-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:46.2204162+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3034,7 +3034,7 @@
         "industry/boostdocs-date-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:47.346474+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3062,7 +3062,7 @@
         "industry/boostdocs-float-match": {
           "MeasuredAtUtc": "2026-08-21T14:40:48.385869+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3094,7 +3094,7 @@
         "literal/identifier-token": {
           "MeasuredAtUtc": "2026-08-21T14:41:05.0463051+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3122,7 +3122,7 @@
         "literal/call-token": {
           "MeasuredAtUtc": "2026-08-21T14:41:09.9989406+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3150,7 +3150,7 @@
         "literal/identifier-token-casei": {
           "MeasuredAtUtc": "2026-08-21T14:41:15.4741906+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3178,7 +3178,7 @@
         "literal-family/type-token-family": {
           "MeasuredAtUtc": "2026-08-21T14:41:20.1001761+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3206,7 +3206,7 @@
         "literal-family/method-token-family": {
           "MeasuredAtUtc": "2026-08-21T14:41:24.8556692+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3234,7 +3234,7 @@
         "structural/keyword-to-generic-type": {
           "MeasuredAtUtc": "2026-08-21T14:41:30.3037952+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3262,7 +3262,7 @@
         "structural/keyword-family-to-capitalized-identifier": {
           "MeasuredAtUtc": "2026-08-21T14:41:34.7572183+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3290,7 +3290,7 @@
         "structural/method-family-call": {
           "MeasuredAtUtc": "2026-08-21T14:41:39.7266768+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3318,7 +3318,7 @@
         "structural/ordered-keyword-pair": {
           "MeasuredAtUtc": "2026-08-21T14:41:43.8967821+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3346,7 +3346,7 @@
         "structural/ordered-identifier-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:48.1197894+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3374,7 +3374,7 @@
         "structural/modifier-family-to-type-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:51.9049793+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3402,7 +3402,7 @@
         "structural/ordered-keyword-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:56.8166086+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3430,7 +3430,7 @@
         "structural/method-family-generic-call": {
           "MeasuredAtUtc": "2026-08-21T14:42:02.1101845+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3458,7 +3458,7 @@
         "fallback/lookahead": {
           "MeasuredAtUtc": "2026-08-21T14:42:07.8845148+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3486,7 +3486,7 @@
         "balancing/begin-end-blocks": {
           "MeasuredAtUtc": "2026-08-21T14:42:13.089078+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3514,7 +3514,7 @@
         "structural/ordered-modifier-pair": {
           "MeasuredAtUtc": "2026-08-21T14:42:17.7748568+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3542,7 +3542,7 @@
         "structural/modifier-family-to-type-pair": {
           "MeasuredAtUtc": "2026-08-21T14:42:21.2712978+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3570,7 +3570,7 @@
         "lokad/imports/module-imports": {
           "MeasuredAtUtc": "2026-08-21T14:42:23.8833238+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3598,7 +3598,7 @@
         "lokad/folding/region-marker": {
           "MeasuredAtUtc": "2026-08-21T14:42:26.4670079+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3626,7 +3626,7 @@
         "lokad/lexer/identifier": {
           "MeasuredAtUtc": "2026-08-21T14:42:30.918713+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3654,7 +3654,7 @@
         "lokad/lexer/number": {
           "MeasuredAtUtc": "2026-08-21T14:42:36.3465104+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3682,7 +3682,7 @@
         "lokad/lexer/string": {
           "MeasuredAtUtc": "2026-08-21T14:42:42.5691979+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3710,7 +3710,7 @@
         "lokad/lexer/operator-run": {
           "MeasuredAtUtc": "2026-08-21T14:42:46.5601913+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3738,7 +3738,7 @@
         "lokad/lexer/doc-line": {
           "MeasuredAtUtc": "2026-08-21T14:42:50.4713235+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3766,7 +3766,7 @@
         "lokad/docs/inline-doc-prefix": {
           "MeasuredAtUtc": "2026-08-21T14:42:54.0935535+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3794,7 +3794,7 @@
         "lokad/langserv/identifier-validator": {
           "MeasuredAtUtc": "2026-08-21T14:42:58.496831+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3822,7 +3822,7 @@
         "lokad/langserv/helper-identifier": {
           "MeasuredAtUtc": "2026-08-21T14:43:02.1622885+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3850,7 +3850,7 @@
         "lokad/langserv/color-short-hex": {
           "MeasuredAtUtc": "2026-08-21T14:43:04.960465+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3878,7 +3878,7 @@
         "lokad/langserv/color-rgb-hex": {
           "MeasuredAtUtc": "2026-08-21T14:43:08.721621+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3906,7 +3906,7 @@
         "lokad/langserv/url-dashboard": {
           "MeasuredAtUtc": "2026-08-21T14:43:13.4539644+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3934,7 +3934,7 @@
         "lokad/langserv/url-download": {
           "MeasuredAtUtc": "2026-08-21T14:43:18.292847+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3962,7 +3962,7 @@
         "lokad/style/hex-color": {
           "MeasuredAtUtc": "2026-08-21T14:43:20.4718434+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -3990,7 +3990,7 @@
         "lokad/style/cell-ref": {
           "MeasuredAtUtc": "2026-08-21T14:43:24.137392+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4018,7 +4018,7 @@
         "lokad/style/range-ref": {
           "MeasuredAtUtc": "2026-08-21T14:43:27.6644529+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4050,7 +4050,7 @@
         "literal/identifier-token": {
           "MeasuredAtUtc": "2026-08-21T14:41:05.0466218+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4078,7 +4078,7 @@
         "literal/call-token": {
           "MeasuredAtUtc": "2026-08-21T14:41:09.9989484+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4106,7 +4106,7 @@
         "literal/identifier-token-casei": {
           "MeasuredAtUtc": "2026-08-21T14:41:15.4741946+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4134,7 +4134,7 @@
         "literal-family/type-token-family": {
           "MeasuredAtUtc": "2026-08-21T14:41:20.1001786+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4162,7 +4162,7 @@
         "literal-family/method-token-family": {
           "MeasuredAtUtc": "2026-08-21T14:41:24.8556733+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4190,7 +4190,7 @@
         "structural/keyword-to-generic-type": {
           "MeasuredAtUtc": "2026-08-21T14:41:30.3038012+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4218,7 +4218,7 @@
         "structural/keyword-family-to-capitalized-identifier": {
           "MeasuredAtUtc": "2026-08-21T14:41:34.7572207+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4246,7 +4246,7 @@
         "structural/method-family-call": {
           "MeasuredAtUtc": "2026-08-21T14:41:39.7266795+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4274,7 +4274,7 @@
         "structural/ordered-keyword-pair": {
           "MeasuredAtUtc": "2026-08-21T14:41:43.8967845+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4302,7 +4302,7 @@
         "structural/ordered-identifier-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:48.119792+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4330,7 +4330,7 @@
         "structural/modifier-family-to-type-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:51.904984+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4358,7 +4358,7 @@
         "structural/ordered-keyword-window": {
           "MeasuredAtUtc": "2026-08-21T14:41:56.8166112+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4386,7 +4386,7 @@
         "structural/method-family-generic-call": {
           "MeasuredAtUtc": "2026-08-21T14:42:02.1101872+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4414,7 +4414,7 @@
         "fallback/lookahead": {
           "MeasuredAtUtc": "2026-08-21T14:42:07.8845194+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4442,7 +4442,7 @@
         "balancing/begin-end-blocks": {
           "MeasuredAtUtc": "2026-08-21T14:42:13.089083+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4470,7 +4470,7 @@
         "structural/ordered-modifier-pair": {
           "MeasuredAtUtc": "2026-08-21T14:42:17.774864+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4498,7 +4498,7 @@
         "structural/modifier-family-to-type-pair": {
           "MeasuredAtUtc": "2026-08-21T14:42:21.2713012+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4526,7 +4526,7 @@
         "lokad/imports/module-imports": {
           "MeasuredAtUtc": "2026-08-21T14:42:23.8833289+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4554,7 +4554,7 @@
         "lokad/folding/region-marker": {
           "MeasuredAtUtc": "2026-08-21T14:42:26.467012+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4582,7 +4582,7 @@
         "lokad/lexer/identifier": {
           "MeasuredAtUtc": "2026-08-21T14:42:30.9187161+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4610,7 +4610,7 @@
         "lokad/lexer/number": {
           "MeasuredAtUtc": "2026-08-21T14:42:36.3465154+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4638,7 +4638,7 @@
         "lokad/lexer/string": {
           "MeasuredAtUtc": "2026-08-21T14:42:42.5692014+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4666,7 +4666,7 @@
         "lokad/lexer/operator-run": {
           "MeasuredAtUtc": "2026-08-21T14:42:46.5601935+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4694,7 +4694,7 @@
         "lokad/lexer/doc-line": {
           "MeasuredAtUtc": "2026-08-21T14:42:50.4713255+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4722,7 +4722,7 @@
         "lokad/docs/inline-doc-prefix": {
           "MeasuredAtUtc": "2026-08-21T14:42:54.0935555+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4750,7 +4750,7 @@
         "lokad/langserv/identifier-validator": {
           "MeasuredAtUtc": "2026-08-21T14:42:58.4968331+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4778,7 +4778,7 @@
         "lokad/langserv/helper-identifier": {
           "MeasuredAtUtc": "2026-08-21T14:43:02.1622904+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4806,7 +4806,7 @@
         "lokad/langserv/color-short-hex": {
           "MeasuredAtUtc": "2026-08-21T14:43:04.9604679+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4834,7 +4834,7 @@
         "lokad/langserv/color-rgb-hex": {
           "MeasuredAtUtc": "2026-08-21T14:43:08.7216231+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4862,7 +4862,7 @@
         "lokad/langserv/url-dashboard": {
           "MeasuredAtUtc": "2026-08-21T14:43:13.4539666+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4890,7 +4890,7 @@
         "lokad/langserv/url-download": {
           "MeasuredAtUtc": "2026-08-21T14:43:18.2928507+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4918,7 +4918,7 @@
         "lokad/style/hex-color": {
           "MeasuredAtUtc": "2026-08-21T14:43:20.4718445+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4946,7 +4946,7 @@
         "lokad/style/cell-ref": {
           "MeasuredAtUtc": "2026-08-21T14:43:24.1373929+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4974,7 +4974,7 @@
         "lokad/style/range-ref": {
           "MeasuredAtUtc": "2026-08-21T14:43:27.6644538+00:00",
           "Environment": {
-            "SourceCommit": "2595ce56fd1c",
+            "SourceCommit": "6af55a06265a",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",

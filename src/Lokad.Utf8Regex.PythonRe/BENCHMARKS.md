@@ -17,7 +17,7 @@ Enumeration, split, and replacement rows include the result materialization need
 ## Snapshot summary
 
 - Generated: `2026-08-21T10:14:37.8911438+00:00`
-- Snapshot SHA-256: `65A0B637F52221261FC4872FEAB9C270BCF60E3B82F47E7467DB548A2DD2C1A1`
+- Snapshot SHA-256: `B773EA973311AD7069A3CAB91C86173DFDDE1A981F8EBF22D585B2115D429720`
 - Cases: `28`
 - At or below the decode-then-CPython median: `17/28`
 - Measurement environments represented: `1`
@@ -26,7 +26,7 @@ Enumeration, split, and replacement rows include the result materialization need
 - CPython environments represented: `1`
 - CPython baseline: `CPython 3.13.2` at `C:\Python313\python.exe` on Windows-11-10.0.26200-SP0
 
-Measured from source `48af59249c37` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel.
+Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel.
 
 ## Results
 
