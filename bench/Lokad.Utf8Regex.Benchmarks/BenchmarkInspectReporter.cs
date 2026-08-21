@@ -1466,6 +1466,16 @@ internal static partial class BenchmarkInspectReporter
     }
 
     public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
+
+    public static int RunMeasureReadmeCaseReversed(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmeCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
+
+    private static int RunMeasureReadmeCase(
+        string caseId,
+        string? iterationsText,
+        string? samplesText,
+        bool reverseMeasurementOrder)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
@@ -1484,7 +1494,8 @@ internal static partial class BenchmarkInspectReporter
                 context.ExecutePredecodedRegex,
                 context.ExecutePredecodedCompiledRegex,
                 context.ExecuteDecodeThenRegex,
-                context.ExecuteDecodeThenCompiledRegex);
+                context.ExecuteDecodeThenCompiledRegex,
+                reverseMeasurementOrder);
             Console.WriteLine(FormatReadmeCaseRow(scriptRow));
             return 0;
         }
@@ -1501,12 +1512,23 @@ internal static partial class BenchmarkInspectReporter
             benchmarkCase.CountPredecodedRegex,
             benchmarkCase.CountPredecodedCompiledRegex,
             benchmarkCase.CountDecodeThenRegex,
-            benchmarkCase.CountDecodeThenCompiledRegex);
+            benchmarkCase.CountDecodeThenCompiledRegex,
+            reverseMeasurementOrder);
         Console.WriteLine(FormatReadmeCaseRow(row));
         return 0;
     }
 
     public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: false);
+
+    public static int RunMeasureReadmePublicCaseReversed(string caseId, string? iterationsText, string? samplesText)
+        => RunMeasureReadmePublicCase(caseId, iterationsText, samplesText, reverseMeasurementOrder: true);
+
+    private static int RunMeasureReadmePublicCase(
+        string caseId,
+        string? iterationsText,
+        string? samplesText,
+        bool reverseMeasurementOrder)
     {
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
@@ -1521,7 +1543,8 @@ internal static partial class BenchmarkInspectReporter
             context.ExecutePredecodedRegex,
             context.ExecutePredecodedCompiledRegex,
             context.ExecuteDecodeThenRegex,
-            context.ExecuteDecodeThenCompiledRegex);
+            context.ExecuteDecodeThenCompiledRegex,
+            reverseMeasurementOrder);
         Console.WriteLine(FormatReadmeCaseRow(row));
         return 0;
     }
@@ -5572,7 +5595,8 @@ internal static partial class BenchmarkInspectReporter
         Func<int> predecoded,
         Func<int> compiledRegex,
         Func<int> decodeThenRegex,
-        Func<int> decodeThenCompiledRegex)
+        Func<int> decodeThenCompiledRegex,
+        bool reverseMeasurementOrder = false)
     {
         Func<int>[] actions =
         [
@@ -5588,25 +5612,34 @@ internal static partial class BenchmarkInspectReporter
             iterationTarget,
             samples,
             actions);
-        var utf8Microseconds = MeasureMedianMicroseconds(samples, effectiveIterations, utf8);
-        var utf8CompiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, utf8Compiled);
-        var predecodedMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, predecoded);
-        var compiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, compiledRegex);
-        var decodeMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenRegex);
-        var decodeCompiledMicroseconds = MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenCompiledRegex);
+        var measurements = new double[actions.Length];
+        var allocatedBytes = new double[actions.Length];
+        var measurementOrder = reverseMeasurementOrder
+            ? Enumerable.Range(0, actions.Length).Reverse()
+            : Enumerable.Range(0, actions.Length);
+        foreach (var index in measurementOrder)
+        {
+            measurements[index] = MeasureMedianMicroseconds(samples, effectiveIterations, actions[index]);
+        }
+
+        foreach (var index in measurementOrder)
+        {
+            allocatedBytes[index] = MeasureAllocatedBytesPerOperation(effectiveIterations, actions[index]);
+        }
+
         return new ReadmeCaseMeasurement(
-            utf8Microseconds,
-            utf8CompiledMicroseconds,
-            predecodedMicroseconds,
-            compiledMicroseconds,
-            decodeMicroseconds,
-            decodeCompiledMicroseconds,
-            MeasureAllocatedBytesPerOperation(effectiveIterations, utf8),
-            MeasureAllocatedBytesPerOperation(effectiveIterations, utf8Compiled),
-            MeasureAllocatedBytesPerOperation(effectiveIterations, predecoded),
-            MeasureAllocatedBytesPerOperation(effectiveIterations, compiledRegex),
-            MeasureAllocatedBytesPerOperation(effectiveIterations, decodeThenRegex),
-            MeasureAllocatedBytesPerOperation(effectiveIterations, decodeThenCompiledRegex),
+            measurements[0],
+            measurements[1],
+            measurements[2],
+            measurements[3],
+            measurements[4],
+            measurements[5],
+            allocatedBytes[0],
+            allocatedBytes[1],
+            allocatedBytes[2],
+            allocatedBytes[3],
+            allocatedBytes[4],
+            allocatedBytes[5],
             requestedIterations,
             effectiveIterations,
             samples);

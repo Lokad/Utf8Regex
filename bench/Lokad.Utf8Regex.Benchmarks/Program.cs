@@ -238,9 +238,19 @@ if (args.Length >= 2 && args[0].Equals("--measure-readme-case", StringComparison
     return BenchmarkInspectReporter.RunMeasureReadmeCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
+if (args.Length >= 2 && args[0].Equals("--measure-readme-case-reversed", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureReadmeCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-readme-public-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureReadmePublicCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
+}
+
+if (args.Length >= 2 && args[0].Equals("--measure-readme-public-case-reversed", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureReadmePublicCaseReversed(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
 }
 
 if (args.Length >= 1 && args[0].Equals("--migrate-readme-benchmark-json", StringComparison.Ordinal))

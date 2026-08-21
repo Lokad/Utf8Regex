@@ -183,6 +183,10 @@ Current intended uses:
   - measure one or more sections, update `README.Benchmarks.json`, then regenerate the affected README output
 - --resume-readme-benchmarks
   - continue an interrupted section refresh, skipping only current clean rows with matching measurement parameters
+- --measure-readme-case-reversed
+  - run the same calibrated six-lane replica measurement in reverse order; use it with the normal command to qualify rows in the 0.98–1.02 tie band without rewriting the snapshot
+- --measure-readme-public-case-reversed
+  - reverse the calibrated six-lane measurement for a public/common or industry case in the tie band
 - --migrate-readme-benchmark-json
   - one-time migration/repair command for rebuilding the JSON snapshot from existing README-era benchmark data
 
