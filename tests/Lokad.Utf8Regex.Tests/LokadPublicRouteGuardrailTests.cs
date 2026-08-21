@@ -322,10 +322,13 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount);
     }
 
-    [Fact]
-    public void CommonDateMatchUsesBoundedDateDirectFamilyForMatch()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void CommonDateMatchUsesPrioritizedBoundedDateBooleanFamily(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None);
+        const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
+        var regex = new Utf8Regex(pattern, options);
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
@@ -344,6 +347,23 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.False(regex.Inspection.DebugTryMatchWithoutValidation(
             "Today is 11/18/2019. \xC3"u8,
             out _));
+
+        string[] inputs =
+        [
+            "1/2/20",
+            "Today is 11/18/2019.",
+            "Today is 11/18/20199.",
+            "x11/18/2019",
+            "é11/18/2019",
+            "١١/١٨/٢٠١٩",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'1', (byte)'1', (byte)'/', (byte)'1', (byte)'8', (byte)'/', (byte)'2', (byte)'0', (byte)'1', (byte)'9', 0xFF]));
     }
 
     [Fact]

@@ -3032,7 +3032,28 @@ public sealed class Utf8Regex
             return true;
         }
 
-        return TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch);
+        if (TryIsMatchAnchoredBoundedDateWithoutValidation(input, out isMatch))
+        {
+            return true;
+        }
+
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
+        {
+            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            {
+                return false;
+            }
+
+            isMatch = Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
+                input,
+                0,
+                _fallbackDirectFamily,
+                out _,
+                out _);
+            return true;
+        }
+
+        return false;
     }
 
     private bool ShouldFallbackForTrailingNewlineAnchoredValidator(ReadOnlySpan<byte> input, Utf8ValidationResult validation)
