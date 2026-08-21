@@ -83,27 +83,27 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---:|---:|---:|
-| `literal/sherlock-en` | 114.090 us | 63.290 us | 515.730 us |
-| `literal/sherlock-casei-en` | 153.145 us | 97.400 us | 540.610 us |
-| `literal/sherlock-ru` | 1,950.685 us | 66.625 us | 3,223.920 us |
-| `literal/sherlock-casei-ru` | 3,857.490 us | 219.925 us | 3,073.305 us |
-| `literal/sherlock-zh` | 578.660 us | 17.190 us | 1,634.585 us |
-| `literal-alternate/sherlock-en` | 257.265 us | 958.060 us | 1,368.410 us |
-| `literal-alternate/sherlock-en-nomatch` | 80.455 us | 395.005 us | 633.725 us |
-| `literal-alternate/sherlock-en-mixed` | 94.925 us | 384.130 us | 664.895 us |
-| `literal-alternate/sherlock-casei-en` | 229.210 us | 7,006.700 us | 7,006.315 us |
-| `literal-alternate/sherlock-ru` | 2,859.675 us | 3,341.320 us | 6,644.790 us |
-| `literal-alternate/sherlock-casei-ru` | 18,367.955 us | 15,061.530 us | 17,833.990 us |
-| `literal-alternate/sherlock-zh` | 1,549.660 us | 45.765 us | 1,650.745 us |
-| `bounded-repeat/letters-en` | 498.485 us | 1,822.758 us | 2,562.436 us |
-| `bounded-repeat/letters-ru` | 785.520 us | 5,048.247 us | 4,542.601 us |
-| `bounded-repeat/context` | 22,181.665 us | 87,284.315 us | 88,231.660 us |
-| `bounded-repeat/capitals` | 110.945 us | 26,534.150 us | 28,829.025 us |
-| `dictionary/single` | 5,014.850 us | 17,138.465 us | 16,897.645 us |
-| `aws-keys/full` | 1,906.785 us | 90,314.280 us | 115,506.850 us |
-| `aws-keys/quick` | 4,258.480 us | 7,742.685 us | 37,498.105 us |
-| `ruff-noqa/real` | 2,965.055 us | 90,843.940 us | 112,979.305 us |
-| `ruff-noqa/tweaked` | 3,713.190 us | 5,370.250 us | 35,178.400 us |
+| `literal/sherlock-en` | 106.470 us | 54.890 us | 303.225 us |
+| `literal/sherlock-casei-en` | 156.340 us | 92.075 us | 336.115 us |
+| `literal/sherlock-ru` | 1,956.030 us | 62.435 us | 3,049.405 us |
+| `literal/sherlock-casei-ru` | 3,976.215 us | 224.065 us | 3,386.975 us |
+| `literal/sherlock-zh` | 585.500 us | 17.050 us | 1,291.615 us |
+| `literal-alternate/sherlock-en` | 252.920 us | 948.120 us | 1,273.955 us |
+| `literal-alternate/sherlock-en-nomatch` | 89.030 us | 429.950 us | 811.890 us |
+| `literal-alternate/sherlock-en-mixed` | 99.650 us | 365.100 us | 721.030 us |
+| `literal-alternate/sherlock-casei-en` | 234.305 us | 6,383.250 us | 11,746.145 us |
+| `literal-alternate/sherlock-ru` | 2,728.110 us | 3,174.725 us | 10,843.940 us |
+| `literal-alternate/sherlock-casei-ru` | 17,522.535 us | 23,809.550 us | 27,583.715 us |
+| `literal-alternate/sherlock-zh` | 1,033.650 us | 48.400 us | 1,265.645 us |
+| `bounded-repeat/letters-en` | 504.820 us | 1,613.760 us | 1,637.235 us |
+| `bounded-repeat/letters-ru` | 649.545 us | 3,524.230 us | 4,024.335 us |
+| `bounded-repeat/context` | 27,913.280 us | 157,711.395 us | 162,307.165 us |
+| `bounded-repeat/capitals` | 120.145 us | 38,028.710 us | 55,665.520 us |
+| `dictionary/single` | 5,667.530 us | 31,170.225 us | 31,257.130 us |
+| `aws-keys/full` | 1,617.725 us | 103,630.215 us | 117,509.270 us |
+| `aws-keys/quick` | 3,416.245 us | 6,996.410 us | 34,786.275 us |
+| `ruff-noqa/real` | 2,873.175 us | 90,537.650 us | 70,028.050 us |
+| `ruff-noqa/tweaked` | 3,545.940 us | 5,154.005 us | 16,177.460 us |
 
 ### Public/Common and Industry Workloads
 
@@ -111,40 +111,40 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---|---:|---:|---:|
-| `common/email-match` | `IsMatch` | 0.314 us | 0.213 us | 0.234 us |
-| `common/email-miss` | `IsMatch` | 0.345 us | 0.291 us | 0.305 us |
-| `common/date-match` | `IsMatch` | 0.296 us | 0.101 us | 0.128 us |
-| `common/date-miss` | `IsMatch` | 0.488 us | 0.669 us | 0.759 us |
-| `common/ip-match` | `IsMatch` | 0.221 us | 0.177 us | 0.188 us |
-| `common/ip-miss` | `IsMatch` | 0.162 us | 0.179 us | 0.201 us |
-| `common/uri-match` | `IsMatch` | 0.404 us | 0.198 us | 0.219 us |
-| `common/uri-miss` | `IsMatch` | 0.301 us | 0.173 us | 0.191 us |
-| `common/matches-set` | `Count` | 9.463 us | 114.039 us | 116.900 us |
-| `common/matches-boundary` | `Count` | 9.742 us | 102.138 us | 103.911 us |
-| `common/matches-word` | `Count` | 4.084 us | 7.184 us | 5.326 us |
-| `common/matches-words` | `Count` | 4.166 us | 43.090 us | 43.811 us |
-| `common/match-word` | `Match` | 0.425 us | 0.360 us | 2.834 us |
-| `common/replace-words` | `Replace` | 66.624 us | 47.906 us | 89.140 us |
-| `common/split-words` | `Split` | 15.025 us | 47.110 us | 49.147 us |
-| `common/backtracking` | `IsMatch` | 0.203 us | 0.533 us | 0.555 us |
-| `common/one-node-backtracking` | `IsMatch` | 0.198 us | 0.358 us | 0.385 us |
-| `industry/mariomka-email-count` | `Count` | 2,016.213 us | 233.755 us | 5,460.111 us |
-| `industry/mariomka-uri-count` | `Count` | 2,373.694 us | 1,110.650 us | 6,229.063 us |
-| `industry/mariomka-ip-count` | `Count` | 3,200.650 us | 5,565.222 us | 10,265.026 us |
-| `industry/rust-sherlock-letter-count` | `Count` | 1,137.253 us | 12,138.907 us | 11,290.193 us |
-| `industry/rust-sherlock-holmes-window-count` | `Count` | 46.086 us | 160.223 us | 272.079 us |
-| `industry/rust-sherlock-ing-count` | `Count` | 139.185 us | 7,040.675 us | 7,107.958 us |
-| `industry/rust-sherlock-word-holmes-count` | `Count` | 16.002 us | 4,928.868 us | 5,306.936 us |
-| `industry/rust-sherlock-nonnewline-count` | `Count` | 104.861 us | 625.594 us | 751.229 us |
-| `industry/leipzig-twain-count` | `Count` | 3,573.358 us | 1,449.205 us | 6,524.792 us |
-| `industry/leipzig-name-family-count` | `Count` | 2,047.833 us | 6,630.381 us | 11,614.398 us |
-| `industry/leipzig-river-window-count` | `Count` | 6,739.285 us | 21,658.285 us | 26,917.356 us |
-| `industry/leipzig-symbol-count` | `Count` | 1,335.472 us | 12,563.092 us | 17,104.881 us |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.236 us | 0.101 us | 0.125 us |
-| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.162 us | 0.147 us | 0.159 us |
-| `industry/boostdocs-postcode-match` | `IsMatch` | 0.434 us | 0.078 us | 0.091 us |
-| `industry/boostdocs-date-match` | `IsMatch` | 0.199 us | 0.076 us | 0.092 us |
-| `industry/boostdocs-float-match` | `IsMatch` | 0.097 us | 0.070 us | 0.087 us |
+| `common/email-match` | `IsMatch` | 0.282 us | 0.221 us | 0.674 us |
+| `common/email-miss` | `IsMatch` | 0.502 us | 0.786 us | 0.369 us |
+| `common/date-match` | `IsMatch` | 0.275 us | 0.111 us | 0.109 us |
+| `common/date-miss` | `IsMatch` | 0.472 us | 0.567 us | 0.391 us |
+| `common/ip-match` | `IsMatch` | 0.229 us | 0.637 us | 0.115 us |
+| `common/ip-miss` | `IsMatch` | 0.162 us | 0.215 us | 0.124 us |
+| `common/uri-match` | `IsMatch` | 0.374 us | 0.339 us | 0.200 us |
+| `common/uri-miss` | `IsMatch` | 0.751 us | 0.332 us | 0.181 us |
+| `common/matches-set` | `Count` | 9.118 us | 109.981 us | 110.365 us |
+| `common/matches-boundary` | `Count` | 9.008 us | 97.027 us | 96.186 us |
+| `common/matches-word` | `Count` | 3.190 us | 2.574 us | 3.556 us |
+| `common/matches-words` | `Count` | 4.065 us | 41.914 us | 43.082 us |
+| `common/match-word` | `Match` | 0.374 us | 0.090 us | 0.895 us |
+| `common/replace-words` | `Replace` | 53.884 us | 69.306 us | 81.064 us |
+| `common/split-words` | `Split` | 12.911 us | 46.876 us | 47.303 us |
+| `common/backtracking` | `IsMatch` | 0.194 us | 0.527 us | 0.554 us |
+| `common/one-node-backtracking` | `IsMatch` | 0.183 us | 0.361 us | 0.383 us |
+| `industry/mariomka-email-count` | `Count` | 7,440.960 us | 231.840 us | 5,284.920 us |
+| `industry/mariomka-uri-count` | `Count` | 7,770.480 us | 1,409.460 us | 6,906.275 us |
+| `industry/mariomka-ip-count` | `Count` | 3,228.925 us | 5,074.695 us | 11,177.035 us |
+| `industry/rust-sherlock-letter-count` | `Count` | 1,083.150 us | 14,388.770 us | 18,491.985 us |
+| `industry/rust-sherlock-holmes-window-count` | `Count` | 46.423 us | 194.374 us | 398.882 us |
+| `industry/rust-sherlock-ing-count` | `Count` | 7,266.115 us | 6,832.160 us | 6,934.400 us |
+| `industry/rust-sherlock-word-holmes-count` | `Count` | 16.270 us | 4,713.980 us | 8,329.540 us |
+| `industry/rust-sherlock-nonnewline-count` | `Count` | 140.186 us | 1,050.609 us | 1,703.743 us |
+| `industry/leipzig-twain-count` | `Count` | 4,141.005 us | 1,570.760 us | 9,426.660 us |
+| `industry/leipzig-name-family-count` | `Count` | 2,746.095 us | 6,498.255 us | 11,646.390 us |
+| `industry/leipzig-river-window-count` | `Count` | 6,658.090 us | 31,866.630 us | 27,079.535 us |
+| `industry/leipzig-symbol-count` | `Count` | 2,415.275 us | 12,129.340 us | 17,288.465 us |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.219 us | 0.109 us | 0.193 us |
+| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.134 us | 0.164 us | 0.169 us |
+| `industry/boostdocs-postcode-match` | `IsMatch` | 0.372 us | 0.083 us | 0.095 us |
+| `industry/boostdocs-date-match` | `IsMatch` | 0.176 us | 0.084 us | 0.150 us |
+| `industry/boostdocs-float-match` | `IsMatch` | 0.087 us | 0.075 us | 0.091 us |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
@@ -162,27 +162,27 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 
 | Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---:|---:|---:|
-| `literal/sherlock-en` | 94.630 us | 51.035 us | 291.710 us |
-| `literal/sherlock-casei-en` | 130.990 us | 51.700 us | 315.875 us |
-| `literal/sherlock-ru` | 1,935.235 us | 71.500 us | 3,006.920 us |
-| `literal/sherlock-casei-ru` | 3,006.825 us | 116.350 us | 2,997.100 us |
-| `literal/sherlock-zh` | 701.110 us | 16.175 us | 1,357.620 us |
-| `literal-alternate/sherlock-en` | 253.055 us | 228.590 us | 453.475 us |
-| `literal-alternate/sherlock-en-nomatch` | 80.045 us | 110.545 us | 559.840 us |
-| `literal-alternate/sherlock-en-mixed` | 101.840 us | 97.340 us | 567.690 us |
-| `literal-alternate/sherlock-casei-en` | 235.970 us | 104.195 us | 346.000 us |
-| `literal-alternate/sherlock-ru` | 2,713.570 us | 1,267.255 us | 4,178.720 us |
-| `literal-alternate/sherlock-casei-ru` | 4,269.375 us | 1,309.965 us | 4,048.985 us |
-| `literal-alternate/sherlock-zh` | 896.710 us | 27.935 us | 1,225.750 us |
-| `bounded-repeat/letters-en` | 535.621 us | 1,254.683 us | 1,384.101 us |
-| `bounded-repeat/letters-ru` | 651.472 us | 1,278.034 us | 1,731.050 us |
-| `bounded-repeat/context` | 22,281.635 us | 42,708.990 us | 56,128.870 us |
-| `bounded-repeat/capitals` | 117.500 us | 8,149.000 us | 11,683.480 us |
-| `dictionary/single` | 4,810.835 us | 38,986.755 us | 38,168.155 us |
-| `aws-keys/full` | 1,440.865 us | 18,413.370 us | 41,606.325 us |
-| `aws-keys/quick` | 3,665.630 us | 3,391.260 us | 30,125.925 us |
-| `ruff-noqa/real` | 3,335.780 us | 26,244.465 us | 47,122.170 us |
-| `ruff-noqa/tweaked` | 3,547.250 us | 4,435.455 us | 30,706.930 us |
+| `literal/sherlock-en` | 94.290 us | 41.305 us | 295.855 us |
+| `literal/sherlock-casei-en` | 131.875 us | 49.625 us | 377.695 us |
+| `literal/sherlock-ru` | 1,903.900 us | 54.450 us | 4,378.245 us |
+| `literal/sherlock-casei-ru` | 3,179.800 us | 123.775 us | 4,590.290 us |
+| `literal/sherlock-zh` | 672.640 us | 16.935 us | 1,247.315 us |
+| `literal-alternate/sherlock-en` | 247.145 us | 203.625 us | 615.535 us |
+| `literal-alternate/sherlock-en-nomatch` | 89.810 us | 101.880 us | 377.440 us |
+| `literal-alternate/sherlock-en-mixed` | 106.940 us | 101.115 us | 381.990 us |
+| `literal-alternate/sherlock-casei-en` | 240.740 us | 104.485 us | 845.325 us |
+| `literal-alternate/sherlock-ru` | 2,692.755 us | 1,273.215 us | 6,361.330 us |
+| `literal-alternate/sherlock-casei-ru` | 6,484.605 us | 1,967.745 us | 6,155.350 us |
+| `literal-alternate/sherlock-zh` | 906.765 us | 27.785 us | 1,287.425 us |
+| `bounded-repeat/letters-en` | 473.040 us | 1,055.465 us | 1,100.600 us |
+| `bounded-repeat/letters-ru` | 702.035 us | 1,191.020 us | 2,536.350 us |
+| `bounded-repeat/context` | 35,300.440 us | 56,034.275 us | 62,446.690 us |
+| `bounded-repeat/capitals` | 121.035 us | 11,673.770 us | 18,885.070 us |
+| `dictionary/single` | 5,693.205 us | 76,178.825 us | 75,026.460 us |
+| `aws-keys/full` | 1,504.375 us | 20,512.170 us | 40,779.615 us |
+| `aws-keys/quick` | 3,674.505 us | 7,128.895 us | 28,899.715 us |
+| `ruff-noqa/real` | 3,893.090 us | 23,651.770 us | 26,354.380 us |
+| `ruff-noqa/tweaked` | 3,680.400 us | 4,161.190 us | 15,065.920 us |
 
 ### Public/Common and Industry Workloads
 
@@ -190,40 +190,40 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 
 | Case | Operation | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---|---:|---:|---:|
-| `common/email-match` | `IsMatch` | 0.312 us | 0.446 us | 0.465 us |
-| `common/email-miss` | `IsMatch` | 0.333 us | 0.458 us | 0.245 us |
-| `common/date-match` | `IsMatch` | 0.303 us | 0.225 us | 0.250 us |
-| `common/date-miss` | `IsMatch` | 0.452 us | 0.115 us | 0.139 us |
-| `common/ip-match` | `IsMatch` | 0.161 us | 0.043 us | 0.059 us |
-| `common/ip-miss` | `IsMatch` | 0.166 us | 0.044 us | 0.059 us |
-| `common/uri-match` | `IsMatch` | 0.566 us | 0.066 us | 0.150 us |
-| `common/uri-miss` | `IsMatch` | 0.302 us | 0.057 us | 0.071 us |
-| `common/matches-set` | `Count` | 9.203 us | 97.810 us | 202.499 us |
-| `common/matches-boundary` | `Count` | 4.940 us | 54.633 us | 55.539 us |
-| `common/matches-word` | `Count` | 3.585 us | 1.357 us | 3.912 us |
-| `common/matches-words` | `Count` | 4.125 us | 10.581 us | 11.813 us |
-| `common/match-word` | `Match` | 0.829 us | 0.073 us | 1.369 us |
-| `common/replace-words` | `Replace` | 17.842 us | 15.270 us | 28.106 us |
-| `common/split-words` | `Split` | 11.024 us | 13.541 us | 20.113 us |
-| `common/backtracking` | `IsMatch` | 0.204 us | 0.036 us | 0.052 us |
-| `common/one-node-backtracking` | `IsMatch` | 0.203 us | 0.058 us | 0.073 us |
-| `industry/mariomka-email-count` | `Count` | 1,970.039 us | 219.223 us | 5,180.626 us |
-| `industry/mariomka-uri-count` | `Count` | 2,461.830 us | 669.853 us | 5,702.917 us |
-| `industry/mariomka-ip-count` | `Count` | 3,295.989 us | 2,221.847 us | 6,988.531 us |
-| `industry/rust-sherlock-letter-count` | `Count` | 1,128.874 us | 5,186.630 us | 5,214.307 us |
-| `industry/rust-sherlock-holmes-window-count` | `Count` | 36.806 us | 40.413 us | 378.054 us |
-| `industry/rust-sherlock-ing-count` | `Count` | 131.020 us | 3,008.543 us | 3,124.505 us |
-| `industry/rust-sherlock-word-holmes-count` | `Count` | 15.161 us | 2,429.840 us | 2,652.896 us |
-| `industry/rust-sherlock-nonnewline-count` | `Count` | 90.535 us | 871.132 us | 1,256.145 us |
-| `industry/leipzig-twain-count` | `Count` | 3,267.684 us | 1,604.681 us | 6,715.483 us |
-| `industry/leipzig-name-family-count` | `Count` | 2,054.541 us | 2,238.198 us | 6,994.503 us |
-| `industry/leipzig-river-window-count` | `Count` | 6,665.832 us | 6,593.333 us | 11,386.079 us |
-| `industry/leipzig-symbol-count` | `Count` | 1,260.314 us | 1,171.766 us | 6,373.450 us |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.244 us | 0.047 us | 0.070 us |
-| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.151 us | 0.047 us | 0.063 us |
-| `industry/boostdocs-postcode-match` | `IsMatch` | 0.536 us | 0.037 us | 0.052 us |
-| `industry/boostdocs-date-match` | `IsMatch` | 0.201 us | 0.036 us | 0.050 us |
-| `industry/boostdocs-float-match` | `IsMatch` | 0.096 us | 0.036 us | 0.052 us |
+| `common/email-match` | `IsMatch` | 0.270 us | 0.051 us | 0.149 us |
+| `common/email-miss` | `IsMatch` | 0.585 us | 0.079 us | 0.073 us |
+| `common/date-match` | `IsMatch` | 0.645 us | 0.047 us | 0.098 us |
+| `common/date-miss` | `IsMatch` | 0.616 us | 0.195 us | 0.214 us |
+| `common/ip-match` | `IsMatch` | 0.198 us | 0.036 us | 0.052 us |
+| `common/ip-miss` | `IsMatch` | 0.163 us | 0.034 us | 0.084 us |
+| `common/uri-match` | `IsMatch` | 0.363 us | 0.064 us | 0.097 us |
+| `common/uri-miss` | `IsMatch` | 0.342 us | 0.064 us | 0.047 us |
+| `common/matches-set` | `Count` | 5.007 us | 55.599 us | 56.497 us |
+| `common/matches-boundary` | `Count` | 5.164 us | 54.079 us | 54.938 us |
+| `common/matches-word` | `Count` | 2.169 us | 1.298 us | 1.963 us |
+| `common/matches-words` | `Count` | 4.065 us | 10.229 us | 11.254 us |
+| `common/match-word` | `Match` | 0.379 us | 0.047 us | 0.925 us |
+| `common/replace-words` | `Replace` | 17.480 us | 17.138 us | 20.021 us |
+| `common/split-words` | `Split` | 10.735 us | 13.220 us | 14.413 us |
+| `common/backtracking` | `IsMatch` | 0.195 us | 0.031 us | 0.042 us |
+| `common/one-node-backtracking` | `IsMatch` | 0.180 us | 0.235 us | 0.260 us |
+| `industry/mariomka-email-count` | `Count` | 7,238.280 us | 368.600 us | 5,129.375 us |
+| `industry/mariomka-uri-count` | `Count` | 7,301.080 us | 1,110.170 us | 6,150.140 us |
+| `industry/mariomka-ip-count` | `Count` | 3,101.160 us | 2,108.890 us | 7,088.155 us |
+| `industry/rust-sherlock-letter-count` | `Count` | 1,057.900 us | 10,089.935 us | 8,548.640 us |
+| `industry/rust-sherlock-holmes-window-count` | `Count` | 42.048 us | 42.998 us | 274.233 us |
+| `industry/rust-sherlock-ing-count` | `Count` | 3,008.050 us | 2,880.770 us | 3,015.420 us |
+| `industry/rust-sherlock-word-holmes-count` | `Count` | 17.040 us | 2,364.325 us | 3,445.300 us |
+| `industry/rust-sherlock-nonnewline-count` | `Count` | 167.498 us | 731.720 us | 989.636 us |
+| `industry/leipzig-twain-count` | `Count` | 3,955.360 us | 1,654.755 us | 7,232.540 us |
+| `industry/leipzig-name-family-count` | `Count` | 2,522.690 us | 2,418.610 us | 7,348.470 us |
+| `industry/leipzig-river-window-count` | `Count` | 7,199.590 us | 6,385.765 us | 12,103.855 us |
+| `industry/leipzig-symbol-count` | `Count` | 1,323.055 us | 1,510.905 us | 6,443.450 us |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.269 us | 0.044 us | 0.111 us |
+| `industry/boostdocs-credit-card-match` | `IsMatch` | 0.137 us | 0.047 us | 0.059 us |
+| `industry/boostdocs-postcode-match` | `IsMatch` | 0.372 us | 0.035 us | 0.047 us |
+| `industry/boostdocs-date-match` | `IsMatch` | 0.177 us | 0.035 us | 0.048 us |
+| `industry/boostdocs-float-match` | `IsMatch` | 0.088 us | 0.036 us | 0.049 us |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
 
 <!-- BEGIN GENERATED LOKAD BENCHMARKS -->
@@ -238,40 +238,40 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---:|---:|---:|
-| `literal/identifier-token` | 2.873 us | 3.044 us | 14.913 us |
-| `literal/call-token` | 6.157 us | 2.691 us | 16.488 us |
-| `literal/identifier-token-casei` | 5.641 us | 8.352 us | 29.903 us |
-| `literal-family/type-token-family` | 8.550 us | 32.719 us | 46.195 us |
-| `literal-family/method-token-family` | 5.570 us | 5.701 us | 22.700 us |
-| `structural/keyword-to-generic-type` | 3.557 us | 3.121 us | 16.425 us |
-| `structural/keyword-family-to-capitalized-identifier` | 45.221 us | 270.733 us | 274.979 us |
-| `structural/method-family-call` | 2.894 us | 5.186 us | 21.358 us |
-| `structural/ordered-keyword-pair` | 4.270 us | 3.962 us | 18.972 us |
-| `structural/ordered-identifier-window` | 3.924 us | 20.048 us | 62.684 us |
-| `structural/modifier-family-to-type-window` | 15.764 us | 304.127 us | 306.640 us |
-| `structural/ordered-keyword-window` | 3.885 us | 11.532 us | 32.685 us |
-| `structural/method-family-generic-call` | 2.632 us | 4.639 us | 17.771 us |
-| `fallback/lookahead` | 3.830 us | 4.396 us | 10.247 us |
-| `balancing/begin-end-blocks` | 5,164.090 us | 5,104.702 us | 5,119.828 us |
-| `structural/ordered-modifier-pair` | 3.861 us | 10.109 us | 30.955 us |
-| `structural/modifier-family-to-type-pair` | 11.700 us | 233.160 us | 83.660 us |
-| `lokad/imports/module-imports` | 3.065 us | 3.515 us | 8.575 us |
-| `lokad/folding/region-marker` | 3.290 us | 48.410 us | 25.395 us |
-| `lokad/lexer/identifier` | 7.481 us | 9.398 us | 10.770 us |
-| `lokad/lexer/number` | 2.864 us | 4.426 us | 4.587 us |
-| `lokad/lexer/string` | 6.667 us | 25.598 us | 26.315 us |
-| `lokad/lexer/operator-run` | 0.925 us | 1.188 us | 1.944 us |
-| `lokad/lexer/doc-line` | 1.066 us | 1.457 us | 1.655 us |
-| `lokad/docs/inline-doc-prefix` | 1.124 us | 1.598 us | 2.124 us |
-| `lokad/langserv/identifier-validator` | 3.788 us | 5.686 us | 6.274 us |
-| `lokad/langserv/helper-identifier` | 2.010 us | 3.197 us | 3.516 us |
-| `lokad/langserv/color-short-hex` | 1.066 us | 0.571 us | 0.718 us |
-| `lokad/langserv/color-rgb-hex` | 1.353 us | 1.016 us | 1.080 us |
-| `lokad/langserv/url-dashboard` | 1.025 us | 4.142 us | 4.615 us |
-| `lokad/langserv/url-download` | 3.900 us | 7.215 us | 7.685 us |
-| `lokad/style/hex-color` | 0.475 us | 0.510 us | 0.730 us |
-| `lokad/style/cell-ref` | 1.203 us | 0.932 us | 1.134 us |
-| `lokad/style/range-ref` | 1.723 us | 0.787 us | 0.827 us |
+| `literal/identifier-token` | 6.084 us | 3.849 us | 10.110 us |
+| `literal/call-token` | 5.876 us | 2.796 us | 8.560 us |
+| `literal/identifier-token-casei` | 8.524 us | 8.165 us | 14.076 us |
+| `literal-family/type-token-family` | 8.340 us | 15.618 us | 20.940 us |
+| `literal-family/method-token-family` | 5.249 us | 5.726 us | 11.763 us |
+| `structural/keyword-to-generic-type` | 3.872 us | 3.075 us | 8.917 us |
+| `structural/keyword-family-to-capitalized-identifier` | 45.641 us | 134.052 us | 136.904 us |
+| `structural/method-family-call` | 2.918 us | 5.016 us | 11.522 us |
+| `structural/ordered-keyword-pair` | 5.469 us | 3.288 us | 9.038 us |
+| `structural/ordered-identifier-window` | 7.348 us | 18.451 us | 24.576 us |
+| `structural/modifier-family-to-type-window` | 15.614 us | 161.531 us | 167.962 us |
+| `structural/ordered-keyword-window` | 7.820 us | 11.494 us | 17.463 us |
+| `structural/method-family-generic-call` | 2.780 us | 4.210 us | 11.649 us |
+| `fallback/lookahead` | 4.761 us | 4.677 us | 10.453 us |
+| `balancing/begin-end-blocks` | 2,485.841 us | 2,658.786 us | 2,728.018 us |
+| `structural/ordered-modifier-pair` | 5.426 us | 10.298 us | 17.636 us |
+| `structural/modifier-family-to-type-pair` | 12.829 us | 79.110 us | 88.460 us |
+| `lokad/imports/module-imports` | 3.290 us | 3.235 us | 8.050 us |
+| `lokad/folding/region-marker` | 3.465 us | 20.475 us | 24.970 us |
+| `lokad/lexer/identifier` | 7.202 us | 10.021 us | 11.667 us |
+| `lokad/lexer/number` | 3.368 us | 3.954 us | 4.412 us |
+| `lokad/lexer/string` | 9.878 us | 26.426 us | 28.023 us |
+| `lokad/lexer/operator-run` | 0.935 us | 1.193 us | 1.272 us |
+| `lokad/lexer/doc-line` | 1.267 us | 1.436 us | 1.605 us |
+| `lokad/docs/inline-doc-prefix` | 1.407 us | 1.502 us | 1.895 us |
+| `lokad/langserv/identifier-validator` | 2.990 us | 5.160 us | 6.138 us |
+| `lokad/langserv/helper-identifier` | 2.008 us | 3.069 us | 3.231 us |
+| `lokad/langserv/color-short-hex` | 0.370 us | 0.512 us | 0.791 us |
+| `lokad/langserv/color-rgb-hex` | 0.461 us | 0.971 us | 1.282 us |
+| `lokad/langserv/url-dashboard` | 1.042 us | 4.243 us | 4.506 us |
+| `lokad/langserv/url-download` | 5.035 us | 7.171 us | 7.348 us |
+| `lokad/style/hex-color` | 0.388 us | 0.263 us | 0.293 us |
+| `lokad/style/cell-ref` | 0.467 us | 0.974 us | 1.062 us |
+| `lokad/style/range-ref` | 1.610 us | 0.771 us | 0.854 us |
 <!-- END GENERATED LOKAD BENCHMARKS -->
 
 <!-- BEGIN GENERATED LOKAD_COMPILED BENCHMARKS -->
@@ -286,38 +286,38 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---:|---:|---:|
-| `literal/identifier-token` | 2.854 us | 2.349 us | 15.097 us |
-| `literal/call-token` | 5.935 us | 2.228 us | 15.631 us |
-| `literal/identifier-token-casei` | 5.415 us | 8.289 us | 21.640 us |
-| `literal-family/type-token-family` | 8.570 us | 9.532 us | 21.955 us |
-| `literal-family/method-token-family` | 5.506 us | 4.135 us | 19.908 us |
-| `structural/keyword-to-generic-type` | 3.473 us | 2.851 us | 17.981 us |
-| `structural/keyword-family-to-capitalized-identifier` | 75.414 us | 66.353 us | 79.591 us |
-| `structural/method-family-call` | 2.926 us | 3.437 us | 19.078 us |
-| `structural/ordered-keyword-pair` | 4.338 us | 2.508 us | 15.697 us |
-| `structural/ordered-identifier-window` | 3.677 us | 14.459 us | 24.887 us |
-| `structural/modifier-family-to-type-window` | 17.166 us | 107.296 us | 122.968 us |
-| `structural/ordered-keyword-window` | 3.887 us | 10.559 us | 26.571 us |
-| `structural/method-family-generic-call` | 2.669 us | 2.967 us | 18.107 us |
-| `fallback/lookahead` | 3.613 us | 3.043 us | 15.979 us |
-| `balancing/begin-end-blocks` | 683.019 us | 605.813 us | 636.086 us |
-| `structural/ordered-modifier-pair` | 3.714 us | 7.727 us | 20.989 us |
-| `structural/modifier-family-to-type-pair` | 106.500 us | 61.200 us | 71.840 us |
-| `lokad/imports/module-imports` | 13.670 us | 6.131 us | 36.711 us |
-| `lokad/folding/region-marker` | 28.480 us | 162.400 us | 171.220 us |
-| `lokad/lexer/identifier` | 7.549 us | 10.126 us | 11.049 us |
-| `lokad/lexer/number` | 2.739 us | 4.063 us | 4.653 us |
-| `lokad/lexer/string` | 6.270 us | 23.045 us | 25.120 us |
-| `lokad/lexer/operator-run` | 0.901 us | 1.285 us | 1.282 us |
-| `lokad/lexer/doc-line` | 1.051 us | 1.387 us | 1.597 us |
-| `lokad/docs/inline-doc-prefix` | 1.101 us | 1.764 us | 1.975 us |
-| `lokad/langserv/identifier-validator` | 2.779 us | 5.845 us | 6.388 us |
-| `lokad/langserv/helper-identifier` | 1.967 us | 3.164 us | 3.553 us |
-| `lokad/langserv/color-short-hex` | 0.353 us | 0.662 us | 0.662 us |
-| `lokad/langserv/color-rgb-hex` | 0.600 us | 1.070 us | 1.113 us |
-| `lokad/langserv/url-dashboard` | 0.884 us | 4.185 us | 4.414 us |
-| `lokad/langserv/url-download` | 15.245 us | 16.673 us | 17.429 us |
-| `lokad/style/hex-color` | 1.449 us | 0.855 us | 1.040 us |
-| `lokad/style/cell-ref` | 0.500 us | 1.049 us | 1.148 us |
-| `lokad/style/range-ref` | 0.303 us | 0.878 us | 0.907 us |
+| `literal/identifier-token` | 3.947 us | 3.103 us | 8.507 us |
+| `literal/call-token` | 5.896 us | 2.220 us | 7.919 us |
+| `literal/identifier-token-casei` | 5.421 us | 4.514 us | 10.681 us |
+| `literal-family/type-token-family` | 8.300 us | 5.961 us | 11.863 us |
+| `literal-family/method-token-family` | 5.174 us | 3.551 us | 9.366 us |
+| `structural/keyword-to-generic-type` | 3.145 us | 2.439 us | 8.329 us |
+| `structural/keyword-family-to-capitalized-identifier` | 47.051 us | 41.578 us | 48.781 us |
+| `structural/method-family-call` | 2.760 us | 3.262 us | 9.888 us |
+| `structural/ordered-keyword-pair` | 3.358 us | 2.596 us | 9.063 us |
+| `structural/ordered-identifier-window` | 3.649 us | 5.928 us | 11.695 us |
+| `structural/modifier-family-to-type-window` | 13.774 us | 56.030 us | 62.857 us |
+| `structural/ordered-keyword-window` | 3.808 us | 4.977 us | 10.981 us |
+| `structural/method-family-generic-call` | 2.684 us | 2.853 us | 10.159 us |
+| `fallback/lookahead` | 3.038 us | 2.517 us | 8.791 us |
+| `balancing/begin-end-blocks` | 273.350 us | 261.577 us | 269.409 us |
+| `structural/ordered-modifier-pair` | 3.442 us | 4.465 us | 10.665 us |
+| `structural/modifier-family-to-type-pair` | 11.705 us | 27.961 us | 33.099 us |
+| `lokad/imports/module-imports` | 2.505 us | 2.760 us | 7.805 us |
+| `lokad/folding/region-marker` | 3.570 us | 21.600 us | 25.375 us |
+| `lokad/lexer/identifier` | 7.291 us | 10.164 us | 10.755 us |
+| `lokad/lexer/number` | 2.784 us | 4.327 us | 4.745 us |
+| `lokad/lexer/string` | 6.164 us | 25.621 us | 25.986 us |
+| `lokad/lexer/operator-run` | 0.886 us | 1.165 us | 1.241 us |
+| `lokad/lexer/doc-line` | 1.006 us | 1.462 us | 1.647 us |
+| `lokad/docs/inline-doc-prefix` | 1.112 us | 1.649 us | 1.863 us |
+| `lokad/langserv/identifier-validator` | 2.916 us | 5.461 us | 6.228 us |
+| `lokad/langserv/helper-identifier` | 2.008 us | 3.171 us | 3.959 us |
+| `lokad/langserv/color-short-hex` | 0.475 us | 0.559 us | 0.609 us |
+| `lokad/langserv/color-rgb-hex` | 0.460 us | 1.105 us | 1.197 us |
+| `lokad/langserv/url-dashboard` | 0.853 us | 4.142 us | 4.444 us |
+| `lokad/langserv/url-download` | 1.181 us | 7.268 us | 7.349 us |
+| `lokad/style/hex-color` | 0.391 us | 0.272 us | 0.311 us |
+| `lokad/style/cell-ref` | 0.467 us | 1.115 us | 1.193 us |
+| `lokad/style/range-ref` | 0.364 us | 0.843 us | 0.850 us |
 <!-- END GENERATED LOKAD_COMPILED BENCHMARKS -->
