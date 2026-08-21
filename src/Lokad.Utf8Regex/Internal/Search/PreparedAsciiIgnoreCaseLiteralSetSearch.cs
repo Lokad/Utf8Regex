@@ -11,8 +11,6 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
 
     public PreparedAsciiIgnoreCaseLiteralSetSearch(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
-
         if (literals.Length == 0)
         {
             var emptyBuckets = Array.Empty<AsciiIgnoreCaseLiteralBucket>();

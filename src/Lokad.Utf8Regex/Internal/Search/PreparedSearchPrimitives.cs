@@ -43,7 +43,6 @@ internal readonly struct PreparedByteSearch
 
     public static PreparedByteSearch Create(params byte[] values)
     {
-        ArgumentNullException.ThrowIfNull(values);
         return new PreparedByteSearch([.. values]);
     }
 
@@ -86,7 +85,6 @@ internal readonly struct PreparedSubstringSearch
 
     public PreparedSubstringSearch(byte[] needle, bool ignoreCase)
     {
-        ArgumentNullException.ThrowIfNull(needle);
         Needle = needle;
         IgnoreCase = ignoreCase;
         _exactTier = !ignoreCase ? DetermineExactTier(needle.Length) : PreparedExactSearchTier.None;

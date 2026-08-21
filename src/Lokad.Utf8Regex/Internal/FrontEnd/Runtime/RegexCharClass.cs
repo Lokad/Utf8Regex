@@ -132,8 +132,6 @@ internal sealed class RegexCharClass
 
     public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
     {
-        ArgumentNullException.ThrowIfNull(categoryName);
-
         if (!s_definedCategories.TryGetValue(categoryName, out var category) &&
             !(caseInsensitive && s_definedCategories.TryGetValue(InternalRegexIgnoreCase, out category) && categoryName == "I"))
         {
@@ -145,8 +143,6 @@ internal sealed class RegexCharClass
 
     public void AddCategory(string category, bool invert)
     {
-        ArgumentNullException.ThrowIfNull(category);
-
         var categories = EnsureCategories();
         if (invert)
         {
@@ -163,8 +159,6 @@ internal sealed class RegexCharClass
 
     public void AddCaseEquivalences(CultureInfo culture)
     {
-        ArgumentNullException.ThrowIfNull(culture);
-
         if (_rangelist is not { Count: > 0 } ranges)
         {
             return;
@@ -182,8 +176,6 @@ internal sealed class RegexCharClass
 
     public void AddCaseEquivalences(char first, char last, CultureInfo culture)
     {
-        ArgumentNullException.ThrowIfNull(culture);
-
         _caseBehavior = RegexCaseEquivalences.GetRegexBehavior(culture);
         AddCaseEquivalenceRange(first, last, culture);
     }
@@ -289,7 +281,6 @@ internal sealed class RegexCharClass
 
     internal static bool CharInClassBase(char ch, string set)
     {
-        ArgumentNullException.ThrowIfNull(set);
         if (set.Length < SetStartIndex)
         {
             throw new ArgumentException("Invalid character class payload.", nameof(set));
@@ -524,7 +515,6 @@ internal sealed class RegexCharClass
 
     public static RegexCharClass Parse(string charClass)
     {
-        ArgumentNullException.ThrowIfNull(charClass);
         if (charClass.Length < SetStartIndex)
         {
             throw new ArgumentException("Invalid character class payload.", nameof(charClass));

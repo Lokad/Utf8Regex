@@ -103,8 +103,6 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
 
     public static AsciiCharClass FromPredicate(Func<byte, bool> predicate, bool negated)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-
         ulong low = 0;
         ulong high = 0;
         for (var value = 0; value < 128; value++)

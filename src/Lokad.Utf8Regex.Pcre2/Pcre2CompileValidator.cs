@@ -21,8 +21,6 @@ internal static class Pcre2CompileValidator
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
-
         if ((options & ~SupportedOptions) != Pcre2CompileOptions.None)
         {
             throw new ArgumentOutOfRangeException(nameof(options), "The value contains an unknown PCRE2 compile-option bit.");

@@ -4,10 +4,6 @@ internal static class Utf8ReplacementPlanInterpreter
 {
     public static string Apply(Utf8ReplacementPlan plan, Match match, string input)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(match);
-        ArgumentNullException.ThrowIfNull(input);
-
         if (plan.Instructions.Count == 0)
         {
             return string.Empty;

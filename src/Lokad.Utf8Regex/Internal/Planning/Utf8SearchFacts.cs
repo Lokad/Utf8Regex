@@ -72,7 +72,6 @@ internal readonly struct Utf8SearchFacts
 
     public static Utf8SearchFacts Create(Utf8SearchKind kind, Utf8SearchFactData data)
     {
-        ArgumentNullException.ThrowIfNull(data);
         return new Utf8SearchFacts(kind, data);
     }
 }

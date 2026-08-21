@@ -21,8 +21,6 @@ internal static class Pcre2Compiler
 {
     internal static Pcre2CompiledProgram Compile(Pcre2CompileRequest request, Pcre2FoundationProgramFactory foundationProgramFactory)
     {
-        ArgumentNullException.ThrowIfNull(request.Pattern);
-        ArgumentNullException.ThrowIfNull(foundationProgramFactory);
         Pcre2CompileValidator.Validate(request.Pattern, request.Options, request.Settings);
         if (Pcre2LiteralCompiler.Compile(request) is Pcre2CompiledLiteralOutcome literal)
         {
@@ -633,7 +631,6 @@ internal static class Pcre2ProgramInvariant
 {
     internal static void Validate(Pcre2CompiledProgram program)
     {
-        ArgumentNullException.ThrowIfNull(program);
         ValidateDirectProgram(program.Operations.IsMatch, program);
         ValidateDirectProgram(program.Operations.Count, program);
         ValidateDirectProgram(program.Operations.Enumerate, program);
@@ -643,7 +640,6 @@ internal static class Pcre2ProgramInvariant
 
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
-        ArgumentNullException.ThrowIfNull(directProgram);
         if (directProgram is Pcre2Utf8DirectProgram utf8Program)
         {
             var isOwnedUtf8Program = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&

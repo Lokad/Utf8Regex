@@ -6,7 +6,6 @@ internal static class Utf8NativeReplacementExecutor
 {
     public static bool CanExecute(Utf8ReplacementPlan plan)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         foreach (var instruction in plan.Instructions)
         {
             if (!CanExecute(instruction))
@@ -23,7 +22,6 @@ internal static class Utf8NativeReplacementExecutor
         Utf8ReplacementPlan plan,
         ref Utf8OperationMatchCursor cursor)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
@@ -43,7 +41,6 @@ internal static class Utf8NativeReplacementExecutor
         Span<byte> destination,
         out int bytesWritten)
     {
-        ArgumentNullException.ThrowIfNull(plan);
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {

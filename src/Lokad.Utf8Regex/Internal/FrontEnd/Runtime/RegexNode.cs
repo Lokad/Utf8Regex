@@ -102,7 +102,6 @@ internal sealed class RegexNode
 
     public RegexNode AddChild(RegexNode child)
     {
-        ArgumentNullException.ThrowIfNull(child);
         child.Parent = this;
 
         switch (Children)
@@ -125,7 +124,6 @@ internal sealed class RegexNode
 
     public void ReplaceChild(int index, RegexNode child)
     {
-        ArgumentNullException.ThrowIfNull(child);
         child.Parent = this;
 
         switch (Children)

@@ -339,7 +339,6 @@ public readonly ref struct Utf8Pcre2MatchContext
 
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
-        ArgumentNullException.ThrowIfNull(name);
         if (_nameEntries is null)
         {
             isMore = false;
@@ -359,7 +358,6 @@ public readonly ref struct Utf8Pcre2MatchContext
 
     public bool TryGetFirstSetGroup(string name, out Utf8Pcre2GroupContext group)
     {
-        ArgumentNullException.ThrowIfNull(name);
         if (_nameEntries is not null && _groups is not null)
         {
             foreach (var entry in _nameEntries)

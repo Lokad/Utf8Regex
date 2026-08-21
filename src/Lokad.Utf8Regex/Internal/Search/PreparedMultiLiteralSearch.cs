@@ -620,7 +620,6 @@ internal readonly struct PreparedMultiLiteralPackedSearch
     public static bool TryCreate(byte[][] literals, out PreparedMultiLiteralPackedSearch search)
     {
         search = default;
-        ArgumentNullException.ThrowIfNull(literals);
         if (literals.Length == 0)
         {
             return false;
@@ -651,7 +650,6 @@ internal readonly struct PreparedMultiLiteralPackedSearch
     internal static bool TryCreateAtDiscriminatorOffset(byte[][] literals, int offset, out PreparedMultiLiteralPackedSearch search)
     {
         search = default;
-        ArgumentNullException.ThrowIfNull(literals);
         if (literals.Length == 0)
         {
             return false;
@@ -1094,7 +1092,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateRootByte(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             PreparedMultiLiteralCandidatePrefilterKind.RootByte,
             literals,
@@ -1111,7 +1108,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateEarliest(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             PreparedMultiLiteralCandidatePrefilterKind.Earliest,
             literals,
@@ -1128,7 +1124,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateRareByte(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         var rareByte = new PreparedMultiLiteralRareBytePrefilter(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             rareByte.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.RareByte : PreparedMultiLiteralCandidatePrefilterKind.None,
@@ -1146,7 +1141,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateOffsetMask(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         var offsetMask = new PreparedMultiLiteralOffsetMaskPrefilter(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             offsetMask.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.OffsetMask : PreparedMultiLiteralCandidatePrefilterKind.None,
@@ -1164,7 +1158,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateNibbleMask(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         var nibbleMask = new PreparedMultiLiteralNibbleMaskPrefilter(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             nibbleMask.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.NibbleMask : PreparedMultiLiteralCandidatePrefilterKind.None,
@@ -1182,7 +1175,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreatePackedNibbleSimd(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         var packedNibbleSimd = new PreparedMultiLiteralPackedNibbleSimdPrefilter(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             packedNibbleSimd.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.PackedNibbleSimd : PreparedMultiLiteralCandidatePrefilterKind.None,
@@ -1200,7 +1192,6 @@ internal readonly struct PreparedMultiLiteralCandidatePrefilter
 
     public static PreparedMultiLiteralCandidatePrefilter CreateLeadingUtf8Segment(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         var leadingUtf8Segment = new PreparedMultiLiteralLeadingUtf8SegmentPrefilter(literals);
         return new PreparedMultiLiteralCandidatePrefilter(
             leadingUtf8Segment.HasValue ? PreparedMultiLiteralCandidatePrefilterKind.LeadingUtf8Segment : PreparedMultiLiteralCandidatePrefilterKind.None,
@@ -1301,7 +1292,6 @@ internal readonly struct PreparedMultiLiteralLeadingUtf8SegmentPrefilter
 {
     public PreparedMultiLiteralLeadingUtf8SegmentPrefilter(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         Buckets = [];
 
@@ -1433,7 +1423,6 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
     private PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals, bool asciiIgnoreCase)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         MaskLength = 0;
         LowMaskVectors = [];
@@ -1675,7 +1664,6 @@ internal readonly struct PreparedMultiLiteralNibbleMaskPrefilter
 
     public PreparedMultiLiteralNibbleMaskPrefilter(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         Search = default;
         LowMasks = [];
@@ -1795,7 +1783,6 @@ internal readonly struct PreparedMultiLiteralOffsetMaskPrefilter
 
     public PreparedMultiLiteralOffsetMaskPrefilter(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         Offsets = [];
         Masks = [];
@@ -1933,7 +1920,6 @@ internal readonly struct PreparedMultiLiteralRareBytePrefilter
 {
     public PreparedMultiLiteralRareBytePrefilter(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         OffsetByValue = new int[256];
         Array.Fill(OffsetByValue, -1);
@@ -2080,7 +2066,6 @@ internal readonly struct PreparedMultiLiteralEarliestExactSearch
 {
     public PreparedMultiLiteralEarliestExactSearch(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         Literals = literals;
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         LongestLength = literals.Length == 0 ? 0 : literals.Max(static literal => literal.Length);
@@ -2292,7 +2277,6 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
 
     public static PreparedMultiLiteralAutomatonSearch Create(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         if (literals.Length == 0)
         {
             return new PreparedMultiLiteralAutomatonSearch([], [], [], [], int.MaxValue);
@@ -2644,7 +2628,6 @@ internal readonly struct PreparedMultiLiteralTrieSearch
 
     public static PreparedMultiLiteralTrieSearch Create(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         if (literals.Length == 0)
         {
             return new PreparedMultiLiteralTrieSearch(PreparedByteSearch.Create(), CreateRootMap(Array.Empty<byte>(), Array.Empty<int>()), [], int.MaxValue);

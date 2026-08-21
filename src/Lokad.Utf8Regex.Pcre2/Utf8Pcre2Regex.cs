@@ -32,7 +32,6 @@ public sealed class Utf8Pcre2Regex
         Utf8Pcre2ExecutionLimits defaultExecutionLimits,
         TimeSpan matchTimeout)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
         var request = new Pcre2CompileRequest(
             pattern,
             options,
@@ -403,7 +402,6 @@ public sealed class Utf8Pcre2Regex
 
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
         ValidateStartOffset(input, startOffsetInBytes);
         return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
     }
@@ -429,7 +427,6 @@ public sealed class Utf8Pcre2Regex
 
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
         ValidateStartOffset(input, startOffsetInBytes);
         if (TryReplaceUsingLiteralDriver(
                 input,
@@ -459,7 +456,6 @@ public sealed class Utf8Pcre2Regex
 
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
         var result = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
         _ = Utf8Validation.Validate(result);
         return Encoding.UTF8.GetString(result);
@@ -470,7 +466,6 @@ public sealed class Utf8Pcre2Regex
 
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
         ValidateStartOffset(input, startOffsetInBytes);
         if (TryReplaceToStringViaLiteralDriver(
                 input,
@@ -536,7 +531,6 @@ public sealed class Utf8Pcre2Regex
 
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var matchingEntries = NameEntries.Where(static e => !string.IsNullOrEmpty(e.Name)).ToArray();
         var count = 0;
         foreach (var entry in matchingEntries)
@@ -563,7 +557,6 @@ public sealed class Utf8Pcre2Regex
 
     public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
-        ArgumentNullException.ThrowIfNull(name);
         var context = MatchDetailed(input, startOffsetInBytes, matchOptions);
         return context.TryGetFirstSetGroup(name, out group);
     }

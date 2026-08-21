@@ -9,8 +9,6 @@ internal static class PythonReReplacementParser
         int captureGroupCount,
         IReadOnlyDictionary<string, int> namedGroups)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-        ArgumentNullException.ThrowIfNull(namedGroups);
         var tokens = new List<PythonReReplacementToken>();
         var literal = new StringBuilder();
         var index = 0;

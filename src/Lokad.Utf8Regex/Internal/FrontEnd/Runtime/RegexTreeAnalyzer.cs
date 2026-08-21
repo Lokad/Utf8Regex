@@ -10,8 +10,6 @@ internal static class RegexTreeAnalyzer
 {
     public static AnalysisResults Analyze(RegexTree regexTree)
     {
-        ArgumentNullException.ThrowIfNull(regexTree);
-
         var results = new AnalysisResults(regexTree);
         results.Complete = TryAnalyze(regexTree.Root, results, isAtomicByAncestor: true, isInLoop: false);
         return results;

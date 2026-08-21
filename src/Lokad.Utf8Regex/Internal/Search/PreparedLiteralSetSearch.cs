@@ -19,7 +19,6 @@ internal readonly struct PreparedLiteralSetSearch
 
     public PreparedLiteralSetSearch(byte[][] literals)
     {
-        ArgumentNullException.ThrowIfNull(literals);
         SearchData = AsciiSearch.CreateExactLiteralSearchData(literals);
         UniqueAnchor = CreateUniqueAnchor(SearchData);
         MultiLiteral = SearchData.ShortestLength == 0 || literals.Length < MultiLiteralThreshold

@@ -75,7 +75,6 @@ public readonly ref struct Utf8MatchContext
 
     public Utf8GroupContext GetGroup(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         if (_match is null)
         {
             throw new InvalidOperationException("No match is available.");
@@ -98,7 +97,6 @@ public readonly ref struct Utf8MatchContext
 
     public bool TryGetGroup(string name, out Utf8GroupContext group)
     {
-        ArgumentNullException.ThrowIfNull(name);
         if (_match is null || _groupNames is null || Array.IndexOf(_groupNames, name) < 0)
         {
             group = default;

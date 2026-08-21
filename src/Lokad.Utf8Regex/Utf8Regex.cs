@@ -32,7 +32,6 @@ public sealed class Utf8Regex
 
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
         Pattern = pattern;
@@ -745,7 +744,6 @@ public sealed class Utf8Regex
 
     public int GroupNumberFromName(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
     }
 
@@ -1221,8 +1219,6 @@ public sealed class Utf8Regex
 
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
@@ -1299,8 +1295,6 @@ public sealed class Utf8Regex
 
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
-
         var validation = Utf8Validation.Validate(input);
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8BoundaryMap.Create(input, validation);
@@ -1342,8 +1336,6 @@ public sealed class Utf8Regex
 
     private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
@@ -1356,8 +1348,6 @@ public sealed class Utf8Regex
 
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
-
         _ = Utf8Validation.Validate(input);
         var inputBytes = input.ToArray();
         var decoded = Encoding.UTF8.GetString(input);
@@ -1393,7 +1383,6 @@ public sealed class Utf8Regex
         Span<byte> destination,
         out int bytesWritten)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {

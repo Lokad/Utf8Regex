@@ -6,7 +6,6 @@ internal sealed class Utf8ReplacementPlan
 
     public Utf8ReplacementPlan(IReadOnlyList<Utf8ReplacementInstruction> instructions)
     {
-        ArgumentNullException.ThrowIfNull(instructions);
         var copied = new Utf8ReplacementInstruction[instructions.Count];
         var referencedGroups = new List<int>();
         for (var i = 0; i < copied.Length; i++)

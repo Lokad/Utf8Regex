@@ -27,7 +27,7 @@ internal sealed class PythonReParser
 
     public PythonReParser(string pattern)
     {
-        _pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+        _pattern = pattern;
     }
 
     public PythonReParseResult Parse(PythonReCompileOptions options)

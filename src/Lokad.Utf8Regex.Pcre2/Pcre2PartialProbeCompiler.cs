@@ -90,7 +90,6 @@ internal static class Pcre2PartialProbeCompiler
 {
     internal static Pcre2PartialProbeProgram Compile(Pcre2CharacterProgram characterProgram, Pcre2CompileRequest request)
     {
-        ArgumentNullException.ThrowIfNull(characterProgram);
         var tokens = characterProgram.Tokens;
         if (TryCompileCharacterProgram(tokens, request, out var program))
         {
@@ -102,7 +101,6 @@ internal static class Pcre2PartialProbeCompiler
 
     internal static Pcre2PartialProbeProgram Compile(Pcre2BacktrackingSyntaxTree syntaxTree, Pcre2CompileRequest request)
     {
-        ArgumentNullException.ThrowIfNull(syntaxTree);
         var shape = Describe(syntaxTree.Root);
         return shape switch
         {

@@ -146,52 +146,6 @@ public sealed class Utf8Pcre2RegexConstructionTests
     }
 
     [Fact]
-    public void Utf8Pcre2RegexRejectsNullPattern()
-    {
-        Assert.Throws<ArgumentNullException>(() => new Utf8Pcre2Regex((string)null!));
-    }
-
-    [Fact]
-    public void Utf8Pcre2RegexReplaceRejectsNullReplacement()
-    {
-        var regex = new Utf8Pcre2Regex("abc");
-
-        Assert.Throws<ArgumentNullException>(() => regex.Replace("abc"u8, (string)null!));
-    }
-
-    [Fact]
-    public void Utf8Pcre2RegexReplaceEvaluatorRejectsNullDelegate()
-    {
-        var regex = new Utf8Pcre2Regex("abc");
-
-        Assert.Throws<ArgumentNullException>(() => regex.Replace<int>("abc"u8, 0, null!));
-    }
-
-    [Fact]
-    public void Utf8Pcre2RegexReplaceToStringEvaluatorRejectsNullDelegate()
-    {
-        var regex = new Utf8Pcre2Regex("abc");
-
-        Assert.Throws<ArgumentNullException>(() => regex.ReplaceToString<int>("abc"u8, 0, null!));
-    }
-
-    [Fact]
-    public void Utf8Pcre2RegexCopyNumbersForNameRejectsNullName()
-    {
-        var regex = new Utf8Pcre2Regex("abc");
-
-        Assert.Throws<ArgumentNullException>(() => regex.CopyNumbersForName(null!, [], out _));
-    }
-
-    [Fact]
-    public void Utf8Pcre2RegexTryGetFirstSetGroupRejectsNullName()
-    {
-        var regex = new Utf8Pcre2Regex("abc");
-
-        Assert.Throws<ArgumentNullException>(() => regex.TryGetFirstSetGroup("abc"u8, null!, out _));
-    }
-
-    [Fact]
     public void Utf8Pcre2RegexExposesDuplicateNameEntriesForSpecialPattern()
     {
         var regex = new Utf8Pcre2Regex(

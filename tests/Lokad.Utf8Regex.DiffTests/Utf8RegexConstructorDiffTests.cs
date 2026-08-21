@@ -34,15 +34,6 @@ public sealed class Utf8RegexConstructorDiffTests
         Assert.Equal(runtimeRegex.MatchTimeout, utf8Regex.MatchTimeout);
     }
 
-    [Fact]
-    public void ConstructorRejectsNullPatternLikeRuntime()
-    {
-        var runtime = Assert.Throws<ArgumentNullException>(() => new Regex(null!));
-        var utf8 = Assert.Throws<ArgumentNullException>(() => new Utf8Regex(null!));
-
-        Assert.Equal(runtime.ParamName, utf8.ParamName);
-    }
-
     [Theory]
     [InlineData((RegexOptions)(-1))]
     [InlineData((RegexOptions)0x1000)]

@@ -80,8 +80,6 @@ internal sealed partial class RegexParser
 
     public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
-
         var index = 0;
         while (TryParseLeadingOptionsGroup(pattern, ref index, ref options))
         {
@@ -92,9 +90,6 @@ internal sealed partial class RegexParser
 
     public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
-        ArgumentNullException.ThrowIfNull(culture);
-
         var parser = new RegexParser(pattern, options, culture);
         if (parser.TryParseCore(out var tree, out var error, out var errorOffset))
         {
@@ -113,9 +108,6 @@ internal sealed partial class RegexParser
         CultureInfo culture,
         [NotNullWhen(true)] out RegexTree? tree)
     {
-        ArgumentNullException.ThrowIfNull(pattern);
-        ArgumentNullException.ThrowIfNull(culture);
-
         return new RegexParser(pattern, options, culture).TryParseCore(out tree, out _, out _);
     }
 
@@ -161,8 +153,6 @@ internal sealed partial class RegexParser
 
     public static int GroupNumberFromName(Hashtable? caps, string[]? capsList, int capsize, string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
-
         if (caps is not null)
         {
             return caps[name] is int result ? result : -1;
@@ -333,8 +323,6 @@ internal sealed partial class RegexParser
 
     public static RegexReplacementPattern ParseReplacement(string replacement)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-
         return new RegexParser(replacement, RegexOptions.None, CultureInfo.InvariantCulture).ScanReplacementPattern();
     }
 
@@ -343,8 +331,6 @@ internal sealed partial class RegexParser
         ReadOnlySpan<int> validGroupNumbers,
         ReadOnlySpan<string> validGroupNames)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-
         var parser = new RegexParser(replacement, RegexOptions.None, CultureInfo.InvariantCulture)
         {
             _replacementGroupNumbers = [.. validGroupNumbers],

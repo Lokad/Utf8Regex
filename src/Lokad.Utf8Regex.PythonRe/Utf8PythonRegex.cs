@@ -136,7 +136,7 @@ public sealed class Utf8PythonRegex
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
     {
         PythonReCompileValidator.Validate(pattern, options);
-        Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+        Pattern = pattern;
         Options = options;
         MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
 
@@ -1216,7 +1216,6 @@ public sealed class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
         ValidateStartOffset(input, startOffsetInBytes);
 
         var subject = Decode(input);
@@ -1317,7 +1316,6 @@ public sealed class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
         return SubnManagedUtf8(
             input,
             startOffsetInBytes,
@@ -1374,7 +1372,6 @@ public sealed class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
-        ArgumentNullException.ThrowIfNull(evaluator);
         return SubnManagedUtf8(
             input,
             startOffsetInBytes,
