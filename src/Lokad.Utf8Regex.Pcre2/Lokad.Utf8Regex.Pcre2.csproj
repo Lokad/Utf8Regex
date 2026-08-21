@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Lokad.Utf8Regex.Pcre2</PackageId>
     <Title>Lokad.Utf8Regex.Pcre2</Title>

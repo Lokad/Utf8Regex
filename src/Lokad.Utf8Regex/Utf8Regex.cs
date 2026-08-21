@@ -1230,6 +1230,7 @@ public sealed class Utf8Regex
     }
 
     /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes.</summary>
+    /// <param name="input">The well-formed UTF-8 input.</param>
     /// <param name="replacement">A .NET replacement pattern expressed as UTF-16 text.</param>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
     {

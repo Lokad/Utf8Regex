@@ -9,22 +9,27 @@ using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
+/// <summary>Implements a strictly managed, UTF-8-native subset of PCRE2 semantics.</summary>
+/// <remarks>Unsupported constructs or operation combinations fail explicitly; no native PCRE2 binary or interop layer is used.</remarks>
 public sealed class Utf8Pcre2Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
+    /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(string pattern)
         : this(pattern, Pcre2CompileOptions.None)
     {
     }
 
+    /// <summary>Compiles a PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options)
         : this(pattern, options, default, default, DefaultMatchTimeout)
     {
     }
 
+    /// <summary>Compiles a PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
     public Utf8Pcre2Regex(
         string pattern,
         Pcre2CompileOptions options,
@@ -80,16 +85,19 @@ public sealed class Utf8Pcre2Regex
             nameEntries);
     }
 
+    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with default options, settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8)
         : this(patternUtf8, Pcre2CompileOptions.None)
     {
     }
 
+    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options)
         : this(patternUtf8, options, default, default, DefaultMatchTimeout)
     {
     }
 
+    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
     public Utf8Pcre2Regex(
         ReadOnlySpan<byte> patternUtf8,
         Pcre2CompileOptions options,
@@ -100,20 +108,27 @@ public sealed class Utf8Pcre2Regex
     {
     }
 
+    /// <summary>Gets or sets the timeout used by constructors and static operations that do not specify one.</summary>
+    /// <remarks>The initial value is an infinite timeout.</remarks>
     public static TimeSpan DefaultMatchTimeout
     {
         get => s_defaultMatchTimeout;
         set => s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
     }
 
+    /// <summary>Gets the compiled PCRE2 pattern.</summary>
     public string Pattern => _program.Request.Pattern;
 
+    /// <summary>Gets the compile-option flags.</summary>
     public Pcre2CompileOptions Options => _program.Request.Options;
 
+    /// <summary>Gets the compile-time newline, group-name, and byte-oriented settings.</summary>
     public Utf8Pcre2CompileSettings CompileSettings => _program.Request.Settings;
 
+    /// <summary>Gets the default execution budgets applied to matching operations.</summary>
     public Utf8Pcre2ExecutionLimits DefaultExecutionLimits => _program.Request.DefaultLimits;
 
+    /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout => _program.Request.MatchTimeout;
 
     private bool HasPrimaryUtf8Regex => _program.PrimaryUtf8.IsPresent;
@@ -130,12 +145,15 @@ public sealed class Utf8Pcre2Regex
 
     private Pcre2NameEntry[] NameEntries => _program.NameEntries;
 
+    /// <summary>Determines whether the well-formed UTF-8 subject contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
         => IsMatch(input, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Determines whether a match exists at or after a scalar-aligned UTF-8 byte offset.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => IsMatch(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
@@ -147,12 +165,15 @@ public sealed class Utf8Pcre2Regex
         throw CreateUnsupportedPatternException();
     }
 
+    /// <summary>Counts non-overlapping matches in the well-formed UTF-8 subject.</summary>
     public int Count(ReadOnlySpan<byte> input)
         => Count(input, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Counts non-overlapping matches at or after a scalar-aligned UTF-8 byte offset.</summary>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options.</summary>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
@@ -169,12 +190,15 @@ public sealed class Utf8Pcre2Regex
 
 
 
+    /// <summary>Finds the first match in the well-formed UTF-8 subject.</summary>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input)
         => Match(input, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Finds the first match at or after a scalar-aligned UTF-8 byte offset.</summary>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => Match(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Finds the first match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
@@ -198,12 +222,15 @@ public sealed class Utf8Pcre2Regex
         throw CreateUnsupportedPatternException();
     }
 
+    /// <summary>Finds the first match with capture slots, duplicate-name metadata, and <c>(*MARK)</c> state.</summary>
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input)
         => MatchDetailed(input, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Finds the first detailed match at or after a scalar-aligned UTF-8 byte offset.</summary>
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => MatchDetailed(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
@@ -240,13 +267,16 @@ public sealed class Utf8Pcre2Regex
         throw CreateUnsupportedPatternException();
     }
 
+    /// <summary>Creates a cursor over non-overlapping matches in the UTF-8 subject.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
         => EnumerateMatches(input, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Creates a match cursor starting at a scalar-aligned UTF-8 byte offset.</summary>
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes)
         => EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
@@ -337,12 +367,15 @@ public sealed class Utf8Pcre2Regex
             Internal.Planning.Utf8SearchPortfolioKind.IgnoreCaseLiteral;
     }
 
+    /// <summary>Probes the UTF-8 subject for a full or permitted subject-end partial match.</summary>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode)
         => Probe(input, partialMode, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Probes for a full or partial match at or after a scalar-aligned UTF-8 byte offset.</summary>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes)
         => Probe(input, partialMode, startOffsetInBytes, Pcre2MatchOptions.None);
 
+    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
@@ -391,30 +424,38 @@ public sealed class Utf8Pcre2Regex
         throw CreateUnsupportedProbeException();
     }
 
+    /// <summary>Replaces matches using a PCRE2 replacement template and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
         => Replace(input, replacement, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches at or after a scalar-aligned UTF-8 byte offset.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
         => Replace(input, replacement, startOffsetInBytes, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches using an explicit start byte offset and substitution options.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
         => Replace(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches using explicit start, substitution, and per-match options.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
     }
 
+    /// <summary>Replaces matches using a well-formed UTF-8 PCRE2 replacement template.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
         => Replace(input, replacementPatternUtf8, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches using a UTF-8 template at or after a scalar-aligned byte offset.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes)
         => Replace(input, replacementPatternUtf8, startOffsetInBytes, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches using a UTF-8 template with explicit start and substitution options.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
         => Replace(input, replacementPatternUtf8, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches using a UTF-8 template with explicit start, substitution, and per-match options.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
@@ -422,9 +463,11 @@ public sealed class Utf8Pcre2Regex
         return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions);
     }
 
+    /// <summary>Replaces matches through a stateful callback that writes UTF-8 replacement content.</summary>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
         => Replace(input, state, evaluator, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options.</summary>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
@@ -442,18 +485,23 @@ public sealed class Utf8Pcre2Regex
         return Encoding.UTF8.GetBytes(ReplaceWithUtf8Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions));
     }
 
+    /// <summary>Replaces matches using a PCRE2 replacement template and returns UTF-16 text.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
         => ReplaceToString(input, replacement, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches to UTF-16 text at or after a scalar-aligned UTF-8 byte offset.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes)
         => ReplaceToString(input, replacement, startOffsetInBytes, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches to UTF-16 text using explicit substitution options.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, Pcre2SubstitutionOptions substitutionOptions)
         => ReplaceToString(input, replacement, 0, substitutionOptions, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches to UTF-16 text using explicit start and substitution options.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
         => ReplaceToString(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches to UTF-16 text using explicit start, substitution, and per-match options.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         var result = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
@@ -461,9 +509,11 @@ public sealed class Utf8Pcre2Regex
         return Encoding.UTF8.GetString(result);
     }
 
+    /// <summary>Replaces matches through a stateful callback that returns UTF-16 replacement text.</summary>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
         => ReplaceToString(input, state, evaluator, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options.</summary>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
@@ -481,12 +531,16 @@ public sealed class Utf8Pcre2Regex
         return ReplaceWithUtf16Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions);
     }
 
+    /// <summary>Attempts to write a UTF-8 replacement result into a caller-provided destination.</summary>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten)
         => TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
 
+    /// <summary>Attempts to write a replacement result using explicit substitution options.</summary>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, Pcre2SubstitutionOptions substitutionOptions)
         => TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, 0, substitutionOptions, Pcre2MatchOptions.None);
 
+    /// <summary>Attempts to write a replacement result using explicit start, substitution, and per-match options.</summary>
+    /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the complete result does not fit.</returns>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
@@ -519,8 +573,11 @@ public sealed class Utf8Pcre2Regex
         return OperationStatus.Done;
     }
 
+    /// <summary>Gets the number of name-to-slot entries, including duplicate names.</summary>
     public int NameEntryCount => NameEntries.Length;
 
+    /// <summary>Copies name-to-slot entries into a caller-provided destination.</summary>
+    /// <returns>The number of entries copied; <paramref name="isMore"/> reports whether additional entries did not fit.</returns>
     public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore)
     {
         var written = Math.Min(destination.Length, NameEntries.Length);
@@ -529,6 +586,8 @@ public sealed class Utf8Pcre2Regex
         return written;
     }
 
+    /// <summary>Copies every capture slot assigned to a possibly duplicated group name.</summary>
+    /// <returns>The number of slot numbers copied; <paramref name="isMore"/> reports whether additional numbers did not fit.</returns>
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
         var matchingEntries = NameEntries.Where(static e => !string.IsNullOrEmpty(e.Name)).ToArray();
@@ -552,18 +611,24 @@ public sealed class Utf8Pcre2Regex
         return Math.Min(count, destination.Length);
     }
 
+    /// <summary>Attempts to find the first participating capture slot assigned to a group name.</summary>
     public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group)
         => TryGetFirstSetGroup(input, name, out group, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Attempts to find the first participating named slot using explicit start and per-match options.</summary>
     public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         var context = MatchDetailed(input, startOffsetInBytes, matchOptions);
         return context.TryGetFirstSetGroup(name, out group);
     }
 
+    /// <summary>Copies successive non-overlapping match snapshots into a caller-provided destination.</summary>
+    /// <returns>The number of matches copied; <paramref name="isMore"/> reports whether another match is available.</returns>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore)
         => MatchMany(input, destination, out isMore, 0, Pcre2MatchOptions.None);
 
+    /// <summary>Copies successive match snapshots using explicit start and per-match options.</summary>
+    /// <returns>The number of matches copied; <paramref name="isMore"/> reports whether another match is available.</returns>
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
@@ -737,6 +802,7 @@ public sealed class Utf8Pcre2Regex
     }
 
 
+    /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
     public Utf8Pcre2Analysis Analyze()
     {
         var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
@@ -758,34 +824,43 @@ public sealed class Utf8Pcre2Regex
         };
     }
 
+    /// <summary>Compiles a default PCRE2 pattern and tests the UTF-8 subject.</summary>
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern)
         => IsMatch(input, pattern, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0);
 
+    /// <summary>Compiles a PCRE2 pattern with the specified options and tests the UTF-8 subject.</summary>
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options)
         => IsMatch(input, pattern, options, default, default, DefaultMatchTimeout, 0);
 
+    /// <summary>Compiles and tests a PCRE2 pattern with explicit settings, limits, timeout, and start byte offset.</summary>
     public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes)
     {
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).IsMatch(input, startOffsetInBytes, Pcre2MatchOptions.None);
     }
 
+    /// <summary>Compiles a default PCRE2 pattern and finds the first match.</summary>
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern)
         => Match(input, pattern, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0);
 
+    /// <summary>Compiles a PCRE2 pattern with the specified options and finds the first match.</summary>
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options)
         => Match(input, pattern, options, default, default, DefaultMatchTimeout, 0);
 
+    /// <summary>Compiles and matches a PCRE2 pattern with explicit settings, limits, timeout, and start byte offset.</summary>
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes)
     {
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).Match(input, startOffsetInBytes, Pcre2MatchOptions.None);
     }
 
+    /// <summary>Compiles a default PCRE2 pattern and returns replaced UTF-8 bytes.</summary>
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement)
         => Replace(input, pattern, replacement, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0, Pcre2SubstitutionOptions.None);
 
+    /// <summary>Compiles a PCRE2 pattern with the specified options and returns replaced UTF-8 bytes.</summary>
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options)
         => Replace(input, pattern, replacement, options, default, default, DefaultMatchTimeout, 0, Pcre2SubstitutionOptions.None);
 
+    /// <summary>Compiles and replaces with explicit PCRE2 settings, limits, timeout, start offset, and substitution options.</summary>
     public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions)
     {
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout)
