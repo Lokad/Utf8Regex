@@ -77,6 +77,12 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool UsesEmittedAnchoredValidatorMatcher => Capabilities.UsesEmittedAnchoredValidatorMatcher;
     public bool UsesEmittedKernelMatcher => Capabilities.UsesEmittedKernelMatcher;
 
+    /// <summary>
+    /// Returns an emitted kernel only when it implements complete global-match
+    /// semantics for the supplied validated subject and deadline. Implementors
+    /// return <see langword="null"/> whenever their kernel cannot preserve the
+    /// validation, capture, or timeout contract for this invocation.
+    /// </summary>
     internal virtual Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget) => null;
