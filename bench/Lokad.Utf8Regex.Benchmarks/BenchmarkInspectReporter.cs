@@ -5537,6 +5537,13 @@ internal static partial class BenchmarkInspectReporter
             return 100000;
         }
 
+        if (context.CaseId == "common/matches-word")
+        {
+            // The exact-literal Count route needs this bounded floor to reach
+            // its stable Tiered-PGO throughput state.
+            return 10000;
+        }
+
         if (context.Operation is LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match)
         {
             return context.CaseId.StartsWith("common/", StringComparison.Ordinal)
