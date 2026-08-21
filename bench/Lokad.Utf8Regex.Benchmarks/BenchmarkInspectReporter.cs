@@ -5524,11 +5524,16 @@ internal static partial class BenchmarkInspectReporter
 
     private static int GetShortPublicIterationFloor(LokadPublicBenchmarkContext context)
     {
-        if (context.CaseId == "common/uri-match")
+        if (context.CaseId is
+            "common/date-miss" or
+            "common/ip-match" or
+            "common/ip-miss" or
+            "common/uri-match" or
+            "industry/boostdocs-float-match")
         {
-            // This sub-0.1-us route needs enough calls for Tiered PGO to optimize
-            // the URI Boolean dispatch. The generic common-case floor records a
-            // transient Tier-0/Tier-1 blend instead of warm throughput.
+            // These sub-0.1-us Boolean routes need enough calls for Tiered PGO
+            // to optimize their specialized dispatch. The generic family floor
+            // records a transient Tier-0/Tier-1 blend instead of warm throughput.
             return 100000;
         }
 
