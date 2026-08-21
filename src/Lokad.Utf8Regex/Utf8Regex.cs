@@ -12,6 +12,8 @@ using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
 
+/// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
+/// <remarks>Patterns and coordinates use .NET UTF-16 semantics; value APIs additionally expose scalar-aligned ranges in the original bytes.</remarks>
 public sealed class Utf8Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
@@ -20,16 +22,19 @@ public sealed class Utf8Regex
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
+    /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
     public Utf8Regex(string pattern)
         : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout)
     {
     }
 
+    /// <summary>Compiles an expression with the specified .NET regex options and <see cref="DefaultMatchTimeout"/>.</summary>
     public Utf8Regex(string pattern, RegexOptions options)
         : this(pattern, options, DefaultMatchTimeout)
     {
     }
 
+    /// <summary>Compiles an expression with the specified .NET regex options and match timeout.</summary>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
@@ -42,6 +47,8 @@ public sealed class Utf8Regex
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
     }
 
+    /// <summary>Gets or sets the timeout used by constructors and cached operations that do not specify one.</summary>
+    /// <remarks>The initial value is <see cref="Regex.InfiniteMatchTimeout"/>.</remarks>
     public static TimeSpan DefaultMatchTimeout
     {
         get => s_defaultMatchTimeout;
@@ -53,10 +60,13 @@ public sealed class Utf8Regex
 
     internal static TimeSpan DefaultTimeout => DefaultMatchTimeout;
 
+    /// <summary>Gets the regular-expression pattern.</summary>
     public string Pattern { get; }
 
+    /// <summary>Gets the .NET regular-expression options used during compilation.</summary>
     public RegexOptions Options { get; }
 
+    /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
 
     private Utf8PreparedRegex _preparedRegex => _program.PreparedRegex;
@@ -742,26 +752,31 @@ public sealed class Utf8Regex
             lengthInBytes: isByteAligned ? end.ByteOffset - start.ByteOffset : 0);
     }
 
+    /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
     }
 
+    /// <summary>Returns the name assigned to a group number, or an empty string when the number is undefined.</summary>
     public string GroupNameFromNumber(int i)
     {
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNameFromNumber(i);
     }
 
+    /// <summary>Returns the group names defined by the expression, including group zero.</summary>
     public string[] GetGroupNames()
     {
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
     }
 
+    /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
     public int[] GetGroupNumbers()
     {
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
     }
 
+    /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
         try
@@ -846,6 +861,7 @@ public sealed class Utf8Regex
         return IsMatchViaCompiledEngine(input, validation, budget);
     }
 
+    /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset.</summary>
     public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
@@ -855,6 +871,7 @@ public sealed class Utf8Regex
             start.Value);
     }
 
+    /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
     public int Count(ReadOnlySpan<byte> input)
     {
         try
@@ -986,6 +1003,7 @@ public sealed class Utf8Regex
         return CountViaCompiledEngine(input, validation, budget);
     }
 
+    /// <summary>Counts non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
     public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
@@ -995,6 +1013,7 @@ public sealed class Utf8Regex
             start.Value);
     }
 
+    /// <summary>Finds the first match and returns its UTF-16 and, when scalar-aligned, UTF-8 byte coordinates.</summary>
     public Utf8ValueMatch Match(ReadOnlySpan<byte> input)
     {
         try
@@ -1080,6 +1099,7 @@ public sealed class Utf8Regex
         return MatchViaCompiledEngine(input, validation, budget);
     }
 
+    /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
@@ -1090,6 +1110,7 @@ public sealed class Utf8Regex
         return CreateValueMatch(input, subject.BoundaryMap, match);
     }
 
+    /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
     public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input)
     {
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -1103,6 +1124,7 @@ public sealed class Utf8Regex
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
+    /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
@@ -1112,6 +1134,7 @@ public sealed class Utf8Regex
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
+    /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -1126,6 +1149,7 @@ public sealed class Utf8Regex
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
 
+    /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
@@ -1205,6 +1229,8 @@ public sealed class Utf8Regex
             .WithTimeoutMapping(Pattern, MatchTimeout);
     }
 
+    /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes.</summary>
+    /// <param name="replacement">A .NET replacement pattern expressed as UTF-16 text.</param>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
     {
         try
@@ -1228,6 +1254,7 @@ public sealed class Utf8Regex
         return ReplaceCore(input, replacement, analyzed);
     }
 
+    /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
     {
         try
@@ -1293,6 +1320,10 @@ public sealed class Utf8Regex
         return ReplaceLiteralBytesCore(input, validation, replacementBytes);
     }
 
+    /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content.</summary>
+    /// <typeparam name="TState">The caller-defined state type.</typeparam>
+    /// <exception cref="InvalidOperationException">A match splits a UTF-8 scalar.</exception>
+    /// <exception cref="ArgumentException">The evaluator produces malformed UTF-8.</exception>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator)
     {
         var validation = Utf8Validation.Validate(input);
@@ -1322,6 +1353,7 @@ public sealed class Utf8Regex
         return writer.GetValidatedBytes().ToArray();
     }
 
+    /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
     {
         try
@@ -1346,6 +1378,8 @@ public sealed class Utf8Regex
         return ReplaceToStringCore(input, analyzed);
     }
 
+    /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text.</summary>
+    /// <typeparam name="TState">The caller-defined state type.</typeparam>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
     {
         _ = Utf8Validation.Validate(input);
@@ -1361,6 +1395,8 @@ public sealed class Utf8Regex
             });
     }
 
+    /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
+    /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
     public OperationStatus TryReplace(
         ReadOnlySpan<byte> input,
         string replacement,
@@ -1392,6 +1428,8 @@ public sealed class Utf8Regex
         return TryReplaceCore(input, analyzed, replacement, destination, out bytesWritten);
     }
 
+    /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination.</summary>
+    /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
     public OperationStatus TryReplace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacementPatternUtf8,
@@ -1441,6 +1479,7 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         string pattern) => IsMatch(input, pattern, RegexOptions.CultureInvariant);
 
+    /// <summary>Tests UTF-8 input with a cached expression using the specified options.</summary>
     public static bool IsMatch(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1449,6 +1488,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).IsMatch(input);
     }
 
+    /// <summary>Tests UTF-8 input with a cached expression using the specified options and timeout.</summary>
     public static bool IsMatch(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1463,6 +1503,7 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         string pattern) => Count(input, pattern, RegexOptions.CultureInvariant);
 
+    /// <summary>Counts matches with a cached expression using the specified options.</summary>
     public static int Count(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1471,6 +1512,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).Count(input);
     }
 
+    /// <summary>Counts matches with a cached expression using the specified options and timeout.</summary>
     public static int Count(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1485,6 +1527,7 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         string pattern) => Match(input, pattern, RegexOptions.CultureInvariant);
 
+    /// <summary>Finds the first match with a cached expression using the specified options.</summary>
     public static Utf8ValueMatch Match(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1493,6 +1536,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).Match(input);
     }
 
+    /// <summary>Finds the first match with a cached expression using the specified options and timeout.</summary>
     public static Utf8ValueMatch Match(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1507,6 +1551,7 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         string pattern) => MatchDetailed(input, pattern, RegexOptions.CultureInvariant);
 
+    /// <summary>Finds the first detailed match with a cached expression using the specified options.</summary>
     public static Utf8MatchContext MatchDetailed(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1515,6 +1560,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).MatchDetailed(input);
     }
 
+    /// <summary>Finds the first detailed match with a cached expression using the specified options and timeout.</summary>
     public static Utf8MatchContext MatchDetailed(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1675,6 +1721,7 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         string pattern) => EnumerateMatches(input, pattern, RegexOptions.CultureInvariant);
 
+    /// <summary>Enumerates matches with a cached expression using the specified options.</summary>
     public static Utf8ValueMatchEnumerator EnumerateMatches(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1683,6 +1730,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).EnumerateMatches(input);
     }
 
+    /// <summary>Enumerates matches with a cached expression using the specified options and timeout.</summary>
     public static Utf8ValueMatchEnumerator EnumerateMatches(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1703,6 +1751,7 @@ public sealed class Utf8Regex
         string pattern,
         int count) => EnumerateSplits(input, pattern, count, RegexOptions.CultureInvariant);
 
+    /// <summary>Enumerates a bounded number of split segments with a cached expression using the specified options.</summary>
     public static Utf8ValueSplitEnumerator EnumerateSplits(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1712,6 +1761,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).EnumerateSplits(input, count);
     }
 
+    /// <summary>Enumerates a bounded number of split segments with a cached expression using the specified options and timeout.</summary>
     public static Utf8ValueSplitEnumerator EnumerateSplits(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1728,6 +1778,7 @@ public sealed class Utf8Regex
         string pattern,
         string replacement) => Replace(input, pattern, replacement, RegexOptions.CultureInvariant);
 
+    /// <summary>Replaces matches with a cached expression using the specified options.</summary>
     public static byte[] Replace(
         ReadOnlySpan<byte> input,
         string pattern,
@@ -1737,6 +1788,7 @@ public sealed class Utf8Regex
         return Utf8RegexCache.GetOrAdd(pattern, options).Replace(input, replacement);
     }
 
+    /// <summary>Replaces matches with a cached expression using the specified options and timeout.</summary>
     public static byte[] Replace(
         ReadOnlySpan<byte> input,
         string pattern,

@@ -4,15 +4,27 @@ using System.Text;
 
 namespace Lokad.Utf8Regex;
 
+/// <summary>Represents a callback that appends a replacement directly as UTF-8.</summary>
+/// <typeparam name="TState">The caller-defined state carried between evaluations.</typeparam>
+/// <param name="match">The current match over the original UTF-8 input.</param>
+/// <param name="writer">The destination for the replacement value.</param>
+/// <param name="state">The caller-defined mutable state.</param>
 public delegate void Utf8MatchEvaluator<TState>(
     in Utf8MatchContext match,
     ref Utf8ReplacementWriter writer,
     ref TState state);
 
+/// <summary>Represents a callback that creates a UTF-16 replacement string.</summary>
+/// <typeparam name="TState">The caller-defined state carried between evaluations.</typeparam>
+/// <param name="match">The current match over the original UTF-8 input.</param>
+/// <param name="state">The caller-defined mutable state.</param>
+/// <returns>The replacement value for the current match.</returns>
 public delegate string Utf16MatchEvaluator<TState>(
     in Utf8MatchContext match,
     ref TState state);
 
+/// <summary>Accumulates UTF-8 replacement output produced by a <see cref="Utf8MatchEvaluator{TState}"/>.</summary>
+/// <remarks>The writer is valid only during its evaluator callback. The completed replacement is validated as UTF-8.</remarks>
 public ref struct Utf8ReplacementWriter
 {
     private ArrayBufferWriter<byte>? _buffer;
@@ -22,6 +34,8 @@ public ref struct Utf8ReplacementWriter
         _buffer = buffer;
     }
 
+    /// <summary>Appends bytes intended to be well-formed UTF-8.</summary>
+    /// <remarks>Well-formedness is checked after the evaluator completes.</remarks>
     public void Append(ReadOnlySpan<byte> utf8)
     {
         _buffer ??= new ArrayBufferWriter<byte>();
@@ -30,6 +44,7 @@ public ref struct Utf8ReplacementWriter
         _buffer.Advance(utf8.Length);
     }
 
+    /// <summary>Encodes and appends UTF-16 text as UTF-8.</summary>
     public void Append(ReadOnlySpan<char> utf16)
     {
         _buffer ??= new ArrayBufferWriter<byte>();
@@ -39,6 +54,8 @@ public ref struct Utf8ReplacementWriter
         _buffer.Advance(written);
     }
 
+    /// <summary>Appends one ASCII byte.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is greater than <c>0x7F</c>.</exception>
     public void AppendAsciiByte(byte value)
     {
         if (value > 0x7F)
@@ -52,6 +69,7 @@ public ref struct Utf8ReplacementWriter
         _buffer.Advance(1);
     }
 
+    /// <summary>Encodes and appends one Unicode scalar value as UTF-8.</summary>
     public void Append(Rune value)
     {
         Span<byte> runeBytes = stackalloc byte[4];

@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
 
+/// <summary>Enumerates non-overlapping regex matches without allocating a match collection.</summary>
+/// <remarks>This stack-only enumerator and its current value do not retain the original UTF-8 input.</remarks>
 public ref struct Utf8ValueMatchEnumerator
 {
     private Utf8OperationMatchCursor _cursor;
@@ -112,10 +114,15 @@ public ref struct Utf8ValueMatchEnumerator
     {
     }
 
+    /// <summary>Gets the match at the current enumerator position.</summary>
     public Utf8ValueMatch Current => _cursor.CurrentValueMatch;
 
+    /// <summary>Returns this value as the enumerator for <see langword="foreach"/> pattern matching.</summary>
     public Utf8ValueMatchEnumerator GetEnumerator() => this;
 
+    /// <summary>Advances to the next non-overlapping match.</summary>
+    /// <returns><see langword="true"/> when another match is available.</returns>
+    /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
     public bool MoveNext()
         => _timeoutPattern is null
             ? _cursor.MoveNext()

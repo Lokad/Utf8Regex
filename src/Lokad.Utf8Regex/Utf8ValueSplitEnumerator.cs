@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
 
+/// <summary>Enumerates regex split segments without allocating a string array.</summary>
+/// <remarks>This stack-only enumerator and its current segment borrow the original UTF-8 input.</remarks>
 public ref struct Utf8ValueSplitEnumerator
 {
     private readonly SplitSourceKind _sourceKind;
@@ -171,10 +173,15 @@ public ref struct Utf8ValueSplitEnumerator
         Current = default;
     }
 
+    /// <summary>Gets the split segment at the current enumerator position.</summary>
     public Utf8ValueSplit Current { get; private set; }
 
+    /// <summary>Returns this value as the enumerator for <see langword="foreach"/> pattern matching.</summary>
     public Utf8ValueSplitEnumerator GetEnumerator() => this;
 
+    /// <summary>Advances to the next split segment.</summary>
+    /// <returns><see langword="true"/> when another segment is available.</returns>
+    /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
     public bool MoveNext()
     {
         try

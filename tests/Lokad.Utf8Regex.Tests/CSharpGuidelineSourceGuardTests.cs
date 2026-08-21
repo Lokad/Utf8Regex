@@ -9,7 +9,7 @@ public sealed class CSharpGuidelineSourceGuardTests
     private const int DefaultParameterDebtCeiling = 0;
     private const int NullForgivingDebtCeiling = 0;
     private const int DefensiveNullGuardDebtCeiling = 0;
-    private const int UndocumentedPublicDeclarationDebtCeiling = 425;
+    private const int UndocumentedPublicDeclarationDebtCeiling = 308;
     private const int SingleCallerPrivateMethodDebtCeiling = 1019;
 
     [Fact]
@@ -184,11 +184,18 @@ public sealed class CSharpGuidelineSourceGuardTests
 
     private static void AssertDebtAtOrBelow(string name, int ceiling, string[] offenders)
     {
+        var details = offenders.Length <= 100
+            ? string.Join(Environment.NewLine, offenders)
+            : string.Join(
+                Environment.NewLine,
+                offenders
+                    .GroupBy(static offender => offender[..offender.IndexOf(':')], StringComparer.Ordinal)
+                    .Select(static group => $"{group.Key}: {group.Count()}"));
         Assert.True(
             offenders.Length <= ceiling,
             $"Production {name} grew from its reviewed ceiling of {ceiling} to {offenders.Length}:" +
             Environment.NewLine +
-            string.Join(Environment.NewLine, offenders));
+            details);
     }
 
     private static string Describe(SourceSyntax file, SyntaxNode node)

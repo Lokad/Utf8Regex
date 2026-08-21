@@ -1,5 +1,6 @@
 namespace Lokad.Utf8Regex;
 
+/// <summary>Reports the result, selected execution route, and search counters for a diagnostic count operation.</summary>
 public readonly record struct Utf8CountDiagnostics(
     int Result,
     string ExecutionKind,
