@@ -9,7 +9,7 @@ public sealed class CSharpGuidelineSourceGuardTests
     private const int DefaultParameterDebtCeiling = 0;
     private const int NullForgivingDebtCeiling = 0;
     private const int DefensiveNullGuardDebtCeiling = 0;
-    private const int UndocumentedPublicDeclarationDebtCeiling = 308;
+    private const int UndocumentedPublicDeclarationDebtCeiling = 207;
     private const int SingleCallerPrivateMethodDebtCeiling = 1019;
 
     [Fact]

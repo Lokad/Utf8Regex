@@ -6,6 +6,8 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
+/// <summary>Provides a culture-invariant CPython <c>re</c>-compatible surface over well-formed UTF-8 input.</summary>
+/// <remarks>The adapter preserves Python operation shaping while exposing both UTF-8 byte and UTF-16 coordinate projections.</remarks>
 public sealed class Utf8PythonRegex
 {
     private delegate byte[] Utf8ReplacementBytesFactory<TState>(
@@ -100,11 +102,13 @@ public sealed class Utf8PythonRegex
     private readonly PythonReDirectBackendKind _findAllBackend;
     private readonly PythonReDirectBackendKind _replaceBackend;
 
+    /// <summary>Creates a Python-compatible expression from UTF-16 text with default options and timeout.</summary>
     public Utf8PythonRegex(string pattern)
         : this(pattern, PythonReCompileOptions.None)
     {
     }
 
+    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with default options and timeout.</summary>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8)
         : this(patternUtf8, PythonReCompileOptions.None)
     {
@@ -119,6 +123,7 @@ public sealed class Utf8PythonRegex
     {
     }
 
+    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options and timeout.</summary>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout)
         : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout)
     {
@@ -133,6 +138,7 @@ public sealed class Utf8PythonRegex
     {
     }
 
+    /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options and timeout.</summary>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
     {
         PythonReCompileValidator.Validate(pattern, options);
@@ -193,6 +199,8 @@ public sealed class Utf8PythonRegex
         _replaceBackend = PythonReDirectBackendKind.ManagedRegex;
     }
 
+    /// <summary>Gets or sets the timeout used by constructors that do not specify one.</summary>
+    /// <remarks>The initial value is an infinite timeout.</remarks>
     public static TimeSpan DefaultMatchTimeout
     {
         get => s_defaultMatchTimeout;
@@ -201,12 +209,16 @@ public sealed class Utf8PythonRegex
 
     private readonly string[] _groupNames;
 
+    /// <summary>Gets the original Python regular-expression pattern.</summary>
     public string Pattern { get; }
 
+    /// <summary>Gets the Python-compatible compile options.</summary>
     public PythonReCompileOptions Options { get; }
 
+    /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
 
+    /// <summary>Returns the group names in group-number order, including group zero.</summary>
     public string[] GetGroupNames() => _groupNames;
 
     /// <summary>Tests whether the UTF-8 input contains a match.</summary>

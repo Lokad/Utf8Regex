@@ -1,5 +1,6 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
+/// <summary>Reports a CPython-compatible pattern syntax or compile-option error.</summary>
 public sealed class PythonRePatternException : Exception
 {
     /// <summary>Creates a Python pattern error whose source position is unknown.</summary>
@@ -15,5 +16,6 @@ public sealed class PythonRePatternException : Exception
         Position = position;
     }
 
+    /// <summary>Gets the zero-based UTF-16 position in the pattern, or <c>-1</c> when no position is available.</summary>
     public int Position { get; }
 }
