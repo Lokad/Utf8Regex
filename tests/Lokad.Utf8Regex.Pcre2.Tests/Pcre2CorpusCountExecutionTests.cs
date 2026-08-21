@@ -20,10 +20,10 @@ public sealed class Pcre2CorpusCountExecutionTests
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
         {
-            if (string.Equals(corpusCase.Expected.ErrorKind, Pcre2ErrorKinds.DisallowedLookaroundBackslashK, StringComparison.Ordinal))
+            if (string.Equals(corpusCase.Expected.ErrorKind, nameof(Pcre2ErrorKind.DisallowedLookaroundBackslashK), StringComparison.Ordinal))
             {
                 var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, corpusCase.StartOffsetInBytes));
-                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind);
+                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
             }
             else
             {

@@ -1,30 +1,14 @@
 enum Pcre2BackslashCPolicy { Forbid, Allow }
 enum Pcre2BsrConvention { Default, AnyCrlf, Unicode }
 class Pcre2CompileException
-  ctor Pcre2CompileException(String message, String errorKind)
-  property String ErrorKind { get; }
+  ctor Pcre2CompileException(String message, Pcre2ErrorKind errorKind)
+  property Pcre2ErrorKind ErrorKind { get; }
 enum Pcre2CompileOptions { None, Caseless, Multiline, DotAll, Extended, ExtendedMore, Anchored, EndAnchored, DollarEndOnly, Ungreedy, NoAutoCapture, Ucp, FirstLine }
-class Pcre2ErrorKinds
-  field String BackslashCDisabled
-  field String BackslashCInUtfLookbehind
-  field String CalloutUnsupported
-  field String ClassRangeOrder
-  field String DisallowedLookaroundBackslashK
-  field String EscapeInvalidInClass
-  field String InvalidAfterParensQuery
-  field String LookaroundBackslashKDisabled
-  field String MissingCharacterClassTerminator
-  field String MissingClosingParenthesis
-  field String MissingCommentClosing
-  field String QuantifierInvalid
-  field String QuantifierNumbersOutOfOrder
-  field String QuantifierTooBig
-  field String UnrecognizedEscape
+enum Pcre2ErrorKind { UnrecognizedEscape, InvalidAfterParensQuery, QuantifierNumbersOutOfOrder, QuantifierTooBig, MissingCharacterClassTerminator, EscapeInvalidInClass, ClassRangeOrder, QuantifierInvalid, MissingClosingParenthesis, MissingCommentClosing, BackslashCDisabled, BackslashCInUtfLookbehind, LookaroundBackslashKDisabled, DisallowedLookaroundBackslashK, CalloutUnsupported, PartialMatch, PartialSubs, BadReplacementEscape, InvalidReplacementReference, MalformedReplacementPattern, MissingClosingReplacementBrace, UnknownReplacementGroup, UnsetReplacementGroup, Timeout, MatchLimit, DepthLimit, HeapLimit }
 delegate Void Pcre2MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref Utf8ReplacementWriter writer, ref TState state)
 class Pcre2MatchException
-  ctor Pcre2MatchException(String message)
-  ctor Pcre2MatchException(String message, String errorKind)
-  property String ErrorKind { get; }
+  ctor Pcre2MatchException(String message, Pcre2ErrorKind errorKind)
+  property Pcre2ErrorKind ErrorKind { get; }
 enum Pcre2MatchOptions { None, Anchored, EndAnchored, NotBol, NotEol, NotEmpty, NotEmptyAtStart }
 struct Pcre2NameEntry
   property Int32 Number { get; set; }
@@ -32,9 +16,8 @@ struct Pcre2NameEntry
 enum Pcre2NewlineConvention { Default, Cr, Lf, Crlf, Any, AnyCrlf, Nul }
 enum Pcre2PartialMode { None, Soft, Hard }
 class Pcre2SubstitutionException
-  ctor Pcre2SubstitutionException(String message)
-  ctor Pcre2SubstitutionException(String message, String errorKind)
-  property String ErrorKind { get; }
+  ctor Pcre2SubstitutionException(String message, Pcre2ErrorKind errorKind)
+  property Pcre2ErrorKind ErrorKind { get; }
 enum Pcre2SubstitutionOptions { None, Extended, UnsetEmpty, UnknownUnset, SubstituteMatched, SubstituteLiteral, SubstituteOverflowLength, SubstituteReplacementOnly }
 delegate String Pcre2Utf16MatchEvaluator<TState>(ref Utf8Pcre2MatchContext match, ref TState state)
 struct Utf8Pcre2Analysis

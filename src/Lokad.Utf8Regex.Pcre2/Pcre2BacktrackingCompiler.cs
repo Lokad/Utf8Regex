@@ -4124,7 +4124,7 @@ internal static class Pcre2BacktrackingRunner
                             checked((ulong)nextAtomicDepth * 32UL + (ulong)(atomicCheckpoints.Count + 1) * 8UL));
                         if (!atomicCheckpoints.TryPush(new Pcre2AtomicCheckpoint(frames.Count, markTrail.Count)))
                         {
-                            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+                            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
                         }
                         instructionIndex++;
                         continue;
@@ -4798,7 +4798,7 @@ internal static class Pcre2BacktrackingRunner
         budget.ChargeFrame((uint)nextDepth, estimatedHeapBytes);
         if (!frames.TryPush(frame))
         {
-            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
     }
 
@@ -4952,7 +4952,7 @@ internal static class Pcre2BacktrackingRunner
             checked((ulong)nextDepth * 32UL + (ulong)(mutations.Count + 1) * 12UL));
         if (!calls.TryPush(frame))
         {
-            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
 
         RecordSubroutineCallMutation(
@@ -5096,7 +5096,7 @@ internal static class Pcre2BacktrackingRunner
         budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 12UL));
         if (!mutations.TryPush(new Pcre2SubroutineCallMutation(kind, frame)))
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
     }
 
@@ -5114,7 +5114,7 @@ internal static class Pcre2BacktrackingRunner
             }
             else if (!calls.TryPush(mutation.Frame))
             {
-                throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+                throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
             }
         }
     }
@@ -5140,12 +5140,12 @@ internal static class Pcre2BacktrackingRunner
             (ulong)(trail.Count + (addToTrail ? 1 : 0)) * 8UL));
         if (!mutations.TryPush(new Pcre2MarkMutation(currentMarkId, currentMarkPosition)))
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
         if (addToTrail && !trail.TryPush(new Pcre2MarkTrailEntry(markId, position)))
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
         currentMarkId = markId;
@@ -5202,7 +5202,7 @@ internal static class Pcre2BacktrackingRunner
         budget.ChargeHeap(checked((ulong)(mutations.Count + 1) * 12UL + (ulong)counts.Length * 8UL));
         if (!mutations.TryPush(new Pcre2RepeatMutation(repeatId, counts[repeatId], positions[repeatId])))
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
         counts[repeatId] = count;
@@ -5247,7 +5247,7 @@ internal static class Pcre2BacktrackingRunner
                 owners[slot],
                 openOwners[slot])))
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
         starts[slot] = start;

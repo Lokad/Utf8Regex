@@ -1511,7 +1511,7 @@ internal static class Pcre2Runner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
     }
 
@@ -1529,7 +1529,7 @@ internal static class Pcre2Runner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
     }
 
@@ -1547,7 +1547,7 @@ internal static class Pcre2Runner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
     }
 
@@ -1577,7 +1577,7 @@ internal static class Pcre2Runner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
     }
 
@@ -1596,7 +1596,7 @@ internal static class Pcre2Runner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
     }
 
@@ -2096,7 +2096,7 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
 
             if (match.Success)
@@ -2209,7 +2209,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
 
             if (match.Success)
@@ -2333,7 +2333,7 @@ internal ref struct Pcre2CharacterGlobalMatchCursor
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
 
             if (match.Success)
@@ -2414,7 +2414,7 @@ internal ref struct Pcre2LiteralGlobalMatchCursor
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
 
             if (match.Success)
@@ -2699,7 +2699,7 @@ internal struct Pcre2ResourceBudget
         _deadline.Step();
         if (Limits.MatchLimit != 0 && CandidateSteps > Limits.MatchLimit)
         {
-            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", "MatchLimit");
+            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
         }
     }
 
@@ -2777,7 +2777,7 @@ internal struct Pcre2ResourceBudget
         if (Limits.MatchLimit != 0 &&
             (CandidateSteps > Limits.MatchLimit || BacktrackingSteps > Limits.MatchLimit - CandidateSteps))
         {
-            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", "MatchLimit");
+            throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
         }
     }
 
@@ -2786,7 +2786,7 @@ internal struct Pcre2ResourceBudget
         Depth = Math.Max(Depth, depth);
         if (Limits.DepthLimit != 0 && depth > Limits.DepthLimit)
         {
-            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", "DepthLimit");
+            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
 
         ChargeHeap(heapBytes);
@@ -2797,7 +2797,7 @@ internal struct Pcre2ResourceBudget
         HeapBytes = Math.Max(HeapBytes, heapBytes);
         if (Limits.HeapLimitInBytes != 0 && heapBytes > Limits.HeapLimitInBytes)
         {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", "HeapLimit");
+            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
     }
 

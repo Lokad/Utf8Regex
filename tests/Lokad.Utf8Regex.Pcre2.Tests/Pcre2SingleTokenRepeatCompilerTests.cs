@@ -82,7 +82,7 @@ public sealed class Pcre2SingleTokenRepeatCompilerTests
 
         Assert.IsType<Pcre2SingleTokenRepeatDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(
-            "MatchLimit",
+            Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc"u8)).ErrorKind);
     }
 

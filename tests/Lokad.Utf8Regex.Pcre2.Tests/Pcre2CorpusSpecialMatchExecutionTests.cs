@@ -24,7 +24,7 @@ public sealed class Pcre2CorpusSpecialMatchExecutionTests
             if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
             {
                 var exception = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, corpusCase.StartOffsetInBytes));
-                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind);
+                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
                 return;
             }
 
@@ -50,7 +50,7 @@ public sealed class Pcre2CorpusSpecialMatchExecutionTests
             if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
             {
                 var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(input, corpusCase.StartOffsetInBytes));
-                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind);
+                Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
                 return;
             }
 

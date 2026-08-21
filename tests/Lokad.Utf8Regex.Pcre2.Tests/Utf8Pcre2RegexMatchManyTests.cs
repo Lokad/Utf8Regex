@@ -21,7 +21,7 @@ public sealed class Utf8Pcre2RegexMatchManyTests
         }
 
         Assert.NotNull(exception);
-        Assert.Equal(Pcre2ErrorKinds.DisallowedLookaroundBackslashK, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.DisallowedLookaroundBackslashK, exception.ErrorKind);
         Assert.True(destination[0].Success);
         Assert.Equal(0, destination[0].StartOffsetInBytes);
         Assert.Equal(1, destination[0].EndOffsetInBytes);

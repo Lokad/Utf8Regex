@@ -28,7 +28,7 @@ public sealed class Pcre2CorpusCompileExecutionTests
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.CompileError)
         {
             var exception = Assert.Throws<Pcre2CompileException>(action);
-            Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind);
+            Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
         }
         else
         {

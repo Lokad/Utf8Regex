@@ -177,10 +177,10 @@ public sealed class Pcre2BacktrackingControlCompilerTests
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
 
         Assert.Equal(
-            "DepthLimit",
+            Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => depthLimited.IsMatch("a"u8)).ErrorKind);
         Assert.Equal(
-            "HeapLimit",
+            Pcre2ErrorKind.HeapLimit,
             Assert.Throws<Pcre2MatchException>(() => heapLimited.IsMatch("a"u8)).ErrorKind);
     }
 

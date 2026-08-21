@@ -8,7 +8,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     public void LookaroundKRequiresExplicitOptIn()
     {
         var exception = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex("(?=ab\\K)"));
-        Assert.Equal(Pcre2ErrorKinds.LookaroundBackslashKDisabled, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.LookaroundBackslashKDisabled, exception.ErrorKind);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
         }
 
         Assert.NotNull(exception);
-        Assert.Equal(Pcre2ErrorKinds.DisallowedLookaroundBackslashK, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.DisallowedLookaroundBackslashK, exception.ErrorKind);
     }
 
     [Fact]

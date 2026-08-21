@@ -173,7 +173,7 @@ public sealed class Pcre2AssertionCompilerTests
             new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         Assert.Equal(
-            "DepthLimit",
+            Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("a"u8)).ErrorKind);
 
         var regex = new Utf8Pcre2Regex("(?=(?<x>a|b))\\k<x>");

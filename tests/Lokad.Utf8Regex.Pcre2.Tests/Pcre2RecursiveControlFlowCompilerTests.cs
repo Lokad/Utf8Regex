@@ -117,7 +117,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
             new Utf8Pcre2ExecutionLimits { DepthLimit = 2 },
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         Assert.Equal(
-            "DepthLimit",
+            Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("aaabbb"u8)).ErrorKind);
 
         var regex = new Utf8Pcre2Regex("^(?<r>a(?&r)?b)$");

@@ -265,7 +265,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
             Timeout.InfiniteTimeSpan);
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xxfoo"u8));
-        Assert.Equal("MatchLimit", exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]
@@ -434,7 +434,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
             new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
             Timeout.InfiniteTimeSpan);
         Assert.Equal(
-            "MatchLimit",
+            Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
     }
 
@@ -626,7 +626,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
             Timeout.InfiniteTimeSpan);
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xx foo@bar"u8));
-        Assert.Equal("MatchLimit", exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]

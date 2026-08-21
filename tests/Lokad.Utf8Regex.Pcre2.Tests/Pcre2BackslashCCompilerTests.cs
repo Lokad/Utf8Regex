@@ -15,7 +15,7 @@ public sealed class Pcre2BackslashCCompilerTests
     public void BackslashCRemainsDisabledByDefaultButQuotedTextIsLiteral()
     {
         var exception = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(@"\C"));
-        Assert.Equal(Pcre2ErrorKinds.BackslashCDisabled, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.BackslashCDisabled, exception.ErrorKind);
 
         var quoted = new Utf8Pcre2Regex(@"^\Q\C\E$");
         Assert.True(quoted.IsMatch("\\C"u8));
@@ -135,7 +135,7 @@ public sealed class Pcre2BackslashCCompilerTests
     public void BackslashCInLookbehindRemainsRejected(string pattern)
     {
         var exception = Assert.Throws<Pcre2CompileException>(() => Create(pattern));
-        Assert.Equal(Pcre2ErrorKinds.BackslashCInUtfLookbehind, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.BackslashCInUtfLookbehind, exception.ErrorKind);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class Pcre2BackslashCCompilerTests
     public void BackslashCIsInvalidInsideACharacterClassEvenWhenOptedIn()
     {
         var exception = Assert.Throws<Pcre2CompileException>(() => Create(@"[\C]"));
-        Assert.Equal(Pcre2ErrorKinds.EscapeInvalidInClass, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.EscapeInvalidInClass, exception.ErrorKind);
     }
 
     [Fact]

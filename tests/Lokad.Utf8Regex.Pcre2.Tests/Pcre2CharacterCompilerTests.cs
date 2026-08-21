@@ -319,7 +319,7 @@ public sealed class Pcre2CharacterCompilerTests
 
         Assert.False(sufficient.IsMatch(input));
         var exception = Assert.Throws<Pcre2MatchException>(() => insufficient.IsMatch(input));
-        Assert.Equal("MatchLimit", exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]

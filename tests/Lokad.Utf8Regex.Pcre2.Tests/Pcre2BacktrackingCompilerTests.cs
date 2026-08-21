@@ -137,9 +137,9 @@ public sealed class Pcre2BacktrackingCompilerTests
             new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
 
-        Assert.Equal("MatchLimit", Assert.Throws<Pcre2MatchException>(() => matchLimited.IsMatch("aaaaaaaa"u8)).ErrorKind);
-        Assert.Equal("DepthLimit", Assert.Throws<Pcre2MatchException>(() => depthLimited.IsMatch("acy"u8)).ErrorKind);
-        Assert.Equal("HeapLimit", Assert.Throws<Pcre2MatchException>(() => heapLimited.IsMatch("b"u8)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => matchLimited.IsMatch("aaaaaaaa"u8)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.DepthLimit, Assert.Throws<Pcre2MatchException>(() => depthLimited.IsMatch("acy"u8)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => heapLimited.IsMatch("b"u8)).ErrorKind);
     }
 
     [Fact]

@@ -137,7 +137,7 @@ public sealed class Pcre2LiteralCompilerTests
         var input = Encoding.UTF8.GetBytes(new string('x', 16_384));
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input));
-        Assert.Equal("MatchLimit", exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
     [Fact]

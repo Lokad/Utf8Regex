@@ -107,7 +107,7 @@ public sealed class Pcre2BranchResetCompilerTests
         var error = Assert.Throws<Pcre2CompileException>(
             () => new Utf8Pcre2Regex("(?|(?<x>a)|(?<y>b))"));
 
-        Assert.Equal(Pcre2ErrorKinds.InvalidAfterParensQuery, error.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, error.ErrorKind);
     }
 
     private static Utf8Pcre2Regex CreateDuplicateNameRegex() => new(

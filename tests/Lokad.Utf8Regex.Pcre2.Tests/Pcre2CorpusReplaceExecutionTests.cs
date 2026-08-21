@@ -23,7 +23,7 @@ public sealed class Pcre2CorpusReplaceExecutionTests
         {
             var exception = Assert.Throws<Pcre2SubstitutionException>(
                 () => regex.Replace(input, corpusCase.ReplacementPattern!, corpusCase.StartOffsetInBytes, replacementOptions));
-            Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind);
+            Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
             return;
         }
 

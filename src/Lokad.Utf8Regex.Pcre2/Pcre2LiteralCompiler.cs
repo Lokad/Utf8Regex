@@ -384,7 +384,7 @@ internal static class Pcre2LiteralProbeRunner
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
 
         if (fullMatch.Success)
@@ -417,7 +417,7 @@ internal static class Pcre2LiteralProbeRunner
             }
             catch (Utf8ExecutionDeadlineExpiredException)
             {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", "Timeout");
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
             }
             var suffix = input.Bytes[candidate..];
             if (suffix.Length < literal.Length && literal.StartsWith(suffix))

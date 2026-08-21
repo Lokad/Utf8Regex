@@ -69,7 +69,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         var exception = Assert.Throws<Pcre2CompileException>(() =>
             new Utf8Pcre2Regex("(?=(?:x|ab)\\K)"));
 
-        Assert.Equal(Pcre2ErrorKinds.LookaroundBackslashKDisabled, exception.ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.LookaroundBackslashKDisabled, exception.ErrorKind);
     }
 
     [Fact]
