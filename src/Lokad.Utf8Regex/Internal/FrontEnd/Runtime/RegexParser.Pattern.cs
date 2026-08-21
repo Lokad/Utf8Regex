@@ -55,7 +55,7 @@ internal sealed partial class RegexParser
         AddUnit(body);
         AddGroup();
 
-        var root = _unit!;
+        var root = _unit ?? throw new InvalidOperationException("Closing the root group did not produce a parser unit.");
         PopGroup();
 
         return new RegexTree(
@@ -215,7 +215,7 @@ internal sealed partial class RegexParser
                 {
                     _pos++;
                     AddGroup();
-                    var grouped = _unit!;
+                    var grouped = _unit ?? throw new InvalidOperationException("Closing a group did not produce a parser unit.");
                     PopOptions();
                     PopGroup();
 
@@ -350,7 +350,7 @@ internal sealed partial class RegexParser
 
         AddAlternate();
 
-        var alternation = _alternation!;
+        var alternation = _alternation ?? throw new InvalidOperationException("The regex parser lost its active alternation.");
         var result = alternation.ChildCount == 1 ? alternation.Child(0) : alternation.Reduce();
         PopParserState();
         return result;
@@ -661,7 +661,7 @@ internal sealed partial class RegexParser
         if (TryScanConditionalExpression(_currentOptions, out var conditionNode))
         {
             conditional = new RegexNode(RegexNodeKind.ExpressionConditional, currentOptions)
-                .AddChild(conditionNode!);
+                .AddChild(conditionNode ?? throw new InvalidOperationException("A successful conditional scan produced no condition node."));
         }
         else if (TryScanConditionalReference(out var captureNumber, out var captureName) &&
                  TryConsume(')'))
@@ -790,7 +790,7 @@ internal sealed partial class RegexParser
             _pos++;
             if (!scanOnly)
             {
-                charClass!.Negate = true;
+                RequireCharacterClass(charClass).Negate = true;
             }
         }
 
@@ -805,7 +805,7 @@ internal sealed partial class RegexParser
                     _pos++;
                     if (!scanOnly)
                     {
-                        charClass!.Negate = true;
+                        RequireCharacterClass(charClass).Negate = true;
                     }
                 }
             }
@@ -896,7 +896,7 @@ internal sealed partial class RegexParser
 
             if (!scanOnly)
             {
-                charClass!.AddChar(current);
+                RequireCharacterClass(charClass).AddChar(current);
             }
         }
 
@@ -926,7 +926,7 @@ internal sealed partial class RegexParser
 
         if (!scanOnly && caseInsensitive)
         {
-            charClass!.AddCaseEquivalences(_culture);
+            RequireCharacterClass(charClass).AddCaseEquivalences(_culture);
         }
 
         if (parents is { Count: > 0 })
@@ -935,7 +935,7 @@ internal sealed partial class RegexParser
             parents.RemoveAt(parents.Count - 1);
             if (!scanOnly)
             {
-                parent!.AddSubtraction(charClass!);
+                RequireCharacterClass(parent).AddSubtraction(RequireCharacterClass(charClass));
             }
 
             if (_pos < _scanPattern.Length && _scanPattern[_pos] != ']')
@@ -973,7 +973,7 @@ internal sealed partial class RegexParser
         {
             if (!scanOnly)
             {
-                charClass!.AddChar(previous);
+                RequireCharacterClass(charClass).AddChar(previous);
             }
 
             (parents ??= []).Add(charClass);
@@ -991,7 +991,7 @@ internal sealed partial class RegexParser
 
         if (!scanOnly)
         {
-            charClass!.AddRange(previous, current);
+            RequireCharacterClass(charClass).AddRange(previous, current);
         }
 
         return true;
@@ -1170,7 +1170,7 @@ internal sealed partial class RegexParser
         {
             if (!scanOnly)
             {
-                charClass!.AddChar(literal);
+                RequireCharacterClass(charClass).AddChar(literal);
             }
 
             return true;
@@ -1196,7 +1196,7 @@ internal sealed partial class RegexParser
 
             if (!scanOnly)
             {
-                charClass!.AddCategoryFromName(categoryName, escaped == 'P', caseInsensitive: false, _scanPattern, _pos);
+                RequireCharacterClass(charClass).AddCategoryFromName(categoryName, escaped == 'P', caseInsensitive: false, _scanPattern, _pos);
             }
 
             return true;
@@ -1207,42 +1207,42 @@ internal sealed partial class RegexParser
             case 'd':
                 if (!scanOnly)
                 {
-                    charClass!.AddDigit(ecma: false, negate: false, _scanPattern, _pos - 1);
+                    RequireCharacterClass(charClass).AddDigit(ecma: false, negate: false, _scanPattern, _pos - 1);
                 }
 
                 return true;
             case 'D':
                 if (!scanOnly)
                 {
-                    charClass!.AddDigit(ecma: false, negate: true, _scanPattern, _pos - 1);
+                    RequireCharacterClass(charClass).AddDigit(ecma: false, negate: true, _scanPattern, _pos - 1);
                 }
 
                 return true;
             case 'w':
                 if (!scanOnly)
                 {
-                    charClass!.AddWord(ecma: false, negate: false);
+                    RequireCharacterClass(charClass).AddWord(ecma: false, negate: false);
                 }
 
                 return true;
             case 'W':
                 if (!scanOnly)
                 {
-                    charClass!.AddWord(ecma: false, negate: true);
+                    RequireCharacterClass(charClass).AddWord(ecma: false, negate: true);
                 }
 
                 return true;
             case 's':
                 if (!scanOnly)
                 {
-                    charClass!.AddSpace(ecma: false, negate: false);
+                    RequireCharacterClass(charClass).AddSpace(ecma: false, negate: false);
                 }
 
                 return true;
             case 'S':
                 if (!scanOnly)
                 {
-                    charClass!.AddSpace(ecma: false, negate: true);
+                    RequireCharacterClass(charClass).AddSpace(ecma: false, negate: true);
                 }
 
                 return true;
@@ -1250,6 +1250,9 @@ internal sealed partial class RegexParser
                 return false;
         }
     }
+
+    private static RegexCharClass RequireCharacterClass(RegexCharClass? charClass) =>
+        charClass ?? throw new InvalidOperationException("A materialized character-class scan lost its builder.");
 
     private RegexNode? ScanLiteral(char ch, RegexOptions currentOptions)
     {

@@ -563,16 +563,20 @@ internal sealed class RegexCharClass
             {
                 outermost = result;
             }
+            else if (current is not null)
+            {
+                current.AddSubtraction(result);
+            }
             else
             {
-                current!.AddSubtraction(result);
+                throw new ArgumentException("Invalid character class subtraction payload.", nameof(charClass));
             }
 
             current = result;
             pos = setEnd + categoryLength;
         }
 
-        return outermost!;
+        return outermost ?? throw new ArgumentException("Empty character class payload.", nameof(charClass));
     }
 
     public bool CharInClass(char ch)

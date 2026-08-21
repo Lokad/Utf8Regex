@@ -158,7 +158,12 @@ internal static class PythonReTranslator
 
                 break;
             case PythonReConditionalReferenceKind.GroupName:
-                if (!namedGroups.ContainsKey(reference.GroupName!))
+                if (reference.GroupName is not string groupName)
+                {
+                    throw new PythonRePatternException("Named conditional reference has no group name.");
+                }
+
+                if (!namedGroups.ContainsKey(groupName))
                 {
                     throw new PythonRePatternException($"unknown group name '{reference.GroupName}'");
                 }
@@ -293,7 +298,12 @@ internal static class PythonReTranslator
                 return;
 
             case PythonReGroupKind.NamedCapturing:
-                builder.Append("(?<").Append(emittedGroupNames[node.Name!]).Append('>');
+                if (node.Name is not string groupName)
+                {
+                    throw new PythonRePatternException("Named capturing group has no group name.");
+                }
+
+                builder.Append("(?<").Append(emittedGroupNames[groupName]).Append('>');
                 AppendNode(node.Inner, builder, emittedGroupNames);
                 builder.Append(')');
                 return;
@@ -364,7 +374,12 @@ internal static class PythonReTranslator
                 builder.Append(node.Reference.GroupNumber);
                 break;
             case PythonReConditionalReferenceKind.GroupName:
-                builder.Append(emittedGroupNames[node.Reference.GroupName!]);
+                if (node.Reference.GroupName is not string groupName)
+                {
+                    throw new PythonRePatternException("Named conditional reference has no group name.");
+                }
+
+                builder.Append(emittedGroupNames[groupName]);
                 break;
             default:
                 throw new PythonRePatternException("Unsupported conditional reference.");

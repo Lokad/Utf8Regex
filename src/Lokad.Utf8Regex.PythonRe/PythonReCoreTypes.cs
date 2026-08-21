@@ -483,7 +483,10 @@ public readonly ref struct Utf8PythonMatchContext
 
     public bool Success => _groups is { Length: > 0 } && _groups[0].Success;
 
-    public Utf8PythonValueMatch Value => Success ? Utf8PythonValueMatch.Create(_input, _groups![0]) : default;
+    public Utf8PythonValueMatch Value =>
+        _groups is { Length: > 0 } groups && groups[0].Success
+            ? Utf8PythonValueMatch.Create(_input, groups[0])
+            : default;
 
     public string GetValueString() => Value.GetValueString();
 

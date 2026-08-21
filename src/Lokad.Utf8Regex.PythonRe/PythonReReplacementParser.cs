@@ -229,7 +229,7 @@ internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReRe
             switch (token.Kind)
             {
                 case PythonReReplacementTokenKind.Literal:
-                    builder.Append(token.Text!.Replace("$", "$$", StringComparison.Ordinal));
+                    builder.Append(token.RequiredText.Replace("$", "$$", StringComparison.Ordinal));
                     break;
                 case PythonReReplacementTokenKind.GroupNumber:
                     builder.Append("${").Append(token.Number).Append('}');
@@ -266,7 +266,7 @@ internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReRe
 
                     break;
                 case PythonReReplacementTokenKind.GroupName:
-                    if (match.TryGetFirstSetGroup(token.Text!, out var named) && named.Success)
+                    if (match.TryGetFirstSetGroup(token.RequiredText, out var named) && named.Success)
                     {
                         builder.Append(named.Value.GetValueString());
                     }
@@ -291,7 +291,7 @@ internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReRe
             switch (token.Kind)
             {
                 case PythonReReplacementTokenKind.Literal:
-                    bytes.AddRange(Encoding.UTF8.GetBytes(token.Text!));
+                    bytes.AddRange(Encoding.UTF8.GetBytes(token.RequiredText));
                     break;
                 case PythonReReplacementTokenKind.GroupNumber:
                     if ((uint)token.Number < (uint)groups.Length && groups[token.Number].Success)
@@ -314,6 +314,9 @@ internal readonly record struct PythonReReplacementToken(
     string? Text,
     int Number)
 {
+    public string RequiredText =>
+        Text ?? throw new InvalidOperationException($"Replacement token {Kind} does not carry text.");
+
     public static PythonReReplacementToken ForLiteral(string text) => new(PythonReReplacementTokenKind.Literal, text, 0);
 
     public static PythonReReplacementToken ForGroupNumber(int number) => new(PythonReReplacementTokenKind.GroupNumber, null, number);

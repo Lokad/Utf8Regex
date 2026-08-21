@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class CSharpGuidelineSourceGuardTests
 {
     private const int DefaultParameterDebtCeiling = 0;
-    private const int NullForgivingDebtCeiling = 43;
+    private const int NullForgivingDebtCeiling = 0;
     private const int DefensiveNullGuardDebtCeiling = 80;
     private const int UndocumentedPublicDeclarationDebtCeiling = 452;
 

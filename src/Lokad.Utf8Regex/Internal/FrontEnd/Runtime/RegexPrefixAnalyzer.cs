@@ -83,16 +83,21 @@ internal static class RegexPrefixAnalyzer
                     }
 
                     case RegexNodeKind.Multi:
+                        if (node.Str is not string literal)
+                        {
+                            return false;
+                        }
+
                         if (!ignoreCase)
                         {
                             foreach (var sb in results)
                             {
-                                sb.Append(node.Str);
+                                sb.Append(literal);
                             }
                         }
                         else
                         {
-                            foreach (var c in node.Str!)
+                            foreach (var c in literal)
                             {
                                 if (RegexCharClass.ParticipatesInCaseConversion(c))
                                 {
@@ -109,16 +114,16 @@ internal static class RegexPrefixAnalyzer
                         return true;
 
                     case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic
-                        when !RegexCharClass.IsNegated(node.Str!):
+                        when node.Str is string set && !RegexCharClass.IsNegated(set):
                     {
-                        if (!RegexCharClass.TryGetSetCharCount(node.Str!, out var setCharCount) ||
+                        if (!RegexCharClass.TryGetSetCharCount(set, out var setCharCount) ||
                             setCharCount == 0 ||
                             results.Count * setCharCount > MaxPrefixes)
                         {
                             return false;
                         }
 
-                        var setChars = RegexCharClass.GetSetChars(node.Str!);
+                        var setChars = RegexCharClass.GetSetChars(set);
                         if (setChars.Length == 0)
                         {
                             return false;
@@ -153,7 +158,7 @@ internal static class RegexPrefixAnalyzer
                         }
                         else
                         {
-                            if (!TryFindCaseInsensitiveAsciiPrefixCharacter(node.Str!, out var prefixChar))
+                            if (!TryFindCaseInsensitiveAsciiPrefixCharacter(set, out var prefixChar))
                             {
                                 return false;
                             }

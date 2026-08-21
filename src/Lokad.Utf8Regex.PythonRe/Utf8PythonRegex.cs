@@ -26,7 +26,8 @@ public sealed class Utf8PythonRegex
 
         internal int Count { get; private set; }
 
-        internal readonly PythonReUtf8MatchRange this[int index] => _ranges![index];
+        internal readonly PythonReUtf8MatchRange this[int index] =>
+            (_ranges ?? throw new InvalidOperationException("The range buffer has not been initialized."))[index];
 
         internal void Add(PythonReUtf8MatchRange range)
         {
@@ -35,7 +36,7 @@ public sealed class Utf8PythonRegex
                 Grow();
             }
 
-            _ranges![Count] = range;
+            (_ranges ?? throw new InvalidOperationException("Growing the range buffer did not initialize it."))[Count] = range;
             Count++;
         }
 

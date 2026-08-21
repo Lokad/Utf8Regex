@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -14,8 +15,8 @@ internal sealed partial class RegexParser
     private RegexNode? _alternation;
     private RegexNode? _concatenation;
     private RegexNode? _unit;
-    private List<RegexReplacementToken>? _replacementTokens;
-    private StringBuilder? _replacementLiteral;
+    private List<RegexReplacementToken> _replacementTokens = [];
+    private StringBuilder _replacementLiteral = new();
     private int[] _replacementGroupNumbers = [];
     private string[] _replacementGroupNames = [];
     private bool _resolveReplacementGroups;
@@ -106,7 +107,11 @@ internal sealed partial class RegexParser
             "The current native-subset parser supports only the implemented runtime front-end subset.");
     }
 
-    public static bool TryParse(string pattern, RegexOptions options, CultureInfo culture, out RegexTree tree)
+    public static bool TryParse(
+        string pattern,
+        RegexOptions options,
+        CultureInfo culture,
+        [NotNullWhen(true)] out RegexTree? tree)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         ArgumentNullException.ThrowIfNull(culture);
@@ -116,11 +121,14 @@ internal sealed partial class RegexParser
 
     public static int MapCaptureNumber(int capnum, Hashtable? caps)
     {
-        return capnum == -1
-            ? -1
-            : caps is not null
-                ? (int)caps[capnum]!
-                : capnum;
+        if (capnum == -1 || caps is null)
+        {
+            return capnum;
+        }
+
+        return caps[capnum] is int mapped
+            ? mapped
+            : throw new InvalidOperationException($"Capture number {capnum} is absent from the sparse mapping.");
     }
 
     public static string GroupNameFromNumber(Hashtable? caps, string[]? capsList, int capsize, int number)
@@ -180,7 +188,7 @@ internal sealed partial class RegexParser
     }
 
     private bool TryParseCore(
-        out RegexTree tree,
+        [NotNullWhen(true)] out RegexTree? tree,
         out RegexParseError error,
         out int errorOffset)
     {
@@ -188,7 +196,7 @@ internal sealed partial class RegexParser
         _scanOptions = _options;
         CountCaptures();
 
-        tree = ParsePatternTree()!;
+        tree = ParsePatternTree();
         if (tree is null)
         {
             error = _scanError;
@@ -198,7 +206,7 @@ internal sealed partial class RegexParser
 
         if (!TryValidateReferences(tree, out error, out errorOffset))
         {
-            tree = null!;
+            tree = null;
             return false;
         }
 
@@ -475,7 +483,7 @@ internal sealed partial class RegexParser
                 var result = ScanDollar();
                 if (result.LiteralText is { Length: > 0 } literalText)
                 {
-                    _replacementLiteral!.Append(literalText);
+                    _replacementLiteral.Append(literalText);
                 }
                 else if (result.LiteralizeOriginalText)
                 {
@@ -485,7 +493,7 @@ internal sealed partial class RegexParser
                 else if (result.Token is RegexReplacementToken token)
                 {
                     FlushReplacementLiteral();
-                    _replacementTokens!.Add(token);
+                    _replacementTokens.Add(token);
                 }
 
                 _pos = result.NextPosition;
@@ -638,7 +646,7 @@ internal sealed partial class RegexParser
     {
         if (length > 0)
         {
-            _replacementLiteral!.Append(_pattern, start, length);
+            _replacementLiteral.Append(_pattern, start, length);
         }
     }
 
@@ -659,12 +667,12 @@ internal sealed partial class RegexParser
 
     private void FlushReplacementLiteral()
     {
-        if (_replacementLiteral is null || _replacementLiteral.Length == 0)
+        if (_replacementLiteral.Length == 0)
         {
             return;
         }
 
-        _replacementTokens!.Add(new RegexReplacementToken(RegexReplacementTokenKind.Literal, _replacementLiteral.ToString()));
+        _replacementTokens.Add(new RegexReplacementToken(RegexReplacementTokenKind.Literal, _replacementLiteral.ToString()));
         _replacementLiteral.Clear();
     }
 
