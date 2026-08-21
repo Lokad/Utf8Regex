@@ -5524,6 +5524,14 @@ internal static partial class BenchmarkInspectReporter
 
     private static int GetShortPublicIterationFloor(LokadPublicBenchmarkContext context)
     {
+        if (context.CaseId == "common/uri-match")
+        {
+            // This sub-0.1-us route needs enough calls for Tiered PGO to optimize
+            // the URI Boolean dispatch. The generic common-case floor records a
+            // transient Tier-0/Tier-1 blend instead of warm throughput.
+            return 100000;
+        }
+
         if (context.Operation is LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match)
         {
             return context.CaseId.StartsWith("common/", StringComparison.Ordinal)
