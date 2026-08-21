@@ -959,6 +959,34 @@ public sealed class Utf8RegexConstructionTests
         Assert.Throws<ArgumentException>(() => regex.Count(invalid));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void ExactAsciiLiteralCountMatchesDotNetThroughPrioritizedRoute(RegexOptions options)
+    {
+        const string pattern = "tempus";
+        const string input = "tempus é tempus xtempus";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+        Assert.Throws<ArgumentException>(() => regex.Count([(byte)'t', (byte)'e', 0xFF]));
+    }
+
+    [Theory]
+    [InlineData("foo(?=bar)", "fooqux foobar foo")]
+    [InlineData("^tempus", "tempus x tempus")]
+    [InlineData("tempus$", "tempus x tempus")]
+    [InlineData(@"\btempus\b", "xtempus tempus tempusx")]
+    public void ConstrainedExactAsciiLiteralCountRetainsSemanticRoute(string pattern, string input)
+    {
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
     [Fact]
     public void CompiledMatchUsesDirectDocLinePath()
     {

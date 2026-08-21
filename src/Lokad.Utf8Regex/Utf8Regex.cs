@@ -35,6 +35,7 @@ public sealed class Utf8Regex
 
     private readonly Utf8RegexProgram _program;
     private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
+    private readonly bool _prioritizePlainAsciiLiteralCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -62,7 +63,32 @@ public sealed class Utf8Regex
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
+        _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
+
+        static bool CanPrioritizePlainAsciiLiteralCount(
+            string pattern,
+            Utf8PreparedRegex preparedRegex,
+            RegexOptions options)
+        {
+            if (preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
+                (options & RegexOptions.RightToLeft) != 0 ||
+                preparedRegex.LiteralUtf8 is not { } literal ||
+                pattern.Length != literal.Length)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < literal.Length; i++)
+            {
+                if (pattern[i] != literal[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         static Utf8PrioritizedBooleanFamilyKind SelectPrioritizedBooleanFamily(
             Utf8PreparedRegex preparedRegex,
@@ -971,6 +997,16 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
+        if (_prioritizePlainAsciiLiteralCount)
+        {
+            if (!TryUseAsciiInputValidationShortcut(input))
+            {
+                Utf8Validation.ThrowIfInvalidOnly(input);
+            }
+
+            return CountViaCompiledEngine(input, default, CreateExecutionBudget());
+        }
+
         if (ShouldUseKelvinSignFallback(input))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(

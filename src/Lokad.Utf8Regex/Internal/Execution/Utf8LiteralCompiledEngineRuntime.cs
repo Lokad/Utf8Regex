@@ -143,6 +143,24 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        if (_regexPlan.SearchPlan.HasBoundaryRequirements ||
+            _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
+        {
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _regexPlan,
+                verifierRuntime: null,
+                input,
+                validation,
+                budget);
+            var constrainedCount = 0;
+            while (cursor.MoveNext())
+            {
+                constrainedCount++;
+            }
+
+            return constrainedCount;
+        }
+
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal
