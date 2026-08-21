@@ -42,7 +42,7 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(3, root.GetProperty("SchemaVersion").GetInt32());
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
@@ -67,6 +67,16 @@ public sealed class PythonReBenchmarkSnapshotTests
             AssertCompleteMeasurement(benchmarkCase.Value.GetProperty("DecodeThenRegex"));
             AssertCompleteMeasurement(benchmarkCase.Value.GetProperty("PredecodedRegex"));
 
+            var cpython = benchmarkCase.Value.GetProperty("Cpython");
+            Assert.Equal(1, cpython.GetProperty("ProtocolVersion").GetInt32());
+            AssertCpythonMeasurement(cpython.GetProperty("PredecodedRe"), benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32());
+            AssertCpythonMeasurement(cpython.GetProperty("DecodeThenRe"), benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32());
+            var cpythonEnvironment = cpython.GetProperty("Environment");
+            Assert.Equal("CPython", cpythonEnvironment.GetProperty("Implementation").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(cpythonEnvironment.GetProperty("Version").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(cpythonEnvironment.GetProperty("Executable").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(cpythonEnvironment.GetProperty("Platform").GetString()));
+
             var environment = benchmarkCase.Value.GetProperty("Environment");
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("SourceCommit").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Runtime").GetString()));
@@ -80,8 +90,18 @@ public sealed class PythonReBenchmarkSnapshotTests
         var snapshotPath = FindRepositoryFile("PythonRe.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"));
         var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var cpythonVersions = cases.EnumerateObject()
+            .Select(static benchmarkCase => benchmarkCase.Value
+                .GetProperty("Cpython")
+                .GetProperty("Environment")
+                .GetProperty("Version")
+                .GetString())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
+        Assert.Contains("CPython + decode CPU", page, StringComparison.Ordinal);
+        Assert.All(cpythonVersions, version => Assert.Contains($"CPython {version}", page, StringComparison.Ordinal));
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)
@@ -90,6 +110,16 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.True(measurement.GetProperty("MinimumMicroseconds").GetDouble() > 0);
         Assert.True(measurement.GetProperty("MaximumMicroseconds").GetDouble() > 0);
         Assert.True(measurement.GetProperty("MedianAllocatedBytes").GetInt64() >= 0);
+        Assert.True(measurement.GetProperty("WarmupCalls").GetInt32() > 0);
+        Assert.True(measurement.GetProperty("WarmupMilliseconds").GetDouble() > 0);
+    }
+
+    private static void AssertCpythonMeasurement(JsonElement measurement, int maximumIterations)
+    {
+        Assert.True(measurement.GetProperty("MedianMicroseconds").GetDouble() > 0);
+        Assert.True(measurement.GetProperty("MinimumMicroseconds").GetDouble() > 0);
+        Assert.True(measurement.GetProperty("MaximumMicroseconds").GetDouble() > 0);
+        Assert.InRange(measurement.GetProperty("EffectiveIterations").GetInt32(), 1, maximumIterations);
         Assert.True(measurement.GetProperty("WarmupCalls").GetInt32() > 0);
         Assert.True(measurement.GetProperty("WarmupMilliseconds").GetDouble() > 0);
     }
