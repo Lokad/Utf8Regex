@@ -176,14 +176,14 @@ internal readonly struct Utf8CompiledPatternFamilyPlan
 
     public static Utf8CompiledPatternFamilyPlan FromSimplePatternPlan(AsciiSimplePatternPlan plan)
     {
-        if (plan.AnchoredValidatorPlan.HasValue)
-        {
-            return ForAnchoredValidator(plan.AnchoredValidatorPlan);
-        }
-
         if (plan.AnchoredBoundedDatePlan.HasValue)
         {
             return ForAnchoredBoundedDate(plan.AnchoredBoundedDatePlan);
+        }
+
+        if (plan.AnchoredValidatorPlan.HasValue)
+        {
+            return ForAnchoredValidator(plan.AnchoredValidatorPlan);
         }
 
         if (plan.RepeatedDigitGroupPlan.HasValue)

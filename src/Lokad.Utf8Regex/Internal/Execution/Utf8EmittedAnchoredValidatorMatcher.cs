@@ -45,6 +45,109 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
         return true;
     }
 
+    internal static bool TryCreate(
+        AsciiSimplePatternAnchoredBoundedDatePlan plan,
+        bool allowTrailingNewline,
+        out Utf8EmittedAnchoredValidatorMatcher? matcher)
+    {
+        matcher = null;
+        if (!plan.HasValue ||
+            plan.SecondFieldMinCount == 0 ||
+            plan.ThirdFieldMinCount == 0 ||
+            plan.FirstFieldMaxCount < plan.FirstFieldMinCount ||
+            plan.SecondFieldMaxCount < plan.SecondFieldMinCount ||
+            plan.ThirdFieldMaxCount < plan.ThirdFieldMinCount)
+        {
+            return false;
+        }
+
+        var candidateCount =
+            (plan.FirstFieldMaxCount - plan.FirstFieldMinCount + 1) *
+            (plan.SecondFieldMaxCount - plan.SecondFieldMinCount + 1) *
+            (plan.ThirdFieldMaxCount - plan.ThirdFieldMinCount + 1);
+        var maximumLength =
+            plan.FirstFieldMaxCount +
+            plan.SecondFieldMaxCount +
+            plan.ThirdFieldMaxCount +
+            2;
+        if (candidateCount > 32 || maximumLength > 64)
+        {
+            return false;
+        }
+
+        var compiled = CompileBoundedDate();
+        if (!Validate(compiled))
+        {
+            return false;
+        }
+
+        matcher = new Utf8EmittedAnchoredValidatorMatcher(compiled);
+        return true;
+
+        MatchDelegate CompileBoundedDate()
+        {
+            var dynamicMethod = new DynamicMethod(
+                "Utf8Regex_EmitAnchoredBoundedDateMatch",
+                typeof(int),
+                [typeof(ReadOnlySpan<byte>)],
+                typeof(Utf8EmittedAnchoredValidatorMatcher),
+                skipVisibility: false);
+
+            var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+            var inputLengthLocal = emitter.DeclareLocal<int>();
+            var effectiveLengthLocal = emitter.DeclareLocal<int>();
+            var zeroIndexLocal = emitter.DeclareLocal<int>();
+            var valueLocal = emitter.DeclareLocal<byte>();
+
+            emitter.LoadInputLength();
+            emitter.StoreLocal(inputLengthLocal);
+            emitter.LoadLocal(inputLengthLocal);
+            emitter.StoreLocal(effectiveLengthLocal);
+            emitter.LdcI4(0);
+            emitter.StoreLocal(zeroIndexLocal);
+
+            if (allowTrailingNewline)
+            {
+                emitter.EmitTrimSingleTrailingLf(inputLengthLocal, effectiveLengthLocal, valueLocal);
+            }
+
+            for (var firstCount = (int)plan.FirstFieldMaxCount; firstCount >= plan.FirstFieldMinCount; firstCount--)
+            {
+                for (var secondCount = (int)plan.SecondFieldMaxCount; secondCount >= plan.SecondFieldMinCount; secondCount--)
+                {
+                    for (var thirdCount = (int)plan.ThirdFieldMaxCount; thirdCount >= plan.ThirdFieldMinCount; thirdCount--)
+                    {
+                        EmitCandidate(firstCount, secondCount, thirdCount);
+                    }
+                }
+            }
+
+            emitter.EmitReturnInt(-1);
+            return dynamicMethod.CreateDelegate<MatchDelegate>();
+
+            void EmitCandidate(int firstCount, int secondCount, int thirdCount)
+            {
+                var candidateLength = firstCount + secondCount + thirdCount + 2;
+                var nextCandidateLabel = emitter.DefineLabel();
+                var matchingLengthLabel = emitter.DefineLabel();
+                emitter.LoadLocal(effectiveLengthLocal);
+                emitter.LdcI4(candidateLength);
+                emitter.Emit(OpCodes.Beq, matchingLengthLabel);
+                emitter.Emit(OpCodes.Br, nextCandidateLabel);
+                emitter.MarkLabel(matchingLengthLabel);
+
+                var offset = 0;
+                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, firstCount, nextCandidateLabel);
+                EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SeparatorByte, nextCandidateLabel);
+                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, secondCount, nextCandidateLabel);
+                EmitLiteral(emitter, zeroIndexLocal, valueLocal, ref offset, plan.SecondSeparatorByte, nextCandidateLabel);
+                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, thirdCount, nextCandidateLabel);
+                emitter.EmitReturnInt(candidateLength);
+                emitter.MarkLabel(nextCandidateLabel);
+            }
+        }
+    }
+
     internal int MatchWhole(ReadOnlySpan<byte> input) => _match(input);
 
     private static bool CanCreate(AsciiSimplePatternAnchoredValidatorPlan plan)
@@ -203,6 +306,39 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
         emitter.MarkLabel(failLabel);
         emitter.EmitReturnInt(-1);
         return dynamicMethod.CreateDelegate<MatchDelegate>();
+    }
+
+    private static void EmitDigitRun(
+        Utf8IlEmitter emitter,
+        LocalBuilder zeroIndexLocal,
+        LocalBuilder valueLocal,
+        ref int offset,
+        int count,
+        Label failureLabel)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var matchedLabel = emitter.DefineLabel();
+            emitter.LoadInputByte(zeroIndexLocal, offset++);
+            emitter.StoreLocal(valueLocal);
+            emitter.EmitPredicateBranch(AsciiCharClassPredicateKind.Digit, valueLocal, matchedLabel, failureLabel);
+            emitter.MarkLabel(matchedLabel);
+        }
+    }
+
+    private static void EmitLiteral(
+        Utf8IlEmitter emitter,
+        LocalBuilder zeroIndexLocal,
+        LocalBuilder valueLocal,
+        ref int offset,
+        byte literal,
+        Label failureLabel)
+    {
+        var matchedLabel = emitter.DefineLabel();
+        emitter.LoadInputByte(zeroIndexLocal, offset++);
+        emitter.StoreLocal(valueLocal);
+        emitter.EmitEqualityBranch(valueLocal, literal, matchedLabel, failureLabel);
+        emitter.MarkLabel(matchedLabel);
     }
 
     private static bool Validate(MatchDelegate match)

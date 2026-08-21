@@ -95,12 +95,16 @@ public sealed class LokadPublicRouteGuardrailTests
         var regex = new Utf8Regex(pattern, options);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
+        Assert.Equal(
+            (options & RegexOptions.Compiled) != 0,
+            regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
         Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("12/12/2001"u8, out var directMatch));
         Assert.True(directMatch);
 
         string[] inputs =
         [
             "1/2/2001",
+            "1/12/2001",
             "12/2/2001",
             "12/12/2001",
             "12/12/2001\n",

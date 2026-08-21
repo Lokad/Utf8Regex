@@ -2865,6 +2865,14 @@ public sealed class Utf8Regex
             return false;
         }
 
+        if ((Options & RegexOptions.Compiled) != 0 &&
+            _compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
+            compiledRuntime.TryMatchEmittedAnchoredValidator(input, out _))
+        {
+            isMatch = true;
+            return true;
+        }
+
         var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
             input,
             _anchoredBoundedDatePlan,

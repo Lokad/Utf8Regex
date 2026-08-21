@@ -327,14 +327,30 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
             ? new Utf8CompiledSymmetricLiteralWindowCounter(_symmetricLiteralWindowPlan)
             : null;
         var anchoredValidatorPlan = _compiledPatternFamily.AnchoredValidatorPlan;
-        _emittedAnchoredValidatorMatcher = emitEnabled &&
-            Utf8SimplePatternCompiledRuntimePolicy.ShouldUseEmittedAnchoredValidator(anchoredValidatorPlan) &&
-            Utf8EmittedAnchoredValidatorMatcher.TryCreate(
-                anchoredValidatorPlan,
+        if (!emitEnabled)
+        {
+            _emittedAnchoredValidatorMatcher = null;
+        }
+        else if (_anchoredBoundedDatePlan.HasValue)
+        {
+            _emittedAnchoredValidatorMatcher = Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+                _anchoredBoundedDatePlan,
                 _anchoredValidatorAllowsTrailingNewline,
-                out var emittedAnchoredValidatorMatcher)
-            ? emittedAnchoredValidatorMatcher
-            : null;
+                out var boundedDateMatcher)
+                ? boundedDateMatcher
+                : null;
+        }
+        else
+        {
+            _emittedAnchoredValidatorMatcher =
+                Utf8SimplePatternCompiledRuntimePolicy.ShouldUseEmittedAnchoredValidator(anchoredValidatorPlan) &&
+                Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+                    anchoredValidatorPlan,
+                    _anchoredValidatorAllowsTrailingNewline,
+                    out var anchoredValidatorMatcher)
+                    ? anchoredValidatorMatcher
+                    : null;
+        }
     }
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
@@ -348,6 +364,12 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
         SkipRequiredPrefilterForCount: false,
         UsesEmittedAnchoredValidatorMatcher: _emittedAnchoredValidatorMatcher is not null,
         UsesEmittedKernelMatcher: false);
+
+    public bool TryMatchEmittedAnchoredValidator(ReadOnlySpan<byte> input, out int matchedLength)
+    {
+        matchedLength = _emittedAnchoredValidatorMatcher?.MatchWhole(input) ?? -1;
+        return matchedLength >= 0;
+    }
 
     public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {

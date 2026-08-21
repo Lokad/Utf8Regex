@@ -693,6 +693,53 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void EmittedAnchoredBoundedDateMatchesNativeAcrossFieldWidths()
+    {
+        var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{2,4}$", RegexOptions.Compiled);
+        var plan = regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan;
+
+        Assert.True(plan.HasValue);
+        Assert.True(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+            plan,
+            allowTrailingNewline: true,
+            out var matcher));
+        Assert.NotNull(matcher);
+        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+            new AsciiSimplePatternAnchoredBoundedDatePlan(1, 8, 1, 8, 1, 8, (byte)'/', (byte)'/'),
+            allowTrailingNewline: false,
+            out _));
+
+        byte[][] inputs =
+        [
+            "1/2/01"u8.ToArray(),
+            "1/12/012"u8.ToArray(),
+            "12/1/0123"u8.ToArray(),
+            "12/12/0123"u8.ToArray(),
+            "12/12/0123\n"u8.ToArray(),
+            "1/2/0"u8.ToArray(),
+            "123/1/0123"u8.ToArray(),
+            "12-12-0123"u8.ToArray(),
+            "12/xx/0123"u8.ToArray(),
+        ];
+        foreach (var input in inputs)
+        {
+            var emittedLength = matcher!.MatchWhole(input);
+            var nativeMatch = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
+                input,
+                plan,
+                allowTrailingNewline: true,
+                out var nativeLength,
+                out var needsValidation);
+
+            Assert.False(needsValidation);
+            Assert.Equal(nativeMatch ? nativeLength : -1, emittedLength);
+        }
+
+        Assert.Equal(-1, matcher!.MatchWhole("١/٢/٢٠٠١"u8));
+    }
+
+    [Fact]
     public void EmittedBoundedDateTokenMatcherMatchesCompiledDateRuntime()
     {
         var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
