@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -9,7 +10,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(3, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
 
         var sections = root.GetProperty("Sections");
         AssertSection(sections, "dotnet-performance", 55);
@@ -18,6 +19,49 @@ public sealed class ReadmeBenchmarkSnapshotTests
         AssertSection(sections, "lokad-compiled", 34);
         AssertPairedSections(sections, "dotnet-performance", "dotnet-performance-compiled");
         AssertPairedSections(sections, "lokad", "lokad-compiled");
+
+        var environments = sections.EnumerateObject()
+            .SelectMany(static section => section.Value.GetProperty("Cases").EnumerateObject())
+            .Select(static benchmarkCase => benchmarkCase.Value.GetProperty("Environment"))
+            .ToArray();
+        Assert.Single(environments.Select(static environment => environment.GetProperty("SourceCommit").GetString()).Distinct());
+        Assert.Single(environments.Select(static environment => environment.GetProperty("Runtime").GetString()).Distinct());
+        Assert.Single(environments.Select(static environment => environment.GetProperty("OperatingSystem").GetString()).Distinct());
+        Assert.Single(environments.Select(static environment => environment.GetProperty("Processor").GetString()).Distinct());
+        Assert.Single(environments.Select(static environment => environment.GetProperty("TieredPgo").GetString()).Distinct());
+    }
+
+    [Fact]
+    public void ParityReportMatchesSnapshotAndContainsAllQualifiedRows()
+    {
+        var snapshotPath = FindRepositoryFile("README.Benchmarks.json");
+        var expectedHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
+        var root = document.RootElement;
+        Assert.Equal(1, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal("README.Benchmarks.json", root.GetProperty("GeneratedFrom").GetString());
+        Assert.Equal(expectedHash, root.GetProperty("SnapshotSha256").GetString());
+
+        var summary = root.GetProperty("Summary");
+        Assert.Equal(178, summary.GetProperty("Rows").GetInt32());
+        Assert.Equal(0, summary.GetProperty("Unqualified").GetInt32());
+        Assert.Equal(
+            178,
+            summary.GetProperty("Wins").GetInt32() +
+            summary.GetProperty("TieCandidates").GetInt32() +
+            summary.GetProperty("Gaps").GetInt32());
+
+        var rows = root.GetProperty("Rows").EnumerateArray().ToArray();
+        Assert.Equal(178, rows.Length);
+        Assert.All(rows, row =>
+        {
+            Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap" });
+            Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
+            Assert.True(row.GetProperty("RatioToPredecoded").GetDouble() > 0);
+            Assert.True(row.GetProperty("Utf8AllocatedBytes").GetDouble() >= 0);
+            Assert.True(row.GetProperty("PredecodedRegexAllocatedBytes").GetDouble() >= 0);
+            Assert.True(row.GetProperty("DecodeThenRegexAllocatedBytes").GetDouble() >= 0);
+        });
     }
 
     [Fact]
@@ -41,6 +85,12 @@ public sealed class ReadmeBenchmarkSnapshotTests
         Assert.True(measurement.GetProperty("CompiledRegex").GetDouble() > 0);
         Assert.True(measurement.GetProperty("DecodeThenRegex").GetDouble() > 0);
         Assert.True(measurement.GetProperty("DecodeThenCompiledRegex").GetDouble() > 0);
+        Assert.True(measurement.GetProperty("Utf8RegexAllocatedBytes").GetDouble() >= 0);
+        Assert.True(measurement.GetProperty("Utf8CompiledAllocatedBytes").GetDouble() >= 0);
+        Assert.True(measurement.GetProperty("PredecodedRegexAllocatedBytes").GetDouble() >= 0);
+        Assert.True(measurement.GetProperty("CompiledRegexAllocatedBytes").GetDouble() >= 0);
+        Assert.True(measurement.GetProperty("DecodeThenRegexAllocatedBytes").GetDouble() >= 0);
+        Assert.True(measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetDouble() >= 0);
     }
 
     private static void AssertSection(JsonElement sections, string sectionName, int expectedCount)
@@ -79,17 +129,23 @@ public sealed class ReadmeBenchmarkSnapshotTests
         }
     }
 
-    private static (int Requested, int Effective, int Samples, double Utf8, double Utf8Compiled, double Predecoded, double Compiled, double Decode, double DecodeCompiled) ProjectPairedMeasurement(JsonElement measurement)
+    private static string ProjectPairedMeasurement(JsonElement measurement)
         => (
-            measurement.GetProperty("RequestedIterations").GetInt32(),
-            measurement.GetProperty("EffectiveIterations").GetInt32(),
-            measurement.GetProperty("Samples").GetInt32(),
-            measurement.GetProperty("Utf8Regex").GetDouble(),
-            measurement.GetProperty("Utf8Compiled").GetDouble(),
-            measurement.GetProperty("PredecodedRegex").GetDouble(),
-            measurement.GetProperty("CompiledRegex").GetDouble(),
-            measurement.GetProperty("DecodeThenRegex").GetDouble(),
-            measurement.GetProperty("DecodeThenCompiledRegex").GetDouble());
+            measurement.GetProperty("RequestedIterations").GetRawText() + ";" +
+            measurement.GetProperty("EffectiveIterations").GetRawText() + ";" +
+            measurement.GetProperty("Samples").GetRawText() + ";" +
+            measurement.GetProperty("Utf8Regex").GetRawText() + ";" +
+            measurement.GetProperty("Utf8Compiled").GetRawText() + ";" +
+            measurement.GetProperty("PredecodedRegex").GetRawText() + ";" +
+            measurement.GetProperty("CompiledRegex").GetRawText() + ";" +
+            measurement.GetProperty("DecodeThenRegex").GetRawText() + ";" +
+            measurement.GetProperty("DecodeThenCompiledRegex").GetRawText() + ";" +
+            measurement.GetProperty("Utf8RegexAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("Utf8CompiledAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("PredecodedRegexAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("CompiledRegexAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("DecodeThenRegexAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetRawText());
 
     private static string FindRepositoryFile(string fileName)
     {
