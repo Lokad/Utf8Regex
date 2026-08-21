@@ -660,6 +660,22 @@ public sealed class FrontEndRuntimeSmokeTests
     }
 
     [Fact]
+    public void VendoredRegexCharClassEnumeratesRangeEndingAtMaximumCharacterOnce()
+    {
+        var charClass = new RuntimeFrontEnd.RegexCharClass();
+        charClass.AddRange('\0', char.MaxValue);
+        var payload = charClass.ToStringClass();
+
+        Assert.True(RuntimeFrontEnd.RegexCharClass.TryGetSetCharCount(payload, out var count));
+        Assert.Equal(char.MaxValue + 1, count);
+
+        var chars = RuntimeFrontEnd.RegexCharClass.GetSetChars(payload);
+        Assert.Equal(char.MaxValue + 1, chars.Length);
+        Assert.Equal(char.MinValue, chars[0]);
+        Assert.Equal(char.MaxValue, chars[^1]);
+    }
+
+    [Fact]
     public void VendoredRegexCharClassExposesWordCharacterHelpers()
     {
         Assert.True(RuntimeFrontEnd.RegexCharClass.IsECMAWordChar('A'));

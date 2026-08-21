@@ -325,6 +325,24 @@ internal sealed class RegexCharClass
         set[CategoryLengthIndex] == 0 &&
         (set[SetLengthIndex] & 1) == 0;
 
+    public static bool TryGetSetCharCount(string set, out int count)
+    {
+        if (!CanEasilyEnumerateSetContents(set))
+        {
+            count = 0;
+            return false;
+        }
+
+        count = 0;
+        for (var i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
+        {
+            var upperExclusive = set[i + 1] == char.MinValue ? char.MaxValue + 1 : set[i + 1];
+            count += upperExclusive - set[i];
+        }
+
+        return true;
+    }
+
     public static char[] GetSetChars(string set)
     {
         if (!CanEasilyEnumerateSetContents(set))
@@ -332,14 +350,14 @@ internal sealed class RegexCharClass
             throw new ArgumentException("Set cannot be enumerated cheaply.", nameof(set));
         }
 
-        var chars = new List<char>();
+        _ = TryGetSetCharCount(set, out var count);
+        var chars = new List<char>(count);
         for (var i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
         {
-            var first = set[i];
-            var last = (char)(set[i + 1] - 1);
-            for (var ch = first; ch <= last; ch++)
+            var upperExclusive = set[i + 1] == char.MinValue ? char.MaxValue + 1 : set[i + 1];
+            for (var ch = (int)set[i]; ch < upperExclusive; ch++)
             {
-                chars.Add(ch);
+                chars.Add((char)ch);
             }
         }
 

@@ -111,7 +111,9 @@ internal static class RegexPrefixAnalyzer
                     case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic
                         when !RegexCharClass.IsNegated(node.Str!):
                     {
-                        if (!RegexCharClass.CanEasilyEnumerateSetContents(node.Str!))
+                        if (!RegexCharClass.TryGetSetCharCount(node.Str!, out var setCharCount) ||
+                            setCharCount == 0 ||
+                            results.Count * setCharCount > MaxPrefixes)
                         {
                             return false;
                         }
@@ -218,13 +220,9 @@ internal static class RegexPrefixAnalyzer
     private static bool TryFindCaseInsensitiveAsciiPrefixCharacter(string set, out char prefixChar)
     {
         prefixChar = default;
-        if (!RegexCharClass.CanEasilyEnumerateSetContents(set))
+        for (var value = 0; value <= 0x7F; value++)
         {
-            return false;
-        }
-
-        foreach (var ch in RegexCharClass.GetSetChars(set))
-        {
+            var ch = (char)value;
             if (ch <= 0x7F && RegexCharClass.SetContainsAsciiOrdinalIgnoreCaseCharacter(set, ch))
             {
                 prefixChar = char.ToLowerInvariant(ch);
