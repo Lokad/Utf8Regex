@@ -1,26 +1,34 @@
 # Managed PCRE2 profile qualification
 
-This ledger records the 2026-08-17 qualification of
+This ledger records the 2026-08-21 qualification of
 `Lokad.Utf8Regex.Pcre2` 0.2.0. It describes the selected managed profile; it is
 not a claim of complete upstream PCRE2 compatibility.
 
-> **Historical frozen record:** the hashes and test counts below identify the
-> 2026-08-17 outputs only. The generic paths `artifacts/nuget/*.nupkg` and
-> `PCRE2.Benchmarks.json` are mutable working outputs and have since been
-> superseded; files currently found there are not qualified by this ledger.
-> The live benchmark page verifies its current JSON snapshot independently.
-> A future qualification must archive its packages and snapshot under an
-> immutable source/hash-qualified location before this banner can be removed.
+The qualified files are frozen under
+`artifacts/package-qualification/archive/cd9de80859db3f77d8784f5034eb6c57afc69b45/`.
+The archive command refuses a dirty tracked worktree and refuses to overwrite
+an existing revision directory. Verify all four archived artifacts with:
+
+```powershell
+./verify-pcre2-qualification.ps1 -QualificationId cd9de80859db3f77d8784f5034eb6c57afc69b45
+```
+
+Generic paths such as `artifacts/nuget/*.nupkg` and
+`PCRE2.Benchmarks.json` remain mutable working outputs and are not identified
+by the hashes below. The archived benchmark snapshot is qualified only as the
+exact input to the generated page and priority report; its per-row measurement
+provenance remains mixed and must be refreshed by roadmap Phase 0 before an
+all-case performance claim.
 
 ## Qualified baseline
 
-- Qualified tracked source: `36fb5db0` (`Refresh performance qualification snapshots`).
-- Runtime and benchmark measurement source: `9f3e6bcfb29d`
-  (`Document retained performance kernels`). Subsequent commits changed only
-  benchmark snapshots and qualification documentation.
+- Qualified package/runtime source: `cd9de80859db3f77d8784f5034eb6c57afc69b45`
+  (`Archive immutable PCRE2 qualification evidence`).
+- The subsequent qualification-ledger commit changes documentation only and
+  does not alter the archived packages, API snapshot, or benchmark snapshot.
 - Target: `net10.0`.
-- Public API snapshot: 188 lines, SHA-256
-  `DA79944F41BC2B47A0A67FFD79C83D224116B20B600A00A4C40CFE9059CE4AEB`.
+- Public API snapshot: 171 lines, SHA-256
+  `922AB9DB8C2C0D7FA00DFB37251FFD6CEA9EBDDF51E75CF0A700C3AE0303A38A`.
 - Bootstrap closure: `legacy-specific-count = 0` and
   `bootstrap-specific-method-count = 0`.
 
@@ -58,14 +66,14 @@ promise that every normally matchable pattern supports partial probing.
 
 ## Repository and package verification
 
-The standard repository run passed 3,243 tests:
+The standard repository run passed 3,265 tests:
 
 | Project | Passed |
 |---|---:|
-| `Lokad.Utf8Regex.Tests` | 994 |
-| `Lokad.Utf8Regex.DiffTests` | 379 |
-| `Lokad.Utf8Regex.Pcre2.Tests` | 1,666 |
-| `Lokad.Utf8Regex.PythonRe.Tests` | 204 |
+| `Lokad.Utf8Regex.Tests` | 1,010 |
+| `Lokad.Utf8Regex.DiffTests` | 378 |
+| `Lokad.Utf8Regex.Pcre2.Tests` | 1,667 |
+| `Lokad.Utf8Regex.PythonRe.Tests` | 210 |
 
 The Release solution build completed with no warnings or errors. Public API
 snapshot tests, corpus completion tests, bootstrap/source guards, pool-return
@@ -73,23 +81,23 @@ tests, cache bounds, resource-limit tests, concurrency tests, and
 benchmark-snapshot tests are part of that run.
 
 The qualified `Lokad.Utf8Regex.Pcre2.0.2.0.nupkg` contains only package
-metadata, changelog/license/readme/icon assets, and
-`lib/net10.0/Lokad.Utf8Regex.Pcre2.dll`. Its nuspec has one implementation
+metadata, changelog/license/readme/icon assets, and the assembly plus XML
+documentation under `lib/net10.0`. Its nuspec has one implementation
 dependency: `Lokad.Utf8Regex` 0.2.0. There are no RID folders, native assets,
 external executables, or sibling project references in the consumer graph.
-PE metadata inspection reports 213 types, 26 public types, 1,597 methods, zero
+PE metadata inspection reports 211 types, 26 public types, 1,592 methods, zero
 P/Invoke methods, and references only the core package plus BCL assemblies.
 The reproducible `test-packaged-pcre2.ps1` qualification replaces both sibling
 project references in a copied PCRE2 test project with package references, restores
-through a fresh isolated package cache, and passes all 1,666 PCRE2 tests
+through a fresh isolated package cache, and passes all 1,667 PCRE2 tests
 against the packed binaries. Packages with the same prerelease version must
 be consumed as a version-coherent pair; a stale global cache can otherwise
 combine assemblies from different source commits.
 
-The historical qualified package SHA-256 values were
-`B9A86967E9C6A5A573468F1245849311B24E5354B77E12C688D21DD901A9B35D`
+The qualified package SHA-256 values are
+`84085DC39C6F2DB0B44CC1502353007B465042A74FC661D02374900A3AC8D948`
 for `Lokad.Utf8Regex.0.2.0.nupkg` and
-`57C55E99C9E765657860AD7B6F232EEE25EDAC1953B1E3CC4639EC6ABB21D796`
+`5BD8791B4CB036A95F85E9CD9925BCC936DCBC8C78807245DBF0C44AD28FFAD3`
 for `Lokad.Utf8Regex.Pcre2.0.2.0.nupkg`.
 
 ## Reviewed core integration points
@@ -154,19 +162,24 @@ strategies listed in `Internal/Search/COMPLEXITY.md`, not accidental copies.
 
 ## C# guideline review
 
-The owned-source guard freezes these mechanical counts at zero:
+The repository-wide Roslyn/source guard freezes these mechanical counts at
+zero across core, PCRE2, and PythonRe:
 
 - default-valued method or constructor parameters;
 - null-forgiving expressions;
-- undocumented abstract or virtual methods; and
+- defensive null guards on non-nullable production contracts;
+- undocumented effectively-public declarations; and
 - project-file `InternalsVisibleTo` declarations.
 
-The conservative single-caller scan produced 141 lexical candidates. Each was
-reviewed in its owning algorithm. Retained nonlocal methods are parser/lowerer
+All shipped projects generate XML documentation and promote missing-public-doc
+warning `CS1591` to an error. A semantic one-reference scan, which resolves
+symbols and excludes self-recursion, freezes the repository-wide reviewed
+ceiling at 1,019. Retained nonlocal methods are concentrated in parser/lowerer
 phases, mutually recursive semantic visitors, VM transaction/rollback
 operations, overload families, hot Unicode predicates, or independently
-testable operation adapters. Local leaf calculations are local functions.
-There is no generic `Utilities` owner and no one-off public convenience API.
+testable operation adapters. This inventory is not a mandate for a bulk
+local-function rewrite. There is no generic `Utilities` owner and no one-off
+public convenience API.
 
 ### Nullable inventory
 
@@ -174,7 +187,6 @@ Every remaining nullable member models one of these absences:
 
 | Member family | Modeled absence |
 |---|---|
-| `Pcre2MatchException.ErrorKind`, `Pcre2SubstitutionException.ErrorKind` | The public compatibility contract permits an exception without a modeled PCRE2 sub-kind. |
 | Match/probe `_groups`, `_nameEntries`, and `_mark`; public `Mark` | A default/no-match ref-struct value has no group/name storage, and no `(*MARK)` may have been encountered. |
 | Enumerator `_matches`, `PendingException`, `_managedBoundaryMap` | The selected cursor is not materialized, no deferred error exists, or ASCII input needs no boundary map. |
 | Conditional `Assertion` | A conditional is capture/recursion/subroutine based rather than assertion based. |
@@ -225,14 +237,14 @@ and trimmed to 16 entries. `IsMatch` and `Count` do not construct detailed
 public match results; `MatchMany` writes caller-owned storage and reports
 truncation.
 
-The historically qualified `PCRE2.Benchmarks.json` separated construction, first-call allocation, warm
+The archived `PCRE2.Benchmarks.json` separates construction, first-call allocation, warm
 temporary allocation, and warm throughput for compatible and PCRE2-specific
 operations. Its scaling families vary pattern length, Cartesian alternatives,
 dense/sparse candidates, candidate-heavy misses, branching, non-ASCII
 projection, character classes, zero-width progress, capture rollback, and
 replacement growth at four sizes. The accepted snapshot contains 126
 operation rows and 66 scaling points in 16 families; its SHA-256 is
-`A565BD95D4B152CF1CFB07F02C88576DAAD557EE2DC33E0EAEAE98669AE2BA25`.
+`BB3122EDB0DD9C6C8F9AFB1BAAA5407B2C2AC4B7903D6F4D7FC81B03127FF1FD`.
 
 Across each family's scaling points, candidate misses, branch/repeat,
 coordinate projection, character classes, zero-width iteration, capture
