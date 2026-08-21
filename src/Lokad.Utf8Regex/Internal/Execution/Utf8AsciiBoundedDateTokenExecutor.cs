@@ -10,11 +10,7 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
         out bool needsValidation)
     {
         matchedLength = 0;
-        needsValidation = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0;
-        if (needsValidation)
-        {
-            return false;
-        }
+        needsValidation = false;
 
         var inputLength = input.Length;
         if (allowTrailingNewline &&
@@ -22,6 +18,26 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
             input[^1] == (byte)'\n')
         {
             inputLength--;
+        }
+
+        if (plan is
+            {
+                FirstFieldMinCount: 1,
+                FirstFieldMaxCount: 2,
+                SecondFieldMinCount: 1,
+                SecondFieldMaxCount: 2,
+                ThirdFieldMinCount: 4,
+                ThirdFieldMaxCount: 4,
+            })
+        {
+            if (TryMatchShortDate(input, inputLength, plan.SeparatorByte, plan.SecondSeparatorByte))
+            {
+                matchedLength = inputLength;
+                return true;
+            }
+
+            needsValidation = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0;
+            return false;
         }
 
         var index = 0;
@@ -32,11 +48,50 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
             !TryConsumeDigits(input, ref index, plan.ThirdFieldMinCount, plan.ThirdFieldMaxCount, inputLength) ||
             index != inputLength)
         {
+            needsValidation = input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0;
             return false;
         }
 
         matchedLength = inputLength;
         return true;
+
+        static bool TryMatchShortDate(
+            ReadOnlySpan<byte> input,
+            int length,
+            byte firstSeparator,
+            byte secondSeparator)
+        {
+            var thirdFieldStart = length - 4;
+            if (thirdFieldStart is < 4 or > 6 ||
+                input[thirdFieldStart - 1] != secondSeparator ||
+                !IsAsciiDigit(input[thirdFieldStart]) ||
+                !IsAsciiDigit(input[thirdFieldStart + 1]) ||
+                !IsAsciiDigit(input[thirdFieldStart + 2]) ||
+                !IsAsciiDigit(input[thirdFieldStart + 3]))
+            {
+                return false;
+            }
+
+            return thirdFieldStart switch
+            {
+                4 => IsAsciiDigit(input[0]) &&
+                    input[1] == firstSeparator &&
+                    IsAsciiDigit(input[2]),
+                5 => IsAsciiDigit(input[0]) &&
+                    ((input[1] == firstSeparator &&
+                      IsAsciiDigit(input[2]) &&
+                      IsAsciiDigit(input[3])) ||
+                     (IsAsciiDigit(input[1]) &&
+                      input[2] == firstSeparator &&
+                      IsAsciiDigit(input[3]))),
+                6 => IsAsciiDigit(input[0]) &&
+                    IsAsciiDigit(input[1]) &&
+                    input[2] == firstSeparator &&
+                    IsAsciiDigit(input[3]) &&
+                    IsAsciiDigit(input[4]),
+                _ => false,
+            };
+        }
     }
 
     public static int CountAsciiBoundedDateTokens(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan family)
