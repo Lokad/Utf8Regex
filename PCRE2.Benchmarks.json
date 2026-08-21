@@ -1,5 +1,15 @@
 {
-  "SchemaVersion": 3,
+  "SchemaVersion": 4,
+  "PcreNetNativeBaseline": {
+    "PackageId": "PCRE.NET",
+    "PackageVersion": "1.5.0",
+    "PackageSha512": "Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI\u002B6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==",
+    "NativePcre2Version": "10.47 2025-10-21",
+    "SourceRepository": "https://github.com/ltrzesniewski/pcre-net",
+    "SourceRevision": "e5e5deaa30d50dd3a7ac68ec7fd9e9556551a84f",
+    "License": "BSD-3-Clause WITH PCRE2-exception",
+    "Profile": "UTF-8 standard NFA matcher, validation enabled, reusable match buffer, JIT disabled"
+  },
   "Sections": {
     "pcre2-managed-compatible-ismatch": {
       "Cases": {
@@ -21,6 +31,18 @@
           "ConstructionAllocatedBytes": 79120,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.3422351+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.9570000000000001,
           "Utf8Pcre2": 1.160005,
           "Utf8Regex": 2.813275,
           "PredecodedRegex": 0.180425,
@@ -44,6 +66,18 @@
           "ConstructionAllocatedBytes": 54368,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.4880079+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 7.38,
           "Utf8Pcre2": 1.125785,
           "Utf8Regex": 3.2541349999999998,
           "PredecodedRegex": 0.056175,
@@ -67,6 +101,18 @@
           "ConstructionAllocatedBytes": 63320,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5078945+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.8109,
           "Utf8Pcre2": 4.90686,
           "Utf8Regex": 0.25550500000000004,
           "PredecodedRegex": 0.66415,
@@ -90,6 +136,18 @@
           "ConstructionAllocatedBytes": 68544,
           "FirstCallAllocatedBytes": 1040,
           "WarmAllocatedBytes": 120,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5218441+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.2174,
           "Utf8Pcre2": 0.24644000000000002,
           "Utf8Regex": 0.286385,
           "PredecodedRegex": 0.07864,
@@ -113,6 +171,18 @@
           "ConstructionAllocatedBytes": 68448,
           "FirstCallAllocatedBytes": 1040,
           "WarmAllocatedBytes": 120,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5307724+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.4068,
           "Utf8Pcre2": 0.70936,
           "Utf8Regex": 0.87019,
           "PredecodedRegex": 0.517365,
@@ -136,6 +206,18 @@
           "ConstructionAllocatedBytes": 106312,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.540538+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.3705,
           "Utf8Pcre2": 1.3514899999999999,
           "Utf8Regex": 0.34951,
           "PredecodedRegex": 0.173335,
@@ -159,6 +241,18 @@
           "ConstructionAllocatedBytes": 106312,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5500889+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.2499,
           "Utf8Pcre2": 3.9814300000000005,
           "Utf8Regex": 0.211195,
           "PredecodedRegex": 0.24388,
@@ -182,6 +276,18 @@
           "ConstructionAllocatedBytes": 191480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5591194+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.19469999999999998,
           "Utf8Pcre2": 0.7317600000000001,
           "Utf8Regex": 0.19796,
           "PredecodedRegex": 0.128695,
@@ -205,6 +311,18 @@
           "ConstructionAllocatedBytes": 191480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5661528+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.20959999999999998,
           "Utf8Pcre2": 0.656255,
           "Utf8Regex": 0.16766,
           "PredecodedRegex": 0.136685,
@@ -228,6 +346,18 @@
           "ConstructionAllocatedBytes": 53008,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5737799+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.0712,
           "Utf8Pcre2": 0.19281500000000001,
           "Utf8Regex": 0.206285,
           "PredecodedRegex": 0.49746999999999997,
@@ -251,6 +381,18 @@
           "ConstructionAllocatedBytes": 138400,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5808929+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.2722,
           "Utf8Pcre2": 1.607595,
           "Utf8Regex": 0.522565,
           "PredecodedRegex": 0.16907,
@@ -274,6 +416,18 @@
           "ConstructionAllocatedBytes": 138400,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.5898161+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.38630000000000003,
           "Utf8Pcre2": 1.151785,
           "Utf8Regex": 0.191615,
           "PredecodedRegex": 0.121695,
@@ -297,6 +451,18 @@
           "ConstructionAllocatedBytes": 82760,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.597817+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.1158,
           "Utf8Pcre2": 0.56353,
           "Utf8Regex": 0.23966500000000002,
           "PredecodedRegex": 0.095025,
@@ -320,6 +486,18 @@
           "ConstructionAllocatedBytes": 103248,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6060711+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.084,
           "Utf8Pcre2": 0.390525,
           "Utf8Regex": 0.2927,
           "PredecodedRegex": 0.051475,
@@ -343,6 +521,18 @@
           "ConstructionAllocatedBytes": 54536,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6116488+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.1147,
           "Utf8Pcre2": 0.5147149999999999,
           "Utf8Regex": 0.19537000000000002,
           "PredecodedRegex": 0.05134,
@@ -366,6 +556,18 @@
           "ConstructionAllocatedBytes": 64752,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6199538+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.4586,
           "Utf8Pcre2": 2.2003,
           "Utf8Regex": 0.2023,
           "PredecodedRegex": 0.06290499999999999,
@@ -389,6 +591,18 @@
           "ConstructionAllocatedBytes": 104840,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6285706+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.1469,
           "Utf8Pcre2": 0.390115,
           "Utf8Regex": 0.482625,
           "PredecodedRegex": 0.053175,
@@ -412,6 +626,18 @@
           "ConstructionAllocatedBytes": 98712,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6382552+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.87,
           "Utf8Pcre2": 0.20764000000000002,
           "Utf8Regex": 0.9514299999999999,
           "PredecodedRegex": 0.02876,
@@ -435,6 +661,18 @@
           "ConstructionAllocatedBytes": 54440,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:22:11.807207+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 20,
+          "PcreNetNative": 0.8400000000000001,
           "Utf8Pcre2": 0.21084,
           "Utf8Regex": 0.907745,
           "PredecodedRegex": 0.030275,
@@ -458,6 +696,18 @@
           "ConstructionAllocatedBytes": 54440,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6514951+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 1.2,
           "Utf8Pcre2": 0.24736,
           "Utf8Regex": 0.636955,
           "PredecodedRegex": 0.15524000000000002,
@@ -481,6 +731,18 @@
           "ConstructionAllocatedBytes": 54440,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6583112+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.965,
           "Utf8Pcre2": 0.23725500000000002,
           "Utf8Regex": 0.6315350000000001,
           "PredecodedRegex": 0.14043,
@@ -504,6 +766,18 @@
           "ConstructionAllocatedBytes": 55480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6654095+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.0881,
           "Utf8Pcre2": 0.280565,
           "Utf8Regex": 0.37094,
           "PredecodedRegex": 0.04003,
@@ -527,6 +801,18 @@
           "ConstructionAllocatedBytes": 49504,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6715538+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.0718,
           "Utf8Pcre2": 0.13931500000000002,
           "Utf8Regex": 0.52466,
           "PredecodedRegex": 0.030795,
@@ -550,6 +836,18 @@
           "ConstructionAllocatedBytes": 90072,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.679194+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.086,
           "Utf8Pcre2": 0.33464,
           "Utf8Regex": 1.29269,
           "PredecodedRegex": 0.053255,
@@ -573,6 +871,18 @@
           "ConstructionAllocatedBytes": 86720,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.6882029+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.1076,
           "Utf8Pcre2": 0.23151999999999998,
           "Utf8Regex": 0.929165,
           "PredecodedRegex": 0.06966,
@@ -596,6 +906,18 @@
           "ConstructionAllocatedBytes": 237064,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.695438+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1000,
+          "PcreNetNative": 0.3088,
           "Utf8Pcre2": 0.7038800000000001,
           "Utf8Regex": 0.370635,
           "PredecodedRegex": 0.042660000000000003,
@@ -623,6 +945,18 @@
           "ConstructionAllocatedBytes": 55480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0025686+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.617,
           "Utf8Pcre2": 1.1414799999999998,
           "Utf8Regex": 0.555125,
           "PredecodedRegex": 0.14699500000000001,
@@ -646,6 +980,18 @@
           "ConstructionAllocatedBytes": 49504,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0083976+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.47200000000000003,
           "Utf8Pcre2": 0.31466500000000003,
           "Utf8Regex": 0.61673,
           "PredecodedRegex": 0.086525,
@@ -669,6 +1015,18 @@
           "ConstructionAllocatedBytes": 89936,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0133604+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.65,
           "Utf8Pcre2": 1.0751600000000001,
           "Utf8Regex": 1.23145,
           "PredecodedRegex": 0.19415,
@@ -692,6 +1050,18 @@
           "ConstructionAllocatedBytes": 86720,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0214019+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.703,
           "Utf8Pcre2": 1.0382799999999999,
           "Utf8Regex": 0.77181,
           "PredecodedRegex": 0.265295,
@@ -715,6 +1085,18 @@
           "ConstructionAllocatedBytes": 237064,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0266091+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.608,
           "Utf8Pcre2": 1.51833,
           "Utf8Regex": 0.507075,
           "PredecodedRegex": 0.08524,
@@ -738,6 +1120,18 @@
           "ConstructionAllocatedBytes": 46688,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:13.1140216+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 129.796,
           "Utf8Pcre2": 135.40133689839573,
           "Utf8Regex": 4.678342245989305,
           "PredecodedRegex": 125.15267379679143,
@@ -761,6 +1155,18 @@
           "ConstructionAllocatedBytes": 46984,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:12.912398+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 128.548,
           "Utf8Pcre2": 9.50133164235891,
           "Utf8Regex": 8.35567533291059,
           "PredecodedRegex": 117.02365250475586,
@@ -784,6 +1190,18 @@
           "ConstructionAllocatedBytes": 54440,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:13.3162465+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 20.421,
           "Utf8Pcre2": 2.70105,
           "Utf8Regex": 2.325,
           "PredecodedRegex": 2.5742599999999998,
@@ -807,6 +1225,18 @@
           "ConstructionAllocatedBytes": 106464,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:13.3552198+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 76.068,
           "Utf8Pcre2": 5.081066358534169,
           "Utf8Regex": 4.598497854077253,
           "PredecodedRegex": 49.34362826015187,
@@ -830,6 +1260,18 @@
           "ConstructionAllocatedBytes": 40672,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.9589554+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 487.656,
           "Utf8Pcre2": 32.6439497716895,
           "Utf8Regex": 130.95422374429222,
           "PredecodedRegex": 124.09566210045662,
@@ -853,6 +1295,18 @@
           "ConstructionAllocatedBytes": 56232,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:11.7111026+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 133.156,
           "Utf8Pcre2": 431.71679536679534,
           "Utf8Regex": 74.34189189189189,
           "PredecodedRegex": 57.488030888030885,
@@ -876,6 +1330,18 @@
           "ConstructionAllocatedBytes": 106800,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:13.6195431+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 5,
+          "PcreNetNative": 18407.84,
           "Utf8Pcre2": 2340.7,
           "Utf8Regex": 2170.7,
           "PredecodedRegex": 6984.575,
@@ -899,6 +1365,18 @@
           "ConstructionAllocatedBytes": 107080,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:15.4564639+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1,
+          "PcreNetNative": 33826.2,
           "Utf8Pcre2": 22675.716666666664,
           "Utf8Regex": 6390.666666666667,
           "PredecodedRegex": 24735.716666666664,
@@ -922,6 +1400,18 @@
           "ConstructionAllocatedBytes": 39872,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:17.3421036+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1,
+          "PcreNetNative": 267173.7,
           "Utf8Pcre2": 1318.9272727272726,
           "Utf8Regex": 1406.1904306220094,
           "PredecodedRegex": 13962.06842105263,
@@ -945,6 +1435,18 @@
           "ConstructionAllocatedBytes": 52840,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:21.787702+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 18,
+          "PcreNetNative": 9664.58888888889,
           "Utf8Pcre2": 3972.5779411764706,
           "Utf8Regex": 4456.673529411764,
           "PredecodedRegex": 1505.8970588235295,
@@ -968,6 +1470,18 @@
           "ConstructionAllocatedBytes": 59296,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:25.5059989+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1,
+          "PcreNetNative": 107631.2,
           "Utf8Pcre2": 14827,
           "Utf8Regex": 7132.117647058823,
           "PredecodedRegex": 236.33529411764704,
@@ -991,6 +1505,18 @@
           "ConstructionAllocatedBytes": 191480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:27.3203635+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 8,
+          "PcreNetNative": 12876.9125,
           "Utf8Pcre2": 15191.957142857142,
           "Utf8Regex": 3159.1785714285716,
           "PredecodedRegex": 6295.878571428571,
@@ -1014,6 +1540,18 @@
           "ConstructionAllocatedBytes": 138400,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:29.3744284+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1,
+          "PcreNetNative": 85235.4,
           "Utf8Pcre2": 27766.88181818182,
           "Utf8Regex": 11221.527272727273,
           "PredecodedRegex": 1556.8636363636363,
@@ -1037,6 +1575,18 @@
           "ConstructionAllocatedBytes": 114176,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:30.7455095+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 602.238,
           "Utf8Pcre2": 1701.0262500000001,
           "Utf8Regex": 44.61625,
           "PredecodedRegex": 187.74875,
@@ -1060,6 +1610,7 @@
           "ConstructionAllocatedBytes": 152200,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=2081, native=1829.",
           "Utf8Pcre2": 7000.719444444444,
           "Utf8Regex": 8297.555555555555,
           "PredecodedRegex": 8591.075,
@@ -1083,6 +1634,18 @@
           "ConstructionAllocatedBytes": 39856,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:31.8803717+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 1,
+          "PcreNetNative": 54717.3,
           "Utf8Pcre2": 1643.126923076923,
           "Utf8Regex": 1124.9083333333333,
           "PredecodedRegex": 12370.93205128205,
@@ -1106,6 +1669,18 @@
           "ConstructionAllocatedBytes": 43176,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:32.7423097+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 27,
+          "PcreNetNative": 3810.537037037037,
           "Utf8Pcre2": 152.9278876834716,
           "Utf8Regex": 146.97198468410977,
           "PredecodedRegex": 908.6161455009573,
@@ -1129,6 +1704,18 @@
           "ConstructionAllocatedBytes": 731160,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:34.3568012+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 8,
+          "PcreNetNative": 13773.7125,
           "Utf8Pcre2": 2715.808629441625,
           "Utf8Regex": 27.382741116751266,
           "PredecodedRegex": 6190.4964467005075,
@@ -1156,6 +1743,18 @@
           "ConstructionAllocatedBytes": 55480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0333921+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.284,
           "Utf8Pcre2": 2.9117,
           "Utf8Regex": 9.22595,
           "PredecodedRegex": 0.201495,
@@ -1179,6 +1778,18 @@
           "ConstructionAllocatedBytes": 49504,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0376434+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.21100000000000002,
           "Utf8Pcre2": 3.6074949999999997,
           "Utf8Regex": 9.6304,
           "PredecodedRegex": 0.104965,
@@ -1202,6 +1813,18 @@
           "ConstructionAllocatedBytes": 89936,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0422914+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.322,
           "Utf8Pcre2": 4.4964,
           "Utf8Regex": 16.08022,
           "PredecodedRegex": 0.41133000000000003,
@@ -1225,6 +1848,18 @@
           "ConstructionAllocatedBytes": 86720,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0485684+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.38299999999999995,
           "Utf8Pcre2": 8.144175,
           "Utf8Regex": 13.02295,
           "PredecodedRegex": 0.287245,
@@ -1248,6 +1883,18 @@
           "ConstructionAllocatedBytes": 237064,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0532537+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.439,
           "Utf8Pcre2": 6.28837,
           "Utf8Regex": 11.925675,
           "PredecodedRegex": 0.097335,
@@ -1275,6 +1922,18 @@
           "ConstructionAllocatedBytes": 55480,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0587451+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.29100000000000004,
           "Utf8Pcre2": 1.328835
         },
         "simple/foo-dense": {
@@ -1295,6 +1954,18 @@
           "ConstructionAllocatedBytes": 49504,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0633446+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.21,
           "Utf8Pcre2": 0.27102
         },
         "simple/foo-optional-bar": {
@@ -1315,6 +1986,18 @@
           "ConstructionAllocatedBytes": 89936,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0678816+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.309,
           "Utf8Pcre2": 1.454045
         },
         "simple/httpclient-caseless": {
@@ -1335,6 +2018,18 @@
           "ConstructionAllocatedBytes": 86720,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0723725+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.38,
           "Utf8Pcre2": 0.44199499999999997
         },
         "simple/loglevel-multiline": {
@@ -1355,6 +2050,18 @@
           "ConstructionAllocatedBytes": 237064,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0772661+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.44,
           "Utf8Pcre2": 1.53282
         }
       }
@@ -1379,6 +2086,7 @@
           "ConstructionAllocatedBytes": 106464,
           "FirstCallAllocatedBytes": 9888,
           "WarmAllocatedBytes": 9576,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 30.085160905840286,
           "Utf8Regex": 64.89630512514898,
           "PredecodedRegex": 66.07640047675804,
@@ -1402,6 +2110,7 @@
           "ConstructionAllocatedBytes": 55480,
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 1.6015700000000002,
           "Utf8Regex": 5.814355,
           "PredecodedRegex": 0.33014,
@@ -1425,6 +2134,7 @@
           "ConstructionAllocatedBytes": 49504,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.32509499999999997,
           "Utf8Regex": 4.644335,
           "PredecodedRegex": 0.13112000000000001,
@@ -1448,6 +2158,7 @@
           "ConstructionAllocatedBytes": 89936,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 1.227535,
           "Utf8Regex": 0.296045,
           "PredecodedRegex": 0.24416,
@@ -1471,6 +2182,7 @@
           "ConstructionAllocatedBytes": 86720,
           "FirstCallAllocatedBytes": 384,
           "WarmAllocatedBytes": 104,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.49404499999999996,
           "Utf8Regex": 6.416930000000001,
           "PredecodedRegex": 0.34909,
@@ -1494,6 +2206,7 @@
           "ConstructionAllocatedBytes": 237064,
           "FirstCallAllocatedBytes": 416,
           "WarmAllocatedBytes": 128,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 1.852195,
           "Utf8Regex": 4.335430000000001,
           "PredecodedRegex": 0.161725,
@@ -1521,6 +2234,18 @@
           "ConstructionAllocatedBytes": 31424,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.0943764+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.0586,
           "Utf8Pcre2": 0.15984
         },
         "pcre2/branch-reset-backref": {
@@ -1541,6 +2266,18 @@
           "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1036951+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.0886,
           "Utf8Pcre2": 0.598475
         },
         "pcre2/conditional-accept-negative-lookahead": {
@@ -1561,6 +2298,18 @@
           "ConstructionAllocatedBytes": 45296,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1095298+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.0712,
           "Utf8Pcre2": 0.298535
         },
         "pcre2/conditional-lookahead": {
@@ -1581,6 +2330,18 @@
           "ConstructionAllocatedBytes": 56168,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1152181+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.1586,
           "Utf8Pcre2": 0.297455
         },
         "pcre2/conditional-negative-lookahead": {
@@ -1601,6 +2362,18 @@
           "ConstructionAllocatedBytes": 56208,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1235625+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.1306,
           "Utf8Pcre2": 0.2987
         },
         "pcre2/recursive-optional": {
@@ -1621,6 +2394,18 @@
           "ConstructionAllocatedBytes": 49792,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1456561+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.379,
           "Utf8Pcre2": 3.075715
         },
         "pcre2/recursive-palindrome": {
@@ -1641,6 +2426,18 @@
           "ConstructionAllocatedBytes": 49424,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1526455+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.3708,
           "Utf8Pcre2": 2.164905
         },
         "pcre2/subroutine-prefix-digits": {
@@ -1661,6 +2458,18 @@
           "ConstructionAllocatedBytes": 41376,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1587738+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.0726,
           "Utf8Pcre2": 0.59649
         },
         "pcre2/grapheme-cluster": {
@@ -1681,6 +2490,18 @@
           "ConstructionAllocatedBytes": 31600,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1316999+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 500,
+          "PcreNetNative": 0.29519999999999996,
           "Utf8Pcre2": 0.743595
         }
       }
@@ -1705,6 +2526,18 @@
           "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1944456+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.604,
           "Utf8Pcre2": 4.273465
         },
         "pcre2/branch-reset-basic": {
@@ -1725,6 +2558,18 @@
           "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1993426+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.6759999999999999,
           "Utf8Pcre2": 0.85308
         },
         "pcre2/branch-reset-followup": {
@@ -1745,6 +2590,18 @@
           "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2049293+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.604,
           "Utf8Pcre2": 2.99071
         },
         "pcre2/branch-reset-nested": {
@@ -1765,6 +2622,18 @@
           "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2096741+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.6890000000000001,
           "Utf8Pcre2": 0.96673
         },
         "pcre2/duplicate-names": {
@@ -1785,6 +2654,18 @@
           "ConstructionAllocatedBytes": 83248,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.215277+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.541,
           "Utf8Pcre2": 2.5033
         },
         "pcre2/kreset-atomic-alt": {
@@ -1805,6 +2686,18 @@
           "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2329337+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.498,
           "Utf8Pcre2": 0.946285
         },
         "pcre2/kreset-bar-or-baz": {
@@ -1825,6 +2718,18 @@
           "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2398566+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.552,
           "Utf8Pcre2": 0.805255
         },
         "pcre2/kreset-captured-repeat": {
@@ -1845,6 +2750,7 @@
           "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=3, native=12.",
           "Utf8Pcre2": 1.88315
         },
         "pcre2/kreset-global": {
@@ -1865,6 +2771,18 @@
           "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2464711+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.493,
           "Utf8Pcre2": 0.65394
         },
         "pcre2/kreset-repeat": {
@@ -1885,6 +2803,7 @@
           "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=3, native=12.",
           "Utf8Pcre2": 1.8297599999999998
         },
         "pcre2/same-start-global": {
@@ -1905,6 +2824,18 @@
           "ConstructionAllocatedBytes": 44360,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2532187+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.691,
           "Utf8Pcre2": 1.9552049999999999
         },
         "literal/empty-unicode": {
@@ -1925,6 +2856,18 @@
           "ConstructionAllocatedBytes": 37200,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.1636438+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 16.037,
           "Utf8Pcre2": 5.821625
         },
         "pcre2/grapheme-cluster": {
@@ -1945,6 +2888,18 @@
           "ConstructionAllocatedBytes": 31600,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2204554+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 4.834,
           "Utf8Pcre2": 2.310954375137756
         }
       }
@@ -1969,6 +2924,18 @@
           "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2729759+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.335,
           "Utf8Pcre2": 5.94951
         },
         "pcre2/branch-reset-basic": {
@@ -1989,6 +2956,18 @@
           "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2773502+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.33299999999999996,
           "Utf8Pcre2": 4.311294999999999
         },
         "pcre2/branch-reset-followup": {
@@ -2009,6 +2988,18 @@
           "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2819033+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.33,
           "Utf8Pcre2": 7.320895
         },
         "pcre2/branch-reset-nested": {
@@ -2029,6 +3020,18 @@
           "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2862334+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.413,
           "Utf8Pcre2": 4.380585
         },
         "pcre2/duplicate-names": {
@@ -2049,6 +3052,18 @@
           "ConstructionAllocatedBytes": 83248,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2907482+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.271,
           "Utf8Pcre2": 7.0271550000000005
         },
         "pcre2/kreset-atomic-alt": {
@@ -2069,6 +3084,18 @@
           "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3026986+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.231,
           "Utf8Pcre2": 4.45496
         },
         "pcre2/kreset-bar-or-baz": {
@@ -2089,6 +3116,18 @@
           "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.306777+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.284,
           "Utf8Pcre2": 4.19953
         },
         "pcre2/kreset-captured-repeat": {
@@ -2109,6 +3148,7 @@
           "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=87.",
           "Utf8Pcre2": 5.294005
         },
         "pcre2/kreset-global": {
@@ -2129,6 +3169,18 @@
           "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3122841+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.223,
           "Utf8Pcre2": 4.05877
         },
         "pcre2/kreset-repeat": {
@@ -2149,6 +3201,7 @@
           "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=87.",
           "Utf8Pcre2": 5.249
         },
         "pcre2/same-start-global": {
@@ -2169,6 +3222,18 @@
           "ConstructionAllocatedBytes": 44360,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3179285+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.435,
           "Utf8Pcre2": 5.313275
         },
         "literal/empty-unicode": {
@@ -2189,6 +3254,18 @@
           "ConstructionAllocatedBytes": 37200,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2581796+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 7.062,
           "Utf8Pcre2": 7.29747
         },
         "pcre2/grapheme-cluster": {
@@ -2209,6 +3286,18 @@
           "ConstructionAllocatedBytes": 31600,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.2950676+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 2.134,
           "Utf8Pcre2": 5.8936
         }
       }
@@ -2233,6 +3322,18 @@
           "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3270064+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.337,
           "Utf8Pcre2": 2.59845
         },
         "pcre2/branch-reset-basic": {
@@ -2253,6 +3354,18 @@
           "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3314125+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.321,
           "Utf8Pcre2": 0.8971450000000001
         },
         "pcre2/branch-reset-followup": {
@@ -2273,6 +3386,18 @@
           "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3360749+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.32799999999999996,
           "Utf8Pcre2": 2.680575
         },
         "pcre2/branch-reset-nested": {
@@ -2293,6 +3418,18 @@
           "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3415385+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.413,
           "Utf8Pcre2": 1.0166600000000001
         },
         "pcre2/duplicate-names": {
@@ -2313,6 +3450,18 @@
           "ConstructionAllocatedBytes": 83248,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3461304+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.276,
           "Utf8Pcre2": 2.5402400000000003
         },
         "pcre2/kreset-atomic-alt": {
@@ -2333,6 +3482,18 @@
           "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3555017+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.23,
           "Utf8Pcre2": 0.8744299999999999
         },
         "pcre2/kreset-bar-or-baz": {
@@ -2353,6 +3514,18 @@
           "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3598121+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.284,
           "Utf8Pcre2": 0.85049
         },
         "pcre2/kreset-captured-repeat": {
@@ -2373,6 +3546,7 @@
           "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=39.",
           "Utf8Pcre2": 1.905245
         },
         "pcre2/kreset-global": {
@@ -2393,6 +3567,18 @@
           "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3657111+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.221,
           "Utf8Pcre2": 0.67215
         },
         "pcre2/kreset-repeat": {
@@ -2413,6 +3599,7 @@
           "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=39.",
           "Utf8Pcre2": 1.859025
         },
         "pcre2/same-start-global": {
@@ -2433,6 +3620,18 @@
           "ConstructionAllocatedBytes": 44360,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3715132+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.433,
           "Utf8Pcre2": 1.7490450000000002
         },
         "literal/empty-unicode": {
@@ -2453,6 +3652,18 @@
           "ConstructionAllocatedBytes": 37200,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3223765+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.607,
           "Utf8Pcre2": 0.694
         },
         "pcre2/grapheme-cluster": {
@@ -2473,6 +3684,18 @@
           "ConstructionAllocatedBytes": 31600,
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
+          "PcreNetNativeMeasuredAtUtc": "2026-08-21T08:12:36.3506901+00:00",
+          "PcreNetNativeEnvironment": {
+            "SourceCommit": "568af3f4f802",
+            "TrackedDirty": true,
+            "HasUntrackedFiles": true,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+            "TieredPgo": "runtime-default"
+          },
+          "PcreNetNativeEffectiveIterations": 100,
+          "PcreNetNative": 0.597,
           "Utf8Pcre2": 0.924175
         }
       }
@@ -2497,6 +3720,7 @@
           "ConstructionAllocatedBytes": 38736,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 3.9647050000000004
         },
         "pcre2/branch-reset-basic": {
@@ -2517,6 +3741,7 @@
           "ConstructionAllocatedBytes": 39288,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.9728899999999999
         },
         "pcre2/branch-reset-followup": {
@@ -2537,6 +3762,7 @@
           "ConstructionAllocatedBytes": 43696,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 2.75611
         },
         "pcre2/branch-reset-nested": {
@@ -2557,6 +3783,7 @@
           "ConstructionAllocatedBytes": 43304,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 1.093315
         },
         "pcre2/duplicate-names": {
@@ -2577,6 +3804,7 @@
           "ConstructionAllocatedBytes": 83248,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 2.821625
         },
         "pcre2/kreset-atomic-alt": {
@@ -2597,6 +3825,7 @@
           "ConstructionAllocatedBytes": 36752,
           "FirstCallAllocatedBytes": 368,
           "WarmAllocatedBytes": 88,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.9601850000000001
         },
         "pcre2/kreset-bar-or-baz": {
@@ -2617,6 +3846,7 @@
           "ConstructionAllocatedBytes": 41728,
           "FirstCallAllocatedBytes": 368,
           "WarmAllocatedBytes": 88,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.928435
         },
         "pcre2/kreset-captured-repeat": {
@@ -2637,6 +3867,7 @@
           "ConstructionAllocatedBytes": 35552,
           "FirstCallAllocatedBytes": 2088,
           "WarmAllocatedBytes": 1808,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 8.216320979258755
         },
         "pcre2/kreset-global": {
@@ -2657,6 +3888,7 @@
           "ConstructionAllocatedBytes": 35376,
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 0.755475
         },
         "pcre2/kreset-repeat": {
@@ -2677,6 +3909,7 @@
           "ConstructionAllocatedBytes": 34016,
           "FirstCallAllocatedBytes": 1800,
           "WarmAllocatedBytes": 1520,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 3.767955
         },
         "pcre2/same-start-global": {
@@ -2697,6 +3930,7 @@
           "ConstructionAllocatedBytes": 44360,
           "FirstCallAllocatedBytes": 648,
           "WarmAllocatedBytes": 88,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 1.8635099999999998
         },
         "literal/empty-unicode": {
@@ -2717,6 +3951,7 @@
           "ConstructionAllocatedBytes": 37200,
           "FirstCallAllocatedBytes": 808,
           "WarmAllocatedBytes": 528,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 6.429757946021189
         },
         "pcre2/grapheme-cluster": {
@@ -2737,6 +3972,7 @@
           "ConstructionAllocatedBytes": 31600,
           "FirstCallAllocatedBytes": 392,
           "WarmAllocatedBytes": 112,
+          "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
           "Utf8Pcre2": 3.01125
         }
       }

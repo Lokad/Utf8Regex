@@ -8,7 +8,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
-internal static class PythonReBenchmarkReporter
+internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private static int s_sink;
@@ -94,6 +94,24 @@ internal static class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--emit-pythonre-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = EmitPythonReBenchmarkMarkdown();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--rewrite-pythonre-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = RewritePythonReBenchmarkMarkdown();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--verify-pythonre-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = VerifyPythonReBenchmarkMarkdown();
+            return true;
+        }
+
         exitCode = 0;
         return false;
     }
@@ -165,16 +183,9 @@ internal static class PythonReBenchmarkReporter
     {
         var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
         var snapshotPath = Path.GetFullPath(SnapshotFileName);
-        var temporaryPath = snapshotPath + ".tmp";
-        try
-        {
-            File.WriteAllText(temporaryPath, json + Environment.NewLine, new UTF8Encoding(false));
-            File.Move(temporaryPath, snapshotPath, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporaryPath);
-        }
+        BenchmarkFileWriter.WriteTextAtomically(snapshotPath, json + Environment.NewLine);
+
+        RewritePythonReBenchmarkMarkdown(snapshot);
     }
 
     private static int MeasureCase(string id, int iterations, int samples)

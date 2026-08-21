@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <!-- Benchmark-only native PCRE2 10.47 baseline; never referenced by a shipped project. -->
+    <PackageReference Include="PCRE.NET" Version="1.5.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

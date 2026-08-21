@@ -72,7 +72,10 @@ parameters. Its exact frozen form is
 [`PublicApi.Shipped.txt`](../../tests/Lokad.Utf8Regex.Pcre2.Tests/PublicApi.Shipped.txt).
 The package contract is [`SPEC-PCRE2.md`](../../SPEC-PCRE2.md), internal
 ownership is described in [`ARCHITECTURE.md`](ARCHITECTURE.md), and release
-evidence is recorded in [`QUALIFICATION.md`](QUALIFICATION.md).
+evidence is recorded in [`QUALIFICATION.md`](QUALIFICATION.md). The generated
+[`BENCHMARKS.md`](BENCHMARKS.md) page keeps the PCRE2-specific performance
+snapshot, native PCRE2 baseline, dependency review, and scaling evidence local
+to this companion.
 
 Run `./test-packaged-pcre2.ps1 -Configuration Release` from the repository
 root to pack a version-coherent core/companion pair, reject native or RID

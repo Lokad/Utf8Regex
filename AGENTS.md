@@ -87,9 +87,14 @@ README benchmark snapshot model:
 PCRE2 benchmark snapshot and diagnostics:
 
 - `PCRE2.Benchmarks.json` is the PCRE2 benchmark source of truth for prioritization.
+- `src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md` is generated from that snapshot and is the self-contained published view for the PCRE2 adapter. Do not edit its tables by hand.
 - Prefer:
   - `--refresh-pcre2-benchmark-case`
   - `--refresh-pcre2-benchmarks`
+  - `--refresh-pcre2-native-baseline-case`
+  - `--refresh-pcre2-native-baselines`
+  - `--rewrite-pcre2-benchmark-markdown`
+  - `--verify-pcre2-benchmark-markdown`
   - `--emit-pcre2-priority-report`
   - `--inspect-pcre2-case`
   - `--measure-pcre2-compatible-case`
@@ -98,6 +103,7 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--measure-pcre2-workspace-pool-cost`
   - `--measure-pcre2-vm-metering-cost`
 - PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
+- Native comparison is supplied only by the benchmark project's private `PCRE.NET` 1.5.0 dependency. Keep it out of every shipped project; unsupported or result-incompatible rows must carry an explicit exclusion reason instead of a timing.
 - The workspace and VM-metering commands are attribution replays, not end-to-end
   benchmarks. Use their same-trip-count controls to reject weak mechanisms; do
   not treat their estimates as realizable top-line speedups.
@@ -105,12 +111,14 @@ PCRE2 benchmark snapshot and diagnostics:
 PythonRe benchmark snapshot and diagnostics:
 
 - `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
+- `src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md` is generated from that snapshot and is the self-contained published view for the Python-compatible adapter. Do not edit its tables by hand.
 - Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
 - Use `--measure-pythonre-shaping-case <id> [iterations] [samples]` to split
   detailed-match discovery, direct public projection, and staged projection.
 - Use `--measure-pythonre-findall-phases <id> [iterations] [samples]` to split
   capture-free core enumeration, range collection, and returned-value shaping.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete eight-case catalog.
+- Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
 - The managed UTF-8 adapter, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
 
 Current intended uses:

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -75,6 +76,12 @@ public sealed class PythonReBenchmarkSnapshotTests
 
         Assert.True(cases.GetProperty("capture/search-detailed").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
         Assert.True(cases.GetProperty("literal/fullmatch").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
+
+        var snapshotPath = FindRepositoryFile("PythonRe.Benchmarks.json");
+        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"));
+        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)

@@ -639,7 +639,8 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 3;
+        snapshot.SchemaVersion = 4;
+        snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
 
         foreach (var section in GetPcre2SectionsForCase(caseId))
         {
@@ -657,7 +658,8 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 3;
+        snapshot.SchemaVersion = 4;
+        snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
         var sections = ParsePcre2Sections(sectionsText);
 
         foreach (var section in sections)
@@ -675,7 +677,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 3;
+        snapshot.SchemaVersion = 4;
         if (string.IsNullOrWhiteSpace(familyName))
         {
             snapshot.ScalingFamilies.Clear();
@@ -1188,6 +1190,7 @@ internal static partial class BenchmarkInspectReporter
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, Pcre2BenchmarkSnapshotJsonOptions);
         File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        RewritePcre2BenchmarkMarkdown(snapshot);
     }
 
     private static IReadOnlyList<Pcre2BenchmarkSection> ParsePcre2Sections(string? sectionsText)
@@ -1332,7 +1335,7 @@ internal static partial class BenchmarkInspectReporter
             };
         }
 
-        return new Pcre2CaseMeasurementJson
+        var measurement = new Pcre2CaseMeasurementJson
         {
             MeasuredAtUtc = DateTimeOffset.UtcNow,
             Environment = CaptureBenchmarkEnvironment(),
@@ -1355,6 +1358,8 @@ internal static partial class BenchmarkInspectReporter
             PredecodedRegex = predecodedRegex,
             DecodeThenRegex = decodeThenRegex,
         };
+        MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
+        return measurement;
     }
 
     private static Utf8Pcre2Regex CreatePcre2BenchmarkRegex(Utf8Pcre2BenchmarkCase benchmarkCase)
@@ -1363,7 +1368,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
             benchmarkCase.CompileSettings,
             default,
-            default);
+            Utf8Pcre2Regex.DefaultMatchTimeout);
 
     private static int ExecutePcre2SnapshotOperation(
         Utf8Pcre2Regex regex,
@@ -1621,7 +1626,9 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class Pcre2BenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 3;
+        public int SchemaVersion { get; set; } = 4;
+
+        public PcreNetNativeBaselineDependencyJson? PcreNetNativeBaseline { get; set; }
 
         public Dictionary<string, Pcre2BenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
 
@@ -1685,6 +1692,16 @@ internal static partial class BenchmarkInspectReporter
 
         public long? WarmAllocatedBytes { get; set; }
 
+        public DateTimeOffset? PcreNetNativeMeasuredAtUtc { get; set; }
+
+        public BenchmarkEnvironmentJson? PcreNetNativeEnvironment { get; set; }
+
+        public int? PcreNetNativeEffectiveIterations { get; set; }
+
+        public double? PcreNetNative { get; set; }
+
+        public string? PcreNetNativeUnavailableReason { get; set; }
+
         public double Utf8Pcre2 { get; set; }
 
         public double? Utf8Regex { get; set; }
@@ -1692,6 +1709,27 @@ internal static partial class BenchmarkInspectReporter
         public double? PredecodedRegex { get; set; }
 
         public double? DecodeThenRegex { get; set; }
+    }
+
+    private sealed class PcreNetNativeBaselineDependencyJson
+    {
+        public required string PackageId { get; set; }
+
+        public required string PackageVersion { get; set; }
+
+        // Optional on read so snapshots created before this schema-4 metadata field
+        // can be upgraded by the native-baseline refresh command. Every save writes it.
+        public string PackageSha512 { get; set; } = "";
+
+        public required string NativePcre2Version { get; set; }
+
+        public required string SourceRepository { get; set; }
+
+        public required string SourceRevision { get; set; }
+
+        public required string License { get; set; }
+
+        public required string Profile { get; set; }
     }
 
     private readonly record struct Pcre2PriorityRow(

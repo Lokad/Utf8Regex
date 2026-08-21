@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -29,7 +30,15 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(3, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
+
+        var dependency = root.GetProperty("PcreNetNativeBaseline");
+        Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
+        Assert.Equal("1.5.0", dependency.GetProperty("PackageVersion").GetString());
+        Assert.StartsWith("10.47", dependency.GetProperty("NativePcre2Version").GetString(), StringComparison.Ordinal);
+        Assert.Equal(
+            "Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==",
+            dependency.GetProperty("PackageSha512").GetString());
 
         var families = root.GetProperty("ScalingFamilies");
         Assert.Equal(
@@ -56,6 +65,34 @@ public sealed class Pcre2BenchmarkSnapshotTests
             sections.GetProperty("pcre2-special-count")
                 .GetProperty("Cases")
                 .GetProperty("pcre2/branch-reset-basic"));
+
+        var operationRows = sections.EnumerateObject()
+            .SelectMany(static section => section.Value.GetProperty("Cases").EnumerateObject())
+            .ToArray();
+        Assert.Equal(100, operationRows.Count(static row =>
+            row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
+        Assert.All(operationRows, static row =>
+        {
+            var hasNative = row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0;
+            var hasReason = row.Value.TryGetProperty("PcreNetNativeUnavailableReason", out var reason) &&
+                !string.IsNullOrWhiteSpace(reason.GetString());
+            Assert.True(hasNative || hasReason, $"Missing native PCRE2 disposition for '{row.Name}'.");
+        });
+
+        var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
+        var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"));
+        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
+
+        Assert.Contains(
+            "<PackageReference Include=\"PCRE.NET\" Version=\"1.5.0\" PrivateAssets=\"all\" />",
+            File.ReadAllText(FindRepositoryFile("bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj")),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "PCRE.NET",
+            File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/Lokad.Utf8Regex.Pcre2.csproj")),
+            StringComparison.OrdinalIgnoreCase);
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)

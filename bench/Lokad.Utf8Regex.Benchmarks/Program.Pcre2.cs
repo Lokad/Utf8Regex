@@ -64,6 +64,24 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--emit-pcre2-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunEmitPcre2BenchmarkMarkdown();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--rewrite-pcre2-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunRewritePcre2BenchmarkMarkdown();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--verify-pcre2-benchmark-markdown", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunVerifyPcre2BenchmarkMarkdown();
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--refresh-pcre2-benchmark-case", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunRefreshPcre2BenchmarkCase(
@@ -86,6 +104,24 @@ internal static partial class BenchmarkProgramRouter
         {
             exitCode = BenchmarkInspectReporter.RunRefreshPcre2ScalingFamilies(
                 args.Length >= 2 ? args[1] : null,
+                args.Length >= 3 ? args[2] : null,
+                args.Length >= 4 ? args[3] : null);
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--refresh-pcre2-native-baselines", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunRefreshPcre2NativeBaselines(
+                args.Length >= 2 ? args[1] : null,
+                args.Length >= 3 ? args[2] : null,
+                args.Length >= 4 ? args[3] : null);
+            return true;
+        }
+
+        if (args.Length >= 2 && args[0].Equals("--refresh-pcre2-native-baseline-case", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunRefreshPcre2NativeBaselineCase(
+                args[1],
                 args.Length >= 3 ? args[2] : null,
                 args.Length >= 4 ? args[3] : null);
             return true;
