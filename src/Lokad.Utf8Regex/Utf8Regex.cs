@@ -2943,6 +2943,22 @@ public sealed class Utf8Regex
             return true;
         }
 
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } trailingLiteralUtf8)
+        {
+            if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            {
+                return false;
+            }
+
+            isMatch = Utf8AsciiLeadingAnyRunTrailingLiteralExecutor.TryFindMatch(
+                input,
+                trailingLiteralUtf8,
+                out _,
+                out _);
+            return true;
+        }
+
         if (_hasDirectFallbackTokenFamilyWithoutValidation)
         {
             var directResult = Utf8AsciiTokenFamilyExecutor.TryFindTokenWithoutValidation(

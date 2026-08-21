@@ -143,6 +143,10 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation(
+            "Essential services are provided by regular exprs."u8,
+            out var isMatch));
+        Assert.True(isMatch);
     }
 
     [Fact]
