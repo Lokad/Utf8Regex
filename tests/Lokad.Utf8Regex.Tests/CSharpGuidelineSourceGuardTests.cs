@@ -10,6 +10,7 @@ public sealed class CSharpGuidelineSourceGuardTests
     private const int NullForgivingDebtCeiling = 0;
     private const int DefensiveNullGuardDebtCeiling = 0;
     private const int UndocumentedPublicDeclarationDebtCeiling = 425;
+    private const int SingleCallerPrivateMethodDebtCeiling = 1019;
 
     [Fact]
     public void ProductionCSharpGuidelineDebtDoesNotGrow()
@@ -60,6 +61,81 @@ public sealed class CSharpGuidelineSourceGuardTests
             .ToArray();
 
         Assert.True(offenders.Length == 0, "Undocumented abstract/virtual methods:" + Environment.NewLine + string.Join(Environment.NewLine, offenders));
+    }
+
+    [Fact]
+    public void SingleCallerPrivateMethodDebtDoesNotGrow()
+    {
+        var syntaxFiles = ReadProductionSyntax();
+        var compilation = CreateProductionCompilation(syntaxFiles);
+        var methods = new Dictionary<IMethodSymbol, (SourceSyntax File, MethodDeclarationSyntax Declaration)>(SymbolEqualityComparer.Default);
+
+        foreach (var file in syntaxFiles)
+        {
+            var semanticModel = compilation.GetSemanticModel(file.Root.SyntaxTree);
+            foreach (var declaration in file.Root.DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                if (!declaration.Modifiers.Any(SyntaxKind.PrivateKeyword) ||
+                    semanticModel.GetDeclaredSymbol(declaration) is not IMethodSymbol method)
+                {
+                    continue;
+                }
+
+                methods.TryAdd(method.OriginalDefinition, (file, declaration));
+            }
+        }
+
+        var callers = new Dictionary<IMethodSymbol, List<ISymbol>>(
+            (IEqualityComparer<IMethodSymbol>)SymbolEqualityComparer.Default);
+        foreach (var method in methods.Keys)
+        {
+            callers.Add(method, []);
+        }
+
+        foreach (var file in syntaxFiles)
+        {
+            var semanticModel = compilation.GetSemanticModel(file.Root.SyntaxTree);
+            foreach (var name in file.Root.DescendantNodes().OfType<SimpleNameSyntax>())
+            {
+                var referenced = semanticModel.GetSymbolInfo(name).Symbol as IMethodSymbol;
+                if (referenced is null ||
+                    !callers.TryGetValue(referenced.OriginalDefinition, out var methodCallers))
+                {
+                    continue;
+                }
+
+                var caller = semanticModel.GetEnclosingSymbol(name.SpanStart);
+                if (caller is null || SymbolEqualityComparer.Default.Equals(caller, referenced))
+                {
+                    continue;
+                }
+
+                methodCallers.Add(caller);
+            }
+        }
+
+        var offenders = callers
+            .Where(static entry => entry.Value.Count == 1)
+            .Select(entry =>
+            {
+                var source = methods[entry.Key];
+                var caller = entry.Value.Single().ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+                var line = source.Declaration.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                var method = entry.Key.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+                return $"{source.File.RelativePath}:{line}: {method} <- {caller}";
+            })
+            .OrderBy(static description => description, StringComparer.Ordinal)
+            .ToArray();
+
+        var countsByFile = offenders
+            .GroupBy(static description => description[..description.IndexOf(':')], StringComparer.Ordinal)
+            .Select(static group => $"{group.Key}: {group.Count()}")
+            .ToArray();
+        Assert.True(
+            offenders.Length <= SingleCallerPrivateMethodDebtCeiling,
+            $"Single-caller private methods grew from the reviewed ceiling of {SingleCallerPrivateMethodDebtCeiling} to {offenders.Length}:" +
+            Environment.NewLine +
+            string.Join(Environment.NewLine, countsByFile));
     }
 
     [Fact]
@@ -131,6 +207,21 @@ public sealed class CSharpGuidelineSourceGuardTests
                 Path.GetRelativePath(root, path).Replace('\\', '/'),
                 CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path).GetRoot()))
             .ToArray();
+    }
+
+    private static CSharpCompilation CreateProductionCompilation(SourceSyntax[] syntaxFiles)
+    {
+        var trustedPlatformAssemblies = (string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ??
+            throw new InvalidOperationException("The test host did not expose trusted platform assemblies.");
+        var references = trustedPlatformAssemblies
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(static path => MetadataReference.CreateFromFile(path));
+
+        return CSharpCompilation.Create(
+            "Lokad.Utf8Regex.GuidelineAudit",
+            syntaxFiles.Select(static file => file.Root.SyntaxTree),
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
 
     private static string FindRepositoryRoot()
