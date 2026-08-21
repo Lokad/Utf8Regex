@@ -97,7 +97,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue);
         Assert.Equal(
             (options & RegexOptions.Compiled) != 0,
-            regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+            regex.Inspection.DebugUsesEmittedWholeMatcher);
         Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("12/12/2001"u8, out var directMatch));
         Assert.True(directMatch);
 
@@ -385,7 +385,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
         Assert.Equal(
             (options & RegexOptions.Compiled) != 0,
-            regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+            regex.Inspection.DebugUsesEmittedWholeMatcher);
 
         string[] inputs =
         [
@@ -420,12 +420,41 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(match.Success);
     }
 
-    [Fact]
-    public void BoostdocsCreditCardMatchUsesRepeatedDigitGroupPlan()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoostdocsCreditCardMatchUsesRepeatedDigitGroupPlan(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"([0-9]{4}[- ]){3}[0-9]{3,4}", RegexOptions.Compiled);
+        const string pattern = @"([0-9]{4}[- ]){3}[0-9]{3,4}";
+        var regex = new Utf8Regex(pattern, options);
 
         Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
+        Assert.Equal(
+            (options & RegexOptions.Compiled) != 0,
+            regex.Inspection.DebugUsesEmittedWholeMatcher);
+
+        string[] inputs =
+        [
+            "1234-5678-1234-456",
+            "1234 5678 1234 4567",
+            "1234-5678 1234-456",
+            "x1234-5678-1234-456y",
+            "1234-5678-1234-456x",
+            "1234-5678-1234-45",
+            "1234-5678_1234-456",
+            "1234-5678-123x-456",
+            "١٢٣٤-٥٦٧٨-١٢٣٤-٤٥٦",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
+                (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'-',
+                (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
+                (byte)'4', (byte)'5', (byte)'6', 0xFF]));
     }
 
     [Theory]

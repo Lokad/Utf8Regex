@@ -3,7 +3,11 @@ using System.Reflection.Emit;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed class Utf8EmittedAnchoredValidatorMatcher
+/// <summary>
+/// Emits bounded exact-subject recognizers. Callers may accept a successful result directly,
+/// but must preserve the ordinary search and UTF-8 validation paths when the recognizer misses.
+/// </summary>
+internal sealed class Utf8EmittedWholeMatcher
 {
     private const int MaxSmallPositiveSetSize = 8;
 
@@ -19,7 +23,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
 
     private readonly MatchDelegate _match;
 
-    private Utf8EmittedAnchoredValidatorMatcher(MatchDelegate match)
+    private Utf8EmittedWholeMatcher(MatchDelegate match)
     {
         _match = match;
     }
@@ -27,7 +31,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
     internal static bool TryCreate(
         AsciiSimplePatternAnchoredValidatorPlan plan,
         bool allowTrailingNewline,
-        out Utf8EmittedAnchoredValidatorMatcher? matcher)
+        out Utf8EmittedWholeMatcher? matcher)
     {
         matcher = null;
         if (!CanCreate(plan))
@@ -41,14 +45,14 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
             return false;
         }
 
-        matcher = new Utf8EmittedAnchoredValidatorMatcher(compiled);
+        matcher = new Utf8EmittedWholeMatcher(compiled);
         return true;
     }
 
     internal static bool TryCreate(
         AsciiSimplePatternAnchoredBoundedDatePlan plan,
         bool allowTrailingNewline,
-        out Utf8EmittedAnchoredValidatorMatcher? matcher)
+        out Utf8EmittedWholeMatcher? matcher)
     {
         matcher = null;
         if (!plan.HasValue ||
@@ -81,7 +85,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
             return false;
         }
 
-        matcher = new Utf8EmittedAnchoredValidatorMatcher(compiled);
+        matcher = new Utf8EmittedWholeMatcher(compiled);
         return true;
 
         MatchDelegate CompileBoundedDate()
@@ -90,7 +94,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
                 "Utf8Regex_EmitAnchoredBoundedDateMatch",
                 typeof(int),
                 [typeof(ReadOnlySpan<byte>)],
-                typeof(Utf8EmittedAnchoredValidatorMatcher),
+                typeof(Utf8EmittedWholeMatcher),
                 skipVisibility: false);
 
             var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
@@ -151,7 +155,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
     internal static bool TryCreate(
         AsciiSimplePatternAnchoredOptionalFieldPlan plan,
         bool allowTrailingNewline,
-        out Utf8EmittedAnchoredValidatorMatcher? matcher)
+        out Utf8EmittedWholeMatcher? matcher)
     {
         matcher = null;
         var candidateCount = (plan.HeadMaxCount - plan.HeadMinCount + 1) * 4;
@@ -174,7 +178,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
             return false;
         }
 
-        matcher = new Utf8EmittedAnchoredValidatorMatcher(compiled);
+        matcher = new Utf8EmittedWholeMatcher(compiled);
         return true;
 
         static bool CanEmit(AsciiCharClass charClass)
@@ -195,7 +199,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
                 "Utf8Regex_EmitAnchoredOptionalFieldMatch",
                 typeof(int),
                 [typeof(ReadOnlySpan<byte>)],
-                typeof(Utf8EmittedAnchoredValidatorMatcher),
+                typeof(Utf8EmittedWholeMatcher),
                 skipVisibility: false);
 
             var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
@@ -287,6 +291,92 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
         }
     }
 
+    internal static bool TryCreate(
+        AsciiSimplePatternRepeatedDigitGroupPlan plan,
+        out Utf8EmittedWholeMatcher? matcher)
+    {
+        matcher = null;
+        if (!plan.HasValue ||
+            plan.TrailingMaxDigits < plan.TrailingMinDigits ||
+            plan.RepeatedGroupCount > 4 ||
+            plan.GroupDigitCount > 4 ||
+            plan.TrailingMaxDigits > 4 ||
+            plan.SeparatorBytes.Length is 0 or > MaxSmallPositiveSetSize)
+        {
+            return false;
+        }
+
+        var candidateCount = plan.TrailingMaxDigits - plan.TrailingMinDigits + 1;
+        if (candidateCount > 32 || plan.MaximumLength > 64)
+        {
+            return false;
+        }
+
+        var compiled = CompileRepeatedDigitGroup();
+        if (!Validate(compiled))
+        {
+            return false;
+        }
+
+        matcher = new Utf8EmittedWholeMatcher(compiled);
+        return true;
+
+        MatchDelegate CompileRepeatedDigitGroup()
+        {
+            var dynamicMethod = new DynamicMethod(
+                "Utf8Regex_EmitRepeatedDigitGroupMatch",
+                typeof(int),
+                [typeof(ReadOnlySpan<byte>)],
+                typeof(Utf8EmittedWholeMatcher),
+                skipVisibility: false);
+
+            var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);
+            var inputLengthLocal = emitter.DeclareLocal<int>();
+            var zeroIndexLocal = emitter.DeclareLocal<int>();
+            var valueLocal = emitter.DeclareLocal<byte>();
+
+            emitter.LoadInputLength();
+            emitter.StoreLocal(inputLengthLocal);
+            emitter.LdcI4(0);
+            emitter.StoreLocal(zeroIndexLocal);
+
+            for (var trailingCount = (int)plan.TrailingMaxDigits; trailingCount >= plan.TrailingMinDigits; trailingCount--)
+            {
+                var candidateLength = plan.RepeatedGroupCount * (plan.GroupDigitCount + 1) + trailingCount;
+                var nextCandidateLabel = emitter.DefineLabel();
+                var matchingLengthLabel = emitter.DefineLabel();
+                emitter.LoadLocal(inputLengthLocal);
+                emitter.LdcI4(candidateLength);
+                emitter.Emit(OpCodes.Beq, matchingLengthLabel);
+                emitter.Emit(OpCodes.Br, nextCandidateLabel);
+                emitter.MarkLabel(matchingLengthLabel);
+
+                var offset = 0;
+                for (var group = 0; group < plan.RepeatedGroupCount; group++)
+                {
+                    EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, plan.GroupDigitCount, nextCandidateLabel);
+                    EmitSeparator(ref offset, nextCandidateLabel);
+                }
+
+                EmitDigitRun(emitter, zeroIndexLocal, valueLocal, ref offset, trailingCount, nextCandidateLabel);
+                emitter.EmitReturnInt(candidateLength);
+                emitter.MarkLabel(nextCandidateLabel);
+            }
+
+            emitter.EmitReturnInt(-1);
+            return dynamicMethod.CreateDelegate<MatchDelegate>();
+
+            void EmitSeparator(ref int offset, Label failureLabel)
+            {
+                var matchedLabel = emitter.DefineLabel();
+                emitter.LoadInputByte(zeroIndexLocal, offset++);
+                emitter.StoreLocal(valueLocal);
+                emitter.EmitSmallPositiveSetBranch(plan.SeparatorBytes, valueLocal, matchedLabel, failureLabel);
+                emitter.MarkLabel(matchedLabel);
+            }
+        }
+    }
+
     internal int MatchWhole(ReadOnlySpan<byte> input) => _match(input);
 
     private static bool CanCreate(AsciiSimplePatternAnchoredValidatorPlan plan)
@@ -334,7 +424,7 @@ internal sealed class Utf8EmittedAnchoredValidatorMatcher
             "Utf8Regex_EmitAnchoredValidatorMatch",
             typeof(int),
             [typeof(ReadOnlySpan<byte>)],
-            typeof(Utf8EmittedAnchoredValidatorMatcher),
+            typeof(Utf8EmittedWholeMatcher),
             skipVisibility: false);
 
         var emitter = new Utf8IlEmitter(dynamicMethod.GetILGenerator(), s_getSpanLengthMethod, s_getSpanItemMethod, inputArgIndex: 0);

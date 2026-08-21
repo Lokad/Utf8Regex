@@ -80,7 +80,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         PreferValidateOnlyCount: false,
         SkipRequiredPrefilterForMatch: false,
         SkipRequiredPrefilterForCount: true,
-        UsesEmittedAnchoredValidatorMatcher: false,
+        UsesEmittedWholeMatcher: false,
         UsesEmittedKernelMatcher: false);
 
     internal bool TryGetSmallAsciiLiteralFamilyPrimitive(

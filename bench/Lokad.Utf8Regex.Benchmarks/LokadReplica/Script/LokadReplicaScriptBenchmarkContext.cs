@@ -438,7 +438,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         EnsurePrefixMatchLoop();
         var plan = CompiledUtf8Regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan;
         if (!plan.HasValue ||
-            !Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+            !Utf8EmittedWholeMatcher.TryCreate(
                 plan,
                 allowTrailingNewline: BenchmarkCase.Pattern.EndsWith('$'),
                 out var matcher) ||

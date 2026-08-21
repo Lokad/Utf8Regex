@@ -423,7 +423,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(3, matcher!.MatchWhole("A0f"u8));
         Assert.Equal(3, matcher.MatchWhole("A0f\n"u8));
@@ -454,7 +454,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: false, out var matcher));
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: false, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(3, matcher!.MatchWhole("A0f"u8));
         Assert.Equal(-1, matcher.MatchWhole("A0f\n"u8));
@@ -517,12 +517,59 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void EmittedRepeatedDigitGroupMatchesNativeWholeExecutorAcrossSupportedShapes()
+    {
+        var regex = new Utf8Regex(@"([0-9]{4}[- ]){3}[0-9]{3,4}", RegexOptions.Compiled);
+        var plan = regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan;
+
+        Assert.True(plan.HasValue);
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(plan, out var matcher));
+        Assert.NotNull(matcher);
+        Assert.False(Utf8EmittedWholeMatcher.TryCreate(
+            new AsciiSimplePatternRepeatedDigitGroupPlan(
+                repeatedGroupCount: 5,
+                groupDigitCount: 4,
+                trailingMinDigits: 3,
+                trailingMaxDigits: 4,
+                separatorBytes: [(byte)'-', (byte)' ']),
+            out _));
+
+        byte[][] inputs =
+        [
+            "1234-5678-1234-456"u8.ToArray(),
+            "1234 5678 1234 4567"u8.ToArray(),
+            "1234-5678 1234-456"u8.ToArray(),
+            "1234-5678-1234-45"u8.ToArray(),
+            "1234-5678-1234-45678"u8.ToArray(),
+            "1234-5678_1234-456"u8.ToArray(),
+            "1234-5678-123x-456"u8.ToArray(),
+            "x1234-5678-1234-456"u8.ToArray(),
+            [ (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
+                (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'-',
+                (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'-',
+                (byte)'4', (byte)'5', 0xC3, 0xA9 ],
+        ];
+        foreach (var input in inputs)
+        {
+            var nativeMatch = Utf8AsciiRepeatedDigitGroupExecutor.TryMatchWhole(
+                input,
+                plan,
+                out var nativeLength,
+                out _);
+            var emittedLength = matcher!.MatchWhole(input);
+
+            Assert.Equal(nativeMatch, emittedLength >= 0);
+            Assert.Equal(nativeMatch ? nativeLength : -1, emittedLength);
+        }
+    }
+
+    [Fact]
     public void CompiledPureRunAnchoredValidatorDoesNotUseEmittedMatcher()
     {
         var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.False(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.False(regex.Inspection.DebugUsesEmittedWholeMatcher);
     }
 
     [Fact]
@@ -532,7 +579,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue);
-        Assert.True(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(regex.Inspection.DebugUsesEmittedWholeMatcher);
         Assert.Equal(6, regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments.Length);
         Assert.Contains(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.Segments, static segment => !segment.IsLiteral && segment.MinLength == 1 && segment.MaxLength == 2);
         Assert.True(
@@ -550,12 +597,12 @@ public sealed class Utf8RegexConstructionTests
         var plan = regex.Inspection.SimplePatternPlan.AnchoredOptionalFieldPlan;
 
         Assert.True(plan.HasValue);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(
             plan,
             allowTrailingNewline: true,
             out var matcher));
         Assert.NotNull(matcher);
-        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+        Assert.False(Utf8EmittedWholeMatcher.TryCreate(
             new AsciiSimplePatternAnchoredOptionalFieldPlan(
                 plan.HeadClass,
                 plan.HeadMinCount,
@@ -614,7 +661,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        Assert.True(compiled.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(compiled.Inspection.DebugUsesEmittedWholeMatcher);
 
         AssertCompiledFastPathMatchesBaseline(
             "^ab[0-9]{2}$",
@@ -636,7 +683,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-        Assert.True(compiled.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
+        Assert.True(compiled.Inspection.DebugUsesEmittedWholeMatcher);
 
         AssertCompiledFastPathMatchesBaseline(
             "^ab[a-f0-9]{2}$",
@@ -755,13 +802,13 @@ public sealed class Utf8RegexConstructionTests
         var plan = regex.Inspection.SimplePatternPlan.AnchoredBoundedDatePlan;
 
         Assert.True(plan.HasValue);
-        Assert.True(regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+        Assert.True(regex.Inspection.DebugUsesEmittedWholeMatcher);
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(
             plan,
             allowTrailingNewline: true,
             out var matcher));
         Assert.NotNull(matcher);
-        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(
+        Assert.False(Utf8EmittedWholeMatcher.TryCreate(
             new AsciiSimplePatternAnchoredBoundedDatePlan(1, 8, 1, 8, 1, 8, (byte)'/', (byte)'/'),
             allowTrailingNewline: false,
             out _));
@@ -852,7 +899,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(4, matcher!.MatchWhole("ab01"u8));
         Assert.Equal(4, matcher.MatchWhole("ab01\n"u8));
@@ -866,7 +913,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue);
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.IgnoreCase);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out var matcher));
         Assert.NotNull(matcher);
         Assert.Equal(4, matcher!.MatchWhole("ab0f"u8));
         Assert.Equal(4, matcher.MatchWhole("AB0F"u8));
@@ -879,7 +926,7 @@ public sealed class Utf8RegexConstructionTests
     {
         var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.False(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out _));
+        Assert.False(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline: true, out _));
     }
 
     [Fact]
@@ -1286,7 +1333,7 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan.HasValue, pattern);
-        Assert.True(Utf8EmittedAnchoredValidatorMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline, out var matcher), pattern);
+        Assert.True(Utf8EmittedWholeMatcher.TryCreate(regex.Inspection.SimplePatternPlan.AnchoredValidatorPlan, allowTrailingNewline, out var matcher), pattern);
         Assert.NotNull(matcher);
 
         foreach (var input in inputs)

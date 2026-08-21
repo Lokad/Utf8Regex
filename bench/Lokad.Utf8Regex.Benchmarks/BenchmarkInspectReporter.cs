@@ -2734,10 +2734,10 @@ internal static partial class BenchmarkInspectReporter
                         Measure("AnchoredValidatorSuffixAfterFirstBounded", iterations, context.ExecuteAnchoredValidatorSuffixAfterFirstBoundedOnly);
                         Measure("AnchoredValidatorNativeWhole", iterations, context.ExecuteAnchoredValidatorNativeWholeOnly);
                         Measure("CompiledAnchoredValidatorNativeDirect", iterations, context.ExecuteCompiledAnchoredValidatorDirectOnly);
-                        if (context.CompiledUtf8Regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher)
-                        {
-                            Measure("CompiledAnchoredValidatorEmittedDirect", iterations, context.ExecuteEmittedAnchoredValidatorDirectOnly);
-                        }
+                    }
+                    if (context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher)
+                    {
+                        Measure("CompiledWholeMatcherEmittedDirect", iterations, context.ExecuteEmittedWholeDirectOnly);
                     }
                     if (context.Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(context.InputBytes, out _, out _))
                     {
@@ -2973,7 +2973,7 @@ internal static partial class BenchmarkInspectReporter
                 {
                     Console.WriteLine($"DirectFixedAltEval  : {context.Utf8Regex.Inspection.DebugDirectAnchoredFixedAlternationSummary(context.InputBytes)}");
                 }
-                Console.WriteLine($"CompiledUsesEmittedValidator : {context.CompiledUtf8Regex.Inspection.DebugUsesEmittedAnchoredValidatorMatcher}");
+                Console.WriteLine($"CompiledUsesEmittedWhole     : {context.CompiledUtf8Regex.Inspection.DebugUsesEmittedWholeMatcher}");
             }
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);

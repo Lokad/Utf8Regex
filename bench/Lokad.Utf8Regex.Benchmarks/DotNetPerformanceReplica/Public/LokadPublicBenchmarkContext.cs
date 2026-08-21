@@ -296,9 +296,9 @@ internal sealed class LokadPublicBenchmarkContext
             : 0;
     }
 
-    public int ExecuteEmittedAnchoredValidatorDirectOnly()
+    public int ExecuteEmittedWholeDirectOnly()
     {
-        return CompiledUtf8Regex.Inspection.DebugTryMatchEmittedAnchoredValidator(InputBytes, out var matchedLength)
+        return CompiledUtf8Regex.Inspection.DebugTryMatchEmittedWhole(InputBytes, out var matchedLength)
             ? matchedLength
             : 0;
     }

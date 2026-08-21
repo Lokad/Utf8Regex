@@ -20,6 +20,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     CompiledAnchoredOptionalField = 3,
     AsciiBoundedDateToken = 4,
     AnchoredAsciiLeadingDigitsTail = 5,
+    CompiledRepeatedDigitGroup = 6,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -62,11 +63,13 @@ public sealed class Utf8Regex
                 ? Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate
                 : (options & RegexOptions.Compiled) != 0 && preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue
                     ? Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField
-                    : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken
-                        ? Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken
-                        : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail
-                            ? Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail
-                            : Utf8PrioritizedBooleanFamilyKind.None;
+                    : (options & RegexOptions.Compiled) != 0 && preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue
+                        ? Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup
+                        : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken
+                            ? Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken
+                            : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail
+                                ? Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail
+                                : Utf8PrioritizedBooleanFamilyKind.None;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
     }
 
@@ -489,7 +492,7 @@ public sealed class Utf8Regex
 
     private bool DebugSupportsThrowIfInvalidOnlyCount => _compiledEngineRuntime.SupportsThrowIfInvalidOnlyCount;
 
-    private bool DebugUsesEmittedAnchoredValidatorMatcher => _compiledEngineRuntime.UsesEmittedAnchoredValidatorMatcher;
+    private bool DebugUsesEmittedWholeMatcher => _compiledEngineRuntime.UsesEmittedWholeMatcher;
 
     private string DebugAnchoredValidatorSegmentSummary =>
         Utf8AsciiAnchoredValidatorExecutor.GetSegmentSummary(_anchoredValidatorPlan);
@@ -2832,7 +2835,11 @@ public sealed class Utf8Regex
                 return false;
             }
 
-            isMatch = matched;
+            isMatch = matched || Utf8AsciiRepeatedDigitGroupExecutor.TryFind(
+                input,
+                repeatedDigitGroupPlan,
+                out _,
+                out _);
             return true;
         }
 
@@ -2890,7 +2897,7 @@ public sealed class Utf8Regex
 
         if ((Options & RegexOptions.Compiled) != 0 &&
             _compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
-            compiledRuntime.TryMatchEmittedAnchoredValidator(input, out _))
+            compiledRuntime.TryMatchEmittedWhole(input, out _))
         {
             isMatch = true;
             return true;
@@ -3060,7 +3067,7 @@ public sealed class Utf8Regex
 
             case Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField:
                 if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime &&
-                    compiledRuntime.TryMatchEmittedAnchoredValidator(input, out _))
+                    compiledRuntime.TryMatchEmittedWhole(input, out _))
                 {
                     isMatch = true;
                     return true;
@@ -3093,6 +3100,16 @@ public sealed class Utf8Regex
                     _fallbackDirectFamily.LiteralUtf8,
                     out _);
                 return true;
+
+            case Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup:
+                if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime repeatedGroupRuntime &&
+                    repeatedGroupRuntime.TryMatchEmittedWhole(input, out _))
+                {
+                    isMatch = true;
+                    return true;
+                }
+
+                return false;
 
             default:
                 return false;
@@ -3545,8 +3562,8 @@ public sealed class Utf8Regex
         public bool DebugSupportsThrowIfInvalidOnlyCount =>
             _owner.DebugSupportsThrowIfInvalidOnlyCount;
 
-        public bool DebugUsesEmittedAnchoredValidatorMatcher =>
-            _owner.DebugUsesEmittedAnchoredValidatorMatcher;
+        public bool DebugUsesEmittedWholeMatcher =>
+            _owner.DebugUsesEmittedWholeMatcher;
 
         public string DebugAnchoredValidatorSegmentSummary =>
             _owner.DebugAnchoredValidatorSegmentSummary;
@@ -3586,13 +3603,13 @@ public sealed class Utf8Regex
             out int matchedLength) =>
             _owner.DebugTryMatchCompiledAnchoredValidatorWithoutValidation(input, out matchedLength);
 
-        public bool DebugTryMatchEmittedAnchoredValidator(
+        public bool DebugTryMatchEmittedWhole(
             ReadOnlySpan<byte> input,
             out int matchedLength)
         {
             if (_owner._compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime compiledRuntime)
             {
-                return compiledRuntime.TryMatchEmittedAnchoredValidator(input, out matchedLength);
+                return compiledRuntime.TryMatchEmittedWhole(input, out matchedLength);
             }
 
             matchedLength = 0;
