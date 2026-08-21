@@ -21,6 +21,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AsciiBoundedDateToken = 4,
     AnchoredAsciiLeadingDigitsTail = 5,
     CompiledRepeatedDigitGroup = 6,
+    AnchoredAsciiSignedDecimalWhole = 7,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -57,20 +58,47 @@ public sealed class Utf8Regex
 
         _program = Utf8RegexProgram.Compile(pattern, options, matchTimeout);
         var preparedRegex = _program.PreparedRegex;
-        _prioritizedBooleanFamilyKind = preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral
-            ? Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral
-            : preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue
-                ? Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate
-                : (options & RegexOptions.Compiled) != 0 && preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue
-                    ? Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField
-                    : (options & RegexOptions.Compiled) != 0 && preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue
-                        ? Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup
-                        : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken
-                            ? Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken
-                            : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail
-                                ? Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail
-                                : Utf8PrioritizedBooleanFamilyKind.None;
+        _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
+
+        static Utf8PrioritizedBooleanFamilyKind SelectPrioritizedBooleanFamily(
+            Utf8PreparedRegex preparedRegex,
+            RegexOptions options)
+        {
+            if (preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.LeadingAnyRunTrailingAsciiLiteral)
+            {
+                return Utf8PrioritizedBooleanFamilyKind.LeadingAnyRunTrailingAsciiLiteral;
+            }
+
+            if (preparedRegex.SimplePatternPlan.AnchoredBoundedDatePlan.HasValue)
+            {
+                return Utf8PrioritizedBooleanFamilyKind.AnchoredBoundedDate;
+            }
+
+            if ((options & RegexOptions.Compiled) != 0)
+            {
+                if (preparedRegex.SimplePatternPlan.AnchoredOptionalFieldPlan.HasValue)
+                {
+                    return Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField;
+                }
+
+                if (preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue)
+                {
+                    return Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup;
+                }
+            }
+
+            return preparedRegex.FallbackDirectFamily.Kind switch
+            {
+                Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
+                    Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
+                Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken =>
+                    Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken,
+                Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail =>
+                    Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail,
+                _ => Utf8PrioritizedBooleanFamilyKind.None,
+            };
+        }
     }
 
     /// <summary>Gets or sets the timeout used by constructors and cached operations that do not specify one.</summary>
@@ -3110,6 +3138,15 @@ public sealed class Utf8Regex
                 }
 
                 return false;
+
+            case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole:
+                if (Utf8AsciiPrefixTokenExecutor.TryMatchSignedDecimalWhole(input, out _))
+                {
+                    isMatch = true;
+                    return true;
+                }
+
+                return input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
 
             default:
                 return false;

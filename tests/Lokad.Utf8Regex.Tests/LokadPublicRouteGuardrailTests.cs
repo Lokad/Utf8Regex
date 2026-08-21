@@ -411,13 +411,36 @@ public sealed class LokadPublicRouteGuardrailTests
             [(byte)'A', (byte)'B', (byte)'0', (byte)'Z', (byte)' ', (byte)'1', (byte)'Z', (byte)'Z', 0xFF]));
     }
 
-    [Fact]
-    public void BoostdocsFloatMatchUsesNoValidationSignedDecimalFastPath()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoostdocsFloatMatchUsesNoValidationSignedDecimalFastPath(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"^[-+]?\d*\.?\d*$", RegexOptions.None);
+        const string pattern = @"^[-+]?\d*\.?\d*$";
+        var regex = new Utf8Regex(pattern, options);
 
         Assert.True(regex.Inspection.DebugTryMatchWithoutValidation("-3.14159"u8, out var match));
         Assert.True(match.Success);
+
+        string[] inputs =
+        [
+            "",
+            "+",
+            "-3.14159",
+            ".5",
+            "5.",
+            "5\n",
+            "+.\n",
+            "1.2.3",
+            "--1",
+            "١.٥",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'1', (byte)'.', (byte)'5', 0xFF]));
     }
 
     [Theory]
