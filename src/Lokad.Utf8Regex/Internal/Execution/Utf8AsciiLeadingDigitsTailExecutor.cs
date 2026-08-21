@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiLeadingDigitsTailExecutor
@@ -41,8 +39,7 @@ internal static class Utf8AsciiLeadingDigitsTailExecutor
                 return false;
             }
 
-            var separators = SearchValues.Create(separatorBytes);
-            if (!separators.Contains(input[index]))
+            if (separatorBytes.IndexOf(input[index]) < 0)
             {
                 return false;
             }

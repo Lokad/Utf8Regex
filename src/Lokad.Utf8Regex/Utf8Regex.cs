@@ -19,6 +19,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     AnchoredBoundedDate = 2,
     CompiledAnchoredOptionalField = 3,
     AsciiBoundedDateToken = 4,
+    AnchoredAsciiLeadingDigitsTail = 5,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -63,7 +64,9 @@ public sealed class Utf8Regex
                     ? Utf8PrioritizedBooleanFamilyKind.CompiledAnchoredOptionalField
                     : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken
                         ? Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken
-                        : Utf8PrioritizedBooleanFamilyKind.None;
+                        : preparedRegex.FallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail
+                            ? Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail
+                            : Utf8PrioritizedBooleanFamilyKind.None;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
     }
 
@@ -3076,6 +3079,18 @@ public sealed class Utf8Regex
                     0,
                     _fallbackDirectFamily,
                     out _,
+                    out _);
+                return true;
+
+            case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail:
+                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+                {
+                    return false;
+                }
+
+                isMatch = Utf8AsciiLeadingDigitsTailExecutor.TryMatchWhole(
+                    input,
+                    _fallbackDirectFamily.LiteralUtf8,
                     out _);
                 return true;
 

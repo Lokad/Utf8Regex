@@ -428,10 +428,13 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.Inspection.SimplePatternPlan.RepeatedDigitGroupPlan.HasValue);
     }
 
-    [Fact]
-    public void BoostdocsFtpLineMatchUsesAnchoredLeadingDigitsTailFamily()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoostdocsFtpLineMatchUsesPrioritizedAnchoredLeadingDigitsTailFamily(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"^([0-9]+)(\-| |$)(.*)$", RegexOptions.Compiled);
+        const string pattern = @"^([0-9]+)(\-| |$)(.*)$";
+        var regex = new Utf8Regex(pattern, options);
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
@@ -439,6 +442,27 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+
+        string[] inputs =
+        [
+            "100- message",
+            "100 message",
+            "100",
+            "100\n",
+            "100-",
+            "100 \n",
+            "100_x",
+            "100-\nmore",
+            "é100-message",
+            "100-é",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'1', (byte)'0', (byte)'0', (byte)'-', 0xFF]));
     }
 
     [Fact]
