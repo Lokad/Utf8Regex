@@ -126,14 +126,20 @@ internal static class Utf8AsciiEmailWholeExecutor
 
     private static bool TryConsumeRun(ReadOnlySpan<byte> input, ref int index, int effectiveLength, SearchValues<byte> values, int minCount)
     {
-        var count = 0;
-        while (index < effectiveLength && values.Contains(input[index]))
+        var remaining = input.Slice(index, effectiveLength - index);
+        var count = remaining.IndexOfAnyExcept(values);
+        if (count < 0)
         {
-            index++;
-            count++;
+            count = remaining.Length;
         }
 
-        return count >= minCount;
+        if (count < minCount)
+        {
+            return false;
+        }
+
+        index += count;
+        return true;
     }
 
     private static bool TryConsumeByte(ReadOnlySpan<byte> input, ref int index, int effectiveLength, byte value)
