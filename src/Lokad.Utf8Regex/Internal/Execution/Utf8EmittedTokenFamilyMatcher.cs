@@ -9,7 +9,6 @@ internal enum Utf8EmittedTokenFamilyKind : byte
 
 internal sealed class Utf8EmittedTokenFamilyMatcher
 {
-    private static readonly Utf8AsciiLiteralFinder s_uriDelimiterFinder = new("://"u8);
     private readonly Utf8FallbackDirectFamilyPlan _plan;
 
     private Utf8EmittedTokenFamilyMatcher(Utf8FallbackDirectFamilyPlan plan, Utf8EmittedTokenFamilyKind kind)
@@ -43,7 +42,11 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
         return Kind switch
         {
             Utf8EmittedTokenFamilyKind.BoundedDate => TryFindNextBoundedDate(input, startIndex, out matchIndex, out matchedLength),
-            Utf8EmittedTokenFamilyKind.Uri => TryFindNextUri(input, startIndex, out matchIndex, out matchedLength),
+            Utf8EmittedTokenFamilyKind.Uri => Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(
+                input,
+                startIndex,
+                out matchIndex,
+                out matchedLength),
             _ => ReturnNoMatch(out matchIndex, out matchedLength),
         };
     }
@@ -87,28 +90,6 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
             }
 
             searchFrom = secondSeparatorIndex + 1;
-        }
-
-        return false;
-    }
-
-    private static bool TryFindNextUri(ReadOnlySpan<byte> input, int startIndex, out int matchIndex, out int matchedLength)
-    {
-        matchIndex = -1;
-        matchedLength = 0;
-        if ((uint)startIndex > (uint)input.Length)
-        {
-            return false;
-        }
-
-        var searchFrom = startIndex;
-        while (s_uriDelimiterFinder.TryFindNext(input, searchFrom, out var delimiterIndex))
-        {
-            searchFrom = delimiterIndex + 3;
-            if (TryMatchUriAtDelimiter(input, startIndex, delimiterIndex, out matchIndex, out matchedLength))
-            {
-                return true;
-            }
         }
 
         return false;
@@ -190,85 +171,6 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
         return true;
     }
 
-    private static bool TryMatchUriAtDelimiter(ReadOnlySpan<byte> input, int minStartIndex, int delimiterIndex, out int matchIndex, out int matchedLength)
-    {
-        matchIndex = -1;
-        matchedLength = 0;
-
-        var schemeStart = delimiterIndex;
-        while (schemeStart > minStartIndex && IsAsciiWordByte(input[schemeStart - 1]))
-        {
-            schemeStart--;
-        }
-
-        if (schemeStart == delimiterIndex)
-        {
-            return false;
-        }
-
-        if (schemeStart > 0 && input[schemeStart - 1] >= 0x80)
-        {
-            return false;
-        }
-
-        var index = delimiterIndex + 3;
-        if ((uint)(index + 1) >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        if (!IsAsciiUriBodyStart(input[index]) || !IsAsciiUriBodyContinuation(input[index + 1]))
-        {
-            return false;
-        }
-
-        index += 2;
-        while ((uint)index < (uint)input.Length && IsAsciiUriBodyContinuation(input[index]))
-        {
-            index++;
-        }
-
-        if ((uint)index < (uint)input.Length)
-        {
-            if (input[index] >= 0x80)
-            {
-                return false;
-            }
-
-            if (input[index] == (byte)'?')
-            {
-                index++;
-                while ((uint)index < (uint)input.Length && IsAsciiUriQueryByte(input[index]))
-                {
-                    index++;
-                }
-
-                if ((uint)index < (uint)input.Length && input[index] >= 0x80)
-                {
-                    return false;
-                }
-            }
-
-            if ((uint)index < (uint)input.Length && input[index] == (byte)'#')
-            {
-                index++;
-                while ((uint)index < (uint)input.Length && IsAsciiUriFragmentByte(input[index]))
-                {
-                    index++;
-                }
-
-                if ((uint)index < (uint)input.Length && input[index] >= 0x80)
-                {
-                    return false;
-                }
-            }
-        }
-
-        matchIndex = schemeStart;
-        matchedLength = index - schemeStart;
-        return true;
-    }
-
     private static bool ReturnNoMatch(out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;
@@ -293,37 +195,4 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
         return Utf8AsciiBytePredicates.IsWord(value);
     }
 
-    private static bool IsAsciiWhitespace(byte value)
-    {
-        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
-    }
-
-    private static bool IsAsciiUriBodyStart(byte value)
-    {
-        return value < 0x80 &&
-            value != (byte)'/' &&
-            value != (byte)'?' &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
-    }
-
-    private static bool IsAsciiUriBodyContinuation(byte value)
-    {
-        return value < 0x80 &&
-            value != (byte)'?' &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
-    }
-
-    private static bool IsAsciiUriQueryByte(byte value)
-    {
-        return value < 0x80 &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
-    }
-
-    private static bool IsAsciiUriFragmentByte(byte value)
-    {
-        return value < 0x80 && !IsAsciiWhitespace(value);
-    }
 }

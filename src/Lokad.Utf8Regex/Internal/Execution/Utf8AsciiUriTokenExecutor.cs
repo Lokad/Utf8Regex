@@ -1,7 +1,19 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiUriTokenExecutor
 {
+    // For bytes below 64, bit n says whether byte n belongs to the corresponding
+    // ASCII character class. Bytes 64--127 are accepted by all four negated classes.
+    private const ulong BodyStartLowerAsciiMask = 0x7FFF7FF6FFFFC1FF;
+    private const ulong BodyContinuationLowerAsciiMask = 0x7FFFFFF6FFFFC1FF;
+    private const ulong QueryLowerAsciiMask = 0xFFFFFFF6FFFFC1FF;
+    private const ulong FragmentLowerAsciiMask = 0xFFFFFFFEFFFFC1FF;
+
     public static bool TryMatchWhole(ReadOnlySpan<byte> input, out int matchedLength)
     {
         matchedLength = 0;
@@ -43,7 +55,7 @@ internal static class Utf8AsciiUriTokenExecutor
             }
 
             var delimiterIndex = searchFrom + relative;
-            searchFrom = delimiterIndex + 1;
+            searchFrom = delimiterIndex + 3;
             if (!TryMatchAtDelimiter(input, startIndex, delimiterIndex, out matchIndex, out matchedLength))
             {
                 continue;
@@ -60,6 +72,19 @@ internal static class Utf8AsciiUriTokenExecutor
         matchIndex = -1;
         matchedLength = 0;
 
+        var index = delimiterIndex + 3;
+        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyStart(input[index]))
+        {
+            return false;
+        }
+
+        index++;
+        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyContinuation(input[index]))
+        {
+            return false;
+        }
+
+        index++;
         var schemeStart = delimiterIndex;
         while (schemeStart > minStartIndex && IsAsciiWordChar(input[schemeStart - 1]))
         {
@@ -76,19 +101,31 @@ internal static class Utf8AsciiUriTokenExecutor
             return false;
         }
 
-        var index = delimiterIndex + 3;
-        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyStart(input[index]))
+        if (Vector256.IsHardwareAccelerated)
         {
-            return false;
+            var questionMark = Vector256.Create((byte)'?');
+            var hashMark = Vector256.Create((byte)'#');
+            var space = Vector256.Create((byte)' ');
+            while (input.Length - index >= Vector256<byte>.Count)
+            {
+                var values = Vector256.LoadUnsafe(ref MemoryMarshal.GetReference(input[index..]));
+                var stopMask = values.ExtractMostSignificantBits() |
+                    Vector256.Equals(values, questionMark).ExtractMostSignificantBits() |
+                    Vector256.Equals(values, hashMark).ExtractMostSignificantBits() |
+                    Vector256.LessThanOrEqual(values, space).ExtractMostSignificantBits();
+                if (stopMask != 0)
+                {
+                    // The vector test also stops on ASCII controls below space
+                    // that the regex accepts. The scalar loop resumes at that
+                    // byte and distinguishes those uncommon values exactly.
+                    index += BitOperations.TrailingZeroCount(stopMask);
+                    break;
+                }
+
+                index += Vector256<byte>.Count;
+            }
         }
 
-        index++;
-        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyContinuation(input[index]))
-        {
-            return false;
-        }
-
-        index++;
         while ((uint)index < (uint)input.Length && IsAsciiUriBodyContinuation(input[index]))
         {
             index++;
@@ -96,22 +133,12 @@ internal static class Utf8AsciiUriTokenExecutor
 
         if ((uint)index < (uint)input.Length)
         {
-            if (input[index] >= 0x80)
-            {
-                return false;
-            }
-
             if (input[index] == (byte)'?')
             {
                 index++;
                 while ((uint)index < (uint)input.Length && IsAsciiUriQueryByte(input[index]))
                 {
                     index++;
-                }
-
-                if ((uint)index < (uint)input.Length && input[index] >= 0x80)
-                {
-                    return false;
                 }
             }
 
@@ -121,11 +148,6 @@ internal static class Utf8AsciiUriTokenExecutor
                 while ((uint)index < (uint)input.Length && IsAsciiUriFragmentByte(input[index]))
                 {
                     index++;
-                }
-
-                if ((uint)index < (uint)input.Length && input[index] >= 0x80)
-                {
-                    return false;
                 }
             }
         }
@@ -140,37 +162,31 @@ internal static class Utf8AsciiUriTokenExecutor
         return Utf8AsciiBytePredicates.IsWord(value);
     }
 
-    private static bool IsAsciiWhitespace(byte value)
-    {
-        return Utf8AsciiBytePredicates.IsSixByteWhitespace(value);
-    }
-
     private static bool IsAsciiUriBodyStart(byte value)
     {
-        return value < 0x80 &&
-            value != (byte)'/' &&
-            value != (byte)'?' &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
+        return IsInAsciiClass(value, BodyStartLowerAsciiMask);
     }
 
     private static bool IsAsciiUriBodyContinuation(byte value)
     {
-        return value < 0x80 &&
-            value != (byte)'?' &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
+        return IsInAsciiClass(value, BodyContinuationLowerAsciiMask);
     }
 
     private static bool IsAsciiUriQueryByte(byte value)
     {
-        return value < 0x80 &&
-            value != (byte)'#' &&
-            !IsAsciiWhitespace(value);
+        return IsInAsciiClass(value, QueryLowerAsciiMask);
     }
 
     private static bool IsAsciiUriFragmentByte(byte value)
     {
-        return value < 0x80 && !IsAsciiWhitespace(value);
+        return IsInAsciiClass(value, FragmentLowerAsciiMask);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsInAsciiClass(byte value, ulong lowerAsciiMask)
+    {
+        return value < 64
+            ? ((lowerAsciiMask >> value) & 1) != 0
+            : value < 0x80;
     }
 }

@@ -2739,7 +2739,8 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("CompiledWholeMatcherEmittedDirect", iterations, context.ExecuteEmittedWholeDirectOnly);
                     }
-                    if (context.Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(context.InputBytes, out _, out _))
+                    if (context.CaseId == "common/uri-miss" ||
+                        context.Utf8Regex.Inspection.DebugTryFindDirectFallbackTokenWithoutValidation(context.InputBytes, out _, out _))
                     {
                         Measure("DirectFallbackTokenRaw", iterations, context.ExecuteDirectFallbackTokenRawOnly);
                     }
@@ -2747,7 +2748,7 @@ internal static partial class BenchmarkInspectReporter
                     {
                         Measure("DateTokenWhole", iterations, context.ExecuteDateTokenWholeOnly);
                     }
-                    if (context.CaseId == "common/uri-match")
+                    if (context.CaseId is "common/uri-match" or "common/uri-miss")
                     {
                         Measure("UriTokenWhole", iterations, context.ExecuteUriTokenWholeOnly);
                     }

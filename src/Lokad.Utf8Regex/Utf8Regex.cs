@@ -23,6 +23,7 @@ internal enum Utf8PrioritizedBooleanFamilyKind : byte
     CompiledRepeatedDigitGroup = 6,
     AnchoredAsciiSignedDecimalWhole = 7,
     AnchoredAsciiOptionalFieldWhole = 8,
+    AsciiUriToken = 9,
 }
 
 /// <summary>Matches .NET regular-expression semantics directly over well-formed UTF-8 input.</summary>
@@ -98,6 +99,8 @@ public sealed class Utf8Regex
             {
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
+                Utf8FallbackDirectFamilyKind.AsciiUriToken =>
+                    Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
                 Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken,
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail =>
@@ -3167,6 +3170,27 @@ public sealed class Utf8Regex
                 }
 
                 isMatch = matched;
+                return true;
+
+            case Utf8PrioritizedBooleanFamilyKind.AsciiUriToken:
+                var uriMatched = Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(
+                    input,
+                    0,
+                    out var uriMatchIndex,
+                    out var uriMatchedLength);
+
+                if (uriMatched && uriMatchIndex == 0 && uriMatchedLength == input.Length)
+                {
+                    isMatch = true;
+                    return true;
+                }
+
+                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+                {
+                    return false;
+                }
+
+                isMatch = uriMatched;
                 return true;
 
             default:

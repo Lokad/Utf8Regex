@@ -120,10 +120,14 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'1', (byte)'2', (byte)'/', 0xFF]));
     }
 
-    [Fact]
-    public void CommonUriMatchUsesStructuredTokenDirectFamilyForMatch()
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void CommonUriMatchUsesStructuredTokenDirectFamilyForMatch(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None);
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
@@ -138,6 +142,33 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.False(regex.Inspection.DebugTryIsMatchWithoutValidation(
             "https://example.com/caf\u00E9"u8,
             out _));
+
+        string[] inputs =
+        [
+            "scheme://ab",
+            "https://atlas.example.org/reports/export?id=42",
+            "https://example.com/path#fragment",
+            "https://example.com/path?q=1#fragment",
+            "xx https://host/path trailing",
+            "https://a https://valid.example/path",
+            "https://ab\ttrailing",
+            "https://ab\ntrailing",
+            "https://ab\0rest",
+            $"https://{new string('a', 33)}",
+            $"https://{new string('a', 34)}",
+            $"https://{new string('a', 35)}",
+            "é://host.example/path",
+            "é https://atlas.example/path",
+            "https://hôte.example/path https://atlas.example/path",
+            "not a uri é",
+        ];
+        foreach (var input in inputs)
+        {
+            Assert.Equal(oracle.IsMatch(input), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+        }
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(
+            [(byte)'x', 0xFF, (byte)' ', (byte)'h', (byte)'t', (byte)'t', (byte)'p', (byte)'s', (byte)':', (byte)'/', (byte)'/', (byte)'a', (byte)'b']));
     }
 
     [Fact]
