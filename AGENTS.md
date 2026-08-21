@@ -68,6 +68,7 @@ Examples:
 ./bench.ps1 -CommandArgs "--refresh-readme-case","common/email-match","20","5"
 ./bench.ps1 -CommandArgs "--emit-readme-benchmark-markdown","dotnet-performance,lokad","20","5"
 ./bench.ps1 -CommandArgs "--refresh-readme-benchmarks","dotnet-performance,lokad","20","5"
+./bench.ps1 -CommandArgs "--resume-readme-benchmarks","dotnet-performance,dotnet-performance-compiled","20","7" -MaxWallTimeSeconds 0
 `
 
 README benchmark snapshot model:
@@ -82,6 +83,12 @@ README benchmark snapshot model:
 - Prefer selective refresh while working on perf:
   - `--refresh-readme-case` for one case
   - `--refresh-readme-benchmarks` for one or more whole sections when needed
+- Use `--resume-readme-benchmarks` for an interrupted milestone refresh. It
+  skips only rows whose paired measurements, requested iterations, samples,
+  clean source revision, runtime, OS, processor, and tiering mode all match.
+- README refresh calibrates one shared effective iteration count from all six
+  target/baseline lanes, records that count in the snapshot, checkpoints after
+  every case, and caps each child case at 120 seconds.
 - Use bulk section refresh sparingly; it is slower and more likely to leave unrelated rows stale while you are iterating.
 
 PCRE2 benchmark snapshot and diagnostics:
@@ -165,23 +172,27 @@ Current intended uses:
   - measure one case, update `README.Benchmarks.json`, then regenerate the affected README output
 - --refresh-readme-benchmarks
   - measure one or more sections, update `README.Benchmarks.json`, then regenerate the affected README output
+- --resume-readme-benchmarks
+  - continue an interrupted section refresh, skipping only current clean rows with matching measurement parameters
 - --migrate-readme-benchmark-json
   - one-time migration/repair command for rebuilding the JSON snapshot from existing README-era benchmark data
 
-Short-case floor rule:
-- very short public `IsMatch` / `Match` rows are remeasured with much higher iteration floors during drilldowns and README refresh
-- current defaults are:
-  - `common/*` public `IsMatch` / `Match`: minimum `10000`
-  - `industry/boostdocs-*` public `IsMatch` / `Match`: minimum `5000`
-  - other public `IsMatch` / `Match`: minimum `2000`
-  - public `Replace` / `Split`: minimum `1000`, or `2000` for `common/*`
-  - Lokad prefix-loop drilldowns / refresh: minimum `20000`
+Short-case calibration rule:
+- very short public `IsMatch` / `Match` rows use much higher iteration targets during drilldowns and README refresh
+- README refresh calibrates those targets against the measured cost of the slowest paired lane and a bounded total case budget; input size alone never forces a slow row to execute the full target
+- current maximum targets are:
+  - `common/*` public `IsMatch` / `Match`: target `10000`
+  - `industry/boostdocs-*` public `IsMatch` / `Match`: target `5000`
+  - other public `IsMatch` / `Match`: target `2000`
+  - public `Replace` / `Split`: target `1000`, or `2000` for `common/*`
+  - Lokad prefix-loop drilldowns / refresh: target `20000`
   - short replica count rows used by `--refresh-readme-case`:
-    - `literal` / `literal-family` / `structural` with input `<= 128 KiB`: minimum `20000`
-    - other replica count rows with input `<= 128 KiB`: minimum `10000`
-    - replica count rows with input `<= 512 KiB`: minimum `5000`
+    - `literal` / `literal-family` / `structural` with input `<= 128 KiB`: target `20000`
+    - other replica count rows with input `<= 128 KiB`: target `10000`
+    - replica count rows with input `<= 512 KiB`: target `5000`
 - rationale:
   - sub-microsecond and low-single-microsecond rows are too noisy at small iteration counts
+  - slow rows retain the explicitly requested minimum but use a lower recorded effective count so one case cannot silently become a multi-hour experiment
   - if a short row looks suspiciously weak, trust the higher-floor rerun over an older low-floor snapshot
 
 Command-surface rule:

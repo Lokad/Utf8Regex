@@ -206,6 +206,15 @@ if (args.Length >= 1 && args[0].Equals("--refresh-readme-benchmarks", StringComp
         args.Length >= 4 ? args[3] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--resume-readme-benchmarks", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunRefreshReadmeBenchmarks(
+        args.Length >= 2 ? args[1] : null,
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null,
+        resume: true);
+}
+
 if (args.Length >= 2 && args[0].Equals("--refresh-readme-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunRefreshReadmeCase(

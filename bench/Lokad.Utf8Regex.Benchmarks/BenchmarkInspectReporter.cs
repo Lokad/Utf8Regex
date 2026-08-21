@@ -1395,7 +1395,7 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunRefreshReadmeBenchmarks(string? sectionsText, string? iterationsText, string? samplesText)
+    public static int RunRefreshReadmeBenchmarks(string? sectionsText, string? iterationsText, string? samplesText, bool resume = false)
     {
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
@@ -1409,18 +1409,20 @@ internal static partial class BenchmarkInspectReporter
             ReadmeBenchmarkSection.DotNetPerformance,
             ReadmeBenchmarkSection.DotNetPerformanceCompiled,
             iterations,
-            samples);
+            samples,
+            resume);
         RefreshReadmeSnapshotSectionPairIfRequested(
             snapshot,
             remainingSections,
             ReadmeBenchmarkSection.Lokad,
             ReadmeBenchmarkSection.LokadCompiled,
             iterations,
-            samples);
+            samples,
+            resume);
 
         foreach (var section in sections.Where(remainingSections.Contains))
         {
-            RefreshReadmeSnapshotSection(snapshot, section, iterations, samples);
+            RefreshReadmeSnapshotSection(snapshot, section, iterations, samples, resume);
         }
 
         SaveReadmeBenchmarkSnapshot(snapshot);
@@ -1445,9 +1447,15 @@ internal static partial class BenchmarkInspectReporter
         var samples = ParseSamples(samplesText);
         var snapshot = LoadReadmeBenchmarkSnapshot();
 
-        foreach (var target in GetReadmeTargetsForCase(caseId))
+        var targets = GetReadmeTargetsForCase(caseId).ToArray();
+        if (targets.Length == 0)
         {
-            var measurement = MeasureReadmeSnapshotCase(target, caseId, iterations, samples);
+            throw new InvalidOperationException($"README benchmark case '{caseId}' does not belong to a published section.");
+        }
+
+        var measurement = MeasureReadmeSnapshotCase(targets[0], caseId, iterations, samples);
+        foreach (var target in targets)
+        {
             GetOrAddSnapshotSection(snapshot, target).Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
         }
 
@@ -1459,15 +1467,17 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunMeasureReadmeCase(string caseId, string? iterationsText, string? samplesText)
     {
+        var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
 
         var lokadScriptCase = LokadReplicaScriptBenchmarkCatalog.GetAllCases().FirstOrDefault(c => c.Id == caseId);
         if (lokadScriptCase is not null)
         {
             var context = new LokadReplicaScriptBenchmarkContext(lokadScriptCase);
-            var iterations = ParseReadmeLokadScriptIterations(lokadScriptCase, iterationsText);
+            var scriptIterationTarget = GetReadmeLokadScriptIterationTarget(lokadScriptCase, requestedIterations);
             var scriptRow = MeasureReadmeCase(
-                iterations,
+                requestedIterations,
+                scriptIterationTarget,
                 samples,
                 context.ExecuteUtf8Regex,
                 context.ExecuteUtf8Compiled,
@@ -1481,9 +1491,10 @@ internal static partial class BenchmarkInspectReporter
 
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
-        var replicaIterations = ParseReadmeReplicaIterations(benchmarkCase, iterationsText);
+        var iterationTarget = GetReadmeReplicaIterationTarget(benchmarkCase, requestedIterations);
         var row = MeasureReadmeCase(
-            replicaIterations,
+            requestedIterations,
+            iterationTarget,
             samples,
             () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes),
             () => compiledUtf8Regex.Count(benchmarkCase.InputBytes),
@@ -1497,11 +1508,13 @@ internal static partial class BenchmarkInspectReporter
 
     public static int RunMeasureReadmePublicCase(string caseId, string? iterationsText, string? samplesText)
     {
+        var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var context = new LokadPublicBenchmarkContext(caseId);
-        var iterations = ParseReadmePublicIterations(context, iterationsText);
+        var iterationTarget = GetReadmePublicIterationTarget(context, requestedIterations);
         var row = MeasureReadmeCase(
-            iterations,
+            requestedIterations,
+            iterationTarget,
             samples,
             context.ExecuteUtf8Regex,
             context.ExecuteUtf8Compiled,
@@ -1524,7 +1537,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
     {
-        snapshot.SchemaVersion = 2;
+        snapshot.SchemaVersion = 3;
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -1596,14 +1609,28 @@ internal static partial class BenchmarkInspectReporter
         return sections.Distinct().ToArray();
     }
 
-    private static void RefreshReadmeSnapshotSection(ReadmeBenchmarkSnapshot snapshot, ReadmeBenchmarkSection section, int iterations, int samples)
+    private static void RefreshReadmeSnapshotSection(
+        ReadmeBenchmarkSnapshot snapshot,
+        ReadmeBenchmarkSection section,
+        int iterations,
+        int samples,
+        bool resume)
     {
         var sectionSnapshot = GetOrAddSnapshotSection(snapshot, section);
         var expectedCaseIds = new HashSet<string>(StringComparer.Ordinal);
 
-        void Record(string caseId, ReadmeCaseMeasurement measurement)
+        void MeasureAndRecord(string command, string caseId)
         {
             expectedCaseIds.Add(caseId);
+            if (resume &&
+                sectionSnapshot.Cases.TryGetValue(caseId, out var existing) &&
+                IsCurrentReadmeMeasurement(existing, iterations, samples))
+            {
+                Console.WriteLine($"Skipping current README benchmark case: {caseId}");
+                return;
+            }
+
+            var measurement = MeasureReadmeCaseOutOfProcess(command, caseId, iterations, samples);
             sectionSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
             SaveReadmeBenchmarkSnapshot(snapshot);
         }
@@ -1614,16 +1641,12 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.DotNetPerformanceCompiled:
                 foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
                 {
-                    Record(
-                        benchmarkCase.Id,
-                        MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                    MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
                 }
 
                 foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
                 {
-                    Record(
-                        caseId,
-                        MeasureReadmeCaseOutOfProcess("--measure-readme-public-case", caseId, iterations, samples));
+                    MeasureAndRecord("--measure-readme-public-case", caseId);
                 }
                 break;
 
@@ -1631,9 +1654,7 @@ internal static partial class BenchmarkInspectReporter
             case ReadmeBenchmarkSection.LokadCompiled:
                 foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
                 {
-                    Record(
-                        benchmarkCase.Id,
-                        MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                    MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
                 }
                 break;
 
@@ -1651,7 +1672,8 @@ internal static partial class BenchmarkInspectReporter
         ReadmeBenchmarkSection firstSection,
         ReadmeBenchmarkSection secondSection,
         int iterations,
-        int samples)
+        int samples,
+        bool resume)
     {
         if (!remainingSections.Contains(firstSection) || !remainingSections.Contains(secondSection))
         {
@@ -1662,9 +1684,21 @@ internal static partial class BenchmarkInspectReporter
         var secondSnapshot = GetOrAddSnapshotSection(snapshot, secondSection);
         var expectedCaseIds = new HashSet<string>(StringComparer.Ordinal);
 
-        void Record(string caseId, ReadmeCaseMeasurement measurement)
+        void MeasureAndRecord(string command, string caseId)
         {
             expectedCaseIds.Add(caseId);
+            if (resume &&
+                firstSnapshot.Cases.TryGetValue(caseId, out var firstExisting) &&
+                secondSnapshot.Cases.TryGetValue(caseId, out var secondExisting) &&
+                IsCurrentReadmeMeasurement(firstExisting, iterations, samples) &&
+                IsCurrentReadmeMeasurement(secondExisting, iterations, samples) &&
+                HaveSameReadmeMeasurement(firstExisting, secondExisting))
+            {
+                Console.WriteLine($"Skipping current paired README benchmark case: {caseId}");
+                return;
+            }
+
+            var measurement = MeasureReadmeCaseOutOfProcess(command, caseId, iterations, samples);
             firstSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
             secondSnapshot.Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
             SaveReadmeBenchmarkSnapshot(snapshot);
@@ -1674,25 +1708,19 @@ internal static partial class BenchmarkInspectReporter
         {
             foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.DotNetPerformance))
             {
-                Record(
-                    benchmarkCase.Id,
-                    MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
             }
 
             foreach (var caseId in LokadPublicBenchmarkContext.GetAllCaseIds())
             {
-                Record(
-                    caseId,
-                    MeasureReadmeCaseOutOfProcess("--measure-readme-public-case", caseId, iterations, samples));
+                MeasureAndRecord("--measure-readme-public-case", caseId);
             }
         }
         else if (firstSection == ReadmeBenchmarkSection.Lokad)
         {
             foreach (var benchmarkCase in ReplicaCountBenchmarkCase.GetAll(ReplicaBenchmarkSource.Lokad))
             {
-                Record(
-                    benchmarkCase.Id,
-                    MeasureReadmeCaseOutOfProcess("--measure-readme-case", benchmarkCase.Id, iterations, samples));
+                MeasureAndRecord("--measure-readme-case", benchmarkCase.Id);
             }
         }
         else
@@ -1706,6 +1734,45 @@ internal static partial class BenchmarkInspectReporter
         remainingSections.Remove(firstSection);
         remainingSections.Remove(secondSection);
     }
+
+    private static bool IsCurrentReadmeMeasurement(
+        ReadmeCaseMeasurementJson measurement,
+        int requestedIterations,
+        int samples)
+    {
+        var current = CaptureBenchmarkEnvironment();
+        var measured = measurement.Environment;
+        return !current.TrackedDirty &&
+            measured is not null &&
+            !measured.TrackedDirty &&
+            measurement.RequestedIterations == requestedIterations &&
+            measurement.EffectiveIterations >= requestedIterations &&
+            measurement.Samples == samples &&
+            measurement.Utf8Regex > 0 &&
+            measurement.Utf8Compiled > 0 &&
+            measurement.PredecodedRegex > 0 &&
+            measurement.CompiledRegex > 0 &&
+            measurement.DecodeThenRegex > 0 &&
+            measurement.DecodeThenCompiledRegex > 0 &&
+            measured.SourceCommit == current.SourceCommit &&
+            measured.Runtime == current.Runtime &&
+            measured.OperatingSystem == current.OperatingSystem &&
+            measured.Processor == current.Processor &&
+            measured.TieredPgo == current.TieredPgo;
+    }
+
+    private static bool HaveSameReadmeMeasurement(
+        ReadmeCaseMeasurementJson first,
+        ReadmeCaseMeasurementJson second)
+        => first.RequestedIterations == second.RequestedIterations &&
+            first.EffectiveIterations == second.EffectiveIterations &&
+            first.Samples == second.Samples &&
+            first.Utf8Regex == second.Utf8Regex &&
+            first.Utf8Compiled == second.Utf8Compiled &&
+            first.PredecodedRegex == second.PredecodedRegex &&
+            first.CompiledRegex == second.CompiledRegex &&
+            first.DecodeThenRegex == second.DecodeThenRegex &&
+            first.DecodeThenCompiledRegex == second.DecodeThenCompiledRegex;
 
     private static void RemoveUnexpectedReadmeCases(
         ReadmeBenchmarkSectionJson section,
@@ -5413,60 +5480,65 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ParseShortPublicIterations(LokadPublicBenchmarkContext context, string? text)
     {
-        int floor;
+        return Math.Max(GetShortPublicIterationFloor(context), ParseIterations(text));
+    }
+
+    private static int GetShortPublicIterationFloor(LokadPublicBenchmarkContext context)
+    {
         if (context.Operation is LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match)
         {
-            floor = context.CaseId.StartsWith("common/", StringComparison.Ordinal)
+            return context.CaseId.StartsWith("common/", StringComparison.Ordinal)
                 ? 10000
                 : context.CaseId.StartsWith("industry/boostdocs-", StringComparison.Ordinal)
                     ? 5000
                     : 2000;
         }
-        else if (context.Operation is LokadPublicBenchmarkOperation.Replace or LokadPublicBenchmarkOperation.Split)
+
+        if (context.Operation is LokadPublicBenchmarkOperation.Replace or LokadPublicBenchmarkOperation.Split)
         {
-            floor = context.CaseId.StartsWith("common/", StringComparison.Ordinal) ? 2000 : 1000;
-        }
-        else
-        {
-            floor = 500;
+            return context.CaseId.StartsWith("common/", StringComparison.Ordinal) ? 2000 : 1000;
         }
 
-        return Math.Max(floor, ParseIterations(text));
+        return 500;
     }
 
-    private static int ParseReadmePublicIterations(LokadPublicBenchmarkContext context, string? text)
-    {
-        return ParseShortPublicIterations(context, text);
-    }
+    private static int GetReadmePublicIterationTarget(LokadPublicBenchmarkContext context, int requestedIterations)
+        => Math.Max(GetShortPublicIterationFloor(context), requestedIterations);
 
     private static int ParseReadmeLokadScriptIterations(LokadReplicaScriptBenchmarkCase benchmarkCase, string? text)
+        => GetReadmeLokadScriptIterationTarget(benchmarkCase, ParseIterations(text));
+
+    private static int GetReadmeLokadScriptIterationTarget(
+        LokadReplicaScriptBenchmarkCase benchmarkCase,
+        int requestedIterations)
     {
         return benchmarkCase.Model == LokadReplicaScriptBenchmarkModel.PrefixMatchLoop
-            ? ParseLokadPrefixIterations(text)
-            : ParseIterations(text);
+            ? Math.Max(20000, requestedIterations)
+            : requestedIterations;
     }
 
-    private static int ParseReadmeReplicaIterations(ReplicaCountBenchmarkCase benchmarkCase, string? text)
+    private static int GetReadmeReplicaIterationTarget(
+        ReplicaCountBenchmarkCase benchmarkCase,
+        int requestedIterations)
     {
-        var requested = ParseIterations(text);
         var inputBytes = benchmarkCase.InputBytes.Length;
 
         if (inputBytes <= 128 * 1024)
         {
             if (benchmarkCase.Group is "literal" or "literal-family" or "structural")
             {
-                return Math.Max(20000, requested);
+                return Math.Max(20000, requestedIterations);
             }
 
-            return Math.Max(10000, requested);
+            return Math.Max(10000, requestedIterations);
         }
 
         if (inputBytes <= 512 * 1024)
         {
-            return Math.Max(5000, requested);
+            return Math.Max(5000, requestedIterations);
         }
 
-        return requested;
+        return requestedIterations;
     }
 
     private static int ParseSamples(string? text)
@@ -5485,7 +5557,8 @@ internal static partial class BenchmarkInspectReporter
     private static string FormatMicros(double value) => $"{value:N3} us";
 
     private static ReadmeCaseMeasurement MeasureReadmeCase(
-        int iterations,
+        int requestedIterations,
+        int iterationTarget,
         int samples,
         Func<int> utf8,
         Func<int> utf8Compiled,
@@ -5493,48 +5566,138 @@ internal static partial class BenchmarkInspectReporter
         Func<int> compiledRegex,
         Func<int> decodeThenRegex,
         Func<int> decodeThenCompiledRegex)
-        => new(
-            MeasureMedianMicroseconds(samples, iterations, utf8),
-            MeasureMedianMicroseconds(samples, iterations, utf8Compiled),
-            MeasureMedianMicroseconds(samples, iterations, predecoded),
-            MeasureMedianMicroseconds(samples, iterations, compiledRegex),
-            MeasureMedianMicroseconds(samples, iterations, decodeThenRegex),
-            MeasureMedianMicroseconds(samples, iterations, decodeThenCompiledRegex));
+    {
+        Func<int>[] actions =
+        [
+            utf8,
+            utf8Compiled,
+            predecoded,
+            compiledRegex,
+            decodeThenRegex,
+            decodeThenCompiledRegex,
+        ];
+        var effectiveIterations = CalibrateReadmeIterations(
+            requestedIterations,
+            iterationTarget,
+            samples,
+            actions);
+        return new ReadmeCaseMeasurement(
+            MeasureMedianMicroseconds(samples, effectiveIterations, utf8),
+            MeasureMedianMicroseconds(samples, effectiveIterations, utf8Compiled),
+            MeasureMedianMicroseconds(samples, effectiveIterations, predecoded),
+            MeasureMedianMicroseconds(samples, effectiveIterations, compiledRegex),
+            MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenRegex),
+            MeasureMedianMicroseconds(samples, effectiveIterations, decodeThenCompiledRegex),
+            requestedIterations,
+            effectiveIterations,
+            samples);
+    }
+
+    private static int CalibrateReadmeIterations(
+        int requestedIterations,
+        int iterationTarget,
+        int samples,
+        IReadOnlyList<Func<int>> actions)
+    {
+        const double targetSampleMicroseconds = 100_000;
+        const double targetCaseMeasurementMicroseconds = 30_000_000;
+        var slowestMicroseconds = 0d;
+        var totalMicroseconds = 0d;
+        foreach (var action in actions)
+        {
+            var microseconds = MeasureReadmeProbeMicrosecondsPerOperation(action, iterationTarget);
+            slowestMicroseconds = Math.Max(slowestMicroseconds, microseconds);
+            totalMicroseconds += microseconds;
+        }
+
+        if (slowestMicroseconds <= 0 || totalMicroseconds <= 0)
+        {
+            return iterationTarget;
+        }
+
+        var sampleBound = (int)Math.Clamp(
+            Math.Floor(targetSampleMicroseconds / slowestMicroseconds),
+            1,
+            iterationTarget);
+        var caseBound = (int)Math.Clamp(
+            Math.Floor(targetCaseMeasurementMicroseconds / (samples * totalMicroseconds)),
+            1,
+            iterationTarget);
+        return Math.Clamp(Math.Min(sampleBound, caseBound), requestedIterations, iterationTarget);
+    }
+
+    private static double MeasureReadmeProbeMicrosecondsPerOperation(Func<int> action, int iterationTarget)
+    {
+        const double probeTargetMicroseconds = 20_000;
+        var sink = action();
+        var probeIterations = 1;
+        while (true)
+        {
+            var measurement = MeasureTimedCore(probeIterations, action);
+            sink ^= measurement.Sink;
+            var elapsedMicroseconds = measurement.Elapsed.TotalMicroseconds;
+            if (elapsedMicroseconds >= probeTargetMicroseconds || probeIterations >= iterationTarget)
+            {
+                GC.KeepAlive(sink);
+                return elapsedMicroseconds / probeIterations;
+            }
+
+            probeIterations = probeIterations > iterationTarget / 2
+                ? iterationTarget
+                : probeIterations * 2;
+        }
+    }
 
     private static ReadmeCaseMeasurement MeasureReadmeCaseOutOfProcess(string command, string caseId, int iterations, int samples)
     {
+        const int caseTimeoutMilliseconds = 120_000;
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
             RedirectStandardOutput = true,
+            RedirectStandardError = true,
             UseShellExecute = false,
+            CreateNoWindow = true,
             WorkingDirectory = Environment.CurrentDirectory,
         };
-        psi.ArgumentList.Add("run");
-        psi.ArgumentList.Add("--project");
-        psi.ArgumentList.Add(@".\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj");
-        psi.ArgumentList.Add("-c");
-        psi.ArgumentList.Add("Release");
-        psi.ArgumentList.Add("--no-build");
-        psi.ArgumentList.Add("--");
+        psi.ArgumentList.Add(typeof(BenchmarkInspectReporter).Assembly.Location);
         psi.ArgumentList.Add(command);
         psi.ArgumentList.Add(caseId);
         psi.ArgumentList.Add(iterations.ToString(CultureInfo.InvariantCulture));
         psi.ArgumentList.Add(samples.ToString(CultureInfo.InvariantCulture));
 
+        Console.WriteLine($"Measuring README benchmark case: {caseId} (requested={iterations}, samples={samples}, cap=120s)");
+        Console.Out.Flush();
         using var process = Process.Start(psi) ?? throw new InvalidOperationException($"Unable to start child process for {command} {caseId}.");
-        var output = process.StandardOutput.ReadToEnd().Trim();
-        process.WaitForExit();
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        if (!process.WaitForExit(caseTimeoutMilliseconds))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            var partialError = errorTask.GetAwaiter().GetResult().Trim();
+            throw new TimeoutException(
+                $"README benchmark case '{caseId}' exceeded its 120-second child budget. " +
+                $"Prior cases remain checkpointed. Inspect the case with a smaller bounded command before resuming." +
+                (partialError.Length == 0 ? string.Empty : $" Child error: {partialError}"));
+        }
+
+        var output = outputTask.GetAwaiter().GetResult().Trim();
+        var error = errorTask.GetAwaiter().GetResult().Trim();
         if (process.ExitCode != 0)
         {
-            throw new InvalidOperationException($"Child process failed for {command} {caseId}: {output}");
+            throw new InvalidOperationException(
+                $"Child process failed for {command} {caseId}: " +
+                (error.Length == 0 ? output : error));
         }
 
         return ParseReadmeCaseRow(output);
     }
 
     private static string FormatReadmeCaseRow(ReadmeCaseMeasurement row)
-        => string.Create(CultureInfo.InvariantCulture, $"Utf8Regex={row.Utf8Regex:F3};Utf8Compiled={row.Utf8Compiled:F3};PredecodedRegex={row.PredecodedRegex:F3};CompiledRegex={row.CompiledRegex:F3};DecodeThenRegex={row.DecodeThenRegex:F3};DecodeThenCompiledRegex={row.DecodeThenCompiledRegex:F3}");
+        => string.Create(
+            CultureInfo.InvariantCulture,
+            $"RequestedIterations={row.RequestedIterations};EffectiveIterations={row.EffectiveIterations};Samples={row.Samples};Utf8Regex={row.Utf8Regex:F3};Utf8Compiled={row.Utf8Compiled:F3};PredecodedRegex={row.PredecodedRegex:F3};CompiledRegex={row.CompiledRegex:F3};DecodeThenRegex={row.DecodeThenRegex:F3};DecodeThenCompiledRegex={row.DecodeThenCompiledRegex:F3}");
 
     private static ReadmeCaseMeasurement ParseReadmeCaseRow(string text)
     {
@@ -5544,6 +5707,9 @@ internal static partial class BenchmarkInspectReporter
         double compiledRegex = 0;
         double decode = 0;
         double decodeCompiled = 0;
+        var requestedIterations = 0;
+        var effectiveIterations = 0;
+        var samples = 0;
 
         foreach (var part in text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
@@ -5553,31 +5719,54 @@ internal static partial class BenchmarkInspectReporter
                 continue;
             }
 
-            var value = double.Parse(pieces[1], CultureInfo.InvariantCulture);
             switch (pieces[0])
             {
+                case "RequestedIterations":
+                    requestedIterations = int.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "EffectiveIterations":
+                    effectiveIterations = int.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
+                case "Samples":
+                    samples = int.Parse(pieces[1], CultureInfo.InvariantCulture);
+                    break;
                 case "Utf8Regex":
-                    utf8 = value;
+                    utf8 = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
                 case "PredecodedRegex":
-                    predecoded = value;
+                    predecoded = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
                 case "Utf8Compiled":
-                    utf8Compiled = value;
+                    utf8Compiled = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
                 case "CompiledRegex":
-                    compiledRegex = value;
+                    compiledRegex = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
                 case "DecodeThenRegex":
-                    decode = value;
+                    decode = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
                 case "DecodeThenCompiledRegex":
-                    decodeCompiled = value;
+                    decodeCompiled = double.Parse(pieces[1], CultureInfo.InvariantCulture);
                     break;
             }
         }
 
-        return new ReadmeCaseMeasurement(utf8, utf8Compiled, predecoded, compiledRegex, decode, decodeCompiled);
+        if (requestedIterations <= 0 || effectiveIterations < requestedIterations || samples <= 0 ||
+            utf8 <= 0 || utf8Compiled <= 0 || predecoded <= 0 || compiledRegex <= 0 || decode <= 0 || decodeCompiled <= 0)
+        {
+            throw new InvalidOperationException($"Child process returned an incomplete README benchmark row: {text}");
+        }
+
+        return new ReadmeCaseMeasurement(
+            utf8,
+            utf8Compiled,
+            predecoded,
+            compiledRegex,
+            decode,
+            decodeCompiled,
+            requestedIterations,
+            effectiveIterations,
+            samples);
     }
 
     private static readonly JsonSerializerOptions ReadmeBenchmarkSnapshotJsonOptions = new()
@@ -5588,7 +5777,7 @@ internal static partial class BenchmarkInspectReporter
 
     private sealed class ReadmeBenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 2;
+        public int SchemaVersion { get; set; } = 3;
 
         public Dictionary<string, ReadmeBenchmarkSectionJson> Sections { get; set; } = new(StringComparer.Ordinal);
     }
@@ -5603,6 +5792,12 @@ internal static partial class BenchmarkInspectReporter
         public DateTimeOffset? MeasuredAtUtc { get; set; }
 
         public BenchmarkEnvironmentJson? Environment { get; set; }
+
+        public int RequestedIterations { get; set; }
+
+        public int EffectiveIterations { get; set; }
+
+        public int Samples { get; set; }
 
         public double Utf8Regex { get; set; }
 
@@ -5621,6 +5816,9 @@ internal static partial class BenchmarkInspectReporter
             {
                 MeasuredAtUtc = DateTimeOffset.UtcNow,
                 Environment = CaptureBenchmarkEnvironment(),
+                RequestedIterations = measurement.RequestedIterations,
+                EffectiveIterations = measurement.EffectiveIterations,
+                Samples = measurement.Samples,
                 Utf8Regex = measurement.Utf8Regex,
                 Utf8Compiled = measurement.Utf8Compiled,
                 PredecodedRegex = measurement.PredecodedRegex,
@@ -5630,10 +5828,28 @@ internal static partial class BenchmarkInspectReporter
             };
 
         public ReadmeCaseMeasurement ToMeasurement()
-            => new(Utf8Regex, Utf8Compiled, PredecodedRegex, CompiledRegex, DecodeThenRegex, DecodeThenCompiledRegex);
+            => new(
+                Utf8Regex,
+                Utf8Compiled,
+                PredecodedRegex,
+                CompiledRegex,
+                DecodeThenRegex,
+                DecodeThenCompiledRegex,
+                RequestedIterations,
+                EffectiveIterations,
+                Samples);
     }
 
-    private readonly record struct ReadmeCaseMeasurement(double Utf8Regex, double Utf8Compiled, double PredecodedRegex, double CompiledRegex, double DecodeThenRegex, double DecodeThenCompiledRegex);
+    private readonly record struct ReadmeCaseMeasurement(
+        double Utf8Regex,
+        double Utf8Compiled,
+        double PredecodedRegex,
+        double CompiledRegex,
+        double DecodeThenRegex,
+        double DecodeThenCompiledRegex,
+        int RequestedIterations,
+        int EffectiveIterations,
+        int Samples);
     private readonly record struct HybridLiteralFamilyMetrics(
         int Count,
         int Windows,
