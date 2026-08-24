@@ -58,7 +58,8 @@ internal static class Utf8AsciiTokenFamilyExecutor
         matchIndex = -1;
         matchedLength = 0;
 
-        if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
+        if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
+            Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
             Utf8FallbackDirectFamilyKind.AsciiUriToken or
             Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
         {
@@ -82,6 +83,40 @@ internal static class Utf8AsciiTokenFamilyExecutor
             Utf8FallbackDirectFamilyKind.AsciiIdentifierToken => Utf8AsciiTokenFinderExecutor.TryFindAsciiIdentifierTokenWithoutValidation(input, startIndex, out matchIndex, out matchedLength),
             _ => Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation,
         };
+    }
+
+    public static Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult TryIsMatchWithoutValidation(
+        ReadOnlySpan<byte> input,
+        int startIndex,
+        in Utf8FallbackDirectFamilyPlan plan)
+    {
+        if (plan.Kind != Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns)
+        {
+            var result = TryFindTokenWithoutValidation(input, startIndex, plan, out _, out var matchedLength);
+            return result == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match && matchedLength <= 0
+                ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch
+                : result;
+        }
+
+        if (plan.LiteralUtf8 is not { Length: 1 } literalUtf8)
+        {
+            return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
+        }
+
+        if (!Utf8AsciiLiteralBetweenNegatedRunsExecutor.TryIsMatchWithoutValidation(
+            input,
+            startIndex,
+            literalUtf8[0],
+            plan.SeparatorByte,
+            plan.SecondSeparatorByte,
+            out var isMatch))
+        {
+            return Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation;
+        }
+
+        return isMatch
+            ? Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match
+            : Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NoMatch;
     }
 
     public static bool TryCountTokens(

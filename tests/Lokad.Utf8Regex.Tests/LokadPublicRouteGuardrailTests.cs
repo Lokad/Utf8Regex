@@ -231,6 +231,13 @@ public sealed class LokadPublicRouteGuardrailTests
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("bbb.ccc"u8, out var asciiMatch));
+        Assert.True(asciiMatch);
+        Assert.True(regex.Inspection.DebugTryIsMatchWithoutValidation("no literal"u8, out var asciiMiss));
+        Assert.False(asciiMiss);
+        Assert.False(regex.Inspection.DebugTryIsMatchWithoutValidation("é.ccc"u8, out _));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', 0xFF]));
+        Assert.Throws<ArgumentException>(() => regex.IsMatch([(byte)'b', (byte)'.', (byte)'c', 0xFF]));
     }
 
     [Fact]

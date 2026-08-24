@@ -3177,19 +3177,16 @@ public sealed class Utf8Regex
 
         if (_hasDirectFallbackTokenFamilyWithoutValidation)
         {
-            var directResult = Utf8AsciiTokenFamilyExecutor.TryFindTokenWithoutValidation(
+            var directResult = Utf8AsciiTokenFamilyExecutor.TryIsMatchWithoutValidation(
                 input,
                 0,
-                _fallbackDirectFamily,
-                out _,
-                out var matchedLength);
+                _fallbackDirectFamily);
             if (directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.NeedsValidation)
             {
                 return false;
             }
 
-            isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match &&
-                matchedLength > 0;
+            isMatch = directResult == Utf8AsciiAnchoredValidatorExecutor.DirectMatchResult.Match;
             return true;
         }
 

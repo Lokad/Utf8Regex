@@ -254,6 +254,9 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     [InlineData("bbb.z")]
     [InlineData("bbb.")]
     [InlineData("bbb.ccz")]
+    [InlineData("é.ccc")]
+    [InlineData("bbb.é")]
+    [InlineData("é.z")]
     public void OneNodeBacktrackingIsMatchMatchesDotNetOnRepresentativeInput(string input)
     {
         const string pattern = @"[^a]+\.[^z]+";
