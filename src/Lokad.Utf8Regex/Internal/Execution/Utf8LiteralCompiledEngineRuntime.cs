@@ -561,9 +561,9 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         if (budget.IsInfinite &&
             _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiteral &&
-            literal.Length is >= 9 and <= 16)
+            literal.Length is >= 6 and <= 16)
         {
-            // For medium exact literals, the runtime sequence search keeps one
+            // For six- to sixteen-byte exact literals, the runtime sequence search keeps one
             // vectorized scan in flight instead of restarting an anchor-byte
             // scan after every match. Short literals retain their specialized
             // prepared tiers, and longer literals keep their existing policy.
