@@ -252,7 +252,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-to-generic-type` | 3.204 us | 3.302 us | 9.202 us |
 | `structural/keyword-family-to-capitalized-identifier` | 45.323 us | 132.100 us | 142.134 us |
 | `structural/method-family-call` | 2.786 us | 5.303 us | 11.897 us |
-| `structural/ordered-keyword-pair` | 3.425 us | 3.345 us | 9.219 us |
+| `structural/ordered-keyword-pair` | 4.488 us | 5.593 us | 9.615 us |
 | `structural/ordered-identifier-window` | 4.323 us | 18.431 us | 24.803 us |
 | `structural/modifier-family-to-type-window` | 14.075 us | 164.592 us | 164.381 us |
 | `structural/ordered-keyword-window` | 3.764 us | 11.366 us | 18.346 us |
@@ -302,7 +302,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/keyword-to-generic-type` | 3.375 us | 2.604 us | 8.606 us |
 | `structural/keyword-family-to-capitalized-identifier` | 45.065 us | 43.417 us | 52.467 us |
 | `structural/method-family-call` | 2.824 us | 3.524 us | 9.832 us |
-| `structural/ordered-keyword-pair` | 3.366 us | 2.694 us | 8.655 us |
+| `structural/ordered-keyword-pair` | 5.734 us | 3.734 us | 9.996 us |
 | `structural/ordered-identifier-window` | 3.659 us | 6.742 us | 11.743 us |
 | `structural/modifier-family-to-type-window` | 13.524 us | 57.715 us | 66.023 us |
 | `structural/ordered-keyword-window` | 3.827 us | 5.220 us | 11.857 us |
