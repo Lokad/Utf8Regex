@@ -2582,6 +2582,52 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(31)]
+    [InlineData(32)]
+    [InlineData(47)]
+    [InlineData(63)]
+    public void SeparatorLiteralLookaheadCountRetainsCandidatesAcrossVectorLanes(int matchIndex)
+    {
+        const string pattern = "HttpClient(?=\\s+client)";
+        var input = Encoding.UTF8.GetBytes($"{new string('x', matchIndex)}HttpClient client suffix");
+
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+
+            Assert.Equal(1, regex.Count(input));
+        }
+    }
+
+    [Theory]
+    [InlineData("HttpClient\u00A0client")]
+    [InlineData("HttpClient\u2003client")]
+    [InlineData("HttpClient\u2028client")]
+    public void SeparatorLiteralLookaheadCountFallsBackForUnicodeWhitespace(string input)
+    {
+        const string pattern = "HttpClient(?=\\s+client)";
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            Assert.Equal(Regex.Count(input, pattern, options), new Utf8Regex(pattern, options).Count(bytes));
+        }
+    }
+
+    [Fact]
+    public void SeparatorLiteralLookaheadCountStillValidatesAfterAnAsciiMatch()
+    {
+        var regex = new Utf8Regex("HttpClient(?=\\s+client)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        byte[] malformed = [.. "HttpClient client"u8, 0xFF];
+
+        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
+    }
+
     [Fact]
     public void OrderedLiteralWindowLiteralFamilyCountPreservesBehavior()
     {

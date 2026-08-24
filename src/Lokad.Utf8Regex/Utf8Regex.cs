@@ -1054,6 +1054,29 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
+        if (_prioritizeOrderedLiteralWindowCount)
+        {
+            var orderedWindowPlan = _program.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
+            if (orderedWindowPlan.TrailingLiteralUtf8.Length >= 2 &&
+                AsciiOrderedLiteralWindowExecutor.CanUseSeparatorOnlySingleLiteralFastPath(orderedWindowPlan))
+            {
+                var orderedWindowBudget = CreateExecutionBudget();
+                if (AsciiOrderedLiteralWindowExecutor.TryCountSeparatorOnlySingleLiteralAscii(
+                        input,
+                        orderedWindowPlan,
+                        orderedWindowBudget,
+                        out var orderedWindowCount))
+                {
+                    Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
+                    return orderedWindowCount;
+                }
+
+                // The native separator set is ASCII-only; valid non-ASCII input needs the semantic oracle too.
+                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                    Utf8Validation.DecodeStrict(input));
+            }
+        }
+
         if (_prioritizePlainAsciiLiteralCount ||
             _prioritizeBoundaryOnlyStructuralLiteralFamilyCount ||
             _prioritizeOrderedLiteralWindowCount)

@@ -1,5 +1,10 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class AsciiOrderedLiteralWindowExecutor
@@ -125,6 +130,193 @@ internal static class AsciiOrderedLiteralWindowExecutor
         return !plan.IsLiteralFamily &&
             plan.MaxGap == 0 &&
             plan.GapLeadingSeparatorMinCount > 0;
+    }
+
+    internal static bool TryCountSeparatorOnlySingleLiteralAscii(
+        ReadOnlySpan<byte> input,
+        AsciiOrderedLiteralWindowPlan plan,
+        Utf8ExecutionDeadline budget,
+        out int count)
+    {
+        count = 0;
+        if (!CanUseSeparatorOnlySingleLiteralFastPath(plan) ||
+            plan.TrailingLiteralUtf8.Length < 2)
+        {
+            return false;
+        }
+
+        var trailingLiteral = plan.TrailingLiteralUtf8.AsSpan();
+        var firstTrailing = trailingLiteral[0];
+        var lastTrailingIndex = trailingLiteral.Length - 1;
+        var lastTrailing = trailingLiteral[lastTrailingIndex];
+        var maximumTrailingStart = input.Length - trailingLiteral.Length;
+        var minimumMatchStart = 0;
+        var minimumTrailingStart = plan.LeadingLiteralUtf8.Length + plan.GapLeadingSeparatorMinCount;
+        var offset = 0;
+        ref var inputRef = ref MemoryMarshal.GetReference(input);
+
+        // Candidate correlation and high-bit inspection share the first load. Keep
+        // scanning after matches so a successful result also proves the whole input ASCII.
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var finalVectorStart = maximumTrailingStart - Vector256<byte>.Count + 1;
+            var firstVector = Vector256.Create(firstTrailing);
+            var lastVector = Vector256.Create(lastTrailing);
+            while (offset <= finalVectorStart)
+            {
+                budget.Step();
+                var values = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                if (values.ExtractMostSignificantBits() != 0)
+                {
+                    return false;
+                }
+
+                var lastValues = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset + lastTrailingIndex));
+                var candidates = (Vector256.Equals(values, firstVector) & Vector256.Equals(lastValues, lastVector))
+                    .ExtractMostSignificantBits();
+                CountSeparatorOnlySingleLiteralCandidates(
+                    input,
+                    plan,
+                    trailingLiteral,
+                    offset,
+                    candidates,
+                    ref minimumMatchStart,
+                    ref minimumTrailingStart,
+                    ref count);
+                offset += Vector256<byte>.Count;
+            }
+        }
+
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var finalVectorStart = maximumTrailingStart - Vector128<byte>.Count + 1;
+            if (offset <= finalVectorStart)
+            {
+                budget.Step();
+                var values = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                if (values.ExtractMostSignificantBits() != 0)
+                {
+                    return false;
+                }
+
+                var lastValues = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset + lastTrailingIndex));
+                var candidates = (Vector128.Equals(values, Vector128.Create(firstTrailing)) &
+                                  Vector128.Equals(lastValues, Vector128.Create(lastTrailing)))
+                    .ExtractMostSignificantBits();
+                CountSeparatorOnlySingleLiteralCandidates(
+                    input,
+                    plan,
+                    trailingLiteral,
+                    offset,
+                    candidates,
+                    ref minimumMatchStart,
+                    ref minimumTrailingStart,
+                    ref count);
+                offset += Vector128<byte>.Count;
+            }
+        }
+
+        while (offset < input.Length)
+        {
+            var value = input[offset];
+            if (value >= 0x80)
+            {
+                return false;
+            }
+
+            if (offset >= minimumTrailingStart &&
+                offset <= maximumTrailingStart &&
+                value == firstTrailing &&
+                input[offset + lastTrailingIndex] == lastTrailing)
+            {
+                CountSeparatorOnlySingleLiteralCandidate(
+                    input,
+                    plan,
+                    trailingLiteral,
+                    offset,
+                    ref minimumMatchStart,
+                    ref minimumTrailingStart,
+                    ref count);
+            }
+
+            offset++;
+        }
+
+        return true;
+    }
+
+    private static void CountSeparatorOnlySingleLiteralCandidates(
+        ReadOnlySpan<byte> input,
+        AsciiOrderedLiteralWindowPlan plan,
+        ReadOnlySpan<byte> trailingLiteral,
+        int blockOffset,
+        uint candidates,
+        ref int minimumMatchStart,
+        ref int minimumTrailingStart,
+        ref int count)
+    {
+        while (candidates != 0)
+        {
+            var trailingStart = blockOffset + BitOperations.TrailingZeroCount(candidates);
+            if (trailingStart >= minimumTrailingStart)
+            {
+                CountSeparatorOnlySingleLiteralCandidate(
+                    input,
+                    plan,
+                    trailingLiteral,
+                    trailingStart,
+                    ref minimumMatchStart,
+                    ref minimumTrailingStart,
+                    ref count);
+            }
+
+            candidates &= candidates - 1;
+        }
+    }
+
+    private static void CountSeparatorOnlySingleLiteralCandidate(
+        ReadOnlySpan<byte> input,
+        AsciiOrderedLiteralWindowPlan plan,
+        ReadOnlySpan<byte> trailingLiteral,
+        int trailingStart,
+        ref int minimumMatchStart,
+        ref int minimumTrailingStart,
+        ref int count)
+    {
+        if (!input[trailingStart..].StartsWith(trailingLiteral) ||
+            !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.TrailingLiteralLeadingBoundary, input, trailingStart) ||
+            !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.TrailingLiteralTrailingBoundary, input, trailingStart + trailingLiteral.Length))
+        {
+            return;
+        }
+
+        var separatorStart = trailingStart;
+        while (separatorStart > minimumMatchStart &&
+               input[separatorStart - 1] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v')
+        {
+            separatorStart--;
+        }
+
+        if (trailingStart - separatorStart < plan.GapLeadingSeparatorMinCount)
+        {
+            return;
+        }
+
+        var leadingLiteral = plan.LeadingLiteralUtf8.AsSpan();
+        var leadingStart = separatorStart - leadingLiteral.Length;
+        if (leadingStart < minimumMatchStart ||
+            !input[leadingStart..].StartsWith(leadingLiteral) ||
+            !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralLeadingBoundary, input, leadingStart) ||
+            !AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.LeadingLiteralTrailingBoundary, input, separatorStart))
+        {
+            return;
+        }
+
+        count++;
+        minimumMatchStart = plan.YieldLeadingLiteralOnly
+            ? separatorStart
+            : trailingStart + trailingLiteral.Length;
+        minimumTrailingStart = minimumMatchStart + leadingLiteral.Length + plan.GapLeadingSeparatorMinCount;
     }
 
     internal static int CountSeparatorOnlySingleLiteralTrailingCandidates(
