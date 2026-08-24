@@ -928,6 +928,20 @@ public sealed class Utf8Regex
                 out _);
         }
 
+        if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole)
+        {
+            var optionalFieldMatched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
+                input,
+                _anchoredOptionalFieldPlan,
+                _allowsTrailingNewlineBeforeEnd,
+                out _,
+                out var optionalFieldNeedsValidation);
+            if (!optionalFieldNeedsValidation)
+            {
+                return optionalFieldMatched;
+            }
+        }
+
         try
         {
             return IsMatchCore(input);
@@ -3229,20 +3243,6 @@ public sealed class Utf8Regex
 
                 return false;
 
-            case Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken:
-                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-                {
-                    return false;
-                }
-
-                isMatch = Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
-                    input,
-                    0,
-                    _fallbackDirectFamily,
-                    out _,
-                    out _);
-                return true;
-
             case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail:
                 if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
                 {
@@ -3273,21 +3273,6 @@ public sealed class Utf8Regex
                 }
 
                 return input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0;
-
-            case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiOptionalFieldWhole:
-                var matched = Utf8AsciiAnchoredOptionalFieldExecutor.TryMatchWhole(
-                    input,
-                    _anchoredOptionalFieldPlan,
-                    _allowsTrailingNewlineBeforeEnd,
-                    out _,
-                    out var needsValidation);
-                if (needsValidation)
-                {
-                    return false;
-                }
-
-                isMatch = matched;
-                return true;
 
             case Utf8PrioritizedBooleanFamilyKind.AsciiUriToken:
                 var uriMatched = Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(
