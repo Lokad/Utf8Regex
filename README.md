@@ -129,7 +129,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/replace-words` | `Replace` | 47.756 us | 46.897 us | 48.029 us |
 | `common/split-words` | `Split` | 9.907 us | 49.342 us | 50.061 us |
 | `common/backtracking` | `IsMatch` | 0.013 us | 0.531 us | 0.552 us |
-| `common/one-node-backtracking` | `IsMatch` | 0.255 us | 0.351 us | 0.388 us |
+| `common/one-node-backtracking` | `IsMatch` | 0.108 us | 0.360 us | 0.395 us |
 | `industry/mariomka-email-count` | `Count` | 5,275.316 us | 279.074 us | 5,280.228 us |
 | `industry/mariomka-uri-count` | `Count` | 5,931.430 us | 1,080.190 us | 6,028.280 us |
 | `industry/mariomka-ip-count` | `Count` | 4,894.530 us | 5,072.805 us | 10,121.885 us |
@@ -210,7 +210,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/replace-words` | `Replace` | 14.613 us | 14.630 us | 14.868 us |
 | `common/split-words` | `Split` | 9.576 us | 14.752 us | 14.592 us |
 | `common/backtracking` | `IsMatch` | 0.013 us | 0.028 us | 0.045 us |
-| `common/one-node-backtracking` | `IsMatch` | 0.257 us | 0.231 us | 0.260 us |
+| `common/one-node-backtracking` | `IsMatch` | 0.110 us | 0.233 us | 0.265 us |
 | `industry/mariomka-email-count` | `Count` | 5,280.718 us | 251.636 us | 5,312.416 us |
 | `industry/mariomka-uri-count` | `Count` | 5,569.105 us | 633.815 us | 5,519.565 us |
 | `industry/mariomka-ip-count` | `Count` | 5,034.210 us | 2,179.545 us | 7,062.355 us |
