@@ -332,6 +332,11 @@ if (args.Length >= 2 && args[0].Equals("--measure-utf8-validation-case", StringC
     return BenchmarkInspectReporter.RunMeasureUtf8ValidationReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 2 && args[0].Equals("--inspect-utf8-validation-route", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunInspectUtf8ValidationRoute(args[1]);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-backends-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureExactLiteralFamilyBackendsReplicaCase(

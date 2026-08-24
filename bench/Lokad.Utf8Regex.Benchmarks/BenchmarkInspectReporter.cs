@@ -2906,6 +2906,84 @@ internal static partial class BenchmarkInspectReporter
         Func<int> Action,
         int ExpectedResult);
 
+    public static int RunInspectUtf8ValidationRoute(string caseId)
+    {
+        byte[] input;
+        string origin;
+        if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))
+        {
+            var context = new LokadPublicBenchmarkContext(caseId);
+            input = context.InputBytes;
+            origin = $"public/{context.Operation}";
+        }
+        else if (ReplicaCountBenchmarkCase.TryResolve(caseId, out var benchmarkCase))
+        {
+            input = benchmarkCase!.InputBytes;
+            origin = benchmarkCase.Source.ToString();
+        }
+        else
+        {
+            Console.Error.WriteLine($"Benchmark case '{caseId}' was not found.");
+            return 1;
+        }
+
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        var census = Utf8ValidationRouteCensus.Analyze(input);
+        var first256 = Utf8InputAnalyzer.DescribeLeadByteSample(input, 256);
+        var first4096 = Utf8InputAnalyzer.DescribeLeadByteSample(input, 4096);
+
+        Console.WriteLine($"CaseId                    : {caseId}");
+        Console.WriteLine($"Origin                    : {origin}");
+        Console.WriteLine($"InputBytes                : {census.InputBytes}");
+        Console.WriteLine($"ThrowIfInvalidMode        : {Utf8InputAnalyzer.SelectThrowIfInvalidOnlyMode(input)}");
+        WriteUtf8LeadByteSample("First256", first256);
+        WriteUtf8LeadByteSample("First4096", first4096);
+        Console.WriteLine($"InitialWideMode           : {census.InitialWideMode}");
+        Console.WriteLine($"ScalarCount               : {census.ScalarCount}");
+        Console.WriteLine($"FirstNonAsciiOffset       : {census.FirstNonAsciiOffset}");
+        Console.WriteLine($"FirstTwoByteOffset        : {census.FirstTwoByteOffset}");
+        Console.WriteLine($"FirstSafeThreeByteOffset  : {census.FirstSafeThreeByteOffset}");
+        Console.WriteLine($"FirstConstrained3Offset   : {census.FirstConstrainedThreeByteOffset}");
+        Console.WriteLine($"FirstFourByteOffset       : {census.FirstFourByteOffset}");
+        Console.WriteLine($"Cross32ByteScalars        : {census.CrossBlockScalars}");
+        foreach (var shape in Enum.GetValues<Utf8ValidationScalarShape>())
+        {
+            var index = (int)shape;
+            Console.WriteLine(
+                $"Scalar[{shape,-17}]: count={census.ScalarCounts[index]}, bytes={census.ScalarBytes[index]}, " +
+                $"runs={census.ScalarRuns[index]}, maxRunScalars={census.LongestScalarRunScalars[index]}, " +
+                $"maxRunBytes={census.LongestScalarRunBytes[index]}");
+        }
+
+        Console.WriteLine($"Blocks32                  : {census.BlockCount}");
+        foreach (var shape in Enum.GetValues<Utf8ValidationBlockShape>())
+        {
+            var index = (int)shape;
+            Console.WriteLine(
+                $"Block[{shape,-21}]: count={census.BlockShapeCounts[index]}, " +
+                $"maxRun={census.LongestBlockShapeRuns[index]}");
+        }
+
+        Console.WriteLine($"BlockShapeTransitions     : {census.BlockShapeTransitions}");
+        Console.WriteLine($"DenseSafeThreeByteBlocks  : {census.DenseSafeThreeByteBlocks}");
+        Console.WriteLine($"ScalarEscapeBlocks        : {census.ScalarEscapeBlocks}");
+        Console.WriteLine($"EstimatedLeanBlocks       : {census.EstimatedLeanBlocks}");
+        Console.WriteLine($"EstimatedWideBlocks       : {census.EstimatedWideBlocks}");
+        Console.WriteLine($"EstimatedWideEntries      : {census.EstimatedWideEntries}");
+        Console.WriteLine($"EstimatedWideExits        : {census.EstimatedWideExits}");
+        Console.WriteLine("CensusScope                : untimed full-corpus shape replay");
+        Console.WriteLine("PolicyEstimateScope        : fixed 32-byte grid; not executed production-branch counters");
+        return 0;
+    }
+
+    private static void WriteUtf8LeadByteSample(string label, Utf8LeadByteSampleShape sample)
+    {
+        Console.WriteLine(
+            $"{label,-26}: bytes={sample.SampleLength}, ascii={sample.AsciiBytes}, " +
+            $"firstNonAscii={sample.FirstNonAsciiOffset}, leads2={sample.TwoByteLeads}, " +
+            $"leads3={sample.ThreeByteLeads}, leads4={sample.FourByteLeads}");
+    }
+
     public static int RunMeasureCompiledMicrocostCase(string caseId, string? iterationsText)
     {
         if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))

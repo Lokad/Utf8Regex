@@ -63,6 +63,7 @@ Examples:
 ./bench.ps1 -CommandArgs "--measure-count-attribution-case","literal/sherlock-zh","20","5"
 ./bench.ps1 -CommandArgs "--dump-dotnet-generated-regex-case","lokad/lexer/doc-line"
 ./bench.ps1 -CommandArgs "--measure-utf8-validation-profile","three-byte-large","20"
+./bench.ps1 -CommandArgs "--inspect-utf8-validation-route","industry/mariomka-email-count"
 ./bench.ps1 -CommandArgs "--measure-unicode-literal-case","literal/sherlock-ru","20"
 ./bench.ps1 -CommandArgs "--measure-token-finder-case","lokad/langserv/helper-identifier","20"
 ./bench.ps1 -CommandArgs "--measure-line-family-case","lokad/imports/module-imports","20"
@@ -167,6 +168,11 @@ Current intended uses:
   - generate and dump the .NET source-generated C# for one raw pattern and option set
 - --measure-utf8-validation-profile
   - benchmark UTF-8 validation kernels on frozen profiles
+- --inspect-utf8-validation-route
+  - emit an untimed full-corpus census of scalar widths, 32-byte block shapes,
+    cross-block scalars, constrained runs, and estimated lean/wide policy transitions
+  - use this before changing mixed-width validation; estimated policy counts describe
+    the current shape policy and are not timed production-branch counters
 - --measure-unicode-literal-case
   - benchmark the Unicode exact-literal path end-to-end, including validation and exact-literal kernel variants
 - --measure-token-finder-case
