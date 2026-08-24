@@ -274,7 +274,21 @@ internal static class Utf8ValidationCore
                 var unsupportedStop = unsupportedBits == 0
                     ? Vector256<byte>.Count
                     : BitOperations.TrailingZeroCount(unsupportedBits);
-                var trailingLeadBits = leadBits & 0xC000_0000u;
+                // A two-byte lead can start at byte 30 and still end inside this
+                // vector; a safe three-byte lead needs two remaining bytes.
+                var trailingLeadBits =
+                    (twoByteLeadBits & 0x8000_0000u) |
+                    (safeThreeByteLeadBits & 0xC000_0000u);
+                var expectedContinuationBits = (leadBits << 1) | (safeThreeByteLeadBits << 2);
+                if (overlongLeadBits == 0 &&
+                    unsupportedBits == 0 &&
+                    trailingLeadBits == 0 &&
+                    continuationBits == expectedContinuationBits)
+                {
+                    offset += Vector256<byte>.Count;
+                    continue;
+                }
+
                 var trailingLeadStop = trailingLeadBits == 0
                     ? Vector256<byte>.Count
                     : BitOperations.TrailingZeroCount(trailingLeadBits);
@@ -286,7 +300,6 @@ internal static class Utf8ValidationCore
                     ? uint.MaxValue
                     : (1u << stop) - 1u;
                 var invalidLeadBits = overlongLeadBits & prefixBits;
-                var expectedContinuationBits = (leadBits << 1) | (safeThreeByteLeadBits << 2);
                 var structuralMismatchBits = (continuationBits ^ expectedContinuationBits) & prefixBits;
                 var invalidBits = invalidLeadBits | structuralMismatchBits;
                 if (invalidBits != 0)

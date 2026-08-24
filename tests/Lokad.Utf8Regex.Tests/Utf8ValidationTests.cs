@@ -120,6 +120,16 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
+    public void LeanTwoByteDrainAcceptsAScalarEndingAtTheVectorBoundary()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 30) + "é" + new string('b', 32));
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
+        Assert.Equal(input.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
     public void AsciiAndTwoByteDrainReportsInvalidLeadOffsetsAroundVectorBoundaries()
     {
         var cases = new[]
