@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -17,6 +18,7 @@ public sealed class InvariantCyrillicLiteralCountTests
         const string input = "шерлок холмс; ШЕРЛОК ХОЛМС; Шерлок ХоЛмС; Шерлок Уолмс";
 
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.False(regex.Inspection.DebugInvariantCyrillicCountUsesCorrelatedPrefilter);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
@@ -31,6 +33,9 @@ public sealed class InvariantCyrillicLiteralCountTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.Equal(
+            Sse2.IsSupported && Ssse3.IsSupported,
+            regex.Inspection.DebugInvariantCyrillicCountUsesCorrelatedPrefilter);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 

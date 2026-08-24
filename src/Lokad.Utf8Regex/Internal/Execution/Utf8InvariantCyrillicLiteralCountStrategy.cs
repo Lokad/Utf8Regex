@@ -28,8 +28,10 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         _sharedAnchorSearchValues = null;
         _sharedAnchorLiteralMasks = null;
         _sharedAnchorByteOffset = -1;
-        _correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(
-            literals.Select(static literal => literal.Bytes).ToArray());
+        _correlatedPrefilter = literals.Length > 1
+            ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(
+                literals.Select(static literal => literal.Bytes).ToArray())
+            : default;
 
         var sharedAnchorByteOffset = literals[0].AnchorByteOffset;
         for (var i = 1; i < literals.Length; i++)
@@ -224,6 +226,8 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
         return count;
     }
+
+    public bool UsesCorrelatedPrefilter => _correlatedPrefilter.HasValue;
 
     private int CountWithCorrelatedPrefilter(ReadOnlySpan<byte> input)
     {
