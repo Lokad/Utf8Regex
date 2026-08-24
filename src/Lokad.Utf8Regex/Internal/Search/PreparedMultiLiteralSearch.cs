@@ -1603,17 +1603,42 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             var zero = Vector256<byte>.Zero;
             while (baseIndex <= vectorLimit)
             {
-                var candidates = Vector256.Create((byte)0xFF);
-                for (var offset = 0; offset < MaskLength; offset++)
+                Vector256<byte> candidates;
+                // Long folded families select exactly three rare offsets. Keep that
+                // dominant AVX2 path free of the per-block mask loop and repeated array indexing.
+                if (MaskLength == 3)
                 {
-                    var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + MaskOffsets[offset]));
-                    var low = Avx2.And(window, lowNibbleMask);
-                    var high = Avx2.And(
-                        Avx2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),
+                    candidates = CreateAvxMask(
+                        ref inputRef,
+                        baseIndex + MaskOffsets[0],
+                        LowMaskVectors[0],
+                        HighMaskVectors[0],
                         lowNibbleMask);
-                    var lowMask = Avx2.Shuffle(LowMaskVectors[offset], low);
-                    var highMask = Avx2.Shuffle(HighMaskVectors[offset], high);
-                    candidates = Avx2.And(candidates, Avx2.And(lowMask, highMask));
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        ref inputRef,
+                        baseIndex + MaskOffsets[1],
+                        LowMaskVectors[1],
+                        HighMaskVectors[1],
+                        lowNibbleMask));
+                    candidates = Avx2.And(candidates, CreateAvxMask(
+                        ref inputRef,
+                        baseIndex + MaskOffsets[2],
+                        LowMaskVectors[2],
+                        HighMaskVectors[2],
+                        lowNibbleMask));
+                }
+                else
+                {
+                    candidates = Vector256.Create((byte)0xFF);
+                    for (var offset = 0; offset < MaskLength; offset++)
+                    {
+                        candidates = Avx2.And(candidates, CreateAvxMask(
+                            ref inputRef,
+                            baseIndex + MaskOffsets[offset],
+                            LowMaskVectors[offset],
+                            HighMaskVectors[offset],
+                            lowNibbleMask));
+                    }
                 }
 
                 var zeroMask = Avx2.MoveMask(Avx2.CompareEqual(candidates, zero));
@@ -1708,6 +1733,24 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         state = new PreparedMultiLiteralScanState(input.Length, 0, 0);
         return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector256<byte> CreateAvxMask(
+        ref byte inputRef,
+        int inputOffset,
+        Vector256<byte> lowMaskVector,
+        Vector256<byte> highMaskVector,
+        Vector256<byte> lowNibbleMask)
+    {
+        var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, inputOffset));
+        var low = Avx2.And(window, lowNibbleMask);
+        var high = Avx2.And(
+            Avx2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),
+            lowNibbleMask);
+        var lowMask = Avx2.Shuffle(lowMaskVector, low);
+        var highMask = Avx2.Shuffle(highMaskVector, high);
+        return Avx2.And(lowMask, highMask);
     }
 }
 
