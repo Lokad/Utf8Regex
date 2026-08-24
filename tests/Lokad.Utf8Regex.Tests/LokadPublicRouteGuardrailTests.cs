@@ -440,6 +440,42 @@ public sealed class LokadPublicRouteGuardrailTests
             [(byte)'1', (byte)'1', (byte)'/', (byte)'1', (byte)'8', (byte)'/', (byte)'2', (byte)'0', (byte)'1', (byte)'9', 0xFF]));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void CommonDateMatcherMatchesDotNetAcrossFieldWidthsAndBoundaries(RegexOptions options)
+    {
+        const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        string[] boundaries = [string.Empty, " ", "x"];
+
+        for (var firstWidth = 0; firstWidth <= 3; firstWidth++)
+        {
+            for (var secondWidth = 0; secondWidth <= 3; secondWidth++)
+            {
+                for (var thirdWidth = 0; thirdWidth <= 5; thirdWidth++)
+                {
+                    foreach (var prefix in boundaries)
+                    {
+                        foreach (var suffix in boundaries)
+                        {
+                            var input = prefix +
+                                new string('1', firstWidth) + "/" +
+                                new string('2', secondWidth) + "/" +
+                                new string('3', thirdWidth) +
+                                suffix;
+
+                            Assert.Equal(
+                                oracle.IsMatch(input),
+                                regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     [Fact]
     public void BoostdocsWholeDateMatchUsesNoValidationBoundedDateFastPath()
     {

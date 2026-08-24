@@ -117,6 +117,17 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
         }
 
         var searchFrom = Math.Max(startIndex, 0);
+        var useShortCommonDate = family is
+        {
+            FirstFieldMinCount: 1,
+            FirstFieldMaxCount: 2,
+            SecondFieldMinCount: 1,
+            SecondFieldMaxCount: 2,
+            ThirdFieldMinCount: 2,
+            ThirdFieldMaxCount: 4,
+            RequireLeadingBoundary: true,
+            RequireTrailingBoundary: true,
+        };
         while (searchFrom <= input.Length - 6)
         {
             var relative = input[searchFrom..].IndexOfAnyInRange((byte)'0', (byte)'9');
@@ -126,7 +137,10 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
             }
 
             var candidateStart = searchFrom + relative;
-            if (TryMatchAt(input, candidateStart, family, out matchedLength))
+            var matched = useShortCommonDate
+                ? TryMatchShortCommonDateAt(input, candidateStart, family.SeparatorByte, family.SecondSeparatorByte, out matchedLength)
+                : TryMatchAt(input, candidateStart, family, out matchedLength);
+            if (matched)
             {
                 matchIndex = candidateStart;
                 return true;
@@ -136,6 +150,64 @@ internal static class Utf8AsciiBoundedDateTokenExecutor
         }
 
         return false;
+    }
+
+    private static bool TryMatchShortCommonDateAt(
+        ReadOnlySpan<byte> input,
+        int startIndex,
+        byte firstSeparator,
+        byte secondSeparator,
+        out int matchedLength)
+    {
+        matchedLength = 0;
+        if (!HasLeadingBoundary(input, startIndex))
+        {
+            return false;
+        }
+
+        var index = startIndex + 1;
+        if ((uint)index < (uint)input.Length && IsAsciiDigit(input[index]))
+        {
+            index++;
+        }
+
+        if ((uint)index >= (uint)input.Length || input[index++] != firstSeparator ||
+            (uint)index >= (uint)input.Length || !IsAsciiDigit(input[index]))
+        {
+            return false;
+        }
+
+        index++;
+        if ((uint)index < (uint)input.Length && IsAsciiDigit(input[index]))
+        {
+            index++;
+        }
+
+        if ((uint)index >= (uint)input.Length || input[index++] != secondSeparator ||
+            input.Length - index < 2 ||
+            !IsAsciiDigit(input[index]) ||
+            !IsAsciiDigit(input[index + 1]))
+        {
+            return false;
+        }
+
+        index += 2;
+        if ((uint)index < (uint)input.Length && IsAsciiDigit(input[index]))
+        {
+            index++;
+            if ((uint)index < (uint)input.Length && IsAsciiDigit(input[index]))
+            {
+                index++;
+            }
+        }
+
+        if (!HasTrailingBoundary(input, index))
+        {
+            return false;
+        }
+
+        matchedLength = index - startIndex;
+        return true;
     }
 
     private static bool TryMatchAt(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackDirectFamilyPlan family, out int matchedLength)
