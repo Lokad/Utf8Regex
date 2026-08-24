@@ -990,6 +990,23 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void EscapedMediumAsciiLiteralCountUsesItsAsciiSearchPlan(RegexOptions options)
+    {
+        const string literal = "ConfigureAwait(";
+        var pattern = Regex.Escape(literal);
+        const string input = "é ConfigureAwait( 夏 ConfigureAwait(false";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+        Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(literal), 0xFF]));
+    }
+
+    [Theory]
     [InlineData("foo(?=bar)", "fooqux foobar foo")]
     [InlineData("^tempus", "tempus x tempus")]
     [InlineData("tempus$", "tempus x tempus")]

@@ -560,7 +560,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         if (budget.IsInfinite &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
+            _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiteral &&
             literal.Length is >= 9 and <= 16)
         {
             // For medium exact literals, the runtime sequence search keeps one
