@@ -36,7 +36,7 @@ public sealed class Utf8Regex
     private readonly Utf8RegexProgram _program;
     private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _prioritizePlainAsciiLiteralCount;
-    private readonly bool _prioritizeBoundaryOnlyStructuralLiteralFamilyCount;
+    private readonly bool _prioritizeBoundaryLiteralFamilyCount;
     private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
@@ -67,9 +67,15 @@ public sealed class Utf8Regex
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
-        _prioritizeBoundaryOnlyStructuralLiteralFamilyCount =
+        _prioritizeBoundaryLiteralFamilyCount =
             (options & RegexOptions.RightToLeft) == 0 &&
-            Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex);
+            (Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex) ||
+             preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+             preparedRegex.SearchPlan.HasBoundaryRequirements &&
+             Utf8EmittedLiteralFamilyCounter.CanCreate(
+                 preparedRegex.SearchPlan,
+                 preparedRegex.SearchPlan.CountOperation,
+                 preparedRegex.SearchPlan.FirstMatchOperation));
         _prioritizeOrderedLiteralWindowCount =
             preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
@@ -267,6 +273,9 @@ public sealed class Utf8Regex
 
     private bool DebugHasInvariantCyrillicLiteralCountStrategy =>
         _invariantCyrillicLiteralCountStrategy is not null;
+
+    private bool DebugPrioritizesBoundaryLiteralFamilyCount =>
+        _prioritizeBoundaryLiteralFamilyCount;
 
     private NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
 
@@ -1078,7 +1087,7 @@ public sealed class Utf8Regex
         }
 
         if (_prioritizePlainAsciiLiteralCount ||
-            _prioritizeBoundaryOnlyStructuralLiteralFamilyCount ||
+            _prioritizeBoundaryLiteralFamilyCount ||
             _prioritizeOrderedLiteralWindowCount)
         {
             if (!TryUseAsciiInputValidationShortcut(input))
@@ -3646,6 +3655,9 @@ public sealed class Utf8Regex
 
         public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
             _owner.DebugHasInvariantCyrillicLiteralCountStrategy;
+
+        public bool DebugPrioritizesBoundaryLiteralFamilyCount =>
+            _owner.DebugPrioritizesBoundaryLiteralFamilyCount;
 
         public NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind =>
             _owner.DebugAsciiCultureInvariantTwinExecutionKind;

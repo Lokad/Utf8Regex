@@ -14,6 +14,7 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
+        Assert.True(regex.Inspection.DebugPrioritizesBoundaryLiteralFamilyCount);
     }
 
     [Fact]
