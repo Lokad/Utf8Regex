@@ -42,6 +42,7 @@ public sealed class Utf8Regex
     private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
+    private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
@@ -100,6 +101,14 @@ public sealed class Utf8Regex
                 matchTimeout,
                 out var invariantCyrillicLiteralCountStrategy)
                     ? invariantCyrillicLiteralCountStrategy
+                    : null;
+        _packedNibbleLiteralFamilyCountStrategy =
+            Utf8PackedNibbleLiteralFamilyCountStrategy.TryCreate(
+                preparedRegex,
+                options,
+                matchTimeout,
+                out var packedNibbleLiteralFamilyCountStrategy)
+                    ? packedNibbleLiteralFamilyCountStrategy
                     : null;
 
         static bool CanPrioritizePlainAsciiLiteralCount(
@@ -287,6 +296,9 @@ public sealed class Utf8Regex
 
     private bool DebugHasInvariantCyrillicLiteralCountStrategy =>
         _invariantCyrillicLiteralCountStrategy is not null;
+
+    private bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
+        _packedNibbleLiteralFamilyCountStrategy is not null;
 
     private bool DebugPrioritizesBoundaryLiteralFamilyCount =>
         _prioritizeBoundaryLiteralFamilyCount;
@@ -1097,6 +1109,12 @@ public sealed class Utf8Regex
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
             return fusedBoundaryLiteralFamilyCount;
+        }
+
+        if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            return packedNibbleLiteralFamilyCountStrategy.Count(input);
         }
 
         if (_prioritizeOrderedLiteralWindowCount)
@@ -3691,6 +3709,9 @@ public sealed class Utf8Regex
 
         public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
             _owner.DebugHasInvariantCyrillicLiteralCountStrategy;
+
+        public bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
+            _owner.DebugHasPackedNibbleLiteralFamilyCountStrategy;
 
         public bool DebugPrioritizesBoundaryLiteralFamilyCount =>
             _owner.DebugPrioritizesBoundaryLiteralFamilyCount;

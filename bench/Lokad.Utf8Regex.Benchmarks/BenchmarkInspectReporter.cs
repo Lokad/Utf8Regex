@@ -3912,6 +3912,7 @@ internal static partial class BenchmarkInspectReporter
         if (packedNibbleSimd.HasValue)
         {
             Measure("PackedNibbleSimdCandidates", iterations, () => ExecuteCandidatePrefilterCount(packedNibbleSimd, benchmarkCase.InputBytes));
+            Measure("PackedNibbleSimdVerifiedCount", iterations, () => ExecuteCandidatePrefilterCountWithBoundaries(packedNibbleSimd, searchPlan, benchmarkCase.InputBytes));
             Measure("PackedNibbleSimdProbe512", iterations, () => ExecuteHybridChunkedLiteralSetProbe(packedNibbleSimd, automaton, benchmarkCase.InputBytes, 512));
             Measure("PackedNibbleSimdProbe2048", iterations, () => ExecuteHybridChunkedLiteralSetProbe(packedNibbleSimd, automaton, benchmarkCase.InputBytes, 2048));
             Measure("PackedNibbleSimdHybrid512", iterations, () => ExecuteHybridChunkedLiteralSetCount(packedNibbleSimd, automaton, benchmarkCase.InputBytes, 512));

@@ -1439,13 +1439,14 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             return;
         }
 
-        // Long folded families benefit more from three rare correlated positions
-        // than from spending a fourth SIMD mask on the four leading positions.
+        // Long folded families benefit more from three rare correlated positions.
+        // Three-scalar UTF-8 prefixes likewise use one continuation byte per scalar:
+        // their leading bytes are usually identical and add little discrimination.
         MaskOffsets = invariantCyrillicIgnoreCase
             ? Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray()
             : asciiIgnoreCase && ShortestLength >= 8
             ? SelectAsciiIgnoreCaseOffsets(literals, ShortestLength)
-            : Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray();
+            : SelectExactOffsets(literals, ShortestLength);
         MaskLength = MaskOffsets.Length;
         LowMaskVectors = new Vector256<byte>[MaskLength];
         HighMaskVectors = new Vector256<byte>[MaskLength];
@@ -1564,6 +1565,25 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             }
 
             return offsets;
+        }
+
+        static int[] SelectExactOffsets(byte[][] exactLiterals, int shortestLength)
+        {
+            if (shortestLength >= 9 && exactLiterals.All(static literal =>
+                    literal[0] is >= 0xE0 and < 0xF0 &&
+                    literal[1] is >= 0x80 and < 0xC0 &&
+                    literal[2] is >= 0x80 and < 0xC0 &&
+                    literal[3] is >= 0xE0 and < 0xF0 &&
+                    literal[4] is >= 0x80 and < 0xC0 &&
+                    literal[5] is >= 0x80 and < 0xC0 &&
+                    literal[6] is >= 0xE0 and < 0xF0 &&
+                    literal[7] is >= 0x80 and < 0xC0 &&
+                    literal[8] is >= 0x80 and < 0xC0))
+            {
+                return [2, 5, 8];
+            }
+
+            return Enumerable.Range(0, Math.Min(MaxMaskLen, shortestLength)).ToArray();
         }
     }
 
