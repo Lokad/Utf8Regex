@@ -257,7 +257,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/modifier-family-to-type-window` | 14.075 us | 164.592 us | 164.381 us |
 | `structural/ordered-keyword-window` | 3.764 us | 11.366 us | 18.346 us |
 | `structural/method-family-generic-call` | 2.642 us | 4.333 us | 10.937 us |
-| `fallback/lookahead` | 2.987 us | 3.950 us | 9.545 us |
+| `fallback/lookahead` | 2.075 us | 4.022 us | 9.946 us |
 | `balancing/begin-end-blocks` | 2,415.066 us | 2,382.982 us | 2,382.488 us |
 | `structural/ordered-modifier-pair` | 3.229 us | 9.876 us | 15.715 us |
 | `structural/modifier-family-to-type-pair` | 11.449 us | 77.155 us | 83.332 us |
@@ -307,7 +307,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/modifier-family-to-type-window` | 13.524 us | 57.715 us | 66.023 us |
 | `structural/ordered-keyword-window` | 3.827 us | 5.220 us | 11.857 us |
 | `structural/method-family-generic-call` | 2.660 us | 3.102 us | 9.322 us |
-| `fallback/lookahead` | 3.048 us | 2.479 us | 7.788 us |
+| `fallback/lookahead` | 2.089 us | 2.493 us | 8.224 us |
 | `balancing/begin-end-blocks` | 278.545 us | 261.384 us | 275.908 us |
 | `structural/ordered-modifier-pair` | 3.215 us | 4.523 us | 9.933 us |
 | `structural/modifier-family-to-type-pair` | 11.314 us | 26.395 us | 32.253 us |
