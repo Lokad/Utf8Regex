@@ -1212,6 +1212,14 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
+            if (budget.IsInfinite &&
+                !_regexPlan.SearchPlan.HasBoundaryRequirements &&
+                _regexPlan.SearchPlan.AlternateIgnoreCaseLiteralSearch is { } ignoreCaseSearch &&
+                ignoreCaseSearch.TryCountWithSelectiveCorrelatedPrefilter(input, out var correlatedCount))
+            {
+                return correlatedCount;
+            }
+
             if (budget.IsInfinite && _emittedLiteralFamilyCounter is not null)
             {
                 return _emittedLiteralFamilyCounter.Count(input);

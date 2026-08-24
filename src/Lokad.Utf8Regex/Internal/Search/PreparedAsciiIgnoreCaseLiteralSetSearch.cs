@@ -266,6 +266,30 @@ internal readonly struct PreparedAsciiIgnoreCaseLiteralSetSearch
         return false;
     }
 
+    public bool TryCountWithSelectiveCorrelatedPrefilter(ReadOnlySpan<byte> input, out int count)
+    {
+        count = 0;
+        var prefilter = CorrelatedPrefilter;
+        if (!prefilter.HasValue || prefilter.ShortestLength < 8)
+        {
+            return false;
+        }
+
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (prefilter.TryFindNextCandidate(input, ref state, out var candidate))
+        {
+            if (!TryGetMatchedLiteralLength(input, candidate, out var matchedLength))
+            {
+                continue;
+            }
+
+            count++;
+            state = new PreparedMultiLiteralScanState(candidate + matchedLength, 0, 0);
+        }
+
+        return true;
+    }
+
     private static byte[] BuildSearchBytes(ReadOnlySpan<byte> foldedFirstBytes)
     {
         Span<bool> seen = stackalloc bool[256];

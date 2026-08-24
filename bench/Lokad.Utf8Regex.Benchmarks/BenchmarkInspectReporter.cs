@@ -1053,6 +1053,7 @@ internal static partial class BenchmarkInspectReporter
             ignoreCaseLiteralSearch = ignoreCaseSearch;
             correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(
                 ignoreCaseSearch.Buckets.SelectMany(static bucket => bucket.Literals).ToArray());
+            Console.WriteLine($"CorrelatedOffsets: {string.Join(',', correlatedPrefilter.MaskOffsets)}");
             var candidates = CountIgnoreCaseLiteralFamilyCandidates(ignoreCaseSearch, benchmarkCase.InputBytes);
             Console.WriteLine($"FirstByteCandidates: {candidates.FirstByte}");
             Console.WriteLine($"PrefixCandidates  : {candidates.CorrelatedPrefix}");

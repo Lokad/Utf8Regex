@@ -1425,6 +1425,7 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     {
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         MaskLength = 0;
+        MaskOffsets = [];
         LowMaskVectors = [];
         HighMaskVectors = [];
         Search = default;
@@ -1434,7 +1435,12 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             return;
         }
 
-        MaskLength = Math.Min(MaxMaskLen, ShortestLength);
+        // Long folded families benefit more from three rare correlated positions
+        // than from spending a fourth SIMD mask on the four leading positions.
+        MaskOffsets = asciiIgnoreCase && ShortestLength >= 8
+            ? SelectAsciiIgnoreCaseOffsets(literals, ShortestLength)
+            : Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray();
+        MaskLength = MaskOffsets.Length;
         LowMaskVectors = new Vector256<byte>[MaskLength];
         HighMaskVectors = new Vector256<byte>[MaskLength];
 
@@ -1451,7 +1457,7 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
             {
                 var bit = (byte)(1 << literalIndex);
-                var value = literals[literalIndex][offset];
+                var value = literals[literalIndex][MaskOffsets[offset]];
                 AddMaskValue(lowTable, highTable, value, bit);
                 if (asciiIgnoreCase && IsFoldedAsciiLetter(value))
                 {
@@ -1494,6 +1500,53 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         }
 
         Search = firstCount == 0 ? default : PreparedByteSearch.Create(firstBytes[..firstCount].ToArray());
+
+        static int[] SelectAsciiIgnoreCaseOffsets(byte[][] foldedLiterals, int shortestLength)
+        {
+            const int selectedOffsetCount = 3;
+            var offsets = new int[selectedOffsetCount];
+            var selected = new bool[shortestLength];
+            Span<long> literalWeights = stackalloc long[foldedLiterals.Length];
+            literalWeights.Fill(1);
+
+            for (var selectedIndex = 0; selectedIndex < selectedOffsetCount; selectedIndex++)
+            {
+                var bestOffset = -1;
+                var bestScore = long.MaxValue;
+                for (var offset = 0; offset < shortestLength; offset++)
+                {
+                    if (selected[offset])
+                    {
+                        continue;
+                    }
+
+                    long score = 0;
+                    for (var literalIndex = 0; literalIndex < foldedLiterals.Length; literalIndex++)
+                    {
+                        var rank = PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(
+                            foldedLiterals[literalIndex][offset]);
+                        score += literalWeights[literalIndex] * (rank + 1L);
+                    }
+
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        bestOffset = offset;
+                    }
+                }
+
+                offsets[selectedIndex] = bestOffset;
+                selected[bestOffset] = true;
+                for (var literalIndex = 0; literalIndex < foldedLiterals.Length; literalIndex++)
+                {
+                    var rank = PreparedMultiLiteralRareBytePrefilter.GetAsciiFrequencyRank(
+                        foldedLiterals[literalIndex][bestOffset]);
+                    literalWeights[literalIndex] *= rank + 1L;
+                }
+            }
+
+            return offsets;
+        }
     }
 
     public static PreparedMultiLiteralPackedNibbleSimdPrefilter CreateAsciiIgnoreCase(byte[][] foldedLiterals)
@@ -1502,6 +1555,8 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     public int ShortestLength { get; }
 
     public int MaskLength { get; }
+
+    public int[] MaskOffsets { get; }
 
     public Vector256<byte>[] LowMaskVectors { get; }
 
@@ -1545,17 +1600,16 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
         {
             var vectorLimit = maxStart - (AvxLaneCount - 1);
             var lowNibbleMask = Vector256.Create((byte)0x0F);
-            var highNibbleMask = Vector256.Create((byte)0xF0);
             var zero = Vector256<byte>.Zero;
             while (baseIndex <= vectorLimit)
             {
                 var candidates = Vector256.Create((byte)0xFF);
                 for (var offset = 0; offset < MaskLength; offset++)
                 {
-                    var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + offset));
+                    var window = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + MaskOffsets[offset]));
                     var low = Avx2.And(window, lowNibbleMask);
                     var high = Avx2.And(
-                        Avx2.ShiftRightLogical(Avx2.And(window, highNibbleMask).AsUInt16(), 4).AsByte(),
+                        Avx2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),
                         lowNibbleMask);
                     var lowMask = Avx2.Shuffle(LowMaskVectors[offset], low);
                     var highMask = Avx2.Shuffle(HighMaskVectors[offset], high);
@@ -1581,17 +1635,16 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         var sseVectorLimit = maxStart - (SseLaneCount - 1);
         var sseLowNibbleMask = Vector128.Create((byte)0x0F);
-        var sseHighNibbleMask = Vector128.Create((byte)0xF0);
         var sseZero = Vector128<byte>.Zero;
         while (baseIndex <= sseVectorLimit)
         {
             var candidates = Vector128.Create((byte)0xFF);
             for (var offset = 0; offset < MaskLength; offset++)
             {
-                var window = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + offset));
+                var window = Vector128.LoadUnsafe(ref Unsafe.Add(ref inputRef, baseIndex + MaskOffsets[offset]));
                 var low = Sse2.And(window, sseLowNibbleMask);
                 var high = Sse2.And(
-                    Sse2.ShiftRightLogical(Sse2.And(window, sseHighNibbleMask).AsUInt16(), 4).AsByte(),
+                    Sse2.ShiftRightLogical(window.AsUInt16(), 4).AsByte(),
                     sseLowNibbleMask);
                 var lowMask = Ssse3.Shuffle(LowMaskVectors[offset].GetLower(), low);
                 var highMask = Ssse3.Shuffle(HighMaskVectors[offset].GetLower(), high);
@@ -1633,7 +1686,7 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
             ulong candidates = ulong.MaxValue;
             for (var offset = 0; offset < MaskLength; offset++)
             {
-                var value = input[start + offset];
+                var value = input[start + MaskOffsets[offset]];
                 var lowMask = LowMaskVectors[offset].GetLower().GetElement(value & 0xF);
                 var highMask = HighMaskVectors[offset].GetLower().GetElement(value >> 4);
                 candidates &= (ulong)(lowMask & highMask);

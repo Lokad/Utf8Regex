@@ -133,6 +133,23 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LongLiteralFamilyCountPreservesMixedUtf8AndNonOverlappingSemantics(bool compiled)
+    {
+        const string pattern =
+            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty";
+        const string subject =
+            "é SHERLOCK HOLMES sherlock holmesx John Watson 夏 irene adler Professor Moriarty";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var expected = new Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options);
+
+        Assert.Equal(expected.Count(subject), actual.Count(Encoding.UTF8.GetBytes(subject)));
+    }
+
+    [Theory]
     [InlineData("alpha|needle|omega|zeta", false)]
     [InlineData("alpha|needle|omega|zeta", true)]
     [InlineData(@"\b(?:alpha|needle|omega|zeta)\b", false)]

@@ -188,6 +188,41 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PackedIgnoreCasePrefilterSelectsRareCorrelatedOffsetsForLongFamilies()
+    {
+        byte[][] literals =
+        [
+            "sherlock holmes"u8.ToArray(),
+            "john watson"u8.ToArray(),
+            "irene adler"u8.ToArray(),
+            "inspector lestrade"u8.ToArray(),
+            "professor moriarty"u8.ToArray(),
+        ];
+
+        var prefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateAsciiIgnoreCase(literals);
+
+        Assert.Equal([0, 3, 7], prefilter.MaskOffsets);
+    }
+
+    [Fact]
+    public void PreparedIgnoreCaseLiteralFamilyCountsCorrelatedMatchesDirectly()
+    {
+        byte[][] literals =
+        [
+            "sherlock holmes"u8.ToArray(),
+            "john watson"u8.ToArray(),
+            "irene adler"u8.ToArray(),
+            "inspector lestrade"u8.ToArray(),
+            "professor moriarty"u8.ToArray(),
+        ];
+        var search = new PreparedAsciiIgnoreCaseLiteralSetSearch(literals);
+        var input = "x SHERLOCK HOLMES y irene adler z Professor Moriarty"u8;
+
+        Assert.True(search.TryCountWithSelectiveCorrelatedPrefilter(input, out var count));
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
     public void PreparedMultiLiteralSearchPromotesLargeExactSetsToAutomatonBackend()
     {
         var search = new PreparedMultiLiteralSearch(
