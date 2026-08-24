@@ -844,12 +844,6 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         var literalSearch = _regexPlan.SearchPlan.LiteralSearch ?? throw UnexpectedExecutionKind();
         if (budget.IsInfinite)
         {
-            var preferredCompareIndex = literalSearch.GetIgnoreCasePreferredCompareIndex();
-            if (preferredCompareIndex >= 0)
-            {
-                return literalSearch.CountIgnoreCaseWithPreferredCompareIndex(input, preferredCompareIndex, out _, out _);
-            }
-
             return literalSearch.CountIgnoreCaseWithTier(input, literalSearch.IgnoreCaseTier, out _, out _);
         }
 

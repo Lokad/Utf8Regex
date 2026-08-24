@@ -118,6 +118,21 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LongLiteralCountPreservesMatchesOnNonAsciiInputWithoutKelvinSign(bool compiled)
+    {
+        const string pattern = "Sherlock Holmes";
+        const string subject = "é SHERLOCK HOLMES Sherlock Holmes 夏 sherlock holmesx";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None);
+        var expected = new Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options);
+
+        Assert.Equal(expected.Count(subject), actual.Count(Encoding.UTF8.GetBytes(subject)));
+    }
+
+    [Theory]
     [InlineData("alpha|needle|omega|zeta", false)]
     [InlineData("alpha|needle|omega|zeta", true)]
     [InlineData(@"\b(?:alpha|needle|omega|zeta)\b", false)]
