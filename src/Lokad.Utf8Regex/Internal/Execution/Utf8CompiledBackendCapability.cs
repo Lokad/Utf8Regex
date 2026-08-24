@@ -21,8 +21,7 @@ internal static class Utf8CompiledBackendCapability
     {
         return IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.CountOperation) &&
             IsEmittableSearchGuidedFallbackProgram(regexPlan.SearchPlan.FirstMatchOperation) &&
-            (CanUseVerifierDrivenSearchGuidedFallback(regexPlan) ||
-             CanUseBoundaryLiteralFamilySearchGuidedFallback(regexPlan));
+            CanUseVerifierDrivenSearchGuidedFallback(regexPlan);
     }
 
     private static bool IsEmittableSearchGuidedFallbackProgram(Utf8SearchOperationPlan program)
@@ -37,20 +36,6 @@ internal static class Utf8CompiledBackendCapability
     {
         return regexPlan.SearchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier &&
             regexPlan.SearchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.FallbackVerifier;
-    }
-
-    private static bool CanUseBoundaryLiteralFamilySearchGuidedFallback(Utf8PreparedRegex regexPlan)
-    {
-        var searchPlan = regexPlan.SearchPlan;
-        return regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            searchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
-            searchPlan.HasPreparedSearcher &&
-            searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
-            !searchPlan.HasAlternateLiteralPrefixOverlap &&
-            searchPlan.HasBoundaryRequirements &&
-            !searchPlan.HasTrailingLiteralRequirement &&
-            searchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
-            searchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
     }
 
     private static bool IsEmittableLiteralFamilyProgram(Utf8SearchOperationPlan program)

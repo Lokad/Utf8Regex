@@ -12,12 +12,12 @@ internal static class Utf8NativeExecutionAnalyzer
         RegexOptions executionOptions,
         out Utf8RegexAnalysis analyzedRegex)
     {
-        if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
 
-        if (TryAnalyzeAsciiStructuralIdentifierFamilyTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
+        if (TryAnalyzeLiteralTree(semanticRegex, executionPattern, executionOptions, out analyzedRegex))
         {
             return true;
         }
@@ -142,19 +142,9 @@ internal static class Utf8NativeExecutionAnalyzer
                 return false;
             }
 
-            if (!hasNonAscii &&
-                (alternationLeadingBoundary != Utf8BoundaryRequirement.None ||
-                 alternationTrailingBoundary != Utf8BoundaryRequirement.None))
-            {
-                analyzedRegex = default;
-                return false;
-            }
-
             var searchKind = ignoreCase
                 ? Utf8SearchKind.AsciiFoldedByteLiterals
-                : !hasNonAscii &&
-                  alternationLeadingBoundary == Utf8BoundaryRequirement.None &&
-                  alternationTrailingBoundary == Utf8BoundaryRequirement.None
+                : !hasNonAscii
                     ? Utf8SearchKind.ExactAsciiLiterals
                     : Utf8SearchKind.ExactUtf8Literals;
             var executionKind = ignoreCase
@@ -1096,6 +1086,11 @@ internal static class Utf8NativeExecutionAnalyzer
             TryGetBoundaryRequirement(node.Child(endChildIndex).Kind, out trailingBoundary))
         {
             endChildIndex--;
+        }
+
+        if (startChildIndex > endChildIndex)
+        {
+            return false;
         }
 
         if (!TryExtractLiteralFamily(node.Child(startChildIndex), out prefixes))

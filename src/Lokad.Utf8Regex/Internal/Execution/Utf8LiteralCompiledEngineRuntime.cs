@@ -146,6 +146,11 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         if (_regexPlan.SearchPlan.HasBoundaryRequirements ||
             _regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
+            if (budget.IsInfinite && _emittedLiteralFamilyCounter is not null)
+            {
+                return _emittedLiteralFamilyCounter.Count(input);
+            }
+
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 verifierRuntime: null,

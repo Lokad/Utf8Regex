@@ -11,8 +11,8 @@ public sealed class LokadCodeRouteGuardrailTests
     {
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, regex.Inspection.CompiledEngineKind);
+        Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
     }
 

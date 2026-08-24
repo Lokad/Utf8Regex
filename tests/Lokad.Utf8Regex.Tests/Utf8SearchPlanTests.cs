@@ -250,7 +250,7 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
         var fallbackRegex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchOperationKind.PrefilterThenConfirm, regex.Inspection.SearchPlan.EnumerationOperation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.SearchThenConfirm, regex.Inspection.SearchPlan.EnumerationOperation.Kind);
         Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.Kind);
         Assert.Equal(Utf8ProjectionKind.Utf16BoundaryMap, regex.Inspection.SearchPlan.EnumerationOperation.Projection.Kind);
 
@@ -281,7 +281,7 @@ public sealed class Utf8SearchPlanTests
         var fallback = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
         var structural = new Utf8Regex("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, literalFamily.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literalFamily.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, fallback.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, structural.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledExecutionBackend.InterpretedInstruction, fallback.Inspection.CompiledExecutionBackend);
@@ -301,7 +301,7 @@ public sealed class Utf8SearchPlanTests
         var identifierAnalysis = Utf8CompiledSearchAnalyzer.Analyze(identifierFamily.Inspection.PreparedRegex, preferCompiled: true);
         var orderedWindowAnalysis = Utf8CompiledSearchAnalyzer.Analyze(orderedWindow.Inspection.PreparedRegex, preferCompiled: true);
 
-        Assert.Equal(Utf8CompiledSearchMode.SearchGuidedFallback, literalAnalysis.Mode);
+        Assert.Equal(Utf8CompiledSearchMode.LiteralFamily, literalAnalysis.Mode);
         Assert.Equal(Utf8CompiledSearchMode.CompiledFallback, fallbackAnalysis.Mode);
         Assert.Equal(Utf8CompiledSearchMode.StructuralIdentifierFamily, identifierAnalysis.Mode);
         Assert.Equal(Utf8CompiledEmittedFamily.UpperWordIdentifier, identifierAnalysis.EmittedFamily);
@@ -507,26 +507,6 @@ public sealed class Utf8SearchPlanTests
 
         Assert.False(Utf8EmittedSearchGuidedFallback.TryCreate(regex.Inspection.PreparedRegex, verifierRuntime, out var backend));
         Assert.Null(backend);
-    }
-
-    [Fact]
-    public void EmittedSearchGuidedFallbackMatchesInterpreterForBoundaryLiteralFamilies()
-    {
-        const string pattern = @"\b(?:Task|ValueTask|IAsyncEnumerable)\b";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var verifierRuntime = Utf8VerifierRuntime.Create(analysis, pattern, RegexOptions.CultureInvariant, Utf8Regex.DefaultMatchTimeout);
-        var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
-
-        Assert.True(Utf8EmittedSearchGuidedFallback.TryCreate(regex.Inspection.PreparedRegex, verifierRuntime, out var backend));
-        Assert.NotNull(backend);
-
-        Assert.Equal(
-            Utf8SearchStrategyExecutor.CountLiteralFamily(regex.Inspection.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite),
-            backend!.Count(input));
-        Assert.Equal(
-            Utf8SearchStrategyExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
-            backend.IsMatch(input));
     }
 
     [Fact]

@@ -50,6 +50,10 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             "xa-b a-b b niño"
         },
         {
+            @"\b(?:Task|ValueTask|IAsyncEnumerable)\b",
+            "Task xTask Taskx ValueTask IAsyncEnumerable éTask Taské 😀Task😀"
+        },
+        {
             @"\b(?:-a|a-|𐐀|café)\b",
             "-a a- x-a a-x 𐐀 x𐐀x café xcafé caféx"
         },
@@ -84,7 +88,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     }
 
     [Fact]
-    public void CompiledAsciiPrefixRequirementsStayOnTheSemanticFallback()
+    public void CompiledAsciiBoundaryFamiliesUseTheNativeLiteralRuntime()
     {
         var prefix = new Utf8Regex(
             @"\b(?:foo|foobar|baz)\b",
@@ -94,9 +98,9 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(prefix.Inspection.SearchPlan.HasAlternateLiteralPrefixOverlap);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, prefix.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, prefix.Inspection.CompiledEngineKind);
         Assert.False(noPrefix.Inspection.SearchPlan.HasAlternateLiteralPrefixOverlap);
-        Assert.Equal(Utf8CompiledEngineKind.SearchGuidedFallback, noPrefix.Inspection.CompiledEngineKind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, noPrefix.Inspection.CompiledEngineKind);
     }
 
     [Theory]

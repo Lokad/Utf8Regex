@@ -50,18 +50,6 @@ internal sealed class Utf8EmittedSearchGuidedFallback
             return false;
         }
 
-        if (CanUseBoundaryLiteralFamilyBackend(regexPlan))
-        {
-            backend = new Utf8EmittedSearchGuidedFallback(
-                regexPlan.SearchPlan,
-                verifierRuntime,
-                regexPlan.SearchPlan.FirstMatchOperation,
-                regexPlan.SearchPlan.CountOperation,
-                BoundaryLiteralFamilyIsMatch,
-                BoundaryLiteralFamilyCount);
-            return true;
-        }
-
         backend = new Utf8EmittedSearchGuidedFallback(
             regexPlan.SearchPlan,
             verifierRuntime,
@@ -75,19 +63,6 @@ internal sealed class Utf8EmittedSearchGuidedFallback
     internal bool IsMatch(ReadOnlySpan<byte> input) => _isMatch(this, input);
 
     internal int Count(ReadOnlySpan<byte> input) => _count(this, input);
-
-    private static bool CanUseBoundaryLiteralFamilyBackend(Utf8PreparedRegex regexPlan)
-    {
-        var searchPlan = regexPlan.SearchPlan;
-        return regexPlan.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            searchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
-            searchPlan.HasPreparedSearcher &&
-            searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
-            searchPlan.HasBoundaryRequirements &&
-            !searchPlan.HasTrailingLiteralRequirement &&
-            searchPlan.FirstMatchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
-            searchPlan.CountOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
-    }
 
     private static bool TryFindNextVerifiedMatch(
         Utf8EmittedSearchGuidedFallback backend,
@@ -114,57 +89,6 @@ internal sealed class Utf8EmittedSearchGuidedFallback
     private static int GetNextSearchStart(Utf8FallbackVerificationResult verification)
     {
         return verification.IndexInBytes + Math.Max(verification.LengthInBytes, 1);
-    }
-
-    private static bool BoundaryLiteralFamilyIsMatch(Utf8EmittedSearchGuidedFallback backend, ReadOnlySpan<byte> input)
-    {
-        var state = new PreparedSearchScanState(0, default);
-        while (backend._searchPlan.PreparedSearcher.TryFindNextOverlappingMatch(input, ref state, out var match))
-        {
-            if (Utf8ConfirmationExecutor.IsMatch(
-                backend._searchPlan,
-                backend._firstMatchProgram.Confirmation,
-                input,
-                match.Index,
-                match.Length))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static int BoundaryLiteralFamilyCount(Utf8EmittedSearchGuidedFallback backend, ReadOnlySpan<byte> input)
-    {
-        var count = 0;
-        var state = new PreparedMultiLiteralScanState(0, 0, 0);
-        while (backend._searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var index, out var matchedLength))
-        {
-            if (Utf8ConfirmationExecutor.IsMatch(
-                backend._searchPlan,
-                backend._countProgram.Confirmation,
-                input,
-                index,
-                matchedLength))
-            {
-                count++;
-                continue;
-            }
-
-            if (backend._searchPlan.HasAlternateLiteralProperStartOverlap)
-            {
-                ResetAfterRejectedCandidate(ref state, index);
-            }
-        }
-
-        return count;
-    }
-
-    private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
-    {
-        var nextStart = candidateIndex + 1;
-        state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
     }
 
     private static IsMatchDelegate CompileIsMatch()
