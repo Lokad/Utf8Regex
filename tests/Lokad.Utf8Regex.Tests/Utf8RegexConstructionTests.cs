@@ -993,6 +993,21 @@ public sealed class Utf8RegexConstructionTests
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
+    public void FiveByteExactAsciiLiteralCountMatchesDotNetOnMixedUtf8Input(RegexOptions options)
+    {
+        const string pattern = "Twain";
+        const string input = "Twain é Twain 夏 MarkTwain";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+        Assert.Throws<ArgumentException>(() => regex.Count([.. "Twain"u8, 0xFF]));
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
     public void MediumExactAsciiLiteralCountMatchesDotNetOnMixedUtf8Input(RegexOptions options)
     {
         const string pattern = "Sherlock Holmes";
