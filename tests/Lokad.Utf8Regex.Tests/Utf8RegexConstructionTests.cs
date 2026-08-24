@@ -2036,13 +2036,10 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("tempus|magna|semper", options);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("tempus magna semper ", 64)));
 
-        for (var i = 0; i < 32; i++)
-        {
-            _ = CountSplitValues(regex, bytes);
-        }
-
         var count = 0;
-        for (var i = 0; i < 64; i++)
+        // Keep tier promotion out of the allocation window. A short 96-call warmup can
+        // still trigger dynamic-PGO work during the measured loop in the full test suite.
+        for (var i = 0; i < 2_048; i++)
         {
             count = CountSplitValues(regex, bytes);
         }
