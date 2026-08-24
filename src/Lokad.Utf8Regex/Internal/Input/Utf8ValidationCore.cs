@@ -169,6 +169,12 @@ internal static class Utf8ValidationCore
                         offset = ConsumeThreeByteRun(input, offset);
                     }
                 }
+                else if (!computeUtf16Length && b0 is 0xE0 or 0xED)
+                {
+                    // Keep a locally constrained run in one scalar phase instead
+                    // of re-entering the common-width SIMD drain for every scalar.
+                    offset = ConsumeConstrainedThreeByteRun(input, offset);
+                }
 
                 continue;
             }
@@ -445,6 +451,31 @@ internal static class Utf8ValidationCore
         }
 
         return Math.Max(leadOffset, 0);
+    }
+
+    private static int ConsumeConstrainedThreeByteRun(ReadOnlySpan<byte> input, int offset)
+    {
+        while (offset <= input.Length - 3)
+        {
+            var lead = input[offset];
+            if (lead is not (0xE0 or 0xED))
+            {
+                break;
+            }
+
+            var second = input[offset + 1];
+            var validSecond = lead == 0xE0
+                ? second is >= 0xA0 and <= 0xBF
+                : second is >= 0x80 and <= 0x9F;
+            if (!validSecond || !IsContinuationByte(input[offset + 2]))
+            {
+                break;
+            }
+
+            offset += 3;
+        }
+
+        return offset;
     }
 
     private static int DrainAscii(ReadOnlySpan<byte> input, int offset)

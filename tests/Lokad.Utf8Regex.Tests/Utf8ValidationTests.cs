@@ -84,6 +84,38 @@ public sealed class Utf8ValidationTests
         Assert.Contains("byte offset 1", error.Message);
     }
 
+    [Theory]
+    [InlineData(0xE0, 0xA0, 0x9F)]
+    [InlineData(0xED, 0x9F, 0xA0)]
+    public void ThrowIfInvalidOnlyConsumesConsecutiveConstrainedThreeByteScalars(
+        byte lead,
+        byte validSecond,
+        byte invalidSecond)
+    {
+        var input = Enumerable.Repeat((byte)'a', 37)
+            .Concat(Enumerable.Range(0, 8).SelectMany(_ => new[] { lead, validSecond, (byte)0x80 }))
+            .Concat(Enumerable.Repeat((byte)'b', 37))
+            .ToArray();
+
+        Utf8Validation.ThrowIfInvalidOnly(input);
+
+        for (var scalarIndex = 1; scalarIndex < 8; scalarIndex++)
+        {
+            var scalarOffset = 37 + scalarIndex * 3;
+            var malformedSecond = input.ToArray();
+            malformedSecond[scalarOffset + 1] = invalidSecond;
+            var secondError = Assert.Throws<ArgumentException>(
+                () => Utf8Validation.ThrowIfInvalidOnly(malformedSecond));
+            Assert.Contains($"byte offset {scalarOffset}", secondError.Message);
+
+            var malformedThird = input.ToArray();
+            malformedThird[scalarOffset + 2] = (byte)'x';
+            var thirdError = Assert.Throws<ArgumentException>(
+                () => Utf8Validation.ThrowIfInvalidOnly(malformedThird));
+            Assert.Contains($"byte offset {scalarOffset}", thirdError.Message);
+        }
+    }
+
     [Fact]
     public void AsciiAndTwoByteDrainCrossesVectorBoundaries()
     {
