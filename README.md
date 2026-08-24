@@ -132,7 +132,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/one-node-backtracking` | `IsMatch` | 0.108 us | 0.360 us | 0.395 us |
 | `industry/mariomka-email-count` | `Count` | 1,285.880 us | 268.020 us | 5,115.935 us |
 | `industry/mariomka-uri-count` | `Count` | 1,615.830 us | 1,263.790 us | 6,227.850 us |
-| `industry/mariomka-ip-count` | `Count` | 4,894.530 us | 5,072.805 us | 10,121.885 us |
+| `industry/mariomka-ip-count` | `Count` | 1,824.800 us | 5,033.010 us | 9,931.020 us |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,086.050 us | 11,588.785 us | 11,727.325 us |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 34.789 us | 153.624 us | 278.592 us |
 | `industry/rust-sherlock-ing-count` | `Count` | 146.775 us | 6,859.935 us | 7,017.960 us |
@@ -213,7 +213,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/one-node-backtracking` | `IsMatch` | 0.110 us | 0.233 us | 0.265 us |
 | `industry/mariomka-email-count` | `Count` | 1,293.220 us | 214.145 us | 5,051.485 us |
 | `industry/mariomka-uri-count` | `Count` | 1,595.110 us | 682.540 us | 5,721.920 us |
-| `industry/mariomka-ip-count` | `Count` | 5,034.210 us | 2,179.545 us | 7,062.355 us |
+| `industry/mariomka-ip-count` | `Count` | 1,822.080 us | 2,175.360 us | 7,098.180 us |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,129.775 us | 4,640.010 us | 5,019.195 us |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 34.232 us | 35.973 us | 151.620 us |
 | `industry/rust-sherlock-ing-count` | `Count` | 148.135 us | 2,818.325 us | 3,154.965 us |
