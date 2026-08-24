@@ -22,6 +22,18 @@ internal static class Utf8AsciiBytePredicates
         IsDigit(value) || (uint)((value | 0x20) - (byte)'a') <= (byte)'f' - (byte)'a';
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool MatchesKnownClass(byte value, AsciiCharClassPredicateKind predicateKind) =>
+        predicateKind switch
+        {
+            AsciiCharClassPredicateKind.Digit => IsDigit(value),
+            AsciiCharClassPredicateKind.AsciiLetter => IsLetter(value),
+            AsciiCharClassPredicateKind.AsciiLetterOrDigit => IsLetterOrDigit(value),
+            AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore => IsWord(value),
+            AsciiCharClassPredicateKind.AsciiHexDigit => IsHexDigit(value),
+            _ => false,
+        };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsSixByteWhitespace(byte value) =>
         value is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n' or (byte)'\f' or (byte)'\v';
 }

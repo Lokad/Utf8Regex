@@ -42,6 +42,31 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     }
 
     [Fact]
+    public void SharedKnownClassPredicateMatchesItsClassCarrierForEveryByte()
+    {
+        (AsciiCharClassPredicateKind Kind, Func<byte, bool> Predicate)[] predicates =
+        [
+            (AsciiCharClassPredicateKind.Digit, Utf8AsciiBytePredicates.IsDigit),
+            (AsciiCharClassPredicateKind.AsciiLetter, Utf8AsciiBytePredicates.IsLetter),
+            (AsciiCharClassPredicateKind.AsciiLetterOrDigit, Utf8AsciiBytePredicates.IsLetterOrDigit),
+            (AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore, Utf8AsciiBytePredicates.IsWord),
+            (AsciiCharClassPredicateKind.AsciiHexDigit, Utf8AsciiBytePredicates.IsHexDigit),
+        ];
+
+        foreach (var (kind, predicate) in predicates)
+        {
+            var charClass = AsciiCharClass.FromPredicate(predicate);
+            Assert.Equal(kind, charClass.KnownPredicateKind);
+            for (var value = 0; value <= byte.MaxValue; value++)
+            {
+                Assert.Equal(charClass.Contains((byte)value), Utf8AsciiBytePredicates.MatchesKnownClass((byte)value, kind));
+            }
+        }
+
+        Assert.False(Utf8AsciiBytePredicates.MatchesKnownClass((byte)'0', AsciiCharClassPredicateKind.None));
+    }
+
+    [Fact]
     public void DotNetProjectionOwnsRegexCharClassDecoding()
     {
         Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(RuntimeFrontEnd.RegexCharClass.DigitClass, out var digits));

@@ -82,7 +82,7 @@ internal static class Utf8AsciiCharClassRunExecutor
             }
 
             var runEnd = runStart + 1 + lookahead;
-            while (runEnd < input.Length && MatchesPredicate(input[runEnd], runPlan.PredicateKind))
+            while (runEnd < input.Length && Utf8AsciiBytePredicates.MatchesKnownClass(input[runEnd], runPlan.PredicateKind))
             {
                 runEnd++;
             }
@@ -179,7 +179,7 @@ internal static class Utf8AsciiCharClassRunExecutor
             }
 
             var runEnd = runStart + 1 + lookahead;
-            while (runEnd < input.Length && MatchesPredicate(input[runEnd], runPlan.PredicateKind))
+            while (runEnd < input.Length && Utf8AsciiBytePredicates.MatchesKnownClass(input[runEnd], runPlan.PredicateKind))
             {
                 runEnd++;
             }
@@ -201,25 +201,12 @@ internal static class Utf8AsciiCharClassRunExecutor
     {
         for (var i = 0; i < length; i++)
         {
-            if (!MatchesPredicate(input[startIndex + i], predicateKind))
+            if (!Utf8AsciiBytePredicates.MatchesKnownClass(input[startIndex + i], predicateKind))
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    private static bool MatchesPredicate(byte value, AsciiCharClassPredicateKind predicateKind)
-    {
-        return predicateKind switch
-        {
-            AsciiCharClassPredicateKind.Digit => value is >= (byte)'0' and <= (byte)'9',
-            AsciiCharClassPredicateKind.AsciiLetter => value is >= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z',
-            AsciiCharClassPredicateKind.AsciiLetterOrDigit => value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z',
-            AsciiCharClassPredicateKind.AsciiLetterDigitUnderscore => value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z' or (byte)'_',
-            AsciiCharClassPredicateKind.AsciiHexDigit => value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'F' or >= (byte)'a' and <= (byte)'f',
-            _ => false,
-        };
     }
 }

@@ -303,6 +303,18 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
                 continue;
             }
 
+            if (segment.MinLength == segment.MaxLength)
+            {
+                if (inputLength - index < segment.MaxLength ||
+                    !MatchesCharClassRun(input, index, segment.MaxLength, charClass))
+                {
+                    return false;
+                }
+
+                index += segment.MaxLength;
+                continue;
+            }
+
             if (!TryChooseBoundedRunLength(input, index, inputLength, segments, i, charClass, segment.MinLength, segment.MaxLength, out var runLength))
             {
                 return false;
@@ -535,6 +547,19 @@ internal static class Utf8AsciiAnchoredValidatorExecutor
 
     private static bool MatchesCharClassRun(ReadOnlySpan<byte> input, int index, int length, AsciiCharClass charClass)
     {
+        if (charClass.TryGetKnownPredicateKind(out var predicateKind))
+        {
+            for (var i = 0; i < length; i++)
+            {
+                if (!Utf8AsciiBytePredicates.MatchesKnownClass(input[index + i], predicateKind))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         if (!charClass.Negated)
         {
             var allowed = charClass.GetPositiveMatchBytes();
