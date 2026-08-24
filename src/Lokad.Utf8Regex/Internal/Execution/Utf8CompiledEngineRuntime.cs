@@ -730,6 +730,9 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         UsesEmittedWholeMatcher: false,
         UsesEmittedKernelMatcher: _emittedKernelMatcher is not null);
 
+    internal Utf8EmittedLiteralFamilyCounter? EmittedBoundaryLiteralFamily =>
+        _emittedBoundaryLiteralFamily;
+
     internal override Utf8EmittedKernelMatcher? GetGlobalMatchKernel(
         Utf8ValidationResult validation,
         Utf8ExecutionDeadline budget)

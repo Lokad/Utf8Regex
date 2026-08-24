@@ -38,6 +38,7 @@ public sealed class Utf8Regex
     private readonly bool _prioritizePlainAsciiLiteralCount;
     private readonly int _fusedAsciiLiteralCountAnchorOffset;
     private readonly bool _prioritizeBoundaryLiteralFamilyCount;
+    private readonly Utf8EmittedLiteralFamilyCounter? _fusedAsciiBoundaryLiteralFamilyCounter;
     private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
@@ -83,6 +84,12 @@ public sealed class Utf8Regex
                  preparedRegex.SearchPlan,
                  preparedRegex.SearchPlan.CountOperation,
                  preparedRegex.SearchPlan.FirstMatchOperation));
+        if (matchTimeout == Regex.InfiniteMatchTimeout &&
+            _program.CompiledEngineRuntime is Utf8StructuralLinearAutomatonCompiledEngineRuntime structuralRuntime &&
+            structuralRuntime.EmittedBoundaryLiteralFamily is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
+        {
+            _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
+        }
         _prioritizeOrderedLiteralWindowCount =
             preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
@@ -283,6 +290,9 @@ public sealed class Utf8Regex
 
     private bool DebugPrioritizesBoundaryLiteralFamilyCount =>
         _prioritizeBoundaryLiteralFamilyCount;
+
+    private bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
+        _fusedAsciiBoundaryLiteralFamilyCounter is not null;
 
     private NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
 
@@ -1080,6 +1090,13 @@ public sealed class Utf8Regex
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralCount);
             return fusedAsciiLiteralCount;
+        }
+
+        if (_fusedAsciiBoundaryLiteralFamilyCounter is { } fusedAsciiBoundaryLiteralFamilyCounter &&
+            fusedAsciiBoundaryLiteralFamilyCounter.TryCountAndValidateAscii(input, out var fusedBoundaryLiteralFamilyCount))
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
+            return fusedBoundaryLiteralFamilyCount;
         }
 
         if (_prioritizeOrderedLiteralWindowCount)
@@ -3677,6 +3694,9 @@ public sealed class Utf8Regex
 
         public bool DebugPrioritizesBoundaryLiteralFamilyCount =>
             _owner.DebugPrioritizesBoundaryLiteralFamilyCount;
+
+        public bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
+            _owner.DebugHasFusedAsciiBoundaryLiteralFamilyCount;
 
         public NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind =>
             _owner.DebugAsciiCultureInvariantTwinExecutionKind;
