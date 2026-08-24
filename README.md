@@ -138,7 +138,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/rust-sherlock-ing-count` | `Count` | 146.775 us | 6,859.935 us | 7,017.960 us |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 15.315 us | 4,590.530 us | 4,811.805 us |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 89.546 us | 586.837 us | 709.028 us |
-| `industry/leipzig-twain-count` | `Count` | 3,353.450 us | 1,527.160 us | 6,216.910 us |
+| `industry/leipzig-twain-count` | `Count` | 735.615 us | 1,342.280 us | 6,356.585 us |
 | `industry/leipzig-name-family-count` | `Count` | 1,900.345 us | 6,086.520 us | 10,905.570 us |
 | `industry/leipzig-river-window-count` | `Count` | 6,490.630 us | 21,346.275 us | 26,630.385 us |
 | `industry/leipzig-symbol-count` | `Count` | 1,164.275 us | 12,406.570 us | 17,701.575 us |
@@ -219,7 +219,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/rust-sherlock-ing-count` | `Count` | 148.135 us | 2,818.325 us | 3,154.965 us |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 16.935 us | 2,321.720 us | 2,480.790 us |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 93.301 us | 522.667 us | 663.024 us |
-| `industry/leipzig-twain-count` | `Count` | 3,362.255 us | 1,534.235 us | 6,038.530 us |
+| `industry/leipzig-twain-count` | `Count` | 744.155 us | 1,303.320 us | 6,316.620 us |
 | `industry/leipzig-name-family-count` | `Count` | 1,914.825 us | 2,141.075 us | 6,962.170 us |
 | `industry/leipzig-river-window-count` | `Count` | 6,562.410 us | 6,616.195 us | 11,591.330 us |
 | `industry/leipzig-symbol-count` | `Count` | 1,204.060 us | 1,180.960 us | 6,426.605 us |
