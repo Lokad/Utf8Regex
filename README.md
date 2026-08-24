@@ -146,7 +146,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.155 us | 0.162 us | 0.169 us |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.078 us | 0.084 us | 0.092 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.010 us | 0.047 us | 0.058 us |
-| `industry/boostdocs-float-match` | `IsMatch` | 0.036 us | 0.071 us | 0.086 us |
+| `industry/boostdocs-float-match` | `IsMatch` | 0.033 us | 0.069 us | 0.082 us |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
 
 <!-- BEGIN GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
@@ -227,7 +227,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.038 us | 0.047 us | 0.061 us |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.029 us | 0.034 us | 0.047 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.012 us | 0.021 us | 0.031 us |
-| `industry/boostdocs-float-match` | `IsMatch` | 0.037 us | 0.035 us | 0.047 us |
+| `industry/boostdocs-float-match` | `IsMatch` | 0.034 us | 0.035 us | 0.046 us |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
 
 <!-- BEGIN GENERATED LOKAD BENCHMARKS -->
