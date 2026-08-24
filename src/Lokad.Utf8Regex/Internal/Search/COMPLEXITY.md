@@ -18,6 +18,7 @@ once per compiled regex; scan state is retained by operation cursors.
 | `PreparedMultiLiteralSearch` packed/prefilter tiers | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | AVX2, SSE, and scalar tails share retained selected offsets, masks, and buckets; every prefilter advances monotonically. |
 | `PreparedMultiLiteralSearch` automaton tier | `O(L * alphabet)` | `O(n + matches)` | The automaton state is carried in `PreparedMultiLiteralScanState`; it never restarts after a rejected match. |
 | `PreparedMultiLiteralSearch` trie tier | `O(L)` | `O(n * max(m))` worst case | Trie nodes are immutable after preparation. |
+| `Utf8InvariantCyrillicLiteralCountStrategy` | `O(L + k * alphabet)` | `O(n * k * max(m))` worst case | At most eight plain-literal branches share the packed candidate scan when SIMD is available; every correlated, shared-anchor, and per-branch fallback cursor advances monotonically. |
 | `PreparedSearcher` | selected-owner cost | selected-owner cost | It is a typed dispatcher and does not add another scan; overlapping byte-set cursors advance at least one byte after every candidate. |
 | `PreparedWindowSearch` | two selected-owner costs | `O(leading work + trailing work + c)` | Leading and trailing scan states are both retained. A dense leading stream with an absent trailing literal scans the trailing suffix once, not once per leading candidate. |
 | `Utf8LiteralEquality` | `O(1)` | `O(m)` per requested comparison | Bounds checks precede every comparison; no input scan is hidden here. |

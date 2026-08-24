@@ -223,6 +223,30 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PackedInvariantCyrillicPrefilterRetainsMixedCaseCandidates()
+    {
+        if (!Ssse3.IsSupported || !Sse2.IsSupported)
+        {
+            return;
+        }
+
+        byte[][] literals =
+        [
+            "Шерлок Холмс"u8.ToArray(),
+            "Джон Уотсон"u8.ToArray(),
+            "Ирен Адлер"u8.ToArray(),
+        ];
+        var prefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(literals);
+        var input = "xx шЕрлок холмс yy ДЖон уотсон zz иРЕн адлер"u8;
+
+        var candidates = CollectCandidates(prefilter, input);
+
+        Assert.Contains(3, candidates);
+        Assert.Contains(("xx шЕрлок холмс yy "u8).Length, candidates);
+        Assert.Contains(("xx шЕрлок холмс yy ДЖон уотсон zz "u8).Length, candidates);
+    }
+
+    [Fact]
     public void PreparedMultiLiteralSearchPromotesLargeExactSetsToAutomatonBackend()
     {
         var search = new PreparedMultiLiteralSearch(

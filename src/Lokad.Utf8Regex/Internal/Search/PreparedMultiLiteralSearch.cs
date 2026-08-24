@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Search;
 
@@ -1417,11 +1418,14 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     private const int AvxLaneCount = 32;
 
     public PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals)
-        : this(literals, asciiIgnoreCase: false)
+        : this(literals, asciiIgnoreCase: false, invariantCyrillicIgnoreCase: false)
     {
     }
 
-    private PreparedMultiLiteralPackedNibbleSimdPrefilter(byte[][] literals, bool asciiIgnoreCase)
+    private PreparedMultiLiteralPackedNibbleSimdPrefilter(
+        byte[][] literals,
+        bool asciiIgnoreCase,
+        bool invariantCyrillicIgnoreCase)
     {
         ShortestLength = literals.Length == 0 ? int.MaxValue : literals.Min(static literal => literal.Length);
         MaskLength = 0;
@@ -1437,7 +1441,9 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
 
         // Long folded families benefit more from three rare correlated positions
         // than from spending a fourth SIMD mask on the four leading positions.
-        MaskOffsets = asciiIgnoreCase && ShortestLength >= 8
+        MaskOffsets = invariantCyrillicIgnoreCase
+            ? Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray()
+            : asciiIgnoreCase && ShortestLength >= 8
             ? SelectAsciiIgnoreCaseOffsets(literals, ShortestLength)
             : Enumerable.Range(0, Math.Min(MaxMaskLen, ShortestLength)).ToArray();
         MaskLength = MaskOffsets.Length;
@@ -1462,6 +1468,11 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                 if (asciiIgnoreCase && IsFoldedAsciiLetter(value))
                 {
                     AddMaskValue(lowTable, highTable, (byte)(value - ('a' - 'A')), bit);
+                }
+                else if (invariantCyrillicIgnoreCase &&
+                    Utf8InvariantCyrillicCase.TryGetCounterpartByte(literals[literalIndex], MaskOffsets[offset], out var counterpart))
+                {
+                    AddMaskValue(lowTable, highTable, counterpart, bit);
                 }
             }
 
@@ -1496,6 +1507,13 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
                     firstSeen[upper] = true;
                     firstBytes[firstCount++] = upper;
                 }
+            }
+            else if (invariantCyrillicIgnoreCase &&
+                Utf8InvariantCyrillicCase.TryGetCounterpartByte(literals[literalIndex], 0, out var counterpart) &&
+                !firstSeen[counterpart])
+            {
+                firstSeen[counterpart] = true;
+                firstBytes[firstCount++] = counterpart;
             }
         }
 
@@ -1550,7 +1568,10 @@ internal readonly struct PreparedMultiLiteralPackedNibbleSimdPrefilter
     }
 
     public static PreparedMultiLiteralPackedNibbleSimdPrefilter CreateAsciiIgnoreCase(byte[][] foldedLiterals)
-        => new(foldedLiterals, asciiIgnoreCase: true);
+        => new(foldedLiterals, asciiIgnoreCase: true, invariantCyrillicIgnoreCase: false);
+
+    public static PreparedMultiLiteralPackedNibbleSimdPrefilter CreateInvariantCyrillicIgnoreCase(byte[][] literals)
+        => new(literals, asciiIgnoreCase: false, invariantCyrillicIgnoreCase: true);
 
     public int ShortestLength { get; }
 

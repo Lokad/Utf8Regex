@@ -1,7 +1,11 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -11,24 +15,61 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// </summary>
 internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 {
-    private readonly Unit[] _units;
-    private readonly int _literalByteLength;
-    private readonly int _anchorByteOffset;
-    private readonly byte _anchorFirst;
-    private readonly byte _anchorSecond;
+    private const int MaximumAlternatives = 8;
+    private readonly Literal[] _literals;
+    private readonly SearchValues<byte>? _sharedAnchorSearchValues;
+    private readonly byte[]? _sharedAnchorLiteralMasks;
+    private readonly int _sharedAnchorByteOffset;
+    private readonly PreparedMultiLiteralPackedNibbleSimdPrefilter _correlatedPrefilter;
 
-    private Utf8InvariantCyrillicLiteralCountStrategy(
-        Unit[] units,
-        int literalByteLength,
-        int anchorByteOffset,
-        byte anchorFirst,
-        byte anchorSecond)
+    private Utf8InvariantCyrillicLiteralCountStrategy(Literal[] literals)
     {
-        _units = units;
-        _literalByteLength = literalByteLength;
-        _anchorByteOffset = anchorByteOffset;
-        _anchorFirst = anchorFirst;
-        _anchorSecond = anchorSecond;
+        _literals = literals;
+        _sharedAnchorSearchValues = null;
+        _sharedAnchorLiteralMasks = null;
+        _sharedAnchorByteOffset = -1;
+        _correlatedPrefilter = PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(
+            literals.Select(static literal => literal.Bytes).ToArray());
+
+        var sharedAnchorByteOffset = literals[0].AnchorByteOffset;
+        for (var i = 1; i < literals.Length; i++)
+        {
+            if (literals[i].AnchorByteOffset != sharedAnchorByteOffset)
+            {
+                return;
+            }
+        }
+
+        Span<bool> seen = stackalloc bool[256];
+        Span<byte> anchorBytes = stackalloc byte[MaximumAlternatives * 2];
+        var literalMasks = new byte[256];
+        var anchorByteCount = 0;
+        for (var literalIndex = 0; literalIndex < literals.Length; literalIndex++)
+        {
+            ref readonly var literal = ref literals[literalIndex];
+            AddSharedAnchor(literal.AnchorFirst, literalIndex, seen, anchorBytes, literalMasks, ref anchorByteCount);
+            AddSharedAnchor(literal.AnchorSecond, literalIndex, seen, anchorBytes, literalMasks, ref anchorByteCount);
+        }
+
+        _sharedAnchorSearchValues = SearchValues.Create(anchorBytes[..anchorByteCount]);
+        _sharedAnchorLiteralMasks = literalMasks;
+        _sharedAnchorByteOffset = sharedAnchorByteOffset;
+    }
+
+    private static void AddSharedAnchor(
+        byte value,
+        int literalIndex,
+        Span<bool> seen,
+        Span<byte> anchorBytes,
+        byte[] literalMasks,
+        ref int anchorByteCount)
+    {
+        literalMasks[value] |= (byte)(1 << literalIndex);
+        if (!seen[value])
+        {
+            seen[value] = true;
+            anchorBytes[anchorByteCount++] = value;
+        }
     }
 
     public static bool TryCreate(
@@ -51,19 +92,48 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             return false;
         }
 
-        var units = new Unit[pattern.Length];
+        var alternatives = pattern.Split('|');
+        if (alternatives.Length is 0 or > MaximumAlternatives)
+        {
+            strategy = null;
+            return false;
+        }
+
+        var literals = new Literal[alternatives.Length];
+        for (var alternativeIndex = 0; alternativeIndex < alternatives.Length; alternativeIndex++)
+        {
+            if (!TryCreateLiteral(alternatives[alternativeIndex], out literals[alternativeIndex]))
+            {
+                strategy = null;
+                return false;
+            }
+        }
+
+        strategy = new Utf8InvariantCyrillicLiteralCountStrategy(literals);
+        return true;
+    }
+
+    private static bool TryCreateLiteral(string literal, out Literal prepared)
+    {
+        if (literal.Length == 0)
+        {
+            prepared = default;
+            return false;
+        }
+
+        var units = new Unit[literal.Length];
         var byteOffset = 0;
         var anchorByteOffset = -1;
         var anchorFirst = (byte)0;
         var anchorSecond = (byte)0;
-        for (var i = 0; i < pattern.Length; i++)
+        for (var i = 0; i < literal.Length; i++)
         {
-            var value = pattern[i];
+            var value = literal[i];
             if (value <= 0x7F)
             {
                 if (char.IsAsciiLetter(value) || Utf8RegexSyntax.IsRegexMetaCharacter(value))
                 {
-                    strategy = null;
+                    prepared = default;
                     return false;
                 }
 
@@ -72,14 +142,14 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
                 continue;
             }
 
-            if (!TryGetBasicCyrillicPair(value, out var upper, out var lower))
+            if (!Utf8InvariantCyrillicCase.TryGetPair(value, out var upper, out var lower))
             {
-                strategy = null;
+                prepared = default;
                 return false;
             }
 
-            var upperUtf8 = EncodeTwoByteScalar(upper);
-            var lowerUtf8 = EncodeTwoByteScalar(lower);
+            var upperUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(upper);
+            var lowerUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(lower);
             units[i] = Unit.CreatePair(byteOffset, upperUtf8, lowerUtf8);
             if (anchorByteOffset < 0)
             {
@@ -93,12 +163,13 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
         if (anchorByteOffset < 0)
         {
-            strategy = null;
+            prepared = default;
             return false;
         }
 
-        strategy = new Utf8InvariantCyrillicLiteralCountStrategy(
+        prepared = new Literal(
             units,
+            Encoding.UTF8.GetBytes(literal),
             byteOffset,
             anchorByteOffset,
             anchorFirst,
@@ -109,96 +180,180 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
     public int Count(ReadOnlySpan<byte> input)
     {
         Utf8Validation.ThrowIfInvalidOnly(input);
-        if (input.Length < _literalByteLength)
+        if (_correlatedPrefilter.HasValue)
         {
-            return 0;
+            return CountWithCorrelatedPrefilter(input);
         }
 
+        if (_sharedAnchorSearchValues is { } sharedAnchorSearchValues &&
+            _sharedAnchorLiteralMasks is { } sharedAnchorLiteralMasks)
+        {
+            return CountWithSharedAnchor(input, sharedAnchorSearchValues, sharedAnchorLiteralMasks);
+        }
+
+        Span<int> candidates = stackalloc int[_literals.Length];
+        candidates.Fill(-1);
         var count = 0;
-        var searchIndex = _anchorByteOffset;
-        var maxStart = input.Length - _literalByteLength;
+        var nextStart = 0;
+        while (nextStart <= input.Length)
+        {
+            var bestIndex = int.MaxValue;
+            var bestLiteralIndex = -1;
+            for (var literalIndex = 0; literalIndex < _literals.Length; literalIndex++)
+            {
+                if (candidates[literalIndex] < nextStart)
+                {
+                    candidates[literalIndex] = _literals[literalIndex].FindNext(input, nextStart);
+                }
+
+                if (candidates[literalIndex] < bestIndex)
+                {
+                    bestIndex = candidates[literalIndex];
+                    bestLiteralIndex = literalIndex;
+                }
+            }
+
+            if (bestLiteralIndex < 0)
+            {
+                break;
+            }
+
+            count++;
+            nextStart = bestIndex + _literals[bestLiteralIndex].ByteLength;
+        }
+
+        return count;
+    }
+
+    private int CountWithCorrelatedPrefilter(ReadOnlySpan<byte> input)
+    {
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (_correlatedPrefilter.TryFindNextCandidate(input, ref state, out var candidate))
+        {
+            for (var literalIndex = 0; literalIndex < _literals.Length; literalIndex++)
+            {
+                ref readonly var literal = ref _literals[literalIndex];
+                if (candidate > input.Length - literal.ByteLength || !literal.MatchesAt(input, candidate))
+                {
+                    continue;
+                }
+
+                count++;
+                state = new PreparedMultiLiteralScanState(candidate + literal.ByteLength, 0, 0);
+                break;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountWithSharedAnchor(
+        ReadOnlySpan<byte> input,
+        SearchValues<byte> anchorSearchValues,
+        byte[] anchorLiteralMasks)
+    {
+        var count = 0;
+        var nextStart = 0;
+        var searchIndex = _sharedAnchorByteOffset;
         while (searchIndex < input.Length)
         {
-            var relative = input[searchIndex..].IndexOfAny(_anchorFirst, _anchorSecond);
+            var relative = input[searchIndex..].IndexOfAny(anchorSearchValues);
             if (relative < 0)
             {
                 break;
             }
 
             var anchorIndex = searchIndex + relative;
-            var candidate = anchorIndex - _anchorByteOffset;
             searchIndex = anchorIndex + 1;
-            if ((uint)candidate > (uint)maxStart || !MatchesAt(input, candidate))
+            var candidate = anchorIndex - _sharedAnchorByteOffset;
+            if (candidate < nextStart)
             {
                 continue;
             }
 
-            count++;
-            searchIndex = candidate + _literalByteLength + _anchorByteOffset;
+            var literalMask = anchorLiteralMasks[input[anchorIndex]];
+            while (literalMask != 0)
+            {
+                var literalIndex = BitOperations.TrailingZeroCount((uint)literalMask);
+                ref readonly var literal = ref _literals[literalIndex];
+                if (candidate <= input.Length - literal.ByteLength && literal.MatchesAt(input, candidate))
+                {
+                    count++;
+                    nextStart = candidate + literal.ByteLength;
+                    searchIndex = nextStart + _sharedAnchorByteOffset;
+                    break;
+                }
+
+                literalMask &= (byte)(literalMask - 1);
+            }
         }
 
         return count;
     }
 
-    private bool MatchesAt(ReadOnlySpan<byte> input, int candidate)
+    private readonly record struct Literal(
+        Unit[] Units,
+        byte[] Bytes,
+        int ByteLength,
+        int AnchorByteOffset,
+        byte AnchorFirst,
+        byte AnchorSecond)
     {
-        for (var i = 0; i < _units.Length; i++)
+        public int FindNext(ReadOnlySpan<byte> input, int startIndex)
         {
-            ref readonly var unit = ref _units[i];
-            var offset = candidate + unit.ByteOffset;
-            if (unit.IsAscii)
+            var maxStart = input.Length - ByteLength;
+            if ((uint)startIndex > (uint)maxStart)
             {
-                if (input[offset] != (byte)unit.First)
+                return int.MaxValue;
+            }
+
+            var searchIndex = startIndex + AnchorByteOffset;
+            while (searchIndex < input.Length)
+            {
+                var relative = input[searchIndex..].IndexOfAny(AnchorFirst, AnchorSecond);
+                if (relative < 0)
+                {
+                    return int.MaxValue;
+                }
+
+                var anchorIndex = searchIndex + relative;
+                var candidate = anchorIndex - AnchorByteOffset;
+                searchIndex = anchorIndex + 1;
+                if ((uint)candidate <= (uint)maxStart && MatchesAt(input, candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return int.MaxValue;
+        }
+
+        public bool MatchesAt(ReadOnlySpan<byte> input, int candidate)
+        {
+            for (var i = 0; i < Units.Length; i++)
+            {
+                ref readonly var unit = ref Units[i];
+                var offset = candidate + unit.ByteOffset;
+                if (unit.IsAscii)
+                {
+                    if (input[offset] != (byte)unit.First)
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                var actual = BinaryPrimitives.ReadUInt16LittleEndian(input[offset..]);
+                if (actual != unit.First && actual != unit.Second)
                 {
                     return false;
                 }
-
-                continue;
             }
 
-            var actual = BinaryPrimitives.ReadUInt16LittleEndian(input[offset..]);
-            if (actual != unit.First && actual != unit.Second)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool TryGetBasicCyrillicPair(char value, out char upper, out char lower)
-    {
-        if (value is >= '\u0410' and <= '\u042F')
-        {
-            upper = value;
-            lower = (char)(value + 0x20);
             return true;
         }
-
-        if (value is >= '\u0430' and <= '\u044F')
-        {
-            upper = (char)(value - 0x20);
-            lower = value;
-            return true;
-        }
-
-        if (value is '\u0401' or '\u0451')
-        {
-            upper = '\u0401';
-            lower = '\u0451';
-            return true;
-        }
-
-        upper = default;
-        lower = default;
-        return false;
-    }
-
-    private static ushort EncodeTwoByteScalar(char value)
-    {
-        var first = (byte)(0xC0 | value >> 6);
-        var second = (byte)(0x80 | value & 0x3F);
-        return (ushort)(first | second << 8);
     }
 
     private readonly record struct Unit(int ByteOffset, ushort First, ushort Second, bool IsAscii)

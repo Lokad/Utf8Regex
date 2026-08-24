@@ -20,6 +20,33 @@ public sealed class InvariantCyrillicLiteralCountTests
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData(RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled)]
+    public void SherlockLiteralAlternationUsesNativeCountStrategy(RegexOptions options)
+    {
+        const string pattern = "Шерлок Холмс|Джон Уотсон|Ирен Адлер|инспектор Лестрейд|профессор Мориарти";
+        const string input = "шерлок холмс; ДЖОН УОТСОН; ирен адлер; ИнСпЕкТоР ЛеСтРеЙд; ПРОФЕССОР МОРИАРТИ; Шерлок Уолмс";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
+    [InlineData("А|АА", "АА")]
+    [InlineData("АА|А", "АА")]
+    [InlineData("АБ|Б", "АББ")]
+    public void LiteralAlternationPreservesLeftmostBranchOrderAndNonOverlap(string pattern, string input)
+    {
+        var regex = new Utf8Regex(pattern, Options);
+        var oracle = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
+
+        Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
     [Fact]
     public void BasicCyrillicPairsMatchTheInvariantRegexOracle()
     {
@@ -49,6 +76,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData("abc")]
     [InlineData("Ш+")]
     [InlineData("Україна")]
+    [InlineData("Шерлок|")]
+    [InlineData("Шерлок|abc")]
     public void StrategyRejectsPatternsOutsideItsExactSemanticSubset(string pattern)
     {
         var regex = new Utf8Regex(pattern, Options);
