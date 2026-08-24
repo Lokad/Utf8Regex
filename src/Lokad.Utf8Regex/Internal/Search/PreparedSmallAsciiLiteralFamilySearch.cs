@@ -115,12 +115,13 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         var startIndex = 0;
         while (startIndex <= input.Length - ShortestLength)
         {
-            var candidate = FindNextCandidate(input, startIndex);
-            if (candidate < 0)
+            var relative = input[startIndex..].IndexOfAny(_searchData.FirstByteSearchValues);
+            if (relative < 0)
             {
                 return false;
             }
 
+            var candidate = startIndex + relative;
             if (TryMatchAt(input, candidate, out matchedLength, preferFastMatch: true))
             {
                 index = candidate;

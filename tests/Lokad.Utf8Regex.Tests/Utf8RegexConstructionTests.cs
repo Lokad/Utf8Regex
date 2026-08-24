@@ -2510,6 +2510,43 @@ public sealed class Utf8RegexConstructionTests
         Assert.True(match.IsByteAligned);
     }
 
+    [Fact]
+    public void ExactAsciiLiteralFamilyDirectMatchValidatesNonAsciiSuffix()
+    {
+        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var bytes = Encoding.UTF8.GetBytes("magna café");
+
+        var handled = regex.Inspection.DebugTryMatchWithoutValidation(bytes, out var match);
+
+        Assert.True(handled);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.IndexInBytes);
+        Assert.Equal(5, match.LengthInBytes);
+    }
+
+    [Fact]
+    public void ExactAsciiLiteralFamilyDirectMatchDeclinesNonAsciiPrefixProjection()
+    {
+        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var bytes = Encoding.UTF8.GetBytes("café magna");
+
+        Assert.False(regex.Inspection.DebugTryMatchWithoutValidation(bytes, out _));
+
+        var match = regex.Match(bytes);
+        Assert.True(match.Success);
+        Assert.Equal(5, match.IndexInUtf16);
+        Assert.Equal(6, match.IndexInBytes);
+    }
+
+    [Fact]
+    public void ExactAsciiLiteralFamilyDirectMatchStillRejectsMalformedSuffix()
+    {
+        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        byte[] malformed = [.. "magna"u8, 0xFF];
+
+        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

@@ -3,6 +3,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -295,8 +296,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
         if (!budget.IsInfinite ||
-            (_smallAsciiLiteralFamilyPrimitive is null && !SupportsAsciiDirectMatch) ||
-            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            (_smallAsciiLiteralFamilyPrimitive is null && !SupportsAsciiDirectMatch))
         {
             match = Utf8ValueMatch.NoMatch;
             return false;
@@ -304,10 +304,36 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
-            match = primitive.TryFindFirst(input, out var index, out var matchedLength)
-                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
-                : Utf8ValueMatch.NoMatch;
+            // The public API must reject malformed bytes even after an early
+            // match. Utf8.IsValid proves that contract more cheaply than an
+            // ASCII-only scan on large subjects. A non-ASCII prefix still
+            // declines this shortcut because byte and UTF-16 indices diverge.
+            if (!Utf8.IsValid(input))
+            {
+                match = Utf8ValueMatch.NoMatch;
+                return false;
+            }
+
+            if (!primitive.TryFindFirst(input, out var index, out var matchedLength))
+            {
+                match = Utf8ValueMatch.NoMatch;
+                return true;
+            }
+
+            if (!Utf8InputAnalyzer.IsAscii(input[..index]))
+            {
+                match = Utf8ValueMatch.NoMatch;
+                return false;
+            }
+
+            match = new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
             return true;
+        }
+
+        if (!Utf8InputAnalyzer.IsAscii(input))
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
         }
 
         return TryMatchAsciiDirect(input, budget, out match);

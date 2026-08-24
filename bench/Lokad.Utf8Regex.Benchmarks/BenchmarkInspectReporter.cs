@@ -2739,6 +2739,11 @@ internal static partial class BenchmarkInspectReporter
 
                 case LokadPublicBenchmarkOperation.IsMatch:
                 case LokadPublicBenchmarkOperation.Match:
+                    Measure("AsciiOnly", iterations, () =>
+                        Utf8InputAnalyzer.IsAscii(context.InputBytes) ? context.InputBytes.Length : 0);
+                    Measure("Utf8IsValid", iterations, context.ExecuteUtf8IsValidOnly);
+                    Measure("Utf8InputValidateOnly", iterations, context.ExecuteUtf8InputValidateOnly);
+                    Measure("Utf8ValidationCoreOnly", iterations, context.ExecuteUtf8ValidationCoreWellFormedOnly);
                     if (context.Operation == LokadPublicBenchmarkOperation.IsMatch)
                     {
                         Measure("DirectBoolOnly", iterations, context.ExecuteUtf8DirectBoolOnly);
