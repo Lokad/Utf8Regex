@@ -120,7 +120,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-match` | `IsMatch` | 0.012 us | 0.098 us | 0.110 us |
 | `common/ip-miss` | `IsMatch` | 0.012 us | 0.126 us | 0.140 us |
 | `common/uri-match` | `IsMatch` | 0.021 us | 0.131 us | 0.151 us |
-| `common/uri-miss` | `IsMatch` | 0.066 us | 0.186 us | 0.203 us |
+| `common/uri-miss` | `IsMatch` | 0.054 us | 0.189 us | 0.202 us |
 | `common/matches-set` | `Count` | 4.782 us | 109.182 us | 109.603 us |
 | `common/matches-boundary` | `Count` | 5.200 us | 94.762 us | 94.962 us |
 | `common/matches-word` | `Count` | 0.818 us | 2.595 us | 3.934 us |
@@ -201,7 +201,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/ip-match` | `IsMatch` | 0.012 us | 0.033 us | 0.041 us |
 | `common/ip-miss` | `IsMatch` | 0.012 us | 0.032 us | 0.042 us |
 | `common/uri-match` | `IsMatch` | 0.037 us | 0.053 us | 0.073 us |
-| `common/uri-miss` | `IsMatch` | 0.068 us | 0.054 us | 0.067 us |
+| `common/uri-miss` | `IsMatch` | 0.055 us | 0.055 us | 0.069 us |
 | `common/matches-set` | `Count` | 4.858 us | 54.161 us | 55.632 us |
 | `common/matches-boundary` | `Count` | 5.151 us | 53.382 us | 54.005 us |
 | `common/matches-word` | `Count` | 0.828 us | 1.262 us | 2.437 us |
