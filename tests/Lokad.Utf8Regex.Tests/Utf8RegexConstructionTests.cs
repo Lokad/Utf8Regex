@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Reflection;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
@@ -1617,6 +1618,40 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), baseline.Count(bytes));
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoundedSuffixLiteralCountUsesNativeRouteWithUnicodeWhitespace(RegexOptions options)
+    {
+        const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
+        const string input = "\u00A0sing\u2003 café \u0085bringing\u2028 naïve ring 東京";
+        var regex = new Utf8Regex(pattern, options);
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var session = Utf8SearchDiagnosticsSession.Start();
+
+        try
+        {
+            Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
+            Assert.Equal(Utf8ExecutionRoute.NativeAsciiBoundedSuffixLiteral, session.ExecutionRoute);
+        }
+        finally
+        {
+            session.Complete();
+        }
+    }
+
+    [Fact]
+    public void IgnoreCaseBoundedSuffixLiteralCountMatchesDotNetOnMixedUtf8Input()
+    {
+        const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
+        const string input = "\u00A0SING\u2003 café \u0085BrInGiNg\u2028";
+        const RegexOptions options = RegexOptions.IgnoreCase;
+        var regex = new Utf8Regex(pattern, options);
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
     }
 
     [Fact]

@@ -38,7 +38,18 @@ public sealed class AsciiSimplePatternPortfolioTests
         var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.Compiled);
 
         Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.HasValue);
+        Assert.True(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.SupportsValidatedUtf8Input);
         Assert.True(regex.Inspection.SimplePatternPlan.HasSearchCompiledSpecialization);
         Assert.False(regex.Inspection.SimplePatternPlan.HasWholeInputCompiledSpecialization);
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.IgnoreCase)]
+    [InlineData(RegexOptions.ECMAScript)]
+    public void BoundedSuffixLiteralPlanDoesNotClaimUnicodeSafeExecutionForDifferentSemantics(RegexOptions options)
+    {
+        var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", options);
+
+        Assert.False(regex.Inspection.SimplePatternPlan.BoundedSuffixLiteralPlan.SupportsValidatedUtf8Input);
     }
 }

@@ -512,7 +512,10 @@ internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
         int repeatedMinLength,
         int repeatedMaxLength,
         byte[] literalUtf8,
-        AsciiCharClass suffixCharClass)
+        AsciiCharClass suffixCharClass,
+        Utf8SimplePatternScalarClassKind prefixScalarClassKind,
+        Utf8SimplePatternScalarClassKind suffixScalarClassKind,
+        bool repeatedRequiresAsciiInput)
     {
         _prefixCharClass = prefixCharClass;
         _repeatedCharClass = repeatedCharClass;
@@ -520,6 +523,9 @@ internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
         RepeatedMaxLength = repeatedMaxLength;
         _literalUtf8 = literalUtf8;
         _suffixCharClass = suffixCharClass;
+        PrefixScalarClassKind = prefixScalarClassKind;
+        SuffixScalarClassKind = suffixScalarClassKind;
+        RepeatedRequiresAsciiInput = repeatedRequiresAsciiInput;
         LiteralLastByte = literalUtf8[^1];
     }
 
@@ -534,6 +540,17 @@ internal readonly struct AsciiSimplePatternBoundedSuffixLiteralPlan
     public byte[] LiteralUtf8 => _literalUtf8 ?? [];
 
     public AsciiCharClass SuffixCharClass => _suffixCharClass;
+
+    public Utf8SimplePatternScalarClassKind PrefixScalarClassKind { get; }
+
+    public Utf8SimplePatternScalarClassKind SuffixScalarClassKind { get; }
+
+    public bool RepeatedRequiresAsciiInput { get; }
+
+    public bool SupportsValidatedUtf8Input =>
+        PrefixScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
+        SuffixScalarClassKind == Utf8SimplePatternScalarClassKind.UnicodeWhitespace &&
+        !RepeatedRequiresAsciiInput;
 
     public byte LiteralLastByte { get; }
 

@@ -97,7 +97,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             repeatedDigitGroupPlan: TryExtractRepeatedDigitGroupPlan(branches, ignoreCase, out var repeatedDigitGroupPlan)
                 ? repeatedDigitGroupPlan
                 : default,
-            boundedSuffixLiteralPlan: TryExtractBoundedSuffixLiteralPlan(branches, isStartAnchored, isEndAnchored, out var boundedSuffixLiteralPlan)
+            boundedSuffixLiteralPlan: !ignoreCase &&
+                TryExtractBoundedSuffixLiteralPlan(
+                    branches,
+                    isStartAnchored,
+                    isEndAnchored,
+                    allowUnicodeWhitespace: (options & RegexOptions.ECMAScript) == 0,
+                    out var boundedSuffixLiteralPlan)
                 ? boundedSuffixLiteralPlan
                 : default,
             symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
@@ -143,9 +149,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         AsciiSimplePatternToken[] tokens,
         int start,
         int endExclusive,
-        out AsciiCharClass charClass)
+        out AsciiCharClass charClass,
+        out bool requiresAsciiInput)
     {
         charClass = default;
+        requiresAsciiInput = false;
         if (endExclusive <= start ||
             tokens[start].Kind != AsciiSimplePatternTokenKind.CharClass ||
             tokens[start].CharClass.IsEmpty)
@@ -154,18 +162,21 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         var firstCharClass = tokens[start].CharClass;
+        var firstRequiresAsciiInput = tokens[start].RequiresAsciiInput;
 
         for (var i = start + 1; i < endExclusive; i++)
         {
             if (tokens[i].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 tokens[i].CharClass.IsEmpty ||
-                !firstCharClass.HasSameDefinition(tokens[i].CharClass))
+                !firstCharClass.HasSameDefinition(tokens[i].CharClass) ||
+                tokens[i].RequiresAsciiInput != firstRequiresAsciiInput)
             {
                 return false;
             }
         }
 
         charClass = firstCharClass;
+        requiresAsciiInput = firstRequiresAsciiInput;
         return true;
     }
 

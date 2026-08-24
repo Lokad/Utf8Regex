@@ -8,6 +8,7 @@ internal readonly struct AsciiSimplePatternToken
         Literal = literal;
         CharClass = default;
         RequiresAsciiInput = false;
+        ScalarClassKind = Utf8SimplePatternScalarClassKind.None;
     }
 
     public AsciiSimplePatternToken(AsciiCharClass charClass)
@@ -15,12 +16,16 @@ internal readonly struct AsciiSimplePatternToken
     {
     }
 
-    public AsciiSimplePatternToken(AsciiCharClass charClass, bool requiresAsciiInput)
+    public AsciiSimplePatternToken(
+        AsciiCharClass charClass,
+        bool requiresAsciiInput,
+        Utf8SimplePatternScalarClassKind scalarClassKind = Utf8SimplePatternScalarClassKind.None)
     {
         Kind = AsciiSimplePatternTokenKind.CharClass;
         Literal = 0;
         CharClass = charClass;
         RequiresAsciiInput = requiresAsciiInput;
+        ScalarClassKind = scalarClassKind;
     }
 
     private AsciiSimplePatternToken(AsciiSimplePatternTokenKind kind)
@@ -29,6 +34,7 @@ internal readonly struct AsciiSimplePatternToken
         Literal = 0;
         CharClass = default;
         RequiresAsciiInput = false;
+        ScalarClassKind = Utf8SimplePatternScalarClassKind.None;
     }
 
     public AsciiSimplePatternTokenKind Kind { get; }
@@ -39,7 +45,15 @@ internal readonly struct AsciiSimplePatternToken
 
     public bool RequiresAsciiInput { get; }
 
+    public Utf8SimplePatternScalarClassKind ScalarClassKind { get; }
+
     public static AsciiSimplePatternToken Dot { get; } = new(AsciiSimplePatternTokenKind.Dot);
+}
+
+internal enum Utf8SimplePatternScalarClassKind : byte
+{
+    None = 0,
+    UnicodeWhitespace = 1,
 }
 
 internal enum AsciiSimplePatternTokenKind : byte

@@ -9,6 +9,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         AsciiSimplePatternToken[][] branches,
         bool isStartAnchored,
         bool isEndAnchored,
+        bool allowUnicodeWhitespace,
         out AsciiSimplePatternBoundedSuffixLiteralPlan plan)
     {
         plan = default;
@@ -25,7 +26,12 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             firstBranch[^1].CharClass.IsEmpty ||
             !TryExtractTrailingLiteral(firstBranch, out var literalStart, out var literalUtf8) ||
             literalStart < 1 ||
-            !TryGetUniformRepeatedClass(firstBranch, 1, literalStart, out var repeatedCharClass))
+            !TryGetUniformRepeatedClass(
+                firstBranch,
+                1,
+                literalStart,
+                out var repeatedCharClass,
+                out var repeatedRequiresAsciiInput))
         {
             return false;
         }
@@ -42,9 +48,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 branch[0].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 branch[0].CharClass.IsEmpty ||
                 !prefixCharClass.HasSameDefinition(branch[0].CharClass) ||
+                branch[0].ScalarClassKind != firstBranch[0].ScalarClassKind ||
                 branch[^1].Kind != AsciiSimplePatternTokenKind.CharClass ||
                 branch[^1].CharClass.IsEmpty ||
                 !suffixCharClass.HasSameDefinition(branch[^1].CharClass) ||
+                branch[^1].ScalarClassKind != firstBranch[^1].ScalarClassKind ||
                 !TryExtractTrailingLiteral(branch, out var nextLiteralStart, out var nextLiteralUtf8) ||
                 !nextLiteralUtf8.AsSpan().SequenceEqual(literalUtf8))
             {
@@ -54,8 +62,14 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             var repeatedLength = nextLiteralStart - 1;
             if (repeatedLength > 0)
             {
-                if (!TryGetUniformRepeatedClass(branch, 1, nextLiteralStart, out var nextRepeatedCharClass) ||
-                    !repeatedCharClass.HasSameDefinition(nextRepeatedCharClass))
+                if (!TryGetUniformRepeatedClass(
+                        branch,
+                        1,
+                        nextLiteralStart,
+                        out var nextRepeatedCharClass,
+                        out var nextRepeatedRequiresAsciiInput) ||
+                    !repeatedCharClass.HasSameDefinition(nextRepeatedCharClass) ||
+                    nextRepeatedRequiresAsciiInput != repeatedRequiresAsciiInput)
                 {
                     return false;
                 }
@@ -71,7 +85,14 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             minLength,
             maxLength,
             literalUtf8,
-            suffixCharClass);
+            suffixCharClass,
+            allowUnicodeWhitespace
+                ? firstBranch[0].ScalarClassKind
+                : Utf8SimplePatternScalarClassKind.None,
+            allowUnicodeWhitespace
+                ? firstBranch[^1].ScalarClassKind
+                : Utf8SimplePatternScalarClassKind.None,
+            repeatedRequiresAsciiInput);
         return plan.HasValue;
     }
 

@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -73,7 +75,12 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
 
             var literalEndIndex = candidateSearchStart + relative;
             candidateSearchStart = literalEndIndex + 1;
-            if (!plan.SuffixCharClass.Contains(input[literalEndIndex + 1]))
+            if (!TryMatchScalarClassAt(
+                    input,
+                    literalEndIndex + 1,
+                    plan.SuffixCharClass,
+                    plan.SuffixScalarClassKind,
+                    out var suffixByteLength))
             {
                 continue;
             }
@@ -89,7 +96,14 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
             budget.Step();
 
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-            if (!TryMatchAt(input, plan, candidateLiteralIndex, startIndex, out var candidateStart, out matchedLength))
+            if (!TryMatchAt(
+                    input,
+                    plan,
+                    candidateLiteralIndex,
+                    suffixByteLength,
+                    startIndex,
+                    out var candidateStart,
+                    out matchedLength))
             {
                 continue;
             }
@@ -106,6 +120,7 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
         ReadOnlySpan<byte> input,
         AsciiSimplePatternBoundedSuffixLiteralPlan plan,
         int literalIndex,
+        int suffixByteLength,
         int minStartIndex,
         out int matchStart,
         out int matchedLength)
@@ -123,15 +138,77 @@ internal static class Utf8AsciiBoundedSuffixLiteralExecutor
             index--;
         }
 
-        if (repeatedCount < plan.RepeatedMinLength ||
-            index < minStartIndex ||
-            !plan.PrefixCharClass.Contains(input[index]))
+        if (repeatedCount < plan.RepeatedMinLength || index < minStartIndex)
         {
             return false;
         }
 
-        matchStart = index;
-        matchedLength = plan.LiteralUtf8.Length + repeatedCount + 2;
+        var prefixEnd = index + 1;
+        if (!TryMatchScalarClassBefore(
+                input,
+                prefixEnd,
+                plan.PrefixCharClass,
+                plan.PrefixScalarClassKind,
+                out var prefixByteLength))
+        {
+            return false;
+        }
+
+        matchStart = prefixEnd - prefixByteLength;
+        if (matchStart < minStartIndex)
+        {
+            return false;
+        }
+
+        matchedLength = prefixByteLength + repeatedCount + plan.LiteralUtf8.Length + suffixByteLength;
         return true;
+    }
+
+    private static bool TryMatchScalarClassAt(
+        ReadOnlySpan<byte> input,
+        int byteOffset,
+        AsciiCharClass asciiClass,
+        Utf8SimplePatternScalarClassKind scalarClassKind,
+        out int byteLength)
+    {
+        var first = input[byteOffset];
+        if (first < 0x80)
+        {
+            byteLength = 1;
+            return asciiClass.Contains(first);
+        }
+
+        if (scalarClassKind != Utf8SimplePatternScalarClassKind.UnicodeWhitespace ||
+            Rune.DecodeFromUtf8(input[byteOffset..], out var scalar, out byteLength) != OperationStatus.Done)
+        {
+            byteLength = 0;
+            return false;
+        }
+
+        return Rune.IsWhiteSpace(scalar);
+    }
+
+    private static bool TryMatchScalarClassBefore(
+        ReadOnlySpan<byte> input,
+        int byteOffset,
+        AsciiCharClass asciiClass,
+        Utf8SimplePatternScalarClassKind scalarClassKind,
+        out int byteLength)
+    {
+        var last = input[byteOffset - 1];
+        if (last < 0x80)
+        {
+            byteLength = 1;
+            return asciiClass.Contains(last);
+        }
+
+        if (scalarClassKind != Utf8SimplePatternScalarClassKind.UnicodeWhitespace ||
+            Rune.DecodeLastFromUtf8(input[..byteOffset], out var scalar, out byteLength) != OperationStatus.Done)
+        {
+            byteLength = 0;
+            return false;
+        }
+
+        return Rune.IsWhiteSpace(scalar);
     }
 }

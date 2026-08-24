@@ -23,7 +23,10 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         {
             token = new AsciiSimplePatternToken(
                 charClass,
-                DotNetAsciiCharClassProjector.RequiresAsciiInput(set));
+                DotNetAsciiCharClassProjector.RequiresAsciiInput(set),
+                set == RuntimeFrontEnd.RegexCharClass.SpaceClass
+                    ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace
+                    : Utf8SimplePatternScalarClassKind.None);
             return true;
         }
 

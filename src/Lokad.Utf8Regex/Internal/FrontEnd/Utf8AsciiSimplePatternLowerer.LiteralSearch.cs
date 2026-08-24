@@ -167,7 +167,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     case AsciiSimplePatternTokenKind.CharClass when !token.CharClass.IsEmpty:
                         tokens[i] = new AsciiSimplePatternToken(
                             token.CharClass.ToIgnoreCaseInvariant(),
-                            token.RequiresAsciiInput);
+                            token.RequiresAsciiInput,
+                            token.ScalarClassKind);
                         break;
                 }
             }
