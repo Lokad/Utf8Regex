@@ -86,7 +86,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---:|---:|---:|
 | `literal/sherlock-en` | 91.075 us | 54.820 us | 301.935 us |
-| `literal/sherlock-casei-en` | 122.830 us | 87.495 us | 316.180 us |
+| `literal/sherlock-casei-en` | 46.400 us | 91.440 us | 346.345 us |
 | `literal/sherlock-ru` | 1,998.505 us | 62.535 us | 3,041.335 us |
 | `literal/sherlock-casei-ru` | 3,182.870 us | 222.075 us | 3,211.835 us |
 | `literal/sherlock-zh` | 562.255 us | 16.745 us | 1,224.980 us |
@@ -167,7 +167,7 @@ Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.
 | Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---:|---:|---:|
 | `literal/sherlock-en` | 90.585 us | 41.465 us | 283.840 us |
-| `literal/sherlock-casei-en` | 123.815 us | 50.105 us | 291.370 us |
+| `literal/sherlock-casei-en` | 46.520 us | 64.090 us | 317.370 us |
 | `literal/sherlock-ru` | 1,989.115 us | 54.340 us | 3,032.015 us |
 | `literal/sherlock-casei-ru` | 3,013.295 us | 119.285 us | 3,132.735 us |
 | `literal/sherlock-zh` | 572.780 us | 19.220 us | 1,266.205 us |
