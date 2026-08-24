@@ -8,6 +8,7 @@ public sealed class Utf8AsciiSearchHeuristicsTests
     [InlineData('q', 10)]
     [InlineData('V', 8)]
     [InlineData('m', 6)]
+    [InlineData('o', 5)]
     [InlineData('S', 4)]
     [InlineData('e', 2)]
     [InlineData('7', 5)]

@@ -316,6 +316,8 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(Utf8EmittedKernelLowerer.TryLower(regex.Inspection.PreparedRegex, out var kernelPlan));
         Assert.Equal(Utf8EmittedKernelKind.UpperWordIdentifierFamily, kernelPlan.Kind);
+        Assert.Equal(3, kernelPlan.FindOptimization.AnchorOffset);
+        Assert.Equal([(byte)'o', (byte)'s', (byte)'u'], kernelPlan.FindOptimization.AnchorBytes);
         Assert.Equal(
             [
                 Utf8EmittedKernelBlockKind.FindAnchorSet,
