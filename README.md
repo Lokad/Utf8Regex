@@ -125,7 +125,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-boundary` | `Count` | 5.200 us | 94.762 us | 94.962 us |
 | `common/matches-word` | `Count` | 0.818 us | 2.595 us | 3.934 us |
 | `common/matches-words` | `Count` | 4.308 us | 41.725 us | 43.841 us |
-| `common/match-word` | `Match` | 0.416 us | 0.098 us | 0.753 us |
+| `common/match-word` | `Match` | 0.341 us | 0.096 us | 0.863 us |
 | `common/replace-words` | `Replace` | 47.756 us | 46.897 us | 48.029 us |
 | `common/split-words` | `Split` | 9.907 us | 49.342 us | 50.061 us |
 | `common/backtracking` | `IsMatch` | 0.013 us | 0.531 us | 0.552 us |
@@ -206,7 +206,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/matches-boundary` | `Count` | 5.151 us | 53.382 us | 54.005 us |
 | `common/matches-word` | `Count` | 0.828 us | 1.262 us | 2.437 us |
 | `common/matches-words` | `Count` | 4.333 us | 10.131 us | 11.459 us |
-| `common/match-word` | `Match` | 0.421 us | 0.046 us | 0.664 us |
+| `common/match-word` | `Match` | 0.346 us | 0.050 us | 0.720 us |
 | `common/replace-words` | `Replace` | 14.613 us | 14.630 us | 14.868 us |
 | `common/split-words` | `Split` | 9.576 us | 14.752 us | 14.592 us |
 | `common/backtracking` | `IsMatch` | 0.013 us | 0.028 us | 0.045 us |
