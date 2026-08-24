@@ -38,9 +38,11 @@ public sealed class ReadmeBenchmarkSnapshotTests
         var expectedHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
         var root = document.RootElement;
-        Assert.Equal(1, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
         Assert.Equal("README.Benchmarks.json", root.GetProperty("GeneratedFrom").GetString());
         Assert.Equal(expectedHash, root.GetProperty("SnapshotSha256").GetString());
+        Assert.Equal("PredecodedRegex", root.GetProperty("PrimaryCpuComparator").GetString());
+        Assert.Equal("DecodeThenRegex", root.GetProperty("SecondaryCpuComparator").GetString());
 
         var summary = root.GetProperty("Summary");
         Assert.Equal(178, summary.GetProperty("Rows").GetInt32());
@@ -58,12 +60,21 @@ public sealed class ReadmeBenchmarkSnapshotTests
             Assert.Contains(row.GetProperty("Status").GetString(), new[] { "Win", "TieCandidate", "Gap" });
             Assert.Equal("AlternatingSixLaneV1", row.GetProperty("MeasurementProtocol").GetString());
             Assert.True(row.GetProperty("RatioToDecode").GetDouble() > 0);
-            Assert.True(row.GetProperty("RatioToPredecoded").GetDouble() > 0);
+            var ratioToPredecoded = row.GetProperty("RatioToPredecoded").GetDouble();
+            Assert.True(ratioToPredecoded > 0);
+            Assert.Equal(ClassifyRatio(ratioToPredecoded), row.GetProperty("Status").GetString());
             Assert.True(row.GetProperty("Utf8AllocatedBytes").GetDouble() >= 0);
             Assert.True(row.GetProperty("PredecodedRegexAllocatedBytes").GetDouble() >= 0);
             Assert.True(row.GetProperty("DecodeThenRegexAllocatedBytes").GetDouble() >= 0);
         });
     }
+
+    private static string ClassifyRatio(double ratio)
+        => ratio <= 0.98
+            ? "Win"
+            : ratio <= 1.02
+                ? "TieCandidate"
+                : "Gap";
 
     [Fact]
     public void PublicOperationRowsContainMeasuredValues()

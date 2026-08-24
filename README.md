@@ -76,6 +76,8 @@ These numbers are stored in `README.Benchmarks.json` and refreshed incrementally
 - `.NET predecoded`: `.NET Regex` on an already-decoded `string`
 - `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`
 
+Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.
+
 All stress rows below are for `Count(...)`.
 Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.
 
@@ -154,6 +156,8 @@ These numbers are stored in `README.Benchmarks.json` and refreshed incrementally
 - `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`
 - `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`
 - `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`
+
+Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.
 
 All stress rows below are for `Count(...)`.
 Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.
@@ -234,6 +238,8 @@ These numbers are stored in `README.Benchmarks.json` and refreshed incrementally
 - `.NET predecoded`: `.NET Regex` on an already-decoded `string`
 - `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`
 
+Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.
+
 This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.
 
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
@@ -281,6 +287,8 @@ These numbers are stored in `README.Benchmarks.json` and refreshed incrementally
 - `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`
 - `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`
 - `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`
+
+Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.
 
 This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.
 

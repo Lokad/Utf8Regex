@@ -1395,6 +1395,13 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunRewriteReadmeBenchmarkMarkdown()
+    {
+        RewriteReadmeFromSnapshot(LoadReadmeBenchmarkSnapshot());
+        Console.WriteLine($"Rewrote README.md benchmark sections from {ReadmeBenchmarkSnapshotFileName}.");
+        return 0;
+    }
+
     public static int RunRefreshReadmeBenchmarks(string? sectionsText, string? iterationsText, string? samplesText, bool resume = false)
     {
         var iterations = ParseIterations(iterationsText);
@@ -1966,6 +1973,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("- `Utf8Regex`: direct UTF-8 input");
                 writer.WriteLine("- `.NET predecoded`: `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`");
+                WriteReadmeComparatorPolicy(writer);
                 writer.WriteLine();
                 writer.WriteLine("All stress rows below are for `Count(...)`.");
                 writer.WriteLine("Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.");
@@ -1997,6 +2005,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("- `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`");
                 writer.WriteLine("- `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`");
+                WriteReadmeComparatorPolicy(writer);
                 writer.WriteLine();
                 writer.WriteLine("All stress rows below are for `Count(...)`.");
                 writer.WriteLine("Ignore-case `sherlock-casei-*` rows use `RegexOptions.IgnoreCase | RegexOptions.CultureInvariant`.");
@@ -2028,6 +2037,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("- `Utf8Regex`: direct UTF-8 input");
                 writer.WriteLine("- `.NET predecoded`: `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET + decode`: `Encoding.UTF8.GetString(...)` on each operation, then `.NET Regex`");
+                WriteReadmeComparatorPolicy(writer);
                 writer.WriteLine();
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
@@ -2045,6 +2055,7 @@ internal static partial class BenchmarkInspectReporter
                 writer.WriteLine("- `Utf8Regex Compiled`: direct UTF-8 input using `Utf8Regex(..., options | RegexOptions.Compiled)`");
                 writer.WriteLine("- `.NET compiled predecoded`: compiled `.NET Regex` on an already-decoded `string`");
                 writer.WriteLine("- `.NET compiled + decode`: `Encoding.UTF8.GetString(...)` on each operation, then compiled `.NET Regex`");
+                WriteReadmeComparatorPolicy(writer);
                 writer.WriteLine();
                 writer.WriteLine("This combined suite covers Lokad production-style workloads, mixing coding-agent-style codebase probes over a plausible C# corpus with Lokad script whole-document counts and anchored per-sample prefix-match loops.");
                 writer.WriteLine();
@@ -2060,6 +2071,12 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return writer.ToString().TrimEnd();
+    }
+
+    private static void WriteReadmeComparatorPolicy(StringWriter writer)
+    {
+        writer.WriteLine();
+        writer.WriteLine("Predecoded .NET is the primary CPU parity comparator. `.NET + decode` is a secondary end-to-end indicator.");
     }
 
     private static IEnumerable<ReadmeBenchmarkSection> GetReadmeTargetsForCase(string caseId)

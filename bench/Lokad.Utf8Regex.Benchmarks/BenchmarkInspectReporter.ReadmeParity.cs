@@ -32,6 +32,14 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunRewriteReadmeParityReport()
+    {
+        var snapshotPath = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
+        WriteReadmeParityReport(LoadReadmeBenchmarkSnapshot(), snapshotPath);
+        Console.WriteLine($"Rewrote {ReadmeParityReportFileName} from {ReadmeBenchmarkSnapshotFileName}.");
+        return 0;
+    }
+
     private static void WriteReadmeParityReport(ReadmeBenchmarkSnapshot snapshot, string snapshotPath)
     {
         var reportPath = Path.Combine(Path.GetDirectoryName(snapshotPath)!, ReadmeParityReportFileName);
@@ -65,9 +73,11 @@ internal static partial class BenchmarkInspectReporter
 
         return new ReadmeParityReport
         {
-            SchemaVersion = 1,
+            SchemaVersion = 2,
             GeneratedFrom = ReadmeBenchmarkSnapshotFileName,
             SnapshotSha256 = snapshotHash,
+            PrimaryCpuComparator = "PredecodedRegex",
+            SecondaryCpuComparator = "DecodeThenRegex",
             Summary = new ReadmeParitySummary
             {
                 Rows = rows.Count,
@@ -132,9 +142,9 @@ internal static partial class BenchmarkInspectReporter
         var ratioToPredecoded = qualified ? utf8Microseconds / predecodedMicroseconds : (double?)null;
         var status = !qualified
             ? "Unqualified"
-            : ratioToDecode <= 0.98
+            : ratioToPredecoded <= 0.98
                 ? "Win"
-                : ratioToDecode <= 1.02
+                : ratioToPredecoded <= 1.02
                     ? "TieCandidate"
                     : "Gap";
 
@@ -174,6 +184,10 @@ internal static partial class BenchmarkInspectReporter
         public required string GeneratedFrom { get; set; }
 
         public required string SnapshotSha256 { get; set; }
+
+        public required string PrimaryCpuComparator { get; set; }
+
+        public required string SecondaryCpuComparator { get; set; }
 
         public required ReadmeParitySummary Summary { get; set; }
 

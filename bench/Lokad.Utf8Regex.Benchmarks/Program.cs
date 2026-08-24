@@ -208,6 +208,16 @@ if (args.Length >= 1 && args[0].Equals("--verify-readme-parity-report", StringCo
     return BenchmarkInspectReporter.RunVerifyReadmeParityReport();
 }
 
+if (args.Length >= 1 && args[0].Equals("--rewrite-readme-benchmark-markdown", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunRewriteReadmeBenchmarkMarkdown();
+}
+
+if (args.Length >= 1 && args[0].Equals("--rewrite-readme-parity-report", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunRewriteReadmeParityReport();
+}
+
 if (args.Length >= 1 && args[0].Equals("--refresh-readme-benchmarks", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunRefreshReadmeBenchmarks(
