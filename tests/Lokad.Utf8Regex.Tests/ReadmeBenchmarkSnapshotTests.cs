@@ -24,7 +24,6 @@ public sealed class ReadmeBenchmarkSnapshotTests
             .SelectMany(static section => section.Value.GetProperty("Cases").EnumerateObject())
             .Select(static benchmarkCase => benchmarkCase.Value.GetProperty("Environment"))
             .ToArray();
-        Assert.Single(environments.Select(static environment => environment.GetProperty("SourceCommit").GetString()).Distinct());
         Assert.Single(environments.Select(static environment => environment.GetProperty("Runtime").GetString()).Distinct());
         Assert.Single(environments.Select(static environment => environment.GetProperty("OperatingSystem").GetString()).Distinct());
         Assert.Single(environments.Select(static environment => environment.GetProperty("Processor").GetString()).Distinct());
@@ -158,7 +157,8 @@ public sealed class ReadmeBenchmarkSnapshotTests
             measurement.GetProperty("PredecodedRegexAllocatedBytes").GetRawText() + ";" +
             measurement.GetProperty("CompiledRegexAllocatedBytes").GetRawText() + ";" +
             measurement.GetProperty("DecodeThenRegexAllocatedBytes").GetRawText() + ";" +
-            measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetRawText());
+            measurement.GetProperty("DecodeThenCompiledRegexAllocatedBytes").GetRawText() + ";" +
+            measurement.GetProperty("Environment").GetRawText());
 
     private static string FindRepositoryFile(string fileName)
     {
