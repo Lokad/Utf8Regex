@@ -128,24 +128,17 @@ internal static class Utf8InputAnalyzer
     private static bool ShouldUseUtf8IsValidFastPath(ReadOnlySpan<byte> input)
     {
         var length = Math.Min(input.Length, 256);
-        var twoByteLeadCount = 0;
-        var threeByteLeadCount = 0;
+        var constrainedOrFourByteLeadCount = 0;
         for (var i = 0; i < length; i++)
         {
             var value = input[i];
-            if (value is >= 0xC2 and < 0xE0)
+            if (value is 0xE0 or 0xED or >= 0xF0)
             {
-                twoByteLeadCount++;
-                continue;
-            }
-
-            if (value is >= 0xE0 and < 0xF0)
-            {
-                threeByteLeadCount++;
+                constrainedOrFourByteLeadCount++;
             }
         }
 
-        return twoByteLeadCount == 0 && threeByteLeadCount >= 8;
+        return constrainedOrFourByteLeadCount >= 8;
     }
 
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -81,6 +82,80 @@ public sealed class Utf8ValidationTests
         var error = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalid(invalid));
 
         Assert.Contains("byte offset 1", error.Message);
+    }
+
+    [Fact]
+    public void AsciiAndTwoByteDrainCrossesVectorBoundaries()
+    {
+        var input = Encoding.UTF8.GetBytes(
+            new string('a', 31) + "é" +
+            new string('b', 32) + "Ж中" +
+            new string('c', 33));
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: true, out var nextOffset, out var errorOffset));
+        Assert.Equal(input.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void CommonUtf8DrainStopsBeforeAConstrainedThreeByteScalar()
+    {
+        var prefix = Encoding.UTF8.GetBytes(new string('a', 37) + "é");
+        var input = prefix.Concat(Encoding.UTF8.GetBytes("ࠀsuffix")).ToArray();
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: true, out var nextOffset, out var errorOffset));
+        Assert.Equal(prefix.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void LeanTwoByteDrainLeavesThreeByteScalarsToTheSemanticValidator()
+    {
+        var prefix = Encoding.UTF8.GetBytes(new string('a', 37) + "é");
+        var input = prefix.Concat(Encoding.UTF8.GetBytes("中suffix")).ToArray();
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
+        Assert.Equal(prefix.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void AsciiAndTwoByteDrainReportsInvalidLeadOffsetsAroundVectorBoundaries()
+    {
+        var cases = new[]
+        {
+            (Input: Enumerable.Repeat((byte)'a', 30).Concat(new byte[] { 0xC2, 0xE2 }).ToArray(), ErrorOffset: 30),
+            (Input: Enumerable.Repeat((byte)'a', 31).Concat(new byte[] { 0xC2, (byte)'x' }).ToArray(), ErrorOffset: 31),
+            (Input: Enumerable.Repeat((byte)'a', 32).Concat(new byte[] { 0x80 }).ToArray(), ErrorOffset: 32),
+            (Input: Enumerable.Repeat((byte)'a', 15).Concat(new byte[] { 0xC0, 0x80 }).ToArray(), ErrorOffset: 15),
+        };
+
+        foreach (var testCase in cases)
+        {
+            Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(testCase.Input, 0, drainSafeThreeByte: true, out _, out var errorOffset));
+            Assert.Equal(testCase.ErrorOffset, errorOffset);
+        }
+    }
+
+    [Fact]
+    public void ThrowIfInvalidOnlyMatchesBclForRandomByteSequences()
+    {
+        var random = new Random(0x5EED);
+        for (var iteration = 0; iteration < 2_000; iteration++)
+        {
+            var input = new byte[random.Next(0, 160)];
+            random.NextBytes(input);
+
+            var error = Record.Exception(() => Utf8Validation.ThrowIfInvalidOnly(input));
+            if (Utf8.IsValid(input))
+            {
+                Assert.Null(error);
+            }
+            else
+            {
+                Assert.IsType<ArgumentException>(error);
+            }
+        }
     }
 
     [Fact]

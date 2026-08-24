@@ -38,13 +38,45 @@ internal static class Utf8ValidationCore
         containsKelvinSign = false;
         var isAscii = true;
         var offset = 0;
+        var drainSafeThreeByte = false;
+        if (!computeUtf16Length)
+        {
+            // The lean two-byte mask loop wins on Cyrillic-like text; the wider
+            // three-byte mask loop wins on CJK-like text. Sample once so neither
+            // corpus pays the other shape's vector work on every block.
+            var sampleLength = Math.Min(input.Length, 256);
+            var twoByteLeads = 0;
+            var safeThreeByteLeads = 0;
+            for (var i = 0; i < sampleLength; i++)
+            {
+                var value = input[i];
+                if (value is >= 0xC2 and < 0xE0)
+                {
+                    twoByteLeads++;
+                }
+                else if (value is >= 0xE1 and <= 0xEC or >= 0xEE and < 0xF0)
+                {
+                    safeThreeByteLeads++;
+                }
+            }
+
+            drainSafeThreeByte = safeThreeByteLeads > twoByteLeads;
+        }
 
         while (offset < input.Length)
         {
-            var asciiStart = offset;
-            offset = DrainAscii(input, offset);
-            if (computeUtf16Length)
+            if (!computeUtf16Length)
             {
+                if (!TryDrainAsciiAndCommonUtf8(input, offset, drainSafeThreeByte, out offset, out errorOffset))
+                {
+                    validation = default;
+                    return false;
+                }
+            }
+            else
+            {
+                var asciiStart = offset;
+                offset = DrainAscii(input, offset);
                 utf16Length += offset - asciiStart;
             }
 
@@ -181,6 +213,191 @@ internal static class Utf8ValidationCore
             computeUtf16Length ? utf16Length : 0,
             isAscii,
             containsSupplementaryScalars);
+        errorOffset = -1;
+        return true;
+    }
+
+    internal static bool TryDrainAsciiAndCommonUtf8(
+        ReadOnlySpan<byte> input,
+        int offset,
+        bool drainSafeThreeByte,
+        out int nextOffset,
+        out int errorOffset)
+    {
+        if (Vector256.IsHardwareAccelerated)
+        {
+            ref var inputRef = ref MemoryMarshal.GetReference(input);
+            var lastVectorStart = input.Length - Vector256<byte>.Count;
+            var continuationTag = Vector256.Create((byte)0x80);
+            var continuationMask = Vector256.Create((byte)0xC0);
+            var twoByteLeadTag = Vector256.Create((byte)0xC0);
+            var twoByteLeadMask = Vector256.Create((byte)0xE0);
+            var threeByteLeadTag = Vector256.Create((byte)0xE0);
+            var threeByteLeadMask = Vector256.Create((byte)0xF0);
+            var e0 = Vector256.Create((byte)0xE0);
+            var ed = Vector256.Create((byte)0xED);
+            var overlongLeadTag = Vector256.Create((byte)0xC0);
+            var overlongLeadMask = Vector256.Create((byte)0xFE);
+
+            while (offset <= lastVectorStart)
+            {
+                var current = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+                var nonAsciiBits = current.ExtractMostSignificantBits();
+                if (nonAsciiBits == 0)
+                {
+                    offset += Vector256<byte>.Count;
+                    continue;
+                }
+
+                var continuationBits = Vector256.Equals(
+                    Vector256.BitwiseAnd(current, continuationMask),
+                    continuationTag).ExtractMostSignificantBits();
+                var twoByteLeadBits = Vector256.Equals(
+                    Vector256.BitwiseAnd(current, twoByteLeadMask),
+                    twoByteLeadTag).ExtractMostSignificantBits();
+                var safeThreeByteLeadBits = 0u;
+                if (drainSafeThreeByte)
+                {
+                    var threeByteLeadBits = Vector256.Equals(
+                        Vector256.BitwiseAnd(current, threeByteLeadMask),
+                        threeByteLeadTag).ExtractMostSignificantBits();
+                    var constrainedThreeByteLeadBits =
+                        Vector256.Equals(current, e0).ExtractMostSignificantBits() |
+                        Vector256.Equals(current, ed).ExtractMostSignificantBits();
+                    safeThreeByteLeadBits = threeByteLeadBits & ~constrainedThreeByteLeadBits;
+                }
+                var leadBits = twoByteLeadBits | safeThreeByteLeadBits;
+                var overlongLeadBits = Vector256.Equals(
+                    Vector256.BitwiseAnd(current, overlongLeadMask),
+                    overlongLeadTag).ExtractMostSignificantBits();
+                var unsupportedBits = nonAsciiBits & ~(continuationBits | leadBits);
+                var unsupportedStop = unsupportedBits == 0
+                    ? Vector256<byte>.Count
+                    : BitOperations.TrailingZeroCount(unsupportedBits);
+                var trailingLeadBits = leadBits & 0xC000_0000u;
+                var trailingLeadStop = trailingLeadBits == 0
+                    ? Vector256<byte>.Count
+                    : BitOperations.TrailingZeroCount(trailingLeadBits);
+                var stop = Math.Min(unsupportedStop, trailingLeadStop);
+                var stoppedForTrailingLead = trailingLeadStop <= unsupportedStop &&
+                    trailingLeadStop < Vector256<byte>.Count;
+
+                var prefixBits = stop == Vector256<byte>.Count
+                    ? uint.MaxValue
+                    : (1u << stop) - 1u;
+                var invalidLeadBits = overlongLeadBits & prefixBits;
+                var expectedContinuationBits = (leadBits << 1) | (safeThreeByteLeadBits << 2);
+                var structuralMismatchBits = (continuationBits ^ expectedContinuationBits) & prefixBits;
+                var invalidBits = invalidLeadBits | structuralMismatchBits;
+                if (invalidBits != 0)
+                {
+                    var invalidIndex = BitOperations.TrailingZeroCount(invalidBits);
+                    errorOffset = offset + invalidIndex;
+                    if ((expectedContinuationBits & (1u << invalidIndex)) != 0)
+                    {
+                        errorOffset -= invalidIndex >= 2 &&
+                            (safeThreeByteLeadBits & (1u << (invalidIndex - 2))) != 0
+                                ? 2
+                                : 1;
+                    }
+
+                    nextOffset = errorOffset;
+                    return false;
+                }
+
+                if (stop < Vector256<byte>.Count)
+                {
+                    if ((expectedContinuationBits & (1u << stop)) != 0)
+                    {
+                        errorOffset = offset + stop - 1;
+                        if (stop >= 2 && (safeThreeByteLeadBits & (1u << (stop - 2))) != 0)
+                        {
+                            errorOffset--;
+                        }
+
+                        nextOffset = errorOffset;
+                        return false;
+                    }
+
+                    if (stoppedForTrailingLead)
+                    {
+                        var leadOffset = offset + stop;
+                        var lead = input[leadOffset];
+                        var scalarLength = lead < 0xE0 ? 2 : 3;
+                        if (lead < 0xC2 ||
+                            leadOffset + scalarLength > input.Length ||
+                            !IsContinuationByte(input[leadOffset + 1]) ||
+                            (scalarLength == 3 && !IsContinuationByte(input[leadOffset + 2])))
+                        {
+                            errorOffset = leadOffset;
+                            nextOffset = leadOffset;
+                            return false;
+                        }
+
+                        offset = leadOffset + scalarLength;
+                        continue;
+                    }
+
+                    nextOffset = offset + stop;
+                    errorOffset = -1;
+                    return true;
+                }
+
+                offset += Vector256<byte>.Count;
+            }
+        }
+
+        while (offset < input.Length)
+        {
+            var value = input[offset];
+            if (value < 0x80)
+            {
+                offset++;
+                continue;
+            }
+
+            if (value is >= 0xC2 and < 0xE0)
+            {
+                if (offset + 1 >= input.Length || !IsContinuationByte(input[offset + 1]))
+                {
+                    nextOffset = offset;
+                    errorOffset = offset;
+                    return false;
+                }
+
+                offset += 2;
+                continue;
+            }
+
+            if (drainSafeThreeByte &&
+                value is >= 0xE1 and <= 0xEC or >= 0xEE and < 0xF0)
+            {
+                if (offset + 2 >= input.Length ||
+                    !IsContinuationByte(input[offset + 1]) ||
+                    !IsContinuationByte(input[offset + 2]))
+                {
+                    nextOffset = offset;
+                    errorOffset = offset;
+                    return false;
+                }
+
+                offset += 3;
+                continue;
+            }
+
+            if (value >= 0xE0)
+            {
+                nextOffset = offset;
+                errorOffset = -1;
+                return true;
+            }
+
+            nextOffset = offset;
+            errorOffset = offset;
+            return false;
+        }
+
+        nextOffset = offset;
         errorOffset = -1;
         return true;
     }
