@@ -149,6 +149,50 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
+    public void CommonUtf8DrainCarriesExpectedContinuationsAcrossEveryVectorLane()
+    {
+        var scalarCases = new[]
+        {
+            (Bytes: "é"u8.ToArray(), DrainSafeThreeByte: false),
+            (Bytes: "中"u8.ToArray(), DrainSafeThreeByte: true),
+        };
+
+        foreach (var scalarCase in scalarCases)
+        {
+            for (var prefixLength = 0; prefixLength < 96; prefixLength++)
+            {
+                var input = Enumerable.Repeat((byte)'a', prefixLength)
+                    .Concat(scalarCase.Bytes)
+                    .Concat(Enumerable.Repeat((byte)'b', 96))
+                    .ToArray();
+
+                Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+                    input,
+                    0,
+                    scalarCase.DrainSafeThreeByte,
+                    out var nextOffset,
+                    out var errorOffset));
+                Assert.Equal(input.Length, nextOffset);
+                Assert.Equal(-1, errorOffset);
+
+                for (var continuation = 1; continuation < scalarCase.Bytes.Length; continuation++)
+                {
+                    var malformed = input.ToArray();
+                    malformed[prefixLength + continuation] = (byte)'x';
+
+                    Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+                        malformed,
+                        0,
+                        scalarCase.DrainSafeThreeByte,
+                        out _,
+                        out errorOffset));
+                    Assert.Equal(prefixLength, errorOffset);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void AsciiAndTwoByteDrainReportsInvalidLeadOffsetsAroundVectorBoundaries()
     {
         var cases = new[]

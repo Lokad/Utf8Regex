@@ -228,6 +228,7 @@ internal static class Utf8ValidationCore
         {
             ref var inputRef = ref MemoryMarshal.GetReference(input);
             var lastVectorStart = input.Length - Vector256<byte>.Count;
+            var expectedContinuationCarry = 0u;
             var continuationTag = Vector256.Create((byte)0x80);
             var continuationMask = Vector256.Create((byte)0xC0);
             var twoByteLeadTag = Vector256.Create((byte)0xC0);
@@ -243,7 +244,7 @@ internal static class Utf8ValidationCore
             {
                 var current = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
                 var nonAsciiBits = current.ExtractMostSignificantBits();
-                if (nonAsciiBits == 0)
+                if (nonAsciiBits == 0 && expectedContinuationCarry == 0)
                 {
                     offset += Vector256<byte>.Count;
                     continue;
@@ -271,46 +272,25 @@ internal static class Utf8ValidationCore
                     Vector256.BitwiseAnd(current, overlongLeadMask),
                     overlongLeadTag).ExtractMostSignificantBits();
                 var unsupportedBits = nonAsciiBits & ~(continuationBits | leadBits);
-                var unsupportedStop = unsupportedBits == 0
-                    ? Vector256<byte>.Count
-                    : BitOperations.TrailingZeroCount(unsupportedBits);
-                // A two-byte lead can start at byte 30 and still end inside this
-                // vector; a safe three-byte lead needs two remaining bytes.
-                var trailingLeadBits =
-                    (twoByteLeadBits & 0x8000_0000u) |
-                    (safeThreeByteLeadBits & 0xC000_0000u);
-                var expectedContinuationBits = (leadBits << 1) | (safeThreeByteLeadBits << 2);
+                // Keep the SIMD phase stable when a scalar crosses a block:
+                // high bits carry the expected continuation lanes forward.
+                var expectedContinuationWide =
+                    ((ulong)leadBits << 1) |
+                    ((ulong)safeThreeByteLeadBits << 2) |
+                    expectedContinuationCarry;
+                var expectedContinuationBits = (uint)expectedContinuationWide;
                 if (overlongLeadBits == 0 &&
                     unsupportedBits == 0 &&
-                    trailingLeadBits == 0 &&
                     continuationBits == expectedContinuationBits)
                 {
+                    expectedContinuationCarry = (uint)(expectedContinuationWide >> 32);
                     offset += Vector256<byte>.Count;
                     continue;
                 }
 
-                if (overlongLeadBits == 0 &&
-                    unsupportedBits == 0 &&
-                    safeThreeByteLeadBits == 0 &&
-                    trailingLeadBits == 0x8000_0000u &&
-                    continuationBits == expectedContinuationBits &&
-                    offset < lastVectorStart &&
-                    IsContinuationByte(input[offset + Vector256<byte>.Count]))
-                {
-                    // Complete the sole two-byte scalar crossing this block and
-                    // resume after its continuation instead of entering the
-                    // diagnostic offset path for an otherwise valid vector.
-                    offset += Vector256<byte>.Count + 1;
-                    continue;
-                }
-
-                var trailingLeadStop = trailingLeadBits == 0
+                var stop = unsupportedBits == 0
                     ? Vector256<byte>.Count
-                    : BitOperations.TrailingZeroCount(trailingLeadBits);
-                var stop = Math.Min(unsupportedStop, trailingLeadStop);
-                var stoppedForTrailingLead = trailingLeadStop <= unsupportedStop &&
-                    trailingLeadStop < Vector256<byte>.Count;
-
+                    : BitOperations.TrailingZeroCount(unsupportedBits);
                 var prefixBits = stop == Vector256<byte>.Count
                     ? uint.MaxValue
                     : (1u << stop) - 1u;
@@ -320,14 +300,12 @@ internal static class Utf8ValidationCore
                 if (invalidBits != 0)
                 {
                     var invalidIndex = BitOperations.TrailingZeroCount(invalidBits);
-                    errorOffset = offset + invalidIndex;
-                    if ((expectedContinuationBits & (1u << invalidIndex)) != 0)
-                    {
-                        errorOffset -= invalidIndex >= 2 &&
-                            (safeThreeByteLeadBits & (1u << (invalidIndex - 2))) != 0
-                                ? 2
-                                : 1;
-                    }
+                    var missingContinuation =
+                        (expectedContinuationBits & (1u << invalidIndex)) != 0 &&
+                        (continuationBits & (1u << invalidIndex)) == 0;
+                    errorOffset = missingContinuation
+                        ? FindPreviousScalarLead(input, offset + invalidIndex)
+                        : offset + invalidIndex;
 
                     nextOffset = errorOffset;
                     return false;
@@ -337,41 +315,28 @@ internal static class Utf8ValidationCore
                 {
                     if ((expectedContinuationBits & (1u << stop)) != 0)
                     {
-                        errorOffset = offset + stop - 1;
-                        if (stop >= 2 && (safeThreeByteLeadBits & (1u << (stop - 2))) != 0)
-                        {
-                            errorOffset--;
-                        }
-
+                        errorOffset = FindPreviousScalarLead(input, offset + stop);
                         nextOffset = errorOffset;
                         return false;
-                    }
-
-                    if (stoppedForTrailingLead)
-                    {
-                        var leadOffset = offset + stop;
-                        var lead = input[leadOffset];
-                        var scalarLength = lead < 0xE0 ? 2 : 3;
-                        if (lead < 0xC2 ||
-                            leadOffset + scalarLength > input.Length ||
-                            !IsContinuationByte(input[leadOffset + 1]) ||
-                            (scalarLength == 3 && !IsContinuationByte(input[leadOffset + 2])))
-                        {
-                            errorOffset = leadOffset;
-                            nextOffset = leadOffset;
-                            return false;
-                        }
-
-                        offset = leadOffset + scalarLength;
-                        continue;
                     }
 
                     nextOffset = offset + stop;
                     errorOffset = -1;
                     return true;
                 }
+            }
 
-                offset += Vector256<byte>.Count;
+            while (expectedContinuationCarry != 0)
+            {
+                if (offset >= input.Length || !IsContinuationByte(input[offset]))
+                {
+                    errorOffset = FindPreviousScalarLead(input, offset);
+                    nextOffset = errorOffset;
+                    return false;
+                }
+
+                offset++;
+                expectedContinuationCarry >>= 1;
             }
         }
 
@@ -428,6 +393,17 @@ internal static class Utf8ValidationCore
         nextOffset = offset;
         errorOffset = -1;
         return true;
+    }
+
+    private static int FindPreviousScalarLead(ReadOnlySpan<byte> input, int offset)
+    {
+        var leadOffset = offset - 1;
+        while (leadOffset > 0 && IsContinuationByte(input[leadOffset]))
+        {
+            leadOffset--;
+        }
+
+        return Math.Max(leadOffset, 0);
     }
 
     private static int DrainAscii(ReadOnlySpan<byte> input, int offset)
