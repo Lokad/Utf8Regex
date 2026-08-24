@@ -219,10 +219,10 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
                 excludedTailByte);
         }
 
-        if (TryParseAsciiUriToken(executionPattern, options) ||
-            TryParseAsciiUriToken(semanticPattern, options))
+        if (TryParseUtf8UriToken(executionPattern, options) ||
+            TryParseUtf8UriToken(semanticPattern, options))
         {
-            return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiUriToken, Utf8FallbackFindModeKind.FindToken);
+            return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8UriToken, Utf8FallbackFindModeKind.FindToken);
         }
 
         if (TryParseAsciiLiteralStructuredTokenCount(

@@ -28,7 +28,7 @@ public sealed class LokadPublicRouteGuardrailTests
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, analysis.FallbackDirectFamily.Kind);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
@@ -165,9 +165,9 @@ public sealed class LokadPublicRouteGuardrailTests
         var regex = new Utf8Regex(pattern, options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
-            nameof(Utf8FallbackDirectFamilyKind.AsciiUriToken) => Utf8FallbackDirectFamilyKind.AsciiUriToken,
+            nameof(Utf8FallbackDirectFamilyKind.Utf8UriToken) => Utf8FallbackDirectFamilyKind.Utf8UriToken,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsWellFormedOnlyMatch);
@@ -388,9 +388,9 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
-            nameof(Utf8FallbackDirectFamilyKind.AsciiUriToken) => Utf8FallbackDirectFamilyKind.AsciiUriToken,
+            nameof(Utf8FallbackDirectFamilyKind.Utf8UriToken) => Utf8FallbackDirectFamilyKind.Utf8UriToken,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount);

@@ -142,7 +142,7 @@ public sealed class Utf8Regex
             {
                 Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole =>
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiSignedDecimalWhole,
-                Utf8FallbackDirectFamilyKind.AsciiUriToken =>
+                Utf8FallbackDirectFamilyKind.Utf8UriToken =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiUriToken,
                 Utf8FallbackDirectFamilyKind.AsciiIpv4Token =>
                     Utf8PrioritizedBooleanFamilyKind.AsciiIpv4Token,
@@ -1135,7 +1135,9 @@ public sealed class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
-        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount)
+        if (_fallbackDirectFamily.Kind is
+            Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
+            Utf8FallbackDirectFamilyKind.Utf8UriToken)
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());

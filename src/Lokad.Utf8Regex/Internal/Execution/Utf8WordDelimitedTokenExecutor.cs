@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Text;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -85,7 +84,7 @@ internal static class Utf8WordDelimitedTokenExecutor
 
         if (Rune.DecodeFromUtf8(input[scalarStart..index], out var scalar, out var consumed) != OperationStatus.Done ||
             consumed != index - scalarStart ||
-            !IsDotNetWord(scalar))
+            !DotNetUtf8WordChar.IsWord(scalar))
         {
             return false;
         }
@@ -121,7 +120,7 @@ internal static class Utf8WordDelimitedTokenExecutor
         }
 
         if (Rune.DecodeFromUtf8(input[index..], out var scalar, out var consumed) != OperationStatus.Done ||
-            !IsDotNetWord(scalar))
+            !DotNetUtf8WordChar.IsWord(scalar))
         {
             return false;
         }
@@ -135,9 +134,6 @@ internal static class Utf8WordDelimitedTokenExecutor
 
     private static bool IsAsciiBody(byte value)
         => Utf8AsciiBytePredicates.IsWord(value) || value is (byte)'.' or (byte)'-';
-
-    private static bool IsDotNetWord(Rune scalar)
-        => scalar.IsBmp && RuntimeFrontEnd.RegexCharClass.IsWordChar((char)scalar.Value);
 
     private static bool IsContinuationByte(byte value) => (value & 0xC0) == 0x80;
 }

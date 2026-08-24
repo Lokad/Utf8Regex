@@ -52,6 +52,13 @@ internal static class Utf8ScalarNeighbors // PCRE2-INTEGRATION-POINT
     }
 }
 
+internal static class DotNetUtf8WordChar
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsWord(Rune scalar) =>
+        scalar.IsBmp && RuntimeFrontEnd.RegexCharClass.IsWordChar((char)scalar.Value);
+}
+
 internal static class DotNetUtf8WordBoundary
 {
     /// <summary>

@@ -27,7 +27,7 @@ internal sealed class Utf8EmittedTokenFamilyMatcher
             return true;
         }
 
-        if (plan.Kind == Utf8FallbackDirectFamilyKind.AsciiUriToken)
+        if (plan.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
         {
             matcher = new Utf8EmittedTokenFamilyMatcher(plan, Utf8EmittedTokenFamilyKind.Uri);
             return true;

@@ -24,7 +24,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.AsciiUriToken or
+        Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
     public static bool IsPreparedTokenFindFamily(Utf8FallbackDirectFamilyKind kind)
@@ -35,7 +35,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.AsciiUriToken or
+        Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
     public static bool IsPreparedTokenCountFamily(Utf8FallbackDirectFamilyKind kind)
@@ -62,7 +62,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.AsciiUriToken or
+        Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
 
     public static bool IsNativeFallbackOnlyCountFamily(Utf8FallbackDirectFamilyKind kind)
@@ -78,7 +78,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.AsciiUriToken or
+        Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken or
         Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole;
@@ -89,5 +89,5 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.AsciiUriToken;
+        Utf8FallbackDirectFamilyKind.Utf8UriToken;
 }

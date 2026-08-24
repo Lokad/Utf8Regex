@@ -21,7 +21,7 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     AsciiUntilByteStarCount = 14,
     UnicodeLetterCount = 15,
     UnicodeCategoryCount = 16,
-    AsciiUriToken = 17,
+    Utf8UriToken = 17,
     AsciiBoundedDateToken = 18,
     AsciiWordBoundedCount = 19,
     AnchoredAsciiSignedDecimalWhole = 20,

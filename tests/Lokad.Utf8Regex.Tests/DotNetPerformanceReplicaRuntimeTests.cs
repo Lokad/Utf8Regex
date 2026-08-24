@@ -116,11 +116,11 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
     }
 
     [Fact]
-    public void UriPatternClassifiesAsAsciiUriToken()
+    public void UriPatternClassifiesAsUtf8UriToken()
     {
         var analysis = Utf8FrontEnd.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiUriToken, analysis.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8UriToken, analysis.FallbackDirectFamily.Kind);
         Assert.True(analysis.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 

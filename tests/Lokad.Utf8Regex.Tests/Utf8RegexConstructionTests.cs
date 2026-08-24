@@ -1842,7 +1842,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledAsciiUriTokenCountMatchesDotNetOnMixedUtf8Input()
+    public void CompiledUtf8UriTokenCountMatchesDotNetOnMixedUtf8Input()
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         const string input = "été https://atlas.example.org/reports/export?id=42 βγ http://northwind-control.net/a#frag 夏洛克";
@@ -1850,6 +1850,35 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
+    }
+
+    [Theory]
+    [InlineData("é://host/path", 1)]
+    [InlineData("https://hôte.example/路径", 1)]
+    [InlineData("https://host.example/a\u00A0http://next.example/b", 2)]
+    [InlineData("𐐀://host/path https://ok.example/a", 1)]
+    [InlineData("x://a x://ab x:////", 1)]
+    [InlineData("x://ab?query#fragment x://cd##tail", 2)]
+    public void Utf8UriTokenCountMatchesDotNetUnicodeSemantics(string input, int expected)
+    {
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        var bytes = Encoding.UTF8.GetBytes(input);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(expected, Regex.Count(input, pattern, options));
+            Assert.Equal(expected, regex.Count(bytes));
+        }
+    }
+
+    [Fact]
+    public void Utf8UriTokenCountRejectsMalformedUtf8AfterAValidMatch()
+    {
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        byte[] input = [.. "https://host.example/path"u8, 0xFF];
+
+        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(input));
+        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, RegexOptions.Compiled).Count(input));
     }
 
     [Theory]

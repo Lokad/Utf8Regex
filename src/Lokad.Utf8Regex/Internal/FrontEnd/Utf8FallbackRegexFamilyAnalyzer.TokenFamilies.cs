@@ -234,7 +234,7 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         return index == pattern.Length;
     }
 
-    public static bool TryParseAsciiUriToken(string pattern, RegexOptions options)
+    public static bool TryParseUtf8UriToken(string pattern, RegexOptions options)
     {
         options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
         return options == RegexOptions.None &&

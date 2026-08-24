@@ -37,7 +37,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
             case Utf8FallbackDirectFamilyKind.AsciiIpv4Token:
                 return Utf8AsciiIpv4TokenExecutor.TryFindAsciiIpv4Token(input, startIndex, out matchIndex, out matchedLength);
 
-            case Utf8FallbackDirectFamilyKind.AsciiUriToken:
+            case Utf8FallbackDirectFamilyKind.Utf8UriToken:
                 return Utf8AsciiUriTokenExecutor.TryFindAsciiUriToken(input, startIndex, out matchIndex, out matchedLength);
 
             case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken:
@@ -60,7 +60,7 @@ internal static class Utf8AsciiTokenFamilyExecutor
 
         if (plan.Kind is Utf8FallbackDirectFamilyKind.AsciiLiteralBetweenNegatedRuns or
             Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-            Utf8FallbackDirectFamilyKind.AsciiUriToken or
+            Utf8FallbackDirectFamilyKind.Utf8UriToken or
             Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
@@ -141,9 +141,13 @@ internal static class Utf8AsciiTokenFamilyExecutor
                 count = Utf8AsciiIpv4TokenExecutor.CountAsciiIpv4Tokens(input);
                 return true;
 
-            case Utf8FallbackDirectFamilyKind.AsciiUriToken when isAscii:
-                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiUriToken;
-                count = Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input);
+            case Utf8FallbackDirectFamilyKind.Utf8UriToken:
+                diagnosticsRoute = isAscii
+                    ? Utf8ExecutionRoute.FallbackDirectAsciiUriToken
+                    : Utf8ExecutionRoute.FallbackDirectUtf8UriToken;
+                count = isAscii
+                    ? Utf8AsciiUriTokenExecutor.CountAsciiUriTokens(input)
+                    : Utf8UriTokenCountExecutor.CountWellFormed(input);
                 return true;
 
             case Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken when isAscii:
