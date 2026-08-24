@@ -2672,6 +2672,240 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMeasureCountAttributionCase(
+        string caseId,
+        string? iterationsText,
+        string? samplesText)
+    {
+        var iterations = string.IsNullOrWhiteSpace(iterationsText) ? 20 : ParseIterations(iterationsText);
+        var samples = string.IsNullOrWhiteSpace(samplesText) ? 5 : Math.Clamp(ParseSamples(samplesText), 1, 9);
+
+        if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))
+        {
+            var context = new LokadPublicBenchmarkContext(caseId);
+            if (context.Operation != LokadPublicBenchmarkOperation.Count)
+            {
+                Console.Error.WriteLine($"Case '{caseId}' is a {context.Operation} case, not a Count case.");
+                return 1;
+            }
+
+            return RunMeasureCountAttributionCaseCore(
+                caseId,
+                origin: "public",
+                context.Pattern,
+                context.InputBytes,
+                context.Utf8Regex,
+                context.CompiledUtf8Regex,
+                context.ExecutePredecodedRegex,
+                context.ExecutePredecodedCompiledRegex,
+                iterations,
+                samples);
+        }
+
+        if (!ReplicaCountBenchmarkCase.TryResolve(caseId, out var benchmarkCase))
+        {
+            Console.Error.WriteLine($"Count benchmark case '{caseId}' was not found.");
+            return 1;
+        }
+
+        var resolvedCase = benchmarkCase!;
+        return RunMeasureCountAttributionCaseCore(
+            caseId,
+            resolvedCase.Source.ToString(),
+            resolvedCase.Pattern,
+            resolvedCase.InputBytes,
+            resolvedCase.Utf8Regex,
+            new Utf8Regex(resolvedCase.Utf8Pattern, resolvedCase.Options | RegexOptions.Compiled),
+            resolvedCase.CountPredecodedRegex,
+            resolvedCase.CountPredecodedCompiledRegex,
+            iterations,
+            samples);
+    }
+
+    private static int RunMeasureCountAttributionCaseCore(
+        string caseId,
+        string origin,
+        string pattern,
+        byte[] input,
+        Utf8Regex ordinaryRegex,
+        Utf8Regex compiledRegex,
+        Func<int> predecodedOrdinary,
+        Func<int> predecodedCompiled,
+        int iterations,
+        int samples)
+    {
+        if (!ordinaryRegex.Inspection.DebugTryCountSelectedKernelWithoutValidation(input, out var ordinaryKernelResult) ||
+            !compiledRegex.Inspection.DebugTryCountSelectedKernelWithoutValidation(input, out var compiledKernelResult))
+        {
+            Console.Error.WriteLine($"Case '{caseId}' does not expose a separable selected Count kernel.");
+            return 1;
+        }
+
+        var expectedResult = predecodedOrdinary();
+        RequireCountResult("PredecodedCompiled", expectedResult, predecodedCompiled());
+        RequireCountResult("OrdinarySelectedKernel", expectedResult, ordinaryKernelResult);
+        RequireCountResult("CompiledSelectedKernel", expectedResult, compiledKernelResult);
+        RequireCountResult("Utf8Regex", expectedResult, ordinaryRegex.Count(input));
+        RequireCountResult("Utf8Compiled", expectedResult, compiledRegex.Count(input));
+
+        var ordinaryDiagnostics = ordinaryRegex.CollectCountDiagnostics(input);
+        var compiledDiagnostics = compiledRegex.CollectCountDiagnostics(input);
+
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Origin            : {origin}");
+        Console.WriteLine($"Pattern           : {pattern}");
+        Console.WriteLine($"InputBytes        : {input.Length}");
+        Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine("AttributionProtocol: AlternatingSelectedCountPhasesV1");
+        Console.WriteLine("WarmupPerLane     : at least 250 ms and 64 calls");
+        Console.WriteLine($"ExpectedResult    : {expectedResult}");
+        Console.WriteLine($"OrdinaryKernel    : {ordinaryRegex.Inspection.DebugSelectedCountKernelKind}");
+        Console.WriteLine($"CompiledKernel    : {compiledRegex.Inspection.DebugSelectedCountKernelKind}");
+        Console.WriteLine($"OrdinaryRoute     : {ordinaryDiagnostics.ExecutionRoute}");
+        Console.WriteLine($"CompiledRoute     : {compiledDiagnostics.ExecutionRoute}");
+
+        var lanes = new CountAttributionLane[]
+        {
+            new("ValidationOnly", () => ExecuteCountValidationOnly(input), input.Length),
+            new("OrdinarySelectedKernel", () => ExecuteSelectedCountKernel(ordinaryRegex, input), expectedResult),
+            new("CompiledSelectedKernel", () => ExecuteSelectedCountKernel(compiledRegex, input), expectedResult),
+            new("ValidationThenOrdinaryKernel", () => ExecuteValidationThenSelectedCountKernel(ordinaryRegex, input), expectedResult),
+            new("ValidationThenCompiledKernel", () => ExecuteValidationThenSelectedCountKernel(compiledRegex, input), expectedResult),
+            new("Utf8Regex", () => ordinaryRegex.Count(input), expectedResult),
+            new("Utf8Compiled", () => compiledRegex.Count(input), expectedResult),
+            new("PredecodedRegex", predecodedOrdinary, expectedResult),
+            new("PredecodedCompiledRegex", predecodedCompiled, expectedResult),
+        };
+
+        var medians = MeasureAlternatingCountAttribution(lanes, iterations, samples);
+        WriteCountPhaseComposition("Ordinary", medians, "OrdinarySelectedKernel", "ValidationThenOrdinaryKernel", "Utf8Regex");
+        WriteCountPhaseComposition("Compiled", medians, "CompiledSelectedKernel", "ValidationThenCompiledKernel", "Utf8Compiled");
+        Console.WriteLine("CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups");
+        return 0;
+    }
+
+    private static Dictionary<string, double> MeasureAlternatingCountAttribution(
+        CountAttributionLane[] lanes,
+        int iterations,
+        int samples)
+    {
+        WriteMeasurementEnvironment();
+        var elapsedByLane = new TimeSpan[lanes.Length][];
+        var warmupCalls = new int[lanes.Length];
+        for (var laneIndex = 0; laneIndex < lanes.Length; laneIndex++)
+        {
+            elapsedByLane[laneIndex] = new TimeSpan[samples];
+            warmupCalls[laneIndex] = WarmupForMilliseconds(
+                lanes[laneIndex].Action,
+                milliseconds: 250,
+                minimumIterations: 64);
+        }
+
+        for (var sample = 0; sample < samples; sample++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            for (var position = 0; position < lanes.Length; position++)
+            {
+                var laneIndex = (sample & 1) == 0 ? position : lanes.Length - 1 - position;
+                var measured = MeasureTimedCore(iterations, lanes[laneIndex].Action);
+                elapsedByLane[laneIndex][sample] = measured.Elapsed;
+                GC.KeepAlive(measured.Sink);
+            }
+        }
+
+        var medians = new Dictionary<string, double>(lanes.Length, StringComparer.Ordinal);
+        for (var laneIndex = 0; laneIndex < lanes.Length; laneIndex++)
+        {
+            var elapsed = elapsedByLane[laneIndex];
+            Array.Sort(elapsed);
+            var medianMicroseconds = elapsed[elapsed.Length / 2].TotalMicroseconds / iterations;
+            var minimumMicroseconds = elapsed[0].TotalMicroseconds / iterations;
+            var maximumMicroseconds = elapsed[^1].TotalMicroseconds / iterations;
+            medians.Add(lanes[laneIndex].Label, medianMicroseconds);
+            Console.WriteLine(
+                $"{lanes[laneIndex].Label,-32}: {medianMicroseconds,10:F3} us/op | " +
+                $"range={minimumMicroseconds:F3}..{maximumMicroseconds:F3} | " +
+                $"result={lanes[laneIndex].ExpectedResult} | warmupCalls={warmupCalls[laneIndex]}");
+        }
+
+        return medians;
+    }
+
+    private static int WarmupForMilliseconds(Func<int> action, int milliseconds, int minimumIterations)
+    {
+        const int maximumIterations = 262144;
+        var target = TimeSpan.FromMilliseconds(milliseconds);
+        var iterations = 0;
+        var sink = 0;
+        var stopwatch = Stopwatch.StartNew();
+        do
+        {
+            sink ^= action();
+            iterations++;
+        }
+        while (iterations < maximumIterations &&
+               (iterations < minimumIterations || stopwatch.Elapsed < target));
+
+        GC.KeepAlive(sink);
+        return iterations;
+    }
+
+    private static int ExecuteCountValidationOnly(byte[] input)
+    {
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        return input.Length;
+    }
+
+    private static int ExecuteSelectedCountKernel(Utf8Regex regex, byte[] input)
+    {
+        if (!regex.Inspection.DebugTryCountSelectedKernelWithoutValidation(input, out var count))
+        {
+            throw new InvalidOperationException("The selected Count kernel became unavailable during measurement.");
+        }
+
+        return count;
+    }
+
+    private static int ExecuteValidationThenSelectedCountKernel(Utf8Regex regex, byte[] input)
+    {
+        Utf8Validation.ThrowIfInvalidOnly(input);
+        return ExecuteSelectedCountKernel(regex, input);
+    }
+
+    private static void RequireCountResult(string lane, int expected, int actual)
+    {
+        if (actual != expected)
+        {
+            throw new InvalidOperationException($"Count attribution lane '{lane}' returned {actual}; expected {expected}.");
+        }
+    }
+
+    private static void WriteCountPhaseComposition(
+        string label,
+        IReadOnlyDictionary<string, double> medians,
+        string kernelLane,
+        string sameTripLane,
+        string publicLane)
+    {
+        var validation = medians["ValidationOnly"];
+        var kernel = medians[kernelLane];
+        var phaseSum = validation + kernel;
+        var sameTrip = medians[sameTripLane];
+        var publicOperation = medians[publicLane];
+        Console.WriteLine(
+            $"{label}Composition : validation={validation:F3} + kernel={kernel:F3} => sum={phaseSum:F3} us | " +
+            $"sameTrip={sameTrip:F3} ({sameTrip - phaseSum:+0.000;-0.000;0.000}) | " +
+            $"public={publicOperation:F3} ({publicOperation - sameTrip:+0.000;-0.000;0.000} vs sameTrip)");
+    }
+
+    private readonly record struct CountAttributionLane(
+        string Label,
+        Func<int> Action,
+        int ExpectedResult);
+
     public static int RunMeasureCompiledMicrocostCase(string caseId, string? iterationsText)
     {
         if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))

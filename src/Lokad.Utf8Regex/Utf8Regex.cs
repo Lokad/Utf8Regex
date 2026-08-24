@@ -387,6 +387,43 @@ public sealed class Utf8Regex
         return CountViaCompiledEngine(input, default, budget: Utf8ExecutionDeadline.Infinite);
     }
 
+    private string DebugSelectedCountKernelKind =>
+        _packedNibbleLiteralFamilyCountStrategy is not null
+            ? "PackedNibbleLiteralFamily"
+            : _fallbackDirectFamily.Kind is
+                Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
+                Utf8FallbackDirectFamilyKind.Utf8UriToken
+                    ? $"FallbackDirect/{_fallbackDirectFamily.Kind}"
+                    : _compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
+                        ? $"{_compiledEngine.Kind}/{_compiledEngineRuntime.GetType().Name}"
+                        : "Unsupported";
+
+    private bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count)
+    {
+        if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
+        {
+            count = packedNibbleLiteralFamilyCountStrategy.Count(input);
+            return true;
+        }
+
+        if (_fallbackDirectFamily.Kind is
+            Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
+            Utf8FallbackDirectFamilyKind.Utf8UriToken)
+        {
+            count = CountViaCompiledEngine(input, default, budget: Utf8ExecutionDeadline.Infinite);
+            return true;
+        }
+
+        if (_compiledEngine.Kind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
+        {
+            count = CountViaCompiledEngine(input, default, budget: Utf8ExecutionDeadline.Infinite);
+            return true;
+        }
+
+        count = 0;
+        return false;
+    }
+
     private bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralValidatedThreeByte(input, out count);
@@ -3779,6 +3816,11 @@ public sealed class Utf8Regex
 
         public int DebugCountViaCompiledEngine(ReadOnlySpan<byte> input) =>
             _owner.DebugCountViaCompiledEngine(input);
+
+        public string DebugSelectedCountKernelKind => _owner.DebugSelectedCountKernelKind;
+
+        public bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count) =>
+            _owner.DebugTryCountSelectedKernelWithoutValidation(input, out count);
 
         public bool DebugTryCountExactUtf8LiteralValidatedThreeByte(
             ReadOnlySpan<byte> input,

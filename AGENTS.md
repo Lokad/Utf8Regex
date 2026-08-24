@@ -60,6 +60,7 @@ Examples:
 ./bench.ps1 -CommandArgs "--measure-case-deep","lokad/imports/module-imports","20"
 ./bench.ps1 -CommandArgs "--measure-case-deep","structural/keyword-family-to-capitalized-identifier","20"
 ./bench.ps1 -CommandArgs "--measure-case-deep","literal-family/method-token-family","20"
+./bench.ps1 -CommandArgs "--measure-count-attribution-case","literal/sherlock-zh","20","5"
 ./bench.ps1 -CommandArgs "--dump-dotnet-generated-regex-case","lokad/lexer/doc-line"
 ./bench.ps1 -CommandArgs "--measure-utf8-validation-profile","three-byte-large","20"
 ./bench.ps1 -CommandArgs "--measure-unicode-literal-case","literal/sherlock-ru","20"
@@ -154,6 +155,12 @@ Current intended uses:
 - --measure-case-deep
   - run the best available family-specific drilldown for one benchmark case id
   - dispatches internally to the appropriate literal-family, structural-family, prefix-loop, or whole-document drilldown
+- --measure-count-attribution-case
+  - run a bounded, alternating production-route Count breakdown for one case
+  - reports the selected ordinary/compiled kernels, required UTF-8 validation,
+    same-trip validation plus kernel, public operations, and both predecoded .NET baselines
+  - validates every Count result before timing and defaults to 20 iterations,
+    five samples, and a retained 250 ms Tiered-PGO warmup over only the selected lanes
 - --dump-dotnet-generated-regex-case
   - generate and dump the .NET source-generated C# for one benchmark case id
 - --dump-dotnet-generated-regex-pattern

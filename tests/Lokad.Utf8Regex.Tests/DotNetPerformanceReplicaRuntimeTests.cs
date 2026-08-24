@@ -7,6 +7,25 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class DotNetPerformanceReplicaRuntimeTests
 {
+    [Theory]
+    [InlineData(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", "Reach équipe@exemple.fr and ops@example.net.")]
+    [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "Open δοκιμή://παράδειγμα.gr/διαδρομή and https://example.net/café.")]
+    [InlineData("Шерлок Холмс", "Шерлок Холмс и доктор Ватсон. Шерлок Холмс.")]
+    [InlineData("夏洛克·福尔摩斯", "夏洛克·福尔摩斯和约翰华生。夏洛克·福尔摩斯。")]
+    [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯和约翰华生拜访阿德勒。")]
+    public void SelectedCountKernelMatchesPublicCountOnWellFormedInput(string pattern, string input)
+    {
+        var inputBytes = Encoding.UTF8.GetBytes(input);
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            var regex = new Utf8Regex(pattern, options);
+
+            Assert.True(regex.Inspection.DebugTryCountSelectedKernelWithoutValidation(inputBytes, out var selectedCount));
+            Assert.NotEqual("Unsupported", regex.Inspection.DebugSelectedCountKernelKind);
+            Assert.Equal(regex.Count(inputBytes), selectedCount);
+        }
+    }
+
     [Fact]
     public void EmailPatternClassifiesAsUtf8WordDelimitedTokenCount()
     {

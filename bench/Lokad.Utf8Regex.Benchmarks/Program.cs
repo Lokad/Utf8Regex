@@ -95,6 +95,14 @@ if (args.Length >= 2 && args[0].Equals("--measure-compiled-microcost-case", Stri
     return BenchmarkInspectReporter.RunMeasureCompiledMicrocostCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 2 && args[0].Equals("--measure-count-attribution-case", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureCountAttributionCase(
+        args[1],
+        args.Length >= 3 ? args[2] : null,
+        args.Length >= 4 ? args[3] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-compiled-fallback-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureCompiledFallbackReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
