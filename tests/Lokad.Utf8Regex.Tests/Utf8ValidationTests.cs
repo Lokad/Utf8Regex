@@ -47,6 +47,22 @@ public sealed class Utf8ValidationTests
         Assert.True(result.ContainsSupplementaryScalars);
     }
 
+    [Theory]
+    [InlineData("plain ASCII", false)]
+    [InlineData("café", false)]
+    [InlineData("K", true)]
+    [InlineData("before K after", true)]
+    public void ValidateOnlyCanReportKelvinSignWithoutASecondScan(string text, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+
+        var validation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
+
+        Assert.Equal(input.Length, validation.ByteLength);
+        Assert.Equal(text.Length, validation.Utf16Length);
+        Assert.Equal(expected, containsKelvinSign);
+    }
+
     [Fact]
     public void ThrowIfInvalidRejectsTruncatedSequence()
     {

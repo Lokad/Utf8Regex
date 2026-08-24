@@ -24,9 +24,18 @@ internal static class Utf8ValidationCore
         bool computeUtf16Length,
         out Utf8ValidationResult validation,
         out int errorOffset)
+        => TryValidate(input, computeUtf16Length, out validation, out errorOffset, out _);
+
+    public static bool TryValidate(
+        ReadOnlySpan<byte> input,
+        bool computeUtf16Length,
+        out Utf8ValidationResult validation,
+        out int errorOffset,
+        out bool containsKelvinSign)
     {
         var utf16Length = 0;
         var containsSupplementaryScalars = false;
+        containsKelvinSign = false;
         var isAscii = true;
         var offset = 0;
 
@@ -104,6 +113,8 @@ internal static class Utf8ValidationCore
                     errorOffset = offset;
                     return false;
                 }
+
+                containsKelvinSign |= b0 == 0xE2 && b1 == 0x84 && b2 == 0xAA;
 
                 offset += 3;
                 if (computeUtf16Length)

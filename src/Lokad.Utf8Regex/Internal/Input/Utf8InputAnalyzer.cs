@@ -19,10 +19,14 @@ internal static class Utf8InputAnalyzer
         => Utf8ValidatedInput.Create(input);
 
     public static Utf8ValidationResult ValidateOnly(ReadOnlySpan<byte> input)
+        => ValidateOnly(input, out _);
+
+    public static Utf8ValidationResult ValidateOnly(ReadOnlySpan<byte> input, out bool containsKelvinSign)
     {
         var firstNonAscii = input.IndexOfAnyExceptInRange((byte)0x00, (byte)0x7F);
         if (firstNonAscii < 0)
         {
+            containsKelvinSign = false;
             return new Utf8ValidationResult(
                 input.Length,
                 input.Length,
@@ -30,7 +34,12 @@ internal static class Utf8InputAnalyzer
                 containsSupplementaryScalars: false);
         }
 
-        if (!Utf8ValidationCore.TryValidate(input, computeUtf16Length: true, out var validation, out var errorOffset))
+        if (!Utf8ValidationCore.TryValidate(
+                input,
+                computeUtf16Length: true,
+                out var validation,
+                out var errorOffset,
+                out containsKelvinSign))
         {
             throw Utf8Validation.CreateInvalidUtf8Exception(errorOffset);
         }

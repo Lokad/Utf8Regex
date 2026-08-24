@@ -1020,6 +1020,24 @@ public sealed class Utf8Regex
             return CountViaCompiledEngine(input, default, CreateExecutionBudget());
         }
 
+        if (CanValidateKelvinSignDuringNativeCount())
+        {
+            var kelvinValidation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
+            if (containsKelvinSign)
+            {
+                return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                    Utf8Validation.DecodeStrict(input));
+            }
+
+            if (!ShouldSkipRequiredPrefilterForCount() && RejectsByRequiredPrefilter(input))
+            {
+                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
+                return 0;
+            }
+
+            return CountViaCompiledEngine(input, kelvinValidation, CreateExecutionBudget());
+        }
+
         if (ShouldUseKelvinSignFallback(input))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
@@ -3335,6 +3353,14 @@ public sealed class Utf8Regex
 
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input);
+
+    private bool CanValidateKelvinSignDuringNativeCount()
+        => _requiresKelvinSignFallback &&
+           (Options & RegexOptions.CultureInvariant) != 0 &&
+           !UsesRightToLeft() &&
+           _compiledEngineRuntime.SupportsWellFormedOnlyCount &&
+           _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase or
+               NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals;
 
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
     {
