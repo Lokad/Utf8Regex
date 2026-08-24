@@ -32,6 +32,10 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             ? PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(
                 literals.Select(static literal => literal.Bytes).ToArray())
             : default;
+        if (literals.Length == 1)
+        {
+            return;
+        }
 
         var sharedAnchorByteOffset = literals[0].AnchorByteOffset;
         for (var i = 1; i < literals.Length; i++)
@@ -182,6 +186,11 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
     public int Count(ReadOnlySpan<byte> input)
     {
         Utf8Validation.ThrowIfInvalidOnly(input);
+        if (_literals.Length == 1)
+        {
+            return CountSingleLiteral(input, _literals[0]);
+        }
+
         if (_correlatedPrefilter.HasValue)
         {
             return CountWithCorrelatedPrefilter(input);
@@ -227,7 +236,28 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         return count;
     }
 
+    private static int CountSingleLiteral(ReadOnlySpan<byte> input, Literal literal)
+    {
+        var count = 0;
+        var nextStart = 0;
+        while (nextStart <= input.Length - literal.ByteLength)
+        {
+            var candidate = literal.FindNext(input, nextStart);
+            if (candidate == int.MaxValue)
+            {
+                break;
+            }
+
+            count++;
+            nextStart = candidate + literal.ByteLength;
+        }
+
+        return count;
+    }
+
     public bool UsesCorrelatedPrefilter => _correlatedPrefilter.HasValue;
+
+    public bool UsesDirectSingleLiteralSearch => _literals.Length == 1;
 
     private int CountWithCorrelatedPrefilter(ReadOnlySpan<byte> input)
     {

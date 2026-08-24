@@ -300,6 +300,9 @@ public sealed class Utf8Regex
     private bool DebugInvariantCyrillicCountUsesCorrelatedPrefilter =>
         _invariantCyrillicLiteralCountStrategy?.UsesCorrelatedPrefilter == true;
 
+    private bool DebugInvariantCyrillicCountUsesDirectSingleLiteralSearch =>
+        _invariantCyrillicLiteralCountStrategy?.UsesDirectSingleLiteralSearch == true;
+
     private bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
         _packedNibbleLiteralFamilyCountStrategy is not null;
 
@@ -3715,6 +3718,9 @@ public sealed class Utf8Regex
 
         public bool DebugInvariantCyrillicCountUsesCorrelatedPrefilter =>
             _owner.DebugInvariantCyrillicCountUsesCorrelatedPrefilter;
+
+        public bool DebugInvariantCyrillicCountUsesDirectSingleLiteralSearch =>
+            _owner.DebugInvariantCyrillicCountUsesDirectSingleLiteralSearch;
 
         public bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
             _owner.DebugHasPackedNibbleLiteralFamilyCountStrategy;

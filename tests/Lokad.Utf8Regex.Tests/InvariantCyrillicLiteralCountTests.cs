@@ -19,6 +19,7 @@ public sealed class InvariantCyrillicLiteralCountTests
 
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
         Assert.False(regex.Inspection.DebugInvariantCyrillicCountUsesCorrelatedPrefilter);
+        Assert.True(regex.Inspection.DebugInvariantCyrillicCountUsesDirectSingleLiteralSearch);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
@@ -36,6 +37,7 @@ public sealed class InvariantCyrillicLiteralCountTests
         Assert.Equal(
             Sse2.IsSupported && Ssse3.IsSupported,
             regex.Inspection.DebugInvariantCyrillicCountUsesCorrelatedPrefilter);
+        Assert.False(regex.Inspection.DebugInvariantCyrillicCountUsesDirectSingleLiteralSearch);
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
