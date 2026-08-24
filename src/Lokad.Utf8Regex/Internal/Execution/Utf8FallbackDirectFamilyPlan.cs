@@ -35,6 +35,7 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     AnchoredAsciiHexQueryWhole = 28,
     AnchoredAsciiHexColorWhole = 29,
     LeadingAnyRunTrailingAsciiLiteral = 30,
+    Utf8WordDelimitedTokenCount = 31,
 }
 
 internal enum Utf8FallbackFindModeKind : byte
@@ -365,8 +366,37 @@ internal readonly struct Utf8FallbackDirectFamilyPlan
         byte[] headCharSetUtf8,
         byte[] middleCharSetUtf8,
         byte[] tailCharSetUtf8)
-        => CreateWithLiteralsAndCharSets(
+        => ForDelimitedTokenCount(
             Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount,
+            delimiterUtf8,
+            secondaryDelimiterUtf8,
+            headCharSetUtf8,
+            middleCharSetUtf8,
+            tailCharSetUtf8);
+
+    public static Utf8FallbackDirectFamilyPlan ForUtf8WordDelimitedTokenCount(
+        byte[] delimiterUtf8,
+        byte[] secondaryDelimiterUtf8,
+        byte[] headCharSetUtf8,
+        byte[] middleCharSetUtf8,
+        byte[] tailCharSetUtf8)
+        => ForDelimitedTokenCount(
+            Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount,
+            delimiterUtf8,
+            secondaryDelimiterUtf8,
+            headCharSetUtf8,
+            middleCharSetUtf8,
+            tailCharSetUtf8);
+
+    private static Utf8FallbackDirectFamilyPlan ForDelimitedTokenCount(
+        Utf8FallbackDirectFamilyKind kind,
+        byte[] delimiterUtf8,
+        byte[] secondaryDelimiterUtf8,
+        byte[] headCharSetUtf8,
+        byte[] middleCharSetUtf8,
+        byte[] tailCharSetUtf8)
+        => CreateWithLiteralsAndCharSets(
+            kind,
             Utf8FallbackFindModeKind.None,
             new Utf8FallbackLiteralPayload(delimiterUtf8, secondaryDelimiterUtf8, null),
             new Utf8FallbackCharSetPayload(headCharSetUtf8, middleCharSetUtf8, tailCharSetUtf8, null));

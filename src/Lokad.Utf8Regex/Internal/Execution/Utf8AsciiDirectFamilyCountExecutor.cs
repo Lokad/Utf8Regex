@@ -38,6 +38,11 @@ internal static class Utf8AsciiDirectFamilyCountExecutor
 
         switch (plan.Kind)
         {
+            case Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount:
+                diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectUtf8WordDelimitedToken;
+                count = Utf8WordDelimitedTokenExecutor.CountWellFormed(input);
+                return true;
+
             case Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount when isAscii && plan.MinCount > 0:
                 diagnosticsRoute = Utf8ExecutionRoute.FallbackDirectAsciiWordBounded;
                 count = CountAsciiWordRuns(input, plan.MinCount);

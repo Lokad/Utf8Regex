@@ -13,21 +13,26 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             HasExactChars(tailClass, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
     }
 
-    public static bool TryParseAsciiDelimitedTokenCount(
+    public static bool TryParseDelimitedTokenCount(
         string pattern,
         RegexOptions options,
         out byte[]? headCharSetUtf8,
         out byte[]? delimiterUtf8,
         out byte[]? middleCharSetUtf8,
         out byte[]? secondaryDelimiterUtf8,
-        out byte[]? tailCharSetUtf8)
+        out byte[]? tailCharSetUtf8,
+        out bool isUtf8WordDelimitedShape)
     {
+        static bool ContainsWordEscape(string source, int start, int end)
+            => source.AsSpan(start, end - start).IndexOf("\\w") >= 0;
+
         options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
         headCharSetUtf8 = null;
         delimiterUtf8 = null;
         middleCharSetUtf8 = null;
         secondaryDelimiterUtf8 = null;
         tailCharSetUtf8 = null;
+        isUtf8WordDelimitedShape = false;
 
         if (options != RegexOptions.None)
         {
@@ -35,14 +40,40 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         }
 
         var index = 0;
-        if (!TryReadCharClass(pattern, ref index, out var headClass) ||
-            !TryConsume(pattern, ref index, "+") ||
-            !TryReadAsciiLiteral(pattern, ref index, out delimiterUtf8) ||
-            !TryReadCharClass(pattern, ref index, out var middleClass) ||
-            !TryConsume(pattern, ref index, "+") ||
-            !TryReadAsciiLiteral(pattern, ref index, out secondaryDelimiterUtf8) ||
-            !TryReadCharClass(pattern, ref index, out var tailClass) ||
-            !TryConsume(pattern, ref index, "+") ||
+        var headStart = index;
+        if (!TryReadCharClass(pattern, ref index, out var headClass))
+        {
+            return false;
+        }
+
+        var headHasWordEscape = ContainsWordEscape(pattern, headStart, index);
+        if (!TryConsume(pattern, ref index, "+") ||
+            !TryReadAsciiLiteral(pattern, ref index, out delimiterUtf8))
+        {
+            return false;
+        }
+
+        var middleStart = index;
+        if (!TryReadCharClass(pattern, ref index, out var middleClass))
+        {
+            return false;
+        }
+
+        var middleHasWordEscape = ContainsWordEscape(pattern, middleStart, index);
+        if (!TryConsume(pattern, ref index, "+") ||
+            !TryReadAsciiLiteral(pattern, ref index, out secondaryDelimiterUtf8))
+        {
+            return false;
+        }
+
+        var tailStart = index;
+        if (!TryReadCharClass(pattern, ref index, out var tailClass))
+        {
+            return false;
+        }
+
+        var tailHasWordEscape = ContainsWordEscape(pattern, tailStart, index);
+        if (!TryConsume(pattern, ref index, "+") ||
             index != pattern.Length)
         {
             return false;
@@ -51,6 +82,14 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         headCharSetUtf8 = EncodeAsciiCharSet(headClass);
         middleCharSetUtf8 = EncodeAsciiCharSet(middleClass);
         tailCharSetUtf8 = EncodeAsciiCharSet(tailClass);
+        isUtf8WordDelimitedShape = headHasWordEscape &&
+            middleHasWordEscape &&
+            tailHasWordEscape &&
+            delimiterUtf8.AsSpan().SequenceEqual("@"u8) &&
+            secondaryDelimiterUtf8.AsSpan().SequenceEqual("."u8) &&
+            HasExactChars(headClass, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-") &&
+            HasExactChars(middleClass, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-") &&
+            HasExactChars(tailClass, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-");
         return delimiterUtf8 is { Length: > 0 } &&
             secondaryDelimiterUtf8 is { Length: > 0 } &&
             headCharSetUtf8.Length > 0 &&

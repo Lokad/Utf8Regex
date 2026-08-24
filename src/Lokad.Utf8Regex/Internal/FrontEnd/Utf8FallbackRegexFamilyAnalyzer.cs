@@ -181,21 +181,29 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
             return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.AsciiIdentifierToken, Utf8FallbackFindModeKind.FindToken);
         }
 
-        if (TryParseAsciiDelimitedTokenCount(
+        if (TryParseDelimitedTokenCount(
             executionPattern,
             options,
             out var headCharSetUtf8,
             out var delimiterUtf8,
             out var middleCharSetUtf8,
             out var secondaryDelimiterUtf8,
-            out var tailCharSetUtf8))
+            out var tailCharSetUtf8,
+            out var isUtf8WordDelimitedShape))
         {
-            return Utf8FallbackDirectFamilyPlan.ForDelimitedTokenCount(
-                RequireBytes(delimiterUtf8),
-                RequireBytes(secondaryDelimiterUtf8),
-                RequireBytes(headCharSetUtf8),
-                RequireBytes(middleCharSetUtf8),
-                RequireBytes(tailCharSetUtf8));
+            return isUtf8WordDelimitedShape
+                ? Utf8FallbackDirectFamilyPlan.ForUtf8WordDelimitedTokenCount(
+                    RequireBytes(delimiterUtf8),
+                    RequireBytes(secondaryDelimiterUtf8),
+                    RequireBytes(headCharSetUtf8),
+                    RequireBytes(middleCharSetUtf8),
+                    RequireBytes(tailCharSetUtf8))
+                : Utf8FallbackDirectFamilyPlan.ForDelimitedTokenCount(
+                    RequireBytes(delimiterUtf8),
+                    RequireBytes(secondaryDelimiterUtf8),
+                    RequireBytes(headCharSetUtf8),
+                    RequireBytes(middleCharSetUtf8),
+                    RequireBytes(tailCharSetUtf8));
         }
 
         if (TryParseAsciiLiteralBetweenNegatedRuns(

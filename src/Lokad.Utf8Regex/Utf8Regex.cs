@@ -1135,6 +1135,12 @@ public sealed class Utf8Regex
                 Utf8Validation.DecodeStrict(input));
         }
 
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount)
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            return CountViaCompiledEngine(input, default, CreateExecutionBudget());
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount ||
             Utf8FallbackDirectFamilyCategories.IsTokenCountFamily(_fallbackDirectFamily.Kind))
         {

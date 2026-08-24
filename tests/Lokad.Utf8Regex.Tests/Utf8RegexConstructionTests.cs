@@ -1831,7 +1831,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledAsciiDelimitedTokenEmailCountMatchesDotNetOnMixedUtf8Input()
+    public void CompiledUtf8WordDelimitedTokenEmailCountMatchesDotNetOnMixedUtf8Input()
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         const string input = "été alpha@example.org βγ ops.dispatch@northwind-control.net 夏洛克";
@@ -1858,7 +1858,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "https://hôte.example/路径 https://atlas.example/path")]
     [InlineData(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "١١/١٨/٢٠١٩ 11/18/2019")]
     [InlineData(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "é11/18/2019é 11/18/2019")]
-    public void AsciiDirectFamilyCountFallsBackForUnicodeSensitiveMixedInput(string pattern, string input)
+    public void UnicodeSensitiveDirectFamilyCountMatchesDotNetOnMixedInput(string pattern, string input)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })

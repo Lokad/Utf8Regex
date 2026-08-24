@@ -8,9 +8,19 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class DotNetPerformanceReplicaRuntimeTests
 {
     [Fact]
-    public void EmailPatternClassifiesAsAsciiDelimitedTokenCount()
+    public void EmailPatternClassifiesAsUtf8WordDelimitedTokenCount()
     {
         var analysis = Utf8FrontEnd.Compile(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.None);
+
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
+    }
+
+    [Fact]
+    public void ExplicitAsciiEmailPatternRetainsAsciiDelimitedTokenCount()
+    {
+        var analysis = Utf8FrontEnd.Compile(
+            @"[A-Za-z0-9_\.+-]+@[A-Za-z0-9_\.-]+\.[A-Za-z0-9_\.-]+",
+            RegexOptions.None);
 
         Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
     }
@@ -53,6 +63,32 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
+    [InlineData("e\u0301quipe@exemple.fr")]
+    [InlineData("δοκιμή@παράδειγμα.gr")]
+    [InlineData("𐐀@example.org")]
+    [InlineData("alpha@example.org.")]
+    public void Utf8WordDelimitedTokenCountMatchesDotNetWordSemantics(string input)
+    {
+        const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
+
+        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
+        {
+            Assert.Equal(
+                Regex.Count(input, pattern, options),
+                new Utf8Regex(pattern, options).Count(Encoding.UTF8.GetBytes(input)));
+        }
+    }
+
+    [Fact]
+    public void Utf8WordDelimitedTokenCountStillRejectsMalformedSuffix()
+    {
+        var regex = new Utf8Regex(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.Compiled);
+        byte[] malformed = [.. "alpha@example.org"u8, 0xFF];
+
+        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
     }
 
     [Theory]

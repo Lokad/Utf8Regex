@@ -8,14 +8,14 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class LokadPublicRouteGuardrailTests
 {
     [Fact]
-    public void MariomkaEmailCountStaysOnDelimitedTokenFallbackFamily()
+    public void MariomkaEmailCountStaysOnUtf8WordDelimitedTokenFamily()
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
 
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
         var regex = new Utf8Regex(pattern, RegexOptions.None);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, analysis.FallbackDirectFamily.Kind);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
@@ -375,9 +375,9 @@ public sealed class LokadPublicRouteGuardrailTests
     {
         var regex = new Utf8Regex(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.Compiled);
 
-        Assert.Equal(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount, regex.Inspection.DebugFallbackDirectFamilyKind switch
+        Assert.Equal(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount, regex.Inspection.DebugFallbackDirectFamilyKind switch
         {
-            nameof(Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount) => Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount,
+            nameof(Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount) => Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount,
             _ => throw new Xunit.Sdk.XunitException($"Unexpected direct family kind: {regex.Inspection.DebugFallbackDirectFamilyKind}")
         });
         Assert.True(regex.Inspection.DebugSupportsThrowIfInvalidOnlyCount);

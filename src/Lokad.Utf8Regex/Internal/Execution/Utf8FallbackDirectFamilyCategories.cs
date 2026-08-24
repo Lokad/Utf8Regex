@@ -33,6 +33,7 @@ internal static class Utf8FallbackDirectFamilyCategories
 
     public static bool IsTokenCountFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
+        Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
         Utf8FallbackDirectFamilyKind.AsciiUriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken;
@@ -72,6 +73,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         => IsNativeFallbackOnlyCountFamily(kind) ||
         kind is Utf8FallbackDirectFamilyKind.AsciiWordBoundedCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
+        Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiLiteralStructuredTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount or
@@ -83,6 +85,7 @@ internal static class Utf8FallbackDirectFamilyCategories
 
     public static bool SkipsRequiredPrefilterForCount(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount or
+        Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
