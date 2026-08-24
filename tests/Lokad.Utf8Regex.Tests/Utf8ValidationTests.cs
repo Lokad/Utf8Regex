@@ -112,11 +112,87 @@ public sealed class Utf8ValidationTests
     public void LeanTwoByteDrainLeavesThreeByteScalarsToTheSemanticValidator()
     {
         var prefix = Encoding.UTF8.GetBytes(new string('a', 37) + "é");
-        var input = prefix.Concat(Encoding.UTF8.GetBytes("中suffix")).ToArray();
+        var input = prefix
+            .Concat(Encoding.UTF8.GetBytes("中" + new string('b', 96)))
+            .ToArray();
 
         Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
         Assert.Equal(prefix.Length, nextOffset);
         Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void LeanTwoByteDrainAdaptsToLocallyDenseThreeByteScalars()
+    {
+        var input = Encoding.UTF8.GetBytes(
+            new string('a', 40) + "中文" + new string('b', 160));
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+            input,
+            0,
+            drainSafeThreeByte: false,
+            out var nextOffset,
+            out var errorOffset));
+        Assert.Equal(input.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void AdaptiveThreeByteDrainReturnsToLeanModeAfterAsciiBlocks()
+    {
+        var sparseScalarOffset = Encoding.UTF8.GetByteCount("中文" + new string('a', 192));
+        var input = Encoding.UTF8.GetBytes(
+            "中文" + new string('a', 192) + "語" + new string('b', 96));
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+            input,
+            0,
+            drainSafeThreeByte: false,
+            out var nextOffset,
+            out var errorOffset));
+        Assert.Equal(sparseScalarOffset, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void AdaptiveThreeByteDrainReportsMalformedContinuationsAtEveryDenseBlockLane()
+    {
+        for (var lane = 0; lane <= 25; lane++)
+        {
+            var scalarStart = 64 + lane;
+            var input = Enumerable.Repeat((byte)'a', scalarStart)
+                .Concat("中文"u8.ToArray())
+                .Concat(Enumerable.Repeat((byte)'b', 96))
+                .ToArray();
+
+            Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+                input,
+                0,
+                drainSafeThreeByte: false,
+                out var nextOffset,
+                out var errorOffset));
+            Assert.Equal(input.Length, nextOffset);
+            Assert.Equal(-1, errorOffset);
+
+            for (var byteOffset = 1; byteOffset < 6; byteOffset++)
+            {
+                if (byteOffset == 3)
+                {
+                    continue;
+                }
+
+                var malformed = input.ToArray();
+                malformed[scalarStart + byteOffset] = (byte)'x';
+
+                Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(
+                    malformed,
+                    0,
+                    drainSafeThreeByte: false,
+                    out _,
+                    out errorOffset));
+                Assert.Equal(byteOffset < 3 ? scalarStart : scalarStart + 3, errorOffset);
+            }
+        }
     }
 
     [Fact]
