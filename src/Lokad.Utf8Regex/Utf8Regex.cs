@@ -3341,16 +3341,15 @@ public sealed class Utf8Regex
                 return false;
 
             case Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail:
-                if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-                {
-                    return false;
-                }
-
-                isMatch = Utf8AsciiLeadingDigitsTailExecutor.TryMatchWhole(
+                if (Utf8AsciiLeadingDigitsTailExecutor.TryMatchPrintableAsciiWhole(
                     input,
                     _fallbackDirectFamily.LiteralUtf8,
-                    out _);
-                return true;
+                    out isMatch))
+                {
+                    return true;
+                }
+
+                return false;
 
             case Utf8PrioritizedBooleanFamilyKind.CompiledRepeatedDigitGroup:
                 if (_compiledEngineRuntime is Utf8SimplePatternCompiledEngineRuntime repeatedGroupRuntime &&

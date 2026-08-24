@@ -2,11 +2,46 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiLeadingDigitsTailExecutor
 {
+    public static bool TryMatchPrintableAsciiWhole(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> separatorBytes,
+        out bool isMatch)
+    {
+        isMatch = false;
+        var index = 0;
+        while ((uint)index < (uint)input.Length && IsAsciiDigit(input[index]))
+        {
+            index++;
+        }
+
+        if (index == 0)
+        {
+            return input.IndexOfAnyExceptInRange((byte)0x20, (byte)0x7F) < 0;
+        }
+
+        if (index < input.Length)
+        {
+            if (separatorBytes.IsEmpty || separatorBytes.IndexOf(input[index]) < 0)
+            {
+                return input.IndexOfAnyExceptInRange((byte)0x20, (byte)0x7F) < 0;
+            }
+
+            index++;
+            if (input[index..].IndexOfAnyExceptInRange((byte)0x20, (byte)0x7F) >= 0)
+            {
+                return false;
+            }
+        }
+
+        isMatch = true;
+        return true;
+    }
+
     public static bool TryMatchWhole(ReadOnlySpan<byte> input, ReadOnlySpan<byte> separatorBytes, out int matchedLength)
     {
-        matchedLength = 0;
         if (input.IsEmpty)
         {
+            matchedLength = 0;
             return false;
         }
 
@@ -16,6 +51,16 @@ internal static class Utf8AsciiLeadingDigitsTailExecutor
             effectiveLength--;
         }
 
+        return TryMatchWholeCore(input, separatorBytes, effectiveLength, out matchedLength);
+    }
+
+    private static bool TryMatchWholeCore(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> separatorBytes,
+        int effectiveLength,
+        out int matchedLength)
+    {
+        matchedLength = 0;
         if (effectiveLength <= 0)
         {
             return false;
@@ -45,7 +90,8 @@ internal static class Utf8AsciiLeadingDigitsTailExecutor
             }
 
             index++;
-            if (index < effectiveLength && input[index..effectiveLength].IndexOf((byte)'\n') >= 0)
+            if (index < effectiveLength &&
+                input[index..effectiveLength].IndexOf((byte)'\n') >= 0)
             {
                 return false;
             }
