@@ -4,9 +4,9 @@
     "dotnet-performance": {
       "Cases": {
         "literal/sherlock-en": {
-          "MeasuredAtUtc": "2026-08-21T19:10:58.3838777+00:00",
+          "MeasuredAtUtc": "2026-08-24T08:28:02.4027501+00:00",
           "Environment": {
-            "SourceCommit": "9f659f85dc46",
+            "SourceCommit": "b80e1db9809e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -18,12 +18,12 @@
           "RequestedIterations": 20,
           "EffectiveIterations": 20,
           "Samples": 7,
-          "Utf8Regex": 91.075,
-          "Utf8Compiled": 90.585,
-          "PredecodedRegex": 54.82,
-          "CompiledRegex": 41.465,
-          "DecodeThenRegex": 301.935,
-          "DecodeThenCompiledRegex": 283.84,
+          "Utf8Regex": 37.32,
+          "Utf8Compiled": 38.69,
+          "PredecodedRegex": 59.36,
+          "CompiledRegex": 45.36,
+          "DecodeThenRegex": 300.64,
+          "DecodeThenCompiledRegex": 279.415,
           "Utf8RegexAllocatedBytes": 1.2,
           "Utf8CompiledAllocatedBytes": 1.2,
           "PredecodedRegexAllocatedBytes": 1.2,
@@ -1548,9 +1548,9 @@
     "dotnet-performance-compiled": {
       "Cases": {
         "literal/sherlock-en": {
-          "MeasuredAtUtc": "2026-08-21T19:10:58.3841645+00:00",
+          "MeasuredAtUtc": "2026-08-24T08:28:02.4884637+00:00",
           "Environment": {
-            "SourceCommit": "9f659f85dc46",
+            "SourceCommit": "b80e1db9809e",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -1562,12 +1562,12 @@
           "RequestedIterations": 20,
           "EffectiveIterations": 20,
           "Samples": 7,
-          "Utf8Regex": 91.075,
-          "Utf8Compiled": 90.585,
-          "PredecodedRegex": 54.82,
-          "CompiledRegex": 41.465,
-          "DecodeThenRegex": 301.935,
-          "DecodeThenCompiledRegex": 283.84,
+          "Utf8Regex": 37.32,
+          "Utf8Compiled": 38.69,
+          "PredecodedRegex": 59.36,
+          "CompiledRegex": 45.36,
+          "DecodeThenRegex": 300.64,
+          "DecodeThenCompiledRegex": 279.415,
           "Utf8RegexAllocatedBytes": 1.2,
           "Utf8CompiledAllocatedBytes": 1.2,
           "PredecodedRegexAllocatedBytes": 1.2,
