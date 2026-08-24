@@ -244,6 +244,11 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             return CountSuffixOnlyViaPreparedSearcher(input, familyPlan, searchPlan, budget);
         }
 
+        if (CanUseBoundaryWrappedLiteralFamilyCountKernel(familyPlan))
+        {
+            return CountBoundaryWrappedLiteralFamily(input, familyPlan, searchPlan, budget);
+        }
+
         if (CanUsePreparedSearcherNonOverlappingCountKernel(familyPlan))
         {
             return CountStatefulViaPreparedSearcherNonOverlapping(input, familyPlan, searchPlan, budget);
@@ -277,6 +282,50 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
             Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
             count++;
             minStartIndex = match.Index + Math.Max(matchedLength, 1);
+        }
+
+        return count;
+    }
+
+    private static int CountBoundaryWrappedLiteralFamily(
+        ReadOnlySpan<byte> input,
+        in AsciiStructuralIdentifierFamilyPlan familyPlan,
+        Utf8SearchPlan searchPlan,
+        Utf8ExecutionDeadline budget)
+    {
+        var count = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        var diagnostics = Utf8SearchDiagnosticsSession.Current;
+        var enforceDeadline = !budget.IsInfinite;
+
+        while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
+        {
+            if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(
+                    familyPlan.LeadingBoundary,
+                    input,
+                    matchIndex))
+            {
+                continue;
+            }
+
+            if (enforceDeadline)
+            {
+                budget.Step();
+            }
+
+            diagnostics?.CountSearchCandidate();
+            diagnostics?.CountVerifierInvocation();
+
+            if (!AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(
+                    familyPlan.TrailingBoundary,
+                    input,
+                    matchIndex + matchLength))
+            {
+                continue;
+            }
+
+            diagnostics?.CountVerifierMatch();
+            count++;
         }
 
         return count;
@@ -1502,6 +1551,15 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
     private static bool CanUsePreparedSearcherNonOverlappingCountKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
     {
         return familyPlan.LeadingBoundary == Utf8BoundaryRequirement.Boundary;
+    }
+
+    private static bool CanUseBoundaryWrappedLiteralFamilyCountKernel(in AsciiStructuralIdentifierFamilyPlan familyPlan)
+    {
+        return familyPlan.LeadingBoundary == Utf8BoundaryRequirement.Boundary &&
+            familyPlan.SeparatorCharClass.IsEmpty &&
+            familyPlan.SeparatorMinCount == 0 &&
+            string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
+            familyPlan.CompiledSuffixParts.Length == 0;
     }
 
     private static bool MatchesLeadingBoundaryForWordPrefix(

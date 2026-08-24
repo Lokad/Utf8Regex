@@ -71,6 +71,21 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(Utf8CompiledEngineKind.StructuralLinearAutomaton, regex.Inspection.CompiledEngineKind);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BoundaryWrappedSharedPrefixLiteralFamilyCountMatchesRuntime(RegexOptions mode)
+    {
+        const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
+        const string input = "LogTrace xLogDebug LogInformationX LogWarning LogError\nLogDebug éLogTrace LogDebugé";
+        var options = mode | RegexOptions.CultureInvariant;
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(NativeExecutionKind.AsciiStructuralIdentifierFamily, regex.Inspection.ExecutionKind);
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+    }
+
     [Fact]
     public void ConstructorClassifiesAsciiStructuralIdentifierFamilyAsNative()
     {
