@@ -291,6 +291,8 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
         var count = 0;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var minStartIndex = 0;
+        var diagnostics = Utf8SearchDiagnosticsSession.Current;
+        var enforceDeadline = !budget.IsInfinite;
 
         while (searchPlan.PreparedSearcher.TryFindNextNonOverlappingLength(input, ref state, out var matchIndex, out var matchLength))
         {
@@ -300,15 +302,19 @@ internal static class Utf8AsciiStructuralIdentifierFamilyExecutor
                 continue;
             }
 
-            budget.Step();
-            Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-            Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
+            if (enforceDeadline)
+            {
+                budget.Step();
+            }
+
+            diagnostics?.CountSearchCandidate();
+            diagnostics?.CountVerifierInvocation();
             if (!AsciiStructuralIdentifierFamilyMatcher.TryMatch(input, matchIndex, matchLength, familyPlan, out var matchedLength))
             {
                 continue;
             }
 
-            Utf8SearchDiagnosticsSession.Current?.CountVerifierMatch();
+            diagnostics?.CountVerifierMatch();
             count++;
             minStartIndex = matchIndex + Math.Max(matchedLength, 1);
         }
