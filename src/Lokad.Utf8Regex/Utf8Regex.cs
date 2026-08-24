@@ -36,6 +36,7 @@ public sealed class Utf8Regex
     private readonly Utf8RegexProgram _program;
     private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _prioritizePlainAsciiLiteralCount;
+    private readonly bool _prioritizeBoundaryOnlyStructuralLiteralFamilyCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -64,6 +65,9 @@ public sealed class Utf8Regex
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
+        _prioritizeBoundaryOnlyStructuralLiteralFamilyCount =
+            (options & RegexOptions.RightToLeft) == 0 &&
+            Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex);
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
 
         static bool CanPrioritizePlainAsciiLiteralCount(
@@ -1010,7 +1014,7 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
-        if (_prioritizePlainAsciiLiteralCount)
+        if (_prioritizePlainAsciiLiteralCount || _prioritizeBoundaryOnlyStructuralLiteralFamilyCount)
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
