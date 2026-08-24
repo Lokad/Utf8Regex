@@ -142,7 +142,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-name-family-count` | `Count` | 1,900.345 us | 6,086.520 us | 10,905.570 us |
 | `industry/leipzig-river-window-count` | `Count` | 6,490.630 us | 21,346.275 us | 26,630.385 us |
 | `industry/leipzig-symbol-count` | `Count` | 1,164.275 us | 12,406.570 us | 17,701.575 us |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.060 us | 0.109 us | 0.124 us |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.054 us | 0.105 us | 0.129 us |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.155 us | 0.162 us | 0.169 us |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.078 us | 0.084 us | 0.092 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.010 us | 0.047 us | 0.058 us |
@@ -223,7 +223,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-name-family-count` | `Count` | 1,914.825 us | 2,141.075 us | 6,962.170 us |
 | `industry/leipzig-river-window-count` | `Count` | 6,562.410 us | 6,616.195 us | 11,591.330 us |
 | `industry/leipzig-symbol-count` | `Count` | 1,204.060 us | 1,180.960 us | 6,426.605 us |
-| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.062 us | 0.046 us | 0.062 us |
+| `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.055 us | 0.044 us | 0.066 us |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.038 us | 0.047 us | 0.061 us |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.029 us | 0.034 us | 0.047 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.012 us | 0.021 us | 0.031 us |
