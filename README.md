@@ -115,7 +115,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 |---|---|---:|---:|---:|
 | `common/email-match` | `IsMatch` | 0.082 us | 0.311 us | 0.327 us |
 | `common/email-miss` | `IsMatch` | 0.042 us | 0.192 us | 0.215 us |
-| `common/date-match` | `IsMatch` | 0.111 us | 0.107 us | 0.133 us |
+| `common/date-match` | `IsMatch` | 0.078 us | 0.112 us | 0.134 us |
 | `common/date-miss` | `IsMatch` | 0.058 us | 0.326 us | 0.373 us |
 | `common/ip-match` | `IsMatch` | 0.012 us | 0.098 us | 0.110 us |
 | `common/ip-miss` | `IsMatch` | 0.012 us | 0.126 us | 0.140 us |
@@ -196,7 +196,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 |---|---|---:|---:|---:|
 | `common/email-match` | `IsMatch` | 0.068 us | 0.094 us | 0.109 us |
 | `common/email-miss` | `IsMatch` | 0.043 us | 0.119 us | 0.147 us |
-| `common/date-match` | `IsMatch` | 0.111 us | 0.231 us | 0.256 us |
+| `common/date-match` | `IsMatch` | 0.080 us | 0.234 us | 0.248 us |
 | `common/date-miss` | `IsMatch` | 0.057 us | 0.114 us | 0.137 us |
 | `common/ip-match` | `IsMatch` | 0.012 us | 0.033 us | 0.041 us |
 | `common/ip-miss` | `IsMatch` | 0.012 us | 0.032 us | 0.042 us |
