@@ -917,6 +917,17 @@ public sealed class Utf8Regex
             }
         }
 
+        if (_prioritizedBooleanFamilyKind == Utf8PrioritizedBooleanFamilyKind.AsciiBoundedDateToken &&
+            input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) < 0)
+        {
+            return Utf8AsciiBoundedDateTokenExecutor.TryFindAsciiBoundedDateToken(
+                input,
+                0,
+                _fallbackDirectFamily,
+                out _,
+                out _);
+        }
+
         try
         {
             return IsMatchCore(input);
