@@ -38,6 +38,7 @@ public sealed class Utf8Regex
     private readonly bool _prioritizePlainAsciiLiteralCount;
     private readonly bool _prioritizeBoundaryOnlyStructuralLiteralFamilyCount;
     private readonly bool _requiresKelvinSignFallback;
+    private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
@@ -69,6 +70,14 @@ public sealed class Utf8Regex
             (options & RegexOptions.RightToLeft) == 0 &&
             Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex);
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
+        _invariantCyrillicLiteralCountStrategy =
+            Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
+                pattern,
+                options,
+                matchTimeout,
+                out var invariantCyrillicLiteralCountStrategy)
+                    ? invariantCyrillicLiteralCountStrategy
+                    : null;
 
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -252,6 +261,9 @@ public sealed class Utf8Regex
     private string DebugFallbackDirectFamilyKind => _preparedRegex.FallbackDirectFamily.Kind.ToString();
 
     private bool DebugHasAsciiCultureInvariantTwin => _asciiCultureInvariantStrategy is not null;
+
+    private bool DebugHasInvariantCyrillicLiteralCountStrategy =>
+        _invariantCyrillicLiteralCountStrategy is not null;
 
     private NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind => _asciiCultureInvariantStrategy?.PreparedRegex.ExecutionKind;
 
@@ -1057,6 +1069,11 @@ public sealed class Utf8Regex
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.Count(input);
+        }
+
+        if (_invariantCyrillicLiteralCountStrategy is { } invariantCyrillicLiteralCountStrategy)
+        {
+            return invariantCyrillicLiteralCountStrategy.Count(input);
         }
 
         if (ShouldDecodeWholeSubjectForFallbackValueOperation())
@@ -3597,6 +3614,9 @@ public sealed class Utf8Regex
         public string DebugFallbackDirectFamilyKind => _owner.DebugFallbackDirectFamilyKind;
 
         public bool DebugHasAsciiCultureInvariantTwin => _owner.DebugHasAsciiCultureInvariantTwin;
+
+        public bool DebugHasInvariantCyrillicLiteralCountStrategy =>
+            _owner.DebugHasInvariantCyrillicLiteralCountStrategy;
 
         public NativeExecutionKind? DebugAsciiCultureInvariantTwinExecutionKind =>
             _owner.DebugAsciiCultureInvariantTwinExecutionKind;
