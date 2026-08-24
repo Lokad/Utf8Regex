@@ -248,7 +248,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/call-token` | 2.955 us | 3.005 us | 9.089 us |
 | `literal/identifier-token-casei` | 5.567 us | 8.521 us | 13.697 us |
 | `literal-family/type-token-family` | 8.883 us | 15.979 us | 22.261 us |
-| `literal-family/method-token-family` | 5.659 us | 5.698 us | 11.660 us |
+| `literal-family/method-token-family` | 5.838 us | 6.095 us | 11.883 us |
 | `structural/keyword-to-generic-type` | 3.204 us | 3.302 us | 9.202 us |
 | `structural/keyword-family-to-capitalized-identifier` | 45.323 us | 132.100 us | 142.134 us |
 | `structural/method-family-call` | 2.786 us | 5.303 us | 11.897 us |
@@ -298,7 +298,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/call-token` | 2.995 us | 2.264 us | 8.312 us |
 | `literal/identifier-token-casei` | 5.707 us | 4.770 us | 10.596 us |
 | `literal-family/type-token-family` | 8.580 us | 5.888 us | 12.879 us |
-| `literal-family/method-token-family` | 5.813 us | 3.870 us | 9.519 us |
+| `literal-family/method-token-family` | 3.917 us | 3.602 us | 9.271 us |
 | `structural/keyword-to-generic-type` | 3.375 us | 2.604 us | 8.606 us |
 | `structural/keyword-family-to-capitalized-identifier` | 45.065 us | 43.417 us | 52.467 us |
 | `structural/method-family-call` | 2.824 us | 3.524 us | 9.832 us |
