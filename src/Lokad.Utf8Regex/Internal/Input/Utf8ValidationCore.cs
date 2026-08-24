@@ -289,6 +289,21 @@ internal static class Utf8ValidationCore
                     continue;
                 }
 
+                if (overlongLeadBits == 0 &&
+                    unsupportedBits == 0 &&
+                    safeThreeByteLeadBits == 0 &&
+                    trailingLeadBits == 0x8000_0000u &&
+                    continuationBits == expectedContinuationBits &&
+                    offset < lastVectorStart &&
+                    IsContinuationByte(input[offset + Vector256<byte>.Count]))
+                {
+                    // Complete the sole two-byte scalar crossing this block and
+                    // resume after its continuation instead of entering the
+                    // diagnostic offset path for an otherwise valid vector.
+                    offset += Vector256<byte>.Count + 1;
+                    continue;
+                }
+
                 var trailingLeadStop = trailingLeadBits == 0
                     ? Vector256<byte>.Count
                     : BitOperations.TrailingZeroCount(trailingLeadBits);

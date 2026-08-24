@@ -130,6 +130,25 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
+    public void LeanTwoByteDrainCompletesAScalarCrossingTheVectorBoundary()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 31) + "é" + new string('b', 32));
+
+        Assert.True(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out var nextOffset, out var errorOffset));
+        Assert.Equal(input.Length, nextOffset);
+        Assert.Equal(-1, errorOffset);
+    }
+
+    [Fact]
+    public void LeanTwoByteDrainReportsAnInvalidCrossVectorContinuationAtTheLead()
+    {
+        var input = Enumerable.Repeat((byte)'a', 31).Concat(new byte[] { 0xC2, (byte)'x' }).ToArray();
+
+        Assert.False(Utf8ValidationCore.TryDrainAsciiAndCommonUtf8(input, 0, drainSafeThreeByte: false, out _, out var errorOffset));
+        Assert.Equal(31, errorOffset);
+    }
+
+    [Fact]
     public void AsciiAndTwoByteDrainReportsInvalidLeadOffsetsAroundVectorBoundaries()
     {
         var cases = new[]
