@@ -265,6 +265,37 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
     }
 
+    [Fact]
+    public void FloatIsMatchMatchesDotNetAcrossShortAsciiDomain()
+    {
+        const string pattern = @"^[-+]?\d*\.?\d*$";
+        const string alphabet = "09.+-x\n";
+        var ordinary = new Utf8Regex(pattern, RegexOptions.None);
+        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var oracle = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
+
+        for (var length = 0; length <= 5; length++)
+        {
+            var combinationCount = (int)Math.Pow(alphabet.Length, length);
+            for (var combination = 0; combination < combinationCount; combination++)
+            {
+                var remaining = combination;
+                var characters = new char[length];
+                for (var index = 0; index < characters.Length; index++)
+                {
+                    characters[index] = alphabet[remaining % alphabet.Length];
+                    remaining /= alphabet.Length;
+                }
+
+                var input = new string(characters);
+                var bytes = Encoding.UTF8.GetBytes(input);
+                var expected = oracle.IsMatch(input);
+                Assert.Equal(expected, ordinary.IsMatch(bytes));
+                Assert.Equal(expected, compiled.IsMatch(bytes));
+            }
+        }
+    }
+
     [Theory]
     [InlineData("100- this is a line of ftp response which contains a message string")]
     [InlineData("220 Service ready")]

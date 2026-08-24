@@ -127,18 +127,12 @@ internal static class Utf8AsciiPrefixTokenExecutor
             index++;
         }
 
-        while (index < length && IsAsciiDigit(input[index]))
-        {
-            index++;
-        }
+        index += CountLeadingDigits(input[index..length]);
 
         if (index < length && input[index] == (byte)'.')
         {
             index++;
-            while (index < length && IsAsciiDigit(input[index]))
-            {
-                index++;
-            }
+            index += CountLeadingDigits(input[index..length]);
         }
 
         if (index != length)
@@ -339,8 +333,6 @@ internal static class Utf8AsciiPrefixTokenExecutor
         var stop = input.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
         return stop < 0 ? input.Length : stop;
     }
-
-    private static bool IsAsciiDigit(byte value) => Utf8AsciiBytePredicates.IsDigit(value);
 
     private static bool IsAsciiOperator(byte value) => s_asciiOperators.Contains(value);
 }
