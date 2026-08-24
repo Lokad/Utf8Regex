@@ -133,6 +133,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
         var units = new Unit[literal.Length];
         var byteOffset = 0;
+        var anchorPreviousAscii = -1;
         var anchorByteOffset = -1;
         var anchorFirst = (byte)0;
         var anchorSecond = (byte)0;
@@ -161,8 +162,16 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             var upperUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(upper);
             var lowerUtf8 = Utf8InvariantCyrillicCase.EncodeTwoByteScalar(lower);
             units[i] = Unit.CreatePair(byteOffset, upperUtf8, lowerUtf8);
-            if (anchorByteOffset < 0)
+            var previousAscii = i > 0 && literal[i - 1] <= 0x7F
+                ? literal[i - 1]
+                : -1;
+            // Prefer the first Cyrillic scalar following an ASCII separator.
+            // Its adjacent byte supplies a cheap correlated rejection while the
+            // first Cyrillic scalar remains the fallback for single-word literals.
+            if (anchorByteOffset < 0 ||
+                (anchorPreviousAscii < 0 && previousAscii >= 0))
             {
+                anchorPreviousAscii = previousAscii;
                 anchorByteOffset = byteOffset + 1;
                 anchorFirst = (byte)(upperUtf8 >> 8);
                 anchorSecond = (byte)(lowerUtf8 >> 8);
@@ -181,6 +190,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
             units,
             Encoding.UTF8.GetBytes(literal),
             byteOffset,
+            anchorPreviousAscii,
             anchorByteOffset,
             anchorFirst,
             anchorSecond);
@@ -438,6 +448,8 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         var candidate = anchorIndex - literal.AnchorByteOffset;
         if (candidate < nextMatchStart ||
             (uint)candidate > (uint)maxStart ||
+            (literal.AnchorPreviousAscii >= 0 &&
+             input[anchorIndex - 2] != (byte)literal.AnchorPreviousAscii) ||
             !literal.MatchesAt(input, candidate))
         {
             return;
@@ -541,6 +553,7 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         Unit[] Units,
         byte[] Bytes,
         int ByteLength,
+        int AnchorPreviousAscii,
         int AnchorByteOffset,
         byte AnchorFirst,
         byte AnchorSecond)
