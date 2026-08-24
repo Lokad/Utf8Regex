@@ -37,6 +37,7 @@ public sealed class Utf8Regex
     private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _prioritizePlainAsciiLiteralCount;
     private readonly bool _prioritizeBoundaryOnlyStructuralLiteralFamilyCount;
+    private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
@@ -69,6 +70,8 @@ public sealed class Utf8Regex
         _prioritizeBoundaryOnlyStructuralLiteralFamilyCount =
             (options & RegexOptions.RightToLeft) == 0 &&
             Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex);
+        _prioritizeOrderedLiteralWindowCount =
+            preparedRegex.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow;
         _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
         _invariantCyrillicLiteralCountStrategy =
             Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
@@ -1026,7 +1029,9 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
-        if (_prioritizePlainAsciiLiteralCount || _prioritizeBoundaryOnlyStructuralLiteralFamilyCount)
+        if (_prioritizePlainAsciiLiteralCount ||
+            _prioritizeBoundaryOnlyStructuralLiteralFamilyCount ||
+            _prioritizeOrderedLiteralWindowCount)
         {
             if (!TryUseAsciiInputValidationShortcut(input))
             {
