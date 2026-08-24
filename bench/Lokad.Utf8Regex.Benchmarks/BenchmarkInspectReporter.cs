@@ -3615,10 +3615,14 @@ internal static partial class BenchmarkInspectReporter
                     rightToLeft) ? 1 : 0);
         }
 
-        Measure("CompiledDirect", iterations, () => regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
+        Measure("OrdinaryDirect", iterations, () => regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
+        Measure("CompiledDirect", iterations, () => compiledUtf8Regex.Inspection.DebugCountViaCompiledEngine(benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
+        Measure("Utf8Compiled", iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
         Measure("DecodeThenRegex", iterations, benchmarkCase.CountDecodeThenRegex);
+        Measure("DecodeThenCompiledRegex", iterations, benchmarkCase.CountDecodeThenCompiledRegex);
         Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
+        Measure("PredecodedCompiledRegex", iterations, benchmarkCase.CountPredecodedCompiledRegex);
 
         var decoded = Encoding.UTF8.GetString(benchmarkCase.InputBytes);
         Measure("Utf8IsMatch", iterations, () => benchmarkCase.Utf8Regex.IsMatch(benchmarkCase.InputBytes) ? 1 : 0);
@@ -5543,7 +5547,9 @@ internal static partial class BenchmarkInspectReporter
 
     private static int ParseShortPublicIterations(LokadPublicBenchmarkContext context, string? text)
     {
-        return Math.Max(GetShortPublicIterationFloor(context), ParseIterations(text));
+        return string.IsNullOrWhiteSpace(text)
+            ? GetShortPublicIterationFloor(context)
+            : ParseIterations(text);
     }
 
     private static int GetShortPublicIterationFloor(LokadPublicBenchmarkContext context)
@@ -6096,11 +6102,13 @@ internal static partial class BenchmarkInspectReporter
 
     private static void WriteCountDiagnostics(string label, Utf8CountDiagnostics diagnostics)
     {
+        Console.WriteLine($"{label}Result     : {diagnostics.Result}");
         Console.WriteLine($"{label}Route      : {diagnostics.ExecutionRoute}");
         Console.WriteLine($"{label}ExecKind   : {diagnostics.ExecutionKind}");
         Console.WriteLine($"{label}SearchKind : {diagnostics.SearchKind}");
         Console.WriteLine($"{label}Fallback   : {diagnostics.FallbackVerifierMode}");
         Console.WriteLine($"{label}Candidates : {diagnostics.SearchCandidates}");
+        Console.WriteLine($"{label}FixedReject: {diagnostics.FixedCheckRejects}");
         Console.WriteLine($"{label}VerifierInv: {diagnostics.VerifierInvocations}");
         Console.WriteLine($"{label}VerifierHit: {diagnostics.VerifierMatches}");
         Console.WriteLine($"{label}ProbeWin   : {diagnostics.PrefilterWindows}");
