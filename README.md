@@ -271,7 +271,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/docs/inline-doc-prefix` | 0.986 us | 1.618 us | 1.900 us |
 | `lokad/langserv/identifier-validator` | 3.271 us | 5.187 us | 5.883 us |
 | `lokad/langserv/helper-identifier` | 1.753 us | 3.227 us | 2.987 us |
-| `lokad/langserv/color-short-hex` | 0.564 us | 0.520 us | 0.576 us |
+| `lokad/langserv/color-short-hex` | 0.541 us | 0.568 us | 0.791 us |
 | `lokad/langserv/color-rgb-hex` | 0.670 us | 0.999 us | 1.121 us |
 | `lokad/langserv/url-dashboard` | 0.857 us | 4.313 us | 4.498 us |
 | `lokad/langserv/url-download` | 1.209 us | 7.502 us | 7.668 us |
@@ -321,7 +321,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/docs/inline-doc-prefix` | 0.996 us | 1.568 us | 1.806 us |
 | `lokad/langserv/identifier-validator` | 3.130 us | 5.158 us | 5.660 us |
 | `lokad/langserv/helper-identifier` | 1.803 us | 2.814 us | 3.194 us |
-| `lokad/langserv/color-short-hex` | 0.545 us | 0.502 us | 0.632 us |
+| `lokad/langserv/color-short-hex` | 0.539 us | 0.578 us | 0.662 us |
 | `lokad/langserv/color-rgb-hex` | 0.673 us | 0.907 us | 1.027 us |
 | `lokad/langserv/url-dashboard` | 0.864 us | 4.146 us | 4.563 us |
 | `lokad/langserv/url-download` | 1.282 us | 7.290 us | 7.413 us |
