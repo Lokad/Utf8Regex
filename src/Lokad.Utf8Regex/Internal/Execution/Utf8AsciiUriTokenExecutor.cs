@@ -48,15 +48,34 @@ internal static class Utf8AsciiUriTokenExecutor
         var searchFrom = startIndex;
         while (searchFrom < input.Length)
         {
-            var relative = input[searchFrom..].IndexOf("://"u8);
+            var relative = input[searchFrom..].IndexOf((byte)':');
             if (relative < 0)
             {
                 return false;
             }
 
             var delimiterIndex = searchFrom + relative;
-            searchFrom = delimiterIndex + 3;
-            if (!TryMatchAtDelimiter(input, startIndex, delimiterIndex, out matchIndex, out matchedLength))
+            searchFrom = delimiterIndex + 1;
+            if (input.Length - delimiterIndex < 3 ||
+                input[delimiterIndex + 1] != (byte)'/' ||
+                input[delimiterIndex + 2] != (byte)'/')
+            {
+                continue;
+            }
+
+            searchFrom += 2;
+            var bodyStart = delimiterIndex + 3;
+            if (input.Length - bodyStart < 2 ||
+                !IsAsciiUriBodyStart(input[bodyStart]) ||
+                input[bodyStart + 1] == (byte)' ' ||
+                !IsAsciiUriBodyContinuation(input[bodyStart + 1]) ||
+                !TryMatchAfterRequiredBodyPair(
+                    input,
+                    startIndex,
+                    delimiterIndex,
+                    bodyStart + 2,
+                    out matchIndex,
+                    out matchedLength))
             {
                 continue;
             }
@@ -73,18 +92,32 @@ internal static class Utf8AsciiUriTokenExecutor
         matchedLength = 0;
 
         var index = delimiterIndex + 3;
-        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyStart(input[index]))
+        if (input.Length - index < 2 ||
+            !IsAsciiUriBodyStart(input[index]) ||
+            !IsAsciiUriBodyContinuation(input[index + 1]))
         {
             return false;
         }
 
-        index++;
-        if ((uint)index >= (uint)input.Length || !IsAsciiUriBodyContinuation(input[index]))
-        {
-            return false;
-        }
+        return TryMatchAfterRequiredBodyPair(
+            input,
+            minStartIndex,
+            delimiterIndex,
+            index + 2,
+            out matchIndex,
+            out matchedLength);
+    }
 
-        index++;
+    private static bool TryMatchAfterRequiredBodyPair(
+        ReadOnlySpan<byte> input,
+        int minStartIndex,
+        int delimiterIndex,
+        int index,
+        out int matchIndex,
+        out int matchedLength)
+    {
+        matchIndex = -1;
+        matchedLength = 0;
         var schemeStart = delimiterIndex;
         while (schemeStart > minStartIndex && IsAsciiWordChar(input[schemeStart - 1]))
         {
