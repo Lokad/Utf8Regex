@@ -520,6 +520,25 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
+        static int CountViaSpanSearch(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)
+        {
+            var count = 0;
+            var index = 0;
+            while (index <= haystack.Length - needle.Length)
+            {
+                var found = haystack[index..].IndexOf(needle);
+                if (found < 0)
+                {
+                    break;
+                }
+
+                count++;
+                index += found + needle.Length;
+            }
+
+            return count;
+        }
+
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         if (literal.Length == 0)
         {
@@ -538,6 +557,17 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
         {
             return CountExactUtf8LiteralLeadingScalarAnchored(input, literal, leadingSegmentLength);
+        }
+
+        if (budget.IsInfinite &&
+            _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
+            literal.Length is >= 9 and <= 16)
+        {
+            // For medium exact literals, the runtime sequence search keeps one
+            // vectorized scan in flight instead of restarting an anchor-byte
+            // scan after every match. Short literals retain their specialized
+            // prepared tiers, and longer literals keep their existing policy.
+            return CountViaSpanSearch(input, literal);
         }
 
         if (budget.IsInfinite && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)

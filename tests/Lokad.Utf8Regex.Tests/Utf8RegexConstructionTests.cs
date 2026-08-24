@@ -976,6 +976,20 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void MediumExactAsciiLiteralCountMatchesDotNetOnMixedUtf8Input(RegexOptions options)
+    {
+        const string pattern = "Sherlock Holmes";
+        const string input = "é Sherlock Holmes 夏 Sherlock Holmes Sherlock Watson";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
+        Assert.Throws<ArgumentException>(() => regex.Count([.. Encoding.UTF8.GetBytes(pattern), 0xFF]));
+    }
+
+    [Theory]
     [InlineData("foo(?=bar)", "fooqux foobar foo")]
     [InlineData("^tempus", "tempus x tempus")]
     [InlineData("tempus$", "tempus x tempus")]
