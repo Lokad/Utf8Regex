@@ -2,7 +2,11 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.InteropServices;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
@@ -185,6 +189,14 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
 
     public int Count(ReadOnlySpan<byte> input)
     {
+        if (_literals.Length == 1 &&
+            TryCountSingleLiteralAndValidateTwoByte(input, _literals[0], out var fusedCount))
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(
+                Utf8ExecutionRoute.InvariantCyrillicFusedValidatedCount);
+            return fusedCount;
+        }
+
         Utf8Validation.ThrowIfInvalidOnly(input);
         if (_literals.Length == 1)
         {
@@ -234,6 +246,205 @@ internal sealed class Utf8InvariantCyrillicLiteralCountStrategy
         }
 
         return count;
+    }
+
+    private static bool TryCountSingleLiteralAndValidateTwoByte(
+        ReadOnlySpan<byte> input,
+        Literal literal,
+        out int count)
+    {
+        count = 0;
+        if (!Vector256.IsHardwareAccelerated || input.Length < Vector256<byte>.Count)
+        {
+            return false;
+        }
+
+        var nextMatchStart = 0;
+        var maxStart = input.Length - literal.ByteLength;
+        var offset = 0;
+        var expectedContinuationCarry = 0u;
+        ref var inputRef = ref MemoryMarshal.GetReference(input);
+        var lastVectorStart = input.Length - Vector256<byte>.Count;
+        var continuationTag = Vector256.Create((byte)0x80);
+        var continuationMask = Vector256.Create((byte)0xC0);
+        var twoByteLeadTag = Vector256.Create((byte)0xC0);
+        var twoByteLeadMask = Vector256.Create((byte)0xE0);
+        var overlongLeadTag = Vector256.Create((byte)0xC0);
+        var overlongLeadMask = Vector256.Create((byte)0xFE);
+        var anchorMaskByte = (byte)~(literal.AnchorFirst ^ literal.AnchorSecond);
+        var anchorMask = Vector256.Create(anchorMaskByte);
+        var maskedAnchor = Vector256.Create((byte)(literal.AnchorFirst & anchorMaskByte));
+
+        // This intentionally stays monomorphic. It mirrors the lean ASCII/two-byte
+        // validation proof while extracting the one literal anchor from the same
+        // loaded block. Rare wider scalars resume through Rune below; structural
+        // uncertainty returns to the canonical validator and direct search.
+        while (offset <= lastVectorStart)
+        {
+            var current = Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, offset));
+            var nonAsciiBits = current.ExtractMostSignificantBits();
+            if (nonAsciiBits == 0 && expectedContinuationCarry == 0)
+            {
+                offset += Vector256<byte>.Count;
+                continue;
+            }
+
+            var continuationBits = Vector256.Equals(
+                Vector256.BitwiseAnd(current, continuationMask),
+                continuationTag).ExtractMostSignificantBits();
+            var twoByteLeadBits = Vector256.Equals(
+                Vector256.BitwiseAnd(current, twoByteLeadMask),
+                twoByteLeadTag).ExtractMostSignificantBits();
+            var overlongLeadBits = Vector256.Equals(
+                Vector256.BitwiseAnd(current, overlongLeadMask),
+                overlongLeadTag).ExtractMostSignificantBits();
+            var unsupportedBits = nonAsciiBits & ~(continuationBits | twoByteLeadBits);
+            var expectedContinuationWide = ((ulong)twoByteLeadBits << 1) | expectedContinuationCarry;
+            var expectedContinuationBits = (uint)expectedContinuationWide;
+            var candidateBits = Vector256.Equals(
+                Vector256.BitwiseAnd(current, anchorMask),
+                maskedAnchor).ExtractMostSignificantBits();
+
+            if (overlongLeadBits == 0 &&
+                unsupportedBits == 0 &&
+                continuationBits == expectedContinuationBits)
+            {
+                CountCandidates(
+                    input,
+                    literal,
+                    offset,
+                    candidateBits,
+                    maxStart,
+                    ref nextMatchStart,
+                    ref count);
+                expectedContinuationCarry = (uint)(expectedContinuationWide >> 32);
+                offset += Vector256<byte>.Count;
+                continue;
+            }
+
+            var stop = unsupportedBits == 0
+                ? Vector256<byte>.Count
+                : BitOperations.TrailingZeroCount(unsupportedBits);
+            var prefixBits = stop == Vector256<byte>.Count
+                ? uint.MaxValue
+                : (1u << stop) - 1u;
+            var invalidBits = (overlongLeadBits | (continuationBits ^ expectedContinuationBits)) & prefixBits;
+            if (invalidBits != 0 || stop == Vector256<byte>.Count)
+            {
+                return false;
+            }
+
+            CountCandidates(
+                input,
+                literal,
+                offset,
+                candidateBits & prefixBits,
+                maxStart,
+                ref nextMatchStart,
+                ref count);
+            offset += stop;
+            if ((expectedContinuationBits & (1u << stop)) != 0 ||
+                Rune.DecodeFromUtf8(input[offset..], out _, out var bytesConsumed) != OperationStatus.Done)
+            {
+                return false;
+            }
+
+            offset += bytesConsumed;
+            expectedContinuationCarry = 0;
+        }
+
+        while (expectedContinuationCarry != 0)
+        {
+            if ((uint)offset >= (uint)input.Length || (input[offset] & 0xC0) != 0x80)
+            {
+                return false;
+            }
+
+            CountCandidate(
+                input,
+                literal,
+                offset,
+                maxStart,
+                ref nextMatchStart,
+                ref count);
+            offset++;
+            expectedContinuationCarry >>= 1;
+        }
+
+        while (offset < input.Length)
+        {
+            var value = input[offset];
+            if (value < 0x80)
+            {
+                offset++;
+                continue;
+            }
+
+            if (Rune.DecodeFromUtf8(input[offset..], out _, out var bytesConsumed) != OperationStatus.Done)
+            {
+                return false;
+            }
+
+            if (bytesConsumed == 2)
+            {
+                CountCandidate(
+                    input,
+                    literal,
+                    offset + 1,
+                    maxStart,
+                    ref nextMatchStart,
+                    ref count);
+            }
+
+            offset += bytesConsumed;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void CountCandidates(
+        ReadOnlySpan<byte> input,
+        Literal literal,
+        int blockStart,
+        uint candidateBits,
+        int maxStart,
+        ref int nextMatchStart,
+        ref int count)
+    {
+        while (candidateBits != 0)
+        {
+            var anchorIndex = blockStart + BitOperations.TrailingZeroCount(candidateBits);
+            CountCandidate(
+                input,
+                literal,
+                anchorIndex,
+                maxStart,
+                ref nextMatchStart,
+                ref count);
+            candidateBits &= candidateBits - 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void CountCandidate(
+        ReadOnlySpan<byte> input,
+        Literal literal,
+        int anchorIndex,
+        int maxStart,
+        ref int nextMatchStart,
+        ref int count)
+    {
+        var candidate = anchorIndex - literal.AnchorByteOffset;
+        if (candidate < nextMatchStart ||
+            (uint)candidate > (uint)maxStart ||
+            !literal.MatchesAt(input, candidate))
+        {
+            return;
+        }
+
+        count++;
+        nextMatchStart = candidate + literal.ByteLength;
     }
 
     private static int CountSingleLiteral(ReadOnlySpan<byte> input, Literal literal)
