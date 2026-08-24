@@ -13,20 +13,35 @@ internal static class Utf8AsciiIpv4TokenExecutor
             return false;
         }
 
-        for (var index = Math.Max(startIndex, 0); index < input.Length; index++)
+        // Every accepted first octet has two or three digits, so its dot gives
+        // exactly two candidate starts and is much rarer than a digit in text.
+        var searchIndex = Math.Max(startIndex + 2, 2);
+        while (searchIndex < input.Length)
         {
-            if (!IsAsciiDigit(input[index]))
+            var relative = input[searchIndex..].IndexOf((byte)'.');
+            if (relative < 0)
             {
-                continue;
+                return false;
             }
 
-            if (!TryMatchAt(input[index..], out matchedLength))
+            var firstDot = searchIndex + relative;
+            var threeDigitStart = firstDot - 3;
+            if (threeDigitStart >= startIndex &&
+                TryMatchAt(input[threeDigitStart..], out matchedLength))
             {
-                continue;
+                matchIndex = threeDigitStart;
+                return true;
             }
 
-            matchIndex = index;
-            return true;
+            var twoDigitStart = firstDot - 2;
+            if (twoDigitStart >= startIndex &&
+                TryMatchAt(input[twoDigitStart..], out matchedLength))
+            {
+                matchIndex = twoDigitStart;
+                return true;
+            }
+
+            searchIndex = firstDot + 1;
         }
 
         return false;

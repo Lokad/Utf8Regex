@@ -1798,6 +1798,51 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void AsciiIpv4DotAnchoringMatchesDotNetAcrossDenseCandidateText()
+    {
+        const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        const string alphabet = "0123456789... abcxyz";
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        var ordinary = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var random = new Random(0x4950_7634);
+
+        for (var sample = 0; sample < 256; sample++)
+        {
+            var chars = new char[128];
+            for (var i = 0; i < chars.Length; i++)
+            {
+                chars[i] = alphabet[random.Next(alphabet.Length)];
+            }
+
+            if (sample % 4 == 0)
+            {
+                const string inserted = "255.10.00.199";
+                inserted.CopyTo(0, chars, random.Next(chars.Length - inserted.Length), inserted.Length);
+            }
+
+            var input = new string(chars);
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expectedCount = oracle.Count(input);
+            var expectedMatch = oracle.Match(input);
+            var ordinaryMatch = ordinary.Match(bytes);
+            var compiledMatch = compiled.Match(bytes);
+
+            Assert.Equal(expectedCount, ordinary.Count(bytes));
+            Assert.Equal(expectedCount, compiled.Count(bytes));
+            Assert.Equal(expectedMatch.Success, ordinaryMatch.Success);
+            Assert.Equal(expectedMatch.Success, compiledMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, ordinaryMatch.IndexInBytes);
+                Assert.Equal(expectedMatch.Length, ordinaryMatch.LengthInBytes);
+                Assert.Equal(expectedMatch.Index, compiledMatch.IndexInBytes);
+                Assert.Equal(expectedMatch.Length, compiledMatch.LengthInBytes);
+            }
+        }
+    }
+
+    [Fact]
     public void CompiledAsciiUntilByteStarCountMatchesDotNet()
     {
         const string pattern = @"[^\n]*";
