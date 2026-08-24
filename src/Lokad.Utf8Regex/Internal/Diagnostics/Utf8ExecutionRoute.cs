@@ -4,6 +4,7 @@ internal enum Utf8ExecutionRoute : byte
 {
     None = 0,
     CompiledFusedAsciiLiteralFamilyCount,
+    CompiledFusedAsciiLiteralCount,
     CompiledFusedUtf8LiteralCount,
     CompiledFusedUtf8LiteralFamilyCount,
     RequiredPrefilterReject,
@@ -62,6 +63,7 @@ internal static class Utf8ExecutionRouteText
     {
         Utf8ExecutionRoute.None => "<none>",
         Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount => "compiled_fused_ascii_literal_family_count",
+        Utf8ExecutionRoute.CompiledFusedAsciiLiteralCount => "compiled_fused_ascii_literal_count",
         Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount => "compiled_fused_utf8_literal_count",
         Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount => "compiled_fused_utf8_literal_family_count",
         Utf8ExecutionRoute.RequiredPrefilterReject => "required_prefilter_reject",

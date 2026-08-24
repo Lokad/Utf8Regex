@@ -36,6 +36,7 @@ public sealed class Utf8Regex
     private readonly Utf8RegexProgram _program;
     private readonly Utf8PrioritizedBooleanFamilyKind _prioritizedBooleanFamilyKind;
     private readonly bool _prioritizePlainAsciiLiteralCount;
+    private readonly int _fusedAsciiLiteralCountAnchorOffset;
     private readonly bool _prioritizeBoundaryLiteralFamilyCount;
     private readonly bool _prioritizeOrderedLiteralWindowCount;
     private readonly bool _requiresKelvinSignFallback;
@@ -67,6 +68,12 @@ public sealed class Utf8Regex
         var preparedRegex = _program.PreparedRegex;
         _prioritizedBooleanFamilyKind = SelectPrioritizedBooleanFamily(preparedRegex, options);
         _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
+        _fusedAsciiLiteralCountAnchorOffset =
+            _prioritizePlainAsciiLiteralCount &&
+            matchTimeout == Regex.InfiniteMatchTimeout &&
+            preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral
+                ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(fusedAsciiLiteral)
+                : -1;
         _prioritizeBoundaryLiteralFamilyCount =
             (options & RegexOptions.RightToLeft) == 0 &&
             (Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(preparedRegex) ||
@@ -1063,6 +1070,18 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
+        if (_fusedAsciiLiteralCountAnchorOffset >= 0 &&
+            _preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral &&
+            Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+                input,
+                fusedAsciiLiteral,
+                _fusedAsciiLiteralCountAnchorOffset,
+                out var fusedAsciiLiteralCount))
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralCount);
+            return fusedAsciiLiteralCount;
+        }
+
         if (_prioritizeOrderedLiteralWindowCount)
         {
             var orderedWindowPlan = _program.PreparedRegex.StructuralLinearProgram.OrderedLiteralWindowPlan;
