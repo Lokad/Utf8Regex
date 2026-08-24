@@ -32,6 +32,41 @@ internal static class Utf8UriTokenCountExecutor
         return count;
     }
 
+    public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var searchFrom = 0;
+        while ((uint)searchFrom < (uint)input.Length)
+        {
+            var relative = input[searchFrom..].IndexOf("://"u8);
+            if (relative < 0)
+            {
+                break;
+            }
+
+            candidates++;
+            var delimiterIndex = searchFrom + relative;
+            if (!TryFindSchemeStart(input, searchFrom, delimiterIndex, out _) ||
+                !TryConsumeBody(input, delimiterIndex + 3, out var tokenEnd))
+            {
+                searchFrom = delimiterIndex + 3;
+                continue;
+            }
+
+            matches++;
+            searchFrom = tokenEnd;
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "FallbackDirect/Utf8UriToken",
+            ":// delimiter probes",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
     private static bool TryFindSchemeStart(
         ReadOnlySpan<byte> input,
         int minStartIndex,

@@ -2748,6 +2748,22 @@ internal static partial class BenchmarkInspectReporter
         RequireCountResult("Utf8Regex", expectedResult, ordinaryRegex.Count(input));
         RequireCountResult("Utf8Compiled", expectedResult, compiledRegex.Count(input));
 
+        var hasOrdinaryMetrics = ordinaryRegex.Inspection.DebugTryGetSelectedCountKernelMetrics(
+            input,
+            out var ordinaryMetrics);
+        var hasCompiledMetrics = compiledRegex.Inspection.DebugTryGetSelectedCountKernelMetrics(
+            input,
+            out var compiledMetrics);
+        if (hasOrdinaryMetrics)
+        {
+            RequireCountResult("OrdinarySelectedMetrics", expectedResult, ordinaryMetrics.Matches);
+        }
+
+        if (hasCompiledMetrics)
+        {
+            RequireCountResult("CompiledSelectedMetrics", expectedResult, compiledMetrics.Matches);
+        }
+
         var ordinaryDiagnostics = ordinaryRegex.CollectCountDiagnostics(input);
         var compiledDiagnostics = compiledRegex.CollectCountDiagnostics(input);
 
@@ -2757,13 +2773,15 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"InputBytes        : {input.Length}");
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
-        Console.WriteLine("AttributionProtocol: AlternatingSelectedCountPhasesV1");
+        Console.WriteLine("AttributionProtocol: AlternatingSelectedCountPhasesV2");
         Console.WriteLine("WarmupPerLane     : at least 250 ms and 64 calls");
         Console.WriteLine($"ExpectedResult    : {expectedResult}");
         Console.WriteLine($"OrdinaryKernel    : {ordinaryRegex.Inspection.DebugSelectedCountKernelKind}");
         Console.WriteLine($"CompiledKernel    : {compiledRegex.Inspection.DebugSelectedCountKernelKind}");
         Console.WriteLine($"OrdinaryRoute     : {ordinaryDiagnostics.ExecutionRoute}");
         Console.WriteLine($"CompiledRoute     : {compiledDiagnostics.ExecutionRoute}");
+        WriteSelectedCountKernelMetrics("Ordinary", hasOrdinaryMetrics, ordinaryMetrics);
+        WriteSelectedCountKernelMetrics("Compiled", hasCompiledMetrics, compiledMetrics);
 
         var lanes = new CountAttributionLane[]
         {
@@ -2782,7 +2800,41 @@ internal static partial class BenchmarkInspectReporter
         WriteCountPhaseComposition("Ordinary", medians, "OrdinarySelectedKernel", "ValidationThenOrdinaryKernel", "Utf8Regex");
         WriteCountPhaseComposition("Compiled", medians, "CompiledSelectedKernel", "ValidationThenCompiledKernel", "Utf8Compiled");
         Console.WriteLine("CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups");
+        if (ordinaryMetrics.IncludesUtf8Validation || compiledMetrics.IncludesUtf8Validation)
+        {
+            Console.WriteLine("KernelScopeNote   : selected kernel includes UTF-8 validation; validation-plus-kernel is intentionally not a disjoint phase sum");
+        }
+
         return 0;
+    }
+
+    private static void WriteSelectedCountKernelMetrics(
+        string label,
+        bool hasMetrics,
+        Utf8SelectedCountKernelMetrics metrics)
+    {
+        if (!hasMetrics)
+        {
+            Console.WriteLine($"{label}Metrics     : unavailable for selected route");
+            return;
+        }
+
+        var fullVerifications = metrics.FullVerifications.HasValue
+            ? metrics.FullVerifications.Value.ToString(CultureInfo.InvariantCulture)
+            : "unavailable";
+        var candidates = metrics.Candidates.HasValue
+            ? metrics.Candidates.Value.ToString(CultureInfo.InvariantCulture)
+            : "unavailable";
+        var rejected = metrics.Candidates.HasValue
+            ? (metrics.Candidates.Value - metrics.Matches).ToString(CultureInfo.InvariantCulture)
+            : "unavailable";
+        Console.WriteLine($"{label}MetricRoute : {metrics.Route}");
+        Console.WriteLine($"{label}CandidateDef: {metrics.CandidateDefinition}");
+        Console.WriteLine($"{label}Candidates  : {candidates}");
+        Console.WriteLine($"{label}Verifies    : {fullVerifications}");
+        Console.WriteLine($"{label}MetricMatches: {metrics.Matches}");
+        Console.WriteLine($"{label}Rejected    : {rejected}");
+        Console.WriteLine($"{label}KernelValidatesUtf8: {metrics.IncludesUtf8Validation}");
     }
 
     private static Dictionary<string, double> MeasureAlternatingCountAttribution(

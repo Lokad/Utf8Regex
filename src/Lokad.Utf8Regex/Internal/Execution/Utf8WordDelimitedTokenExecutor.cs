@@ -62,6 +62,71 @@ internal static class Utf8WordDelimitedTokenExecutor
         return count;
     }
 
+    public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var searchFrom = 0;
+        while ((uint)searchFrom < (uint)input.Length)
+        {
+            var relative = input[searchFrom..].IndexOf((byte)'@');
+            if (relative < 0)
+            {
+                break;
+            }
+
+            candidates++;
+            var delimiterIndex = searchFrom + relative;
+            var tokenStart = delimiterIndex;
+            while (tokenStart > searchFrom && TryConsumePreviousHead(input, ref tokenStart))
+            {
+            }
+
+            if (tokenStart == delimiterIndex)
+            {
+                searchFrom = delimiterIndex + 1;
+                continue;
+            }
+
+            var tokenEnd = delimiterIndex + 1;
+            var bodyScalarCount = 0;
+            var lastSecondaryIndex = -1;
+            var hasSecondaryWithTail = false;
+            while (TryConsumeNextBody(input, ref tokenEnd, out var scalarStart, out var isSecondary))
+            {
+                if (lastSecondaryIndex > delimiterIndex + 1)
+                {
+                    hasSecondaryWithTail = true;
+                }
+
+                if (isSecondary)
+                {
+                    lastSecondaryIndex = scalarStart;
+                }
+
+                bodyScalarCount++;
+            }
+
+            if (bodyScalarCount > 0 && hasSecondaryWithTail)
+            {
+                matches++;
+                searchFrom = tokenEnd;
+            }
+            else
+            {
+                searchFrom = delimiterIndex + 1;
+            }
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "FallbackDirect/Utf8WordDelimitedTokenCount",
+            "@ delimiter probes",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
     private static bool TryConsumePreviousHead(ReadOnlySpan<byte> input, ref int index)
     {
         var value = input[index - 1];

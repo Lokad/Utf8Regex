@@ -36,6 +36,60 @@ internal static class Utf8AsciiUriTokenExecutor
         return count;
     }
 
+    public static Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var startIndex = 0;
+        while ((uint)startIndex < (uint)input.Length)
+        {
+            var searchFrom = startIndex;
+            var foundMatch = false;
+            while ((uint)searchFrom < (uint)input.Length)
+            {
+                var relative = input[searchFrom..].IndexOf((byte)':');
+                if (relative < 0)
+                {
+                    break;
+                }
+
+                var delimiterIndex = searchFrom + relative;
+                searchFrom = delimiterIndex + 1;
+                if (input.Length - delimiterIndex < 3 ||
+                    input[delimiterIndex + 1] != (byte)'/' ||
+                    input[delimiterIndex + 2] != (byte)'/')
+                {
+                    continue;
+                }
+
+                candidates++;
+                searchFrom += 2;
+                if (!TryMatchAtDelimiter(input, startIndex, delimiterIndex, out var matchIndex, out var matchedLength))
+                {
+                    continue;
+                }
+
+                matches++;
+                startIndex = matchIndex + Math.Max(matchedLength, 1);
+                foundMatch = true;
+                break;
+            }
+
+            if (!foundMatch)
+            {
+                break;
+            }
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "FallbackDirect/AsciiUriToken",
+            ":// delimiter probes",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
     public static bool TryFindAsciiUriToken(ReadOnlySpan<byte> input, int startIndex, out int matchIndex, out int matchedLength)
     {
         matchIndex = -1;

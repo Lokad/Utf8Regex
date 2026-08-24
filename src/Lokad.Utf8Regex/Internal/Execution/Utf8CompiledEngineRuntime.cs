@@ -145,6 +145,11 @@ internal abstract class Utf8CompiledEngineRuntime
     public bool TryDebugCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
         => Utf8CompiledRuntimeInspection.TryCountValidatedThreeByte(this, input, out count);
 
+    public bool TryDebugGetSelectedCountKernelMetrics(
+        ReadOnlySpan<byte> input,
+        out Utf8SelectedCountKernelMetrics metrics) =>
+        Utf8CompiledRuntimeInspection.TryGetSelectedCountKernelMetrics(this, input, out metrics);
+
     public bool TryDebugCountExactUtf8LiteralLeadingScalarAnchored(ReadOnlySpan<byte> input, out int count)
         => Utf8CompiledRuntimeInspection.TryCountLeadingScalarAnchored(this, input, out count);
 

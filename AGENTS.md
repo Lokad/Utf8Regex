@@ -160,6 +160,8 @@ Current intended uses:
   - run a bounded, alternating production-route Count breakdown for one case
   - reports the selected ordinary/compiled kernels, required UTF-8 validation,
     same-trip validation plus kernel, public operations, and both predecoded .NET baselines
+  - emits an untimed selected-route census of candidates, full verifications, matches,
+    and whether the selected kernel intrinsically validates UTF-8
   - validates every Count result before timing and defaults to 20 iterations,
     five samples, and a retained 250 ms Tiered-PGO warmup over only the selected lanes
 - --dump-dotnet-generated-regex-case

@@ -553,6 +553,286 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         return false;
     }
 
+    internal bool TryInspectSelectedCountKernelMetrics(
+        ReadOnlySpan<byte> input,
+        out Utf8SelectedCountKernelMetrics metrics)
+    {
+        var literal = _regexPlan.LiteralUtf8;
+        if (_regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
+            literal is not { Length: > 0 })
+        {
+            metrics = default;
+            return false;
+        }
+
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
+        {
+            metrics = InspectValidatedThreeByteMetrics(input, literal);
+            return true;
+        }
+
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            literal.Length >= 4 &&
+            literal[0] is >= 0xC2 and < 0xE0 &&
+            input.Length >= CorrelatedTwoByteLiteralCountThresholdBytes &&
+            Vector256.IsHardwareAccelerated)
+        {
+            metrics = InspectCorrelatedTwoBytePrefixMetrics(input, literal);
+            return true;
+        }
+
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
+        {
+            metrics = InspectLeadingScalarMetrics(input, literal, leadingSegmentLength);
+            return true;
+        }
+
+        if (_regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiteral &&
+            literal.Length is >= 5 and <= 16)
+        {
+            metrics = InspectFullSequenceSearchMetrics(input, literal, "SpanSequenceSearch");
+            return true;
+        }
+
+        if (_regexPlan.SearchPlan.LiteralSearch.HasValue)
+        {
+            metrics = InspectFullSequenceSearchMetrics(input, literal, "PreparedLiteralSearch");
+            return true;
+        }
+
+        if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            TryGetExactUtf8LiteralAnchor(literal, out var anchorIndex, out var anchorByte))
+        {
+            metrics = InspectAnchoredMetrics(input, literal, anchorIndex, anchorByte);
+            return true;
+        }
+
+        metrics = InspectFullSequenceSearchMetrics(input, literal, "SequenceSearchFallback");
+        return true;
+
+        static Utf8SelectedCountKernelMetrics InspectLeadingScalarMetrics(
+            ReadOnlySpan<byte> input,
+            ReadOnlySpan<byte> literal,
+            int scalarLength)
+        {
+            var candidates = 0;
+            var matches = 0;
+            var searchIndex = 0;
+            var maxStart = input.Length - literal.Length;
+            var anchor = literal[..scalarLength];
+            while (searchIndex <= maxStart)
+            {
+                var relative = input[searchIndex..].IndexOf(anchor);
+                if (relative < 0)
+                {
+                    break;
+                }
+
+                candidates++;
+                var candidate = searchIndex + relative;
+                if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
+                {
+                    matches++;
+                    searchIndex = candidate + literal.Length;
+                }
+                else
+                {
+                    searchIndex = candidate + 1;
+                }
+            }
+
+            return new Utf8SelectedCountKernelMetrics(
+                "LeadingUtf8Scalar",
+                "leading-scalar sequence hits",
+                candidates,
+                candidates,
+                matches,
+                IncludesUtf8Validation: false);
+        }
+    }
+
+    private static Utf8SelectedCountKernelMetrics InspectValidatedThreeByteMetrics(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literal)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var index = 0;
+        var maxStart = input.Length - literal.Length;
+        while (index < input.Length)
+        {
+            if (Rune.DecodeFromUtf8(input[index..], out _, out var consumed) != OperationStatus.Done)
+            {
+                throw new InvalidOperationException("Selected Count metric replay received malformed UTF-8.");
+            }
+
+            if (index <= maxStart && input[index] == literal[0])
+            {
+                candidates++;
+                if (input.Slice(index, literal.Length).SequenceEqual(literal))
+                {
+                    matches++;
+                    index += literal.Length;
+                    continue;
+                }
+            }
+
+            index += consumed;
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "FusedValidatedBmpThreeByte",
+            "scalar starts matching the literal lead byte",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: true);
+    }
+
+    private static Utf8SelectedCountKernelMetrics InspectCorrelatedTwoBytePrefixMetrics(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literal)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var index = 0;
+        var maxStart = input.Length - literal.Length;
+        var first = Vector256.Create(literal[0]);
+        var second = Vector256.Create(literal[1]);
+        var fourth = Vector256.Create(literal[3]);
+        ref var inputRef = ref MemoryMarshal.GetReference(input);
+
+        while (index <= maxStart - (Vector256<byte>.Count - 1))
+        {
+            var correlated = Vector256.BitwiseAnd(
+                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index)), first),
+                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 1)), second));
+            correlated = Vector256.BitwiseAnd(
+                correlated,
+                Vector256.Equals(Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 3)), fourth));
+            var candidateBits = correlated.ExtractMostSignificantBits();
+            var matched = false;
+            while (candidateBits != 0)
+            {
+                candidates++;
+                var candidate = index + BitOperations.TrailingZeroCount(candidateBits);
+                if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
+                {
+                    matches++;
+                    index = candidate + literal.Length;
+                    matched = true;
+                    break;
+                }
+
+                candidateBits &= candidateBits - 1;
+            }
+
+            if (!matched)
+            {
+                index += Vector256<byte>.Count;
+            }
+        }
+
+        while (index <= maxStart)
+        {
+            if (input[index] == literal[0] &&
+                input[index + 1] == literal[1] &&
+                input[index + 3] == literal[3])
+            {
+                candidates++;
+                if (input.Slice(index, literal.Length).SequenceEqual(literal))
+                {
+                    matches++;
+                    index += literal.Length;
+                    continue;
+                }
+            }
+
+            index++;
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "CorrelatedTwoBytePrefix",
+            "starts matching literal bytes 0, 1, and 3",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
+    private static Utf8SelectedCountKernelMetrics InspectAnchoredMetrics(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literal,
+        int anchorIndex,
+        byte anchorByte)
+    {
+        var candidates = 0;
+        var matches = 0;
+        var searchIndex = anchorIndex;
+        var maxStart = input.Length - literal.Length;
+        while (searchIndex < input.Length)
+        {
+            var relative = input[searchIndex..].IndexOf(anchorByte);
+            if (relative < 0)
+            {
+                break;
+            }
+
+            var anchorPosition = searchIndex + relative;
+            var candidate = anchorPosition - anchorIndex;
+            searchIndex = anchorPosition + 1;
+            if ((uint)candidate > (uint)maxStart)
+            {
+                continue;
+            }
+
+            candidates++;
+            if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
+            {
+                matches++;
+                searchIndex = candidate + literal.Length + anchorIndex;
+            }
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "RareByteAnchored",
+            $"byte 0x{anchorByte:X2} hits at literal offset {anchorIndex}",
+            candidates,
+            candidates,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
+    private static Utf8SelectedCountKernelMetrics InspectFullSequenceSearchMetrics(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literal,
+        string route)
+    {
+        var matches = 0;
+        var index = 0;
+        while (index <= input.Length - literal.Length)
+        {
+            var relative = input[index..].IndexOf(literal);
+            if (relative < 0)
+            {
+                break;
+            }
+
+            matches++;
+            index += relative + literal.Length;
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            route,
+            "internal search candidates unavailable",
+            Candidates: null,
+            FullVerifications: null,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
     private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         static int CountViaSpanSearch(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)

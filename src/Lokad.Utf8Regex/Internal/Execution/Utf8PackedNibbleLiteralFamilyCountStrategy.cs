@@ -61,6 +61,34 @@ internal sealed class Utf8PackedNibbleLiteralFamilyCountStrategy
         return count;
     }
 
+    public Utf8SelectedCountKernelMetrics InspectMetrics(ReadOnlySpan<byte> input)
+    {
+        var candidates = 0;
+        var fullVerifications = 0;
+        var matches = 0;
+        var state = new PreparedMultiLiteralScanState(0, 0, 0);
+        while (_prefilter.TryFindNextCandidate(input, ref state, out var candidateIndex))
+        {
+            candidates++;
+            fullVerifications++;
+            if (!_prefilter.TryGetMatchedLength(input, candidateIndex, out var matchedLength))
+            {
+                continue;
+            }
+
+            matches++;
+            state = new PreparedMultiLiteralScanState(candidateIndex + matchedLength, 0, 0);
+        }
+
+        return new Utf8SelectedCountKernelMetrics(
+            "PackedNibbleLiteralFamily",
+            "packed-nibble correlated start lanes",
+            candidates,
+            fullVerifications,
+            matches,
+            IncludesUtf8Validation: false);
+    }
+
     private static bool HasThreeByteLiteralPrefix(ReadOnlySpan<byte[]> literals)
     {
         foreach (var literal in literals)

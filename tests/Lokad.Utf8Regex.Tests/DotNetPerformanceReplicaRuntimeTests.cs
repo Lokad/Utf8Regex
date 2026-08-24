@@ -10,8 +10,10 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
     [Theory]
     [InlineData(@"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", "Reach équipe@exemple.fr and ops@example.net.")]
     [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "Open δοκιμή://παράδειγμα.gr/διαδρομή and https://example.net/café.")]
+    [InlineData(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", "Open https://example.net/path and ftp://mirror.example.org/file.")]
     [InlineData("Шерлок Холмс", "Шерлок Холмс и доктор Ватсон. Шерлок Холмс.")]
     [InlineData("夏洛克·福尔摩斯", "夏洛克·福尔摩斯和约翰华生。夏洛克·福尔摩斯。")]
+    [InlineData("夏洛克", "夏洛克和约翰华生。夏洛克。")]
     [InlineData("夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", "夏洛克·福尔摩斯和约翰华生拜访阿德勒。")]
     public void SelectedCountKernelMatchesPublicCountOnWellFormedInput(string pattern, string input)
     {
@@ -21,8 +23,23 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
             var regex = new Utf8Regex(pattern, options);
 
             Assert.True(regex.Inspection.DebugTryCountSelectedKernelWithoutValidation(inputBytes, out var selectedCount));
+            Assert.True(regex.Inspection.DebugTryGetSelectedCountKernelMetrics(inputBytes, out var metrics));
             Assert.NotEqual("Unsupported", regex.Inspection.DebugSelectedCountKernelKind);
             Assert.Equal(regex.Count(inputBytes), selectedCount);
+            Assert.Equal(selectedCount, metrics.Matches);
+            if (metrics.Candidates.HasValue)
+            {
+                Assert.True(metrics.Candidates.Value >= metrics.Matches);
+            }
+
+            if (metrics.FullVerifications.HasValue)
+            {
+                Assert.True(metrics.Candidates.HasValue);
+                Assert.InRange(
+                    metrics.FullVerifications.Value,
+                    metrics.Matches,
+                    metrics.Candidates.GetValueOrDefault());
+            }
         }
     }
 
@@ -99,6 +116,18 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
                 Regex.Count(input, pattern, options),
                 new Utf8Regex(pattern, options).Count(Encoding.UTF8.GetBytes(input)));
         }
+    }
+
+    [Fact]
+    public void SelectedCountMetricsIdentifyFusedUtf8Validation()
+    {
+        var regex = new Utf8Regex("夏洛克", RegexOptions.None);
+        var input = Encoding.UTF8.GetBytes("夏洛克和约翰华生。夏洛克。");
+
+        Assert.True(regex.Inspection.DebugTryGetSelectedCountKernelMetrics(input, out var metrics));
+        Assert.Equal("FusedValidatedBmpThreeByte", metrics.Route);
+        Assert.True(metrics.IncludesUtf8Validation);
+        Assert.Equal(regex.Count(input), metrics.Matches);
     }
 
     [Fact]

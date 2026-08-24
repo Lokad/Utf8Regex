@@ -424,6 +424,33 @@ public sealed class Utf8Regex
         return false;
     }
 
+    private bool DebugTryGetSelectedCountKernelMetrics(
+        ReadOnlySpan<byte> input,
+        out Utf8SelectedCountKernelMetrics metrics)
+    {
+        if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
+        {
+            metrics = packedNibbleLiteralFamilyCountStrategy.InspectMetrics(input);
+            return true;
+        }
+
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8WordDelimitedTokenCount)
+        {
+            metrics = Utf8WordDelimitedTokenExecutor.InspectMetrics(input);
+            return true;
+        }
+
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.Utf8UriToken)
+        {
+            metrics = Utf8InputAnalyzer.IsAscii(input)
+                ? Utf8AsciiUriTokenExecutor.InspectMetrics(input)
+                : Utf8UriTokenCountExecutor.InspectMetrics(input);
+            return true;
+        }
+
+        return _compiledEngineRuntime.TryDebugGetSelectedCountKernelMetrics(input, out metrics);
+    }
+
     private bool DebugTryCountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, out int count)
     {
         return _compiledEngineRuntime.TryDebugCountExactUtf8LiteralValidatedThreeByte(input, out count);
@@ -3821,6 +3848,11 @@ public sealed class Utf8Regex
 
         public bool DebugTryCountSelectedKernelWithoutValidation(ReadOnlySpan<byte> input, out int count) =>
             _owner.DebugTryCountSelectedKernelWithoutValidation(input, out count);
+
+        public bool DebugTryGetSelectedCountKernelMetrics(
+            ReadOnlySpan<byte> input,
+            out Utf8SelectedCountKernelMetrics metrics) =>
+            _owner.DebugTryGetSelectedCountKernelMetrics(input, out metrics);
 
         public bool DebugTryCountExactUtf8LiteralValidatedThreeByte(
             ReadOnlySpan<byte> input,

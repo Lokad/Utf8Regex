@@ -2,6 +2,21 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8CompiledRuntimeInspection
 {
+    public static bool TryGetSelectedCountKernelMetrics(
+        Utf8CompiledEngineRuntime runtime,
+        ReadOnlySpan<byte> input,
+        out Utf8SelectedCountKernelMetrics metrics)
+    {
+        var literal = GetLiteralRuntime(runtime);
+        if (literal is not null)
+        {
+            return literal.TryInspectSelectedCountKernelMetrics(input, out metrics);
+        }
+
+        metrics = default;
+        return false;
+    }
+
     public static bool TryCountValidatedThreeByte(
         Utf8CompiledEngineRuntime runtime,
         ReadOnlySpan<byte> input,
