@@ -27,7 +27,8 @@ internal static class Utf8CompiledPatternBackendPolicy
 
     public static Utf8CompiledSearchAnalysis CreateDeterministicLinearAnalysis(Utf8PreparedRegex regexPlan, Utf8SearchOperationPlan countPipeline)
     {
-        var backend = Utf8CompiledBackendCapability.CanUseEmittedStructuralLinear(regexPlan)
+        var usesBoundaryLiteralFamily = Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regexPlan);
+        var backend = Utf8CompiledBackendCapability.CanUseEmittedStructuralLinear(regexPlan) || usesBoundaryLiteralFamily
             ? Utf8CompiledExecutionBackend.EmittedInstruction
             : Utf8CompiledExecutionBackend.Legacy;
         return new Utf8CompiledSearchAnalysis(
@@ -37,7 +38,11 @@ internal static class Utf8CompiledPatternBackendPolicy
                     ? Utf8CompiledSearchMode.StructuralIdentifierFamily
                     : Utf8CompiledSearchMode.StructuralLinearAutomaton,
             new Utf8CompiledEngine(Utf8CompiledEngineKind.StructuralLinearAutomaton, backend),
-            backend == Utf8CompiledExecutionBackend.EmittedInstruction ? Utf8CompiledEmittedFamily.StructuralDeterministic : Utf8CompiledEmittedFamily.None,
+            usesBoundaryLiteralFamily
+                ? Utf8CompiledEmittedFamily.LiteralFamily
+                : backend == Utf8CompiledExecutionBackend.EmittedInstruction
+                    ? Utf8CompiledEmittedFamily.StructuralDeterministic
+                    : Utf8CompiledEmittedFamily.None,
             countPipeline.CandidateSource.Kind);
     }
 

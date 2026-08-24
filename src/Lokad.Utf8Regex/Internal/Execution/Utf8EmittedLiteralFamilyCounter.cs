@@ -67,12 +67,16 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private readonly Utf8SearchOperationPlan _countProgram;
     private readonly Utf8SearchOperationPlan _firstMatchProgram;
     private readonly bool _canUseAsciiBoundaryOnlyFastConfirmation;
+    private readonly Utf8BoundaryRequirement _leadingBoundary;
+    private readonly Utf8BoundaryRequirement _trailingBoundary;
 
     private Utf8EmittedLiteralFamilyCounter(
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan countProgram,
         Utf8SearchOperationPlan firstMatchProgram,
         bool canUseAsciiBoundaryOnlyFastConfirmation,
+        Utf8BoundaryRequirement leadingBoundary,
+        Utf8BoundaryRequirement trailingBoundary,
         CountDelegate count,
         IsMatchDelegate isMatch,
         TryMatchDelegate tryMatch)
@@ -81,6 +85,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         _countProgram = countProgram;
         _firstMatchProgram = firstMatchProgram;
         _canUseAsciiBoundaryOnlyFastConfirmation = canUseAsciiBoundaryOnlyFastConfirmation;
+        _leadingBoundary = leadingBoundary;
+        _trailingBoundary = trailingBoundary;
         _count = count;
         _isMatch = isMatch;
         _tryMatch = tryMatch;
@@ -102,6 +108,71 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
              (!countProgram.Confirmation.HasValue && !firstMatchProgram.Confirmation.HasValue)) &&
             countProgram.HasValue &&
             firstMatchProgram.HasValue;
+    }
+
+    internal static bool CanCreateBoundaryOnlyStructuralFamily(Utf8PreparedRegex regexPlan)
+    {
+        // Common-prefix analysis can represent a boundary-wrapped literal alternation as a
+        // structural family. With no separator, identifier, or suffix work, its execution
+        // semantics reconverge to the existing emitted boundary-literal-family kernel.
+        var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
+        var searchPlan = regexPlan.SearchPlan;
+        return regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
+            string.IsNullOrEmpty(familyPlan.SeparatorSet) &&
+            string.IsNullOrEmpty(familyPlan.IdentifierStartSet) &&
+            familyPlan.CompiledSuffixParts.Length == 0 &&
+            (familyPlan.LeadingBoundary != Utf8BoundaryRequirement.None ||
+             familyPlan.TrailingBoundary != Utf8BoundaryRequirement.None) &&
+            searchPlan.HasPreparedSearcher &&
+            searchPlan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
+            !searchPlan.HasTrailingLiteralRequirement &&
+            !searchPlan.HasAlternateLiteralPrefixOverlap &&
+            searchPlan.CountOperation.HasValue &&
+            searchPlan.FirstMatchOperation.HasValue;
+    }
+
+    internal static bool TryCreateBoundaryOnlyStructuralFamily(
+        Utf8PreparedRegex regexPlan,
+        out Utf8EmittedLiteralFamilyCounter? counter)
+    {
+        counter = null;
+        if (!CanCreateBoundaryOnlyStructuralFamily(regexPlan))
+        {
+            return false;
+        }
+
+        var searchPlan = regexPlan.SearchPlan;
+        var familyPlan = regexPlan.StructuralIdentifierFamilyPlan;
+        var singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(searchPlan, out var loweredLiterals) ? loweredLiterals : null;
+        var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(searchPlan, out var commonPrefix, out var prefixLiterals)
+            ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
+            : ((byte[] CommonPrefix, byte[][] Literals)?)null;
+        counter = new Utf8EmittedLiteralFamilyCounter(
+            searchPlan,
+            searchPlan.CountOperation,
+            searchPlan.FirstMatchOperation,
+            canUseAsciiBoundaryOnlyFastConfirmation: true,
+            familyPlan.LeadingBoundary,
+            familyPlan.TrailingBoundary,
+            CompileCount(
+                requiresConfirmation: true,
+                useAsciiBoundaryOnlyFastConfirmation: true,
+                retryOverlappingAfterRejection: false,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily),
+            CompileIsMatch(
+                requiresConfirmation: true,
+                useAsciiBoundaryOnlyFastConfirmation: true,
+                retryOverlappingAfterRejection: false,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily),
+            CompileTryMatch(
+                requiresConfirmation: true,
+                useAsciiBoundaryOnlyFastConfirmation: true,
+                retryOverlappingAfterRejection: false,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily));
+        return true;
     }
 
     internal static bool TryCreate(
@@ -126,6 +197,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             countProgram,
             firstMatchProgram,
             canUseFastConfirmation,
+            plan.LeadingBoundary,
+            plan.TrailingBoundary,
             CompileCount(
                 countProgram.Confirmation.HasValue,
                 canUseFastConfirmation,
@@ -175,10 +248,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static bool ConfirmAsciiBoundaryOnly(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength)
     {
-        if (!TryMatchesBoundaryRequirementAsciiOnly(counter._plan.LeadingBoundary, input, index, out var leadingMatch) ||
-            !TryMatchesBoundaryRequirementAsciiOnly(counter._plan.TrailingBoundary, input, index + matchedLength, out var trailingMatch))
+        if (!TryMatchesBoundaryRequirementAsciiOnly(counter._leadingBoundary, input, index, out var leadingMatch) ||
+            !TryMatchesBoundaryRequirementAsciiOnly(counter._trailingBoundary, input, index + matchedLength, out var trailingMatch))
         {
-            return Utf8ConfirmationExecutor.IsMatch(counter._plan, counter._firstMatchProgram.Confirmation, input, index, matchedLength);
+            return DotNetUtf8WordBoundary.MatchesRequirement(counter._leadingBoundary, input, index) &&
+                DotNetUtf8WordBoundary.MatchesRequirement(counter._trailingBoundary, input, index + matchedLength);
         }
 
         return leadingMatch && trailingMatch;
@@ -267,7 +341,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     {
         literals = [];
 
-        if (plan.Kind != Utf8SearchKind.ExactUtf8Literals ||
+        if (plan.Kind is not (Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals) ||
             !plan.AlternateLiteralSearch.HasValue ||
             plan.MultiLiteralSearch.Kind is not (PreparedMultiLiteralKind.ExactDirect or PreparedMultiLiteralKind.ExactEarliest))
         {
@@ -306,7 +380,8 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         commonPrefix = [];
         literals = [];
 
-        if (plan.Kind != Utf8SearchKind.ExactUtf8Literals || !plan.AlternateLiteralSearch.HasValue)
+        if (plan.Kind is not (Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals) ||
+            !plan.AlternateLiteralSearch.HasValue)
         {
             return false;
         }

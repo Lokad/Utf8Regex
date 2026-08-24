@@ -406,6 +406,20 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
+    public void EmittedLiteralFamilyCounterSupportsAsciiBoundaryOnlyStructuralFamilies()
+    {
+        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
+        var plan = regex.Inspection.SearchPlan;
+        var input = Encoding.UTF8.GetBytes("LogTrace xLogError LogWarning_ LogDebug");
+
+        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, plan.Kind);
+        Assert.True(Utf8EmittedLiteralFamilyCounter.CanCreateBoundaryOnlyStructuralFamily(regex.Inspection.PreparedRegex));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(regex.Inspection.PreparedRegex, out var counter));
+        Assert.NotNull(counter);
+        Assert.Equal(2, counter!.Count(input));
+    }
+
+    [Fact]
     public void EmittedLiteralFamilyCounterMatchesInstructionExecutorForIsMatch()
     {
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);

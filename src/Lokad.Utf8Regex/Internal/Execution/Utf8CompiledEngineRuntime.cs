@@ -691,6 +691,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
     private readonly bool _emitEnabled;
     private readonly Utf8EmittedDeterministicMatcher? _emittedDeterministicMatcher;
     private readonly Utf8EmittedKernelMatcher? _emittedKernelMatcher;
+    private readonly Utf8EmittedLiteralFamilyCounter? _emittedBoundaryLiteralFamily;
     private readonly PreparedAsciiFindPlan _orderedWindowTrailingFindPlan;
 
     public Utf8StructuralLinearAutomatonCompiledEngineRuntime(Utf8NonLiteralCompiledEngineRuntime inner, bool emitEnabled)
@@ -705,6 +706,13 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
         _emittedKernelMatcher = emitEnabled && Utf8EmittedKernelMatcher.TryCreate(_regexPlan, out var emittedKernelMatcher)
             ? emittedKernelMatcher
             : null;
+        _emittedBoundaryLiteralFamily = emitEnabled &&
+            (_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Options & RegexOptions.RightToLeft) == 0 &&
+            Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
+                _regexPlan,
+                out var emittedBoundaryLiteralFamily)
+                ? emittedBoundaryLiteralFamily
+                : null;
         _orderedWindowTrailingFindPlan = _regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow
             ? PreparedAsciiFindPlan.CreateForOrderedWindow(_regexPlan.StructuralLinearProgram.OrderedLiteralWindowPlan)
             : default;
@@ -742,6 +750,12 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             return Utf8AsciiCharClassRunExecutor.IsMatch(input, _regexPlan.SimplePatternPlan.RunPlan, budget);
         }
 
+        if (budget.IsInfinite &&
+            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
+        {
+            return emittedBoundaryLiteralFamily.IsMatch(input);
+        }
+
         if (Utf8StructuralLinearCompiledRouter.TryIsMatch(
                 _regexPlan,
                 _verifierRuntime,
@@ -766,6 +780,13 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             _regexPlan.SimplePatternPlan.RunPlan.HasValue)
         {
             return Utf8AsciiCharClassRunExecutor.Count(input, _regexPlan.SimplePatternPlan.RunPlan, budget);
+        }
+
+        if (budget.IsInfinite &&
+            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeStructuralFamilyEmit);
+            return emittedBoundaryLiteralFamily.Count(input);
         }
 
         if (Utf8StructuralLinearCompiledRouter.TryCount(
@@ -795,6 +816,15 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             return index < 0
                 ? Utf8ValueMatch.NoMatch
                 : new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength);
+        }
+
+        if (validation.IsAscii &&
+            budget.IsInfinite &&
+            _emittedBoundaryLiteralFamily is { } emittedBoundaryLiteralFamily)
+        {
+            return emittedBoundaryLiteralFamily.TryMatch(input, out var index, out var matchedLength)
+                ? new Utf8ValueMatch(true, true, index, matchedLength, index, matchedLength)
+                : Utf8ValueMatch.NoMatch;
         }
 
         if (Utf8StructuralLinearCompiledRouter.TryMatch(

@@ -26,6 +26,34 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
+    public void CompiledMethodTokenFamilyUsesEmittedBoundaryLiteralKernel()
+    {
+        const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
+        const string input = "é LogTrace λLogError LogWarning_ LogDebug.";
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+        var expected = Regex.Count(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
+        Assert.Equal(expected, regex.Count(bytes));
+        Assert.Equal(expected > 0, regex.IsMatch(bytes));
+        Assert.Equal("native_structural_family_emit", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+    }
+
+    [Fact]
+    public void CompiledMethodTokenFamilyStillRejectsMalformedUtf8()
+    {
+        var regex = new Utf8Regex(
+            @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        byte[] malformed = [0xFF, .. System.Text.Encoding.UTF8.GetBytes(" LogTrace")];
+
+        Assert.Throws<ArgumentException>(() => regex.IsMatch(malformed));
+        Assert.Throws<ArgumentException>(() => regex.Count(malformed));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformed));
+    }
+
+    [Fact]
     public void OrderedIdentifierWindowStaysOnStructuralEngine()
     {
         var regex = new Utf8Regex(@"\bHttpClient\b[\s\S]{0,80}\bSendAsync\b", RegexOptions.CultureInvariant);
