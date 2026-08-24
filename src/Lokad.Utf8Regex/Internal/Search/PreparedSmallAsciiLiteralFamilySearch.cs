@@ -87,7 +87,7 @@ internal readonly struct PreparedSmallAsciiLiteralFamilySearch
         }
 
         var searchData = AsciiSearch.CreateExactLiteralSearchData(literals);
-        if (searchData.Buckets.Length is < 2 or > 3)
+        if (searchData.Buckets.Length is < 2 or > 6)
         {
             return false;
         }

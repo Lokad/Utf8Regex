@@ -514,6 +514,24 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
+    public void PreparedSmallAsciiLiteralFamilySearchSupportsFourLeadingByteBuckets()
+    {
+        byte[][] literals =
+        [
+            "Sherlock Holmes"u8.ToArray(),
+            "John Watson"u8.ToArray(),
+            "Irene Adler"u8.ToArray(),
+            "Inspector Lestrade"u8.ToArray(),
+            "Professor Moriarty"u8.ToArray(),
+        ];
+        var input = "é Professor Moriarty xx Irene Adler xx Sherlock Holmes 夏"u8;
+
+        Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
+        Assert.Equal(3, search.CountScalar(input));
+        Assert.Equal(3, search.Count(input));
+    }
+
+    [Fact]
     public void PreparedSmallAsciiLiteralFamilySearchFindsNonOverlappingMatches()
     {
         byte[][] literals =
