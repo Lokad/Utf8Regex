@@ -16,10 +16,15 @@ internal readonly struct AsciiSimplePatternToken
     {
     }
 
+    public AsciiSimplePatternToken(AsciiCharClass charClass, bool requiresAsciiInput)
+        : this(charClass, requiresAsciiInput, Utf8SimplePatternScalarClassKind.None)
+    {
+    }
+
     public AsciiSimplePatternToken(
         AsciiCharClass charClass,
         bool requiresAsciiInput,
-        Utf8SimplePatternScalarClassKind scalarClassKind = Utf8SimplePatternScalarClassKind.None)
+        Utf8SimplePatternScalarClassKind scalarClassKind)
     {
         Kind = AsciiSimplePatternTokenKind.CharClass;
         Literal = 0;
