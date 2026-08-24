@@ -77,7 +77,7 @@ public sealed class Utf8RegexConstructionTests
     public void BoundaryWrappedSharedPrefixLiteralFamilyCountMatchesRuntime(RegexOptions mode)
     {
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
-        const string input = "LogTrace xLogDebug LogInformationX LogWarning LogError\nLogDebug éLogTrace LogDebugé";
+        const string input = "LogTrace xLogDebug LogInformationX LogWarning LogError\nLogDebug éLogTrace LogDebugé Log";
         var options = mode | RegexOptions.CultureInvariant;
         var regex = new Utf8Regex(pattern, options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);

@@ -66,7 +66,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private readonly Utf8SearchPlan _plan;
     private readonly Utf8SearchOperationPlan _countProgram;
     private readonly Utf8SearchOperationPlan _firstMatchProgram;
-    private readonly bool _canUseAsciiBoundaryOnlyFastConfirmation;
     private readonly Utf8BoundaryRequirement _leadingBoundary;
     private readonly Utf8BoundaryRequirement _trailingBoundary;
 
@@ -74,7 +73,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         Utf8SearchPlan plan,
         Utf8SearchOperationPlan countProgram,
         Utf8SearchOperationPlan firstMatchProgram,
-        bool canUseAsciiBoundaryOnlyFastConfirmation,
         Utf8BoundaryRequirement leadingBoundary,
         Utf8BoundaryRequirement trailingBoundary,
         CountDelegate count,
@@ -84,7 +82,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         _plan = plan;
         _countProgram = countProgram;
         _firstMatchProgram = firstMatchProgram;
-        _canUseAsciiBoundaryOnlyFastConfirmation = canUseAsciiBoundaryOnlyFastConfirmation;
         _leadingBoundary = leadingBoundary;
         _trailingBoundary = trailingBoundary;
         _count = count;
@@ -151,7 +148,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             searchPlan,
             searchPlan.CountOperation,
             searchPlan.FirstMatchOperation,
-            canUseAsciiBoundaryOnlyFastConfirmation: true,
             familyPlan.LeadingBoundary,
             familyPlan.TrailingBoundary,
             CompileCount(
@@ -196,7 +192,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             plan,
             countProgram,
             firstMatchProgram,
-            canUseFastConfirmation,
             plan.LeadingBoundary,
             plan.TrailingBoundary,
             CompileCount(
@@ -246,17 +241,9 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return Utf8ConfirmationExecutor.IsMatch(counter._plan, counter._firstMatchProgram.Confirmation, input, index, matchedLength);
     }
 
-    private static bool ConfirmAsciiBoundaryOnly(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength)
-    {
-        if (!TryMatchesBoundaryRequirementAsciiOnly(counter._leadingBoundary, input, index, out var leadingMatch) ||
-            !TryMatchesBoundaryRequirementAsciiOnly(counter._trailingBoundary, input, index + matchedLength, out var trailingMatch))
-        {
-            return DotNetUtf8WordBoundary.MatchesRequirement(counter._leadingBoundary, input, index) &&
-                DotNetUtf8WordBoundary.MatchesRequirement(counter._trailingBoundary, input, index + matchedLength);
-        }
-
-        return leadingMatch && trailingMatch;
-    }
+    private static bool ConfirmAsciiBoundaryOnly(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength) =>
+        DotNetUtf8WordBoundary.MatchesRequirement(counter._leadingBoundary, input, index) &&
+        DotNetUtf8WordBoundary.MatchesRequirement(counter._trailingBoundary, input, index + matchedLength);
 
     private static void ResetAfterRejectedCandidate(ref PreparedMultiLiteralScanState state, int candidateIndex)
     {
@@ -295,35 +282,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
         var relative = input[startIndex..].IndexOf(firstByte0);
         return relative < 0 ? -1 : startIndex + relative;
-    }
-
-    private static bool TryMatchesBoundaryRequirementAsciiOnly(Utf8BoundaryRequirement requirement, ReadOnlySpan<byte> input, int byteOffset, out bool isMatch)
-    {
-        isMatch = false;
-        if (requirement == Utf8BoundaryRequirement.None)
-        {
-            isMatch = true;
-            return true;
-        }
-
-        if (!TryGetAsciiWordBoundary(input, byteOffset, out var isBoundary))
-        {
-            return false;
-        }
-
-        isMatch = requirement switch
-        {
-            Utf8BoundaryRequirement.Boundary => isBoundary,
-            Utf8BoundaryRequirement.NonBoundary => !isBoundary,
-            _ => false,
-        };
-
-        return true;
-    }
-
-    private static bool TryGetAsciiWordBoundary(ReadOnlySpan<byte> input, int byteOffset, out bool isBoundary)
-    {
-        return DotNetUtf8WordBoundary.TryGetAsciiBoundary(input, byteOffset, out isBoundary);
     }
 
     private static bool CanUseAsciiBoundaryOnlyFastConfirmation(
@@ -1050,7 +1008,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         e.LdcI4(0);
         e.Emit(OpCodes.Blt, returnLabel);
 
-        e.EmitEnsureAvailable(candidateLocal, inputLengthLocal, commonPrefix.Length, prefixMatchedLabel, retryLabel);
+        e.EmitEnsureAvailable(candidateLocal, inputLengthLocal, commonPrefix.Length + 1, prefixMatchedLabel, retryLabel);
         e.MarkLabel(prefixMatchedLabel);
         e.EmitSpanLiteralEquals(candidateLocal, commonPrefix, 1, successLabel, retryLabel);
 
