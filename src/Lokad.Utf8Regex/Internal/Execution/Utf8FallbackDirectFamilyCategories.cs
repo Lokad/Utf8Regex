@@ -81,7 +81,8 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.Utf8UriToken or
         Utf8FallbackDirectFamilyKind.AsciiBoundedDateToken or
         Utf8FallbackDirectFamilyKind.AsciiUntilByteStarCount or
-        Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole;
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole or
+        Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount;
 
     public static bool SkipsRequiredPrefilterForCount(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount or
@@ -89,5 +90,6 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AsciiDelimitedTokenCount or
         Utf8FallbackDirectFamilyKind.AsciiIdentifierToken or
         Utf8FallbackDirectFamilyKind.AsciiIpv4Token or
-        Utf8FallbackDirectFamilyKind.Utf8UriToken;
+        Utf8FallbackDirectFamilyKind.Utf8UriToken or
+        Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount;
 }

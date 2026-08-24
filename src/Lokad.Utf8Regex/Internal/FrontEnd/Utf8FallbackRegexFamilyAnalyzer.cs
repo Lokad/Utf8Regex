@@ -19,6 +19,12 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         RegexOptions options,
         byte[]? requiredPrefilterLiteralUtf8)
     {
+        if (IsUtf8BalancedBeginEndCount(executionPattern, options) ||
+            IsUtf8BalancedBeginEndCount(semanticPattern, options))
+        {
+            return Utf8FallbackDirectFamilyPlan.ForKind(Utf8FallbackDirectFamilyKind.Utf8BalancedBeginEndCount);
+        }
+
         if (TryParseAnchoredQuotedLineSegmentCountFamily(
             executionPattern,
             options,
