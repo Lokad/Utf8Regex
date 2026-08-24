@@ -135,7 +135,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/mariomka-ip-count` | `Count` | 4,894.530 us | 5,072.805 us | 10,121.885 us |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,086.050 us | 11,588.785 us | 11,727.325 us |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 34.789 us | 153.624 us | 278.592 us |
-| `industry/rust-sherlock-ing-count` | `Count` | 7,021.525 us | 6,712.150 us | 6,908.150 us |
+| `industry/rust-sherlock-ing-count` | `Count` | 146.775 us | 6,859.935 us | 7,017.960 us |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 15.315 us | 4,590.530 us | 4,811.805 us |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 89.546 us | 586.837 us | 709.028 us |
 | `industry/leipzig-twain-count` | `Count` | 3,353.450 us | 1,527.160 us | 6,216.910 us |
@@ -216,7 +216,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/mariomka-ip-count` | `Count` | 5,034.210 us | 2,179.545 us | 7,062.355 us |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,129.775 us | 4,640.010 us | 5,019.195 us |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 34.232 us | 35.973 us | 151.620 us |
-| `industry/rust-sherlock-ing-count` | `Count` | 2,957.740 us | 2,819.765 us | 3,021.080 us |
+| `industry/rust-sherlock-ing-count` | `Count` | 148.135 us | 2,818.325 us | 3,154.965 us |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 16.935 us | 2,321.720 us | 2,480.790 us |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 93.301 us | 522.667 us | 663.024 us |
 | `industry/leipzig-twain-count` | `Count` | 3,362.255 us | 1,534.235 us | 6,038.530 us |
