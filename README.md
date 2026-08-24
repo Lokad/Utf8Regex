@@ -144,7 +144,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-symbol-count` | `Count` | 1,164.275 us | 12,406.570 us | 17,701.575 us |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.060 us | 0.109 us | 0.124 us |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.155 us | 0.162 us | 0.169 us |
-| `industry/boostdocs-postcode-match` | `IsMatch` | 0.086 us | 0.081 us | 0.093 us |
+| `industry/boostdocs-postcode-match` | `IsMatch` | 0.078 us | 0.084 us | 0.092 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.010 us | 0.047 us | 0.058 us |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.036 us | 0.071 us | 0.086 us |
 <!-- END GENERATED DOTNET_PERFORMANCE BENCHMARKS -->
@@ -225,7 +225,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-symbol-count` | `Count` | 1,204.060 us | 1,180.960 us | 6,426.605 us |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.062 us | 0.046 us | 0.062 us |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.038 us | 0.047 us | 0.061 us |
-| `industry/boostdocs-postcode-match` | `IsMatch` | 0.029 us | 0.035 us | 0.046 us |
+| `industry/boostdocs-postcode-match` | `IsMatch` | 0.029 us | 0.034 us | 0.047 us |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.012 us | 0.021 us | 0.031 us |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.037 us | 0.035 us | 0.047 us |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
