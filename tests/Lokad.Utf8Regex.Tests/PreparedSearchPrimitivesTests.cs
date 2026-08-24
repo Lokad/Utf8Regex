@@ -53,6 +53,27 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.Equal(32, exact.LastIndexOf(input));
     }
 
+    [Theory]
+    [InlineData(".HttpName")]
+    [InlineData("Http_Name")]
+    [InlineData("HttpClient")]
+    [InlineData("Http.Name!")]
+    public void PreparedSubstringSearchCorrelatesNineAndTenByteIgnoreCaseLiterals(string literal)
+    {
+        var firstMatch = literal.ToLowerInvariant();
+        var secondMatch = literal.ToUpperInvariant();
+        var text = $"prefix-{firstMatch}-middle-{secondMatch}-suffix";
+        var input = Encoding.UTF8.GetBytes(text);
+        var search = new PreparedSubstringSearch(Encoding.UTF8.GetBytes(literal), ignoreCase: true);
+        var firstIndex = "prefix-".Length;
+        var secondIndex = text.LastIndexOf(secondMatch, StringComparison.Ordinal);
+
+        Assert.Equal(PreparedIgnoreCaseSearchTier.VectorAnchored, search.IgnoreCaseTier);
+        Assert.Equal(firstIndex, search.IndexOf(input));
+        Assert.Equal(secondIndex, search.LastIndexOf(input));
+        Assert.Equal(2, search.CountIgnoreCaseWithTier(input, search.IgnoreCaseTier, out _, out _));
+    }
+
     [Fact]
     public void PreparedMultiLiteralSearchSupportsExactAndIgnoreCaseFamilies()
     {

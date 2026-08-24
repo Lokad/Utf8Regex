@@ -98,7 +98,7 @@ internal readonly struct PreparedSubstringSearch
         _ignoreCaseShiftTable = ignoreCase && needle.Length >= 3 && foldedNeedle is not null
             ? CreateIgnoreCaseShiftTable(foldedNeedle)
             : null;
-        _ignoreCasePreferredCompareIndex = ignoreCase && needle.Length > 10 && foldedNeedle is not null
+        _ignoreCasePreferredCompareIndex = ignoreCase && needle.Length >= 9 && foldedNeedle is not null
             ? GetPreferredCompareIndex(foldedNeedle, foldedNeedle[0], foldedNeedle.Length - 1)
             : -1;
         if (ignoreCase && needle.Length > 10 && foldedNeedle is not null && TryCreateIgnoreCasePackedPair(foldedNeedle, out var packedPair))
@@ -265,7 +265,7 @@ internal readonly struct PreparedSubstringSearch
             tier = IgnoreCaseTier;
         }
 
-        if (tier == PreparedIgnoreCaseSearchTier.ShortLiteral || Needle.Length <= 10)
+        if (tier == PreparedIgnoreCaseSearchTier.ShortLiteral || Needle.Length <= 8)
         {
             return CountWithMetrics(input, out candidateCount, out verifyCount);
         }
@@ -565,7 +565,7 @@ internal readonly struct PreparedSubstringSearch
             return 0;
         }
 
-        if (Needle.Length <= 10)
+        if (Needle.Length <= 8)
         {
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
         }
@@ -637,7 +637,7 @@ internal readonly struct PreparedSubstringSearch
             return 0;
         }
 
-        if (Needle.Length <= 10)
+        if (Needle.Length <= 8)
         {
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
         }
@@ -711,7 +711,7 @@ internal readonly struct PreparedSubstringSearch
             return 0;
         }
 
-        if (Needle.Length <= 10)
+        if (Needle.Length <= 8)
         {
             return AsciiSearch.IndexOfIgnoreCase(input, Needle);
         }
@@ -819,6 +819,11 @@ internal readonly struct PreparedSubstringSearch
         var compareIndex = GetPreferredCompareIndex(foldedNeedle, firstFolded, lastIndex);
 
         var lastFolded = foldedNeedle[compareIndex];
+        if (!CanUseCaseBitVectorAnchors(firstFolded, lastFolded))
+        {
+            return false;
+        }
+
         var maxCandidateStart = input.Length - needleLength;
         var foldMask128 = Vector128.Create((byte)0x20);
         if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
@@ -925,6 +930,11 @@ internal readonly struct PreparedSubstringSearch
         var compareIndex = GetPreferredCompareIndex(foldedNeedle, firstFolded, lastIndex);
 
         var lastFolded = foldedNeedle[compareIndex];
+        if (!CanUseCaseBitVectorAnchors(firstFolded, lastFolded))
+        {
+            return false;
+        }
+
         var maxCandidateStart = input.Length - needleLength;
         var foldMask128 = Vector128.Create((byte)0x20);
         if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
@@ -1053,6 +1063,11 @@ internal readonly struct PreparedSubstringSearch
         ref var searchSpace = ref MemoryMarshal.GetReference(input);
         var firstFolded = foldedNeedle[0];
         var compareFolded = foldedNeedle[preferredCompareIndex];
+        if (!CanUseCaseBitVectorAnchors(firstFolded, compareFolded))
+        {
+            return false;
+        }
+
         var maxCandidateStart = input.Length - needleLength;
         var foldMask128 = Vector128.Create((byte)0x20);
         if (Vector256.IsHardwareAccelerated && input.Length - lastIndex >= Vector256<byte>.Count)
@@ -1388,7 +1403,7 @@ internal readonly struct PreparedSubstringSearch
             return PreparedIgnoreCaseSearchTier.None;
         }
 
-        if (Needle.Length <= 10)
+        if (Needle.Length <= 8)
         {
             return PreparedIgnoreCaseSearchTier.ShortLiteral;
         }
@@ -1486,6 +1501,11 @@ internal readonly struct PreparedSubstringSearch
 
         return false;
     }
+
+    // The vector fold sets the ASCII case bit, so both correlated anchors must be letters.
+    private static bool CanUseCaseBitVectorAnchors(byte firstFolded, byte compareFolded)
+        => TryGetCaseVariants(firstFolded, out _, out _) &&
+           TryGetCaseVariants(compareFolded, out _, out _);
 
     private static bool MatchesFoldedTailSkippingIndexes(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> foldedNeedle, int skipIndex1, int skipIndex2)
     {
