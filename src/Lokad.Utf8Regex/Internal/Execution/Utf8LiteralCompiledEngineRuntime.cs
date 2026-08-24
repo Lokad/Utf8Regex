@@ -2,7 +2,10 @@ using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Buffers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -12,6 +15,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     IUtf8UnvalidatedMatchRuntime
 {
     private const int PreparedSearcherLiteralFamilyCountThresholdBytes = 4096;
+    private const int CorrelatedTwoByteLiteralCountThresholdBytes = 128 * 1024;
     private readonly Utf8CompiledEngine _compiledEngine;
     private readonly Utf8PreparedRegex _regexPlan;
     private readonly bool _usesRightToLeft;
@@ -585,6 +589,16 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         if (budget.IsInfinite &&
             _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            literal.Length >= 4 &&
+            literal[0] is >= 0xC2 and < 0xE0 &&
+            input.Length >= CorrelatedTwoByteLiteralCountThresholdBytes &&
+            Vector256.IsHardwareAccelerated)
+        {
+            return CountExactUtf8LiteralCorrelatedTwoBytePrefix(input, literal);
+        }
+
+        if (budget.IsInfinite &&
+            _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             TryGetLeadingUtf8SegmentLength(literal, out var leadingSegmentLength))
         {
             return CountExactUtf8LiteralLeadingScalarAnchored(input, literal, leadingSegmentLength);
@@ -751,6 +765,75 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     }
 
     private static bool IsContinuationByte(byte value) => (value & 0xC0) == 0x80;
+
+    private static int CountExactUtf8LiteralCorrelatedTwoBytePrefix(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literal)
+    {
+        var count = 0;
+        var index = 0;
+        var maxStart = input.Length - literal.Length;
+        var first = Vector256.Create(literal[0]);
+        var second = Vector256.Create(literal[1]);
+        var fourth = Vector256.Create(literal[3]);
+        ref var inputRef = ref MemoryMarshal.GetReference(input);
+
+        while (index <= maxStart - (Vector256<byte>.Count - 1))
+        {
+            // Correlate the first scalar and the final byte of the next scalar.
+            // A full compare is then needed only for the surviving start lanes.
+            var matches = Vector256.BitwiseAnd(
+                Vector256.Equals(
+                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index)),
+                    first),
+                Vector256.Equals(
+                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 1)),
+                    second));
+            matches = Vector256.BitwiseAnd(
+                matches,
+                Vector256.Equals(
+                    Vector256.LoadUnsafe(ref Unsafe.Add(ref inputRef, index + 3)),
+                    fourth));
+            var candidateBits = matches.ExtractMostSignificantBits();
+            var matched = false;
+
+            while (candidateBits != 0)
+            {
+                var candidate = index + BitOperations.TrailingZeroCount(candidateBits);
+                if (input.Slice(candidate, literal.Length).SequenceEqual(literal))
+                {
+                    count++;
+                    index = candidate + literal.Length;
+                    matched = true;
+                    break;
+                }
+
+                candidateBits &= candidateBits - 1;
+            }
+
+            if (!matched)
+            {
+                index += Vector256<byte>.Count;
+            }
+        }
+
+        while (index <= maxStart)
+        {
+            if (input[index] == literal[0] &&
+                input[index + 1] == literal[1] &&
+                input[index + 3] == literal[3] &&
+                input.Slice(index, literal.Length).SequenceEqual(literal))
+            {
+                count++;
+                index += literal.Length;
+                continue;
+            }
+
+            index++;
+        }
+
+        return count;
+    }
 
     private static int CountExactUtf8LiteralAnchored(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, int anchorIndex, byte anchorByte)
     {

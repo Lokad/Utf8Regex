@@ -1948,6 +1948,43 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
+    public void ExactTwoByteLiteralCorrelatedPrefixCountCoversEveryVectorLane()
+    {
+        const string pattern = "Шерлок Холмс";
+        var literal = Encoding.UTF8.GetBytes(pattern);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        foreach (var lane in Enumerable.Range(0, 32))
+        {
+            var bytes = Enumerable.Repeat((byte)'x', 132 * 1024).ToArray();
+            var matchOffset = 64 * 1024 + lane;
+            literal.CopyTo(bytes, matchOffset);
+            var input = Encoding.UTF8.GetString(bytes);
+
+            foreach (var options in new[]
+                     {
+                         RegexOptions.CultureInvariant,
+                         RegexOptions.CultureInvariant | RegexOptions.Compiled,
+                     })
+            {
+                var regex = new Utf8Regex(pattern, options);
+                Assert.Equal(oracle.Count(input), regex.Count(bytes));
+            }
+        }
+    }
+
+    [Fact]
+    public void ExactTwoByteLiteralCorrelatedPrefixCountRejectsMalformedSuffix()
+    {
+        const string pattern = "Шерлок Холмс";
+        var bytes = Enumerable.Repeat((byte)'x', 132 * 1024).ToArray();
+        Encoding.UTF8.GetBytes(pattern).CopyTo(bytes, 64 * 1024 + 31);
+        bytes[^1] = 0xFF;
+
+        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern).Count(bytes));
+        Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, RegexOptions.Compiled).Count(bytes));
+    }
+
+    [Fact]
     public void CompiledExactUtf8LiteralFamilyCanCountWithFusedValidation()
     {
         const string pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
