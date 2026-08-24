@@ -244,7 +244,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU |
 |---|---:|---:|---:|
-| `literal/identifier-token` | 2.558 us | 3.238 us | 8.753 us |
+| `literal/identifier-token` | 1.356 us | 3.182 us | 8.357 us |
 | `literal/call-token` | 2.955 us | 3.005 us | 9.089 us |
 | `literal/identifier-token-casei` | 3.378 us | 8.053 us | 13.869 us |
 | `literal-family/type-token-family` | 5.283 us | 15.789 us | 22.301 us |
@@ -294,7 +294,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled CPU | .NET compiled predecoded CPU | .NET compiled + decode CPU |
 |---|---:|---:|---:|
-| `literal/identifier-token` | 2.444 us | 2.343 us | 8.276 us |
+| `literal/identifier-token` | 1.372 us | 2.309 us | 7.803 us |
 | `literal/call-token` | 2.995 us | 2.264 us | 8.312 us |
 | `literal/identifier-token-casei` | 3.437 us | 4.504 us | 9.848 us |
 | `literal-family/type-token-family` | 5.344 us | 6.030 us | 12.286 us |
