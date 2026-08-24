@@ -88,9 +88,16 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     internal static bool CanCreate(Utf8SearchPlan plan, Utf8SearchOperationPlan countProgram, Utf8SearchOperationPlan firstMatchProgram)
     {
+        // The generic emitted loop crosses a DynamicMethod helper for every accepted
+        // candidate. With no confirmation to fuse, the prepared loop is cheaper.
+        var isUnconstrainedIgnoreCaseFamily =
+            plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals &&
+            !countProgram.Confirmation.HasValue &&
+            !firstMatchProgram.Confirmation.HasValue;
         return plan.HasPreparedSearcher &&
             plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             !plan.HasTrailingLiteralRequirement &&
+            !isUnconstrainedIgnoreCaseFamily &&
             (!plan.HasAlternateLiteralPrefixOverlap ||
              (!countProgram.Confirmation.HasValue && !firstMatchProgram.Confirmation.HasValue)) &&
             countProgram.HasValue &&
@@ -119,9 +126,24 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             countProgram,
             firstMatchProgram,
             canUseFastConfirmation,
-            CompileCount(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily),
-            CompileIsMatch(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily),
-            CompileTryMatch(canUseFastConfirmation, plan.HasAlternateLiteralProperStartOverlap, singleLiteralBuckets, singleBucketPrefixFamily));
+            CompileCount(
+                countProgram.Confirmation.HasValue,
+                canUseFastConfirmation,
+                plan.HasAlternateLiteralProperStartOverlap,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily),
+            CompileIsMatch(
+                firstMatchProgram.Confirmation.HasValue,
+                canUseFastConfirmation,
+                plan.HasAlternateLiteralProperStartOverlap,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily),
+            CompileTryMatch(
+                firstMatchProgram.Confirmation.HasValue,
+                canUseFastConfirmation,
+                plan.HasAlternateLiteralProperStartOverlap,
+                singleLiteralBuckets,
+                singleBucketPrefixFamily));
         return true;
     }
 
@@ -313,6 +335,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     }
 
     private static CountDelegate CompileCount(
+        bool requiresConfirmation,
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
@@ -328,10 +351,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixCount(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericCount(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
+        return CompileGenericCount(requiresConfirmation, useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
     private static IsMatchDelegate CompileIsMatch(
+        bool requiresConfirmation,
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
@@ -347,10 +371,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixIsMatch(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericIsMatch(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
+        return CompileGenericIsMatch(requiresConfirmation, useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
     private static TryMatchDelegate CompileTryMatch(
+        bool requiresConfirmation,
         bool useAsciiBoundaryOnlyFastConfirmation,
         bool retryOverlappingAfterRejection,
         byte[][]? singleLiteralBuckets,
@@ -366,10 +391,13 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             return CompileSingleBucketPrefixTryMatch(useAsciiBoundaryOnlyFastConfirmation, prefixFamily.CommonPrefix, prefixFamily.Literals);
         }
 
-        return CompileGenericTryMatch(useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
+        return CompileGenericTryMatch(requiresConfirmation, useAsciiBoundaryOnlyFastConfirmation, retryOverlappingAfterRejection);
     }
 
-    private static CountDelegate CompileGenericCount(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
+    private static CountDelegate CompileGenericCount(
+        bool requiresConfirmation,
+        bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyCount",
@@ -406,19 +434,22 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Call, s_tryFindNextNonOverlappingLengthMethod);
         il.Emit(OpCodes.Brfalse, returnLabel);
 
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Ldloc, indexLocal);
-        il.Emit(OpCodes.Ldloc, matchedLengthLocal);
-        il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
-        il.Emit(OpCodes.Brtrue, incrementLabel);
-        if (retryOverlappingAfterRejection)
+        if (requiresConfirmation)
         {
-            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldloc, indexLocal);
-            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            il.Emit(OpCodes.Ldloc, matchedLengthLocal);
+            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
+            il.Emit(OpCodes.Brtrue, incrementLabel);
+            if (retryOverlappingAfterRejection)
+            {
+                il.Emit(OpCodes.Ldloca_S, stateLocal);
+                il.Emit(OpCodes.Ldloc, indexLocal);
+                il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            }
+            il.Emit(OpCodes.Br, loopLabel);
         }
-        il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(incrementLabel);
         il.Emit(OpCodes.Ldloc, countLocal);
@@ -434,7 +465,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return dynamicMethod.CreateDelegate<CountDelegate>();
     }
 
-    private static IsMatchDelegate CompileGenericIsMatch(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
+    private static IsMatchDelegate CompileGenericIsMatch(
+        bool requiresConfirmation,
+        bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyIsMatch",
@@ -467,19 +501,22 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Call, s_tryFindNextNonOverlappingLengthMethod);
         il.Emit(OpCodes.Brfalse, returnFalseLabel);
 
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Ldloc, indexLocal);
-        il.Emit(OpCodes.Ldloc, matchedLengthLocal);
-        il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod);
-        il.Emit(OpCodes.Brtrue, successLabel);
-        if (retryOverlappingAfterRejection)
+        if (requiresConfirmation)
         {
-            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldloc, indexLocal);
-            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            il.Emit(OpCodes.Ldloc, matchedLengthLocal);
+            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod);
+            il.Emit(OpCodes.Brtrue, successLabel);
+            if (retryOverlappingAfterRejection)
+            {
+                il.Emit(OpCodes.Ldloca_S, stateLocal);
+                il.Emit(OpCodes.Ldloc, indexLocal);
+                il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            }
+            il.Emit(OpCodes.Br, loopLabel);
         }
-        il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(successLabel);
         il.Emit(OpCodes.Ldc_I4_1);
@@ -492,7 +529,10 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         return dynamicMethod.CreateDelegate<IsMatchDelegate>();
     }
 
-    private static TryMatchDelegate CompileGenericTryMatch(bool useAsciiBoundaryOnlyFastConfirmation, bool retryOverlappingAfterRejection)
+    private static TryMatchDelegate CompileGenericTryMatch(
+        bool requiresConfirmation,
+        bool useAsciiBoundaryOnlyFastConfirmation,
+        bool retryOverlappingAfterRejection)
     {
         var dynamicMethod = new DynamicMethod(
             "Utf8Regex_EmitLiteralFamilyTryMatch",
@@ -525,19 +565,22 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         il.Emit(OpCodes.Call, s_tryFindNextNonOverlappingLengthMethod);
         il.Emit(OpCodes.Brfalse, returnFalseLabel);
 
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Ldloc, indexLocal);
-        il.Emit(OpCodes.Ldloc, matchedLengthLocal);
-        il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
-        il.Emit(OpCodes.Brtrue, successLabel);
-        if (retryOverlappingAfterRejection)
+        if (requiresConfirmation)
         {
-            il.Emit(OpCodes.Ldloca_S, stateLocal);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldloc, indexLocal);
-            il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            il.Emit(OpCodes.Ldloc, matchedLengthLocal);
+            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
+            il.Emit(OpCodes.Brtrue, successLabel);
+            if (retryOverlappingAfterRejection)
+            {
+                il.Emit(OpCodes.Ldloca_S, stateLocal);
+                il.Emit(OpCodes.Ldloc, indexLocal);
+                il.Emit(OpCodes.Call, s_resetAfterRejectedCandidateMethod);
+            }
+            il.Emit(OpCodes.Br, loopLabel);
         }
-        il.Emit(OpCodes.Br, loopLabel);
 
         il.MarkLabel(successLabel);
         il.Emit(OpCodes.Ldarg_2);
