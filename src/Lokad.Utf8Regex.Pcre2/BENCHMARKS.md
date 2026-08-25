@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `50234CE1F7E3FADB5CBDAF9755D6D361B59F2D4CA4D5121A11D277C64EFD2A0B`
-- Latest managed row measurement: `2026-08-25T20:21:53.9348285+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:21:53.9348285+00:00`
+- Snapshot SHA-256: `4DBC04BB3DC9A10130E07F03F9B31E4404BED6D65C8FB1657DF3222C5DE0177C`
+- Latest managed row measurement: `2026-08-25T20:23:29.0503811+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:23:29.0503811+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `47/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `50` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `44` unqualified, `26` excluded
-- Rows with paired qualification evidence: `56/100`
+- Comparator Status: `53` managed faster, `0` equivalent, `5` native faster, `2` inconclusive, `40` unqualified, `26` excluded
+- Rows with paired qualification evidence: `60/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `40/38`
+- Managed/comparator measurement environments represented: `41/39`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -70,10 +70,10 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/boostdocs-float-match` | **Managed faster** | 8 B | 0.018 us | 0.140 us | 0.13x | 0.13–0.13x | -0.122 us | 9 pairs; 40/39 ms; 2,194,500/280,814 ops/lane; IQR 1.010/1.007 | `Pcre2Backtracking` | 0.195 us | 0.051 us | 0.058 us | 0.31x | 0 B | 0 B |
 | `industry/boostdocs-ftp-line-match` | **Managed faster** | 67 B | 0.012 us | 0.246 us | 0.05x | 0.05–0.05x | -0.234 us | 9 pairs; 36/40 ms; 3,051,971/164,312 ops/lane; IQR 1.007/1.020 | `Pcre2Backtracking` | 0.202 us | 0.063 us | 0.079 us | 0.15x | 0 B | 0 B |
 | `industry/boostdocs-postcode-match` | **Managed faster** | 7 B | 0.015 us | 0.138 us | 0.11x | 0.11–0.11x | -0.123 us | 9 pairs; 41/40 ms; 2,740,945/291,818 ops/lane; IQR 1.013/1.008 | `Pcre2Backtracking` | 0.049 us | 0.070 us | 0.082 us | 0.18x | 0 B | 0 B |
-| `literal/absolute-anchored` | **Unqualified** | 4,103 B | 0.208 us | 0.870 us | 0.24x | — | -0.662 us | — | `—` | 0.951 us | 0.029 us | 0.378 us | 0.55x | 0 B | — |
-| `literal/early` | **Unqualified** | 4,103 B | 0.211 us | 0.840 us | 0.25x | — | -0.629 us | — | `—` | 0.908 us | 0.030 us | 0.493 us | 0.43x | 0 B | — |
-| `literal/late` | **Unqualified** | 4,103 B | 0.247 us | 1.200 us | 0.21x | — | -0.953 us | — | `—` | 0.637 us | 0.155 us | 0.510 us | 0.48x | 0 B | — |
-| `literal/missing` | **Unqualified** | 4,096 B | 0.237 us | 0.965 us | 0.25x | — | -0.728 us | — | `—` | 0.632 us | 0.140 us | 0.513 us | 0.46x | 0 B | — |
+| `literal/absolute-anchored` | **Inconclusive** | 4,103 B | 0.079 us | 1.412 us | 0.06x | 0.05–0.06x | -1.333 us | 15 pairs; 40/38 ms; 502,775/27,056 ops/lane; IQR 1.007/1.144 | `Pcre2Literal` | 0.893 us | 0.063 us | 0.380 us | 0.21x | 0 B | 0 B |
+| `literal/early` | **Managed faster** | 4,103 B | 0.084 us | 0.890 us | 0.09x | 0.09–0.10x | -0.806 us | 9 pairs; 32/41 ms; 380,632/45,721 ops/lane; IQR 1.011/1.002 | `Pcre2Literal` | 0.407 us | 0.070 us | 0.383 us | 0.22x | 0 B | 0 B |
+| `literal/late` | **Managed faster** | 4,103 B | 0.130 us | 0.963 us | 0.14x | 0.13–0.14x | -0.833 us | 9 pairs; 32/40 ms; 243,447/41,843 ops/lane; IQR 1.011/1.006 | `Pcre2Literal` | 0.527 us | 0.287 us | 0.650 us | 0.20x | 0 B | 0 B |
+| `literal/missing` | **Managed faster** | 4,096 B | 0.135 us | 0.952 us | 0.14x | 0.14–0.14x | -0.815 us | 9 pairs; 33/41 ms; 247,596/42,733 ops/lane; IQR 1.017/1.030 | `Pcre2Literal` | 0.488 us | 0.259 us | 0.577 us | 0.23x | 0 B | 0 B |
 | `simple/ab-plus` | **Managed faster** | 16 B | 0.004 us | 0.133 us | 0.03x | 0.03–0.03x | -0.129 us | 9 pairs; 38/40 ms; 10,245,503/304,551 ops/lane; IQR 1.022/1.015 | `Pcre2Backtracking` | 0.371 us | 0.040 us | 0.048 us | 0.08x | 0 B | 0 B |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.031 us | 0.126 us | 0.25x | 0.24–0.25x | -0.094 us | 9 pairs; 38/41 ms; 1,228,819/323,220 ops/lane; IQR 1.018/1.007 | `Pcre2Literal` | 0.301 us | 0.052 us | 0.070 us | 0.44x | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.007 us | 0.142 us | 0.05x | 0.05–0.05x | -0.135 us | 9 pairs; 38/40 ms; 5,676,570/284,384 ops/lane; IQR 1.008/1.004 | `Pcre2Backtracking` | 1.293 us | 0.053 us | 0.068 us | 0.10x | 0 B | 0 B |
@@ -246,6 +246,10 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-float-match` | `D825BE69E98B` | 201 B | 136 B | 0 B | 0 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-ftp-line-match` | `4470161C2446` | 232 B | 184 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-postcode-match` | `4871C808F2E5` | 339 B | 136 B | 0 B | 5 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-ismatch` | `literal/absolute-anchored` | `AA3EF83FFFB7` | 172 B | 136 B | 0 B | 6 chars | 1/110 | 0/ |
+| `pcre2-managed-compatible-ismatch` | `literal/early` | `58237AC4098D` | 171 B | 136 B | 0 B | 6 chars | 1/110 | 1/101 |
+| `pcre2-managed-compatible-ismatch` | `literal/late` | `58237AC4098D` | 171 B | 136 B | 0 B | 6 chars | 1/110 | 1/101 |
+| `pcre2-managed-compatible-ismatch` | `literal/missing` | `58237AC4098D` | 171 B | 136 B | 0 B | 6 chars | 1/110 | 1/101 |
 | `pcre2-managed-compatible-ismatch` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
