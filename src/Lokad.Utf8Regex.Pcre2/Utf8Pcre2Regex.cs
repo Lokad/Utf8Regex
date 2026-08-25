@@ -54,6 +54,7 @@ public sealed class Utf8Pcre2Regex
                 Pcre2LeadingDotStarLiteralIsMatchDirectProgram or
                 Pcre2SeparatedRunsIsMatchDirectProgram or
                 Pcre2AsciiBoundedIsMatchDirectProgram or
+                Pcre2AsciiAnchoredDfaIsMatchDirectProgram or
                 Pcre2AsciiRegularIsMatchDirectProgram)
         {
             _unmeteredIsMatchProgram = isMatchProgram;
@@ -211,6 +212,11 @@ public sealed class Utf8Pcre2Regex
                 case Pcre2DirectProgramKind.Pcre2AsciiBoundedIsMatch:
                     return Pcre2AsciiBoundedIsMatchRunner.IsMatch(
                         (Pcre2AsciiBoundedIsMatchDirectProgram)_unmeteredIsMatchProgram,
+                        input,
+                        0);
+                case Pcre2DirectProgramKind.Pcre2AsciiAnchoredDfaIsMatch:
+                    return Pcre2AsciiAnchoredDfaIsMatchRunner.IsMatch(
+                        (Pcre2AsciiAnchoredDfaIsMatchDirectProgram)_unmeteredIsMatchProgram,
                         input,
                         0);
             }
@@ -4104,6 +4110,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
             Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
             Pcre2AsciiBoundedIsMatchDirectProgram asciiBounded => asciiBounded.Fallback,
+            Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfa => asciiAnchoredDfa.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)

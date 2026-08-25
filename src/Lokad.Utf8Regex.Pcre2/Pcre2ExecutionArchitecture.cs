@@ -381,6 +381,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2LeadingDotStarLiteralIsMatch = 15,
     Pcre2SeparatedRunsIsMatch = 16,
     Pcre2AsciiBoundedIsMatch = 17,
+    Pcre2AsciiAnchoredDfaIsMatch = 18,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -791,6 +792,18 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
 
+        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
+            Pcre2AsciiAnchoredDfaIsMatchAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                backtrackingProgram) is { } asciiAnchoredDfa)
+        {
+            operations = operations with
+            {
+                IsMatch = asciiAnchoredDfa,
+            };
+        }
+
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(syntaxTree.Root, legacy.Request);
         return new Pcre2CompiledProgram(
             legacy.Request,
@@ -1013,6 +1026,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(asciiBoundedProgram.Fallback, ownedAsciiBoundedFallback.Program)))
         {
             throw new InvalidOperationException("A bounded ASCII IsMatch backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram &&
+            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedAsciiAnchoredDfaFallback ||
+             !ReferenceEquals(asciiAnchoredDfaProgram.Fallback, ownedAsciiAnchoredDfaFallback.Program)))
+        {
+            throw new InvalidOperationException("An anchored ASCII DFA IsMatch backend must be owned by its compiled PCRE2 program.");
         }
     }
 }
@@ -2112,6 +2132,28 @@ internal static class Pcre2Runner
 
             result = ExecuteBacktracking(
                 asciiBoundedProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
+        if (program is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram)
+        {
+            if (matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            {
+                result = Pcre2AsciiAnchoredDfaIsMatchRunner.IsMatch(
+                    asciiAnchoredDfaProgram,
+                    input.Bytes,
+                    start.Value);
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                asciiAnchoredDfaProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
