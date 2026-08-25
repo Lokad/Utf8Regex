@@ -78,9 +78,9 @@ internal static partial class BenchmarkInspectReporter
                     $"{diagnostics.CandidateAttempts:N0} | {diagnostics.BacktrackingSteps:N0} | " +
                     $"{diagnostics.VmTokenSteps:N0} | {diagnostics.VmPossessiveTokenScanSteps:N0} | " +
                     $"{diagnostics.VmPossessiveTokenScanCharacters:N0} | {diagnostics.WorkspacePoolRents:N0} | " +
-                    $"{pair.ManagedMicroseconds:F3} | " +
-                    $"{pair.NativeMicroseconds:F3} | " +
-                    $"{pair.ManagedMicroseconds / pair.NativeMicroseconds:F2}x |");
+                    $"{pair.FirstMicroseconds:F3} | " +
+                    $"{pair.SecondMicroseconds:F3} | " +
+                    $"{pair.FirstMicroseconds / pair.SecondMicroseconds:F2}x |");
             }
         }
 

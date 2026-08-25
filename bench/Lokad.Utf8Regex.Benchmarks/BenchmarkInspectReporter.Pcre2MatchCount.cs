@@ -119,28 +119,29 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine(
                 $"| {actualMatchCount} | {diagnostics.CandidateAttempts:N0} | " +
                 $"{diagnostics.BacktrackingSteps:N0} | {diagnostics.WorkspacePoolRents:N0} | " +
-                $"{count.ManagedMicroseconds:F3} | {count.NativeMicroseconds:F3} | " +
-                $"{count.ManagedMicroseconds / count.NativeMicroseconds:F2}x | " +
-                $"{enumerate.ManagedMicroseconds:F3} | {enumerate.NativeMicroseconds:F3} | " +
-                $"{enumerate.ManagedMicroseconds / enumerate.NativeMicroseconds:F2}x | " +
-                $"{matchMany.ManagedMicroseconds:F3} | {matchMany.NativeMicroseconds:F3} | " +
-                $"{matchMany.ManagedMicroseconds / matchMany.NativeMicroseconds:F2}x |");
+                $"{count.FirstMicroseconds:F3} | {count.SecondMicroseconds:F3} | " +
+                $"{count.FirstMicroseconds / count.SecondMicroseconds:F2}x | " +
+                $"{enumerate.FirstMicroseconds:F3} | {enumerate.SecondMicroseconds:F3} | " +
+                $"{enumerate.FirstMicroseconds / enumerate.SecondMicroseconds:F2}x | " +
+                $"{matchMany.FirstMicroseconds:F3} | {matchMany.SecondMicroseconds:F3} | " +
+                $"{matchMany.FirstMicroseconds / matchMany.SecondMicroseconds:F2}x |");
         }
 
         return 0;
     }
 
     private static Pcre2DiagnosticPairMeasurement MeasurePcre2DiagnosticPair(
-        Func<int> managedAction,
-        Func<int> nativeAction,
+        Func<int> firstAction,
+        Func<int> secondAction,
         int iterations,
         int samples)
     {
-        var managedWarmup = WarmupCore(managedAction);
-        var nativeWarmup = WarmupCore(nativeAction);
-        var managedMicroseconds = new List<double>(samples);
-        var nativeMicroseconds = new List<double>(samples);
-        var sink = managedWarmup.Sink ^ nativeWarmup.Sink;
+        var firstWarmup = WarmupCore(firstAction);
+        var secondWarmup = WarmupCore(secondAction);
+        var firstMicrosecondsBySample = new List<double>(samples);
+        var secondMicrosecondsBySample = new List<double>(samples);
+        var pairedDeltas = new List<double>(samples);
+        var sink = firstWarmup.Sink ^ secondWarmup.Sink;
         for (var sample = 0; sample < samples; sample++)
         {
             GC.Collect();
@@ -150,23 +151,28 @@ internal static partial class BenchmarkInspectReporter
                 ? Pcre2PairLaneOrder.ManagedFirst
                 : Pcre2PairLaneOrder.ComparatorFirst;
             var pair = MeasurePcre2QualificationPair(
-                managedAction,
+                firstAction,
                 iterations,
-                nativeAction,
+                secondAction,
                 iterations,
                 firstLane);
-            managedMicroseconds.Add(pair.Managed.Elapsed.TotalMicroseconds / iterations);
-            nativeMicroseconds.Add(pair.Comparator.Elapsed.TotalMicroseconds / iterations);
+            var firstMicroseconds = pair.Managed.Elapsed.TotalMicroseconds / iterations;
+            var secondMicroseconds = pair.Comparator.Elapsed.TotalMicroseconds / iterations;
+            firstMicrosecondsBySample.Add(firstMicroseconds);
+            secondMicrosecondsBySample.Add(secondMicroseconds);
+            pairedDeltas.Add(secondMicroseconds - firstMicroseconds);
             sink ^= pair.Managed.Sink ^ pair.Comparator.Sink;
         }
 
         GC.KeepAlive(sink);
         return new Pcre2DiagnosticPairMeasurement(
-            Median(managedMicroseconds),
-            Median(nativeMicroseconds));
+            Median(firstMicrosecondsBySample),
+            Median(secondMicrosecondsBySample),
+            Median(pairedDeltas));
     }
 
     private readonly record struct Pcre2DiagnosticPairMeasurement(
-        double ManagedMicroseconds,
-        double NativeMicroseconds);
+        double FirstMicroseconds,
+        double SecondMicroseconds,
+        double MedianSecondMinusFirstMicroseconds);
 }
