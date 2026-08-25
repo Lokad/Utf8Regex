@@ -18,6 +18,7 @@ public sealed class Utf8Pcre2Regex
     private readonly Pcre2FiniteLiteralBooleanSearch? _finiteLiteralBooleanSearch;
     private readonly Pcre2LiteralPrefixRepeatDirectProgram? _literalPrefixRepeatIsMatchProgram;
     private readonly Pcre2PalindromeIsMatchDirectProgram? _palindromeIsMatchProgram;
+    private readonly Pcre2LeadingDotStarLiteralIsMatchDirectProgram? _leadingDotStarLiteralIsMatchProgram;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -61,6 +62,11 @@ public sealed class Utf8Pcre2Regex
             Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
         {
             _palindromeIsMatchProgram = palindromeProgram;
+        }
+        else if (_program.Operations.IsMatch is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        {
+            _leadingDotStarLiteralIsMatchProgram = leadingDotStarLiteralProgram;
         }
     }
 
@@ -185,6 +191,15 @@ public sealed class Utf8Pcre2Regex
         {
             _ = Utf8ValidatedInput.Create(input);
             return Pcre2PalindromeIsMatchRunner.IsMatch(_palindromeIsMatchProgram, input);
+        }
+
+        if (_leadingDotStarLiteralIsMatchProgram is not null)
+        {
+            _ = Utf8ValidatedInput.Create(input);
+            return Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
+                _leadingDotStarLiteralIsMatchProgram,
+                input,
+                0);
         }
 
         return IsMatch(input, 0, Pcre2MatchOptions.None);
@@ -4072,6 +4087,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
             Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
+            Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
