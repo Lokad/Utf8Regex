@@ -277,6 +277,9 @@ public sealed class Utf8Pcre2Regex
         => EnumerateMatches(input, startOffsetInBytes, Pcre2MatchOptions.None);
 
     /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options.</summary>
+    // Keep the large discriminated-union cursor router out of hot consumer loops. Tiered PGO
+    // otherwise expands every backend construction branch and its bulk struct copies at the call site.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
