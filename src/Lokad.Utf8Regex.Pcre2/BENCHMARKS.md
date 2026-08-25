@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `9C32DC75E78577FC23E4417BF3054F8252563CB97F39E42AC8D30A6D0C0BBD4B`
-- Latest managed row measurement: `2026-08-25T20:33:51.9955750+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:33:51.9955750+00:00`
+- Snapshot SHA-256: `F3A69CBDE8DC897D789292A45166463C76A2543D68F0317FC6594E94FD9F4C14`
+- Latest managed row measurement: `2026-08-25T20:34:49.7714024+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:34:49.7714024+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `47/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `99/126`
-- Comparator Status: `85` managed faster, `0` equivalent, `5` native faster, `7` inconclusive, `2` unqualified, `27` excluded
-- Rows with paired qualification evidence: `97/99`
+- Comparator Status: `86` managed faster, `0` equivalent, `5` native faster, `8` inconclusive, `0` unqualified, `27` excluded
+- Rows with paired qualification evidence: `99/99`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `35/34`
+- Managed/comparator measurement environments represented: `36/34`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -100,8 +100,8 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/rust-sherlock-holmes-window-count` | **Managed faster** | 594,930 B | 33.741 us | 539.792 us | 0.06x | 0.06–0.06x | -506.217 us | 9 pairs; 38/39 ms; 1,133/73 ops/lane; IQR 1.027/1.003 | `Pcre2Backtracking` | 44.616 us | 187.749 us | 311.021 us | 0.11x | 0 B | 0 B |
 | `industry/rust-sherlock-ing-count` | **Excluded** | 594,930 B | 7,000.719 us | — | — | — | — | — | `—` | 8,297.556 us | 8,591.075 us | 9,062.328 us | 0.77x | 0 B | — |
 | `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 1,481.200 us | 52,926.100 us | 0.03x | 0.03–0.03x | -51436.823 us | 9 pairs; 39/53 ms; 26/1 ops/lane; IQR 1.011/1.008 | `Pcre2Character` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B | 0 B |
-| `industry/rust-sherlock-nonnewline-count` | **Unqualified** | 594,930 B | 152.928 us | 3,810.537 us | 0.04x | — | -3657.609 us | — | `—` | 146.972 us | 908.616 us | 1,427.111 us | 0.11x | 0 B | — |
-| `industry/rust-sherlock-word-holmes-count` | **Unqualified** | 594,930 B | 2,715.809 us | 13,773.712 us | 0.20x | — | -11057.904 us | — | `—` | 27.383 us | 6,190.496 us | 5,827.548 us | 0.47x | 0 B | — |
+| `industry/rust-sherlock-nonnewline-count` | **Inconclusive** | 594,930 B | 88.221 us | 3,563.773 us | 0.02x | 0.02–0.03x | -3475.004 us | 9 pairs; 37/39 ms; 422/11 ops/lane; IQR 1.015/1.010 | `Pcre2SingleTokenRepeat` | 114.970 us | 585.920 us | 695.570 us | 0.13x | 0 B | 0 B |
+| `industry/rust-sherlock-word-holmes-count` | **Managed faster** | 594,930 B | 982.734 us | 11,974.267 us | 0.08x | 0.08–0.08x | -10976.957 us | 9 pairs; 40/36 ms; 41/3 ops/lane; IQR 1.009/1.007 | `Pcre2Backtracking` | 15.930 us | 4,681.443 us | 4,703.007 us | 0.21x | 0 B | 0 B |
 | `simple/ab-plus` | **Managed faster** | 16 B | 0.035 us | 0.594 us | 0.06x | 0.06–0.06x | -0.559 us | 9 pairs; 40/40 ms; 1,146,486/67,647 ops/lane; IQR 1.007/1.007 | `Pcre2Backtracking` | 0.555 us | 0.147 us | 0.158 us | 0.22x | 0 B | 0 B |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.123 us | 0.451 us | 0.27x | 0.27–0.27x | -0.329 us | 9 pairs; 41/40 ms; 333,598/88,113 ops/lane; IQR 1.021/1.007 | `Pcre2Literal` | 0.189 us | 0.189 us | 0.196 us | 0.63x | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.141 us | 0.636 us | 0.22x | 0.22–0.22x | -0.497 us | 9 pairs; 40/40 ms; 280,376/62,230 ops/lane; IQR 1.014/1.008 | `Pcre2Backtracking` | 1.231 us | 0.194 us | 0.205 us | 0.69x | 0 B | 0 B |
@@ -276,6 +276,8 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-count` | `industry/mariomka-uri-count` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-holmes-window-count` | `B40600CA7551` | 218 B | 136 B | 0 B | 12 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-letter-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-count` | `industry/rust-sherlock-nonnewline-count` | `448D3EF7E1BF` | 161 B | 136 B | 0 B | 0 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-count` | `industry/rust-sherlock-word-holmes-count` | `A6CC67CBE2DD` | 175 B | 136 B | 0 B | 8 chars | 0/ | 1/115 |
 | `pcre2-managed-compatible-enumerate` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
 | `pcre2-managed-compatible-enumerate` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-enumerate` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
