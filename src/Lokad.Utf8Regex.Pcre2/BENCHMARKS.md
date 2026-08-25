@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `9689CF2DB597E4C89AA115B9C64958E478E7FB00633996E3358556109C660740`
-- Latest managed row measurement: `2026-08-25T20:12:24.0699699+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:12:24.0699699+00:00`
+- Snapshot SHA-256: `A5CF2FAE87E451BAF91EF090EB88160677FF2143DE67968ED552D1924C5671D7`
+- Latest managed row measurement: `2026-08-25T20:14:19.5330699+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:14:19.5330699+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `41/60`
+- Comparable rows at or below the decode-then-.NET median: `42/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `38` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `56` unqualified, `26` excluded
-- Rows with paired qualification evidence: `44/100`
+- Comparator Status: `39` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `55` unqualified, `26` excluded
+- Rows with paired qualification evidence: `45/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `35/33`
+- Managed/comparator measurement environments represented: `36/34`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -69,7 +69,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/boostdocs-date-match` | **Managed faster** | 10 B | 0.013 us | 0.138 us | 0.09x | 0.09–0.10x | -0.125 us | 9 pairs; 41/40 ms; 3,207,701/293,661 ops/lane; IQR 1.047/1.011 | `Pcre2Backtracking` | 0.293 us | 0.051 us | 0.061 us | 0.21x | 0 B | 0 B |
 | `industry/boostdocs-float-match` | **Managed faster** | 8 B | 0.018 us | 0.140 us | 0.13x | 0.13–0.13x | -0.122 us | 9 pairs; 40/39 ms; 2,194,500/280,814 ops/lane; IQR 1.010/1.007 | `Pcre2Backtracking` | 0.195 us | 0.051 us | 0.058 us | 0.31x | 0 B | 0 B |
 | `industry/boostdocs-ftp-line-match` | **Managed faster** | 67 B | 0.012 us | 0.246 us | 0.05x | 0.05–0.05x | -0.234 us | 9 pairs; 36/40 ms; 3,051,971/164,312 ops/lane; IQR 1.007/1.020 | `Pcre2Backtracking` | 0.202 us | 0.063 us | 0.079 us | 0.15x | 0 B | 0 B |
-| `industry/boostdocs-postcode-match` | **Unqualified** | 7 B | 0.390 us | 0.147 us | 2.66x | — | +0.243 us | — | `—` | 0.483 us | 0.053 us | 0.061 us | 6.38x | 0 B | — |
+| `industry/boostdocs-postcode-match` | **Managed faster** | 7 B | 0.015 us | 0.138 us | 0.11x | 0.11–0.11x | -0.123 us | 9 pairs; 41/40 ms; 2,740,945/291,818 ops/lane; IQR 1.013/1.008 | `Pcre2Backtracking` | 0.049 us | 0.070 us | 0.082 us | 0.18x | 0 B | 0 B |
 | `literal/absolute-anchored` | **Unqualified** | 4,103 B | 0.208 us | 0.870 us | 0.24x | — | -0.662 us | — | `—` | 0.951 us | 0.029 us | 0.378 us | 0.55x | 0 B | — |
 | `literal/early` | **Unqualified** | 4,103 B | 0.211 us | 0.840 us | 0.25x | — | -0.629 us | — | `—` | 0.908 us | 0.030 us | 0.493 us | 0.43x | 0 B | — |
 | `literal/late` | **Unqualified** | 4,103 B | 0.247 us | 1.200 us | 0.21x | — | -0.953 us | — | `—` | 0.637 us | 0.155 us | 0.510 us | 0.48x | 0 B | — |
@@ -242,6 +242,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-date-match` | `3C934787A99D` | 179 B | 136 B | 0 B | 8 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-float-match` | `D825BE69E98B` | 201 B | 136 B | 0 B | 0 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-ftp-line-match` | `4470161C2446` | 232 B | 184 B | 0 B | 1 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-ismatch` | `industry/boostdocs-postcode-match` | `4871C808F2E5` | 339 B | 136 B | 0 B | 5 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
