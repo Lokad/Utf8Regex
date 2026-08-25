@@ -9,20 +9,21 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `6`
-- Snapshot SHA-256: `22B5DA96D18478D6C0674B22717F698BD980F2D0E0B768B09349065BB57641C9`
-- Latest managed row measurement: `2026-08-17T10:08:03.6712825+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-21T08:22:11.8072070+00:00`
+- Snapshot SHA-256: `4459B48C0467FDA260AE723C5BC4AF98D930158E9AD0E775504607FD2E6D28E6`
+- Latest managed row measurement: `2026-08-25T10:56:30.1941015+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T10:56:30.1941015+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `19/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `0` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `100` unqualified, `26` excluded
-- Rows with paired qualification evidence: `0/100`
+- Comparator Status: `2` managed faster, `0` equivalent, `0` native faster, `2` inconclusive, `96` unqualified, `26` excluded
+- Rows with paired qualification evidence: `4/100`
+- Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `1/1`
+- Managed/comparator measurement environments represented: `2/2`
 
-Managed rows were measured from source `9f3e6bcfb29d` on .NET 10.0.8, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel; Tiered PGO `runtime-default`.
+Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
-PCRE.NET / PCRE2 NFA rows were measured from source `568af3f4f802` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel; Tiered PGO `runtime-default`, tracked dirty `True`, untracked files `True`.
+Comparator rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.
 
 NuGet package SHA-512: `Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==`.
 
@@ -36,7 +37,7 @@ The benchmark executable—not either shipped library—uses one additional depe
 
 Admission evidence: the package has a dedicated `net10.0` asset with no managed dependencies, is strongly named, is built and tested on Windows/Linux/macOS, and its tagged source has been maintained since 2014. It bundles RID-specific native libraries, so `PrivateAssets=all` and benchmark-project-only placement are mandatory. Native replacement is left blank because PCRE.NET does not expose equivalent UTF-8 span substitution output; routing through its string API would bias the comparison.
 
-`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.
+`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations and frozen operations per lane. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.
 
 ## Compatible IsMatch
 
@@ -64,7 +65,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | `literal/late` | **Unqualified** | 4,103 B | 0.247 us | 1.200 us | 0.21x | — | -0.953 us | — | `—` | 0.637 us | 0.155 us | 0.510 us | 0.48x | 0 B |
 | `literal/missing` | **Unqualified** | 4,096 B | 0.237 us | 0.965 us | 0.25x | — | -0.728 us | — | `—` | 0.632 us | 0.140 us | 0.513 us | 0.46x | 0 B |
 | `simple/ab-plus` | **Unqualified** | 16 B | 0.281 us | 0.088 us | 3.18x | — | +0.192 us | — | `—` | 0.371 us | 0.040 us | 0.048 us | 5.85x | 0 B |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.139 us | 0.072 us | 1.94x | — | +0.068 us | — | `—` | 0.525 us | 0.031 us | 0.040 us | 3.50x | 0 B |
+| `simple/foo-dense` | **Inconclusive** | 18 B | 0.135 us | 0.129 us | 1.07x | 1.02–1.14x | +0.009 us | 9 pairs; 29/36 ms; 213,679/279,055 ops/lane | `Pcre2Literal` | 0.525 us | 0.031 us | 0.040 us | 3.39x | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 0.335 us | 0.086 us | 3.89x | — | +0.249 us | — | `—` | 1.293 us | 0.053 us | 0.068 us | 4.93x | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.232 us | 0.108 us | 2.15x | — | +0.124 us | — | `—` | 0.929 us | 0.070 us | 0.091 us | 2.54x | 0 B |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 0.704 us | 0.309 us | 2.28x | — | +0.395 us | — | `—` | 0.371 us | 0.043 us | 0.056 us | 12.50x | 0 B |
@@ -92,7 +93,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | `industry/rust-sherlock-nonnewline-count` | **Unqualified** | 594,930 B | 152.928 us | 3,810.537 us | 0.04x | — | -3657.609 us | — | `—` | 146.972 us | 908.616 us | 1,427.111 us | 0.11x | 0 B |
 | `industry/rust-sherlock-word-holmes-count` | **Unqualified** | 594,930 B | 2,715.809 us | 13,773.712 us | 0.20x | — | -11057.904 us | — | `—` | 27.383 us | 6,190.496 us | 5,827.548 us | 0.47x | 0 B |
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.141 us | 0.617 us | 1.85x | — | +0.524 us | — | `—` | 0.555 us | 0.147 us | 0.158 us | 7.21x | 0 B |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.315 us | 0.472 us | 0.67x | — | -0.157 us | — | `—` | 0.617 us | 0.087 us | 0.098 us | 3.22x | 0 B |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.179 us | 0.476 us | 0.39x | 0.38–0.39x | -0.292 us | 9 pairs; 35/36 ms; 197,013/76,207 ops/lane | `Pcre2Literal` | 0.617 us | 0.087 us | 0.098 us | 1.83x | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 1.075 us | 0.650 us | 1.65x | — | +0.425 us | — | `—` | 1.231 us | 0.194 us | 0.205 us | 5.25x | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 1.038 us | 0.703 us | 1.48x | — | +0.335 us | — | `—` | 0.772 us | 0.265 us | 0.295 us | 3.53x | 0 B |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 1.518 us | 0.608 us | 2.50x | — | +0.910 us | — | `—` | 0.507 us | 0.085 us | 0.101 us | 15.03x | 0 B |
@@ -102,7 +103,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 2.912 us | 0.284 us | 10.25x | — | +2.628 us | — | `—` | 9.226 us | 0.201 us | 0.208 us | 13.97x | 0 B |
-| `simple/foo-dense` | **Unqualified** | 18 B | 3.607 us | 0.211 us | 17.10x | — | +3.396 us | — | `—` | 9.630 us | 0.105 us | 0.114 us | 31.55x | 0 B |
+| `simple/foo-dense` | **Inconclusive** | 18 B | 3.239 us | 0.462 us | 7.04x | 6.23–7.14x | +2.774 us | 9 pairs; 35/36 ms; 10,810/77,808 ops/lane | `Pcre2Literal` | 9.630 us | 0.105 us | 0.114 us | 28.32x | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 4.496 us | 0.322 us | 13.96x | — | +4.174 us | — | `—` | 16.080 us | 0.411 us | 0.433 us | 10.38x | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 8.144 us | 0.383 us | 21.26x | — | +7.761 us | — | `—` | 13.023 us | 0.287 us | 0.339 us | 23.99x | 0 B |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 6.288 us | 0.439 us | 14.32x | — | +5.849 us | — | `—` | 11.926 us | 0.097 us | 0.205 us | 30.69x | 0 B |
@@ -112,7 +113,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.329 us | 0.291 us | 4.57x | — | +1.038 us | — | `—` | — | — | — | — | 0 B |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.271 us | 0.210 us | 1.29x | — | +0.061 us | — | `—` | — | — | — | — | 0 B |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.198 us | 0.459 us | 0.43x | 0.43–0.44x | -0.261 us | 9 pairs; 35/35 ms; 178,096/76,989 ops/lane | `Pcre2Literal` | — | — | — | — | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 1.454 us | 0.309 us | 4.71x | — | +1.145 us | — | `—` | — | — | — | — | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.442 us | 0.380 us | 1.16x | — | +0.062 us | — | `—` | — | — | — | — | 0 B |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 1.533 us | 0.440 us | 3.48x | — | +1.093 us | — | `—` | — | — | — | — | 0 B |
@@ -277,6 +278,7 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ```powershell
 ./bench.ps1 -CommandArgs "--verify-pcre2-comparator-case","simple/foo-dense"
 ./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case","simple/foo-dense","9"
+./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case-reversed","simple/foo-dense","9"
 ./bench.ps1 -CommandArgs "--measure-pcre2-compatible-case","common/email-match","200","7"
 ./bench.ps1 -CommandArgs "--measure-pcre2-special-case","pcre2/branch-reset-basic","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pcre2-benchmark-case","common/email-match","200","7"

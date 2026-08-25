@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Security.Cryptography;
+using System.Globalization;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -71,31 +72,63 @@ public sealed class Pcre2BenchmarkSnapshotTests
             .ToArray();
         Assert.Equal(100, operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
-        Assert.Equal(100, operationRows.Count(static row =>
-            row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Unqualified"));
         Assert.Equal(26, operationRows.Count(static row =>
             row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
+        Assert.Equal(4, operationRows.Count(static row =>
+            row.Value.TryGetProperty("PcreNetNativePair", out _)));
         Assert.All(operationRows, static row =>
         {
             var hasNative = row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0;
             var hasReason = row.Value.TryGetProperty("PcreNetNativeUnavailableReason", out var reason) &&
                 !string.IsNullOrWhiteSpace(reason.GetString());
             Assert.True(hasNative || hasReason, $"Missing native PCRE2 disposition for '{row.Name}'.");
-            Assert.Equal(
-                hasNative ? "Unqualified" : "Excluded",
-                row.Value.GetProperty("PcreNetNativeStatus").GetString());
-            Assert.False(row.Value.TryGetProperty("PcreNetNativePair", out _));
+            var status = row.Value.GetProperty("PcreNetNativeStatus").GetString();
+            if (row.Value.TryGetProperty("PcreNetNativePair", out _))
+            {
+                Assert.True(hasNative);
+                Assert.NotEqual("Unqualified", status);
+                Assert.NotEqual("Excluded", status);
+            }
+            else
+            {
+                Assert.Equal(hasNative ? "Unqualified" : "Excluded", status);
+            }
         });
+
+        foreach (var section in sections.EnumerateObject())
+        {
+            foreach (var row in section.Value.GetProperty("Cases").EnumerateObject())
+            {
+                if (row.Value.TryGetProperty("PcreNetNativePair", out var pair))
+                {
+                    AssertPairedMeasurement(section.Name, row.Name, row.Value, pair);
+                }
+            }
+        }
 
         var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"));
         var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var statusCounts = operationRows
+            .GroupBy(static row => row.Value.GetProperty("PcreNetNativeStatus").GetString())
+            .ToDictionary(static group => group.Key!, static group => group.Count(), StringComparer.Ordinal);
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.Contains("PCRE.NET / PCRE2 NFA CPU", page, StringComparison.Ordinal);
-        Assert.Contains("`100` unqualified, `26` excluded", page, StringComparison.Ordinal);
-        Assert.Contains("Rows with paired qualification evidence: `0/100`", page, StringComparison.Ordinal);
+        Assert.Contains(
+            $"Comparator Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
+            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, " +
+            $"`{statusCounts.GetValueOrDefault("NativeFaster")}` native faster, " +
+            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, " +
+            $"`{statusCounts.GetValueOrDefault("Unqualified")}` unqualified, " +
+            $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
+            page,
+            StringComparison.Ordinal);
+        Assert.Contains("Rows with paired qualification evidence: `4/100`", page, StringComparison.Ordinal);
+        Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
         Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
+        Assert.Contains("median sample durations and frozen operations per lane", page, StringComparison.Ordinal);
         Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
+        Assert.Contains("--qualify-pcre2-comparator-case-reversed", page, StringComparison.Ordinal);
         Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
 
         Assert.Contains(
@@ -106,6 +139,88 @@ public sealed class Pcre2BenchmarkSnapshotTests
             "PCRE.NET",
             File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/Lokad.Utf8Regex.Pcre2.csproj")),
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AssertPairedMeasurement(
+        string sectionName,
+        string caseId,
+        JsonElement row,
+        JsonElement pair)
+    {
+        Assert.Equal(4, pair.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal(sectionName, pair.GetProperty("Section").GetString());
+        Assert.Equal(caseId, pair.GetProperty("CaseId").GetString());
+        Assert.Equal(row.GetProperty("PcreNetNativeStatus").GetString(), pair.GetProperty("Status").GetString());
+        Assert.True(Guid.TryParseExact(pair.GetProperty("PairId").GetString(), "N", out _));
+        Assert.True(pair.GetProperty("WorktreeQualified").GetBoolean());
+        Assert.False(pair.GetProperty("Environment").GetProperty("TrackedDirty").GetBoolean());
+        Assert.Equal("PCRE.NET", pair.GetProperty("ComparatorPackageId").GetString());
+        Assert.Equal("1.5.0", pair.GetProperty("ComparatorPackageVersion").GetString());
+        Assert.StartsWith("10.47", pair.GetProperty("ComparatorEngineVersion").GetString(), StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ComparatorPackageSha512").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ComparatorProfile").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedRoute").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedPlan").GetString()));
+        Assert.Equal("highest-efficiency-class", pair.GetProperty("ProcessorSetPolicy").GetString());
+        Assert.StartsWith("0x", pair.GetProperty("ProcessorAffinityMask").GetString(), StringComparison.Ordinal);
+        Assert.True(pair.GetProperty("ProcessorEfficiencyClass").GetInt32() >= 0);
+        Assert.True(ulong.TryParse(
+            pair.GetProperty("ResultChecksum").GetString(),
+            NumberStyles.HexNumber,
+            CultureInfo.InvariantCulture,
+            out _));
+
+        var sampleCount = pair.GetProperty("SampleCount").GetInt32();
+        Assert.True(sampleCount >= 9);
+        Assert.True(pair.GetProperty("ManagedBatchCount").GetInt32() > 0);
+        Assert.True(pair.GetProperty("ComparatorBatchCount").GetInt32() > 0);
+        Assert.True(pair.GetProperty("ManagedWarmupIterations").GetInt32() >= 64);
+        Assert.True(pair.GetProperty("ComparatorWarmupIterations").GetInt32() >= 64);
+        Assert.True(pair.GetProperty("ManagedWarmupMilliseconds").GetDouble() >= 750);
+        Assert.True(pair.GetProperty("ComparatorWarmupMilliseconds").GetDouble() >= 750);
+
+        var laneOrders = pair.GetProperty("LaneOrders").EnumerateArray().Select(static value => value.GetString()).ToArray();
+        var managedMicroseconds = ReadSamples(pair, "ManagedSampleMicroseconds", sampleCount);
+        var comparatorMicroseconds = ReadSamples(pair, "ComparatorSampleMicroseconds", sampleCount);
+        var managedMilliseconds = ReadSamples(pair, "ManagedSampleMilliseconds", sampleCount);
+        var comparatorMilliseconds = ReadSamples(pair, "ComparatorSampleMilliseconds", sampleCount);
+        var ratios = ReadSamples(pair, "PairedRatios", sampleCount);
+        Assert.Equal(sampleCount, laneOrders.Length);
+        for (var sample = 0; sample < sampleCount; sample++)
+        {
+            Assert.True(laneOrders[sample] is "ManagedFirst" or "ComparatorFirst");
+            if (sample > 0)
+            {
+                Assert.NotEqual(laneOrders[sample - 1], laneOrders[sample]);
+            }
+
+            Assert.True(managedMicroseconds[sample] > 0);
+            Assert.True(comparatorMicroseconds[sample] > 0);
+            Assert.True(managedMilliseconds[sample] >= 20);
+            Assert.True(comparatorMilliseconds[sample] >= 20);
+            Assert.Equal(managedMicroseconds[sample] / comparatorMicroseconds[sample], ratios[sample], 12);
+        }
+
+        var lower = pair.GetProperty("RatioLower95").GetDouble();
+        var median = pair.GetProperty("RatioMedian").GetDouble();
+        var upper = pair.GetProperty("RatioUpper95").GetDouble();
+        Assert.True(lower > 0);
+        Assert.InRange(median, lower, upper);
+        Assert.True(pair.GetProperty("OrderEffectRatio").GetDouble() > 0);
+        Assert.Equal(24301, pair.GetProperty("BootstrapSeed").GetInt32());
+        Assert.Equal(10_000, pair.GetProperty("BootstrapResamples").GetInt32());
+
+        if (pair.GetProperty("Status").GetString() == "Inconclusive")
+        {
+            Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("StatusReason").GetString()));
+        }
+    }
+
+    private static double[] ReadSamples(JsonElement pair, string propertyName, int sampleCount)
+    {
+        var samples = pair.GetProperty(propertyName).EnumerateArray().Select(static value => value.GetDouble()).ToArray();
+        Assert.Equal(sampleCount, samples.Length);
+        return samples;
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)
