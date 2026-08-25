@@ -1839,50 +1839,9 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        if (compiledProgram.Operations.Enumerate is Pcre2LiteralDirectProgram literalProgram)
+        if (TryCreateDirectCursor(compiledProgram, input, start, matchOptions, out var direct))
         {
-            cursor = Pcre2GlobalMatchCursor.CreateLiteral(
-                literalProgram.Program, input, start, matchOptions, compiledProgram.Request);
-            return true;
-        }
-
-        if (compiledProgram.Operations.Enumerate is Pcre2CharacterDirectProgram characterProgram)
-        {
-            cursor = Pcre2GlobalMatchCursor.CreateCharacter(
-                characterProgram.Program, input, start, matchOptions, compiledProgram.Request);
-            return true;
-        }
-
-        if (compiledProgram.Operations.Enumerate is Pcre2BacktrackingDirectProgram backtrackingProgram)
-        {
-            cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-                backtrackingProgram.Program,
-                compiledProgram.CandidateSearchPlan,
-                input,
-                start,
-                matchOptions,
-                compiledProgram.Request,
-                collectDiagnostics: false);
-            return true;
-        }
-
-        if (compiledProgram.Operations.Enumerate is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
-        {
-            cursor = HasUnmeteredExecution(compiledProgram.Request)
-                ? Pcre2GlobalMatchCursor.CreateSingleTokenRepeat(
-                    singleTokenRepeatProgram.Program,
-                    input,
-                    start,
-                    matchOptions,
-                    compiledProgram.Request)
-                : Pcre2GlobalMatchCursor.CreateBacktracking(
-                    singleTokenRepeatProgram.Program.Fallback,
-                    compiledProgram.CandidateSearchPlan,
-                    input,
-                    start,
-                    matchOptions,
-                    compiledProgram.Request,
-                    collectDiagnostics: false);
+            cursor = Pcre2GlobalMatchCursor.CreateDirect(direct);
             return true;
         }
 
@@ -1890,9 +1849,6 @@ internal static class Pcre2GlobalOperationDriver
         return false;
     }
 
-    // Keep this public-enumerator path separate from the broader global cursor factory.
-    // Passing the 320-byte direct cursor through that factory adds an observable bulk copy
-    // to Count, MatchMany, replacement, and diagnostic consumers.
     internal static bool TryCreateDirectCursor(
         Pcre2CompiledProgram compiledProgram,
         Utf8ValidatedInput input,
@@ -2004,35 +1960,14 @@ internal ref struct Pcre2GlobalMatchCursor
         ? _direct.Diagnostics
         : default;
 
-    internal static Pcre2GlobalMatchCursor CreateLiteral(
-        Pcre2LiteralProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request) =>
-        new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request));
+    internal static Pcre2GlobalMatchCursor CreateDirect(Pcre2DirectGlobalMatchCursor cursor) =>
+        new(cursor);
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Utf8Regex regex,
         Utf8ValidatedInput input,
         Utf8BytePosition start) =>
         new(new Pcre2LiteralFamilyGlobalMatchCursor(regex, input, start));
-
-    internal static Pcre2GlobalMatchCursor CreateCharacter(
-        Pcre2CharacterProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request) =>
-        new(Pcre2DirectGlobalMatchCursor.CreateCharacter(program, input, start, matchOptions, request));
-
-    internal static Pcre2GlobalMatchCursor CreateSingleTokenRepeat(
-        Pcre2SingleTokenRepeatProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request) =>
-        new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
