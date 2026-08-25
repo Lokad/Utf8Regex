@@ -9,13 +9,13 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `6EC1F3FB552AA8E3FCAFCF771E7BDC37587817FA491620F1973248362F7B9A26`
-- Latest managed row measurement: `2026-08-25T17:42:02.4360233+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:42:02.4360233+00:00`
+- Snapshot SHA-256: `90FC80CEA34F7E3280E26075A2FF6786EED841CC2581040CB8AAD9CC9383CCE5`
+- Latest managed row measurement: `2026-08-25T17:48:19.7325581+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:48:19.7325581+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `29/60`
+- Comparable rows at or below the decode-then-.NET median: `30/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `15` managed faster, `0` equivalent, `1` native faster, `0` inconclusive, `84` unqualified, `26` excluded
+- Comparator Status: `16` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `84` unqualified, `26` excluded
 - Rows with paired qualification evidence: `16/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
@@ -76,7 +76,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `literal/missing` | **Unqualified** | 4,096 B | 0.237 us | 0.965 us | 0.25x | — | -0.728 us | — | `—` | 0.632 us | 0.140 us | 0.513 us | 0.46x | 0 B | — |
 | `simple/ab-plus` | **Unqualified** | 16 B | 0.281 us | 0.088 us | 3.18x | — | +0.192 us | — | `—` | 0.371 us | 0.040 us | 0.048 us | 5.85x | 0 B | — |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.031 us | 0.126 us | 0.25x | 0.24–0.25x | -0.094 us | 9 pairs; 38/41 ms; 1,228,819/323,220 ops/lane; IQR 1.018/1.007 | `Pcre2Literal` | 0.301 us | 0.052 us | 0.070 us | 0.44x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Native faster** | 23 B | 0.219 us | 0.142 us | 1.53x | 1.52–1.56x | +0.076 us | 9 pairs; 35/39 ms; 160,541/277,442 ops/lane; IQR 1.009/1.015 | `Pcre2Backtracking` | 1.293 us | 0.053 us | 0.068 us | 3.23x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.007 us | 0.142 us | 0.05x | 0.05–0.05x | -0.135 us | 9 pairs; 38/40 ms; 5,676,570/284,384 ops/lane; IQR 1.008/1.004 | `Pcre2Backtracking` | 1.293 us | 0.053 us | 0.068 us | 0.10x | 0 B | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.055 us | 0.161 us | 0.34x | — | -0.106 us | — | `—` | 0.929 us | 0.070 us | 0.091 us | 0.60x | 0 B | — |
 | `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.031 us | 0.215 us | 0.14x | 0.14–0.15x | -0.185 us | 15 pairs; 40/40 ms; 1,291,541/184,676 ops/lane; IQR 1.038/1.012 | `Pcre2Backtracking` | 0.371 us | 0.043 us | 0.056 us | 0.55x | 0 B | 0 B |
 
@@ -104,7 +104,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/rust-sherlock-word-holmes-count` | **Unqualified** | 594,930 B | 2,715.809 us | 13,773.712 us | 0.20x | — | -11057.904 us | — | `—` | 27.383 us | 6,190.496 us | 5,827.548 us | 0.47x | 0 B | — |
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.141 us | 0.617 us | 1.85x | — | +0.524 us | — | `—` | 0.555 us | 0.147 us | 0.158 us | 7.21x | 0 B | — |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.123 us | 0.451 us | 0.27x | 0.27–0.27x | -0.329 us | 9 pairs; 41/40 ms; 333,598/88,113 ops/lane; IQR 1.021/1.007 | `Pcre2Literal` | 0.189 us | 0.189 us | 0.196 us | 0.63x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.128 us | 0.634 us | 0.20x | 0.20–0.20x | -0.506 us | 9 pairs; 39/40 ms; 303,018/63,098 ops/lane; IQR 1.004/1.003 | `Pcre2Backtracking` | 1.231 us | 0.194 us | 0.205 us | 0.63x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.141 us | 0.636 us | 0.22x | 0.22–0.22x | -0.497 us | 9 pairs; 40/40 ms; 280,376/62,230 ops/lane; IQR 1.014/1.008 | `Pcre2Backtracking` | 1.231 us | 0.194 us | 0.205 us | 0.69x | 0 B | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.552 us | 0.686 us | 0.81x | — | -0.133 us | — | `—` | 0.772 us | 0.265 us | 0.295 us | 1.87x | 0 B | — |
 | `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.049 us | 0.520 us | 0.09x | 0.09–0.10x | -0.471 us | 15 pairs; 41/41 ms; 836,986/79,322 ops/lane; IQR 1.039/1.029 | `Pcre2Backtracking` | 0.507 us | 0.085 us | 0.101 us | 0.49x | 0 B | 0 B |
 
@@ -114,7 +114,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 2.912 us | 0.284 us | 10.25x | — | +2.628 us | — | `—` | 9.226 us | 0.201 us | 0.208 us | 13.97x | 0 B | — |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.350 us | 0.455 us | 0.77x | 0.77–0.77x | -0.104 us | 9 pairs; 42/40 ms; 119,012/88,716 ops/lane; IQR 1.011/1.008 | `Pcre2Literal` | 0.976 us | 0.215 us | 0.243 us | 1.44x | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.469 us | 0.634 us | 0.74x | 0.73–0.74x | -0.166 us | 9 pairs; 41/40 ms; 86,736/63,342 ops/lane; IQR 1.006/1.002 | `Pcre2Backtracking` | 16.080 us | 0.411 us | 0.433 us | 1.08x | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.461 us | 0.641 us | 0.72x | 0.71–0.72x | -0.181 us | 9 pairs; 40/40 ms; 86,025/62,553 ops/lane; IQR 1.005/1.006 | `Pcre2Backtracking` | 16.080 us | 0.411 us | 0.433 us | 1.06x | 0 B | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.515 us | 0.695 us | 0.74x | — | -0.180 us | — | `—` | 13.023 us | 0.287 us | 0.339 us | 1.52x | 0 B | — |
 | `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.370 us | 0.520 us | 0.70x | 0.68–0.72x | -0.155 us | 15 pairs; 41/38 ms; 112,229/73,458 ops/lane; IQR 1.032/1.075 | `Pcre2Backtracking` | 11.926 us | 0.097 us | 0.205 us | 1.80x | 0 B | 0 B |
 
@@ -124,7 +124,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.329 us | 0.291 us | 4.57x | — | +1.038 us | — | `—` | — | — | — | — | 0 B | — |
 | `simple/foo-dense` | **Managed faster** | 18 B | 0.146 us | 0.459 us | 0.32x | 0.32–0.32x | -0.313 us | 9 pairs; 38/41 ms; 262,156/88,955 ops/lane; IQR 1.009/1.016 | `Pcre2Literal` | — | — | — | — | 0 B | 0 B |
-| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.285 us | 0.636 us | 0.45x | 0.44–0.45x | -0.350 us | 9 pairs; 39/40 ms; 136,125/62,401 ops/lane; IQR 1.005/1.006 | `Pcre2Backtracking` | — | — | — | — | 0 B | 0 B |
+| `simple/foo-optional-bar` | **Managed faster** | 23 B | 0.282 us | 0.641 us | 0.44x | 0.44–0.44x | -0.358 us | 9 pairs; 40/40 ms; 143,179/62,525 ops/lane; IQR 1.008/1.008 | `Pcre2Backtracking` | — | — | — | — | 0 B | 0 B |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.338 us | 0.693 us | 0.49x | — | -0.355 us | — | `—` | — | — | — | — | 0 B | — |
 | `simple/loglevel-multiline` | **Managed faster** | 67 B | 0.152 us | 0.499 us | 0.30x | 0.30–0.31x | -0.346 us | 15 pairs; 41/39 ms; 268,779/79,085 ops/lane; IQR 1.021/1.021 | `Pcre2Backtracking` | — | — | — | — | 0 B | 0 B |
 
