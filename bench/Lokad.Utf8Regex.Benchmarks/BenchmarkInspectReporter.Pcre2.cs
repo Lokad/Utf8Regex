@@ -35,6 +35,11 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
         WritePcre2EnumeratorLayout();
         Console.WriteLine($"CandidateSearch   : {context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch.Kind}");
+        var autoPossessRepeatCount =
+            context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.IsMatch is Pcre2BacktrackingDirectProgram backtracking
+                ? backtracking.Program.AutoPossessiveRepeatCount
+                : 0;
+        Console.WriteLine($"AutoPossessRepeats: {autoPossessRepeatCount}");
         Console.WriteLine($"HasUtf8Regex      : {context.Utf8Regex is not null}");
         Console.WriteLine($"HasRegex          : {context.Regex is not null}");
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)

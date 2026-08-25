@@ -204,4 +204,53 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(multiline.IsMatch("x\naaaaaaaab"u8));
         Assert.True(multiline.DebugIsMatchWithDiagnostics("x\naaaaaaaab"u8, 0).Execution.CandidateAttempts > 1);
     }
+
+    [Theory]
+    [InlineData("^([a-z]+)@$", "abc@", 1)]
+    [InlineData(@"^(?:[a-z]+\.)+[a-z]+$", "one.two", 1)]
+    [InlineData("^(?:a+z|b+z)$", "aaaz", 2)]
+    [InlineData("^a*ab$", "aaab", 0)]
+    [InlineData("(?i)^a*A$", "aaa", 0)]
+    [InlineData("^a+?b$", "aaab", 0)]
+    public void AutoPossessificationRequiresAProvablyDisjointFollowingLiteral(
+        string pattern,
+        string input,
+        int expectedRepeatCount)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        Assert.Equal(expectedRepeatCount, direct.Program.AutoPossessiveRepeatCount);
+    }
+
+    [Fact]
+    public void AutoPossessificationDoesNotChangeMeteredInstructionAccounting()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "^a+b$",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
+            Timeout.InfiniteTimeSpan);
+
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+
+        Assert.Equal(0, direct.Program.AutoPossessiveRepeatCount);
+        Assert.True(regex.IsMatch("aaab"u8));
+    }
+
+    [Fact]
+    public void AutoPossessificationPreservesGlobalProgressionAndCaptures()
+    {
+        var regex = new Utf8Pcre2Regex("([a-z]+),");
+
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        var match = regex.MatchDetailed("one,two,"u8);
+
+        Assert.Equal(1, direct.Program.AutoPossessiveRepeatCount);
+        Assert.Equal(2, regex.Count("one,two,"u8));
+        Assert.Equal("one", match.GetGroup(1).GetValueString());
+    }
 }
