@@ -299,9 +299,11 @@ public sealed class Pcre2ExecutionArchitectureTests
     private static void AssertFiniteLiteralBoundaryResetPlan(Utf8Pcre2Regex regex)
     {
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        var count = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(
+            regex.DebugCompiledProgram.Operations.Count);
         var enumerate = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(
             regex.DebugCompiledProgram.Operations.Enumerate);
+        Assert.Same(count, enumerate);
         Assert.NotNull(enumerate.BoundaryProjection);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);

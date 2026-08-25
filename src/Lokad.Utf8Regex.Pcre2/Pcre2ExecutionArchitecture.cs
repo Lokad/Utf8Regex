@@ -557,19 +557,13 @@ internal static class Pcre2CompiledProgramOverlay
             var literalFamily = new Pcre2FiniteLiteralLanguageDirectProgram(
                 finiteLiteralCompilation,
                 backtrackingProgram);
-            // The original plan wins first-match searches. The capture-free
-            // expansion wins global discovery, but tiny boundary-reset Count
-            // calls do not amortize the auxiliary core plan.
-            operations = finiteLiteralCompilation.BoundaryProjection is null
-                ? operations with
-                {
-                    Count = literalFamily,
-                    Enumerate = literalFamily,
-                }
-                : operations with
-                {
-                    Enumerate = literalFamily,
-                };
+            // The original plan wins first-match searches, while the capture-free
+            // expansion wins when every non-overlapping match must be discovered.
+            operations = operations with
+            {
+                Count = literalFamily,
+                Enumerate = literalFamily,
+            };
         }
         else if (Pcre2SingleTokenRepeatAnalyzer.TryCompile(
                      syntaxTree.Root,
@@ -2011,6 +2005,23 @@ internal static class Pcre2GlobalOperationDriver
         out int result)
     {
         var program = compiledProgram.Operations.Count;
+        if (program is Pcre2FiniteLiteralLanguageDirectProgram
+            {
+                BoundaryProjection: not null,
+            } boundaryResetProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = 0;
+            var matches = boundaryResetProgram.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
+            while (matches.MoveNext())
+            {
+                result = checked(result + 1);
+            }
+
+            return true;
+        }
+
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             HasUnmeteredExecution(compiledProgram.Request))
