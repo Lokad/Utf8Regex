@@ -11,26 +11,27 @@ internal static partial class BenchmarkInspectReporter
         string? iterationsText,
         string? samplesText)
     {
-        var context = new Utf8Pcre2BenchmarkContext(Utf8Pcre2BenchmarkCatalog.Get(caseId));
-        if (context.Utf8Pcre2Regex.DebugCompiledProgram.Operations.Count is not Pcre2BacktrackingDirectProgram direct)
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+        if (!TryCapturePcre2AttributionDiagnostics(benchmarkCase, context, out var attribution))
         {
-            Console.Error.WriteLine($"Case '{caseId}' does not use the PCRE2 backtracking Count runner.");
             return 2;
         }
 
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var diagnostics = context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0).Execution;
+        var diagnostics = attribution.Execution;
         var poolReplay = MeasureMedianMicroseconds(
             samples,
             iterations,
-            () => ReplayWorkspacePoolTraffic(direct.Program, diagnostics));
+            () => ReplayWorkspacePoolTraffic(attribution.Program, diagnostics));
         var loopControl = MeasureMedianMicroseconds(
             samples,
             iterations,
             () => ReplayWorkspaceLoopControl(diagnostics));
 
         Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Operation         : {attribution.Operation}");
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
         Console.WriteLine($"WorkspaceRents    : {diagnostics.WorkspacePoolRents}");
@@ -52,10 +53,16 @@ internal static partial class BenchmarkInspectReporter
         string? iterationsText,
         string? samplesText)
     {
-        var context = new Utf8Pcre2BenchmarkContext(Utf8Pcre2BenchmarkCatalog.Get(caseId));
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+        if (!TryCapturePcre2AttributionDiagnostics(benchmarkCase, context, out var attribution))
+        {
+            return 2;
+        }
+
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var diagnostics = context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0).Execution;
+        var diagnostics = attribution.Execution;
         var chargeReplay = MeasureMedianMicroseconds(
             samples,
             iterations,
@@ -66,6 +73,7 @@ internal static partial class BenchmarkInspectReporter
             () => ReplayVmChargeLoopControl(diagnostics));
 
         Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Operation         : {attribution.Operation}");
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
         Console.WriteLine($"CandidateAttempts : {diagnostics.CandidateAttempts}");
@@ -75,6 +83,58 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"NetChargeEstimate : {Math.Max(0, chargeReplay - loopControl):F3} us/op");
         Console.WriteLine("ReplayScope       : infinite-timeout, limit-free candidate and VM step charging");
         return 0;
+    }
+
+    private static bool TryCapturePcre2AttributionDiagnostics(
+        Utf8Pcre2BenchmarkCase benchmarkCase,
+        Utf8Pcre2BenchmarkContext context,
+        out Pcre2AttributionDiagnostics attribution)
+    {
+        var operations = context.Utf8Pcre2Regex.DebugCompiledProgram.Operations;
+        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
+        {
+            var program = operations.Enumerate switch
+            {
+                Pcre2BacktrackingDirectProgram direct => direct.Program,
+                Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+                Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
+                _ => null,
+            };
+            if (program is not null)
+            {
+                attribution = new Pcre2AttributionDiagnostics(
+                    Utf8Pcre2BenchmarkOperation.Count,
+                    program,
+                    context.Utf8Pcre2Regex.DebugCountWithDiagnostics(context.InputBytes, 0).Execution);
+                return true;
+            }
+        }
+        else if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
+        {
+            var program = operations.IsMatch switch
+            {
+                Pcre2BacktrackingDirectProgram direct => direct.Program,
+                Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
+                Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
+                Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+                Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
+                Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
+                _ => null,
+            };
+            if (program is not null)
+            {
+                attribution = new Pcre2AttributionDiagnostics(
+                    Utf8Pcre2BenchmarkOperation.IsMatch,
+                    program,
+                    context.Utf8Pcre2Regex.DebugIsMatchWithDiagnostics(context.InputBytes, 0).Execution);
+                return true;
+            }
+        }
+
+        attribution = default;
+        Console.Error.WriteLine(
+            $"Case '{benchmarkCase.Id}' does not expose a backtracking attribution route for its selected public operation.");
+        return false;
     }
 
     private static int ReplayWorkspacePoolTraffic(
@@ -152,4 +212,9 @@ internal static partial class BenchmarkInspectReporter
 
         return sink;
     }
+
+    private readonly record struct Pcre2AttributionDiagnostics(
+        Utf8Pcre2BenchmarkOperation Operation,
+        Pcre2BacktrackingProgram Program,
+        Pcre2ExecutionDiagnostics Execution);
 }
