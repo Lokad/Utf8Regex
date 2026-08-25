@@ -166,8 +166,42 @@ public sealed class Pcre2ExecutionArchitectureTests
         var result = regex.DebugIsMatchWithDiagnostics("aaaaaaaa"u8, 0);
 
         Assert.False(result.IsMatch);
-        Assert.True(result.Execution.CandidateAttempts > 0);
+        Assert.Equal(1UL, result.Execution.CandidateAttempts);
         Assert.True(result.Execution.BacktrackingSteps > 0);
         Assert.True(result.Execution.WorkspacePoolRents > 0);
+    }
+
+    [Theory]
+    [InlineData("^(a+)+b$", true)]
+    [InlineData(@"\A(a+)+b$", true)]
+    [InlineData(@"\G(a+)+b$", true)]
+    [InlineData("(^a)+b", true)]
+    [InlineData("(?:^a|^b)c", true)]
+    [InlineData("(?:^a|b)c", false)]
+    [InlineData("(?m)^(a+)+b$", false)]
+    [InlineData("(?:^a)?b", false)]
+    public void BacktrackingPlanProvesOnlyMandatoryInitialPositionAnchors(
+        string pattern,
+        bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+
+        Assert.Equal(expected, direct.Program.RestrictsSearchToInitialCandidate);
+    }
+
+    [Fact]
+    public void InitialPositionRestrictionPreservesOffsetAndMultilineSemantics()
+    {
+        var subjectAnchored = new Utf8Pcre2Regex("^(a+)+b$");
+        var firstMatchingPosition = new Utf8Pcre2Regex(@"\G(a+)+b$");
+        var multiline = new Utf8Pcre2Regex("^(a+)+b$", Pcre2CompileOptions.Multiline);
+
+        Assert.False(subjectAnchored.IsMatch("zaab"u8, 1));
+        Assert.False(subjectAnchored.IsMatch("aab"u8, 0, Pcre2MatchOptions.NotBol));
+        Assert.True(firstMatchingPosition.IsMatch("zaab"u8, 1));
+        Assert.True(multiline.IsMatch("x\naaaaaaaab"u8));
+        Assert.True(multiline.DebugIsMatchWithDiagnostics("x\naaaaaaaab"u8, 0).Execution.CandidateAttempts > 1);
     }
 }

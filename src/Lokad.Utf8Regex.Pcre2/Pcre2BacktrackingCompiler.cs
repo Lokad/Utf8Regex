@@ -367,6 +367,7 @@ internal sealed class Pcre2BacktrackingProgram
         bool mayReportNonMonotoneMatchOffsets,
         bool mayThrowDeferredLookaroundReset,
         bool suppressesUnresetEmptyMatches,
+        bool restrictsSearchToInitialCandidate,
         Pcre2BacktrackingProgram[] assertionPrograms,
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
@@ -396,6 +397,7 @@ internal sealed class Pcre2BacktrackingProgram
         MayReportNonMonotoneMatchOffsets = mayReportNonMonotoneMatchOffsets;
         MayThrowDeferredLookaroundReset = mayThrowDeferredLookaroundReset;
         SuppressesUnresetEmptyMatches = suppressesUnresetEmptyMatches;
+        RestrictsSearchToInitialCandidate = restrictsSearchToInitialCandidate;
         AssertionPrograms = assertionPrograms;
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
@@ -434,6 +436,8 @@ internal sealed class Pcre2BacktrackingProgram
     internal bool MayThrowDeferredLookaroundReset { get; }
 
     internal bool SuppressesUnresetEmptyMatches { get; }
+
+    internal bool RestrictsSearchToInitialCandidate { get; }
 
     internal Pcre2BacktrackingProgram[] AssertionPrograms { get; }
 
@@ -2205,6 +2209,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _mayReportNonMonotoneMatchOffsets,
             _mayThrowDeferredLookaroundReset,
             SuppressesUnresetEmptyMatches(root),
+            Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root),
             [.. _assertionPrograms],
             [.. _backreferenceSlotSets],
             [.. _conditions],
@@ -2637,6 +2642,30 @@ internal sealed class Pcre2BacktrackingLowerer
 
 internal static class Pcre2BacktrackingAnalysis
 {
+    // This is deliberately narrower than general anchoring analysis. It proves
+    // only that every successful path reaches a subject-start or first-match
+    // position assertion before any input can be consumed. A failed attempt at
+    // the caller's initial candidate therefore cannot be rescued by bumpalong.
+    internal static bool RestrictsSearchToInitialCandidate(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2TokenBacktrackingNode { Token: var token } => token.Kind switch
+        {
+            Pcre2CharacterTokenKind.BeginningOfSubject or
+            Pcre2CharacterTokenKind.FirstMatchingPosition => true,
+            Pcre2CharacterTokenKind.BeginningOfLine =>
+                (token.Options & Pcre2CharacterOptions.Multiline) == 0,
+            _ => false,
+        },
+        Pcre2SequenceBacktrackingNode sequence => SequenceRestrictsSearch(sequence),
+        Pcre2AlternationBacktrackingNode alternation =>
+            alternation.Alternatives.All(RestrictsSearchToInitialCandidate),
+        Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat =>
+            RestrictsSearchToInitialCandidate(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => RestrictsSearchToInitialCandidate(capture.Body),
+        Pcre2AtomicBacktrackingNode atomic => RestrictsSearchToInitialCandidate(atomic.Body),
+        _ => false,
+    };
+
     internal static int GetMinimumByteLength(
         IPcre2BacktrackingNode node,
         IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
@@ -2870,6 +2899,24 @@ internal static class Pcre2BacktrackingAnalysis
         }
 
         return result;
+    }
+
+    private static bool SequenceRestrictsSearch(Pcre2SequenceBacktrackingNode sequence)
+    {
+        foreach (var child in sequence.Children)
+        {
+            if (RestrictsSearchToInitialCandidate(child))
+            {
+                return true;
+            }
+
+            if (CanConsume(child))
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryGetLeadingAsciiByte(IPcre2BacktrackingNode node, out byte leading)
@@ -3201,10 +3248,12 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget)
     {
         var bytes = input.Bytes;
-        var anchored = (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
+        var anchored = program.RestrictsSearchToInitialCandidate ||
+            (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
         var candidate = start.Value;
-        var useCandidateSearch = candidateSearch.HasValue &&
+        var useCandidateSearch = !anchored &&
+            candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
             budget.IsUnmetered;
         var candidateState = new PreparedSearchScanState(
