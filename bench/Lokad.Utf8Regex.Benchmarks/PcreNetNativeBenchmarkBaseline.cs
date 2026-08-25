@@ -23,12 +23,14 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     private readonly PcreRegexUtf8 _regex;
     private readonly PcreMatchBuffer8Bit _matchBuffer;
 
-    internal PcreNetNativeBenchmarkBaseline(Utf8Pcre2BenchmarkCase benchmarkCase)
+    internal PcreNetNativeBenchmarkBaseline(
+        Utf8Pcre2BenchmarkCase benchmarkCase,
+        PcreOptions additionalOptions = PcreOptions.None)
     {
         _input = System.Text.Encoding.UTF8.GetBytes(benchmarkCase.Input);
         var settings = new PcreRegexSettings
         {
-            Options = ToPcreNetOptions(benchmarkCase),
+            Options = ToPcreNetOptions(benchmarkCase) | additionalOptions,
             NewLine = ToPcreNetNewLine(benchmarkCase.CompileSettings.Newline),
             BackslashR = ToPcreNetBackslashR(benchmarkCase.CompileSettings.Bsr),
             ExtraCompileOptions = benchmarkCase.CompileSettings.AllowLookaroundBackslashK

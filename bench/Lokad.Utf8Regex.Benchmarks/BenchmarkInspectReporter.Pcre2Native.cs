@@ -4,6 +4,105 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class BenchmarkInspectReporter
 {
+    public static int RunMeasurePcre2NativeAutoPossessCost(
+        string caseId,
+        string? iterationsText,
+        string? samplesText)
+    {
+        var requestedIterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"RequestedIterations: {requestedIterations}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"CPU set           : {processorSet.Description}");
+
+        foreach (var section in GetPcre2SectionsForCase(caseId))
+        {
+            var operation = GetPcre2SectionRequirements(section).Operation;
+            if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var defaultBaseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
+                using var disabledBaseline = new PcreNetNativeBenchmarkBaseline(
+                    benchmarkCase,
+                    PCRE.PcreOptions.NoAutoPossess);
+                var defaultChecksum = defaultBaseline.ComputeChecksum(operation);
+                var disabledChecksum = disabledBaseline.ComputeChecksum(operation);
+                if (defaultChecksum != disabledChecksum)
+                {
+                    Console.Error.WriteLine(
+                        $"{operation}: default/NoAutoPossess checksum mismatch; " +
+                        $"default={defaultChecksum}; disabled={disabledChecksum}.");
+                    return 1;
+                }
+
+                Func<int> defaultAction = () => defaultBaseline.Execute(operation);
+                Func<int> disabledAction = () => disabledBaseline.Execute(operation);
+                var defaultWarmup = WarmPcre2QualificationLane(defaultAction);
+                var disabledWarmup = WarmPcre2QualificationLane(disabledAction);
+                var defaultIterations = Math.Max(
+                    requestedIterations,
+                    CalibratePcre2QualificationBatch(defaultAction));
+                var disabledIterations = Math.Max(
+                    requestedIterations,
+                    CalibratePcre2QualificationBatch(disabledAction));
+                var defaultSamples = new List<double>(samples);
+                var disabledSamples = new List<double>(samples);
+                var sink = 0;
+                for (var sample = 0; sample < samples; sample++)
+                {
+                    var order = sample % 2 == 0
+                        ? Pcre2PairLaneOrder.ManagedFirst
+                        : Pcre2PairLaneOrder.ComparatorFirst;
+                    var pair = MeasurePcre2QualificationPair(
+                        defaultAction,
+                        defaultIterations,
+                        disabledAction,
+                        disabledIterations,
+                        order);
+                    defaultSamples.Add(pair.Managed.Elapsed.TotalMicroseconds / defaultIterations);
+                    disabledSamples.Add(pair.Comparator.Elapsed.TotalMicroseconds / disabledIterations);
+                    sink ^= pair.Managed.Sink ^ pair.Comparator.Sink;
+                }
+
+                GC.KeepAlive(sink);
+                var defaultMedian = Median(defaultSamples);
+                var disabledMedian = Median(disabledSamples);
+                var defaultPlan = defaultBaseline.CapturePlanFingerprint();
+                var disabledPlan = disabledBaseline.CapturePlanFingerprint();
+
+                Console.WriteLine($"Operation         : {operation}");
+                Console.WriteLine($"EffectiveIterations: {defaultIterations:N0}/{disabledIterations:N0} default/disabled");
+                Console.WriteLine(
+                    $"Default           : {defaultMedian:F3} us/op " +
+                    $"({defaultSamples.Min():F3}..{defaultSamples.Max():F3})");
+                Console.WriteLine(
+                    $"NoAutoPossess     : {disabledMedian:F3} us/op " +
+                    $"({disabledSamples.Min():F3}..{disabledSamples.Max():F3})");
+                Console.WriteLine($"Disabled/Default  : {disabledMedian / defaultMedian:F3}x");
+                Console.WriteLine($"DefaultPlan       : {defaultPlan.Sha256[..12]}; {defaultPlan.EffectiveOptions}");
+                Console.WriteLine($"DisabledPlan      : {disabledPlan.Sha256[..12]}; {disabledPlan.EffectiveOptions}");
+                Console.WriteLine(
+                    $"Warmup calls      : {defaultWarmup.Iterations:N0}/{disabledWarmup.Iterations:N0} " +
+                    $"default/disabled in {defaultWarmup.Elapsed.TotalMilliseconds:F0}/" +
+                    $"{disabledWarmup.Elapsed.TotalMilliseconds:F0} ms");
+            }
+            catch (PCRE.PcreException exception)
+            {
+                Console.WriteLine($"{operation}: Excluded; {exception.Message}");
+            }
+        }
+
+        return 0;
+    }
+
     public static int RunMeasurePcre2NativeBufferCost(
         string caseId,
         string? iterationsText,

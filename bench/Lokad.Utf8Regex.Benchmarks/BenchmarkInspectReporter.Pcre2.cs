@@ -53,8 +53,16 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"IsMatchVmTokens   : {execution.VmTokenSteps}");
             Console.WriteLine($"IsMatchVmBranches : {execution.VmBranchSteps}");
             Console.WriteLine($"IsMatchVmRepeats  : {execution.VmRepeatSteps}");
+            Console.WriteLine($"IsMatchRepeatEnter: {execution.VmRepeatEnterSteps}");
+            Console.WriteLine($"IsMatchRepeatEnd  : {execution.VmRepeatEndSteps}");
+            Console.WriteLine($"IsMatchRepeatExit : {execution.VmRepeatExitSteps}");
             Console.WriteLine($"IsMatchVmCaptures : {execution.VmCaptureSteps}");
             Console.WriteLine($"IsMatchWorkspace  : {execution.WorkspacePoolRents}");
+            Console.WriteLine($"IsMatchWorkFixed  : {execution.WorkspaceFixedRents}");
+            Console.WriteLine($"IsMatchWorkFrames : {execution.WorkspaceFrameRents}");
+            Console.WriteLine($"IsMatchWorkRepeats: {execution.WorkspaceRepeatMutationRents}");
+            Console.WriteLine($"IsMatchWorkCapture: {execution.WorkspaceCaptureMutationRents}");
+            Console.WriteLine($"IsMatchWorkGrowths: {execution.WorkspacePoolGrowths}");
             Console.WriteLine($"IsMatchAllocBytes : {allocatedBytes}");
             Console.WriteLine($"IsMatchElapsedUs  : {stopwatch.Elapsed.TotalMicroseconds:F3}");
         }
