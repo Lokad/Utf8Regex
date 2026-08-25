@@ -142,29 +142,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
         _success = data.Success;
     }
 
-    internal Utf8Pcre2ValueMatch(
-        ReadOnlySpan<byte> input,
-        bool success,
-        int startOffsetInBytes,
-        int endOffsetInBytes,
-        int startOffsetInUtf16,
-        int endOffsetInUtf16,
-        bool coordinateFlagsSpecified,
-        bool utf8SliceIsWellFormed,
-        bool utf16ProjectionIsExact)
-    {
-        _input = input;
-        _startOffsetInBytes = success ? startOffsetInBytes : 0;
-        _endOffsetInBytes = success ? endOffsetInBytes : 0;
-        _startOffsetInUtf16 = success ? startOffsetInUtf16 : 0;
-        _endOffsetInUtf16 = success ? endOffsetInUtf16 : 0;
-        _isUtf8SliceWellFormed = success &&
-            (coordinateFlagsSpecified ? utf8SliceIsWellFormed : startOffsetInBytes <= endOffsetInBytes);
-        _hasUtf16Projection = success &&
-            (!coordinateFlagsSpecified || utf16ProjectionIsExact);
-        _success = success;
-    }
-
     /// <summary>Gets whether the operation found a full or partial match.</summary>
     public bool Success
     {
@@ -945,16 +922,20 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 return Utf8Pcre2ValueMatch.Create(_input, _materializedMatches.Matches[_index]);
             }
 
-            return new Utf8Pcre2ValueMatch(
+            return Utf8Pcre2ValueMatch.Create(
                 _input,
-                _currentData.Success,
-                _currentData.StartOffsetInBytes,
-                _currentData.EndOffsetInBytes,
-                _currentData.StartOffsetInUtf16,
-                _currentData.EndOffsetInUtf16,
-                _currentData.CoordinateFlagsSpecified,
-                _currentData.Utf8SliceIsWellFormed,
-                _currentData.Utf16ProjectionIsExact);
+                new Pcre2GroupData
+                {
+                    Number = 0,
+                    Success = _currentData.Success,
+                    StartOffsetInBytes = _currentData.StartOffsetInBytes,
+                    EndOffsetInBytes = _currentData.EndOffsetInBytes,
+                    StartOffsetInUtf16 = _currentData.StartOffsetInUtf16,
+                    EndOffsetInUtf16 = _currentData.EndOffsetInUtf16,
+                    CoordinateFlagsSpecified = _currentData.CoordinateFlagsSpecified,
+                    Utf8SliceIsWellFormed = _currentData.Utf8SliceIsWellFormed,
+                    Utf16ProjectionIsExact = _currentData.Utf16ProjectionIsExact,
+                });
         }
     }
 
