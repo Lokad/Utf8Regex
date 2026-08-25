@@ -31,7 +31,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(8, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(9, root.GetProperty("SchemaVersion").GetInt32());
 
         var dependency = root.GetProperty("PcreNetNativeBaseline");
         Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
@@ -78,7 +78,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
         Assert.Equal(26, operationRows.Count(static row =>
             row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
-        Assert.Equal(6, operationRows.Count(static row =>
+        Assert.Equal(19, operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNativePair", out _)));
         Assert.All(operationRows, static row =>
         {
@@ -126,10 +126,11 @@ public sealed class Pcre2BenchmarkSnapshotTests
             $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
             page,
             StringComparison.Ordinal);
-        Assert.Contains("Rows with paired qualification evidence: `6/100`", page, StringComparison.Ordinal);
+        Assert.Contains("Rows with paired qualification evidence: `19/100`", page, StringComparison.Ordinal);
         Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
         Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
-        Assert.Contains("median sample durations and frozen operations per lane", page, StringComparison.Ordinal);
+        Assert.Contains("interquartile spread ratios", page, StringComparison.Ordinal);
+        Assert.Contains("IQR ", page, StringComparison.Ordinal);
         Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
         Assert.Contains($"Native build fingerprint: `{buildFingerprintSha256}`", page, StringComparison.Ordinal);
         Assert.Contains("## Qualified comparator plans", page, StringComparison.Ordinal);
@@ -163,7 +164,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         JsonElement pair,
         string? expectedBuildFingerprintSha256)
     {
-        Assert.Equal(7, pair.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal(8, pair.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal(sectionName, pair.GetProperty("Section").GetString());
         Assert.Equal(caseId, pair.GetProperty("CaseId").GetString());
         Assert.Equal(row.GetProperty("PcreNetNativeStatus").GetString(), pair.GetProperty("Status").GetString());
@@ -236,6 +237,14 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.True(lower > 0);
         Assert.InRange(median, lower, upper);
         Assert.True(pair.GetProperty("OrderEffectRatio").GetDouble() > 0);
+        Assert.Equal(
+            InterquartileSpread(managedMicroseconds),
+            pair.GetProperty("ManagedInterquartileSpreadRatio").GetDouble(),
+            12);
+        Assert.Equal(
+            InterquartileSpread(comparatorMicroseconds),
+            pair.GetProperty("ComparatorInterquartileSpreadRatio").GetDouble(),
+            12);
         Assert.Equal(24301, pair.GetProperty("BootstrapSeed").GetInt32());
         Assert.Equal(10_000, pair.GetProperty("BootstrapResamples").GetInt32());
 
@@ -353,6 +362,14 @@ public sealed class Pcre2BenchmarkSnapshotTests
         var samples = pair.GetProperty(propertyName).EnumerateArray().Select(static value => value.GetDouble()).ToArray();
         Assert.Equal(sampleCount, samples.Length);
         return samples;
+    }
+
+    private static double InterquartileSpread(IEnumerable<double> values)
+    {
+        var sorted = values.Order().ToArray();
+        var lower = sorted[(int)Math.Floor((sorted.Length - 1) * 0.25)];
+        var upper = sorted[(int)Math.Ceiling((sorted.Length - 1) * 0.75)];
+        return upper / lower;
     }
 
     private static void AssertCompleteMeasurement(JsonElement measurement)
