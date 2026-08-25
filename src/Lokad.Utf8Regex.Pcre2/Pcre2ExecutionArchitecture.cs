@@ -218,7 +218,7 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Program { get; }
 }
 
-internal sealed class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
+internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2LiteralFamilyDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
     {
@@ -231,6 +231,14 @@ internal sealed class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
     internal Utf8Regex Regex { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
+}
+
+internal sealed class Pcre2RepeatedLiteralCaptureDirectProgram : Pcre2LiteralFamilyDirectProgram
+{
+    internal Pcre2RepeatedLiteralCaptureDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
+        : base(regex, fallback)
+    {
+    }
 }
 
 internal enum Pcre2DirectProgramKind : byte
@@ -505,6 +513,21 @@ internal static class Pcre2CompiledProgramOverlay
                 Enumerate = literalFamily,
             };
         }
+        else if (Pcre2RepeatedLiteralCaptureAnalyzer.TryCompile(
+                     syntaxTree.Root,
+                     legacy.Request) is { } repeatedLiteralRegex)
+        {
+            var literalFamily = new Pcre2RepeatedLiteralCaptureDirectProgram(
+                repeatedLiteralRegex,
+                backtrackingProgram);
+            // The original plan wins first-match searches, while the capture-free
+            // expansion wins when every non-overlapping match must be discovered.
+            operations = operations with
+            {
+                Count = literalFamily,
+                Enumerate = literalFamily,
+            };
+        }
         else if (Pcre2SingleTokenRepeatAnalyzer.TryCompile(
                      syntaxTree.Root,
                      backtrackingProgram) is { } singleTokenRepeatProgram)
@@ -672,11 +695,107 @@ internal static class Pcre2ProgramInvariant
         }
 
         if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
+            directProgram is not Pcre2RepeatedLiteralCaptureDirectProgram &&
             (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
              !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
         {
             throw new InvalidOperationException("A literal-family backend must be owned by its compiled PCRE2 program.");
         }
+    }
+}
+
+internal static class Pcre2RepeatedLiteralCaptureAnalyzer
+{
+    internal static Utf8Regex? TryCompile(
+        IPcre2BacktrackingNode root,
+        Pcre2CompileRequest request)
+    {
+        if (request.Options != Pcre2CompileOptions.None ||
+            root is not Pcre2SequenceBacktrackingNode
+            {
+                Children: [var captureSource, Pcre2BackreferenceBacktrackingNode backreference],
+            } ||
+            backreference.Options != Pcre2CharacterOptions.None)
+        {
+            return null;
+        }
+
+        var literals = new List<string>();
+        var pendingSources = new Stack<IPcre2BacktrackingNode>();
+        pendingSources.Push(captureSource);
+        while (pendingSources.TryPop(out var source))
+        {
+            if (source is Pcre2AlternationBacktrackingNode alternation)
+            {
+                for (var i = alternation.Alternatives.Length - 1; i >= 0; i--)
+                {
+                    pendingSources.Push(alternation.Alternatives[i]);
+                }
+
+                continue;
+            }
+
+            if (source is not Pcre2CaptureBacktrackingNode capture)
+            {
+                return null;
+            }
+
+            var referencesCapture = backreference.Target.Kind switch
+            {
+                Pcre2BackreferenceTargetKind.Absolute => backreference.Target.Number == capture.Slot,
+                Pcre2BackreferenceTargetKind.Named =>
+                    backreference.Target.Name.Length != 0 &&
+                    string.Equals(backreference.Target.Name, capture.Name, StringComparison.Ordinal),
+                _ => false,
+            };
+            if (!referencesCapture)
+            {
+                return null;
+            }
+
+            var bodies = capture.Body is Pcre2AlternationBacktrackingNode bodyAlternation
+                ? bodyAlternation.Alternatives
+                : [capture.Body];
+            foreach (var body in bodies)
+            {
+                IPcre2BacktrackingNode[] tokens = body switch
+                {
+                    Pcre2TokenBacktrackingNode token => [token],
+                    Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence => sequence.Children,
+                    _ => [],
+                };
+                if (tokens.Length == 0)
+                {
+                    return null;
+                }
+
+                var builder = new StringBuilder();
+                foreach (var tokenNode in tokens)
+                {
+                    if (tokenNode is not Pcre2TokenBacktrackingNode token ||
+                        token.Token.Kind != Pcre2CharacterTokenKind.Literal ||
+                        token.Token.Options != Pcre2CharacterOptions.None)
+                    {
+                        return null;
+                    }
+
+                    builder.Append(token.Token.Literal.ToString());
+                }
+
+                literals.Add(builder.ToString());
+            }
+        }
+
+        if (literals.Count == 0)
+        {
+            return null;
+        }
+
+        var alternatives = literals
+            .Select(static literal => Regex.Escape(literal + literal))
+            .Distinct(StringComparer.Ordinal);
+        var pattern = $"(?:{string.Join('|', alternatives)})";
+        return new Utf8Regex(pattern, RegexOptions.CultureInvariant, request.MatchTimeout);
     }
 }
 

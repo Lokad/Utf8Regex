@@ -156,7 +156,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     public void BacktrackingCaptureStateUsesOneFixedRentPerCandidate()
     {
         var regex = new Utf8Pcre2Regex(
-            @"(?:(?<n>foo)|(?<n>bar))\k<n>",
+            @"(?:(?<n>f.o)|(?<n>b.r))\k<n>",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
             default,
@@ -171,6 +171,54 @@ public sealed class Pcre2ExecutionArchitectureTests
             result.Execution.WorkspaceFixedRents);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(3UL, result.Execution.CandidateAttempts);
+    }
+
+    [Fact]
+    public void FixedLiteralCaptureBackreferencesUseLiteralFamilyForCaptureIndependentOperations()
+    {
+        var branchReset = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))\1");
+        var duplicateNames = new Utf8Pcre2Regex(
+            @"(?:(?<n>foo)|(?<n>bar))\k<n>",
+            Pcre2CompileOptions.None,
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            Timeout.InfiniteTimeSpan);
+
+        AssertRepeatedLiteralCapturePlan(branchReset);
+        AssertRepeatedLiteralCapturePlan(duplicateNames);
+        Assert.Equal(3, branchReset.Count("abcabc xyzxyz xx abcabc"u8));
+        Assert.Equal(3, duplicateNames.Count("foofoo barbar xx foofoo"u8));
+        var enumerator = branchReset.EnumerateMatches("abcabc xyzxyz xx abcabc"u8);
+        var byteRanges = new List<(int Start, int End)>();
+        while (enumerator.MoveNext())
+        {
+            byteRanges.Add((enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
+        }
+
+        Assert.Equal([(0, 6), (7, 13), (17, 23)], byteRanges);
+        Assert.Equal("abc", branchReset.MatchDetailed("abcabc"u8).GetGroup(1).GetValueString());
+        var duplicateMatch = duplicateNames.MatchDetailed("foofoo"u8);
+        Assert.True(duplicateMatch.TryGetFirstSetGroup("n", out var duplicateGroup));
+        Assert.Equal("foo", duplicateGroup.GetValueString());
+    }
+
+    [Fact]
+    public void RepeatedLiteralCapturePlanRejectsNonExactOrCaselessBackreferences()
+    {
+        var nonExact = new Utf8Pcre2Regex(@"([a-z]+)\1");
+        var caseless = new Utf8Pcre2Regex(@"(?i:(abc))\1");
+
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(nonExact.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(caseless.DebugCompiledProgram.Operations.Count);
+    }
+
+    private static void AssertRepeatedLiteralCapturePlan(Utf8Pcre2Regex regex)
+    {
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2RepeatedLiteralCaptureDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2RepeatedLiteralCaptureDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
     }
 
     [Fact]
