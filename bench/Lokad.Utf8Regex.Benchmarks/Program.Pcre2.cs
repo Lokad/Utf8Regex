@@ -64,6 +64,12 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--migrate-pcre2-benchmark-json", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunMigratePcre2BenchmarkJson();
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-benchmark-markdown", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunEmitPcre2BenchmarkMarkdown();

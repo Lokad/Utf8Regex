@@ -30,7 +30,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
 
         var dependency = root.GetProperty("PcreNetNativeBaseline");
         Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
@@ -71,18 +71,28 @@ public sealed class Pcre2BenchmarkSnapshotTests
             .ToArray();
         Assert.Equal(100, operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
+        Assert.Equal(100, operationRows.Count(static row =>
+            row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Unqualified"));
+        Assert.Equal(26, operationRows.Count(static row =>
+            row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
         Assert.All(operationRows, static row =>
         {
             var hasNative = row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0;
             var hasReason = row.Value.TryGetProperty("PcreNetNativeUnavailableReason", out var reason) &&
                 !string.IsNullOrWhiteSpace(reason.GetString());
             Assert.True(hasNative || hasReason, $"Missing native PCRE2 disposition for '{row.Name}'.");
+            Assert.Equal(
+                hasNative ? "Unqualified" : "Excluded",
+                row.Value.GetProperty("PcreNetNativeStatus").GetString());
         });
 
         var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"));
         var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        Assert.Contains("PCRE.NET / PCRE2 NFA CPU", page, StringComparison.Ordinal);
+        Assert.Contains("`100` unqualified, `26` excluded", page, StringComparison.Ordinal);
+        Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
         Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
 
         Assert.Contains(

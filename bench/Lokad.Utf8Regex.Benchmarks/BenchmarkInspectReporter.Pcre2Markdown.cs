@@ -48,6 +48,22 @@ internal static partial class BenchmarkInspectReporter
 
     private static string BuildPcre2BenchmarkMarkdown(Pcre2BenchmarkSnapshot snapshot)
     {
+        static int GetStatusCount(
+            IReadOnlyDictionary<Pcre2NativeComparisonStatus, int> counts,
+            Pcre2NativeComparisonStatus status)
+            => counts.GetValueOrDefault(status);
+
+        static string FormatNativeStatus(Pcre2NativeComparisonStatus status) => status switch
+        {
+            Pcre2NativeComparisonStatus.Unqualified => "Unqualified",
+            Pcre2NativeComparisonStatus.Excluded => "Excluded",
+            Pcre2NativeComparisonStatus.Inconclusive => "Inconclusive",
+            Pcre2NativeComparisonStatus.Equivalent => "Equivalent",
+            Pcre2NativeComparisonStatus.ManagedFaster => "Managed faster",
+            Pcre2NativeComparisonStatus.NativeFaster => "Native faster",
+            _ => throw new ArgumentOutOfRangeException(nameof(status)),
+        };
+
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var sectionRows = snapshot.Sections
             .OrderBy(static section => GetPcre2MarkdownSectionOrder(section.Key))
@@ -61,6 +77,9 @@ internal static partial class BenchmarkInspectReporter
             .ToArray();
         var parityCount = comparableRows.Count(static row => row.Utf8Pcre2 <= row.DecodeThenRegex);
         var nativeRows = allRows.Where(static row => row.PcreNetNative is > 0).ToArray();
+        var statusCounts = allRows
+            .GroupBy(static row => row.PcreNetNativeStatus)
+            .ToDictionary(static group => group.Key, static group => group.Count());
         var unavailableNativeRows = sectionRows
             .SelectMany(static section => section.Value.Cases.Select(row => new
             {
@@ -120,12 +139,19 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine($"- Schema: `{snapshot.SchemaVersion}`");
         writer.WriteLine($"- Snapshot SHA-256: `{ComputePcre2SnapshotSha256()}`");
         writer.WriteLine($"- Latest managed row measurement: `{FormatPcre2Timestamp(latestManagedMeasurement)}`");
-        writer.WriteLine($"- Latest native baseline measurement: `{FormatPcre2Timestamp(latestNativeMeasurement)}`");
+        writer.WriteLine($"- Latest PCRE.NET / PCRE2 NFA measurement: `{FormatPcre2Timestamp(latestNativeMeasurement)}`");
         writer.WriteLine($"- Operation rows: `{allRows.Length}` across `{sectionRows.Length}` sections");
         writer.WriteLine($"- Comparable rows at or below the decode-then-.NET median: `{parityCount}/{comparableRows.Length}`");
-        writer.WriteLine($"- Rows with a native PCRE2 baseline: `{nativeRows.Length}/{allRows.Length}`");
+        writer.WriteLine($"- Rows with a PCRE.NET / PCRE2 NFA comparator: `{nativeRows.Length}/{allRows.Length}`");
+        writer.WriteLine(
+            $"- Comparator Status: `{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.ManagedFaster)}` managed faster, " +
+            $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Equivalent)}` equivalent, " +
+            $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.NativeFaster)}` native faster, " +
+            $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Inconclusive)}` inconclusive, " +
+            $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Unqualified)}` unqualified, " +
+            $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Excluded)}` excluded");
         writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
-        writer.WriteLine($"- Managed/native measurement environments represented: `{managedEnvironments.Length}/{nativeEnvironments.Length}`");
+        writer.WriteLine($"- Managed/comparator measurement environments represented: `{managedEnvironments.Length}/{nativeEnvironments.Length}`");
         writer.WriteLine();
 
         if (managedEnvironments.Length == 1)
@@ -142,12 +168,12 @@ internal static partial class BenchmarkInspectReporter
         {
             var environment = nativeEnvironments[0]!;
             writer.WriteLine();
-            writer.WriteLine($"Native PCRE.NET rows were measured from source `{environment.SourceCommit}` on {environment.Runtime}, {environment.OperatingSystem}, {environment.Processor}; Tiered PGO `{environment.TieredPgo}`, tracked dirty `{environment.TrackedDirty}`, untracked files `{environment.HasUntrackedFiles}`.");
+            writer.WriteLine($"PCRE.NET / PCRE2 NFA rows were measured from source `{environment.SourceCommit}` on {environment.Runtime}, {environment.OperatingSystem}, {environment.Processor}; Tiered PGO `{environment.TieredPgo}`, tracked dirty `{environment.TrackedDirty}`, untracked files `{environment.HasUntrackedFiles}`.");
         }
         else if (nativeEnvironments.Length > 1)
         {
             writer.WriteLine();
-            writer.WriteLine("Native rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.");
+            writer.WriteLine("Comparator rows span more than one measurement environment. Consult each row's `PcreNetNativeEnvironment` metadata before comparing small differences.");
         }
 
         if (snapshot.PcreNetNativeBaseline is { } dependency)
@@ -159,7 +185,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         WritePcreNetDependencyReview(writer, snapshot.PcreNetNativeBaseline);
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `vs native` is `Utf8Pcre2 / native PCRE2`; lower is better. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
+        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `discovery R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Existing independently measured ratios are discovery data only and cannot determine a winner until a paired qualification protocol records a qualified Status. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
 
         foreach (var (sectionName, section) in sectionRows)
         {
@@ -169,12 +195,12 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             if (compatible)
             {
-                writer.WriteLine("| Case | Input | Utf8Pcre2 CPU | Native PCRE2 CPU | vs native | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |");
-                writer.WriteLine("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | discovery R | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
-                        $"| `{caseId}` | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
+                        $"| `{caseId}` | **{FormatNativeStatus(row.PcreNetNativeStatus)}** | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.PcreNetNative)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.Utf8Regex)} | {FormatPcre2NullableMicroseconds(row.PredecodedRegex)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.DecodeThenRegex)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.DecodeThenRegex)} | " +
@@ -183,12 +209,12 @@ internal static partial class BenchmarkInspectReporter
             }
             else
             {
-                writer.WriteLine("| Case | Input | Utf8Pcre2 CPU | Native PCRE2 CPU | vs native | Utf8Pcre2 warm alloc | Construction CPU | Construction alloc |");
-                writer.WriteLine("|---|---:|---:|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | discovery R | Utf8Pcre2 warm alloc | Construction CPU | Construction alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
-                        $"| `{caseId}` | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
+                        $"| `{caseId}` | **{FormatNativeStatus(row.PcreNetNativeStatus)}** | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.PcreNetNative)} | " +
                         $"{FormatPcre2AllocatedBytes(row.WarmAllocatedBytes)} | {FormatPcre2NullableMicroseconds(row.ConstructionMicroseconds)} | " +
                         $"{FormatPcre2AllocatedBytes(row.ConstructionAllocatedBytes)} |");
@@ -197,11 +223,11 @@ internal static partial class BenchmarkInspectReporter
         }
 
         writer.WriteLine();
-        writer.WriteLine("## Native baseline exclusions");
+        writer.WriteLine("## Comparator exclusions");
         writer.WriteLine();
         if (unavailableNativeRows.Length == 0)
         {
-            writer.WriteLine("No native baseline exclusions are recorded.");
+            writer.WriteLine("No comparator exclusions are recorded.");
         }
         else
         {
@@ -254,11 +280,11 @@ internal static partial class BenchmarkInspectReporter
         StringWriter writer,
         PcreNetNativeBaselineDependencyJson? dependency)
     {
-        writer.WriteLine("## Native baseline dependency");
+        writer.WriteLine("## Comparator dependency");
         writer.WriteLine();
-        writer.WriteLine("The benchmark executable—not either shipped library—uses one additional dependency for PCRE2-dialect rows. It was admitted because it provides the exact upstream engine and a UTF-8 span/reusable-buffer API, avoiding a string conversion or per-call wrapper allocation in the baseline.");
+        writer.WriteLine("The benchmark executable—not either shipped library—uses one additional dependency for PCRE2-dialect rows. It provides the native PCRE2 engine and a UTF-8 span/reusable-buffer API, avoiding a string conversion or per-call wrapper allocation in the comparator.");
         writer.WriteLine();
-        writer.WriteLine("| Package | Version | Upstream engine | License | Source revision | Benchmark profile |");
+        writer.WriteLine("| Package | Version | Native engine | License | Source revision | Benchmark profile |");
         writer.WriteLine("|---|---:|---|---|---|---|");
         if (dependency is null)
         {

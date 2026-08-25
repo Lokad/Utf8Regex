@@ -12,6 +12,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
+    private const int Pcre2BenchmarkSchemaVersion = 5;
 
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
@@ -634,12 +635,21 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
+    public static int RunMigratePcre2BenchmarkJson()
+    {
+        var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
+        SavePcre2BenchmarkSnapshot(snapshot);
+        Console.WriteLine($"Migrated {Pcre2BenchmarkSnapshotFileName} to schema {Pcre2BenchmarkSchemaVersion}.");
+        return 0;
+    }
+
     public static int RunRefreshPcre2BenchmarkCase(string caseId, string? iterationsText, string? samplesText)
     {
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
 
         foreach (var section in GetPcre2SectionsForCase(caseId))
@@ -658,7 +668,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
         var sections = ParsePcre2Sections(sectionsText);
 
@@ -677,7 +687,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         if (string.IsNullOrWhiteSpace(familyName))
         {
             snapshot.ScalingFamilies.Clear();
@@ -1182,14 +1192,24 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var json = File.ReadAllText(path, Encoding.UTF8);
-        return JsonSerializer.Deserialize<Pcre2BenchmarkSnapshot>(json, Pcre2BenchmarkSnapshotJsonOptions) ?? throw new InvalidOperationException($"Could not deserialize {Pcre2BenchmarkSnapshotFileName}.");
+        var snapshot = JsonSerializer.Deserialize<Pcre2BenchmarkSnapshot>(json, Pcre2BenchmarkSnapshotJsonOptions) ??
+            throw new InvalidOperationException($"Could not deserialize {Pcre2BenchmarkSnapshotFileName}.");
+        foreach (var row in snapshot.Sections.SelectMany(static section => section.Value.Cases.Values))
+        {
+            if (row.PcreNetNative is null && !string.IsNullOrWhiteSpace(row.PcreNetNativeUnavailableReason))
+            {
+                row.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+            }
+        }
+
+        return snapshot;
     }
 
     private static void SavePcre2BenchmarkSnapshot(Pcre2BenchmarkSnapshot snapshot)
     {
         var path = Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName);
         var json = JsonSerializer.Serialize(snapshot, Pcre2BenchmarkSnapshotJsonOptions);
-        File.WriteAllText(path, json + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
         RewritePcre2BenchmarkMarkdown(snapshot);
     }
 
@@ -1624,9 +1644,21 @@ internal static partial class BenchmarkInspectReporter
         SpecialReplace = 9,
     }
 
+    [System.Text.Json.Serialization.JsonConverter(
+        typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Pcre2NativeComparisonStatus>))]
+    private enum Pcre2NativeComparisonStatus : byte
+    {
+        Unqualified = 0,
+        Excluded = 1,
+        Inconclusive = 2,
+        Equivalent = 3,
+        ManagedFaster = 4,
+        NativeFaster = 5,
+    }
+
     private sealed class Pcre2BenchmarkSnapshot
     {
-        public int SchemaVersion { get; set; } = 4;
+        public int SchemaVersion { get; set; } = Pcre2BenchmarkSchemaVersion;
 
         public PcreNetNativeBaselineDependencyJson? PcreNetNativeBaseline { get; set; }
 
@@ -1701,6 +1733,8 @@ internal static partial class BenchmarkInspectReporter
         public double? PcreNetNative { get; set; }
 
         public string? PcreNetNativeUnavailableReason { get; set; }
+
+        public Pcre2NativeComparisonStatus PcreNetNativeStatus { get; set; }
 
         public double Utf8Pcre2 { get; set; }
 

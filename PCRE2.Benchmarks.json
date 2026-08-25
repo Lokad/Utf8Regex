@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 4,
+  "SchemaVersion": 5,
   "PcreNetNativeBaseline": {
     "PackageId": "PCRE.NET",
     "PackageVersion": "1.5.0",
@@ -43,6 +43,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.9570000000000001,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.160005,
           "Utf8Regex": 2.813275,
           "PredecodedRegex": 0.180425,
@@ -78,6 +79,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 7.38,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.125785,
           "Utf8Regex": 3.2541349999999998,
           "PredecodedRegex": 0.056175,
@@ -113,6 +115,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.8109,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.90686,
           "Utf8Regex": 0.25550500000000004,
           "PredecodedRegex": 0.66415,
@@ -148,6 +151,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.2174,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.24644000000000002,
           "Utf8Regex": 0.286385,
           "PredecodedRegex": 0.07864,
@@ -183,6 +187,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.4068,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.70936,
           "Utf8Regex": 0.87019,
           "PredecodedRegex": 0.517365,
@@ -218,6 +223,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.3705,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.3514899999999999,
           "Utf8Regex": 0.34951,
           "PredecodedRegex": 0.173335,
@@ -253,6 +259,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.2499,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 3.9814300000000005,
           "Utf8Regex": 0.211195,
           "PredecodedRegex": 0.24388,
@@ -288,6 +295,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.19469999999999998,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.7317600000000001,
           "Utf8Regex": 0.19796,
           "PredecodedRegex": 0.128695,
@@ -323,6 +331,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.20959999999999998,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.656255,
           "Utf8Regex": 0.16766,
           "PredecodedRegex": 0.136685,
@@ -358,6 +367,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.0712,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.19281500000000001,
           "Utf8Regex": 0.206285,
           "PredecodedRegex": 0.49746999999999997,
@@ -393,6 +403,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.2722,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.607595,
           "Utf8Regex": 0.522565,
           "PredecodedRegex": 0.16907,
@@ -428,6 +439,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.38630000000000003,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.151785,
           "Utf8Regex": 0.191615,
           "PredecodedRegex": 0.121695,
@@ -463,6 +475,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.1158,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.56353,
           "Utf8Regex": 0.23966500000000002,
           "PredecodedRegex": 0.095025,
@@ -498,6 +511,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.084,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.390525,
           "Utf8Regex": 0.2927,
           "PredecodedRegex": 0.051475,
@@ -533,6 +547,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.1147,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.5147149999999999,
           "Utf8Regex": 0.19537000000000002,
           "PredecodedRegex": 0.05134,
@@ -568,6 +583,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.4586,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.2003,
           "Utf8Regex": 0.2023,
           "PredecodedRegex": 0.06290499999999999,
@@ -603,6 +619,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.1469,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.390115,
           "Utf8Regex": 0.482625,
           "PredecodedRegex": 0.053175,
@@ -638,6 +655,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.87,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.20764000000000002,
           "Utf8Regex": 0.9514299999999999,
           "PredecodedRegex": 0.02876,
@@ -673,6 +691,7 @@
           },
           "PcreNetNativeEffectiveIterations": 20,
           "PcreNetNative": 0.8400000000000001,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.21084,
           "Utf8Regex": 0.907745,
           "PredecodedRegex": 0.030275,
@@ -708,6 +727,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 1.2,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.24736,
           "Utf8Regex": 0.636955,
           "PredecodedRegex": 0.15524000000000002,
@@ -743,6 +763,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.965,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.23725500000000002,
           "Utf8Regex": 0.6315350000000001,
           "PredecodedRegex": 0.14043,
@@ -778,6 +799,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.0881,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.280565,
           "Utf8Regex": 0.37094,
           "PredecodedRegex": 0.04003,
@@ -813,6 +835,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.0718,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.13931500000000002,
           "Utf8Regex": 0.52466,
           "PredecodedRegex": 0.030795,
@@ -848,6 +871,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.086,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.33464,
           "Utf8Regex": 1.29269,
           "PredecodedRegex": 0.053255,
@@ -883,6 +907,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.1076,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.23151999999999998,
           "Utf8Regex": 0.929165,
           "PredecodedRegex": 0.06966,
@@ -918,6 +943,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1000,
           "PcreNetNative": 0.3088,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.7038800000000001,
           "Utf8Regex": 0.370635,
           "PredecodedRegex": 0.042660000000000003,
@@ -957,6 +983,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.617,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.1414799999999998,
           "Utf8Regex": 0.555125,
           "PredecodedRegex": 0.14699500000000001,
@@ -992,6 +1019,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.47200000000000003,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.31466500000000003,
           "Utf8Regex": 0.61673,
           "PredecodedRegex": 0.086525,
@@ -1027,6 +1055,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.65,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.0751600000000001,
           "Utf8Regex": 1.23145,
           "PredecodedRegex": 0.19415,
@@ -1062,6 +1091,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.703,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.0382799999999999,
           "Utf8Regex": 0.77181,
           "PredecodedRegex": 0.265295,
@@ -1097,6 +1127,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.608,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.51833,
           "Utf8Regex": 0.507075,
           "PredecodedRegex": 0.08524,
@@ -1132,6 +1163,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 129.796,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 135.40133689839573,
           "Utf8Regex": 4.678342245989305,
           "PredecodedRegex": 125.15267379679143,
@@ -1167,6 +1199,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 128.548,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 9.50133164235891,
           "Utf8Regex": 8.35567533291059,
           "PredecodedRegex": 117.02365250475586,
@@ -1202,6 +1235,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 20.421,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.70105,
           "Utf8Regex": 2.325,
           "PredecodedRegex": 2.5742599999999998,
@@ -1237,6 +1271,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 76.068,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 5.081066358534169,
           "Utf8Regex": 4.598497854077253,
           "PredecodedRegex": 49.34362826015187,
@@ -1272,6 +1307,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 487.656,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 32.6439497716895,
           "Utf8Regex": 130.95422374429222,
           "PredecodedRegex": 124.09566210045662,
@@ -1307,6 +1343,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 133.156,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 431.71679536679534,
           "Utf8Regex": 74.34189189189189,
           "PredecodedRegex": 57.488030888030885,
@@ -1342,6 +1379,7 @@
           },
           "PcreNetNativeEffectiveIterations": 5,
           "PcreNetNative": 18407.84,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2340.7,
           "Utf8Regex": 2170.7,
           "PredecodedRegex": 6984.575,
@@ -1377,6 +1415,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1,
           "PcreNetNative": 33826.2,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 22675.716666666664,
           "Utf8Regex": 6390.666666666667,
           "PredecodedRegex": 24735.716666666664,
@@ -1412,6 +1451,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1,
           "PcreNetNative": 267173.7,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1318.9272727272726,
           "Utf8Regex": 1406.1904306220094,
           "PredecodedRegex": 13962.06842105263,
@@ -1447,6 +1487,7 @@
           },
           "PcreNetNativeEffectiveIterations": 18,
           "PcreNetNative": 9664.58888888889,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 3972.5779411764706,
           "Utf8Regex": 4456.673529411764,
           "PredecodedRegex": 1505.8970588235295,
@@ -1482,6 +1523,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1,
           "PcreNetNative": 107631.2,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 14827,
           "Utf8Regex": 7132.117647058823,
           "PredecodedRegex": 236.33529411764704,
@@ -1517,6 +1559,7 @@
           },
           "PcreNetNativeEffectiveIterations": 8,
           "PcreNetNative": 12876.9125,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 15191.957142857142,
           "Utf8Regex": 3159.1785714285716,
           "PredecodedRegex": 6295.878571428571,
@@ -1552,6 +1595,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1,
           "PcreNetNative": 85235.4,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 27766.88181818182,
           "Utf8Regex": 11221.527272727273,
           "PredecodedRegex": 1556.8636363636363,
@@ -1587,6 +1631,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 602.238,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1701.0262500000001,
           "Utf8Regex": 44.61625,
           "PredecodedRegex": 187.74875,
@@ -1611,6 +1656,7 @@
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=2081, native=1829.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 7000.719444444444,
           "Utf8Regex": 8297.555555555555,
           "PredecodedRegex": 8591.075,
@@ -1646,6 +1692,7 @@
           },
           "PcreNetNativeEffectiveIterations": 1,
           "PcreNetNative": 54717.3,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1643.126923076923,
           "Utf8Regex": 1124.9083333333333,
           "PredecodedRegex": 12370.93205128205,
@@ -1681,6 +1728,7 @@
           },
           "PcreNetNativeEffectiveIterations": 27,
           "PcreNetNative": 3810.537037037037,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 152.9278876834716,
           "Utf8Regex": 146.97198468410977,
           "PredecodedRegex": 908.6161455009573,
@@ -1716,6 +1764,7 @@
           },
           "PcreNetNativeEffectiveIterations": 8,
           "PcreNetNative": 13773.7125,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2715.808629441625,
           "Utf8Regex": 27.382741116751266,
           "PredecodedRegex": 6190.4964467005075,
@@ -1755,6 +1804,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.284,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.9117,
           "Utf8Regex": 9.22595,
           "PredecodedRegex": 0.201495,
@@ -1790,6 +1840,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.21100000000000002,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 3.6074949999999997,
           "Utf8Regex": 9.6304,
           "PredecodedRegex": 0.104965,
@@ -1825,6 +1876,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.322,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.4964,
           "Utf8Regex": 16.08022,
           "PredecodedRegex": 0.41133000000000003,
@@ -1860,6 +1912,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.38299999999999995,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 8.144175,
           "Utf8Regex": 13.02295,
           "PredecodedRegex": 0.287245,
@@ -1895,6 +1948,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.439,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 6.28837,
           "Utf8Regex": 11.925675,
           "PredecodedRegex": 0.097335,
@@ -1934,6 +1988,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.29100000000000004,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.328835
         },
         "simple/foo-dense": {
@@ -1966,6 +2021,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.21,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.27102
         },
         "simple/foo-optional-bar": {
@@ -1998,6 +2054,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.309,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.454045
         },
         "simple/httpclient-caseless": {
@@ -2030,6 +2087,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.38,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.44199499999999997
         },
         "simple/loglevel-multiline": {
@@ -2062,6 +2120,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.44,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.53282
         }
       }
@@ -2087,6 +2146,7 @@
           "FirstCallAllocatedBytes": 9888,
           "WarmAllocatedBytes": 9576,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 30.085160905840286,
           "Utf8Regex": 64.89630512514898,
           "PredecodedRegex": 66.07640047675804,
@@ -2111,6 +2171,7 @@
           "FirstCallAllocatedBytes": 400,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.6015700000000002,
           "Utf8Regex": 5.814355,
           "PredecodedRegex": 0.33014,
@@ -2135,6 +2196,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.32509499999999997,
           "Utf8Regex": 4.644335,
           "PredecodedRegex": 0.13112000000000001,
@@ -2159,6 +2221,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.227535,
           "Utf8Regex": 0.296045,
           "PredecodedRegex": 0.24416,
@@ -2183,6 +2246,7 @@
           "FirstCallAllocatedBytes": 384,
           "WarmAllocatedBytes": 104,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.49404499999999996,
           "Utf8Regex": 6.416930000000001,
           "PredecodedRegex": 0.34909,
@@ -2207,6 +2271,7 @@
           "FirstCallAllocatedBytes": 416,
           "WarmAllocatedBytes": 128,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.852195,
           "Utf8Regex": 4.335430000000001,
           "PredecodedRegex": 0.161725,
@@ -2246,6 +2311,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.0586,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.15984
         },
         "pcre2/branch-reset-backref": {
@@ -2278,6 +2344,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.0886,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.598475
         },
         "pcre2/conditional-accept-negative-lookahead": {
@@ -2310,6 +2377,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.0712,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.298535
         },
         "pcre2/conditional-lookahead": {
@@ -2342,6 +2410,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.1586,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.297455
         },
         "pcre2/conditional-negative-lookahead": {
@@ -2374,6 +2443,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.1306,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.2987
         },
         "pcre2/recursive-optional": {
@@ -2406,6 +2476,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.379,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 3.075715
         },
         "pcre2/recursive-palindrome": {
@@ -2438,6 +2509,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.3708,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.164905
         },
         "pcre2/subroutine-prefix-digits": {
@@ -2470,6 +2542,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.0726,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.59649
         },
         "pcre2/grapheme-cluster": {
@@ -2502,6 +2575,7 @@
           },
           "PcreNetNativeEffectiveIterations": 500,
           "PcreNetNative": 0.29519999999999996,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.743595
         }
       }
@@ -2538,6 +2612,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.604,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.273465
         },
         "pcre2/branch-reset-basic": {
@@ -2570,6 +2645,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.6759999999999999,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.85308
         },
         "pcre2/branch-reset-followup": {
@@ -2602,6 +2678,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.604,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.99071
         },
         "pcre2/branch-reset-nested": {
@@ -2634,6 +2711,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.6890000000000001,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.96673
         },
         "pcre2/duplicate-names": {
@@ -2666,6 +2744,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.541,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.5033
         },
         "pcre2/kreset-atomic-alt": {
@@ -2698,6 +2777,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.498,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.946285
         },
         "pcre2/kreset-bar-or-baz": {
@@ -2730,6 +2810,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.552,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.805255
         },
         "pcre2/kreset-captured-repeat": {
@@ -2751,6 +2832,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=3, native=12.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.88315
         },
         "pcre2/kreset-global": {
@@ -2783,6 +2865,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.493,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.65394
         },
         "pcre2/kreset-repeat": {
@@ -2804,6 +2887,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=3, native=12.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.8297599999999998
         },
         "pcre2/same-start-global": {
@@ -2836,6 +2920,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.691,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.9552049999999999
         },
         "literal/empty-unicode": {
@@ -2868,6 +2953,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 16.037,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 5.821625
         },
         "pcre2/grapheme-cluster": {
@@ -2900,6 +2986,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 4.834,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.310954375137756
         }
       }
@@ -2936,6 +3023,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.335,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 5.94951
         },
         "pcre2/branch-reset-basic": {
@@ -2968,6 +3056,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.33299999999999996,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.311294999999999
         },
         "pcre2/branch-reset-followup": {
@@ -3000,6 +3089,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.33,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 7.320895
         },
         "pcre2/branch-reset-nested": {
@@ -3032,6 +3122,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.413,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.380585
         },
         "pcre2/duplicate-names": {
@@ -3064,6 +3155,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.271,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 7.0271550000000005
         },
         "pcre2/kreset-atomic-alt": {
@@ -3096,6 +3188,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.231,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.45496
         },
         "pcre2/kreset-bar-or-baz": {
@@ -3128,6 +3221,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.284,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.19953
         },
         "pcre2/kreset-captured-repeat": {
@@ -3149,6 +3243,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=87.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 5.294005
         },
         "pcre2/kreset-global": {
@@ -3181,6 +3276,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.223,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 4.05877
         },
         "pcre2/kreset-repeat": {
@@ -3202,6 +3298,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=87.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 5.249
         },
         "pcre2/same-start-global": {
@@ -3234,6 +3331,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.435,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 5.313275
         },
         "literal/empty-unicode": {
@@ -3266,6 +3364,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 7.062,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 7.29747
         },
         "pcre2/grapheme-cluster": {
@@ -3298,6 +3397,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 2.134,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 5.8936
         }
       }
@@ -3334,6 +3434,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.337,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.59845
         },
         "pcre2/branch-reset-basic": {
@@ -3366,6 +3467,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.321,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.8971450000000001
         },
         "pcre2/branch-reset-followup": {
@@ -3398,6 +3500,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.32799999999999996,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.680575
         },
         "pcre2/branch-reset-nested": {
@@ -3430,6 +3533,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.413,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.0166600000000001
         },
         "pcre2/duplicate-names": {
@@ -3462,6 +3566,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.276,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 2.5402400000000003
         },
         "pcre2/kreset-atomic-alt": {
@@ -3494,6 +3599,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.23,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.8744299999999999
         },
         "pcre2/kreset-bar-or-baz": {
@@ -3526,6 +3632,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.284,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.85049
         },
         "pcre2/kreset-captured-repeat": {
@@ -3547,6 +3654,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=39.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.905245
         },
         "pcre2/kreset-global": {
@@ -3579,6 +3687,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.221,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.67215
         },
         "pcre2/kreset-repeat": {
@@ -3600,6 +3709,7 @@
           "FirstCallAllocatedBytes": 0,
           "WarmAllocatedBytes": 0,
           "PcreNetNativeUnavailableReason": "Checksum mismatch: managed=21, native=39.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.859025
         },
         "pcre2/same-start-global": {
@@ -3632,6 +3742,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.433,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 1.7490450000000002
         },
         "literal/empty-unicode": {
@@ -3664,6 +3775,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.607,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.694
         },
         "pcre2/grapheme-cluster": {
@@ -3696,6 +3808,7 @@
           },
           "PcreNetNativeEffectiveIterations": 100,
           "PcreNetNative": 0.597,
+          "PcreNetNativeStatus": "Unqualified",
           "Utf8Pcre2": 0.924175
         }
       }
@@ -3721,6 +3834,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 3.9647050000000004
         },
         "pcre2/branch-reset-basic": {
@@ -3742,6 +3856,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.9728899999999999
         },
         "pcre2/branch-reset-followup": {
@@ -3763,6 +3878,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 2.75611
         },
         "pcre2/branch-reset-nested": {
@@ -3784,6 +3900,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.093315
         },
         "pcre2/duplicate-names": {
@@ -3805,6 +3922,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 2.821625
         },
         "pcre2/kreset-atomic-alt": {
@@ -3826,6 +3944,7 @@
           "FirstCallAllocatedBytes": 368,
           "WarmAllocatedBytes": 88,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.9601850000000001
         },
         "pcre2/kreset-bar-or-baz": {
@@ -3847,6 +3966,7 @@
           "FirstCallAllocatedBytes": 368,
           "WarmAllocatedBytes": 88,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.928435
         },
         "pcre2/kreset-captured-repeat": {
@@ -3868,6 +3988,7 @@
           "FirstCallAllocatedBytes": 2088,
           "WarmAllocatedBytes": 1808,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 8.216320979258755
         },
         "pcre2/kreset-global": {
@@ -3889,6 +4010,7 @@
           "FirstCallAllocatedBytes": 376,
           "WarmAllocatedBytes": 96,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 0.755475
         },
         "pcre2/kreset-repeat": {
@@ -3910,6 +4032,7 @@
           "FirstCallAllocatedBytes": 1800,
           "WarmAllocatedBytes": 1520,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 3.767955
         },
         "pcre2/same-start-global": {
@@ -3931,6 +4054,7 @@
           "FirstCallAllocatedBytes": 648,
           "WarmAllocatedBytes": 88,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 1.8635099999999998
         },
         "literal/empty-unicode": {
@@ -3952,6 +4076,7 @@
           "FirstCallAllocatedBytes": 808,
           "WarmAllocatedBytes": 528,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 6.429757946021189
         },
         "pcre2/grapheme-cluster": {
@@ -3973,6 +4098,7 @@
           "FirstCallAllocatedBytes": 392,
           "WarmAllocatedBytes": 112,
           "PcreNetNativeUnavailableReason": "PCRE.NET does not expose equivalent UTF-8 span replacement output.",
+          "PcreNetNativeStatus": "Excluded",
           "Utf8Pcre2": 3.01125
         }
       }

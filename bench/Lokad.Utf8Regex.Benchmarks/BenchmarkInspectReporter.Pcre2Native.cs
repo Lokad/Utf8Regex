@@ -10,7 +10,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
 
@@ -24,14 +24,14 @@ internal static partial class BenchmarkInspectReporter
                     $"The snapshot does not contain case '{caseId}' in section '{sectionName}'. Refresh that section first.");
             }
 
-            Console.WriteLine($"Measuring native PCRE2 baseline for {sectionName}: {caseId}");
+            Console.WriteLine($"Measuring PCRE.NET / PCRE2 NFA comparator for {sectionName}: {caseId}");
             var operation = GetPcre2SectionRequirements(section).Operation;
             var maximumIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, requestedIterations);
             MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
         }
 
         SavePcre2BenchmarkSnapshot(snapshot);
-        Console.WriteLine($"Updated native PCRE2 benchmark case: {caseId}");
+        Console.WriteLine($"Updated PCRE.NET / PCRE2 NFA benchmark case: {caseId}");
         return 0;
     }
 
@@ -43,7 +43,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = 4;
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
         var sections = ParsePcre2Sections(sectionsText);
 
@@ -58,7 +58,7 @@ internal static partial class BenchmarkInspectReporter
             var operation = GetPcre2SectionRequirements(section).Operation;
             foreach (var (caseId, measurement) in sectionSnapshot.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
             {
-                Console.WriteLine($"Measuring native PCRE2 baseline for {GetPcre2SectionToken(section)}: {caseId}");
+                Console.WriteLine($"Measuring PCRE.NET / PCRE2 NFA comparator for {GetPcre2SectionToken(section)}: {caseId}");
                 var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
                 var maximumIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, requestedIterations);
                 MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
@@ -68,7 +68,7 @@ internal static partial class BenchmarkInspectReporter
 
         SavePcre2BenchmarkSnapshot(snapshot);
         Console.WriteLine(
-            $"Updated native PCRE2 baselines: {string.Join(", ", sections.Select(GetPcre2SectionToken))}");
+            $"Updated PCRE.NET / PCRE2 NFA comparators: {string.Join(", ", sections.Select(GetPcre2SectionToken))}");
         return 0;
     }
 
@@ -87,6 +87,7 @@ internal static partial class BenchmarkInspectReporter
             measurement.PcreNetNative = null;
             measurement.PcreNetNativeUnavailableReason =
                 "PCRE.NET does not expose equivalent UTF-8 span replacement output.";
+            measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
             return;
         }
 
@@ -104,6 +105,7 @@ internal static partial class BenchmarkInspectReporter
                 measurement.PcreNetNative = null;
                 measurement.PcreNetNativeUnavailableReason =
                     $"Checksum mismatch: managed={expected}, native={actual}.";
+                measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
                 Console.WriteLine($"  Skipped: {measurement.PcreNetNativeUnavailableReason}");
                 return;
             }
@@ -117,6 +119,7 @@ internal static partial class BenchmarkInspectReporter
                 effectiveIterations,
                 () => baseline.Execute(operation));
             measurement.PcreNetNativeUnavailableReason = null;
+            measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Unqualified;
         }
         catch (PCRE.PcreException exception)
         {
@@ -126,6 +129,7 @@ internal static partial class BenchmarkInspectReporter
             measurement.PcreNetNative = null;
             measurement.PcreNetNativeUnavailableReason =
                 $"Native PCRE2 rejected the mapped profile: {exception.Message}";
+            measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
             Console.WriteLine($"  Skipped: {measurement.PcreNetNativeUnavailableReason}");
         }
     }
