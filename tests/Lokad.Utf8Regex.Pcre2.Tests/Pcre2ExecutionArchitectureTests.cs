@@ -242,16 +242,83 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var nonExact = new Utf8Pcre2Regex(@"([a-z]+)\1");
         var caseless = new Utf8Pcre2Regex(@"(?i:(abc))\1");
-        var boundaryReset = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)");
+        var nonRootAtomic = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)c");
         var tooManyAlternatives = new Utf8Pcre2Regex(
             "(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
         var tooLong = new Utf8Pcre2Regex($"(?|({new string('a', 4097)}))");
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(nonExact.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(caseless.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(boundaryReset.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(nonRootAtomic.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooManyAlternatives.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooLong.DebugCompiledProgram.Operations.Count);
+    }
+
+    [Fact]
+    public void FiniteLiteralBoundaryResetLanguagesProjectReportedRangesWithoutChangingProgression()
+    {
+        var global = new Utf8Pcre2Regex(@"abc\K123");
+        var alternative = new Utf8Pcre2Regex(@"(foo)(\Kbar|baz)");
+        var rootAtomic = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)");
+        var duplicateLanguage = new Utf8Pcre2Regex(@"(?:a\Kb|ab)");
+        var resetAtEnd = new Utf8Pcre2Regex(@"ab\K");
+        var unicode = new Utf8Pcre2Regex(@"é\Kλ");
+        var metered = new Utf8Pcre2Regex(
+            @"abc\K123",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
+            Timeout.InfiniteTimeSpan);
+
+        AssertFiniteLiteralBoundaryResetPlan(global);
+        AssertFiniteLiteralBoundaryResetPlan(alternative);
+        AssertFiniteLiteralBoundaryResetPlan(rootAtomic);
+        AssertFiniteLiteralBoundaryResetPlan(duplicateLanguage);
+        AssertFiniteLiteralBoundaryResetPlan(resetAtEnd);
+        AssertFiniteLiteralBoundaryResetPlan(unicode);
+        AssertFiniteLiteralBoundaryResetPlan(metered);
+        Assert.Equal(2, global.Count("abc123 abc123"u8));
+        Assert.Equal(3, alternative.Count("foobar foobaz foobar"u8));
+        Assert.Equal(3, rootAtomic.Count("abz ab ab"u8));
+        Assert.Equal([(3, 6), (10, 13)], EnumerateByteRanges(global, "abc123 abc123"u8));
+        Assert.Equal([(3, 6), (7, 13), (17, 20)], EnumerateByteRanges(alternative, "foobar foobaz foobar"u8));
+        Assert.Equal([(1, 3), (4, 6), (7, 9)], EnumerateByteRanges(rootAtomic, "abz ab ab"u8));
+        Assert.Equal([(1, 2)], EnumerateByteRanges(duplicateLanguage, "ab"u8));
+        Assert.Equal([(2, 2), (4, 4)], EnumerateByteRanges(resetAtEnd, "abab"u8));
+        Assert.Equal([(2, 4)], EnumerateByteRanges(unicode, "éλ"u8));
+        Assert.Equal([(3, 6), (10, 13)], EnumerateByteRanges(metered, "abc123 abc123"u8));
+
+        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
+        Assert.Equal(3, alternative.MatchMany("foobar foobaz foobar"u8, matches, out var isMore));
+        Assert.False(isMore);
+        Assert.Equal((3, 6), (matches[0].StartOffsetInBytes, matches[0].EndOffsetInBytes));
+        Assert.Equal((7, 13), (matches[1].StartOffsetInBytes, matches[1].EndOffsetInBytes));
+        Assert.Equal((17, 20), (matches[2].StartOffsetInBytes, matches[2].EndOffsetInBytes));
+    }
+
+    private static void AssertFiniteLiteralBoundaryResetPlan(Utf8Pcre2Regex regex)
+    {
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        var enumerate = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(
+            regex.DebugCompiledProgram.Operations.Enumerate);
+        Assert.NotNull(enumerate.BoundaryProjection);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
+    }
+
+    private static List<(int Start, int End)> EnumerateByteRanges(
+        Utf8Pcre2Regex regex,
+        ReadOnlySpan<byte> input)
+    {
+        var ranges = new List<(int Start, int End)>();
+        var enumerator = regex.EnumerateMatches(input);
+        while (enumerator.MoveNext())
+        {
+            ranges.Add((enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
+        }
+
+        return ranges;
     }
 
     private static void AssertFiniteLiteralLanguagePlan(Utf8Pcre2Regex regex)

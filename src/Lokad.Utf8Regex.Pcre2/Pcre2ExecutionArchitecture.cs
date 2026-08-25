@@ -235,11 +235,48 @@ internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
 
 internal sealed class Pcre2FiniteLiteralLanguageDirectProgram : Pcre2LiteralFamilyDirectProgram
 {
-    internal Pcre2FiniteLiteralLanguageDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
-        : base(regex, fallback)
+    internal Pcre2FiniteLiteralLanguageDirectProgram(
+        Pcre2FiniteLiteralLanguageCompilation compilation,
+        Pcre2BacktrackingProgram fallback)
+        : base(compilation.Regex, fallback)
     {
+        BoundaryProjection = compilation.BoundaryProjection;
+    }
+
+    internal Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection { get; }
+}
+
+internal sealed record Pcre2FiniteLiteralLanguageCompilation(
+    Utf8Regex Regex,
+    Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection);
+
+internal sealed class Pcre2FiniteLiteralBoundaryProjection
+{
+    private readonly Pcre2FiniteLiteralBoundaryAlternative[] _alternatives;
+
+    internal Pcre2FiniteLiteralBoundaryProjection(Pcre2FiniteLiteralBoundaryAlternative[] alternatives)
+    {
+        _alternatives = alternatives;
+    }
+
+    internal int ProjectStartOffset(ReadOnlySpan<byte> input, int consumedStart, int consumedEnd)
+    {
+        var consumedValue = input[consumedStart..consumedEnd];
+        foreach (var alternative in _alternatives)
+        {
+            if (consumedValue.SequenceEqual(alternative.Value))
+            {
+                return consumedStart + alternative.ReportedStartOffsetInBytes;
+            }
+        }
+
+        throw new InvalidOperationException("A finite literal match must belong to its compiled language.");
     }
 }
+
+internal readonly record struct Pcre2FiniteLiteralBoundaryAlternative(
+    byte[] Value,
+    int ReportedStartOffsetInBytes);
 
 internal enum Pcre2DirectProgramKind : byte
 {
@@ -515,18 +552,24 @@ internal static class Pcre2CompiledProgramOverlay
         }
         else if (Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(
                      syntaxTree.Root,
-                     legacy.Request) is { } finiteLiteralRegex)
+                     legacy.Request) is { } finiteLiteralCompilation)
         {
             var literalFamily = new Pcre2FiniteLiteralLanguageDirectProgram(
-                finiteLiteralRegex,
+                finiteLiteralCompilation,
                 backtrackingProgram);
-            // The original plan wins first-match searches, while the capture-free
-            // expansion wins when every non-overlapping match must be discovered.
-            operations = operations with
-            {
-                Count = literalFamily,
-                Enumerate = literalFamily,
-            };
+            // The original plan wins first-match searches. The capture-free
+            // expansion wins global discovery, but tiny boundary-reset Count
+            // calls do not amortize the auxiliary core plan.
+            operations = finiteLiteralCompilation.BoundaryProjection is null
+                ? operations with
+                {
+                    Count = literalFamily,
+                    Enumerate = literalFamily,
+                }
+                : operations with
+                {
+                    Enumerate = literalFamily,
+                };
         }
         else if (Pcre2SingleTokenRepeatAnalyzer.TryCompile(
                      syntaxTree.Root,
@@ -713,9 +756,10 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
 
     private sealed record Pcre2FiniteLiteralState(
         string Value,
+        int ReportedStartCharacterIndex,
         Dictionary<int, Pcre2FiniteLiteralCapture> Captures);
 
-    internal static Utf8Regex? TryCompile(
+    internal static Pcre2FiniteLiteralLanguageCompilation? TryCompile(
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request)
     {
@@ -728,23 +772,45 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         // paying combinatorial construction cost for an auxiliary plan.
         var initialStates = new List<Pcre2FiniteLiteralState>
         {
-            new(string.Empty, []),
+            new(string.Empty, 0, []),
         };
-        if (!TryEvaluate(root, initialStates, out var states) ||
+        // An atomic group can be flattened only when it owns the root: without
+        // a following continuation, no later failure can revisit its choice.
+        var evaluationRoot = root is Pcre2AtomicBacktrackingNode rootAtomic
+            ? rootAtomic.Body
+            : root;
+        if (!TryEvaluate(evaluationRoot, initialStates, out var states) ||
             states.Count == 0 ||
             states.Any(static state => state.Value.Length == 0))
         {
             return null;
         }
 
-        var alternatives = states
+        var distinctValues = new HashSet<string>(StringComparer.Ordinal);
+        var alternatives = new List<Pcre2FiniteLiteralState>(states.Count);
+        foreach (var state in states)
+        {
+            if (distinctValues.Add(state.Value))
+            {
+                alternatives.Add(state);
+            }
+        }
+
+        var escapedAlternatives = alternatives
             .Select(static state => Regex.Escape(state.Value))
-            .Distinct(StringComparer.Ordinal)
             .ToArray();
-        var pattern = alternatives.Length == 1
-            ? alternatives[0]
-            : $"(?:{string.Join('|', alternatives)})";
-        return new Utf8Regex(pattern, RegexOptions.CultureInvariant, request.MatchTimeout);
+        var pattern = escapedAlternatives.Length == 1
+            ? escapedAlternatives[0]
+            : $"(?:{string.Join('|', escapedAlternatives)})";
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, request.MatchTimeout);
+        var boundaryProjection = alternatives.Any(static state => state.ReportedStartCharacterIndex != 0)
+            ? new Pcre2FiniteLiteralBoundaryProjection(
+                alternatives.Select(static state => new Pcre2FiniteLiteralBoundaryAlternative(
+                    Encoding.UTF8.GetBytes(state.Value),
+                    Encoding.UTF8.GetByteCount(state.Value.AsSpan(0, state.ReportedStartCharacterIndex))))
+                .ToArray())
+            : null;
+        return new Pcre2FiniteLiteralLanguageCompilation(regex, boundaryProjection);
 
         bool TryEvaluate(
             IPcre2BacktrackingNode node,
@@ -765,7 +831,10 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                             return false;
                         }
 
-                        outputs.Add(new Pcre2FiniteLiteralState(input.Value + literal, input.Captures));
+                        outputs.Add(new Pcre2FiniteLiteralState(
+                            input.Value + literal,
+                            input.ReportedStartCharacterIndex,
+                            input.Captures));
                     }
                     return true;
 
@@ -827,7 +896,10 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                                     capture.Name,
                                     captureOutput.Value[input.Value.Length..]),
                             };
-                            outputs.Add(new Pcre2FiniteLiteralState(captureOutput.Value, captures));
+                            outputs.Add(new Pcre2FiniteLiteralState(
+                                captureOutput.Value,
+                                captureOutput.ReportedStartCharacterIndex,
+                                captures));
                             if (outputs.Count > MaximumAlternatives)
                             {
                                 return false;
@@ -869,7 +941,15 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
 
                         outputs.Add(new Pcre2FiniteLiteralState(
                             input.Value + captured.Value,
+                            input.ReportedStartCharacterIndex,
                             input.Captures));
+                    }
+                    return true;
+
+                case Pcre2MatchBoundaryResetBacktrackingNode:
+                    foreach (var input in inputs)
+                    {
+                        outputs.Add(input with { ReportedStartCharacterIndex = input.Value.Length });
                     }
                     return true;
 
@@ -2027,7 +2107,7 @@ internal static class Pcre2GlobalOperationDriver
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
-                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram.Regex, input, start)
+                ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram, input, start)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     literalFamilyProgram.Fallback,
                     compiledProgram.CandidateSearchPlan,
@@ -2133,10 +2213,10 @@ internal ref struct Pcre2GlobalMatchCursor
         new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
-        Utf8Regex regex,
+        Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start) =>
-        new(new Pcre2LiteralFamilyGlobalMatchCursor(regex, input, start));
+        new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start));
 
     internal static Pcre2GlobalMatchCursor CreateCharacter(
         Pcre2CharacterProgram program,
@@ -2510,15 +2590,17 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
     private Utf8PreparedValueMatchEnumerator _enumerator;
     private Utf8ValidatedInput _input;
     private Utf8ProjectionCursor _projection;
+    private readonly Pcre2FiniteLiteralBoundaryProjection? _boundaryProjection;
 
     internal Pcre2LiteralFamilyGlobalMatchCursor(
-        Utf8Regex regex,
+        Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start)
     {
-        _enumerator = regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
+        _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
         _projection = input.CreateProjectionCursor();
+        _boundaryProjection = (program as Pcre2FiniteLiteralLanguageDirectProgram)?.BoundaryProjection;
         Current = default;
     }
 
@@ -2532,9 +2614,15 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
             return false;
         }
 
+        var consumedStart = _enumerator.StartOffsetInBytes;
+        var consumedEnd = _enumerator.EndOffsetInBytes;
+        var reportedStart = _boundaryProjection?.ProjectStartOffset(
+            _input.Bytes,
+            consumedStart,
+            consumedEnd) ?? consumedStart;
         Current = Pcre2GlobalCursorProjection.Project(
-            _enumerator.StartOffsetInBytes,
-            _enumerator.EndOffsetInBytes,
+            reportedStart,
+            consumedEnd,
             ref _input,
             ref _projection);
         return true;
