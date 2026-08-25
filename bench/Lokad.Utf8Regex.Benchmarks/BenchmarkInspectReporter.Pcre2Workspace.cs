@@ -121,6 +121,7 @@ internal static partial class BenchmarkInspectReporter
                 Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
                 Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
                 Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
+                Pcre2AsciiBoundedIsMatchDirectProgram asciiBounded => asciiBounded.Fallback,
                 _ => null,
             };
             if (program is not null)

@@ -20,6 +20,7 @@ public sealed class Utf8Pcre2Regex
     private readonly Pcre2PalindromeIsMatchDirectProgram? _palindromeIsMatchProgram;
     private readonly Pcre2LeadingDotStarLiteralIsMatchDirectProgram? _leadingDotStarLiteralIsMatchProgram;
     private readonly Pcre2SeparatedRunsIsMatchDirectProgram? _separatedRunsIsMatchProgram;
+    private readonly Pcre2AsciiBoundedIsMatchDirectProgram? _asciiBoundedIsMatchProgram;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -73,6 +74,11 @@ public sealed class Utf8Pcre2Regex
             Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
         {
             _separatedRunsIsMatchProgram = separatedRunsProgram;
+        }
+        else if (_program.Operations.IsMatch is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        {
+            _asciiBoundedIsMatchProgram = asciiBoundedProgram;
         }
     }
 
@@ -213,6 +219,15 @@ public sealed class Utf8Pcre2Regex
             _ = Utf8ValidatedInput.Create(input);
             return Pcre2SeparatedRunsIsMatchRunner.IsMatch(
                 _separatedRunsIsMatchProgram,
+                input,
+                0);
+        }
+
+        if (_asciiBoundedIsMatchProgram is not null)
+        {
+            _ = Utf8ValidatedInput.Create(input);
+            return Pcre2AsciiBoundedIsMatchRunner.IsMatch(
+                _asciiBoundedIsMatchProgram,
                 input,
                 0);
         }
@@ -4104,6 +4119,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
             Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
             Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
+            Pcre2AsciiBoundedIsMatchDirectProgram asciiBounded => asciiBounded.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)

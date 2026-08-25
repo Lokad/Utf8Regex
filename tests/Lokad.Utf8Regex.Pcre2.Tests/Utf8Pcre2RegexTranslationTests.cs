@@ -359,12 +359,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void AsciiQuantifiedPatternUsesPcre2BacktrackingProgram()
+    public void AsciiQuantifiedPatternUsesBoundedIsMatchAndVmForGlobalOperations()
     {
         var regex = new Utf8Pcre2Regex(@"\s[a-zA-Z]{0,12}ing\s");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count(" sing  bringing  going  go "u8));
     }
 
@@ -662,12 +662,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void DateValidatorUsesPcre2BacktrackingProgram()
+    public void DateValidatorUsesBoundedIsMatchAndVmForDetailedOperations()
     {
         var regex = new Utf8Pcre2Regex(@"^\d{1,2}/\d{1,2}/\d{4}$");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("12/12/2001"u8));
         Assert.False(regex.IsMatch("12-12-2001"u8));
     }
@@ -678,6 +678,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex(@"(\d{4}[- ]){3}\d{3,4}");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
+        Assert.Equal("IsMatch=Pcre2AsciiBoundedIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("1234-5678-1234-456"u8));
         Assert.False(regex.IsMatch("1234-5678"u8));
     }
