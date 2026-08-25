@@ -157,4 +157,17 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(3UL, result.Execution.CandidateAttempts);
     }
+
+    [Fact]
+    public void IsMatchDiagnosticsExposeRejectedBacktrackingWork()
+    {
+        var regex = new Utf8Pcre2Regex("^(a+)+b$");
+
+        var result = regex.DebugIsMatchWithDiagnostics("aaaaaaaa"u8, 0);
+
+        Assert.False(result.IsMatch);
+        Assert.True(result.Execution.CandidateAttempts > 0);
+        Assert.True(result.Execution.BacktrackingSteps > 0);
+        Assert.True(result.Execution.WorkspacePoolRents > 0);
+    }
 }

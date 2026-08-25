@@ -37,6 +37,28 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CandidateSearch   : {context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch.Kind}");
         Console.WriteLine($"HasUtf8Regex      : {context.Utf8Regex is not null}");
         Console.WriteLine($"HasRegex          : {context.Regex is not null}");
+        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
+        {
+            _ = context.Utf8Pcre2Regex.IsMatch(context.InputBytes);
+            var allocatedBytes = MeasureAllocatedBytesPerInvocation(
+                3,
+                () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
+            var stopwatch = Stopwatch.StartNew();
+            var isMatch = context.Utf8Pcre2Regex.DebugIsMatchWithDiagnostics(context.InputBytes, 0);
+            stopwatch.Stop();
+            var execution = isMatch.Execution;
+            Console.WriteLine($"IsMatchResult     : {isMatch.IsMatch}");
+            Console.WriteLine($"IsMatchCandidates : {execution.CandidateAttempts}");
+            Console.WriteLine($"IsMatchVmSteps    : {execution.BacktrackingSteps}");
+            Console.WriteLine($"IsMatchVmTokens   : {execution.VmTokenSteps}");
+            Console.WriteLine($"IsMatchVmBranches : {execution.VmBranchSteps}");
+            Console.WriteLine($"IsMatchVmRepeats  : {execution.VmRepeatSteps}");
+            Console.WriteLine($"IsMatchVmCaptures : {execution.VmCaptureSteps}");
+            Console.WriteLine($"IsMatchWorkspace  : {execution.WorkspacePoolRents}");
+            Console.WriteLine($"IsMatchAllocBytes : {allocatedBytes}");
+            Console.WriteLine($"IsMatchElapsedUs  : {stopwatch.Elapsed.TotalMicroseconds:F3}");
+        }
+
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
         {
             _ = context.Utf8Pcre2Regex.Count(context.InputBytes);
@@ -378,6 +400,11 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
+            Measure(
+                "Utf8ValidationOnly",
+                samples,
+                iterations,
+                () => Utf8InputAnalyzer.ValidateOnly(context.InputBytes).ByteLength);
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
             var pcre2AllocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,

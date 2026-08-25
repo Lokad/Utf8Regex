@@ -4015,6 +4015,27 @@ public sealed class Utf8Pcre2Regex
         return Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
     }
 
+    internal Pcre2IsMatchDiagnostics DebugIsMatchWithDiagnostics(
+        ReadOnlySpan<byte> input,
+        int startOffsetInBytes)
+    {
+        var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        if (_program.Operations.IsMatch is not Pcre2BacktrackingDirectProgram backtrackingProgram)
+        {
+            return new Pcre2IsMatchDiagnostics(IsMatch(input, startOffsetInBytes), default);
+        }
+
+        var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+            backtrackingProgram.Program,
+            _program.CandidateSearch,
+            subject,
+            start,
+            Pcre2MatchOptions.None,
+            _program.Request,
+            collectDiagnostics: true);
+        return new Pcre2IsMatchDiagnostics(cursor.MoveNext(), cursor.Diagnostics);
+    }
+
     internal Pcre2CountDiagnostics DebugCountWithDiagnostics(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ThrowIfGenericIterationMayBeNonMonotone();

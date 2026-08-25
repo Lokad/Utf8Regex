@@ -2843,6 +2843,8 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
 
 internal readonly record struct Pcre2CountDiagnostics(int Count, Pcre2ExecutionDiagnostics Execution);
 
+internal readonly record struct Pcre2IsMatchDiagnostics(bool IsMatch, Pcre2ExecutionDiagnostics Execution);
+
 internal enum Pcre2SyntaxNodeKind : byte
 {
     LegacyPattern = 0,
