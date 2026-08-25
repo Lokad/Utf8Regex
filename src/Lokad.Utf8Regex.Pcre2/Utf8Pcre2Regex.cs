@@ -285,7 +285,7 @@ public sealed class Utf8Pcre2Regex
         ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
 
-        if (Pcre2GlobalOperationDriver.TryCreateDirectCursor(
+        if (Pcre2GlobalOperationDriver.TryCreateCursor(
                 _program,
                 subject,
                 start,
@@ -293,15 +293,6 @@ public sealed class Utf8Pcre2Regex
                 out var directCursor))
         {
             return new Utf8Pcre2ValueMatchEnumerator(input, directCursor);
-        }
-
-        if (_program.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
-            matchOptions == Pcre2MatchOptions.None &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(_program.Request))
-        {
-            return new Utf8Pcre2ValueMatchEnumerator(
-                input,
-                literalFamilyProgram.Regex.ByteOffsetExecution.EnumerateMatches(subject, start));
         }
 
         if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)

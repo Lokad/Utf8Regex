@@ -49,17 +49,6 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void PublicPcre2EnumeratorCarriesOnlyTheSelectedDirectCursor()
-    {
-        Assert.Equal(
-            Pcre2DirectGlobalMatchCursor.DebugSizeInBytes,
-            Utf8Pcre2ValueMatchEnumerator.DebugDirectCursorSizeInBytes);
-        Assert.True(
-            Utf8Pcre2ValueMatchEnumerator.DebugDirectCursorSizeInBytes <
-            Pcre2GlobalMatchCursor.DebugSizeInBytes);
-    }
-
-    [Fact]
     public void Pcre2GlobalCursorCarriesOneSharedDirectRouteState()
     {
         Assert.True(

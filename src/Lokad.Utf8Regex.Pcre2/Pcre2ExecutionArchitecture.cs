@@ -1839,59 +1839,23 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        if (TryCreateDirectCursor(compiledProgram, input, start, matchOptions, out var direct))
-        {
-            cursor = Pcre2GlobalMatchCursor.CreateDirect(direct);
-            return true;
-        }
-
-        cursor = default;
-        return false;
-    }
-
-    internal static bool TryCreateDirectCursor(
-        Pcre2CompiledProgram compiledProgram,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        out Pcre2DirectGlobalMatchCursor cursor)
-    {
-        if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
-        {
-            if (matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request))
-            {
-                cursor = default;
-                return false;
-            }
-
-            cursor = Pcre2DirectGlobalMatchCursor.CreateBacktracking(
-                literalFamilyProgram.Fallback,
-                compiledProgram.CandidateSearchPlan,
-                input,
-                start,
-                matchOptions,
-                compiledProgram.Request,
-                collectDiagnostics: false);
-            return true;
-        }
-
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralDirectProgram literalProgram)
         {
-            cursor = Pcre2DirectGlobalMatchCursor.CreateLiteral(
+            cursor = Pcre2GlobalMatchCursor.CreateLiteral(
                 literalProgram.Program, input, start, matchOptions, compiledProgram.Request);
             return true;
         }
 
         if (compiledProgram.Operations.Enumerate is Pcre2CharacterDirectProgram characterProgram)
         {
-            cursor = Pcre2DirectGlobalMatchCursor.CreateCharacter(
+            cursor = Pcre2GlobalMatchCursor.CreateCharacter(
                 characterProgram.Program, input, start, matchOptions, compiledProgram.Request);
             return true;
         }
 
         if (compiledProgram.Operations.Enumerate is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
-            cursor = Pcre2DirectGlobalMatchCursor.CreateBacktracking(
+            cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearchPlan,
                 input,
@@ -1905,13 +1869,13 @@ internal static class Pcre2GlobalOperationDriver
         if (compiledProgram.Operations.Enumerate is Pcre2SingleTokenRepeatDirectProgram singleTokenRepeatProgram)
         {
             cursor = HasUnmeteredExecution(compiledProgram.Request)
-                ? Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(
+                ? Pcre2GlobalMatchCursor.CreateSingleTokenRepeat(
                     singleTokenRepeatProgram.Program,
                     input,
                     start,
                     matchOptions,
                     compiledProgram.Request)
-                : Pcre2DirectGlobalMatchCursor.CreateBacktracking(
+                : Pcre2GlobalMatchCursor.CreateBacktracking(
                     singleTokenRepeatProgram.Program.Fallback,
                     compiledProgram.CandidateSearchPlan,
                     input,
@@ -1960,14 +1924,35 @@ internal ref struct Pcre2GlobalMatchCursor
         ? _direct.Diagnostics
         : default;
 
-    internal static Pcre2GlobalMatchCursor CreateDirect(Pcre2DirectGlobalMatchCursor cursor) =>
-        new(cursor);
+    internal static Pcre2GlobalMatchCursor CreateLiteral(
+        Pcre2LiteralProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Utf8Regex regex,
         Utf8ValidatedInput input,
         Utf8BytePosition start) =>
         new(new Pcre2LiteralFamilyGlobalMatchCursor(regex, input, start));
+
+    internal static Pcre2GlobalMatchCursor CreateCharacter(
+        Pcre2CharacterProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(Pcre2DirectGlobalMatchCursor.CreateCharacter(program, input, start, matchOptions, request));
+
+    internal static Pcre2GlobalMatchCursor CreateSingleTokenRepeat(
+        Pcre2SingleTokenRepeatProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
