@@ -31,7 +31,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(7, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(8, root.GetProperty("SchemaVersion").GetInt32());
 
         var dependency = root.GetProperty("PcreNetNativeBaseline");
         Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
@@ -43,6 +43,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         var buildFingerprint = dependency.GetProperty("BuildFingerprint");
         AssertBuildFingerprint(buildFingerprint);
         var buildFingerprintSha256 = buildFingerprint.GetProperty("Sha256").GetString();
+        AssertWorkspaceContract(dependency.GetProperty("WorkspaceContract"), comparator: true);
 
         var families = root.GetProperty("ScalingFamilies");
         Assert.Equal(
@@ -133,6 +134,12 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Contains($"Native build fingerprint: `{buildFingerprintSha256}`", page, StringComparison.Ordinal);
         Assert.Contains("## Qualified comparator plans", page, StringComparison.Ordinal);
         Assert.Contains("Plan SHA-256", page, StringComparison.Ordinal);
+        Assert.Contains("Comparator qualification lifecycle (`PcreMatchBuffer8Bit`)", page, StringComparison.Ordinal);
+        Assert.Contains("not thread-safe and not reentrant", page, StringComparison.Ordinal);
+        Assert.Contains("Retained native match-data heap-frame high water: unavailable", page, StringComparison.Ordinal);
+        Assert.Contains("Managed qualification lifecycle", page, StringComparison.Ordinal);
+        Assert.Contains("median of five managed-thread allocation probes", page, StringComparison.Ordinal);
+        Assert.Contains("Utf8Pcre2 managed alloc | Comparator managed alloc", page, StringComparison.Ordinal);
         Assert.Contains("--qualify-pcre2-comparator-case-reversed", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"relative", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"absolute", page, StringComparison.Ordinal);
@@ -155,7 +162,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         JsonElement pair,
         string? expectedBuildFingerprintSha256)
     {
-        Assert.Equal(5, pair.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal(7, pair.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal(sectionName, pair.GetProperty("Section").GetString());
         Assert.Equal(caseId, pair.GetProperty("CaseId").GetString());
         Assert.Equal(row.GetProperty("PcreNetNativeStatus").GetString(), pair.GetProperty("Status").GetString());
@@ -171,6 +178,8 @@ public sealed class Pcre2BenchmarkSnapshotTests
         AssertBuildFingerprint(buildFingerprint);
         Assert.Equal(expectedBuildFingerprintSha256, buildFingerprint.GetProperty("Sha256").GetString());
         AssertPlanFingerprint(pair.GetProperty("ComparatorPlanFingerprint"));
+        AssertWorkspaceContract(pair.GetProperty("ManagedWorkspaceContract"), comparator: false);
+        AssertWorkspaceContract(pair.GetProperty("ComparatorWorkspaceContract"), comparator: true);
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedRoute").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedPlan").GetString()));
         Assert.Equal("highest-efficiency-class", pair.GetProperty("ProcessorSetPolicy").GetString());
@@ -190,6 +199,8 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.True(pair.GetProperty("ComparatorWarmupIterations").GetInt32() >= 64);
         Assert.True(pair.GetProperty("ManagedWarmupMilliseconds").GetDouble() >= 750);
         Assert.True(pair.GetProperty("ComparatorWarmupMilliseconds").GetDouble() >= 750);
+        AssertAllocationMeasurement(pair, "Managed");
+        AssertAllocationMeasurement(pair, "Comparator");
 
         var laneOrders = pair.GetProperty("LaneOrders").EnumerateArray().Select(static value => value.GetString()).ToArray();
         var managedMicroseconds = ReadSamples(pair, "ManagedSampleMicroseconds", sampleCount);
@@ -251,6 +262,47 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.True(fingerprint.GetProperty("DefaultDepthLimit").GetUInt32() > 0);
         Assert.True(fingerprint.GetProperty("ParenthesesLimit").GetUInt32() > 0);
         Assert.True(fingerprint.GetProperty("CharacterTablesLengthBytes").GetUInt32() > 0);
+    }
+
+    private static void AssertWorkspaceContract(JsonElement contract, bool comparator)
+    {
+        Assert.False(string.IsNullOrWhiteSpace(contract.GetProperty("StateHolder").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(contract.GetProperty("Lifetime").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(contract.GetProperty("ConcurrencyContract").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(contract.GetProperty("RetainedMemoryContract").GetString()));
+        Assert.False(contract.TryGetProperty("RetainedNativeHeapHighWaterBytes", out _));
+
+        if (comparator)
+        {
+            Assert.Equal("PcreMatchBuffer8Bit", contract.GetProperty("StateHolder").GetString());
+            Assert.Contains("not thread-safe and not reentrant", contract.GetProperty("ConcurrencyContract").GetString(), StringComparison.Ordinal);
+            Assert.False(string.IsNullOrWhiteSpace(
+                contract.GetProperty("RetainedNativeHeapHighWaterUnavailableReason").GetString()));
+        }
+        else
+        {
+            Assert.Equal("operation-local managed state", contract.GetProperty("StateHolder").GetString());
+            Assert.Contains("invoked concurrently", contract.GetProperty("ConcurrencyContract").GetString(), StringComparison.Ordinal);
+            Assert.False(contract.TryGetProperty("RetainedNativeHeapHighWaterUnavailableReason", out _));
+        }
+    }
+
+    private static void AssertAllocationMeasurement(JsonElement pair, string lane)
+    {
+        var iterations = pair.GetProperty($"{lane}AllocationProbeIterations").GetInt32();
+        Assert.InRange(iterations, 1, 64);
+        var sampleBytes = pair.GetProperty($"{lane}AllocationSampleBytes")
+            .EnumerateArray()
+            .Select(static value => value.GetInt64())
+            .ToArray();
+        Assert.Equal(5, sampleBytes.Length);
+        Assert.All(sampleBytes, static value => Assert.True(value >= 0));
+        Array.Sort(sampleBytes);
+        Assert.Equal(
+            sampleBytes[sampleBytes.Length / 2] / iterations,
+            pair.GetProperty(lane == "Managed"
+                ? "ManagedAllocatedBytesPerOperation"
+                : "ComparatorManagedAllocatedBytesPerOperation").GetInt64());
     }
 
     private static void AssertPlanFingerprint(JsonElement fingerprint)
