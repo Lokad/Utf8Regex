@@ -9,9 +9,9 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `0192DDE4B25218B0914CDE5447DFA25121F1CFFEF90B5132FB9A0BB9DC1F9B9D`
-- Latest managed row measurement: `2026-08-25T14:19:27.1848507+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T14:19:27.1848507+00:00`
+- Snapshot SHA-256: `96F69B4FF04E14698AF4EEFAA49BC4D4B72852160854BA6539801A2B4082D2F2`
+- Latest managed row measurement: `2026-08-25T14:35:52.1193817+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T14:35:52.1193817+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `22/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
@@ -59,7 +59,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B | — |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B | — |
 | `common/email-match` | **Unqualified** | 34 B | 1.351 us | 0.370 us | 3.65x | — | +0.981 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 7.17x | 0 B | — |
-| `common/email-miss` | **Native faster** | 35 B | 0.628 us | 0.298 us | 2.11x | 2.09–2.14x | +0.330 us | 9 pairs; 39/41 ms; 62,570/136,073 ops/lane; IQR 1.012/1.009 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 2.01x | 0 B | 0 B |
+| `common/email-miss` | **Native faster** | 35 B | 0.473 us | 0.315 us | 1.52x | 1.47–1.57x | +0.162 us | 9 pairs; 31/33 ms; 65,588/104,876 ops/lane; IQR 1.027/1.041 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 1.51x | 0 B | 0 B |
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B | — |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B | — |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
