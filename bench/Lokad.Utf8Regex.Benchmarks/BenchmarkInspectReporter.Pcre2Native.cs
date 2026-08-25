@@ -522,7 +522,7 @@ internal static partial class BenchmarkInspectReporter
         SourceRepository = "https://github.com/ltrzesniewski/pcre-net",
         SourceRevision = PcreNetNativeBenchmarkBaseline.SourceRevision,
         License = "BSD-3-Clause WITH PCRE2-exception",
-        Profile = "UTF-8 standard NFA matcher, validation enabled, reusable match buffer, JIT disabled",
+        Profile = "UTF-8 standard NFA matcher, validation enabled, managed-profile LF newline and Unicode \\R, reusable match buffer, JIT disabled",
         BuildFingerprint = PcreNetNativeBenchmarkBaseline.CaptureBuildFingerprint(),
         WorkspaceContract = PcreNetNativeBenchmarkBaseline.CaptureWorkspaceContract(),
     };

@@ -1272,6 +1272,16 @@ internal static partial class BenchmarkInspectReporter
             {
                 row.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
             }
+
+            if (row.PcreNetNativePair is { } pair &&
+                pair.ProtocolVersion != Pcre2QualificationProtocolVersion)
+            {
+                row.PcreNetNativePair = null;
+                row.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Unqualified;
+                row.PcreNetNativeStatusReason =
+                    $"Stored protocol-v{pair.ProtocolVersion} evidence predates explicit managed-profile " +
+                    "newline and \\R comparator mapping.";
+            }
         }
 
         return snapshot;

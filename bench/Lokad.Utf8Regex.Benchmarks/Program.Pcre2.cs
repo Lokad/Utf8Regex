@@ -156,6 +156,12 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--invalidate-stale-pcre2-qualifications", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunInvalidateStalePcre2Qualifications();
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--verify-pcre2-benchmark-markdown", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunVerifyPcre2BenchmarkMarkdown();

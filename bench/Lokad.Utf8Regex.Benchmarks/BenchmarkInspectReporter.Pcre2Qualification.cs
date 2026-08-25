@@ -9,13 +9,22 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 8;
+    private const int Pcre2QualificationProtocolVersion = 9;
     private const int Pcre2QualificationAllocationProbeSamples = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 40;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
     private const double Pcre2QualificationCalibrationMinimumMilliseconds = 30;
     private const double Pcre2QualificationCalibrationMaximumMilliseconds = 50;
+
+    public static int RunInvalidateStalePcre2Qualifications()
+    {
+        var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
+        SavePcre2BenchmarkSnapshot(snapshot);
+        Console.WriteLine("Invalidated PCRE2 qualifications recorded under an older protocol.");
+        return 0;
+    }
 
     public static int RunQualifyPcre2ComparatorCase(
         string caseId,

@@ -324,7 +324,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
 
     private static PcreNewLine ToPcreNetNewLine(Pcre2NewlineConvention value) => value switch
     {
-        Pcre2NewlineConvention.Default => PcreNewLine.Default,
+        Pcre2NewlineConvention.Default => PcreNewLine.Lf,
         Pcre2NewlineConvention.Cr => PcreNewLine.Cr,
         Pcre2NewlineConvention.Lf => PcreNewLine.Lf,
         Pcre2NewlineConvention.Crlf => PcreNewLine.CrLf,
@@ -336,7 +336,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
 
     private static PcreBackslashR ToPcreNetBackslashR(Pcre2BsrConvention value) => value switch
     {
-        Pcre2BsrConvention.Default => PcreBackslashR.Default,
+        Pcre2BsrConvention.Default => PcreBackslashR.Unicode,
         Pcre2BsrConvention.AnyCrlf => PcreBackslashR.AnyCrLf,
         Pcre2BsrConvention.Unicode => PcreBackslashR.Unicode,
         _ => throw new ArgumentOutOfRangeException(nameof(value)),
