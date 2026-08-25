@@ -9,9 +9,9 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `89178B430C6815AC03C9127AFA8A147DE992A2F69A73D22096647819334E745D`
-- Latest managed row measurement: `2026-08-25T12:48:26.4953870+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T12:48:26.4953870+00:00`
+- Snapshot SHA-256: `4F977F0CD2581EAA802A24F5E89D76647D3B31E3D5ED81D73C2BC11B387D3569`
+- Latest managed row measurement: `2026-08-25T13:02:22.7651844+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T13:02:22.7651844+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `21/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
@@ -19,7 +19,7 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 - Rows with paired qualification evidence: `19/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `6/5`
+- Managed/comparator measurement environments represented: `7/6`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -59,7 +59,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B | — |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B | — |
 | `common/email-match` | **Unqualified** | 34 B | 1.351 us | 0.370 us | 3.65x | — | +0.981 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 7.17x | 0 B | — |
-| `common/email-miss` | **Native faster** | 35 B | 3.807 us | 0.298 us | 12.76x | 12.58–12.82x | +3.504 us | 21 pairs; 40/41 ms; 10,564/137,974 ops/lane; IQR 1.019/1.041 | `Pcre2Backtracking` | 0.211 us | 0.244 us | 0.254 us | 15.02x | 0 B | 0 B |
+| `common/email-miss` | **Native faster** | 35 B | 1.924 us | 0.298 us | 6.46x | 6.40–6.57x | +1.622 us | 9 pairs; 40/39 ms; 20,999/132,607 ops/lane; IQR 1.006/1.005 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 6.15x | 0 B | 0 B |
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B | — |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B | — |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
