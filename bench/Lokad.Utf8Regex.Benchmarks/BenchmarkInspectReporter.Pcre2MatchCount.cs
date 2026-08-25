@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -13,23 +14,31 @@ internal static partial class BenchmarkInspectReporter
     {
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var (pattern, matchToken, missToken, compileSettings) = familyName switch
+        var (pattern, matchToken, missToken, regexOptions, compileSettings) = familyName switch
         {
-            "literal" => ("foo", "foo", "fxx", default(Utf8Pcre2CompileSettings)),
-            "character" => ("[0-9]", "7", "x", default(Utf8Pcre2CompileSettings)),
+            "literal" => ("foo", "foo", "fxx", RegexOptions.CultureInvariant, default(Utf8Pcre2CompileSettings)),
+            "character" => ("[0-9]", "7", "x", RegexOptions.CultureInvariant, default(Utf8Pcre2CompileSettings)),
             "duplicate-names" => (
                 @"(?:(?<n>foo)|(?<n>bar))\k<n>",
                 "foofoo",
                 "foobar",
+                RegexOptions.CultureInvariant,
                 new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }),
             "branch-reset" => (
                 @"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'",
                 "aaaccccaaa",
                 "aaaccccbbb",
+                RegexOptions.CultureInvariant,
                 new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }),
+            "multiline-prefix" => (
+                "^ERROR: .+$",
+                "ERROR: event\n",
+                "INFO: event\n",
+                RegexOptions.CultureInvariant | RegexOptions.Multiline,
+                default(Utf8Pcre2CompileSettings)),
             _ => throw new InvalidOperationException(
                 $"Unknown PCRE2 match-count family '{familyName}'. " +
-                "Expected literal, character, duplicate-names, or branch-reset."),
+                "Expected literal, character, duplicate-names, branch-reset, or multiline-prefix."),
         };
         const int slotCount = 64;
         var stride = Math.Max(matchToken.Length, missToken.Length) + 1;
@@ -44,26 +53,42 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CPU set           : {processorSet.Description}");
         Console.WriteLine("Protocol          : fixed-size input; same-trip paired lanes; alternating order");
         Console.WriteLine();
-        Console.WriteLine("| Matches | Candidates | VM steps | Pool rents | Managed Count us | Native Count us | M/N | Managed Enumerate us | Native Enumerate us | M/N | Managed MatchMany us | Native MatchMany us | M/N |");
-        Console.WriteLine("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+        Console.WriteLine("| Matches | Candidates | VM steps | Pool rents | Managed IsMatch us | Native IsMatch us | M/N | Managed Count us | Native Count us | M/N | Managed Enumerate us | Native Enumerate us | M/N | Managed MatchMany us | Native MatchMany us | M/N |");
+        Console.WriteLine("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
 
         foreach (var requestedMatchCount in new[] { 0, 1, 8, 64 })
         {
-            var inputCharacters = new string('x', inputLength).ToCharArray();
-            for (var slot = 0; slot < slotCount; slot++)
+            string input;
+            if (familyName == "multiline-prefix")
             {
-                var token = slot < requestedMatchCount ? matchToken : missToken;
-                token.CopyTo(0, inputCharacters, slot * stride, token.Length);
+                var lines = new StringBuilder(inputLength);
+                for (var slot = 0; slot < slotCount; slot++)
+                {
+                    lines.Append(slot < requestedMatchCount ? matchToken : missToken);
+                }
+
+                input = lines.ToString();
+            }
+            else
+            {
+                var inputCharacters = new string('x', inputLength).ToCharArray();
+                for (var slot = 0; slot < slotCount; slot++)
+                {
+                    var token = slot < requestedMatchCount ? matchToken : missToken;
+                    token.CopyTo(0, inputCharacters, slot * stride, token.Length);
+                }
+
+                input = new string(inputCharacters);
             }
 
-            var input = new string(inputCharacters);
             var benchmarkCase = new Utf8Pcre2BenchmarkCase(
                 $"diagnostic/{familyName}/{requestedMatchCount}",
                 pattern,
                 input,
-                RegexOptions.CultureInvariant,
+                regexOptions,
                 compileSettings,
-                supportedOperations: Utf8Pcre2BenchmarkOperation.Count |
+                supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch |
+                    Utf8Pcre2BenchmarkOperation.Count |
                     Utf8Pcre2BenchmarkOperation.EnumerateMatches |
                     Utf8Pcre2BenchmarkOperation.MatchMany,
                 supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only);
@@ -82,6 +107,7 @@ internal static partial class BenchmarkInspectReporter
 
             foreach (var operation in new[]
                      {
+                         Utf8Pcre2BenchmarkOperation.IsMatch,
                          Utf8Pcre2BenchmarkOperation.Count,
                          Utf8Pcre2BenchmarkOperation.EnumerateMatches,
                          Utf8Pcre2BenchmarkOperation.MatchMany,
@@ -100,6 +126,11 @@ internal static partial class BenchmarkInspectReporter
                 }
             }
 
+            var isMatch = MeasurePcre2DiagnosticPair(
+                () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0,
+                () => baseline.Execute(Utf8Pcre2BenchmarkOperation.IsMatch),
+                iterations,
+                samples);
             var count = MeasurePcre2DiagnosticPair(
                 () => context.Utf8Pcre2Regex.Count(context.InputBytes),
                 () => baseline.Execute(Utf8Pcre2BenchmarkOperation.Count),
@@ -119,6 +150,8 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine(
                 $"| {actualMatchCount} | {diagnostics.CandidateAttempts:N0} | " +
                 $"{diagnostics.BacktrackingSteps:N0} | {diagnostics.WorkspacePoolRents:N0} | " +
+                $"{isMatch.FirstMicroseconds:F3} | {isMatch.SecondMicroseconds:F3} | " +
+                $"{isMatch.FirstMicroseconds / isMatch.SecondMicroseconds:F2}x | " +
                 $"{count.FirstMicroseconds:F3} | {count.SecondMicroseconds:F3} | " +
                 $"{count.FirstMicroseconds / count.SecondMicroseconds:F2}x | " +
                 $"{enumerate.FirstMicroseconds:F3} | {enumerate.SecondMicroseconds:F3} | " +
