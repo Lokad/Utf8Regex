@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `2518E6D0D6081EC8C80156C72B1E41B135D68242DB824CAC6B4AE434A093D78B`
-- Latest managed row measurement: `2026-08-25T18:59:52.0771596+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:59:52.0771596+00:00`
+- Snapshot SHA-256: `4046E9F54FCC7971F6F82CB767870D47A803C8ACEF93312DED0A531A83AA858E`
+- Latest managed row measurement: `2026-08-25T19:03:15.5423375+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T19:03:15.5423375+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `34/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `26` managed faster, `0` equivalent, `1` native faster, `1` inconclusive, `72` unqualified, `26` excluded
-- Rows with paired qualification evidence: `28/100`
+- Comparator Status: `26` managed faster, `0` equivalent, `2` native faster, `1` inconclusive, `71` unqualified, `26` excluded
+- Rows with paired qualification evidence: `29/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `25/23`
+- Managed/comparator measurement environments represented: `26/24`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -65,7 +65,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
 | `common/uri-match` | **Managed faster** | 46 B | 0.017 us | 0.218 us | 0.08x | 0.08–0.08x | -0.201 us | 9 pairs; 41/39 ms; 2,469,950/179,361 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 0.523 us | 0.169 us | 0.194 us | 0.09x | 0 B | 0 B |
 | `common/uri-miss` | **Unqualified** | 19 B | 1.152 us | 0.386 us | 2.98x | — | +0.765 us | — | `—` | 0.192 us | 0.122 us | 0.130 us | 8.86x | 0 B | — |
-| `industry/boostdocs-credit-card-match` | **Unqualified** | 18 B | 0.564 us | 0.116 us | 4.87x | — | +0.448 us | — | `—` | 0.240 us | 0.095 us | 0.108 us | 5.24x | 0 B | — |
+| `industry/boostdocs-credit-card-match` | **Native faster** | 18 B | 0.470 us | 0.170 us | 2.76x | 2.69–2.79x | +0.300 us | 9 pairs; 39/40 ms; 82,774/237,293 ops/lane; IQR 1.007/1.005 | `Pcre2Backtracking` | 0.240 us | 0.095 us | 0.108 us | 4.38x | 0 B | 0 B |
 | `industry/boostdocs-date-match` | **Unqualified** | 10 B | 0.391 us | 0.084 us | 4.65x | — | +0.307 us | — | `—` | 0.293 us | 0.051 us | 0.061 us | 6.43x | 0 B | — |
 | `industry/boostdocs-float-match` | **Unqualified** | 8 B | 0.515 us | 0.115 us | 4.49x | — | +0.400 us | — | `—` | 0.195 us | 0.051 us | 0.058 us | 8.88x | 0 B | — |
 | `industry/boostdocs-ftp-line-match` | **Unqualified** | 67 B | 2.200 us | 0.459 us | 4.80x | — | +1.742 us | — | `—` | 0.202 us | 0.063 us | 0.079 us | 27.88x | 0 B | — |
@@ -234,6 +234,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `common/backtracking` | `0ED58EBBE52D` | 173 B | 152 B | 0 B | 2 chars | 2/ | 1/115 |
 | `pcre2-managed-compatible-ismatch` | `common/email-miss` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/uri-match` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
+| `pcre2-managed-compatible-ismatch` | `industry/boostdocs-credit-card-match` | `772299501137` | 300 B | 152 B | 0 B | 18 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
