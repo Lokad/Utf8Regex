@@ -1,7 +1,49 @@
+using Lokad.Utf8Regex.Pcre2;
+
 namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class BenchmarkInspectReporter
 {
+    public static int RunVerifyPcre2ComparatorCase(string caseId)
+    {
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var exitCode = 0;
+        foreach (var section in GetPcre2SectionsForCase(caseId))
+        {
+            var operation = GetPcre2SectionRequirements(section).Operation;
+            if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
+            {
+                Console.WriteLine($"{GetPcre2SectionToken(section)}: Excluded");
+                continue;
+            }
+
+            try
+            {
+                var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+                using var baseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
+                var managed = ComputePcre2ManagedResultChecksum(
+                    context.Utf8Pcre2Regex,
+                    context.InputBytes,
+                    operation);
+                var comparator = baseline.ComputeChecksum(operation);
+                var equal = managed == comparator;
+                Console.WriteLine(
+                    $"{GetPcre2SectionToken(section)}: {(equal ? "Equal" : "Mismatch")}; " +
+                    $"managed={managed}; comparator={comparator}");
+                if (!equal)
+                {
+                    exitCode = 1;
+                }
+            }
+            catch (PCRE.PcreException exception)
+            {
+                Console.WriteLine($"{GetPcre2SectionToken(section)}: Excluded; {exception.Message}");
+            }
+        }
+
+        return exitCode;
+    }
+
     public static int RunRefreshPcre2NativeBaselineCase(
         string caseId,
         string? iterationsText,
@@ -95,8 +137,11 @@ internal static partial class BenchmarkInspectReporter
         {
             using var baseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
             var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
-            var expected = ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
-            var actual = baseline.Execute(operation);
+            var expected = ComputePcre2ManagedResultChecksum(
+                context.Utf8Pcre2Regex,
+                context.InputBytes,
+                operation);
+            var actual = baseline.ComputeChecksum(operation);
             if (actual != expected)
             {
                 measurement.PcreNetNativeMeasuredAtUtc = null;
@@ -104,7 +149,7 @@ internal static partial class BenchmarkInspectReporter
                 measurement.PcreNetNativeEffectiveIterations = null;
                 measurement.PcreNetNative = null;
                 measurement.PcreNetNativeUnavailableReason =
-                    $"Checksum mismatch: managed={expected}, native={actual}.";
+                    $"Structured checksum mismatch: managed={expected}, comparator={actual}.";
                 measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
                 Console.WriteLine($"  Skipped: {measurement.PcreNetNativeUnavailableReason}");
                 return;
@@ -156,6 +201,51 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return (int)Math.Clamp(targetMicrosecondsPerSample / elapsedMicroseconds, 1, maximumIterations);
+    }
+
+    private static Pcre2BenchmarkResultChecksum ComputePcre2ManagedResultChecksum(
+        Utf8Pcre2Regex regex,
+        byte[] input,
+        Utf8Pcre2BenchmarkOperation operation)
+    {
+        var checksum = new Pcre2BenchmarkChecksumBuilder(operation);
+        switch (operation)
+        {
+            case Utf8Pcre2BenchmarkOperation.IsMatch:
+                return checksum.Complete(regex.IsMatch(input) ? 1 : 0, false);
+            case Utf8Pcre2BenchmarkOperation.Count:
+                return checksum.Complete(regex.Count(input), false);
+            case Utf8Pcre2BenchmarkOperation.EnumerateMatches:
+            {
+                var count = 0;
+                var enumerator = regex.EnumerateMatches(input);
+                while (enumerator.MoveNext())
+                {
+                    var match = enumerator.Current;
+                    checksum.AddRange(
+                        match.StartOffsetInBytes,
+                        match.EndOffsetInBytes - match.StartOffsetInBytes);
+                    count++;
+                }
+
+                return checksum.Complete(count, false);
+            }
+            case Utf8Pcre2BenchmarkOperation.MatchMany:
+            {
+                Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[8];
+                var written = regex.MatchMany(input, matches, out var isMore);
+                for (var i = 0; i < written; i++)
+                {
+                    checksum.AddRange(
+                        matches[i].StartOffsetInBytes,
+                        matches[i].EndOffsetInBytes - matches[i].StartOffsetInBytes);
+                }
+
+                return checksum.Complete(written, isMore);
+            }
+            default:
+                throw new NotSupportedException($"No structured checksum is available for {operation}.");
+        }
     }
 
     private static PcreNetNativeBaselineDependencyJson CapturePcreNetNativeBaselineDependency() => new()

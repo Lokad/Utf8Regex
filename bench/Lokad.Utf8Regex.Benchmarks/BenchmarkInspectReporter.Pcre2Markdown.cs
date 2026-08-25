@@ -264,6 +264,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine("Run from the repository root in `Release` through `./bench.ps1`:");
         writer.WriteLine();
         writer.WriteLine("```powershell");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pcre2-comparator-case\",\"simple/foo-dense\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-compatible-case\",\"common/email-match\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-special-case\",\"pcre2/branch-reset-basic\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pcre2-benchmark-case\",\"common/email-match\",\"200\",\"7\"");
