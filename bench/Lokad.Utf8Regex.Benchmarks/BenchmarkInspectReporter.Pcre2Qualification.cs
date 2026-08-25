@@ -12,8 +12,10 @@ internal static partial class BenchmarkInspectReporter
     private const int Pcre2QualificationProtocolVersion = 7;
     private const int Pcre2QualificationAllocationProbeSamples = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
-    private const double Pcre2QualificationTargetSampleMilliseconds = 35;
+    private const double Pcre2QualificationTargetSampleMilliseconds = 40;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
+    private const double Pcre2QualificationCalibrationMinimumMilliseconds = 30;
+    private const double Pcre2QualificationCalibrationMaximumMilliseconds = 50;
 
     public static int RunQualifyPcre2ComparatorCase(
         string caseId,
@@ -457,10 +459,42 @@ internal static partial class BenchmarkInspectReporter
             return batchCount;
         }
 
-        return (int)Math.Clamp(
+        batchCount = (int)Math.Clamp(
             Math.Round(batchCount * Pcre2QualificationTargetSampleMilliseconds / probe.Elapsed.TotalMilliseconds),
             1,
             maximumBatchCount);
+        const int confirmationAttempts = 2;
+        for (var attempt = 0; attempt < confirmationAttempts; attempt++)
+        {
+            var confirmation = MeasurePcre2QualificationBatch(action, batchCount);
+            GC.KeepAlive(confirmation.Sink);
+            if (confirmation.Elapsed.TotalMilliseconds is >= Pcre2QualificationCalibrationMinimumMilliseconds and
+                <= Pcre2QualificationCalibrationMaximumMilliseconds)
+            {
+                break;
+            }
+
+            if (confirmation.Elapsed.TotalMilliseconds <= 0)
+            {
+                break;
+            }
+
+            var adjustedBatchCount = (int)Math.Clamp(
+                Math.Round(
+                    batchCount *
+                    Pcre2QualificationTargetSampleMilliseconds /
+                    confirmation.Elapsed.TotalMilliseconds),
+                1,
+                maximumBatchCount);
+            if (adjustedBatchCount == batchCount)
+            {
+                break;
+            }
+
+            batchCount = adjustedBatchCount;
+        }
+
+        return batchCount;
     }
 
     private static Pcre2QualificationBatch MeasurePcre2QualificationBatch(Func<int> action, int batchCount)
