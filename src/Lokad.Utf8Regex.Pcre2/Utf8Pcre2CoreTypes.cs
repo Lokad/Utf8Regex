@@ -922,11 +922,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 return Utf8Pcre2ValueMatch.Create(_input, _materializedMatches.Matches[_index]);
             }
 
-            if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
-            {
-                return Utf8Pcre2ValueMatch.Create(_input, _directMatches.Current);
-            }
-
             return Utf8Pcre2ValueMatch.Create(
                 _input,
                 new Pcre2GroupData
@@ -986,7 +981,25 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
         if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
         {
-            return _directMatches.MoveNext();
+            if (!_directMatches.MoveNext())
+            {
+                _currentData = default;
+                return false;
+            }
+
+            var match = _directMatches.Current;
+            _currentData = new Pcre2ValueData
+            {
+                Success = true,
+                StartOffsetInBytes = match.StartOffsetInBytes,
+                EndOffsetInBytes = match.EndOffsetInBytes,
+                StartOffsetInUtf16 = match.StartOffsetInUtf16,
+                EndOffsetInUtf16 = match.EndOffsetInUtf16,
+                CoordinateFlagsSpecified = true,
+                Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed,
+                Utf16ProjectionIsExact = match.HasUtf16Projection,
+            };
+            return true;
         }
 
         if (_mode == Pcre2ValueMatchEnumeratorMode.Utf8RegexEnumerator)
