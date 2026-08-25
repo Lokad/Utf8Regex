@@ -90,20 +90,25 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
         var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ababaz ", 1024)));
 
-        for (var index = 0; index < 8; index++)
+        for (var index = 0; index < 32; index++)
         {
             Assert.Equal(1024, regex.Count(input));
         }
 
+        for (var index = 0; index < 256; index++)
+        {
+            _ = regex.Count(input);
+        }
+
         var before = GC.GetAllocatedBytesForCurrentThread();
         var total = 0;
-        for (var index = 0; index < 32; index++)
+        for (var index = 0; index < 256; index++)
         {
             total += regex.Count(input);
         }
 
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.Equal(32 * 1024, total);
+        Assert.Equal(256 * 1024, total);
     }
 
     [Fact]
