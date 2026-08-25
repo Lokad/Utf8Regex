@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `F5A9D227803B10823EECC7CA2285A16AAA0E97291DD4D7E6439DE16A6D48E70D`
-- Latest managed row measurement: `2026-08-25T20:18:35.3057894+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:18:35.3057894+00:00`
+- Snapshot SHA-256: `A3522060F7BD5BFA6C4BE23CF620A1BE0FF43FC6F7E6D7ECC21445A0409411AB`
+- Latest managed row measurement: `2026-08-25T20:19:28.3555283+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:19:28.3555283+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `45/60`
+- Comparable rows at or below the decode-then-.NET median: `46/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `45` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `49` unqualified, `26` excluded
-- Rows with paired qualification evidence: `51/100`
+- Comparator Status: `46` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `48` unqualified, `26` excluded
+- Rows with paired qualification evidence: `52/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `39/37`
+- Managed/comparator measurement environments represented: `40/38`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -87,7 +87,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `backtracking/alternation-repeat` | **Managed faster** | 7,168 B | 50.081 us | 176.465 us | 0.28x | 0.27–0.29x | -126.737 us | 9 pairs; 40/40 ms; 803/227 ops/lane; IQR 1.019/1.007 | `Pcre2Backtracking` | 74.342 us | 57.488 us | 58.430 us | 0.86x | 0 B | 0 B |
 | `character/unicode-class-dense` | **Unqualified** | 7,168 B | 32.644 us | 487.656 us | 0.07x | — | -455.012 us | — | `—` | 130.954 us | 124.096 us | 127.889 us | 0.26x | 0 B | — |
 | `common/matches-boundary` | **Unqualified** | 8,208 B | 9.501 us | 128.548 us | 0.07x | — | -119.047 us | — | `—` | 8.356 us | 117.024 us | 121.438 us | 0.08x | 0 B | — |
-| `common/matches-set` | **Unqualified** | 8,208 B | 135.401 us | 129.796 us | 1.04x | — | +5.605 us | — | `—` | 4.678 us | 125.153 us | 128.204 us | 1.06x | 0 B | — |
+| `common/matches-set` | **Managed faster** | 8,208 B | 113.093 us | 127.253 us | 0.89x | 0.89–0.89x | -13.788 us | 9 pairs; 39/39 ms; 349/309 ops/lane; IQR 1.004/1.006 | `Pcre2SingleTokenRepeat` | 12.180 us | 226.903 us | 239.003 us | 0.47x | 0 B | 0 B |
 | `common/matches-word` | **Unqualified** | 8,208 B | 2.701 us | 20.421 us | 0.13x | — | -17.720 us | — | `—` | 2.325 us | 2.574 us | 3.487 us | 0.77x | 0 B | — |
 | `common/matches-words` | **Unqualified** | 8,208 B | 5.081 us | 76.068 us | 0.07x | — | -70.987 us | — | `—` | 4.598 us | 49.344 us | 51.659 us | 0.10x | 0 B | — |
 | `industry/leipzig-name-family-count` | **Unqualified** | 16,013,977 B | 2,340.700 us | 18,407.840 us | 0.13x | — | -16067.140 us | — | `—` | 2,170.700 us | 6,984.575 us | 11,906.325 us | 0.20x | 0 B | — |
@@ -254,6 +254,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-count` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-count` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-count` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
+| `pcre2-managed-compatible-count` | `common/matches-set` | `F981F26785A0` | 165 B | 136 B | 0 B | 10 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `backtracking/alternation-repeat` | `6854D44D1C19` | 176 B | 136 B | 0 B | 2 chars | 1/97 | 1/122 |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-holmes-window-count` | `B40600CA7551` | 218 B | 136 B | 0 B | 12 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-letter-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
