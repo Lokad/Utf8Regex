@@ -36,9 +36,15 @@ internal static partial class BenchmarkInspectReporter
                 "INFO: event\n",
                 RegexOptions.CultureInvariant | RegexOptions.Multiline,
                 default(Utf8Pcre2CompileSettings)),
+            "alternation-repeat" => (
+                "(?:ab|a)+z",
+                "ababaz",
+                "ababax",
+                RegexOptions.CultureInvariant,
+                default(Utf8Pcre2CompileSettings)),
             _ => throw new InvalidOperationException(
                 $"Unknown PCRE2 match-count family '{familyName}'. " +
-                "Expected literal, character, duplicate-names, branch-reset, or multiline-prefix."),
+                "Expected literal, character, duplicate-names, branch-reset, multiline-prefix, or alternation-repeat."),
         };
         const int slotCount = 64;
         var stride = Math.Max(matchToken.Length, missToken.Length) + 1;
