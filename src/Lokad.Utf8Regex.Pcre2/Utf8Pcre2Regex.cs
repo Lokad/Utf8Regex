@@ -2795,7 +2795,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
-            _program.CandidateSearch,
+            _program.CandidateSearchPlan,
             validated,
             start,
             matchOptions,
@@ -2830,7 +2830,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
-            _program.CandidateSearch,
+            _program.CandidateSearchPlan,
             validated,
             start,
             matchOptions,
@@ -2938,7 +2938,7 @@ public sealed class Utf8Pcre2Regex
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(
             program,
-            _program.CandidateSearch,
+            _program.CandidateSearchPlan,
             validated,
             start,
             matchOptions,
@@ -4030,7 +4030,7 @@ public sealed class Utf8Pcre2Regex
 
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
             backtrackingProgram.Program,
-            _program.CandidateSearch,
+            _program.CandidateSearchPlan,
             subject,
             start,
             Pcre2MatchOptions.None,
@@ -4050,7 +4050,7 @@ public sealed class Utf8Pcre2Regex
 
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
             backtrackingProgram.Program,
-            _program.CandidateSearch,
+            _program.CandidateSearchPlan,
             subject,
             start,
             Pcre2MatchOptions.None,

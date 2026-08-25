@@ -353,6 +353,16 @@ internal readonly struct Pcre2CandidateSearchProgram
             minimumWordRunLength);
 }
 
+internal sealed class Pcre2CandidateSearchPlan
+{
+    internal Pcre2CandidateSearchPlan(Pcre2CandidateSearchProgram program)
+    {
+        Program = program;
+    }
+
+    internal Pcre2CandidateSearchProgram Program { get; }
+}
+
 internal sealed class Pcre2CompiledProgram
 {
     internal Pcre2CompiledProgram(
@@ -370,7 +380,7 @@ internal sealed class Pcre2CompiledProgram
         PrimaryUtf8 = primaryUtf8;
         Managed = managed;
         Operations = operations;
-        CandidateSearch = candidateSearch;
+        CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
         SyntaxTree = syntaxTree;
         GroupNames = [.. groupNames];
@@ -385,7 +395,9 @@ internal sealed class Pcre2CompiledProgram
 
     internal Pcre2OperationPrograms Operations { get; }
 
-    internal Pcre2CandidateSearchProgram CandidateSearch { get; }
+    internal Pcre2CandidateSearchProgram CandidateSearch => CandidateSearchPlan.Program;
+
+    internal Pcre2CandidateSearchPlan CandidateSearchPlan { get; }
 
     internal Pcre2PartialProbeProgram PartialProbe { get; }
 
@@ -1818,7 +1830,7 @@ internal static class Pcre2GlobalOperationDriver
                 ? Pcre2GlobalMatchCursor.CreateLiteralFamily(literalFamilyProgram.Regex, input, start)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     literalFamilyProgram.Fallback,
-                    compiledProgram.CandidateSearch,
+                    compiledProgram.CandidateSearchPlan,
                     input,
                     start,
                     matchOptions,
@@ -1845,7 +1857,7 @@ internal static class Pcre2GlobalOperationDriver
         {
             cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
                 backtrackingProgram.Program,
-                compiledProgram.CandidateSearch,
+                compiledProgram.CandidateSearchPlan,
                 input,
                 start,
                 matchOptions,
@@ -1865,7 +1877,7 @@ internal static class Pcre2GlobalOperationDriver
                     compiledProgram.Request)
                 : Pcre2GlobalMatchCursor.CreateBacktracking(
                     singleTokenRepeatProgram.Program.Fallback,
-                    compiledProgram.CandidateSearch,
+                    compiledProgram.CandidateSearchPlan,
                     input,
                     start,
                     matchOptions,
@@ -1944,7 +1956,7 @@ internal ref struct Pcre2GlobalMatchCursor
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CandidateSearchPlan candidateSearch,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -1991,7 +2003,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2CharacterProgram? _characterProgram;
     private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
     private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
-    private readonly Pcre2CandidateSearchProgram _candidateSearch;
+    private readonly Pcre2CandidateSearchPlan? _candidateSearch;
     private Utf8ValidatedInput _input;
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
@@ -2007,7 +2019,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Pcre2CharacterProgram? characterProgram,
         Pcre2SingleTokenRepeatProgram? singleTokenRepeatProgram,
         Pcre2BacktrackingProgram? backtrackingProgram,
-        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CandidateSearchPlan? candidateSearch,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -2094,7 +2106,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
 
     internal static Pcre2DirectGlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CandidateSearchPlan candidateSearch,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -2181,9 +2193,11 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                     case Pcre2DirectGlobalCursorKind.Backtracking:
                         var backtrackingProgram = _backtrackingProgram ??
                             throw new InvalidOperationException("The PCRE2 backtracking cursor has no execution program.");
+                        var candidateSearch = _candidateSearch ??
+                            throw new InvalidOperationException("The PCRE2 backtracking cursor has no candidate-search plan.");
                         var backtrackingMatch = Pcre2BacktrackingRunner.Match(
                             backtrackingProgram,
-                            _candidateSearch,
+                            candidateSearch.Program,
                             ref _input,
                             _restartPosition,
                             _firstMatchingPosition,
@@ -2332,7 +2346,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2BacktrackingDetailedGlobalMatchCursor>();
 
     private readonly Pcre2BacktrackingProgram _program;
-    private readonly Pcre2CandidateSearchProgram _candidateSearch;
+    private readonly Pcre2CandidateSearchPlan _candidateSearch;
     private Utf8ValidatedInput _input;
     private readonly Pcre2CompileRequest _request;
     private readonly Pcre2MatchOptions _matchOptions;
@@ -2343,7 +2357,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
     internal Pcre2BacktrackingDetailedGlobalMatchCursor(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2CandidateSearchPlan candidateSearch,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -2379,7 +2393,7 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
             {
                 match = Pcre2BacktrackingRunner.MatchDetailed(
                     _program,
-                    _candidateSearch,
+                    _candidateSearch.Program,
                     ref _input,
                     _restartPosition,
                     _firstMatchingPosition,

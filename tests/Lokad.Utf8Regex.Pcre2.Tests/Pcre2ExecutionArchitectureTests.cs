@@ -38,6 +38,17 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
+    public void Pcre2CursorsReferenceRegexOwnedCandidateSearchPlan()
+    {
+        Assert.True(
+            Pcre2DirectGlobalMatchCursor.DebugSizeInBytes <
+            Pcre2CandidateSearchProgram.DebugSizeInBytes);
+        Assert.True(
+            Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes <
+            Pcre2CandidateSearchProgram.DebugSizeInBytes);
+    }
+
+    [Fact]
     public void Pcre2GlobalCursorCarriesOneSharedDirectRouteState()
     {
         Assert.True(
