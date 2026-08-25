@@ -7,8 +7,9 @@ internal static partial class BenchmarkInspectReporter
     public static int RunVerifyPcre2ComparatorCase(string caseId)
     {
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var sections = GetPcre2SectionsForCase(caseId).ToArray();
         var exitCode = 0;
-        foreach (var section in GetPcre2SectionsForCase(caseId))
+        foreach (var section in sections)
         {
             var operation = GetPcre2SectionRequirements(section).Operation;
             if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
@@ -41,7 +42,73 @@ internal static partial class BenchmarkInspectReporter
             }
         }
 
+        var hasCount = sections.Any(static section =>
+            GetPcre2SectionRequirements(section).Operation == Utf8Pcre2BenchmarkOperation.Count);
+        var hasEnumeration = sections.Any(static section =>
+            GetPcre2SectionRequirements(section).Operation == Utf8Pcre2BenchmarkOperation.EnumerateMatches);
+        if (hasCount && hasEnumeration)
+        {
+            try
+            {
+                var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+                using var baseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
+                var expected = ComputeManagedPcre2ProgressionAudit(context);
+                Pcre2ProgressionAudit? previousManaged = null;
+                Pcre2ProgressionAudit? previousComparator = null;
+                var progressionStable = true;
+                const int repeats = 3;
+                for (var repeat = 0; repeat < repeats; repeat++)
+                {
+                    var managed = ComputeManagedPcre2ProgressionAudit(context);
+                    var comparator = baseline.ComputeProgressionAudit();
+                    if (managed.CountResult != managed.EnumeratedCount ||
+                        comparator.CountResult != comparator.EnumeratedCount ||
+                        managed != expected ||
+                        comparator != expected ||
+                        (previousManaged.HasValue && previousManaged.Value != managed) ||
+                        (previousComparator.HasValue && previousComparator.Value != comparator))
+                    {
+                        progressionStable = false;
+                        exitCode = 1;
+                    }
+
+                    previousManaged = managed;
+                    previousComparator = comparator;
+                }
+
+                Console.WriteLine(
+                    $"Progression: {(progressionStable ? "Stable" : "Mismatch")}; repeats={repeats}; " +
+                    $"count/enumerate={expected.CountResult}/{expected.EnumeratedCount}; " +
+                    $"checksum={expected.EnumerationChecksum}");
+            }
+            catch (PCRE.PcreException exception)
+            {
+                Console.WriteLine($"Progression: Excluded; {exception.Message}");
+            }
+        }
+
         return exitCode;
+    }
+
+    private static Pcre2ProgressionAudit ComputeManagedPcre2ProgressionAudit(
+        Utf8Pcre2BenchmarkContext context)
+    {
+        var checksum = new Pcre2BenchmarkChecksumBuilder(Utf8Pcre2BenchmarkOperation.EnumerateMatches);
+        var enumeratedCount = 0;
+        var enumerator = context.Utf8Pcre2Regex.EnumerateMatches(context.InputBytes);
+        while (enumerator.MoveNext())
+        {
+            var match = enumerator.Current;
+            checksum.AddRange(
+                match.StartOffsetInBytes,
+                match.EndOffsetInBytes - match.StartOffsetInBytes);
+            enumeratedCount++;
+        }
+
+        return new Pcre2ProgressionAudit(
+            context.Utf8Pcre2Regex.Count(context.InputBytes),
+            enumeratedCount,
+            checksum.Complete(enumeratedCount, false));
     }
 
     public static int RunRefreshPcre2NativeBaselineCase(

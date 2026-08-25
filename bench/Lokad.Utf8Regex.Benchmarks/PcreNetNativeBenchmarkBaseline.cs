@@ -186,6 +186,22 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         }
     }
 
+    internal Pcre2ProgressionAudit ComputeProgressionAudit()
+    {
+        var checksum = new Pcre2BenchmarkChecksumBuilder(Utf8Pcre2BenchmarkOperation.EnumerateMatches);
+        var enumeratedCount = 0;
+        foreach (var match in _matchBuffer.Matches(_input))
+        {
+            checksum.AddRange(match.Index, match.Length);
+            enumeratedCount++;
+        }
+
+        return new Pcre2ProgressionAudit(
+            CountMatches(),
+            enumeratedCount,
+            checksum.Complete(enumeratedCount, false));
+    }
+
     internal static bool Supports(Utf8Pcre2BenchmarkOperation operation) => operation is
         Utf8Pcre2BenchmarkOperation.IsMatch or
         Utf8Pcre2BenchmarkOperation.Count or
@@ -421,3 +437,8 @@ internal sealed class Pcre2BenchmarkWorkspaceContract
 
     public string? RetainedNativeHeapHighWaterUnavailableReason { get; init; }
 }
+
+internal readonly record struct Pcre2ProgressionAudit(
+    int CountResult,
+    int EnumeratedCount,
+    Pcre2BenchmarkResultChecksum EnumerationChecksum);

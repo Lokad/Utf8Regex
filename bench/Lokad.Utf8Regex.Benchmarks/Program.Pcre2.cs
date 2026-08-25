@@ -16,6 +16,12 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--verify-pcre2-qualification-consistency", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunVerifyPcre2QualificationConsistency();
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--qualify-pcre2-comparator-case", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunQualifyPcre2ComparatorCase(
