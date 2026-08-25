@@ -748,7 +748,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 {
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
 
-    internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
+    internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>();
 
     internal static int DebugUtf8PreparedEnumeratorSizeInBytes => Unsafe.SizeOf<Utf8PreparedValueMatchEnumerator>();
 
@@ -766,7 +766,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private readonly ReadOnlySpan<byte> _input;
     private readonly Pcre2MaterializedMatchEnumeratorState _materializedMatches;
     private readonly Pcre2NativeValueEnumeratorKind _generatorExecutionKind;
-    private Pcre2GlobalMatchCursor _directMatches;
+    private Pcre2DirectGlobalMatchCursor _directMatches;
     private Utf8PreparedValueMatchEnumerator _utf8PreparedMatches;
     private Utf8ValueMatchEnumerator _utf8Matches;
     private Regex.ValueMatchEnumerator _managedMatches;
@@ -890,7 +890,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal Utf8Pcre2ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Pcre2GlobalMatchCursor directMatches)
+        Pcre2DirectGlobalMatchCursor directMatches)
     {
         this = default;
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal;
