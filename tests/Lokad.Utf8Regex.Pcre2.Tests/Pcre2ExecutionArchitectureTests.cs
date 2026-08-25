@@ -154,5 +154,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(
             result.Execution.CandidateAttempts,
             result.Execution.WorkspaceFixedRents);
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.Equal(3UL, result.Execution.CandidateAttempts);
     }
 }

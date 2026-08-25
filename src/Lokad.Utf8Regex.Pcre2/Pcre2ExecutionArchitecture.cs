@@ -1146,7 +1146,8 @@ internal static class Pcre2CandidateSearchAnalyzer
 
     private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode node) => node switch
     {
-        Pcre2BackreferenceBacktrackingNode or
+        // A later backreference cannot invalidate a necessary leading-byte set.
+        // The leading-byte analyzer still rejects a backreference at the start.
         Pcre2SubroutineCallBacktrackingNode or
         Pcre2ConditionalBacktrackingNode or
         Pcre2ControlVerbBacktrackingNode or
