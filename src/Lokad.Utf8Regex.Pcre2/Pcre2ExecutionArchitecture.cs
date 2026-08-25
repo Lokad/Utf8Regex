@@ -355,6 +355,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2SingleTokenRepeat = 7,
     Pcre2AsciiRegularIsMatch = 8,
     Pcre2MultilinePrefix = 9,
+    Pcre2AsciiOrderedLiteralWindow = 10,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -615,6 +616,18 @@ internal static class Pcre2CompiledProgramOverlay
                 Enumerate = multilinePrefix,
             };
         }
+        else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot orderedWindowPrimary &&
+            Pcre2AsciiOrderedLiteralWindowAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                orderedWindowPrimary.Regex,
+                backtrackingProgram) is { } orderedWindow)
+        {
+            operations = operations with
+            {
+                Count = orderedWindow,
+            };
+        }
         else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 syntaxTree.Root,
@@ -828,6 +841,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(asciiRegularPrimary.Regex, asciiRegularProgram.Regex)))
         {
             throw new InvalidOperationException("An ASCII-regular IsMatch backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
+            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot orderedWindowPrimary ||
+             !ReferenceEquals(orderedWindowPrimary.Regex, orderedWindowProgram.Regex)))
+        {
+            throw new InvalidOperationException("An ASCII ordered-window backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
@@ -2222,6 +2242,15 @@ internal static class Pcre2GlobalOperationDriver
                 multilinePrefixProgram,
                 input.Bytes,
                 start.Value);
+            return true;
+        }
+
+        if (program is Pcre2AsciiOrderedLiteralWindowDirectProgram orderedWindowProgram &&
+            !input.Validation.ContainsSupplementaryScalars &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
             return true;
         }
 
