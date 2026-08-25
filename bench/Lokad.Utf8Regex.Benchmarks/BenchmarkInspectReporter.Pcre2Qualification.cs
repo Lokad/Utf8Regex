@@ -7,7 +7,8 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 2;
+    private const int Pcre2QualificationProtocolVersion = 3;
+    private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
 
@@ -151,18 +152,14 @@ internal static partial class BenchmarkInspectReporter
                         var order = sample % 2 == 0
                             ? Pcre2PairLaneOrder.ManagedFirst
                             : Pcre2PairLaneOrder.ComparatorFirst;
-                        Pcre2QualificationBatch managedBatch;
-                        Pcre2QualificationBatch comparatorBatch;
-                        if (order == Pcre2PairLaneOrder.ManagedFirst)
-                        {
-                            managedBatch = MeasurePcre2QualificationBatch(managedAction, managedBatchCount);
-                            comparatorBatch = MeasurePcre2QualificationBatch(comparatorAction, comparatorBatchCount);
-                        }
-                        else
-                        {
-                            comparatorBatch = MeasurePcre2QualificationBatch(comparatorAction, comparatorBatchCount);
-                            managedBatch = MeasurePcre2QualificationBatch(managedAction, managedBatchCount);
-                        }
+                        var interleaved = MeasurePcre2QualificationPair(
+                            managedAction,
+                            managedBatchCount,
+                            comparatorAction,
+                            comparatorBatchCount,
+                            order);
+                        var managedBatch = interleaved.Managed;
+                        var comparatorBatch = interleaved.Comparator;
 
                         var managedPerOperation = managedBatch.Elapsed.TotalMicroseconds / managedBatchCount;
                         var comparatorPerOperation = comparatorBatch.Elapsed.TotalMicroseconds / comparatorBatchCount;
@@ -396,6 +393,46 @@ internal static partial class BenchmarkInspectReporter
         return new Pcre2QualificationBatch(Stopwatch.GetElapsedTime(start), sink);
     }
 
+    private static Pcre2QualificationPair MeasurePcre2QualificationPair(
+        Func<int> managedAction,
+        int managedBatchCount,
+        Func<int> comparatorAction,
+        int comparatorBatchCount,
+        Pcre2PairLaneOrder firstLane)
+    {
+        var sliceCount = Math.Min(
+            Pcre2QualificationInterleaveSlices,
+            Math.Min(managedBatchCount, comparatorBatchCount));
+        var managed = new Pcre2QualificationBatch(TimeSpan.Zero, 0);
+        var comparator = new Pcre2QualificationBatch(TimeSpan.Zero, 0);
+
+        for (var slice = 0; slice < sliceCount; slice++)
+        {
+            var managedSliceCount = GetPcre2QualificationSliceCount(managedBatchCount, sliceCount, slice);
+            var comparatorSliceCount = GetPcre2QualificationSliceCount(comparatorBatchCount, sliceCount, slice);
+            if (firstLane == Pcre2PairLaneOrder.ManagedFirst)
+            {
+                managed = Add(managed, MeasurePcre2QualificationBatch(managedAction, managedSliceCount));
+                comparator = Add(comparator, MeasurePcre2QualificationBatch(comparatorAction, comparatorSliceCount));
+            }
+            else
+            {
+                comparator = Add(comparator, MeasurePcre2QualificationBatch(comparatorAction, comparatorSliceCount));
+                managed = Add(managed, MeasurePcre2QualificationBatch(managedAction, managedSliceCount));
+            }
+        }
+
+        return new Pcre2QualificationPair(managed, comparator);
+
+        static Pcre2QualificationBatch Add(
+            Pcre2QualificationBatch left,
+            Pcre2QualificationBatch right)
+            => new(left.Elapsed + right.Elapsed, left.Sink ^ right.Sink);
+    }
+
+    private static int GetPcre2QualificationSliceCount(int total, int slices, int slice)
+        => total / slices + (slice < total % slices ? 1 : 0);
+
     private static double Median(IEnumerable<double> values)
     {
         var sorted = values.Order().ToArray();
@@ -411,6 +448,10 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private readonly record struct Pcre2QualificationBatch(TimeSpan Elapsed, int Sink);
+
+    private readonly record struct Pcre2QualificationPair(
+        Pcre2QualificationBatch Managed,
+        Pcre2QualificationBatch Comparator);
 
     private readonly record struct Pcre2QualificationWarmup(int Iterations, TimeSpan Elapsed);
 }
