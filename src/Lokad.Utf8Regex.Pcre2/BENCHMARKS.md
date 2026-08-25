@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `D31519B792ACFB3E26AF94746B1B085A7EA03DFA72AB489D4CEDE64257CBB385`
-- Latest managed row measurement: `2026-08-25T19:59:09.2767268+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T19:59:09.2767268+00:00`
+- Snapshot SHA-256: `F38C6A01ED8053B8B79E2D907D53007C68ED7BE1DC8B2FCA5DAA9B39FBDCA04C`
+- Latest managed row measurement: `2026-08-25T20:01:50.1834477+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:01:50.1834477+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `40/60`
+- Comparable rows at or below the decode-then-.NET median: `41/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `32` managed faster, `0` equivalent, `4` native faster, `1` inconclusive, `63` unqualified, `26` excluded
-- Rows with paired qualification evidence: `37/100`
+- Comparator Status: `33` managed faster, `0` equivalent, `4` native faster, `1` inconclusive, `62` unqualified, `26` excluded
+- Rows with paired qualification evidence: `38/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `32/30`
+- Managed/comparator measurement environments represented: `33/31`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -64,7 +64,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/ip-miss` | **Managed faster** | 15 B | 0.014 us | 0.253 us | 0.06x | 0.06–0.06x | -0.239 us | 9 pairs; 39/40 ms; 2,782,057/157,881 ops/lane; IQR 1.014/1.014 | `Pcre2Backtracking` | 0.058 us | 0.175 us | 0.194 us | 0.07x | 0 B | 0 B |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
 | `common/uri-match` | **Managed faster** | 46 B | 0.017 us | 0.218 us | 0.08x | 0.08–0.08x | -0.201 us | 9 pairs; 41/39 ms; 2,469,950/179,361 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 0.523 us | 0.169 us | 0.194 us | 0.09x | 0 B | 0 B |
-| `common/uri-miss` | **Unqualified** | 19 B | 1.152 us | 0.386 us | 2.98x | — | +0.765 us | — | `—` | 0.192 us | 0.122 us | 0.130 us | 8.86x | 0 B | — |
+| `common/uri-miss` | **Managed faster** | 19 B | 0.036 us | 0.446 us | 0.08x | 0.08–0.08x | -0.410 us | 9 pairs; 41/42 ms; 1,148,042/94,239 ops/lane; IQR 1.020/1.037 | `Pcre2Backtracking` | 0.058 us | 0.176 us | 0.182 us | 0.20x | 0 B | 0 B |
 | `industry/boostdocs-credit-card-match` | **Managed faster** | 18 B | 0.019 us | 0.171 us | 0.11x | 0.11–0.12x | -0.152 us | 9 pairs; 40/37 ms; 2,092,214/218,867 ops/lane; IQR 1.027/1.011 | `Pcre2Backtracking` | 0.240 us | 0.095 us | 0.108 us | 0.18x | 0 B | 0 B |
 | `industry/boostdocs-date-match` | **Managed faster** | 10 B | 0.013 us | 0.138 us | 0.09x | 0.09–0.10x | -0.125 us | 9 pairs; 41/40 ms; 3,207,701/293,661 ops/lane; IQR 1.047/1.011 | `Pcre2Backtracking` | 0.293 us | 0.051 us | 0.061 us | 0.21x | 0 B | 0 B |
 | `industry/boostdocs-float-match` | **Managed faster** | 8 B | 0.018 us | 0.140 us | 0.13x | 0.13–0.13x | -0.122 us | 9 pairs; 40/39 ms; 2,194,500/280,814 ops/lane; IQR 1.010/1.007 | `Pcre2Backtracking` | 0.195 us | 0.051 us | 0.058 us | 0.31x | 0 B | 0 B |
@@ -236,6 +236,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `common/ip-match` | `94AD8473E42E` | 1,051 B | 136 B | 0 B | 11 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/ip-miss` | `94AD8473E42E` | 1,051 B | 136 B | 0 B | 11 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/uri-match` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
+| `pcre2-managed-compatible-ismatch` | `common/uri-miss` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-credit-card-match` | `772299501137` | 300 B | 152 B | 0 B | 18 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-date-match` | `3C934787A99D` | 179 B | 136 B | 0 B | 8 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-float-match` | `D825BE69E98B` | 201 B | 136 B | 0 B | 0 chars | 0/ | 0/ |
