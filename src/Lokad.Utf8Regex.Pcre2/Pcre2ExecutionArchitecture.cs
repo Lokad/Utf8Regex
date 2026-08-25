@@ -2567,6 +2567,8 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
 
     internal ulong VmRepeatEnterSteps { get; set; }
 
+    internal ulong VmPossessiveTokenScanSteps { get; set; }
+
     internal ulong VmRepeatEndSteps { get; set; }
 
     internal ulong VmRepeatExitSteps { get; set; }
@@ -2608,6 +2610,7 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
         VmBranchSteps,
         VmRepeatSteps,
         VmRepeatEnterSteps,
+        VmPossessiveTokenScanSteps,
         VmRepeatEndSteps,
         VmRepeatExitSteps,
         VmCaptureSteps,
@@ -2738,6 +2741,7 @@ internal struct Pcre2ResourceBudget
                 case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
                     diagnostics.VmRepeatSteps++;
                     diagnostics.VmRepeatEnterSteps++;
+                    diagnostics.VmPossessiveTokenScanSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.CaptureStart:
                 case Pcre2BacktrackingInstructionKind.CaptureEnd:
@@ -2833,6 +2837,7 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong VmBranchSteps,
     ulong VmRepeatSteps,
     ulong VmRepeatEnterSteps,
+    ulong VmPossessiveTokenScanSteps,
     ulong VmRepeatEndSteps,
     ulong VmRepeatExitSteps,
     ulong VmCaptureSteps,

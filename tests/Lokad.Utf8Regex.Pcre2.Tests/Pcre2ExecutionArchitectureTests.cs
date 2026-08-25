@@ -142,6 +142,7 @@ public sealed class Pcre2ExecutionArchitectureTests
             diagnostics.VmRepeatEnterSteps +
             diagnostics.VmRepeatEndSteps +
             diagnostics.VmRepeatExitSteps);
+        Assert.True(diagnostics.VmPossessiveTokenScanSteps <= diagnostics.VmRepeatEnterSteps);
         Assert.Equal(
             diagnostics.WorkspacePoolRents,
             diagnostics.WorkspaceFixedRents +
@@ -281,5 +282,6 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         Assert.True(result.IsMatch);
         Assert.Equal(1UL, result.Execution.VmRepeatSteps);
+        Assert.Equal(1UL, result.Execution.VmPossessiveTokenScanSteps);
     }
 }
