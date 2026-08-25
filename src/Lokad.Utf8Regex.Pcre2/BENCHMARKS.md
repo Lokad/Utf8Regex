@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `2A900DAA434E3BF4B457748D0AD3B9A3898B922BA5F573E4EB8A44B93147C9E4`
-- Latest managed row measurement: `2026-08-25T18:47:28.3323625+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:47:28.3323625+00:00`
+- Snapshot SHA-256: `FD8465468CE2F471520410CD512CF0710BF092EB1A934C4646B9DB688510715D`
+- Latest managed row measurement: `2026-08-25T18:49:06.1694503+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:49:06.1694503+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `33/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `25` managed faster, `0` equivalent, `1` native faster, `1` inconclusive, `73` unqualified, `26` excluded
-- Rows with paired qualification evidence: `27/100`
+- Comparator Status: `25` managed faster, `0` equivalent, `2` native faster, `1` inconclusive, `72` unqualified, `26` excluded
+- Rows with paired qualification evidence: `28/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `24/22`
+- Managed/comparator measurement environments represented: `25/23`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -63,7 +63,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B | — |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B | — |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
-| `common/uri-match` | **Unqualified** | 46 B | 1.608 us | 0.272 us | 5.91x | — | +1.335 us | — | `—` | 0.523 us | 0.169 us | 0.194 us | 8.29x | 0 B | — |
+| `common/uri-match` | **Native faster** | 46 B | 1.144 us | 0.220 us | 5.20x | 5.14–5.25x | +0.924 us | 9 pairs; 41/41 ms; 35,577/186,370 ops/lane; IQR 1.009/1.009 | `Pcre2Backtracking` | 0.523 us | 0.169 us | 0.194 us | 5.90x | 0 B | 0 B |
 | `common/uri-miss` | **Unqualified** | 19 B | 1.152 us | 0.386 us | 2.98x | — | +0.765 us | — | `—` | 0.192 us | 0.122 us | 0.130 us | 8.86x | 0 B | — |
 | `industry/boostdocs-credit-card-match` | **Unqualified** | 18 B | 0.564 us | 0.116 us | 4.87x | — | +0.448 us | — | `—` | 0.240 us | 0.095 us | 0.108 us | 5.24x | 0 B | — |
 | `industry/boostdocs-date-match` | **Unqualified** | 10 B | 0.391 us | 0.084 us | 4.65x | — | +0.307 us | — | `—` | 0.293 us | 0.051 us | 0.061 us | 6.43x | 0 B | — |
@@ -233,6 +233,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 |---|---|---|---:|---:|---:|---:|---|---|
 | `pcre2-managed-compatible-ismatch` | `common/backtracking` | `0ED58EBBE52D` | 173 B | 152 B | 0 B | 2 chars | 2/ | 1/115 |
 | `pcre2-managed-compatible-ismatch` | `common/email-miss` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
+| `pcre2-managed-compatible-ismatch` | `common/uri-match` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
