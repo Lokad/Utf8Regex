@@ -1764,6 +1764,12 @@ internal static partial class BenchmarkInspectReporter
 
         public required string ComparatorProfile { get; set; }
 
+        public string ProcessorSetPolicy { get; set; } = "unrecorded";
+
+        public string ProcessorAffinityMask { get; set; } = "unrecorded";
+
+        public int? ProcessorEfficiencyClass { get; set; }
+
         public bool WorktreeQualified { get; set; }
 
         public int SampleCount { get; set; }
