@@ -9,13 +9,13 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `76113EB78C8DC8CF5E8310DF19A9C7496DAF06029305B0F9BCB520688B17FAE5`
-- Latest managed row measurement: `2026-08-25T18:39:03.3704747+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:39:03.3704747+00:00`
+- Snapshot SHA-256: `2A900DAA434E3BF4B457748D0AD3B9A3898B922BA5F573E4EB8A44B93147C9E4`
+- Latest managed row measurement: `2026-08-25T18:47:28.3323625+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:47:28.3323625+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `32/60`
+- Comparable rows at or below the decode-then-.NET median: `33/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `24` managed faster, `0` equivalent, `2` native faster, `1` inconclusive, `73` unqualified, `26` excluded
+- Comparator Status: `25` managed faster, `0` equivalent, `1` native faster, `1` inconclusive, `73` unqualified, `26` excluded
 - Rows with paired qualification evidence: `27/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
@@ -55,7 +55,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
 | `backtracking/assertion-capture` | **Unqualified** | 4,103 B | 1.160 us | 0.957 us | 1.21x | — | +0.203 us | — | `—` | 2.813 us | 0.180 us | 0.563 us | 2.06x | 0 B | — |
 | `backtracking/capture-backreference` | **Unqualified** | 22,528 B | 1.126 us | 7.380 us | 0.15x | — | -6.254 us | — | `—` | 3.254 us | 0.056 us | 2.032 us | 0.55x | 0 B | — |
-| `common/backtracking` | **Native faster** | 49 B | 2.296 us | 0.779 us | 2.95x | 2.94–2.97x | +1.517 us | 9 pairs; 40/40 ms; 17,433/51,313 ops/lane; IQR 1.011/1.008 | `Pcre2Backtracking` | 0.256 us | 0.664 us | 0.687 us | 3.34x | 0 B | 0 B |
+| `common/backtracking` | **Managed faster** | 49 B | 0.006 us | 0.784 us | 0.01x | 0.01–0.01x | -0.778 us | 9 pairs; 39/40 ms; 6,640,480/51,253 ops/lane; IQR 1.010/1.004 | `Pcre2Backtracking` | 0.256 us | 0.664 us | 0.687 us | 0.01x | 0 B | 0 B |
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B | — |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B | — |
 | `common/email-match` | **Unqualified** | 34 B | 0.046 us | 0.268 us | 0.17x | — | -0.222 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 0.25x | 0 B | — |
