@@ -498,6 +498,7 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     ControlMark = 19,
     ControlDeferred = 20,
     MatchBoundaryReset = 21,
+    PossessiveTokenRepeat = 22,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -579,6 +580,20 @@ internal readonly struct Pcre2BacktrackingInstruction
 
     internal static Pcre2BacktrackingInstruction CreateRepeatExit(int repeatId) =>
         new(Pcre2BacktrackingInstructionKind.RepeatExit, default, 0, 0, repeatId, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreatePossessiveTokenRepeat(
+        Pcre2CharacterToken token,
+        int minimum,
+        int maximum) =>
+        new(
+            Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat,
+            token,
+            0,
+            0,
+            0,
+            minimum,
+            maximum,
+            Pcre2RepeatPreference.Possessive);
 
     internal static Pcre2BacktrackingInstruction CreateAccept() =>
         new(Pcre2BacktrackingInstructionKind.Accept, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);
@@ -2349,9 +2364,17 @@ internal sealed class Pcre2BacktrackingLowerer
                 var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
                     requiredFollowingLiteral is { } followingLiteral &&
                     CanAutoPossess(repeat, followingLiteral);
-                if (repeat.Preference == Pcre2RepeatPreference.Possessive || autoPossessive)
+                if (autoPossessive)
                 {
-                    _autoPossessiveRepeatCount += autoPossessive ? 1 : 0;
+                    _autoPossessiveRepeatCount++;
+                    var repeatedToken = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
+                        repeatedToken,
+                        repeat.Minimum,
+                        repeat.Maximum));
+                }
+                else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
+                {
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());
                     EmitRepeat(new Pcre2RepeatBacktrackingNode(
                         repeat.Body,
@@ -3972,6 +3995,29 @@ internal static class Pcre2BacktrackingRunner
                         SetRepeat(instruction.RepeatId, -1, -1, counts, positions, ref repeatMutations, ref budget);
                         instructionIndex++;
                         continue;
+
+                    case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
+                        var possessiveCount = 0;
+                        while (possessiveCount < instruction.Maximum &&
+                               Pcre2CharacterRunner.TryMatchToken(
+                                   instruction.Token,
+                                   program.Request,
+                                   input,
+                                   inputIndex,
+                                   firstMatchingPosition,
+                                   matchOptions,
+                                   out var possessiveEnd))
+                        {
+                            inputIndex = possessiveEnd;
+                            possessiveCount++;
+                        }
+
+                        if (possessiveCount >= instruction.Minimum)
+                        {
+                            instructionIndex++;
+                            continue;
+                        }
+                        break;
 
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
                         if (captureStarts.IsEmpty)

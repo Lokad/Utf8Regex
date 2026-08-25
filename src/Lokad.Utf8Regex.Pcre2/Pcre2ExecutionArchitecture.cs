@@ -2731,6 +2731,10 @@ internal struct Pcre2ResourceBudget
                     VmRepeatSteps++;
                     VmRepeatExitSteps++;
                     break;
+                case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
+                    VmRepeatSteps++;
+                    VmRepeatEnterSteps++;
+                    break;
                 case Pcre2BacktrackingInstructionKind.CaptureStart:
                 case Pcre2BacktrackingInstructionKind.CaptureEnd:
                 case Pcre2BacktrackingInstructionKind.Backreference:

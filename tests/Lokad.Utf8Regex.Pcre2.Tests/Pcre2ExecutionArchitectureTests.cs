@@ -223,6 +223,10 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(input)));
         Assert.Equal(expectedRepeatCount, direct.Program.AutoPossessiveRepeatCount);
+        Assert.Equal(
+            expectedRepeatCount,
+            direct.Program.Instructions.Count(static instruction =>
+                instruction.Kind == Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat));
     }
 
     [Fact]
@@ -252,5 +256,16 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(1, direct.Program.AutoPossessiveRepeatCount);
         Assert.Equal(2, regex.Count("one,two,"u8));
         Assert.Equal("one", match.GetGroup(1).GetValueString());
+    }
+
+    [Fact]
+    public void PossessiveTokenRepeatExecutesAsOneVmStep()
+    {
+        var regex = new Utf8Pcre2Regex("^a+b$");
+
+        var result = regex.DebugIsMatchWithDiagnostics("aaab"u8, 0);
+
+        Assert.True(result.IsMatch);
+        Assert.Equal(1UL, result.Execution.VmRepeatSteps);
     }
 }
