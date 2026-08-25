@@ -2278,7 +2278,7 @@ internal static class Pcre2GlobalOperationDriver
             matchOptions == Pcre2MatchOptions.None &&
             HasUnmeteredExecution(compiledProgram.Request))
         {
-            result = alternationRepeatProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+            result = alternationRepeatProgram.Count(input.Bytes, start.Value);
             return true;
         }
 
