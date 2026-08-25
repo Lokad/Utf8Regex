@@ -636,6 +636,11 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
+            Measure(
+                "Utf8ValidationOnly",
+                samples,
+                iterations,
+                () => Utf8InputAnalyzer.ValidateOnly(context.InputBytes).ByteLength);
             Measure("Pcre2IsMatch", samples, iterations, () => context.Utf8Pcre2Regex.IsMatch(context.InputBytes) ? 1 : 0);
             var allocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,
