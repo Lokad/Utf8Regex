@@ -9,14 +9,14 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `F79524AF69A567EA09D5E252E514B3D6DAA258D8EAC7C114406A8B949AE85A30`
-- Latest managed row measurement: `2026-08-25T16:01:40.7017077+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T16:01:40.7017077+00:00`
+- Snapshot SHA-256: `01628C6C84AEFE222A35B92021A759AF108F4F6BF0F924D21EC7E79A6FA21CAF`
+- Latest managed row measurement: `2026-08-25T16:21:23.6189954+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T16:21:23.6189954+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `22/60`
+- Comparable rows at or below the decode-then-.NET median: `24/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `30` managed faster, `0` equivalent, `2` native faster, `6` inconclusive, `62` unqualified, `26` excluded
-- Rows with paired qualification evidence: `38/100`
+- Comparator Status: `32` managed faster, `0` equivalent, `1` native faster, `6` inconclusive, `61` unqualified, `26` excluded
+- Rows with paired qualification evidence: `39/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
 - Managed/comparator measurement environments represented: `15/13`
@@ -58,8 +58,8 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/backtracking` | **Unqualified** | 49 B | 4.907 us | 0.811 us | 6.05x | — | +4.096 us | — | `—` | 0.256 us | 0.664 us | 0.687 us | 7.15x | 0 B | — |
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B | — |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B | — |
-| `common/email-match` | **Unqualified** | 34 B | 1.351 us | 0.370 us | 3.65x | — | +0.981 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 7.17x | 0 B | — |
-| `common/email-miss` | **Native faster** | 35 B | 0.473 us | 0.315 us | 1.52x | 1.47–1.57x | +0.162 us | 9 pairs; 31/33 ms; 65,588/104,876 ops/lane; IQR 1.027/1.041 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 1.51x | 0 B | 0 B |
+| `common/email-match` | **Managed faster** | 34 B | 0.046 us | 0.268 us | 0.17x | 0.17–0.17x | -0.222 us | 13 pairs; 41/41 ms; 887,094/150,893 ops/lane; IQR 1.016/1.009 | `Pcre2Backtracking` | 0.350 us | 0.173 us | 0.189 us | 0.25x | 0 B | 0 B |
+| `common/email-miss` | **Managed faster** | 35 B | 0.051 us | 0.311 us | 0.16x | 0.16–0.17x | -0.258 us | 11 pairs; 44/43 ms; 855,313/137,714 ops/lane; IQR 1.094/1.085 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 0.16x | 0 B | 0 B |
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B | — |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B | — |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
@@ -231,6 +231,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 
 | Section | Case | Plan SHA-256 | Pattern | Frame | JIT | Min subject | First type/unit | Last type/unit |
 |---|---|---|---:|---:|---:|---:|---|---|
+| `pcre2-managed-compatible-ismatch` | `common/email-match` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/email-miss` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-ismatch` | `simple/httpclient-caseless` | `D304925EC56F` | 179 B | 136 B | 0 B | 10 chars | 1/104 | 1/116 |
