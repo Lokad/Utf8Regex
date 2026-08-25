@@ -19,6 +19,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(Utf8OperationMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2GlobalMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2DirectGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2ResourceBudget.DebugSizeInBytes > 0);
+        Assert.True(Pcre2ResourceBudget.DebugSizeInBytes < Pcre2ResourceBudget.DebugDiagnosticsSizeInBytes);
         Assert.True(Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes > 0);
     }

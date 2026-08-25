@@ -2533,116 +2533,57 @@ internal sealed class Pcre2GlobalIterationState
     internal int PreviousEndOffsetInBytes { get; set; } = -1;
 }
 
-internal struct Pcre2ResourceBudget
+internal sealed class Pcre2ExecutionDiagnosticsCollector
 {
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2ResourceBudget>();
+    internal ulong VmTokenSteps { get; set; }
 
-    internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
+    internal ulong VmLiteralTokenSteps { get; set; }
 
-    private readonly Utf8ExecutionDeadline _deadline;
-    private readonly bool _collectDiagnostics;
+    internal ulong VmClassTokenSteps { get; set; }
 
-    internal Pcre2ResourceBudget(
-        Utf8Pcre2ExecutionLimits limits,
-        TimeSpan timeout,
-        bool collectDiagnostics)
-    {
-        Limits = limits;
-        Timeout = timeout;
-        _deadline = Utf8ExecutionDeadline.Start(timeout);
-        _collectDiagnostics = collectDiagnostics;
-        CandidateSteps = 0;
-        BacktrackingSteps = 0;
-        VmTokenSteps = 0;
-        VmLiteralTokenSteps = 0;
-        VmClassTokenSteps = 0;
-        VmBoundaryAnchorTokenSteps = 0;
-        VmOtherTokenSteps = 0;
-        VmBranchSteps = 0;
-        VmRepeatSteps = 0;
-        VmRepeatEnterSteps = 0;
-        VmRepeatEndSteps = 0;
-        VmRepeatExitSteps = 0;
-        VmCaptureSteps = 0;
-        VmAssertionSubroutineSteps = 0;
-        VmControlSteps = 0;
-        VmAcceptSteps = 0;
-        Depth = 0;
-        HeapBytes = 0;
-        ResultProjections = 0;
-        WorkspacePoolRents = 0;
-        WorkspaceFixedRents = 0;
-        WorkspaceInitialStackRents = 0;
-        WorkspaceFrameRents = 0;
-        WorkspaceRepeatMutationRents = 0;
-        WorkspaceCaptureMutationRents = 0;
-        WorkspaceControlRents = 0;
-        WorkspacePoolGrowths = 0;
-    }
+    internal ulong VmBoundaryAnchorTokenSteps { get; set; }
 
-    internal Utf8Pcre2ExecutionLimits Limits { get; }
+    internal ulong VmOtherTokenSteps { get; set; }
 
-    internal TimeSpan Timeout { get; }
+    internal ulong VmBranchSteps { get; set; }
 
-    internal ulong CandidateSteps { get; private set; }
+    internal ulong VmRepeatSteps { get; set; }
 
-    internal ulong BacktrackingSteps { get; private set; }
+    internal ulong VmRepeatEnterSteps { get; set; }
 
-    internal ulong VmTokenSteps { get; private set; }
+    internal ulong VmRepeatEndSteps { get; set; }
 
-    internal ulong VmLiteralTokenSteps { get; private set; }
+    internal ulong VmRepeatExitSteps { get; set; }
 
-    internal ulong VmClassTokenSteps { get; private set; }
+    internal ulong VmCaptureSteps { get; set; }
 
-    internal ulong VmBoundaryAnchorTokenSteps { get; private set; }
+    internal ulong VmAssertionSubroutineSteps { get; set; }
 
-    internal ulong VmOtherTokenSteps { get; private set; }
+    internal ulong VmControlSteps { get; set; }
 
-    internal ulong VmBranchSteps { get; private set; }
+    internal ulong VmAcceptSteps { get; set; }
 
-    internal ulong VmRepeatSteps { get; private set; }
+    internal ulong ResultProjections { get; set; }
 
-    internal ulong VmRepeatEnterSteps { get; private set; }
+    internal ulong WorkspacePoolRents { get; set; }
 
-    internal ulong VmRepeatEndSteps { get; private set; }
+    internal ulong WorkspaceFixedRents { get; set; }
 
-    internal ulong VmRepeatExitSteps { get; private set; }
+    internal ulong WorkspaceInitialStackRents { get; set; }
 
-    internal ulong VmCaptureSteps { get; private set; }
+    internal ulong WorkspaceFrameRents { get; set; }
 
-    internal ulong VmAssertionSubroutineSteps { get; private set; }
+    internal ulong WorkspaceRepeatMutationRents { get; set; }
 
-    internal ulong VmControlSteps { get; private set; }
+    internal ulong WorkspaceCaptureMutationRents { get; set; }
 
-    internal ulong VmAcceptSteps { get; private set; }
+    internal ulong WorkspaceControlRents { get; set; }
 
-    internal uint Depth { get; private set; }
-
-    internal ulong HeapBytes { get; private set; }
-
-    internal ulong ResultProjections { get; private set; }
-
-    internal ulong WorkspacePoolRents { get; private set; }
-
-    internal ulong WorkspaceFixedRents { get; private set; }
-
-    internal ulong WorkspaceInitialStackRents { get; private set; }
-
-    internal ulong WorkspaceFrameRents { get; private set; }
-
-    internal ulong WorkspaceRepeatMutationRents { get; private set; }
-
-    internal ulong WorkspaceCaptureMutationRents { get; private set; }
-
-    internal ulong WorkspaceControlRents { get; private set; }
-
-    internal ulong WorkspacePoolGrowths { get; private set; }
-
-    internal bool CollectsDiagnostics => _collectDiagnostics;
+    internal ulong WorkspacePoolGrowths { get; set; }
 
     internal Pcre2ExecutionDiagnostics Diagnostics => new(
-        CandidateSteps,
-        BacktrackingSteps,
+        CandidateAttempts: 0,
+        BacktrackingSteps: 0,
         VmTokenSteps,
         VmLiteralTokenSteps,
         VmClassTokenSteps,
@@ -2666,6 +2607,49 @@ internal struct Pcre2ResourceBudget
         WorkspaceCaptureMutationRents,
         WorkspaceControlRents,
         WorkspacePoolGrowths);
+}
+
+internal struct Pcre2ResourceBudget
+{
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2ResourceBudget>();
+
+    internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
+
+    private readonly Utf8ExecutionDeadline _deadline;
+    private readonly Pcre2ExecutionDiagnosticsCollector? _diagnostics;
+
+    internal Pcre2ResourceBudget(
+        Utf8Pcre2ExecutionLimits limits,
+        TimeSpan timeout,
+        bool collectDiagnostics)
+    {
+        Limits = limits;
+        _deadline = Utf8ExecutionDeadline.Start(timeout);
+        _diagnostics = collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null;
+        CandidateSteps = 0;
+        BacktrackingSteps = 0;
+        Depth = 0;
+        HeapBytes = 0;
+    }
+
+    internal Utf8Pcre2ExecutionLimits Limits { get; }
+
+    internal ulong CandidateSteps { get; private set; }
+
+    internal ulong BacktrackingSteps { get; private set; }
+
+    internal uint Depth { get; private set; }
+
+    internal ulong HeapBytes { get; private set; }
+
+    internal bool CollectsDiagnostics => _diagnostics is not null;
+
+    internal Pcre2ExecutionDiagnostics Diagnostics =>
+        (_diagnostics?.Diagnostics ?? default) with
+        {
+            CandidateAttempts = CandidateSteps,
+            BacktrackingSteps = BacktrackingSteps,
+        };
 
     internal bool RequiresCandidateMetering => !_deadline.IsInfinite || Limits.MatchLimit != 0;
 
@@ -2690,19 +2674,19 @@ internal struct Pcre2ResourceBudget
         Pcre2CharacterTokenKind tokenKind)
     {
         BacktrackingSteps++;
-        if (_collectDiagnostics)
+        if (_diagnostics is { } diagnostics)
         {
             switch (instructionKind)
             {
                 case Pcre2BacktrackingInstructionKind.Token:
-                    VmTokenSteps++;
+                    diagnostics.VmTokenSteps++;
                     switch (tokenKind)
                     {
                         case Pcre2CharacterTokenKind.Literal:
-                            VmLiteralTokenSteps++;
+                            diagnostics.VmLiteralTokenSteps++;
                             break;
                         case Pcre2CharacterTokenKind.CharacterClass:
-                            VmClassTokenSteps++;
+                            diagnostics.VmClassTokenSteps++;
                             break;
                         case Pcre2CharacterTokenKind.BeginningOfLine:
                         case Pcre2CharacterTokenKind.EndOfLine:
@@ -2712,49 +2696,49 @@ internal struct Pcre2ResourceBudget
                         case Pcre2CharacterTokenKind.FirstMatchingPosition:
                         case Pcre2CharacterTokenKind.WordBoundary:
                         case Pcre2CharacterTokenKind.NonWordBoundary:
-                            VmBoundaryAnchorTokenSteps++;
+                            diagnostics.VmBoundaryAnchorTokenSteps++;
                             break;
                         default:
-                            VmOtherTokenSteps++;
+                            diagnostics.VmOtherTokenSteps++;
                             break;
                     }
                     break;
                 case Pcre2BacktrackingInstructionKind.Split:
                 case Pcre2BacktrackingInstructionKind.Jump:
-                    VmBranchSteps++;
+                    diagnostics.VmBranchSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.Repeat:
-                    VmRepeatSteps++;
-                    VmRepeatEnterSteps++;
+                    diagnostics.VmRepeatSteps++;
+                    diagnostics.VmRepeatEnterSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.RepeatEnd:
-                    VmRepeatSteps++;
-                    VmRepeatEndSteps++;
+                    diagnostics.VmRepeatSteps++;
+                    diagnostics.VmRepeatEndSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.RepeatExit:
-                    VmRepeatSteps++;
-                    VmRepeatExitSteps++;
+                    diagnostics.VmRepeatSteps++;
+                    diagnostics.VmRepeatExitSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
-                    VmRepeatSteps++;
-                    VmRepeatEnterSteps++;
+                    diagnostics.VmRepeatSteps++;
+                    diagnostics.VmRepeatEnterSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.CaptureStart:
                 case Pcre2BacktrackingInstructionKind.CaptureEnd:
                 case Pcre2BacktrackingInstructionKind.Backreference:
                 case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
-                    VmCaptureSteps++;
+                    diagnostics.VmCaptureSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.Assertion:
                 case Pcre2BacktrackingInstructionKind.SubroutineCall:
                 case Pcre2BacktrackingInstructionKind.SubroutineReturn:
-                    VmAssertionSubroutineSteps++;
+                    diagnostics.VmAssertionSubroutineSteps++;
                     break;
                 case Pcre2BacktrackingInstructionKind.Accept:
-                    VmAcceptSteps++;
+                    diagnostics.VmAcceptSteps++;
                     break;
                 default:
-                    VmControlSteps++;
+                    diagnostics.VmControlSteps++;
                     break;
             }
         }
@@ -2789,9 +2773,9 @@ internal struct Pcre2ResourceBudget
 
     internal void RecordResultProjection()
     {
-        if (_collectDiagnostics)
+        if (_diagnostics is { } diagnostics)
         {
-            ResultProjections++;
+            diagnostics.ResultProjections++;
         }
     }
 
@@ -2803,17 +2787,17 @@ internal struct Pcre2ResourceBudget
         ulong controlRents,
         ulong stackGrowths)
     {
-        if (_collectDiagnostics)
+        if (_diagnostics is { } diagnostics)
         {
             var stackRents = frameRents + repeatMutationRents + captureMutationRents + controlRents;
-            WorkspacePoolRents += stackRents + fixedRents;
-            WorkspaceFixedRents += fixedRents;
-            WorkspaceInitialStackRents += stackRents - stackGrowths;
-            WorkspaceFrameRents += frameRents;
-            WorkspaceRepeatMutationRents += repeatMutationRents;
-            WorkspaceCaptureMutationRents += captureMutationRents;
-            WorkspaceControlRents += controlRents;
-            WorkspacePoolGrowths += stackGrowths;
+            diagnostics.WorkspacePoolRents += stackRents + fixedRents;
+            diagnostics.WorkspaceFixedRents += fixedRents;
+            diagnostics.WorkspaceInitialStackRents += stackRents - stackGrowths;
+            diagnostics.WorkspaceFrameRents += frameRents;
+            diagnostics.WorkspaceRepeatMutationRents += repeatMutationRents;
+            diagnostics.WorkspaceCaptureMutationRents += captureMutationRents;
+            diagnostics.WorkspaceControlRents += controlRents;
+            diagnostics.WorkspacePoolGrowths += stackGrowths;
         }
     }
 
