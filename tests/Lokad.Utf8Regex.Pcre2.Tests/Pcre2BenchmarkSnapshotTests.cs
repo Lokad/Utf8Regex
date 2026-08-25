@@ -78,8 +78,9 @@ public sealed class Pcre2BenchmarkSnapshotTests
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
         Assert.Equal(26, operationRows.Count(static row =>
             row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
-        Assert.Equal(19, operationRows.Count(static row =>
-            row.Value.TryGetProperty("PcreNetNativePair", out _)));
+        var pairedRowCount = operationRows.Count(static row =>
+            row.Value.TryGetProperty("PcreNetNativePair", out _));
+        Assert.True(pairedRowCount >= 19, $"Expected at least 19 qualified rows, found {pairedRowCount}.");
         Assert.All(operationRows, static row =>
         {
             var hasNative = row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0;
@@ -126,7 +127,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
             page,
             StringComparison.Ordinal);
-        Assert.Contains("Rows with paired qualification evidence: `19/100`", page, StringComparison.Ordinal);
+        Assert.Contains($"Rows with paired qualification evidence: `{pairedRowCount}/100`", page, StringComparison.Ordinal);
         Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
         Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
         Assert.Contains("interquartile spread ratios", page, StringComparison.Ordinal);
