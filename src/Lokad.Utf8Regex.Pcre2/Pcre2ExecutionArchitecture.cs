@@ -272,13 +272,12 @@ internal sealed record Pcre2FiniteLiteralLanguageCompilation(
 internal sealed class Pcre2FiniteLiteralBooleanSearch
 {
     private readonly byte[][] _alternatives;
-    private readonly SearchValues<byte> _leadingBytes;
+    private readonly byte[] _leadingBytes;
 
     internal Pcre2FiniteLiteralBooleanSearch(byte[][] alternatives)
     {
         _alternatives = alternatives;
-        _leadingBytes = SearchValues.Create(
-            alternatives.Select(static alternative => alternative[0]).Distinct().ToArray());
+        _leadingBytes = alternatives.Select(static alternative => alternative[0]).Distinct().ToArray();
     }
 
     internal bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -288,7 +287,13 @@ internal sealed class Pcre2FiniteLiteralBooleanSearch
         var remaining = input[startOffsetInBytes..];
         while (!remaining.IsEmpty)
         {
-            var candidate = remaining.IndexOfAny(_leadingBytes);
+            var candidate = _leadingBytes.Length switch
+            {
+                1 => remaining.IndexOf(_leadingBytes[0]),
+                2 => remaining.IndexOfAny(_leadingBytes[0], _leadingBytes[1]),
+                3 => remaining.IndexOfAny(_leadingBytes[0], _leadingBytes[1], _leadingBytes[2]),
+                _ => remaining.IndexOfAny(_leadingBytes),
+            };
             if (candidate < 0)
             {
                 return false;
