@@ -267,7 +267,8 @@ internal sealed class Pcre2FiniteLiteralLanguageDirectProgram : Pcre2LiteralFami
 internal sealed record Pcre2FiniteLiteralLanguageCompilation(
     Utf8Regex Regex,
     Pcre2FiniteLiteralBooleanSearch BooleanSearch,
-    Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection);
+    Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection,
+    bool HasVariableRepeat);
 
 internal sealed class Pcre2FiniteLiteralBooleanSearch
 {
@@ -666,7 +667,9 @@ internal static class Pcre2CompiledProgramOverlay
             // expanded language; capture-dependent operations retain the VM.
             operations = operations with
             {
-                IsMatch = literalFamily,
+                IsMatch = finiteLiteralCompilation.HasVariableRepeat
+                    ? operations.IsMatch
+                    : literalFamily,
                 Count = literalFamily,
                 Enumerate = literalFamily,
             };
@@ -957,6 +960,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         {
             new(string.Empty, 0, []),
         };
+        var hasVariableRepeat = false;
         // An atomic group can be flattened only when it owns the root: without
         // a following continuation, no later failure can revisit its choice.
         var evaluationRoot = root is Pcre2AtomicBacktrackingNode rootAtomic
@@ -999,7 +1003,8 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         return new Pcre2FiniteLiteralLanguageCompilation(
             regex,
             new Pcre2FiniteLiteralBooleanSearch(alternativeBytes),
-            boundaryProjection);
+            boundaryProjection,
+            hasVariableRepeat);
 
         bool TryEvaluate(
             IPcre2BacktrackingNode node,
@@ -1064,6 +1069,61 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                             if (outputs.Count > MaximumAlternatives)
                             {
                                 return false;
+                            }
+                        }
+                    }
+                    return true;
+
+                case Pcre2RepeatBacktrackingNode repeat
+                    when repeat.Maximum != int.MaxValue &&
+                         repeat.Maximum <= MaximumAlternatives &&
+                         repeat.Preference != Pcre2RepeatPreference.Possessive:
+                    hasVariableRepeat |= repeat.Minimum != repeat.Maximum;
+                    foreach (var input in inputs)
+                    {
+                        var statesByCount = new List<List<Pcre2FiniteLiteralState>>(repeat.Maximum + 1)
+                        {
+                            new() { input },
+                        };
+                        for (var count = 1; count <= repeat.Maximum; count++)
+                        {
+                            var repeatedStates = new List<Pcre2FiniteLiteralState>();
+                            foreach (var state in statesByCount[count - 1])
+                            {
+                                if (!TryEvaluate(repeat.Body, [state], out var bodyOutputs) ||
+                                    bodyOutputs.Any(output => output.Value.Length == state.Value.Length))
+                                {
+                                    return false;
+                                }
+
+                                repeatedStates.AddRange(bodyOutputs);
+                                if (repeatedStates.Count > MaximumAlternatives)
+                                {
+                                    return false;
+                                }
+                            }
+
+                            statesByCount.Add(repeatedStates);
+                        }
+
+                        var firstCount = repeat.Preference == Pcre2RepeatPreference.Greedy
+                            ? repeat.Maximum
+                            : repeat.Minimum;
+                        var lastCount = repeat.Preference == Pcre2RepeatPreference.Greedy
+                            ? repeat.Minimum
+                            : repeat.Maximum;
+                        var step = repeat.Preference == Pcre2RepeatPreference.Greedy ? -1 : 1;
+                        for (var count = firstCount; ; count += step)
+                        {
+                            outputs.AddRange(statesByCount[count]);
+                            if (outputs.Count > MaximumAlternatives)
+                            {
+                                return false;
+                            }
+
+                            if (count == lastCount)
+                            {
+                                break;
                             }
                         }
                     }

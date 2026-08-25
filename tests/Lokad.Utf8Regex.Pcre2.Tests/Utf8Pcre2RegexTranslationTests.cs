@@ -292,13 +292,13 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void OptionalBarPatternUsesGenericBacktrackingProgram()
+    public void OptionalBarPatternUsesLiteralFamilyForCaptureIndependentOperations()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
         Assert.False(regex.DebugHasManagedRegex);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
         var match = regex.Match("xxfooBARzz"u8);
         Assert.True(match.Success);

@@ -242,6 +242,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         var ambiguousPrefixes = new Utf8Pcre2Regex(@"(?|(a|ab))(c|bcd)");
         var relativeBackreference = new Utf8Pcre2Regex(@"(?|(ab))\g{-1}");
         var unicodeBackreference = new Utf8Pcre2Regex(@"(?|(é)|(λ))\1");
+        var optionalCapture = new Utf8Pcre2Regex(@"foo(?<Bar>BAR)?");
+        var greedyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}a");
+        var lazyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}?a");
         var metered = new Utf8Pcre2Regex(
             @"(?|(abc)|(xyz))",
             Pcre2CompileOptions.None,
@@ -262,6 +265,14 @@ public sealed class Pcre2ExecutionArchitectureTests
         AssertFiniteLiteralLanguagePlan(ambiguousPrefixes);
         AssertFiniteLiteralLanguagePlan(relativeBackreference);
         AssertFiniteLiteralLanguagePlan(unicodeBackreference);
+        foreach (var repeated in new[] { optionalCapture, greedyRepeat, lazyRepeat })
+        {
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.IsMatch);
+            Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Count);
+            Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Enumerate);
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.Match);
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.Replace);
+        }
         AssertFiniteLiteralLanguagePlan(metered);
         Assert.Equal(4, branchResetBasic.Count("abc xyz xyz abc q"u8));
         Assert.Equal(3, branchReset.Count("abcabc xyzxyz xx abcabc"u8));
@@ -269,6 +280,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(3, branchResetFollowup.Count("aaaccccaaa bccccb xx aaaccccaaa"u8));
         Assert.Equal(1, relativeBackreference.Count("abab xx"u8));
         Assert.Equal(2, unicodeBackreference.Count("éé λλ xx"u8));
+        Assert.Equal(4, optionalCapture.Count("fooBAR foo fooBAR foo"u8));
+        Assert.Equal(1, greedyRepeat.Count("aaaa"u8));
+        Assert.Equal(2, lazyRepeat.Count("aaaa"u8));
         Assert.Equal(4, metered.Count("abc xyz xyz abc q"u8));
         Assert.True(branchReset.IsMatch("xx xyzxyz"u8));
         Assert.False(branchReset.IsMatch("xx abcxyz"u8));
@@ -278,6 +292,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(unicodeBackreference.IsMatch("xx λλ"u8));
         Assert.False(unicodeBackreference.IsMatch("xx éλ"u8));
         Assert.True(ambiguousPrefixes.IsMatch("xx abcd"u8));
+        var optionalMatch = optionalCapture.MatchDetailed("fooBAR"u8);
+        Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
+        Assert.Equal("BAR", optionalGroup.GetValueString());
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcabc"u8)).ErrorKind);
@@ -294,6 +311,25 @@ public sealed class Pcre2ExecutionArchitectureTests
         }
 
         Assert.Equal([(0, 6), (7, 13), (17, 23)], byteRanges);
+        var optionalEnumerator = optionalCapture.EnumerateMatches("fooBAR foo fooBAR foo"u8);
+        var optionalRanges = new List<(int Start, int End)>();
+        while (optionalEnumerator.MoveNext())
+        {
+            optionalRanges.Add((
+                optionalEnumerator.Current.StartOffsetInBytes,
+                optionalEnumerator.Current.EndOffsetInBytes));
+        }
+
+        Assert.Equal([(0, 6), (7, 10), (11, 17), (18, 21)], optionalRanges);
+        Span<Utf8Pcre2MatchData> optionalDestination = stackalloc Utf8Pcre2MatchData[3];
+        Assert.Equal(3, optionalCapture.MatchMany(
+            "fooBAR foo fooBAR foo"u8,
+            optionalDestination,
+            out var optionalIsMore));
+        Assert.True(optionalIsMore);
+        Assert.Equal((0, 6), (
+            optionalDestination[0].StartOffsetInBytes,
+            optionalDestination[0].EndOffsetInBytes));
         Assert.Equal("abc", branchReset.MatchDetailed("abcabc"u8).GetGroup(1).GetValueString());
         var duplicateMatch = duplicateNames.MatchDetailed("foofoo"u8);
         Assert.True(duplicateMatch.TryGetFirstSetGroup("n", out var duplicateGroup));
@@ -312,12 +348,16 @@ public sealed class Pcre2ExecutionArchitectureTests
         var tooManyAlternatives = new Utf8Pcre2Regex(
             "(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
         var tooLong = new Utf8Pcre2Regex($"(?|({new string('a', 4097)}))");
+        var unboundedRepeat = new Utf8Pcre2Regex(@"(?:ab|cd)+z");
+        var possessiveRepeat = new Utf8Pcre2Regex(@"(?:a|b){1,2}+a");
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(nonExact.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(caseless.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(nonRootAtomic.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooManyAlternatives.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooLong.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(unboundedRepeat.DebugCompiledProgram.Operations.Enumerate);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(possessiveRepeat.DebugCompiledProgram.Operations.Count);
     }
 
     [Fact]
