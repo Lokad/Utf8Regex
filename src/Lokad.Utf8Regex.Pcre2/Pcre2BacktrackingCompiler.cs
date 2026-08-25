@@ -3548,28 +3548,23 @@ internal static class Pcre2BacktrackingRunner
         var needsCaptureState = program.RequiresCaptureState ||
             captureMaterialization != Pcre2CaptureMaterialization.None ||
             !initialCaptureStarts.IsEmpty;
-        var rentedCaptureStarts = !needsCaptureState || program.CaptureSlotCount <= 1
+        var captureStateLength = !needsCaptureState || program.CaptureSlotCount <= 1
+            ? 0
+            : checked(program.CaptureSlotCount * 5);
+        var rentedCaptureState = captureStateLength == 0
+            ? null
+            : ArrayPool<int>.Shared.Rent(captureStateLength);
+        var captureState = rentedCaptureState is null
+            ? Span<int>.Empty
+            : rentedCaptureState.AsSpan(0, captureStateLength);
+
+        var rentedCaptureRestoreGenerations = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
             ? null
             : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureEnds = !needsCaptureState || program.CaptureSlotCount <= 1
+        var rentedCaptureRestoreSlots = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
             ? null
             : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureOpenStarts = !needsCaptureState || program.CaptureSlotCount <= 1
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureOwners = !needsCaptureState || program.CaptureSlotCount <= 1
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureOpenOwners = !needsCaptureState || program.CaptureSlotCount <= 1
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureRestoreGenerations = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureRestoreSlots = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
-            ? null
-            : ArrayPool<int>.Shared.Rent(program.CaptureSlotCount);
-        var rentedCaptureRestoreSnapshots = program.SubroutineTargets.Length == 0 || rentedCaptureStarts is null
+        var rentedCaptureRestoreSnapshots = program.SubroutineTargets.Length == 0 || captureState.IsEmpty
             ? null
             : ArrayPool<Pcre2SubroutineCaptureSnapshot>.Shared.Rent(program.CaptureSlotCount);
         var rentedRepeatRestoreGenerations = program.SubroutineTargets.Length == 0 || program.RepeatCount == 0
@@ -3587,21 +3582,21 @@ internal static class Pcre2BacktrackingRunner
         var positions = rentedRepeatState is null
             ? Span<int>.Empty
             : rentedRepeatState.AsSpan(program.RepeatCount, program.RepeatCount);
-        var captureStarts = rentedCaptureStarts is null
+        var captureStarts = captureState.IsEmpty
             ? Span<int>.Empty
-            : rentedCaptureStarts.AsSpan(0, program.CaptureSlotCount);
-        var captureEnds = rentedCaptureEnds is null
+            : captureState[..program.CaptureSlotCount];
+        var captureEnds = captureState.IsEmpty
             ? Span<int>.Empty
-            : rentedCaptureEnds.AsSpan(0, program.CaptureSlotCount);
-        var captureOpenStarts = rentedCaptureOpenStarts is null
+            : captureState.Slice(program.CaptureSlotCount, program.CaptureSlotCount);
+        var captureOpenStarts = captureState.IsEmpty
             ? Span<int>.Empty
-            : rentedCaptureOpenStarts.AsSpan(0, program.CaptureSlotCount);
-        var captureOwners = rentedCaptureOwners is null
+            : captureState.Slice(program.CaptureSlotCount * 2, program.CaptureSlotCount);
+        var captureOwners = captureState.IsEmpty
             ? Span<int>.Empty
-            : rentedCaptureOwners.AsSpan(0, program.CaptureSlotCount);
-        var captureOpenOwners = rentedCaptureOpenOwners is null
+            : captureState.Slice(program.CaptureSlotCount * 3, program.CaptureSlotCount);
+        var captureOpenOwners = captureState.IsEmpty
             ? Span<int>.Empty
-            : rentedCaptureOpenOwners.AsSpan(0, program.CaptureSlotCount);
+            : captureState.Slice(program.CaptureSlotCount * 4, program.CaptureSlotCount);
         var captureRestoreGenerations = rentedCaptureRestoreGenerations is null
             ? Span<int>.Empty
             : rentedCaptureRestoreGenerations.AsSpan(0, program.CaptureSlotCount);
@@ -4412,11 +4407,7 @@ internal static class Pcre2BacktrackingRunner
                 Math.Max(0, markMutations.RentCount - 1) +
                 Math.Max(0, markTrail.RentCount - 1);
             var fixedRents = (rentedRepeatState is null ? 0 : 1) +
-                (rentedCaptureStarts is null ? 0 : 1) +
-                (rentedCaptureEnds is null ? 0 : 1) +
-                (rentedCaptureOpenStarts is null ? 0 : 1) +
-                (rentedCaptureOwners is null ? 0 : 1) +
-                (rentedCaptureOpenOwners is null ? 0 : 1) +
+                (rentedCaptureState is null ? 0 : 1) +
                 (rentedCaptureRestoreGenerations is null ? 0 : 1) +
                 (rentedCaptureRestoreSlots is null ? 0 : 1) +
                 (rentedCaptureRestoreSnapshots is null ? 0 : 1) +
@@ -4442,25 +4433,9 @@ internal static class Pcre2BacktrackingRunner
             {
                 ArrayPool<int>.Shared.Return(rentedRepeatState);
             }
-            if (rentedCaptureStarts is not null)
+            if (rentedCaptureState is not null)
             {
-                ArrayPool<int>.Shared.Return(rentedCaptureStarts);
-            }
-            if (rentedCaptureEnds is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureEnds);
-            }
-            if (rentedCaptureOpenStarts is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureOpenStarts);
-            }
-            if (rentedCaptureOwners is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureOwners);
-            }
-            if (rentedCaptureOpenOwners is not null)
-            {
-                ArrayPool<int>.Shared.Return(rentedCaptureOpenOwners);
+                ArrayPool<int>.Shared.Return(rentedCaptureState);
             }
             if (rentedCaptureRestoreGenerations is not null)
             {

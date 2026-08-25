@@ -136,4 +136,23 @@ public sealed class Pcre2ExecutionArchitectureTests
             diagnostics.WorkspaceCaptureMutationRents +
             diagnostics.WorkspaceControlRents);
     }
+
+    [Fact]
+    public void BacktrackingCaptureStateUsesOneFixedRentPerCandidate()
+    {
+        var regex = new Utf8Pcre2Regex(
+            @"(?:(?<n>foo)|(?<n>bar))\k<n>",
+            Pcre2CompileOptions.None,
+            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
+            default,
+            Timeout.InfiniteTimeSpan);
+
+        var result = regex.DebugCountWithDiagnostics("foofoo barbar xx foofoo"u8, 0);
+
+        Assert.Equal(3, result.Count);
+        Assert.True(result.Execution.CandidateAttempts > 0);
+        Assert.Equal(
+            result.Execution.CandidateAttempts,
+            result.Execution.WorkspaceFixedRents);
+    }
 }
