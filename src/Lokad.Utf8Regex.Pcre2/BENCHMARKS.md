@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `14D08CB7E75E83057DED9733DFB3A15F281DCB8B3320CF2EB16A6313A458BA89`
-- Latest managed row measurement: `2026-08-25T18:22:17.5633194+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:22:17.5633194+00:00`
+- Snapshot SHA-256: `FADF22E51D03AE33E57B4A14483F36A4A25441863C3D423C02B77D735BE2685D`
+- Latest managed row measurement: `2026-08-25T18:35:59.8370159+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:35:59.8370159+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `32/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `23` managed faster, `0` equivalent, `3` native faster, `0` inconclusive, `74` unqualified, `26` excluded
+- Comparator Status: `24` managed faster, `0` equivalent, `1` native faster, `1` inconclusive, `74` unqualified, `26` excluded
 - Rows with paired qualification evidence: `26/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `24/22`
+- Managed/comparator measurement environments represented: `23/21`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -149,8 +149,8 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/conditional-lookahead` | **Unqualified** | 3 B | 0.297 us | 0.159 us | 1.88x | — | +0.139 us | — | `—` | 0 B | — | 18.627 us | 56,168 B |
 | `pcre2/conditional-negative-lookahead` | **Unqualified** | 3 B | 0.299 us | 0.131 us | 2.29x | — | +0.168 us | — | `—` | 0 B | — | 20.289 us | 56,208 B |
 | `pcre2/grapheme-cluster` | **Unqualified** | 248 B | 0.744 us | 0.295 us | 2.52x | — | +0.448 us | — | `—` | 0 B | — | 32.632 us | 31,600 B |
-| `pcre2/recursive-optional` | **Native faster** | 6 B | 1.701 us | 0.438 us | 3.87x | 3.85–3.89x | +1.262 us | 9 pairs; 41/40 ms; 23,929/91,543 ops/lane; IQR 1.005/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 21.815 us | 49,792 B |
-| `pcre2/recursive-palindrome` | **Native faster** | 6 B | 1.525 us | 0.355 us | 4.30x | 4.26–4.33x | +1.169 us | 9 pairs; 40/40 ms; 26,202/111,772 ops/lane; IQR 1.008/1.006 | `Pcre2Backtracking` | 0 B | 0 B | 21.970 us | 49,424 B |
+| `pcre2/recursive-optional` | **Inconclusive** | 6 B | 0.008 us | 0.430 us | 0.02x | 0.02–0.02x | -0.422 us | 15 pairs; 44/40 ms; 5,597,978/92,276 ops/lane; IQR 1.170/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 59.478 us | 50,568 B |
+| `pcre2/recursive-palindrome` | **Managed faster** | 6 B | 0.007 us | 0.353 us | 0.02x | 0.02–0.02x | -0.345 us | 9 pairs; 41/40 ms; 5,844,760/113,389 ops/lane; IQR 1.028/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 58.892 us | 50,200 B |
 | `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.159 us | 0.136 us | 1.17x | 1.16–1.18x | +0.024 us | 9 pairs; 33/40 ms; 208,510/294,839 ops/lane; IQR 1.010/1.010 | `Pcre2Backtracking` | 0 B | 0 B | 21.353 us | 41,376 B |
 
 ## PCRE2-only Count
