@@ -2535,6 +2535,10 @@ internal sealed class Pcre2GlobalIterationState
 
 internal struct Pcre2ResourceBudget
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2ResourceBudget>();
+
+    internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
+
     private readonly Utf8ExecutionDeadline _deadline;
     private readonly bool _collectDiagnostics;
 

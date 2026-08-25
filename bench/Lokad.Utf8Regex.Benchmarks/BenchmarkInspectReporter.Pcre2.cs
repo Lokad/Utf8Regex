@@ -479,6 +479,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ValueEnumeratorB  : {Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes}");
         Console.WriteLine($"GlobalCursorB     : {Pcre2GlobalMatchCursor.DebugSizeInBytes}");
         Console.WriteLine($"DirectCursorB     : {Pcre2DirectGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"ResourceBudgetB   : {Pcre2ResourceBudget.DebugSizeInBytes}");
+        Console.WriteLine($"DiagnosticsB      : {Pcre2ResourceBudget.DebugDiagnosticsSizeInBytes}");
         Console.WriteLine($"Utf8PreparedEnumB : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8PreparedEnumeratorSizeInBytes}");
         Console.WriteLine($"Utf8EnumeratorB   : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8EnumeratorSizeInBytes}");
         Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
