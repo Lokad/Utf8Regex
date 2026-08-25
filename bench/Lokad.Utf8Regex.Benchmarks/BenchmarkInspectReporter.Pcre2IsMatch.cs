@@ -20,8 +20,13 @@ internal static partial class BenchmarkInspectReporter
             "uri" => (
                 @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?",
                 CreatePcre2UriScalingInput),
+            "finite-backref" => (
+                @"(?|(abc)|(xyz))\1",
+                static (int size, bool isMatch) =>
+                    (isMatch ? "abcabc" : "abcxyz") + new string('q', size - 6)),
             _ => throw new InvalidOperationException(
-                $"Unknown PCRE2 IsMatch scaling family '{familyName}'. Expected email or uri."),
+                $"Unknown PCRE2 IsMatch scaling family '{familyName}'. " +
+                "Expected email, uri, or finite-backref."),
         };
         using var processorSet = Pcre2QualificationProcessorSet.Enter();
 
@@ -102,4 +107,5 @@ internal static partial class BenchmarkInspectReporter
         var suffix = isMatch ? hitSuffix : missSuffix;
         return new string('a', size - suffix.Length) + suffix;
     }
+
 }
