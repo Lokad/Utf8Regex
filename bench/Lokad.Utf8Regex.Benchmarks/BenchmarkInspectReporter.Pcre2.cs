@@ -64,6 +64,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"IsMatchVmRepeats  : {execution.VmRepeatSteps}");
             Console.WriteLine($"IsMatchRepeatEnter: {execution.VmRepeatEnterSteps}");
             Console.WriteLine($"IsMatchTokenScans : {execution.VmPossessiveTokenScanSteps}");
+            Console.WriteLine($"IsMatchScanChars  : {execution.VmPossessiveTokenScanCharacters}");
             Console.WriteLine($"IsMatchRepeatEnd  : {execution.VmRepeatEndSteps}");
             Console.WriteLine($"IsMatchRepeatExit : {execution.VmRepeatExitSteps}");
             Console.WriteLine($"IsMatchVmCaptures : {execution.VmCaptureSteps}");

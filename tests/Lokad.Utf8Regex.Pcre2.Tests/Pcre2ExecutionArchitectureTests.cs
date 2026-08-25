@@ -283,5 +283,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(result.IsMatch);
         Assert.Equal(1UL, result.Execution.VmRepeatSteps);
         Assert.Equal(1UL, result.Execution.VmPossessiveTokenScanSteps);
+        Assert.Equal(3UL, result.Execution.VmPossessiveTokenScanCharacters);
     }
 }

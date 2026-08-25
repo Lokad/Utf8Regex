@@ -2569,6 +2569,8 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
 
     internal ulong VmPossessiveTokenScanSteps { get; set; }
 
+    internal ulong VmPossessiveTokenScanCharacters { get; set; }
+
     internal ulong VmRepeatEndSteps { get; set; }
 
     internal ulong VmRepeatExitSteps { get; set; }
@@ -2611,6 +2613,7 @@ internal sealed class Pcre2ExecutionDiagnosticsCollector
         VmRepeatSteps,
         VmRepeatEnterSteps,
         VmPossessiveTokenScanSteps,
+        VmPossessiveTokenScanCharacters,
         VmRepeatEndSteps,
         VmRepeatExitSteps,
         VmCaptureSteps,
@@ -2771,6 +2774,14 @@ internal struct Pcre2ResourceBudget
         }
     }
 
+    internal void RecordPossessiveTokenScanCharacters(ulong characters)
+    {
+        if (_diagnostics is { } diagnostics)
+        {
+            diagnostics.VmPossessiveTokenScanCharacters += characters;
+        }
+    }
+
     internal void ChargeFrame(uint depth, ulong heapBytes)
     {
         Depth = Math.Max(Depth, depth);
@@ -2838,6 +2849,7 @@ internal readonly record struct Pcre2ExecutionDiagnostics(
     ulong VmRepeatSteps,
     ulong VmRepeatEnterSteps,
     ulong VmPossessiveTokenScanSteps,
+    ulong VmPossessiveTokenScanCharacters,
     ulong VmRepeatEndSteps,
     ulong VmRepeatExitSteps,
     ulong VmCaptureSteps,

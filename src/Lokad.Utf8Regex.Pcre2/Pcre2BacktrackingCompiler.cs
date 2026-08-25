@@ -4012,6 +4012,11 @@ internal static class Pcre2BacktrackingRunner
                             possessiveCount++;
                         }
 
+                        if (budget.CollectsDiagnostics)
+                        {
+                            budget.RecordPossessiveTokenScanCharacters((ulong)possessiveCount);
+                        }
+
                         if (possessiveCount >= instruction.Minimum)
                         {
                             instructionIndex++;

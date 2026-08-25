@@ -119,11 +119,15 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--measure-literal-family-selector`
   - `--measure-pcre2-workspace-pool-cost`
   - `--measure-pcre2-vm-metering-cost`
+  - `--measure-pcre2-ismatch-scaling`
 - PCRE2 snapshot refresh uses case-dependent effective iteration counts, similar in spirit to the README refresh logic; do not assume one global floor fits every case.
 - Native comparison is supplied only by the benchmark project's private `PCRE.NET` 1.5.0 dependency. Keep it out of every shipped project; unsupported or result-incompatible rows must carry an explicit exclusion reason instead of a timing.
 - The workspace and VM-metering commands are attribution replays, not end-to-end
   benchmarks. Use their same-trip-count controls to reject weak mechanisms; do
   not treat their estimates as realizable top-line speedups.
+- The IsMatch scaling command accepts `email` or `uri` and compares same-size
+  hit/miss subjects in paired managed/native lanes. Use modest explicit trip
+  counts while shaping a mechanism; it is diagnostic and does not set Status.
 
 PythonRe benchmark snapshot and diagnostics:
 

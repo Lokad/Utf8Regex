@@ -100,17 +100,17 @@ internal static partial class BenchmarkInspectReporter
                 }
             }
 
-            var count = MeasurePcre2MatchCountPair(
+            var count = MeasurePcre2DiagnosticPair(
                 () => context.Utf8Pcre2Regex.Count(context.InputBytes),
                 () => baseline.Execute(Utf8Pcre2BenchmarkOperation.Count),
                 iterations,
                 samples);
-            var enumerate = MeasurePcre2MatchCountPair(
+            var enumerate = MeasurePcre2DiagnosticPair(
                 () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes),
                 () => baseline.Execute(Utf8Pcre2BenchmarkOperation.EnumerateMatches),
                 iterations,
                 samples);
-            var matchMany = MeasurePcre2MatchCountPair(
+            var matchMany = MeasurePcre2DiagnosticPair(
                 () => ExecutePcre2MatchManyRangeSink(context.Utf8Pcre2Regex, context.InputBytes),
                 () => baseline.Execute(Utf8Pcre2BenchmarkOperation.MatchMany),
                 iterations,
@@ -130,7 +130,7 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    private static Pcre2MatchCountPairMeasurement MeasurePcre2MatchCountPair(
+    private static Pcre2DiagnosticPairMeasurement MeasurePcre2DiagnosticPair(
         Func<int> managedAction,
         Func<int> nativeAction,
         int iterations,
@@ -161,12 +161,12 @@ internal static partial class BenchmarkInspectReporter
         }
 
         GC.KeepAlive(sink);
-        return new Pcre2MatchCountPairMeasurement(
+        return new Pcre2DiagnosticPairMeasurement(
             Median(managedMicroseconds),
             Median(nativeMicroseconds));
     }
 
-    private readonly record struct Pcre2MatchCountPairMeasurement(
+    private readonly record struct Pcre2DiagnosticPairMeasurement(
         double ManagedMicroseconds,
         double NativeMicroseconds);
 }
