@@ -2342,15 +2342,12 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        if (program is Pcre2FiniteLiteralLanguageDirectProgram
-            {
-                BoundaryProjection: not null,
-            } boundaryResetProgram &&
+        if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             HasUnmeteredExecution(compiledProgram.Request))
         {
             result = 0;
-            var matches = boundaryResetProgram.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
+            var matches = finiteLiteralProgram.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
             while (matches.MoveNext())
             {
                 result = checked(result + 1);
