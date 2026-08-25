@@ -4,6 +4,98 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class BenchmarkInspectReporter
 {
+    public static int RunMeasurePcre2NativeBufferCost(
+        string caseId,
+        string? iterationsText,
+        string? samplesText)
+    {
+        var iterations = ParseIterations(iterationsText);
+        var samples = ParseSamples(samplesText);
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+
+        Console.WriteLine($"CaseId            : {caseId}");
+        Console.WriteLine($"Iterations        : {iterations}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"CPU set           : {processorSet.Description}");
+        Console.WriteLine("Fresh contract    : create and dispose one match buffer per operation; compiled regex reused");
+
+        foreach (var section in GetPcre2SectionsForCase(caseId))
+        {
+            var operation = GetPcre2SectionRequirements(section).Operation;
+            if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var baseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
+                var reusedChecksum = baseline.ComputeChecksum(operation);
+                var freshChecksum = baseline.ComputeChecksumWithFreshMatchBuffer(operation);
+                if (reusedChecksum != freshChecksum)
+                {
+                    Console.Error.WriteLine(
+                        $"{operation}: fresh/reused checksum mismatch; reused={reusedChecksum}; fresh={freshChecksum}.");
+                    return 1;
+                }
+
+                Func<int> reusedAction = () => baseline.Execute(operation);
+                Func<int> freshAction = () => baseline.ExecuteWithFreshMatchBuffer(operation);
+                var reusedWarmup = WarmPcre2QualificationLane(reusedAction);
+                var freshWarmup = WarmPcre2QualificationLane(freshAction);
+                var reusedSamples = new List<double>(samples);
+                var freshSamples = new List<double>(samples);
+                var sink = 0;
+                for (var sample = 0; sample < samples; sample++)
+                {
+                    var order = sample % 2 == 0
+                        ? Pcre2PairLaneOrder.ManagedFirst
+                        : Pcre2PairLaneOrder.ComparatorFirst;
+                    var pair = MeasurePcre2QualificationPair(
+                        reusedAction,
+                        iterations,
+                        freshAction,
+                        iterations,
+                        order);
+                    reusedSamples.Add(pair.Managed.Elapsed.TotalMicroseconds / iterations);
+                    freshSamples.Add(pair.Comparator.Elapsed.TotalMicroseconds / iterations);
+                    sink ^= pair.Managed.Sink ^ pair.Comparator.Sink;
+                }
+
+                GC.KeepAlive(sink);
+                var reusedMedian = Median(reusedSamples);
+                var freshMedian = Median(freshSamples);
+                var reusedAllocation = MeasurePcre2QualificationAllocation(
+                    GetPcre2QualificationAllocationProbeIterations(reusedMedian),
+                    reusedAction);
+                var freshAllocation = MeasurePcre2QualificationAllocation(
+                    GetPcre2QualificationAllocationProbeIterations(freshMedian),
+                    freshAction);
+
+                Console.WriteLine($"Operation         : {operation}");
+                Console.WriteLine(
+                    $"ReusedBuffer      : {reusedMedian:F3} us/op " +
+                    $"({reusedSamples.Min():F3}..{reusedSamples.Max():F3})");
+                Console.WriteLine(
+                    $"FreshBuffer       : {freshMedian:F3} us/op " +
+                    $"({freshSamples.Min():F3}..{freshSamples.Max():F3})");
+                Console.WriteLine($"Fresh/Reused      : {freshMedian / reusedMedian:F3}x");
+                Console.WriteLine($"ReusedManagedAlloc: {reusedAllocation.BytesPerOperation:N0} B/op");
+                Console.WriteLine($"FreshManagedAlloc : {freshAllocation.BytesPerOperation:N0} B/op");
+                Console.WriteLine(
+                    $"Warmup calls      : {reusedWarmup.Iterations:N0}/{freshWarmup.Iterations:N0} " +
+                    $"reused/fresh in {reusedWarmup.Elapsed.TotalMilliseconds:F0}/{freshWarmup.Elapsed.TotalMilliseconds:F0} ms");
+            }
+            catch (PCRE.PcreException exception)
+            {
+                Console.WriteLine($"{operation}: Excluded; {exception.Message}");
+            }
+        }
+
+        return 0;
+    }
+
     public static int RunVerifyPcre2ComparatorCase(string caseId)
     {
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);

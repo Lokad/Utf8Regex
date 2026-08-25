@@ -316,6 +316,7 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ./bench.ps1 -CommandArgs "--verify-pcre2-qualification-consistency"
 ./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case","simple/foo-dense","9"
 ./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case-reversed","simple/foo-dense","9"
+./bench.ps1 -CommandArgs "--measure-pcre2-native-buffer-cost","simple/foo-dense","200","5"
 ./bench.ps1 -CommandArgs "--emit-pcre2-priority-report","relative"
 ./bench.ps1 -CommandArgs "--emit-pcre2-priority-report","absolute"
 ./bench.ps1 -CommandArgs "--measure-pcre2-compatible-case","common/email-match","200","7"

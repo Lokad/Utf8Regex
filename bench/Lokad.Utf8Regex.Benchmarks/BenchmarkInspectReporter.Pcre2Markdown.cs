@@ -376,6 +376,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pcre2-qualification-consistency\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pcre2-comparator-case\",\"simple/foo-dense\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pcre2-comparator-case-reversed\",\"simple/foo-dense\",\"9\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-native-buffer-cost\",\"simple/foo-dense\",\"200\",\"5\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pcre2-priority-report\",\"relative\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pcre2-priority-report\",\"absolute\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-compatible-case\",\"common/email-match\",\"200\",\"7\"");

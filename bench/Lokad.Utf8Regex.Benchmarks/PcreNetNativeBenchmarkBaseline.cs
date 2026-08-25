@@ -157,29 +157,51 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         };
     }
 
-    internal int Execute(Utf8Pcre2BenchmarkOperation operation) => operation switch
+    internal int Execute(Utf8Pcre2BenchmarkOperation operation) => Execute(operation, _matchBuffer);
+
+    internal int ExecuteWithFreshMatchBuffer(Utf8Pcre2BenchmarkOperation operation)
     {
-        Utf8Pcre2BenchmarkOperation.IsMatch => _matchBuffer.IsMatch(_input) ? 1 : 0,
-        Utf8Pcre2BenchmarkOperation.Count => CountMatches(),
-        Utf8Pcre2BenchmarkOperation.EnumerateMatches => ComputeRangeSink(int.MaxValue),
-        Utf8Pcre2BenchmarkOperation.MatchMany => ComputeRangeSink(8),
+        using var matchBuffer = _regex.CreateMatchBuffer();
+        return Execute(operation, matchBuffer);
+    }
+
+    internal Pcre2BenchmarkResultChecksum ComputeChecksum(Utf8Pcre2BenchmarkOperation operation) =>
+        ComputeChecksum(operation, _matchBuffer);
+
+    internal Pcre2BenchmarkResultChecksum ComputeChecksumWithFreshMatchBuffer(
+        Utf8Pcre2BenchmarkOperation operation)
+    {
+        using var matchBuffer = _regex.CreateMatchBuffer();
+        return ComputeChecksum(operation, matchBuffer);
+    }
+
+    private int Execute(
+        Utf8Pcre2BenchmarkOperation operation,
+        PcreMatchBuffer8Bit matchBuffer) => operation switch
+    {
+        Utf8Pcre2BenchmarkOperation.IsMatch => matchBuffer.IsMatch(_input) ? 1 : 0,
+        Utf8Pcre2BenchmarkOperation.Count => CountMatches(matchBuffer),
+        Utf8Pcre2BenchmarkOperation.EnumerateMatches => ComputeRangeSink(matchBuffer, int.MaxValue),
+        Utf8Pcre2BenchmarkOperation.MatchMany => ComputeRangeSink(matchBuffer, 8),
         _ => throw new NotSupportedException(
             $"The PCRE.NET UTF-8 span baseline does not expose equivalent work for {operation}."),
     };
 
-    internal Pcre2BenchmarkResultChecksum ComputeChecksum(Utf8Pcre2BenchmarkOperation operation)
+    private Pcre2BenchmarkResultChecksum ComputeChecksum(
+        Utf8Pcre2BenchmarkOperation operation,
+        PcreMatchBuffer8Bit matchBuffer)
     {
         var checksum = new Pcre2BenchmarkChecksumBuilder(operation);
         switch (operation)
         {
             case Utf8Pcre2BenchmarkOperation.IsMatch:
-                return checksum.Complete(_matchBuffer.IsMatch(_input) ? 1 : 0, false);
+                return checksum.Complete(matchBuffer.IsMatch(_input) ? 1 : 0, false);
             case Utf8Pcre2BenchmarkOperation.Count:
-                return checksum.Complete(CountMatches(), false);
+                return checksum.Complete(CountMatches(matchBuffer), false);
             case Utf8Pcre2BenchmarkOperation.EnumerateMatches:
-                return ComputeRangeChecksum(ref checksum, int.MaxValue);
+                return ComputeRangeChecksum(matchBuffer, ref checksum, int.MaxValue);
             case Utf8Pcre2BenchmarkOperation.MatchMany:
-                return ComputeRangeChecksum(ref checksum, 8);
+                return ComputeRangeChecksum(matchBuffer, ref checksum, 8);
             default:
                 throw new NotSupportedException(
                     $"The PCRE.NET UTF-8 span baseline does not expose equivalent work for {operation}.");
@@ -197,7 +219,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         }
 
         return new Pcre2ProgressionAudit(
-            CountMatches(),
+            CountMatches(_matchBuffer),
             enumeratedCount,
             checksum.Complete(enumeratedCount, false));
     }
@@ -214,10 +236,10 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         GC.KeepAlive(_regex);
     }
 
-    private int CountMatches()
+    private int CountMatches(PcreMatchBuffer8Bit matchBuffer)
     {
         var count = 0;
-        foreach (var _ in _matchBuffer.Matches(_input))
+        foreach (var _ in matchBuffer.Matches(_input))
         {
             count++;
         }
@@ -225,12 +247,12 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         return count;
     }
 
-    private int ComputeRangeSink(int limit)
+    private int ComputeRangeSink(PcreMatchBuffer8Bit matchBuffer, int limit)
     {
         var written = 0;
         var sink = 0;
         var isMore = false;
-        foreach (var match in _matchBuffer.Matches(_input))
+        foreach (var match in matchBuffer.Matches(_input))
         {
             if (written == limit)
             {
@@ -246,12 +268,13 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     }
 
     private Pcre2BenchmarkResultChecksum ComputeRangeChecksum(
+        PcreMatchBuffer8Bit matchBuffer,
         ref Pcre2BenchmarkChecksumBuilder checksum,
         int limit)
     {
         var written = 0;
         var isMore = false;
-        foreach (var match in _matchBuffer.Matches(_input))
+        foreach (var match in matchBuffer.Matches(_input))
         {
             if (written == limit)
             {
