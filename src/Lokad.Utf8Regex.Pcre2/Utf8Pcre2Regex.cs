@@ -4023,13 +4023,19 @@ public sealed class Utf8Pcre2Regex
         int startOffsetInBytes)
     {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (_program.Operations.IsMatch is not Pcre2BacktrackingDirectProgram backtrackingProgram)
+        var backtrackingProgram = _program.Operations.IsMatch switch
+        {
+            Pcre2BacktrackingDirectProgram direct => direct.Program,
+            Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
+            _ => null,
+        };
+        if (backtrackingProgram is null)
         {
             return new Pcre2IsMatchDiagnostics(IsMatch(input, startOffsetInBytes), default);
         }
 
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-            backtrackingProgram.Program,
+            backtrackingProgram,
             _program.CandidateSearchPlan,
             subject,
             start,

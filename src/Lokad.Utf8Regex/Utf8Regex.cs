@@ -936,6 +936,52 @@ public sealed class Utf8Regex
         public bool IsMatch(Utf8ValidatedInput input, Utf8BytePosition start)
             => _owner.IsMatchAtByteOffset(input, start);
 
+        // PCRE2-INTEGRATION-POINT: flavor-neutral definitive prepared boolean kernels.
+        public bool TryIsMatchPrepared(
+            Utf8ValidatedInput input,
+            Utf8BytePosition start,
+            out bool isMatch)
+        {
+            if (start.Value != 0)
+            {
+                isMatch = false;
+                return false;
+            }
+
+            var bytes = input.Bytes;
+            if (_owner.TryIsMatchPrioritizedBooleanFamilyWithoutValidation(bytes, out isMatch) ||
+                _owner.TryIsMatchDirectWithoutValidation(bytes, out isMatch))
+            {
+                return true;
+            }
+
+            if (_owner.TryMatchDirectWithoutValidation(bytes, out var match))
+            {
+                isMatch = match.Success;
+                return true;
+            }
+
+            if (_owner.ShouldFallbackForTrailingNewlineAnchoredValidator(bytes, input.Validation))
+            {
+                isMatch = _owner._verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+                    input.GetDecodedString());
+                return true;
+            }
+
+            if (!_owner.ShouldSkipRequiredPrefilterForMatch() &&
+                _owner.RejectsByRequiredPrefilter(bytes))
+            {
+                isMatch = false;
+                return true;
+            }
+
+            isMatch = _owner.IsMatchViaCompiledEngine(
+                bytes,
+                input.Validation,
+                Utf8ExecutionDeadline.Infinite);
+            return true;
+        }
+
         public Utf8ValueMatch Match(Utf8ValidatedInput input, Utf8BytePosition start)
             => _owner.MatchAtByteOffset(input, start);
 

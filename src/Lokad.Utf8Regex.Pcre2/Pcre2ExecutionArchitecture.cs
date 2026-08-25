@@ -218,6 +218,21 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Program { get; }
 }
 
+internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2AsciiRegularIsMatchDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
+    {
+        Regex = regex;
+        Fallback = fallback;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiRegularIsMatch;
+
+    internal Utf8Regex Regex { get; }
+
+    internal Pcre2BacktrackingProgram Fallback { get; }
+}
+
 internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2LiteralFamilyDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
@@ -288,6 +303,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2Backtracking = 5,
     Pcre2LiteralFamily = 6,
     Pcre2SingleTokenRepeat = 7,
+    Pcre2AsciiRegularIsMatch = 8,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -578,6 +594,18 @@ internal static class Pcre2CompiledProgramOverlay
                 singleTokenRepeat);
         }
 
+        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
+            legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot asciiRegularPrimary &&
+            Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(syntaxTree.Root, legacy.Request))
+        {
+            operations = operations with
+            {
+                IsMatch = new Pcre2AsciiRegularIsMatchDirectProgram(
+                    asciiRegularPrimary.Regex,
+                    backtrackingProgram),
+            };
+        }
+
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(syntaxTree.Root, legacy.Request);
         return new Pcre2CompiledProgram(
             legacy.Request,
@@ -731,6 +759,13 @@ internal static class Pcre2ProgramInvariant
             throw new InvalidOperationException("A direct managed backend must be owned by its compiled PCRE2 program.");
         }
 
+        if (directProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram &&
+            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot asciiRegularPrimary ||
+             !ReferenceEquals(asciiRegularPrimary.Regex, asciiRegularProgram.Regex)))
+        {
+            throw new InvalidOperationException("An ASCII-regular IsMatch backend must be owned by its compiled PCRE2 program.");
+        }
+
         if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
             directProgram is not Pcre2FiniteLiteralLanguageDirectProgram &&
             (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
@@ -738,6 +773,56 @@ internal static class Pcre2ProgramInvariant
         {
             throw new InvalidOperationException("A literal-family backend must be owned by its compiled PCRE2 program.");
         }
+    }
+}
+
+internal static class Pcre2AsciiRegularIsMatchAnalyzer
+{
+    internal static bool CanReuseCoreExecution(
+        IPcre2BacktrackingNode root,
+        Pcre2CompileRequest request)
+    {
+        return request.Options == Pcre2CompileOptions.None &&
+            request.Settings.Newline == Pcre2NewlineConvention.Default &&
+            request.Settings.Bsr == Pcre2BsrConvention.Default &&
+            !request.Settings.AllowDuplicateNames &&
+            request.Settings.BackslashC == Pcre2BackslashCPolicy.Forbid &&
+            !request.Settings.AllowLookaroundBackslashK &&
+            Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root) &&
+            IsSupportedNode(root);
+    }
+
+    internal static bool IsSupportedNode(IPcre2BacktrackingNode node) => node switch
+    {
+        Pcre2EmptyBacktrackingNode => true,
+        Pcre2TokenBacktrackingNode { Token: var token } => IsSupportedToken(token),
+        Pcre2SequenceBacktrackingNode sequence => sequence.Children.All(IsSupportedNode),
+        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.All(IsSupportedNode),
+        Pcre2RepeatBacktrackingNode { Preference: not Pcre2RepeatPreference.Possessive } repeat =>
+            IsSupportedNode(repeat.Body),
+        Pcre2CaptureBacktrackingNode capture => IsSupportedNode(capture.Body),
+        _ => false,
+    };
+
+    internal static bool IsSupportedToken(Pcre2CharacterToken token)
+    {
+        if (token.Options != Pcre2CharacterOptions.None)
+        {
+            return false;
+        }
+
+        return token.Kind switch
+        {
+            Pcre2CharacterTokenKind.Literal => token.Literal.IsAscii,
+            Pcre2CharacterTokenKind.CharacterClass =>
+                !token.CharacterClass.Negated &&
+                token.CharacterClass.Terms.All(static term =>
+                    !term.Negated &&
+                    term.Kind == Pcre2CharacterClassTermKind.Range &&
+                    term.Range.High < 128),
+            Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.EndOfLine => true,
+            _ => false,
+        };
     }
 }
 
@@ -1601,6 +1686,28 @@ internal static class Pcre2Runner
         out bool result)
     {
         var program = compiledProgram.Operations.IsMatch;
+        if (program is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram)
+        {
+            if (matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request) &&
+                asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(
+                    input,
+                    start,
+                    out result))
+            {
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                asciiRegularProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&

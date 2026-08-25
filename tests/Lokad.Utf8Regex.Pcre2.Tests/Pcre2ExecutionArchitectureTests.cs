@@ -74,6 +74,55 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
+    public void AsciiRegularIsMatchReusesCoreOnlyForItsProvenSemanticSubset()
+    {
+        const string emailPattern = @"^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,12}$";
+        const string fixedFieldsPattern = @"^([a-z]+)-([0-9]{2})$";
+        const string unanchoredIpPattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        var email = new Utf8Pcre2Regex(emailPattern);
+        var fixedFields = new Utf8Pcre2Regex(fixedFieldsPattern);
+        var unanchoredIp = new Utf8Pcre2Regex(unanchoredIpPattern);
+
+        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(email.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(fixedFields.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(unanchoredIp.DebugCompiledProgram.Operations.IsMatch);
+        Assert.True(email.IsMatch("ops@northwind.example"u8));
+        Assert.True(email.IsMatch("ops@northwind.example\n"u8));
+        Assert.False(email.IsMatch("ops@northwind.example#"u8));
+        Assert.False(email.IsMatch("é@northwind.example"u8));
+        Assert.True(fixedFields.IsMatch("alpha-12"u8));
+        Assert.False(fixedFields.IsMatch("alpha-123"u8));
+
+        foreach (var unsupported in new[] { @"\w+", @"[^a]+", ".+", "é+", @"(?=a)a", @"(a)\1" })
+        {
+            Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(
+                new Utf8Pcre2Regex(unsupported).DebugCompiledProgram.Operations.IsMatch);
+        }
+    }
+
+    [Fact]
+    public void AsciiRegularIsMatchRetainsBacktrackingForOffsetsOptionsAndLimits()
+    {
+        var ordinary = new Utf8Pcre2Regex("^a+$");
+        var captured = new Utf8Pcre2Regex("(a)");
+        var limited = new Utf8Pcre2Regex(
+            "^(a+)+b$",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
+
+        Assert.False(ordinary.IsMatch("a"u8, 0, Pcre2MatchOptions.NotBol));
+        Assert.False(ordinary.IsMatch("xa"u8, 1));
+        Assert.False(captured.IsMatch("xa"u8, 0, Pcre2MatchOptions.Anchored));
+        Assert.True(captured.IsMatch("xa"u8, 1, Pcre2MatchOptions.Anchored));
+        Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(limited.DebugCompiledProgram.Operations.IsMatch);
+        Assert.Equal(
+            Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("aaaaaaaa"u8)).ErrorKind);
+    }
+
+    [Fact]
     public void InvocationStateIsNeverRetainedByCompiledProgram()
     {
         Assert.DoesNotContain(
