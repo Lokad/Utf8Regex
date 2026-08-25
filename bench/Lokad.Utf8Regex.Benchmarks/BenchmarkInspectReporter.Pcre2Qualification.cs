@@ -7,6 +7,7 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
+    private const int Pcre2QualificationProtocolVersion = 2;
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
 
@@ -205,7 +206,7 @@ internal static partial class BenchmarkInspectReporter
                     return new Pcre2PairedMeasurementJson
                     {
                         PairId = Guid.NewGuid().ToString("N"),
-                        ProtocolVersion = 1,
+                        ProtocolVersion = Pcre2QualificationProtocolVersion,
                         CaseId = caseId,
                         Section = sectionName,
                         Operation = operation.ToString(),
@@ -331,14 +332,19 @@ internal static partial class BenchmarkInspectReporter
     private static Pcre2QualificationWarmup WarmPcre2QualificationLane(Func<int> action)
     {
         const int minimumIterations = 64;
-        const double minimumMilliseconds = 150;
+        const int iterationsPerClockCheck = 8;
+        const double minimumMilliseconds = 750;
         var sink = 0;
         var iterations = 0;
         var start = Stopwatch.GetTimestamp();
         do
         {
-            sink ^= action();
-            iterations++;
+            for (var iteration = 0; iteration < iterationsPerClockCheck; iteration++)
+            {
+                sink ^= action();
+            }
+
+            iterations += iterationsPerClockCheck;
         }
         while (iterations < minimumIterations ||
                Stopwatch.GetElapsedTime(start).TotalMilliseconds < minimumMilliseconds);
