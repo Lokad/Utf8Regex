@@ -1882,57 +1882,31 @@ internal ref struct Pcre2GlobalMatchCursor
 
     private readonly Pcre2GlobalCursorKind _kind;
     private Pcre2LiteralFamilyGlobalMatchCursor _literalFamily;
-    private Pcre2LiteralGlobalMatchCursor _literal;
-    private Pcre2CharacterGlobalMatchCursor _character;
-    private Pcre2BacktrackingGlobalMatchCursor _backtracking;
+    private Pcre2DirectGlobalMatchCursor _direct;
 
-    private Pcre2GlobalMatchCursor(Pcre2LiteralGlobalMatchCursor literal)
+    private Pcre2GlobalMatchCursor(Pcre2DirectGlobalMatchCursor direct)
     {
-        _kind = Pcre2GlobalCursorKind.Literal;
+        _kind = Pcre2GlobalCursorKind.Direct;
         _literalFamily = default;
-        _literal = literal;
-        _character = default;
-        _backtracking = default;
-    }
-
-    private Pcre2GlobalMatchCursor(Pcre2CharacterGlobalMatchCursor character)
-    {
-        _kind = Pcre2GlobalCursorKind.Character;
-        _literalFamily = default;
-        _literal = default;
-        _character = character;
-        _backtracking = default;
-    }
-
-    private Pcre2GlobalMatchCursor(Pcre2BacktrackingGlobalMatchCursor backtracking)
-    {
-        _kind = Pcre2GlobalCursorKind.Backtracking;
-        _literalFamily = default;
-        _literal = default;
-        _character = default;
-        _backtracking = backtracking;
+        _direct = direct;
     }
 
     private Pcre2GlobalMatchCursor(Pcre2LiteralFamilyGlobalMatchCursor literalFamily)
     {
         _kind = Pcre2GlobalCursorKind.LiteralFamily;
         _literalFamily = literalFamily;
-        _literal = default;
-        _character = default;
-        _backtracking = default;
+        _direct = default;
     }
 
     internal Pcre2GroupData Current => _kind switch
     {
         Pcre2GlobalCursorKind.LiteralFamily => _literalFamily.Current,
-        Pcre2GlobalCursorKind.Literal => _literal.Current,
-        Pcre2GlobalCursorKind.Character => _character.Current,
-        Pcre2GlobalCursorKind.Backtracking => _backtracking.Current,
+        Pcre2GlobalCursorKind.Direct => _direct.Current,
         _ => default,
     };
 
-    internal Pcre2ExecutionDiagnostics Diagnostics => _kind == Pcre2GlobalCursorKind.Backtracking
-        ? _backtracking.Diagnostics
+    internal Pcre2ExecutionDiagnostics Diagnostics => _kind == Pcre2GlobalCursorKind.Direct
+        ? _direct.Diagnostics
         : default;
 
     internal static Pcre2GlobalMatchCursor CreateLiteral(
@@ -1941,7 +1915,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request) =>
-        new(new Pcre2LiteralGlobalMatchCursor(program, input, start, matchOptions, request));
+        new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Utf8Regex regex,
@@ -1955,7 +1929,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request) =>
-        new(new Pcre2CharacterGlobalMatchCursor(program, input, start, matchOptions, request));
+        new(Pcre2DirectGlobalMatchCursor.CreateCharacter(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateSingleTokenRepeat(
         Pcre2SingleTokenRepeatProgram program,
@@ -1963,7 +1937,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request) =>
-        new(new Pcre2CharacterGlobalMatchCursor(program, input, start, matchOptions, request));
+        new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request));
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
@@ -1973,7 +1947,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
         bool collectDiagnostics) =>
-        new(new Pcre2BacktrackingGlobalMatchCursor(
+        new(Pcre2DirectGlobalMatchCursor.CreateBacktracking(
             program,
             candidateSearch,
             input,
@@ -1985,19 +1959,330 @@ internal ref struct Pcre2GlobalMatchCursor
     internal bool MoveNext() => _kind switch
     {
         Pcre2GlobalCursorKind.LiteralFamily => _literalFamily.MoveNext(),
-        Pcre2GlobalCursorKind.Literal => _literal.MoveNext(),
-        Pcre2GlobalCursorKind.Character => _character.MoveNext(),
-        Pcre2GlobalCursorKind.Backtracking => _backtracking.MoveNext(),
+        Pcre2GlobalCursorKind.Direct => _direct.MoveNext(),
         _ => false,
     };
 
     private enum Pcre2GlobalCursorKind : byte
     {
         None = 0,
+        Direct = 1,
+        LiteralFamily = 2,
+    }
+}
+
+internal readonly record struct Pcre2DirectGlobalMatch(
+    bool Success,
+    int StartOffsetInBytes,
+    int EndOffsetInBytes,
+    int ConsumedStartOffsetInBytes,
+    int ConsumedEndOffsetInBytes,
+    bool MatchBoundaryWasReset);
+
+internal ref struct Pcre2DirectGlobalMatchCursor
+{
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2DirectGlobalMatchCursor>();
+
+    private readonly Pcre2DirectGlobalCursorKind _kind;
+    private readonly Pcre2LiteralProgram? _literalProgram;
+    private readonly Pcre2CharacterProgram? _characterProgram;
+    private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
+    private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
+    private readonly Pcre2CandidateSearchProgram _candidateSearch;
+    private Utf8ValidatedInput _input;
+    private readonly Pcre2CompileRequest _request;
+    private readonly Pcre2MatchOptions _matchOptions;
+    private Pcre2ResourceBudget _budget;
+    private Utf8ProjectionCursor _projection;
+    private Utf8BytePosition _restartPosition;
+    private Utf8BytePosition _firstMatchingPosition;
+    private Pcre2GlobalRetryState _retryState;
+
+    private Pcre2DirectGlobalMatchCursor(
+        Pcre2DirectGlobalCursorKind kind,
+        Pcre2LiteralProgram? literalProgram,
+        Pcre2CharacterProgram? characterProgram,
+        Pcre2SingleTokenRepeatProgram? singleTokenRepeatProgram,
+        Pcre2BacktrackingProgram? backtrackingProgram,
+        Pcre2CandidateSearchProgram candidateSearch,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request,
+        bool collectDiagnostics)
+    {
+        _kind = kind;
+        _literalProgram = literalProgram;
+        _characterProgram = characterProgram;
+        _singleTokenRepeatProgram = singleTokenRepeatProgram;
+        _backtrackingProgram = backtrackingProgram;
+        _candidateSearch = candidateSearch;
+        _input = input;
+        _request = request;
+        _matchOptions = matchOptions;
+        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics);
+        _projection = input.CreateProjectionCursor();
+        _restartPosition = start;
+        _firstMatchingPosition = start;
+        _retryState = Pcre2GlobalRetryState.Search;
+        Current = default;
+    }
+
+    internal Pcre2GroupData Current { get; private set; }
+
+    internal readonly Pcre2ExecutionDiagnostics Diagnostics => _budget.Diagnostics;
+
+    internal static Pcre2DirectGlobalMatchCursor CreateLiteral(
+        Pcre2LiteralProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(
+            Pcre2DirectGlobalCursorKind.Literal,
+            program,
+            characterProgram: null,
+            singleTokenRepeatProgram: null,
+            backtrackingProgram: null,
+            candidateSearch: default,
+            input,
+            start,
+            matchOptions,
+            request,
+            collectDiagnostics: false);
+
+    internal static Pcre2DirectGlobalMatchCursor CreateCharacter(
+        Pcre2CharacterProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(
+            Pcre2DirectGlobalCursorKind.Character,
+            literalProgram: null,
+            program,
+            singleTokenRepeatProgram: null,
+            backtrackingProgram: null,
+            candidateSearch: default,
+            input,
+            start,
+            matchOptions,
+            request,
+            collectDiagnostics: false);
+
+    internal static Pcre2DirectGlobalMatchCursor CreateSingleTokenRepeat(
+        Pcre2SingleTokenRepeatProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request) =>
+        new(
+            Pcre2DirectGlobalCursorKind.SingleTokenRepeat,
+            literalProgram: null,
+            characterProgram: null,
+            program,
+            backtrackingProgram: null,
+            candidateSearch: default,
+            input,
+            start,
+            matchOptions,
+            request,
+            collectDiagnostics: false);
+
+    internal static Pcre2DirectGlobalMatchCursor CreateBacktracking(
+        Pcre2BacktrackingProgram program,
+        Pcre2CandidateSearchProgram candidateSearch,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        Pcre2CompileRequest request,
+        bool collectDiagnostics) =>
+        new(
+            Pcre2DirectGlobalCursorKind.Backtracking,
+            literalProgram: null,
+            characterProgram: null,
+            singleTokenRepeatProgram: null,
+            program,
+            candidateSearch,
+            input,
+            start,
+            matchOptions,
+            request,
+            collectDiagnostics);
+
+    internal bool MoveNext()
+    {
+        while (_retryState != Pcre2GlobalRetryState.Finished)
+        {
+            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
+            var options = retryingEmptyAtSamePosition
+                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
+                : _matchOptions;
+
+            Pcre2DirectGlobalMatch match;
+            try
+            {
+                switch (_kind)
+                {
+                    case Pcre2DirectGlobalCursorKind.Literal:
+                        var literalProgram = _literalProgram ??
+                            throw new InvalidOperationException("The PCRE2 literal cursor has no execution program.");
+                        var literalMatch = Pcre2LiteralRunner.Match(
+                            literalProgram,
+                            ref _input,
+                            _restartPosition,
+                            options,
+                            ref _budget);
+                        match = new Pcre2DirectGlobalMatch(
+                            literalMatch.Success,
+                            literalMatch.StartOffsetInBytes,
+                            literalMatch.EndOffsetInBytes,
+                            literalMatch.StartOffsetInBytes,
+                            literalMatch.ConsumedEndOffsetInBytes,
+                            MatchBoundaryWasReset: false);
+                        break;
+                    case Pcre2DirectGlobalCursorKind.Character:
+                        var characterProgram = _characterProgram ??
+                            throw new InvalidOperationException("The PCRE2 character cursor has no execution program.");
+                        var characterMatch = Pcre2CharacterRunner.Match(
+                            characterProgram,
+                            ref _input,
+                            _restartPosition,
+                            options,
+                            ref _budget);
+                        match = new Pcre2DirectGlobalMatch(
+                            characterMatch.Success,
+                            characterMatch.StartOffsetInBytes,
+                            characterMatch.EndOffsetInBytes,
+                            characterMatch.ConsumedStartOffsetInBytes,
+                            characterMatch.ConsumedEndOffsetInBytes,
+                            characterMatch.MatchBoundaryWasReset);
+                        break;
+                    case Pcre2DirectGlobalCursorKind.SingleTokenRepeat:
+                        var repeatProgram = _singleTokenRepeatProgram ??
+                            throw new InvalidOperationException("The PCRE2 repeat cursor has no execution program.");
+                        var repeatMatch = Pcre2SingleTokenRepeatRunner.Match(
+                            repeatProgram,
+                            ref _input,
+                            _restartPosition,
+                            options,
+                            ref _budget);
+                        match = new Pcre2DirectGlobalMatch(
+                            repeatMatch.Success,
+                            repeatMatch.StartOffsetInBytes,
+                            repeatMatch.EndOffsetInBytes,
+                            repeatMatch.ConsumedStartOffsetInBytes,
+                            repeatMatch.ConsumedEndOffsetInBytes,
+                            repeatMatch.MatchBoundaryWasReset);
+                        break;
+                    case Pcre2DirectGlobalCursorKind.Backtracking:
+                        var backtrackingProgram = _backtrackingProgram ??
+                            throw new InvalidOperationException("The PCRE2 backtracking cursor has no execution program.");
+                        var backtrackingMatch = Pcre2BacktrackingRunner.Match(
+                            backtrackingProgram,
+                            _candidateSearch,
+                            ref _input,
+                            _restartPosition,
+                            _firstMatchingPosition,
+                            options,
+                            ref _budget);
+                        match = new Pcre2DirectGlobalMatch(
+                            backtrackingMatch.Success,
+                            backtrackingMatch.StartOffsetInBytes,
+                            backtrackingMatch.EndOffsetInBytes,
+                            backtrackingMatch.ConsumedStartOffsetInBytes,
+                            backtrackingMatch.ConsumedEndOffsetInBytes,
+                            backtrackingMatch.MatchBoundaryWasReset);
+                        break;
+                    default:
+                        Current = default;
+                        return false;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+            }
+
+            if (match.Success)
+            {
+                var isBacktracking = _kind == Pcre2DirectGlobalCursorKind.Backtracking;
+                if (isBacktracking &&
+                    _backtrackingProgram is { SuppressesUnresetEmptyMatches: true } &&
+                    !match.MatchBoundaryWasReset &&
+                    match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes)
+                {
+                    if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
+                            ref _input,
+                            _request.Settings,
+                            new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
+                            out _restartPosition))
+                    {
+                        _retryState = Pcre2GlobalRetryState.Finished;
+                        Current = default;
+                        return false;
+                    }
+
+                    _retryState = Pcre2GlobalRetryState.Search;
+                    continue;
+                }
+
+                if (isBacktracking && match.StartOffsetInBytes > match.EndOffsetInBytes)
+                {
+                    throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
+                }
+
+                if (isBacktracking)
+                {
+                    _budget.RecordResultProjection();
+                }
+
+                Current = Pcre2GlobalCursorProjection.Project(
+                    match.StartOffsetInBytes,
+                    match.EndOffsetInBytes,
+                    ref _input,
+                    ref _projection);
+                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
+                if (isBacktracking)
+                {
+                    _firstMatchingPosition = _restartPosition;
+                }
+
+                var isEmptyForRetry = isBacktracking
+                    ? match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
+                    : match.StartOffsetInBytes == match.EndOffsetInBytes;
+                _retryState = isEmptyForRetry
+                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
+                    : Pcre2GlobalRetryState.Search;
+                return true;
+            }
+
+            if (!retryingEmptyAtSamePosition ||
+                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
+                    ref _input,
+                    _request.Settings,
+                    _restartPosition,
+                    out _restartPosition))
+            {
+                _retryState = Pcre2GlobalRetryState.Finished;
+                Current = default;
+                return false;
+            }
+
+            _retryState = Pcre2GlobalRetryState.Search;
+        }
+
+        Current = default;
+        return false;
+    }
+
+    private enum Pcre2DirectGlobalCursorKind : byte
+    {
+        None = 0,
         Literal = 1,
         Character = 2,
-        Backtracking = 3,
-        LiteralFamily = 4,
+        SingleTokenRepeat = 3,
+        Backtracking = 4,
     }
 }
 
@@ -2036,124 +2321,6 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
             ref _input,
             ref _projection);
         return true;
-    }
-}
-
-internal ref struct Pcre2BacktrackingGlobalMatchCursor
-{
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2BacktrackingGlobalMatchCursor>();
-
-    private readonly Pcre2BacktrackingProgram _program;
-    private readonly Pcre2CandidateSearchProgram _candidateSearch;
-    private Utf8ValidatedInput _input;
-    private readonly Pcre2CompileRequest _request;
-    private readonly Pcre2MatchOptions _matchOptions;
-    private Pcre2ResourceBudget _budget;
-    private Utf8ProjectionCursor _projection;
-    private Utf8BytePosition _restartPosition;
-    private Utf8BytePosition _firstMatchingPosition;
-    private Pcre2GlobalRetryState _retryState;
-
-    internal Pcre2BacktrackingGlobalMatchCursor(
-        Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request,
-        bool collectDiagnostics)
-    {
-        _program = program;
-        _candidateSearch = candidateSearch;
-        _input = input;
-        _request = request;
-        _matchOptions = matchOptions;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics);
-        _projection = input.CreateProjectionCursor();
-        _restartPosition = start;
-        _firstMatchingPosition = start;
-        _retryState = Pcre2GlobalRetryState.Search;
-        Current = default;
-    }
-
-    internal Pcre2GroupData Current { get; private set; }
-
-    internal readonly Pcre2ExecutionDiagnostics Diagnostics => _budget.Diagnostics;
-
-    internal bool MoveNext()
-    {
-        while (_retryState != Pcre2GlobalRetryState.Finished)
-        {
-            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
-            var options = retryingEmptyAtSamePosition
-                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
-                : _matchOptions;
-
-            Pcre2CharacterMatch match;
-            try
-            {
-                match = Pcre2BacktrackingRunner.Match(
-                    _program,
-                    _candidateSearch,
-                    ref _input,
-                    _restartPosition,
-                    _firstMatchingPosition,
-                    options,
-                    ref _budget);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-            }
-
-            if (match.Success)
-            {
-                if (_program.SuppressesUnresetEmptyMatches && !match.MatchBoundaryWasReset &&
-                    match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes)
-                {
-                    if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                            ref _input,
-                            _request.Settings,
-                            new Utf8BytePosition(match.ConsumedEndOffsetInBytes),
-                            out _restartPosition))
-                    {
-                        _retryState = Pcre2GlobalRetryState.Finished;
-                        Current = default;
-                        return false;
-                    }
-
-                    _retryState = Pcre2GlobalRetryState.Search;
-                    continue;
-                }
-
-                if (match.StartOffsetInBytes > match.EndOffsetInBytes)
-                {
-                    throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-                }
-
-                _budget.RecordResultProjection();
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
-                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                _firstMatchingPosition = _restartPosition;
-                _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
-                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
-                    : Pcre2GlobalRetryState.Search;
-                return true;
-            }
-
-            if (!retryingEmptyAtSamePosition ||
-                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
-            {
-                _retryState = Pcre2GlobalRetryState.Finished;
-                Current = default;
-                return false;
-            }
-
-            _retryState = Pcre2GlobalRetryState.Search;
-        }
-
-        Current = default;
-        return false;
     }
 }
 
@@ -2232,209 +2399,6 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
                 _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
                 _firstMatchingPosition = _restartPosition;
                 _retryState = match.ConsumedStartOffsetInBytes == match.ConsumedEndOffsetInBytes
-                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
-                    : Pcre2GlobalRetryState.Search;
-                return true;
-            }
-
-            if (!retryingEmptyAtSamePosition ||
-                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
-            {
-                _retryState = Pcre2GlobalRetryState.Finished;
-                Current = default;
-                return false;
-            }
-
-            _retryState = Pcre2GlobalRetryState.Search;
-        }
-
-        Current = default;
-        return false;
-    }
-}
-
-internal ref struct Pcre2CharacterGlobalMatchCursor
-{
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2CharacterGlobalMatchCursor>();
-
-    private readonly Pcre2CharacterProgram? _program;
-    private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
-    private Utf8ValidatedInput _input;
-    private readonly Pcre2CompileRequest _request;
-    private readonly Pcre2MatchOptions _matchOptions;
-    private Pcre2ResourceBudget _budget;
-    private Utf8ProjectionCursor _projection;
-    private Utf8BytePosition _restartPosition;
-    private Pcre2GlobalRetryState _retryState;
-
-    internal Pcre2CharacterGlobalMatchCursor(
-        Pcre2CharacterProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        _program = program;
-        _singleTokenRepeatProgram = null;
-        _input = input;
-        _request = request;
-        _matchOptions = matchOptions;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-        _projection = input.CreateProjectionCursor();
-        _restartPosition = start;
-        _retryState = Pcre2GlobalRetryState.Search;
-        Current = default;
-    }
-
-    internal Pcre2CharacterGlobalMatchCursor(
-        Pcre2SingleTokenRepeatProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        _program = null;
-        _singleTokenRepeatProgram = program;
-        _input = input;
-        _request = request;
-        _matchOptions = matchOptions;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-        _projection = input.CreateProjectionCursor();
-        _restartPosition = start;
-        _retryState = Pcre2GlobalRetryState.Search;
-        Current = default;
-    }
-
-    internal Pcre2GroupData Current { get; private set; }
-
-    internal bool MoveNext()
-    {
-        while (_retryState != Pcre2GlobalRetryState.Finished)
-        {
-            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
-            var options = retryingEmptyAtSamePosition
-                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
-                : _matchOptions;
-
-            Pcre2CharacterMatch match;
-            try
-            {
-                if (_singleTokenRepeatProgram is { } singleTokenRepeatProgram)
-                {
-                    match = Pcre2SingleTokenRepeatRunner.Match(
-                        singleTokenRepeatProgram,
-                        ref _input,
-                        _restartPosition,
-                        options,
-                        ref _budget);
-                }
-                else if (_program is { } characterProgram)
-                {
-                    match = Pcre2CharacterRunner.Match(
-                        characterProgram,
-                        ref _input,
-                        _restartPosition,
-                        options,
-                        ref _budget);
-                }
-                else
-                {
-                    throw new InvalidOperationException("The PCRE2 character cursor has no execution program.");
-                }
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-            }
-
-            if (match.Success)
-            {
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
-                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
-                    ? Pcre2GlobalRetryState.EmptyAtSamePosition
-                    : Pcre2GlobalRetryState.Search;
-                return true;
-            }
-
-            if (!retryingEmptyAtSamePosition ||
-                !Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(ref _input, _request.Settings, _restartPosition, out _restartPosition))
-            {
-                _retryState = Pcre2GlobalRetryState.Finished;
-                Current = default;
-                return false;
-            }
-
-            _retryState = Pcre2GlobalRetryState.Search;
-        }
-
-        Current = default;
-        return false;
-    }
-}
-
-internal ref struct Pcre2LiteralGlobalMatchCursor
-{
-    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2LiteralGlobalMatchCursor>();
-
-    private readonly Pcre2LiteralProgram _program;
-    private Utf8ValidatedInput _input;
-    private readonly Pcre2CompileRequest _request;
-    private readonly Pcre2MatchOptions _matchOptions;
-    private Pcre2ResourceBudget _budget;
-    private Utf8ProjectionCursor _projection;
-    private Utf8BytePosition _restartPosition;
-    private Pcre2GlobalRetryState _retryState;
-
-    internal Pcre2LiteralGlobalMatchCursor(
-        Pcre2LiteralProgram program,
-        Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2MatchOptions matchOptions,
-        Pcre2CompileRequest request)
-    {
-        _program = program;
-        _input = input;
-        _request = request;
-        _matchOptions = matchOptions;
-        _budget = new Pcre2ResourceBudget(request.DefaultLimits, request.MatchTimeout, collectDiagnostics: false);
-        _projection = input.CreateProjectionCursor();
-        _restartPosition = start;
-        _retryState = Pcre2GlobalRetryState.Search;
-        Current = default;
-    }
-
-    internal Pcre2GroupData Current { get; private set; }
-
-    internal bool MoveNext()
-    {
-        while (_retryState != Pcre2GlobalRetryState.Finished)
-        {
-            var retryingEmptyAtSamePosition = _retryState == Pcre2GlobalRetryState.EmptyAtSamePosition;
-            var options = retryingEmptyAtSamePosition
-                ? _matchOptions | Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart
-                : _matchOptions;
-
-            Pcre2LiteralMatch match;
-            try
-            {
-                match = Pcre2LiteralRunner.Match(
-                    _program,
-                    ref _input,
-                    _restartPosition,
-                    options,
-                    ref _budget);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-            }
-
-            if (match.Success)
-            {
-                Current = Pcre2GlobalCursorProjection.Project(match.StartOffsetInBytes, match.EndOffsetInBytes, ref _input, ref _projection);
-                _restartPosition = new Utf8BytePosition(match.ConsumedEndOffsetInBytes);
-                _retryState = match.StartOffsetInBytes == match.EndOffsetInBytes
                     ? Pcre2GlobalRetryState.EmptyAtSamePosition
                     : Pcre2GlobalRetryState.Search;
                 return true;

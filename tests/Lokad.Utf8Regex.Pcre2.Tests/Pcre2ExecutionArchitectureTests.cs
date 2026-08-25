@@ -18,10 +18,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes > 0);
         Assert.True(Utf8OperationMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2GlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2DirectGlobalMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2LiteralGlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2CharacterGlobalMatchCursor.DebugSizeInBytes > 0);
-        Assert.True(Pcre2BacktrackingGlobalMatchCursor.DebugSizeInBytes > 0);
         Assert.True(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes > 0);
     }
 
@@ -34,6 +32,16 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(
             Utf8OperationMatchCursor.DebugSizeInBytes <
             Utf8OperationMatchCursor.DebugStructuralLinearProgramSizeInBytes);
+    }
+
+    [Fact]
+    public void Pcre2GlobalCursorCarriesOneSharedDirectRouteState()
+    {
+        Assert.True(
+            Pcre2GlobalMatchCursor.DebugSizeInBytes <=
+            Pcre2DirectGlobalMatchCursor.DebugSizeInBytes +
+            Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes +
+            (2 * IntPtr.Size));
     }
 
     [Fact]

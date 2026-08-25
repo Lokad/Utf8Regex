@@ -437,6 +437,7 @@ internal static partial class BenchmarkInspectReporter
     {
         Console.WriteLine($"ValueEnumeratorB  : {Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes}");
         Console.WriteLine($"GlobalCursorB     : {Pcre2GlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"DirectCursorB     : {Pcre2DirectGlobalMatchCursor.DebugSizeInBytes}");
         Console.WriteLine($"Utf8PreparedEnumB : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8PreparedEnumeratorSizeInBytes}");
         Console.WriteLine($"Utf8EnumeratorB   : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8EnumeratorSizeInBytes}");
         Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
@@ -451,9 +452,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
         Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
         Console.WriteLine($"LiteralFamilyCurB : {Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"LiteralCursorB    : {Pcre2LiteralGlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"CharacterCursorB  : {Pcre2CharacterGlobalMatchCursor.DebugSizeInBytes}");
-        Console.WriteLine($"BacktrackCursorB  : {Pcre2BacktrackingGlobalMatchCursor.DebugSizeInBytes}");
         Console.WriteLine($"DetailedCursorB   : {Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes}");
     }
 

@@ -307,7 +307,8 @@ public sealed class Pcre2LiteralGlobalOperationTests
             "src",
             "Lokad.Utf8Regex.Pcre2",
             "Pcre2ExecutionArchitecture.cs"));
-        var cursorStart = architecture.IndexOf("internal ref struct Pcre2LiteralGlobalMatchCursor", StringComparison.Ordinal);
+        var cursorStart = architecture.IndexOf("internal ref struct Pcre2DirectGlobalMatchCursor", StringComparison.Ordinal);
+        Assert.True(cursorStart >= 0);
         var cursorSource = architecture[cursorStart..];
         Assert.DoesNotContain("Pattern switch", cursorSource, StringComparison.Ordinal);
         Assert.DoesNotContain("Pattern ==", cursorSource, StringComparison.Ordinal);
