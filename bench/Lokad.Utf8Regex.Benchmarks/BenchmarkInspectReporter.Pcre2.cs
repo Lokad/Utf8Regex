@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
-    private const int Pcre2BenchmarkSchemaVersion = 7;
+    private const int Pcre2BenchmarkSchemaVersion = 8;
 
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
@@ -1700,6 +1700,10 @@ internal static partial class BenchmarkInspectReporter
 
         public PcreNetNativePlanFingerprint? ComparatorPlanFingerprint { get; set; }
 
+        public Pcre2BenchmarkWorkspaceContract? ManagedWorkspaceContract { get; set; }
+
+        public Pcre2BenchmarkWorkspaceContract? ComparatorWorkspaceContract { get; set; }
+
         public string ProcessorSetPolicy { get; set; } = "unrecorded";
 
         public string ProcessorAffinityMask { get; set; } = "unrecorded";
@@ -1717,6 +1721,14 @@ internal static partial class BenchmarkInspectReporter
         public int ManagedWarmupIterations { get; set; }
 
         public int ComparatorWarmupIterations { get; set; }
+
+        public int ManagedAllocationProbeIterations { get; set; }
+
+        public int ComparatorAllocationProbeIterations { get; set; }
+
+        public long ManagedAllocatedBytesPerOperation { get; set; }
+
+        public long ComparatorManagedAllocatedBytesPerOperation { get; set; }
 
         public double ManagedWarmupMilliseconds { get; set; }
 
@@ -1829,6 +1841,8 @@ internal static partial class BenchmarkInspectReporter
         public required string Profile { get; set; }
 
         public PcreNetNativeBuildFingerprint? BuildFingerprint { get; set; }
+
+        public Pcre2BenchmarkWorkspaceContract? WorkspaceContract { get; set; }
     }
 
     private readonly record struct Pcre2TranslationRow(

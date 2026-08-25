@@ -86,6 +86,16 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         };
     }
 
+    internal static Pcre2BenchmarkWorkspaceContract CaptureWorkspaceContract() => new()
+    {
+        StateHolder = nameof(PcreMatchBuffer8Bit),
+        Lifetime = "One buffer is constructed per qualified operation row, reused for checksum, warmup, calibration, paired samples, and allocation probing, then disposed.",
+        ConcurrencyContract = "The buffer is not thread-safe and not reentrant; a caller must provide a distinct buffer for overlapping operations.",
+        RetainedMemoryContract = "The reusable buffer retains native match data between operations.",
+        RetainedNativeHeapHighWaterUnavailableReason =
+            "PCRE.NET 1.5.0 does not expose retained match-data heap-frame high-water memory through its public API.",
+    };
+
     internal PcreNetNativePlanFingerprint CapturePlanFingerprint()
     {
         var info = _regex.PatternInfo;
@@ -395,4 +405,19 @@ internal sealed class PcreNetNativePlanFingerprint
     public uint? PatternDepthLimit { get; init; }
 
     public uint? PatternHeapLimitKibibytes { get; init; }
+}
+
+internal sealed class Pcre2BenchmarkWorkspaceContract
+{
+    public required string StateHolder { get; init; }
+
+    public required string Lifetime { get; init; }
+
+    public required string ConcurrencyContract { get; init; }
+
+    public required string RetainedMemoryContract { get; init; }
+
+    public long? RetainedNativeHeapHighWaterBytes { get; init; }
+
+    public string? RetainedNativeHeapHighWaterUnavailableReason { get; init; }
 }

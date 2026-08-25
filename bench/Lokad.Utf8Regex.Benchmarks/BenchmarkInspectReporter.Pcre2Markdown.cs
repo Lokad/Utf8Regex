@@ -100,6 +100,16 @@ internal static partial class BenchmarkInspectReporter
         static string FormatManagedRoute(Pcre2CaseMeasurementJson row) =>
             row.PcreNetNativePair?.ManagedRoute ?? "—";
 
+        static string FormatManagedAllocation(Pcre2CaseMeasurementJson row) =>
+            row.PcreNetNativePair is { ProtocolVersion: >= 6 } pair
+                ? FormatPcre2AllocatedBytes(pair.ManagedAllocatedBytesPerOperation)
+                : FormatPcre2AllocatedBytes(row.WarmAllocatedBytes);
+
+        static string FormatComparatorManagedAllocation(Pcre2CaseMeasurementJson row) =>
+            row.PcreNetNativePair is { ProtocolVersion: >= 6 } pair
+                ? FormatPcre2AllocatedBytes(pair.ComparatorManagedAllocatedBytesPerOperation)
+                : "—";
+
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var sectionRows = snapshot.Sections
             .OrderBy(static section => GetPcre2MarkdownSectionOrder(section.Key))
@@ -117,6 +127,9 @@ internal static partial class BenchmarkInspectReporter
             .GroupBy(static row => row.PcreNetNativeStatus)
             .ToDictionary(static group => group.Key, static group => group.Count());
         var pairedRows = allRows.Count(static row => row.PcreNetNativePair is not null);
+        var managedWorkspaceContract = allRows
+            .Select(static row => row.PcreNetNativePair?.ManagedWorkspaceContract)
+            .FirstOrDefault(static contract => contract is not null);
         var qualificationProcessorSets = allRows
             .Select(static row => row.PcreNetNativePair)
             .Where(static pair => pair is not null)
@@ -237,8 +250,15 @@ internal static partial class BenchmarkInspectReporter
 
         writer.WriteLine();
         WritePcreNetDependencyReview(writer, snapshot.PcreNetNativeBaseline);
+        if (managedWorkspaceContract is not null)
+        {
+            writer.WriteLine();
+            writer.WriteLine(
+                $"Managed qualification lifecycle: {managedWorkspaceContract.Lifetime} " +
+                $"{managedWorkspaceContract.ConcurrencyContract} {managedWorkspaceContract.RetainedMemoryContract}");
+        }
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations and frozen operations per lane. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
+        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations and frozen operations per lane. Allocation columns report managed-thread allocations per public operation; they do not measure native retained memory. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
 
         foreach (var (sectionName, section) in sectionRows)
         {
@@ -248,8 +268,8 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             if (compatible)
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |");
-                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
@@ -258,20 +278,20 @@ internal static partial class BenchmarkInspectReporter
                         $"{FormatNativeExcess(row)} | {FormatNativePair(row)} | `{FormatManagedRoute(row)}` | " +
                         $"{FormatPcre2NullableMicroseconds(row.Utf8Regex)} | {FormatPcre2NullableMicroseconds(row.PredecodedRegex)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.DecodeThenRegex)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.DecodeThenRegex)} | " +
-                        $"{FormatPcre2AllocatedBytes(row.WarmAllocatedBytes)} |");
+                        $"{FormatManagedAllocation(row)} | {FormatComparatorManagedAllocation(row)} |");
                 }
             }
             else
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 warm alloc | Construction CPU | Construction alloc |");
-                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction CPU | Construction alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
                         $"| `{caseId}` | **{FormatNativeStatus(row.PcreNetNativeStatus)}** | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatNativeRatio(row)} | {FormatNativeInterval(row)} | " +
                         $"{FormatNativeExcess(row)} | {FormatNativePair(row)} | `{FormatManagedRoute(row)}` | " +
-                        $"{FormatPcre2AllocatedBytes(row.WarmAllocatedBytes)} | {FormatPcre2NullableMicroseconds(row.ConstructionMicroseconds)} | " +
+                        $"{FormatManagedAllocation(row)} | {FormatComparatorManagedAllocation(row)} | {FormatPcre2NullableMicroseconds(row.ConstructionMicroseconds)} | " +
                         $"{FormatPcre2AllocatedBytes(row.ConstructionAllocatedBytes)} |");
                 }
             }
@@ -402,6 +422,18 @@ internal static partial class BenchmarkInspectReporter
                 $"Build defaults: newline `{build.DefaultNewline}`, `\\R` `{build.DefaultBackslashR}`, heap `{build.DefaultHeapLimitKibibytes:N0}` KiB, " +
                 $"match/depth/parentheses limits `{build.DefaultMatchLimit:N0}/{build.DefaultDepthLimit:N0}/{build.ParenthesesLimit:N0}`, " +
                 $"character tables `{build.CharacterTablesLengthBytes:N0}` bytes.");
+        }
+
+        if (dependency?.WorkspaceContract is { } workspace)
+        {
+            writer.WriteLine();
+            writer.WriteLine(
+                $"Comparator qualification lifecycle (`{workspace.StateHolder}`): {workspace.Lifetime} " +
+                $"{workspace.ConcurrencyContract} {workspace.RetainedMemoryContract}");
+            writer.WriteLine();
+            writer.WriteLine(workspace.RetainedNativeHeapHighWaterBytes is { } retainedBytes
+                ? $"Retained native match-data heap-frame high water: `{retainedBytes:N0}` bytes."
+                : $"Retained native match-data heap-frame high water: unavailable — {workspace.RetainedNativeHeapHighWaterUnavailableReason}");
         }
     }
 

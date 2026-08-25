@@ -9,7 +9,7 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 5;
+    private const int Pcre2QualificationProtocolVersion = 6;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
@@ -208,6 +208,18 @@ internal static partial class BenchmarkInspectReporter
                     var excesses = managedMicroseconds
                         .Select((value, index) => value - comparatorMicroseconds[index])
                         .ToArray();
+                    var managedMedianMicroseconds = Median(managedMicroseconds);
+                    var comparatorMedianMicroseconds = Median(comparatorMicroseconds);
+                    var managedAllocationProbeIterations = GetPcre2QualificationAllocationProbeIterations(
+                        managedMedianMicroseconds);
+                    var comparatorAllocationProbeIterations = GetPcre2QualificationAllocationProbeIterations(
+                        comparatorMedianMicroseconds);
+                    var managedAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                        managedAllocationProbeIterations,
+                        managedAction);
+                    var comparatorManagedAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                        comparatorAllocationProbeIterations,
+                        comparatorAction);
 
                     return new Pcre2PairedMeasurementJson
                     {
@@ -226,6 +238,8 @@ internal static partial class BenchmarkInspectReporter
                         ComparatorProfile = comparatorDependency.Profile,
                         ComparatorBuildFingerprint = comparatorDependency.BuildFingerprint,
                         ComparatorPlanFingerprint = comparator.CapturePlanFingerprint(),
+                        ManagedWorkspaceContract = CaptureManagedPcre2WorkspaceContract(),
+                        ComparatorWorkspaceContract = comparatorDependency.WorkspaceContract,
                         ProcessorSetPolicy = processorSet.Policy,
                         ProcessorAffinityMask = processorSet.AffinityMask,
                         ProcessorEfficiencyClass = processorSet.EfficiencyClass,
@@ -237,14 +251,18 @@ internal static partial class BenchmarkInspectReporter
                         ComparatorWarmupIterations = comparatorWarmup.Iterations,
                         ManagedWarmupMilliseconds = managedWarmup.Elapsed.TotalMilliseconds,
                         ComparatorWarmupMilliseconds = comparatorWarmup.Elapsed.TotalMilliseconds,
+                        ManagedAllocationProbeIterations = managedAllocationProbeIterations,
+                        ComparatorAllocationProbeIterations = comparatorAllocationProbeIterations,
+                        ManagedAllocatedBytesPerOperation = managedAllocatedBytes,
+                        ComparatorManagedAllocatedBytesPerOperation = comparatorManagedAllocatedBytes,
                         LaneOrders = laneOrders,
                         ManagedSampleMicroseconds = managedMicroseconds,
                         ComparatorSampleMicroseconds = comparatorMicroseconds,
                         ManagedSampleMilliseconds = managedMilliseconds,
                         ComparatorSampleMilliseconds = comparatorMilliseconds,
                         PairedRatios = ratios,
-                        ManagedMedianMicroseconds = Median(managedMicroseconds),
-                        ComparatorMedianMicroseconds = Median(comparatorMicroseconds),
+                        ManagedMedianMicroseconds = managedMedianMicroseconds,
+                        ComparatorMedianMicroseconds = comparatorMedianMicroseconds,
                         RatioMedian = ratioMedian,
                         RatioLower95 = Math.Exp(bootstrap.Lower),
                         RatioUpper95 = Math.Exp(bootstrap.Upper),
@@ -339,6 +357,24 @@ internal static partial class BenchmarkInspectReporter
         return 0;
 #endif
     }
+
+    private static int GetPcre2QualificationAllocationProbeIterations(double microsecondsPerOperation)
+    {
+        const double targetProbeMicroseconds = 250_000;
+        const int maximumProbeIterations = 64;
+        return (int)Math.Clamp(
+            Math.Floor(targetProbeMicroseconds / Math.Max(microsecondsPerOperation, 0.001)),
+            1,
+            maximumProbeIterations);
+    }
+
+    private static Pcre2BenchmarkWorkspaceContract CaptureManagedPcre2WorkspaceContract() => new()
+    {
+        StateHolder = "operation-local managed state",
+        Lifetime = "The compiled regex is reused; each public invocation or global enumerator owns its transient state and returns rented storage on disposal or completion.",
+        ConcurrencyContract = "The compiled regex may be invoked concurrently because capture, progress, timeout, and workspace state is invocation-local.",
+        RetainedMemoryContract = "The regex retains its immutable compiled plan, not invocation workspace; shared managed pools may retain returned arrays.",
+    };
 
     private static Pcre2QualificationWarmup WarmPcre2QualificationLane(Func<int> action)
     {
