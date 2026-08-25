@@ -30,7 +30,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(6, root.GetProperty("SchemaVersion").GetInt32());
 
         var dependency = root.GetProperty("PcreNetNativeBaseline");
         Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
@@ -84,6 +84,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             Assert.Equal(
                 hasNative ? "Unqualified" : "Excluded",
                 row.Value.GetProperty("PcreNetNativeStatus").GetString());
+            Assert.False(row.Value.TryGetProperty("PcreNetNativePair", out _));
         });
 
         var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
@@ -92,6 +93,8 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.Contains("PCRE.NET / PCRE2 NFA CPU", page, StringComparison.Ordinal);
         Assert.Contains("`100` unqualified, `26` excluded", page, StringComparison.Ordinal);
+        Assert.Contains("Rows with paired qualification evidence: `0/100`", page, StringComparison.Ordinal);
+        Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
         Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
         Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
 

@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
-    private const int Pcre2BenchmarkSchemaVersion = 5;
+    private const int Pcre2BenchmarkSchemaVersion = 6;
 
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
@@ -1680,6 +1680,14 @@ internal static partial class BenchmarkInspectReporter
         NativeFaster = 5,
     }
 
+    [System.Text.Json.Serialization.JsonConverter(
+        typeof(System.Text.Json.Serialization.JsonStringEnumConverter<Pcre2PairLaneOrder>))]
+    private enum Pcre2PairLaneOrder : byte
+    {
+        ManagedFirst = 0,
+        ComparatorFirst = 1,
+    }
+
     private sealed class Pcre2BenchmarkSnapshot
     {
         public int SchemaVersion { get; set; } = Pcre2BenchmarkSchemaVersion;
@@ -1728,6 +1736,91 @@ internal static partial class BenchmarkInspectReporter
         public Dictionary<string, Pcre2CaseMeasurementJson> Cases { get; set; } = new(StringComparer.Ordinal);
     }
 
+    private sealed class Pcre2PairedMeasurementJson
+    {
+        public required string PairId { get; set; }
+
+        public int ProtocolVersion { get; set; }
+
+        public required string CaseId { get; set; }
+
+        public required string Section { get; set; }
+
+        public required string Operation { get; set; }
+
+        public int StartOffsetInBytes { get; set; }
+
+        public DateTimeOffset MeasuredAtUtc { get; set; }
+
+        public required BenchmarkEnvironmentJson Environment { get; set; }
+
+        public required string ComparatorPackageId { get; set; }
+
+        public required string ComparatorPackageVersion { get; set; }
+
+        public required string ComparatorPackageSha512 { get; set; }
+
+        public required string ComparatorEngineVersion { get; set; }
+
+        public required string ComparatorProfile { get; set; }
+
+        public bool WorktreeQualified { get; set; }
+
+        public int SampleCount { get; set; }
+
+        public int ManagedBatchCount { get; set; }
+
+        public int ComparatorBatchCount { get; set; }
+
+        public int ManagedWarmupIterations { get; set; }
+
+        public int ComparatorWarmupIterations { get; set; }
+
+        public double ManagedWarmupMilliseconds { get; set; }
+
+        public double ComparatorWarmupMilliseconds { get; set; }
+
+        public List<Pcre2PairLaneOrder> LaneOrders { get; set; } = [];
+
+        public List<double> ManagedSampleMicroseconds { get; set; } = [];
+
+        public List<double> ComparatorSampleMicroseconds { get; set; } = [];
+
+        public List<double> ManagedSampleMilliseconds { get; set; } = [];
+
+        public List<double> ComparatorSampleMilliseconds { get; set; } = [];
+
+        public List<double> PairedRatios { get; set; } = [];
+
+        public double ManagedMedianMicroseconds { get; set; }
+
+        public double ComparatorMedianMicroseconds { get; set; }
+
+        public double RatioMedian { get; set; }
+
+        public double RatioLower95 { get; set; }
+
+        public double RatioUpper95 { get; set; }
+
+        public double ExcessMedianMicroseconds { get; set; }
+
+        public double OrderEffectRatio { get; set; }
+
+        public int BootstrapSeed { get; set; }
+
+        public int BootstrapResamples { get; set; }
+
+        public required string ResultChecksum { get; set; }
+
+        public required string ManagedRoute { get; set; }
+
+        public required string ManagedPlan { get; set; }
+
+        public Pcre2NativeComparisonStatus Status { get; set; }
+
+        public string? StatusReason { get; set; }
+    }
+
     private sealed class Pcre2CaseMeasurementJson
     {
         public DateTimeOffset? MeasuredAtUtc { get; set; }
@@ -1758,7 +1851,11 @@ internal static partial class BenchmarkInspectReporter
 
         public string? PcreNetNativeUnavailableReason { get; set; }
 
+        public Pcre2PairedMeasurementJson? PcreNetNativePair { get; set; }
+
         public Pcre2NativeComparisonStatus PcreNetNativeStatus { get; set; }
+
+        public string? PcreNetNativeStatusReason { get; set; }
 
         public double Utf8Pcre2 { get; set; }
 

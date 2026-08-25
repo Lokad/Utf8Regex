@@ -64,6 +64,33 @@ internal static partial class BenchmarkInspectReporter
             _ => throw new ArgumentOutOfRangeException(nameof(status)),
         };
 
+        static string FormatNativeRatio(Pcre2CaseMeasurementJson row) => row.PcreNetNativePair is { } pair
+            ? $"{pair.RatioMedian:F2}x"
+            : FormatPcre2Ratio(row.Utf8Pcre2, row.PcreNetNative);
+
+        static string FormatNativeInterval(Pcre2CaseMeasurementJson row) => row.PcreNetNativePair is { } pair
+            ? $"{pair.RatioLower95:F2}–{pair.RatioUpper95:F2}x"
+            : "—";
+
+        static string FormatNativeExcess(Pcre2CaseMeasurementJson row)
+        {
+            if (row.PcreNetNativePair is { } pair)
+            {
+                return $"{pair.ExcessMedianMicroseconds:+0.000;-0.000;0.000} us";
+            }
+
+            return row.PcreNetNative is > 0
+                ? $"{row.Utf8Pcre2 - row.PcreNetNative.Value:+0.000;-0.000;0.000} us"
+                : "—";
+        }
+
+        static string FormatNativePair(Pcre2CaseMeasurementJson row) => row.PcreNetNativePair is { } pair
+            ? $"{pair.SampleCount} pairs; {pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} batches"
+            : "—";
+
+        static string FormatManagedRoute(Pcre2CaseMeasurementJson row) =>
+            row.PcreNetNativePair?.ManagedRoute ?? "—";
+
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var sectionRows = snapshot.Sections
             .OrderBy(static section => GetPcre2MarkdownSectionOrder(section.Key))
@@ -80,6 +107,7 @@ internal static partial class BenchmarkInspectReporter
         var statusCounts = allRows
             .GroupBy(static row => row.PcreNetNativeStatus)
             .ToDictionary(static group => group.Key, static group => group.Count());
+        var pairedRows = allRows.Count(static row => row.PcreNetNativePair is not null);
         var unavailableNativeRows = sectionRows
             .SelectMany(static section => section.Value.Cases.Select(row => new
             {
@@ -150,6 +178,7 @@ internal static partial class BenchmarkInspectReporter
             $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Inconclusive)}` inconclusive, " +
             $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Unqualified)}` unqualified, " +
             $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Excluded)}` excluded");
+        writer.WriteLine($"- Rows with paired qualification evidence: `{pairedRows}/{nativeRows.Length}`");
         writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
         writer.WriteLine($"- Managed/comparator measurement environments represented: `{managedEnvironments.Length}/{nativeEnvironments.Length}`");
         writer.WriteLine();
@@ -185,7 +214,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         WritePcreNetDependencyReview(writer, snapshot.PcreNetNativeBaseline);
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `discovery R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Existing independently measured ratios are discovery data only and cannot determine a winner until a paired qualification protocol records a qualified Status. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
+        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
 
         foreach (var (sectionName, section) in sectionRows)
         {
@@ -195,13 +224,14 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             if (compatible)
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | discovery R | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |");
-                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 warm alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
                         $"| `{caseId}` | **{FormatNativeStatus(row.PcreNetNativeStatus)}** | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
-                        $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.PcreNetNative)} | " +
+                        $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatNativeRatio(row)} | {FormatNativeInterval(row)} | " +
+                        $"{FormatNativeExcess(row)} | {FormatNativePair(row)} | `{FormatManagedRoute(row)}` | " +
                         $"{FormatPcre2NullableMicroseconds(row.Utf8Regex)} | {FormatPcre2NullableMicroseconds(row.PredecodedRegex)} | " +
                         $"{FormatPcre2NullableMicroseconds(row.DecodeThenRegex)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.DecodeThenRegex)} | " +
                         $"{FormatPcre2AllocatedBytes(row.WarmAllocatedBytes)} |");
@@ -209,13 +239,14 @@ internal static partial class BenchmarkInspectReporter
             }
             else
             {
-                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | discovery R | Utf8Pcre2 warm alloc | Construction CPU | Construction alloc |");
-                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 warm alloc | Construction CPU | Construction alloc |");
+                writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|");
                 foreach (var (caseId, row) in section.Cases.OrderBy(static row => row.Key, StringComparer.Ordinal))
                 {
                     writer.WriteLine(
                         $"| `{caseId}` | **{FormatNativeStatus(row.PcreNetNativeStatus)}** | {FormatPcre2Bytes(row.InputUtf8Bytes)} | {FormatPcre2Microseconds(row.Utf8Pcre2)} | " +
-                        $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatPcre2Ratio(row.Utf8Pcre2, row.PcreNetNative)} | " +
+                        $"{FormatPcre2NullableMicroseconds(row.PcreNetNative)} | {FormatNativeRatio(row)} | {FormatNativeInterval(row)} | " +
+                        $"{FormatNativeExcess(row)} | {FormatNativePair(row)} | `{FormatManagedRoute(row)}` | " +
                         $"{FormatPcre2AllocatedBytes(row.WarmAllocatedBytes)} | {FormatPcre2NullableMicroseconds(row.ConstructionMicroseconds)} | " +
                         $"{FormatPcre2AllocatedBytes(row.ConstructionAllocatedBytes)} |");
                 }
@@ -265,6 +296,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         writer.WriteLine("```powershell");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pcre2-comparator-case\",\"simple/foo-dense\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pcre2-comparator-case\",\"simple/foo-dense\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-compatible-case\",\"common/email-match\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-special-case\",\"pcre2/branch-reset-basic\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pcre2-benchmark-case\",\"common/email-match\",\"200\",\"7\"");

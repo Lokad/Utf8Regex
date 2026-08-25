@@ -121,6 +121,10 @@ internal static partial class BenchmarkInspectReporter
         int maximumIterations,
         int samples)
     {
+        measurement.PcreNetNativePair = null;
+        measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Unqualified;
+        measurement.PcreNetNativeStatusReason =
+            "The managed and comparator lanes were not collected by the paired qualification protocol.";
         if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
         {
             measurement.PcreNetNativeMeasuredAtUtc = null;
@@ -130,6 +134,7 @@ internal static partial class BenchmarkInspectReporter
             measurement.PcreNetNativeUnavailableReason =
                 "PCRE.NET does not expose equivalent UTF-8 span replacement output.";
             measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+            measurement.PcreNetNativeStatusReason = measurement.PcreNetNativeUnavailableReason;
             return;
         }
 
@@ -151,6 +156,7 @@ internal static partial class BenchmarkInspectReporter
                 measurement.PcreNetNativeUnavailableReason =
                     $"Structured checksum mismatch: managed={expected}, comparator={actual}.";
                 measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+                measurement.PcreNetNativeStatusReason = measurement.PcreNetNativeUnavailableReason;
                 Console.WriteLine($"  Skipped: {measurement.PcreNetNativeUnavailableReason}");
                 return;
             }
@@ -175,6 +181,7 @@ internal static partial class BenchmarkInspectReporter
             measurement.PcreNetNativeUnavailableReason =
                 $"Native PCRE2 rejected the mapped profile: {exception.Message}";
             measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+            measurement.PcreNetNativeStatusReason = measurement.PcreNetNativeUnavailableReason;
             Console.WriteLine($"  Skipped: {measurement.PcreNetNativeUnavailableReason}");
         }
     }

@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 5,
+  "SchemaVersion": 6,
   "PcreNetNativeBaseline": {
     "PackageId": "PCRE.NET",
     "PackageVersion": "1.5.0",

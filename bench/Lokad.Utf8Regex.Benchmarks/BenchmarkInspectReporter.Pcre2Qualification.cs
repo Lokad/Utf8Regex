@@ -1,0 +1,410 @@
+using System.Diagnostics;
+using Lokad.Utf8Regex.Pcre2;
+
+namespace Lokad.Utf8Regex.Benchmarks;
+
+internal static partial class BenchmarkInspectReporter
+{
+    private const int Pcre2QualificationBootstrapSeed = 24301;
+    private const int Pcre2QualificationBootstrapResamples = 10_000;
+    private const double Pcre2QualificationTargetSampleMilliseconds = 35;
+    private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
+
+    public static int RunQualifyPcre2ComparatorCase(string caseId, string? samplesText)
+    {
+#if DEBUG
+        Console.Error.WriteLine("PCRE2 qualification requires a Release build.");
+        return 1;
+#else
+        var samples = string.IsNullOrWhiteSpace(samplesText) ? 9 : ParseSamples(samplesText);
+        if (samples < 9)
+        {
+            Console.Error.WriteLine("PCRE2 qualification requires at least nine paired samples.");
+            return 1;
+        }
+
+        var unexpectedWorktreeState = RunGit(
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+            "--",
+            ".",
+            ":(exclude)PCRE2.Benchmarks.json",
+            ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
+            ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
+        if (unexpectedWorktreeState is null)
+        {
+            Console.Error.WriteLine("Could not verify the worktree before PCRE2 qualification.");
+            return 1;
+        }
+
+        if (!string.IsNullOrWhiteSpace(unexpectedWorktreeState))
+        {
+            Console.Error.WriteLine("PCRE2 qualification requires a clean source worktree.");
+            Console.Error.WriteLine(unexpectedWorktreeState);
+            return 1;
+        }
+
+        var environment = CaptureBenchmarkEnvironment();
+        var snapshot = LoadPcre2BenchmarkSnapshot();
+        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
+        var comparatorDependency = CapturePcreNetNativeBaselineDependency();
+        snapshot.PcreNetNativeBaseline = comparatorDependency;
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+
+        foreach (var section in GetPcre2SectionsForCase(caseId))
+        {
+            var sectionName = GetPcre2SectionToken(section);
+            if (!snapshot.Sections.TryGetValue(sectionName, out var sectionSnapshot) ||
+                !sectionSnapshot.Cases.TryGetValue(caseId, out var measurement))
+            {
+                Console.Error.WriteLine(
+                    $"The snapshot does not contain case '{caseId}' in section '{sectionName}'. Refresh that section first.");
+                return 1;
+            }
+
+            var operation = GetPcre2SectionRequirements(section).Operation;
+            if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
+            {
+                measurement.PcreNetNativePair = null;
+                measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+                measurement.PcreNetNativeStatusReason = measurement.PcreNetNativeUnavailableReason;
+                continue;
+            }
+
+            try
+            {
+                using var comparator = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
+                var expected = ComputePcre2ManagedResultChecksum(
+                    context.Utf8Pcre2Regex,
+                    context.InputBytes,
+                    operation);
+                var actual = comparator.ComputeChecksum(operation);
+                if (actual != expected)
+                {
+                    var reason = $"Structured checksum mismatch: managed={expected}, comparator={actual}.";
+                    measurement.PcreNetNativePair = null;
+                    measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+                    measurement.PcreNetNativeStatusReason = reason;
+                    measurement.PcreNetNativeUnavailableReason = reason;
+                    Console.WriteLine($"{sectionName}: Excluded; {reason}");
+                    continue;
+                }
+
+                Func<int> managedAction = () => ExecutePcre2SnapshotOperation(
+                    context.Utf8Pcre2Regex,
+                    context,
+                    operation);
+                Func<int> comparatorAction = () => comparator.Execute(operation);
+                var managedWarmup = WarmPcre2QualificationLane(managedAction);
+                var comparatorWarmup = WarmPcre2QualificationLane(comparatorAction);
+                var managedBatchCount = CalibratePcre2QualificationBatch(managedAction);
+                var comparatorBatchCount = CalibratePcre2QualificationBatch(comparatorAction);
+                var pair = MeasureSection();
+
+                measurement.MeasuredAtUtc = pair.MeasuredAtUtc;
+                measurement.Environment = environment;
+                measurement.EffectiveIterations = managedBatchCount;
+                measurement.Utf8Pcre2 = pair.ManagedMedianMicroseconds;
+                measurement.PcreNetNativeMeasuredAtUtc = pair.MeasuredAtUtc;
+                measurement.PcreNetNativeEnvironment = environment;
+                measurement.PcreNetNativeEffectiveIterations = comparatorBatchCount;
+                measurement.PcreNetNative = pair.ComparatorMedianMicroseconds;
+                measurement.PcreNetNativeUnavailableReason = null;
+                measurement.PcreNetNativePair = pair;
+                measurement.PcreNetNativeStatus = pair.Status;
+                measurement.PcreNetNativeStatusReason = pair.StatusReason;
+
+                var statusLabel = pair.Status switch
+                {
+                    Pcre2NativeComparisonStatus.Unqualified => "Unqualified",
+                    Pcre2NativeComparisonStatus.Excluded => "Excluded",
+                    Pcre2NativeComparisonStatus.Inconclusive => "Inconclusive",
+                    Pcre2NativeComparisonStatus.Equivalent => "Equivalent",
+                    Pcre2NativeComparisonStatus.ManagedFaster => "Managed faster",
+                    Pcre2NativeComparisonStatus.NativeFaster => "Native faster",
+                    _ => throw new ArgumentOutOfRangeException(nameof(pair.Status)),
+                };
+                Console.WriteLine(
+                    $"{sectionName}: {statusLabel}; " +
+                    $"R={pair.RatioMedian:F3} [{pair.RatioLower95:F3}, {pair.RatioUpper95:F3}]; " +
+                    $"managed={pair.ManagedMedianMicroseconds:F3} us; comparator={pair.ComparatorMedianMicroseconds:F3} us");
+
+                Pcre2PairedMeasurementJson MeasureSection()
+                {
+                    var laneOrders = new List<Pcre2PairLaneOrder>(samples);
+                    var managedMicroseconds = new List<double>(samples);
+                    var comparatorMicroseconds = new List<double>(samples);
+                    var managedMilliseconds = new List<double>(samples);
+                    var comparatorMilliseconds = new List<double>(samples);
+                    var ratios = new List<double>(samples);
+                    var sinks = 0;
+
+                    for (var sample = 0; sample < samples; sample++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
+
+                        var order = sample % 2 == 0
+                            ? Pcre2PairLaneOrder.ManagedFirst
+                            : Pcre2PairLaneOrder.ComparatorFirst;
+                        Pcre2QualificationBatch managedBatch;
+                        Pcre2QualificationBatch comparatorBatch;
+                        if (order == Pcre2PairLaneOrder.ManagedFirst)
+                        {
+                            managedBatch = MeasurePcre2QualificationBatch(managedAction, managedBatchCount);
+                            comparatorBatch = MeasurePcre2QualificationBatch(comparatorAction, comparatorBatchCount);
+                        }
+                        else
+                        {
+                            comparatorBatch = MeasurePcre2QualificationBatch(comparatorAction, comparatorBatchCount);
+                            managedBatch = MeasurePcre2QualificationBatch(managedAction, managedBatchCount);
+                        }
+
+                        var managedPerOperation = managedBatch.Elapsed.TotalMicroseconds / managedBatchCount;
+                        var comparatorPerOperation = comparatorBatch.Elapsed.TotalMicroseconds / comparatorBatchCount;
+                        laneOrders.Add(order);
+                        managedMicroseconds.Add(managedPerOperation);
+                        comparatorMicroseconds.Add(comparatorPerOperation);
+                        managedMilliseconds.Add(managedBatch.Elapsed.TotalMilliseconds);
+                        comparatorMilliseconds.Add(comparatorBatch.Elapsed.TotalMilliseconds);
+                        ratios.Add(managedPerOperation / comparatorPerOperation);
+                        sinks ^= managedBatch.Sink ^ comparatorBatch.Sink;
+                    }
+
+                    GC.KeepAlive(sinks);
+                    var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
+                    var bootstrap = BootstrapMedianLogRatio(logRatios);
+                    var ratioMedian = Math.Exp(Median(logRatios));
+                    var managedFirstRatios = laneOrders
+                        .Select((order, index) => (Order: order, Ratio: ratios[index]))
+                        .Where(static sample => sample.Order == Pcre2PairLaneOrder.ManagedFirst)
+                        .Select(static sample => sample.Ratio)
+                        .ToArray();
+                    var comparatorFirstRatios = laneOrders
+                        .Select((order, index) => (Order: order, Ratio: ratios[index]))
+                        .Where(static sample => sample.Order == Pcre2PairLaneOrder.ComparatorFirst)
+                        .Select(static sample => sample.Ratio)
+                        .ToArray();
+                    var orderEffectRatio = Median(managedFirstRatios) / Median(comparatorFirstRatios);
+                    var sampleDurationsQualified = managedMilliseconds.All(
+                                                       static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds) &&
+                                                   comparatorMilliseconds.All(
+                                                       static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds);
+                    var (status, statusReason) = DeriveStatus(
+                        bootstrap.Lower,
+                        bootstrap.Upper,
+                        orderEffectRatio,
+                        sampleDurationsQualified);
+                    var excesses = managedMicroseconds
+                        .Select((value, index) => value - comparatorMicroseconds[index])
+                        .ToArray();
+
+                    return new Pcre2PairedMeasurementJson
+                    {
+                        PairId = Guid.NewGuid().ToString("N"),
+                        ProtocolVersion = 1,
+                        CaseId = caseId,
+                        Section = sectionName,
+                        Operation = operation.ToString(),
+                        StartOffsetInBytes = 0,
+                        MeasuredAtUtc = DateTimeOffset.UtcNow,
+                        Environment = environment,
+                        ComparatorPackageId = PcreNetNativeBenchmarkBaseline.PackageId,
+                        ComparatorPackageVersion = PcreNetNativeBenchmarkBaseline.PackageVersion,
+                        ComparatorPackageSha512 = PcreNetNativeBenchmarkBaseline.PackageSha512,
+                        ComparatorEngineVersion = PcreNetNativeBenchmarkBaseline.NativePcre2Version,
+                        ComparatorProfile = comparatorDependency.Profile,
+                        WorktreeQualified = true,
+                        SampleCount = samples,
+                        ManagedBatchCount = managedBatchCount,
+                        ComparatorBatchCount = comparatorBatchCount,
+                        ManagedWarmupIterations = managedWarmup.Iterations,
+                        ComparatorWarmupIterations = comparatorWarmup.Iterations,
+                        ManagedWarmupMilliseconds = managedWarmup.Elapsed.TotalMilliseconds,
+                        ComparatorWarmupMilliseconds = comparatorWarmup.Elapsed.TotalMilliseconds,
+                        LaneOrders = laneOrders,
+                        ManagedSampleMicroseconds = managedMicroseconds,
+                        ComparatorSampleMicroseconds = comparatorMicroseconds,
+                        ManagedSampleMilliseconds = managedMilliseconds,
+                        ComparatorSampleMilliseconds = comparatorMilliseconds,
+                        PairedRatios = ratios,
+                        ManagedMedianMicroseconds = Median(managedMicroseconds),
+                        ComparatorMedianMicroseconds = Median(comparatorMicroseconds),
+                        RatioMedian = ratioMedian,
+                        RatioLower95 = Math.Exp(bootstrap.Lower),
+                        RatioUpper95 = Math.Exp(bootstrap.Upper),
+                        ExcessMedianMicroseconds = Median(excesses),
+                        OrderEffectRatio = orderEffectRatio,
+                        BootstrapSeed = Pcre2QualificationBootstrapSeed,
+                        BootstrapResamples = Pcre2QualificationBootstrapResamples,
+                        ResultChecksum = expected.ToString(),
+                        ManagedRoute = context.Utf8Pcre2Regex.DebugExecutionKindName,
+                        ManagedPlan = context.Utf8Pcre2Regex.DebugDescribeExecutionPlan(),
+                        Status = status,
+                        StatusReason = statusReason,
+                    };
+                }
+
+                (double Lower, double Upper) BootstrapMedianLogRatio(double[] logRatios)
+                {
+                    var random = new Random(Pcre2QualificationBootstrapSeed);
+                    var bootstrapMedians = new double[Pcre2QualificationBootstrapResamples];
+                    var resample = new double[logRatios.Length];
+                    for (var bootstrapIndex = 0; bootstrapIndex < bootstrapMedians.Length; bootstrapIndex++)
+                    {
+                        for (var sampleIndex = 0; sampleIndex < resample.Length; sampleIndex++)
+                        {
+                            resample[sampleIndex] = logRatios[random.Next(logRatios.Length)];
+                        }
+
+                        bootstrapMedians[bootstrapIndex] = Median(resample);
+                    }
+
+                    Array.Sort(bootstrapMedians);
+                    var lowerIndex = (int)Math.Floor((bootstrapMedians.Length - 1) * 0.025);
+                    var upperIndex = (int)Math.Ceiling((bootstrapMedians.Length - 1) * 0.975);
+                    return (bootstrapMedians[lowerIndex], bootstrapMedians[upperIndex]);
+                }
+
+                static (Pcre2NativeComparisonStatus Status, string? Reason) DeriveStatus(
+                    double lowerLogRatio,
+                    double upperLogRatio,
+                    double orderEffectRatio,
+                    bool sampleDurationsQualified)
+                {
+                    if (!sampleDurationsQualified)
+                    {
+                        return (
+                            Pcre2NativeComparisonStatus.Unqualified,
+                            $"At least one paired lane sample was shorter than {Pcre2QualificationMinimumSampleMilliseconds:F0} ms.");
+                    }
+
+                    if (orderEffectRatio is < 0.98 or > 1.02)
+                    {
+                        return (
+                            Pcre2NativeComparisonStatus.Inconclusive,
+                            $"Lane-order median ratios differ by {Math.Abs(orderEffectRatio - 1) * 100:F2}%.");
+                    }
+
+                    var lowerRatio = Math.Exp(lowerLogRatio);
+                    var upperRatio = Math.Exp(upperLogRatio);
+                    if (upperRatio < 0.98)
+                    {
+                        return (Pcre2NativeComparisonStatus.ManagedFaster, null);
+                    }
+
+                    if (lowerRatio > 1.02)
+                    {
+                        return (Pcre2NativeComparisonStatus.NativeFaster, null);
+                    }
+
+                    if (lowerRatio >= 0.98 && upperRatio <= 1.02)
+                    {
+                        return (Pcre2NativeComparisonStatus.Equivalent, null);
+                    }
+
+                    return (
+                        Pcre2NativeComparisonStatus.Inconclusive,
+                        "The paired 95% interval crosses a Status decision boundary.");
+                }
+            }
+            catch (PCRE.PcreException exception)
+            {
+                var reason = $"PCRE.NET / PCRE2 NFA rejected the mapped profile: {exception.Message}";
+                measurement.PcreNetNativePair = null;
+                measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
+                measurement.PcreNetNativeStatusReason = reason;
+                measurement.PcreNetNativeUnavailableReason = reason;
+                Console.WriteLine($"{sectionName}: Excluded; {reason}");
+            }
+        }
+
+        SavePcre2BenchmarkSnapshot(snapshot);
+        Console.WriteLine($"Qualified PCRE.NET / PCRE2 NFA benchmark case: {caseId}");
+        return 0;
+#endif
+    }
+
+    private static Pcre2QualificationWarmup WarmPcre2QualificationLane(Func<int> action)
+    {
+        const int minimumIterations = 64;
+        const double minimumMilliseconds = 150;
+        var sink = 0;
+        var iterations = 0;
+        var start = Stopwatch.GetTimestamp();
+        do
+        {
+            sink ^= action();
+            iterations++;
+        }
+        while (iterations < minimumIterations ||
+               Stopwatch.GetElapsedTime(start).TotalMilliseconds < minimumMilliseconds);
+
+        var elapsed = Stopwatch.GetElapsedTime(start);
+        GC.KeepAlive(sink);
+        return new Pcre2QualificationWarmup(iterations, elapsed);
+    }
+
+    private static int CalibratePcre2QualificationBatch(Func<int> action)
+    {
+        const double minimumProbeMilliseconds = 2;
+        const int maximumBatchCount = 100_000_000;
+        var batchCount = 1;
+        var probe = MeasurePcre2QualificationBatch(action, batchCount);
+        while (probe.Elapsed.TotalMilliseconds < minimumProbeMilliseconds && batchCount < maximumBatchCount)
+        {
+            var scale = probe.Elapsed.TotalMilliseconds <= 0
+                ? 32
+                : (int)Math.Clamp(
+                    Math.Ceiling(minimumProbeMilliseconds / probe.Elapsed.TotalMilliseconds),
+                    2,
+                    32);
+            batchCount = (int)Math.Min((long)batchCount * scale, maximumBatchCount);
+            probe = MeasurePcre2QualificationBatch(action, batchCount);
+        }
+
+        GC.KeepAlive(probe.Sink);
+        if (probe.Elapsed.TotalMilliseconds <= 0)
+        {
+            return batchCount;
+        }
+
+        return (int)Math.Clamp(
+            Math.Round(batchCount * Pcre2QualificationTargetSampleMilliseconds / probe.Elapsed.TotalMilliseconds),
+            1,
+            maximumBatchCount);
+    }
+
+    private static Pcre2QualificationBatch MeasurePcre2QualificationBatch(Func<int> action, int batchCount)
+    {
+        var sink = 0;
+        var start = Stopwatch.GetTimestamp();
+        for (var iteration = 0; iteration < batchCount; iteration++)
+        {
+            sink ^= action();
+        }
+
+        return new Pcre2QualificationBatch(Stopwatch.GetElapsedTime(start), sink);
+    }
+
+    private static double Median(IEnumerable<double> values)
+    {
+        var sorted = values.Order().ToArray();
+        if (sorted.Length == 0)
+        {
+            throw new InvalidOperationException("Cannot compute the median of an empty sample.");
+        }
+
+        var midpoint = sorted.Length / 2;
+        return sorted.Length % 2 == 0
+            ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+            : sorted[midpoint];
+    }
+
+    private readonly record struct Pcre2QualificationBatch(TimeSpan Elapsed, int Sink);
+
+    private readonly record struct Pcre2QualificationWarmup(int Iterations, TimeSpan Elapsed);
+}
