@@ -220,15 +220,21 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
 
 internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
 {
-    internal Pcre2AsciiRegularIsMatchDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
+    internal Pcre2AsciiRegularIsMatchDirectProgram(
+        Utf8Regex regex,
+        bool supportsPreparedOffsets,
+        Pcre2BacktrackingProgram fallback)
     {
         Regex = regex;
+        SupportsPreparedOffsets = supportsPreparedOffsets;
         Fallback = fallback;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2AsciiRegularIsMatch;
 
     internal Utf8Regex Regex { get; }
+
+    internal bool SupportsPreparedOffsets { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
 }
@@ -782,12 +788,18 @@ internal static class Pcre2CompiledProgramOverlay
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot asciiRegularPrimary &&
-            Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(syntaxTree.Root, legacy.Request))
+            Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(
+                syntaxTree.Root,
+                legacy.Request,
+                asciiRegularPrimary.Regex))
         {
+            var supportsPreparedOffsets =
+                Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(syntaxTree.Root);
             operations = operations with
             {
                 IsMatch = new Pcre2AsciiRegularIsMatchDirectProgram(
                     asciiRegularPrimary.Regex,
+                    supportsPreparedOffsets,
                     backtrackingProgram),
             };
         }
@@ -1041,7 +1053,8 @@ internal static class Pcre2AsciiRegularIsMatchAnalyzer
 {
     internal static bool CanReuseCoreExecution(
         IPcre2BacktrackingNode root,
-        Pcre2CompileRequest request)
+        Pcre2CompileRequest request,
+        Utf8Regex regex)
     {
         return request.Options == Pcre2CompileOptions.None &&
             request.Settings.Newline == Pcre2NewlineConvention.Default &&
@@ -1049,8 +1062,9 @@ internal static class Pcre2AsciiRegularIsMatchAnalyzer
             !request.Settings.AllowDuplicateNames &&
             request.Settings.BackslashC == Pcre2BackslashCPolicy.Forbid &&
             !request.Settings.AllowLookaroundBackslashK &&
-            Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root) &&
-            IsSupportedNode(root);
+            IsSupportedNode(root) &&
+            (Pcre2BacktrackingAnalysis.RestrictsSearchToInitialCandidate(root) ||
+             regex.Inspection.PreparedRegex.FallbackDirectFamily.SupportsAsciiDefinitiveIsMatch);
     }
 
     internal static bool IsSupportedNode(IPcre2BacktrackingNode node) => node switch
@@ -2164,7 +2178,8 @@ internal static class Pcre2Runner
 
         if (program is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram)
         {
-            if (matchOptions == Pcre2MatchOptions.None &&
+            if (asciiRegularProgram.SupportsPreparedOffsets &&
+                matchOptions == Pcre2MatchOptions.None &&
                 Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request) &&
                 asciiRegularProgram.Regex.ByteOffsetExecution.TryIsMatchPrepared(
                     input,

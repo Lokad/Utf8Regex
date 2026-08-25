@@ -85,13 +85,17 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(email.DebugCompiledProgram.Operations.IsMatch);
         Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(fixedFields.DebugCompiledProgram.Operations.IsMatch);
-        Assert.IsNotType<Pcre2AsciiRegularIsMatchDirectProgram>(unanchoredIp.DebugCompiledProgram.Operations.IsMatch);
+        var unanchoredIpProgram = Assert.IsType<Pcre2AsciiRegularIsMatchDirectProgram>(
+            unanchoredIp.DebugCompiledProgram.Operations.IsMatch);
+        Assert.False(unanchoredIpProgram.SupportsPreparedOffsets);
         Assert.True(email.IsMatch("ops@northwind.example"u8));
         Assert.True(email.IsMatch("ops@northwind.example\n"u8));
         Assert.False(email.IsMatch("ops@northwind.example#"u8));
         Assert.False(email.IsMatch("é@northwind.example"u8));
         Assert.True(fixedFields.IsMatch("alpha-12"u8));
         Assert.False(fixedFields.IsMatch("alpha-123"u8));
+        Assert.True(unanchoredIp.IsMatch("prefix 192.168.001.001 suffix"u8));
+        Assert.False(unanchoredIp.IsMatch("prefix 999.999.999.999 suffix"u8));
 
         foreach (var unsupported in new[] { @"\w+", @"[^a]+", ".+", "é+", @"(?=a)a", @"(a)\1" })
         {

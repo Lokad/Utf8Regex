@@ -165,7 +165,8 @@ public sealed class Utf8Pcre2Regex
     {
         if (_unmeteredIsMatchProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegular)
         {
-            if (asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
+            if (!asciiRegular.SupportsPreparedOffsets ||
+                asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
             {
                 return asciiRegular.Regex.IsMatch(input);
             }
@@ -1034,10 +1035,10 @@ public sealed class Utf8Pcre2Regex
 
     private static RegexOptions ToRegexOptions(Pcre2CompileOptions options)
     {
-        var regexOptions = RegexOptions.CultureInvariant;
+        var regexOptions = RegexOptions.None;
         if ((options & Pcre2CompileOptions.Caseless) != 0)
         {
-            regexOptions |= RegexOptions.IgnoreCase;
+            regexOptions |= RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
         }
 
         if ((options & Pcre2CompileOptions.Multiline) != 0)
