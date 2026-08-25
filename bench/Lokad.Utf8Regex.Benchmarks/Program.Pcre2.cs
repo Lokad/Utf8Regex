@@ -166,7 +166,8 @@ internal static partial class BenchmarkProgramRouter
 
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-priority-report", StringComparison.Ordinal))
         {
-            exitCode = BenchmarkInspectReporter.RunEmitPcre2PriorityReport();
+            exitCode = BenchmarkInspectReporter.RunEmitPcre2PriorityReport(
+                args.Length >= 2 ? args[1] : null);
             return true;
         }
 

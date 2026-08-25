@@ -279,6 +279,8 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ./bench.ps1 -CommandArgs "--verify-pcre2-comparator-case","simple/foo-dense"
 ./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case","simple/foo-dense","9"
 ./bench.ps1 -CommandArgs "--qualify-pcre2-comparator-case-reversed","simple/foo-dense","9"
+./bench.ps1 -CommandArgs "--emit-pcre2-priority-report","relative"
+./bench.ps1 -CommandArgs "--emit-pcre2-priority-report","absolute"
 ./bench.ps1 -CommandArgs "--measure-pcre2-compatible-case","common/email-match","200","7"
 ./bench.ps1 -CommandArgs "--measure-pcre2-special-case","pcre2/branch-reset-basic","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pcre2-benchmark-case","common/email-match","200","7"

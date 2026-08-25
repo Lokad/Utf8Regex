@@ -878,53 +878,6 @@ internal static partial class BenchmarkInspectReporter
         return new Pcre2ScalingFamily(name, operation, cases);
     }
 
-    public static int RunEmitPcre2PriorityReport()
-    {
-        var snapshot = LoadPcre2BenchmarkSnapshot();
-        var rows = snapshot.Sections
-            .SelectMany(
-                static kvp => kvp.Value.Cases.Select(
-                    caseKvp => new Pcre2PriorityRow(
-                        kvp.Key,
-                        caseKvp.Key,
-                        caseKvp.Value.Utf8Pcre2,
-                        caseKvp.Value.Utf8Regex,
-                        caseKvp.Value.PredecodedRegex,
-                        caseKvp.Value.DecodeThenRegex)))
-            .ToArray();
-
-        Console.WriteLine("# PCRE2 Priority Report");
-        Console.WriteLine();
-
-        WritePcre2PriorityGroup(
-            "Worst PredecodedRegex Ratios",
-            rows.Where(static r => r.PredecodedRegex is > 0)
-                .OrderByDescending(static r => r.Utf8Pcre2 / r.PredecodedRegex!.Value)
-                .Take(12),
-            static r => FormatPriorityRatio(r.Utf8Pcre2, r.PredecodedRegex));
-
-        WritePcre2PriorityGroup(
-            "Worst DecodeThenRegex Ratios",
-            rows.Where(static r => r.DecodeThenRegex is > 0)
-                .OrderByDescending(static r => r.Utf8Pcre2 / r.DecodeThenRegex!.Value)
-                .Take(12),
-            static r => FormatPriorityRatio(r.Utf8Pcre2, r.DecodeThenRegex));
-
-        WritePcre2PriorityGroup(
-            "Highest Absolute Utf8Pcre2",
-            rows.OrderByDescending(static r => r.Utf8Pcre2).Take(12),
-            static r => r.Utf8Pcre2.ToString("F3", CultureInfo.InvariantCulture) + " us");
-
-        WritePcre2PriorityGroup(
-            "PCRE2-Specific Rows",
-            rows.Where(static r => r.PredecodedRegex is null && r.DecodeThenRegex is null)
-                .OrderByDescending(static r => r.Utf8Pcre2)
-                .Take(12),
-            static _ => "no .NET baseline");
-
-        return 0;
-    }
-
     public static int RunEmitUtf8Pcre2PerfLedger(string? iterationsText)
     {
         var requestedIterations = ParseIterations(iterationsText);
@@ -1616,27 +1569,6 @@ internal static partial class BenchmarkInspectReporter
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
 
-    private static string FormatPriorityRatio(double utf8Pcre2, double? baseline)
-    {
-        if (baseline is null || baseline.Value == 0)
-        {
-            return "-";
-        }
-
-        return (utf8Pcre2 / baseline.Value).ToString("F2", CultureInfo.InvariantCulture) + "x";
-    }
-
-    private static void WritePcre2PriorityGroup(string title, IEnumerable<Pcre2PriorityRow> rows, Func<Pcre2PriorityRow, string> scoreSelector)
-    {
-        Console.WriteLine($"## {title}");
-        foreach (var row in rows)
-        {
-            Console.WriteLine($"- [{row.Section}] {row.CaseId}: Utf8Pcre2={row.Utf8Pcre2.ToString("F3", CultureInfo.InvariantCulture)} us, score={scoreSelector(row)}");
-        }
-
-        Console.WriteLine();
-    }
-
     private static void WritePcre2TranslationGroup(string title, IEnumerable<Pcre2TranslationRow> rows)
     {
         Console.WriteLine($"## {title}");
@@ -1892,14 +1824,6 @@ internal static partial class BenchmarkInspectReporter
 
         public required string Profile { get; set; }
     }
-
-    private readonly record struct Pcre2PriorityRow(
-        string Section,
-        string CaseId,
-        double Utf8Pcre2,
-        double? Utf8Regex,
-        double? PredecodedRegex,
-        double? DecodeThenRegex);
 
     private readonly record struct Pcre2TranslationRow(
         string CaseId,
