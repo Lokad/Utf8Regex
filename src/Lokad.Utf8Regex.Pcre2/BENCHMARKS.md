@@ -9,13 +9,13 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `E7F995A8D6F009054F01B548822F9FD71749564B91245280410FEC4FDC9BFE81`
-- Latest managed row measurement: `2026-08-25T17:16:37.8530340+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:16:37.8530340+00:00`
+- Snapshot SHA-256: `7BC297B64BCC262F405355853C5B7D65825F10B3038F592BACDCAA67B06313B2`
+- Latest managed row measurement: `2026-08-25T17:29:17.1365451+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:29:17.1365451+00:00`
 - Operation rows: `126` across `10` sections
-- Comparable rows at or below the decode-then-.NET median: `27/60`
+- Comparable rows at or below the decode-then-.NET median: `28/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `11` managed faster, `0` equivalent, `1` native faster, `0` inconclusive, `88` unqualified, `26` excluded
+- Comparator Status: `12` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `88` unqualified, `26` excluded
 - Rows with paired qualification evidence: `12/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
@@ -84,7 +84,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
-| `backtracking/alternation-repeat` | **Native faster** | 7,168 B | 389.954 us | 181.663 us | 2.15x | 2.12–2.17x | +205.976 us | 9 pairs; 41/41 ms; 104/226 ops/lane; IQR 1.034/1.045 | `Pcre2Backtracking` | 74.342 us | 57.488 us | 58.430 us | 6.67x | 0 B | 0 B |
+| `backtracking/alternation-repeat` | **Managed faster** | 7,168 B | 50.081 us | 176.465 us | 0.28x | 0.27–0.29x | -126.737 us | 9 pairs; 40/40 ms; 803/227 ops/lane; IQR 1.019/1.007 | `Pcre2Backtracking` | 74.342 us | 57.488 us | 58.430 us | 0.86x | 0 B | 0 B |
 | `character/unicode-class-dense` | **Unqualified** | 7,168 B | 32.644 us | 487.656 us | 0.07x | — | -455.012 us | — | `—` | 130.954 us | 124.096 us | 127.889 us | 0.26x | 0 B | — |
 | `common/matches-boundary` | **Unqualified** | 8,208 B | 9.501 us | 128.548 us | 0.07x | — | -119.047 us | — | `—` | 8.356 us | 117.024 us | 121.438 us | 0.08x | 0 B | — |
 | `common/matches-set` | **Unqualified** | 8,208 B | 135.401 us | 129.796 us | 1.04x | — | +5.605 us | — | `—` | 4.678 us | 125.153 us | 128.204 us | 1.06x | 0 B | — |
