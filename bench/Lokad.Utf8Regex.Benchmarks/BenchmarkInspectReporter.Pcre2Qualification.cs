@@ -14,7 +14,10 @@ internal static partial class BenchmarkInspectReporter
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
 
-    public static int RunQualifyPcre2ComparatorCase(string caseId, string? samplesText)
+    public static int RunQualifyPcre2ComparatorCase(
+        string caseId,
+        string? samplesText,
+        bool comparatorFirst = false)
     {
 #if DEBUG
         Console.Error.WriteLine("PCRE2 qualification requires a Release build.");
@@ -51,6 +54,8 @@ internal static partial class BenchmarkInspectReporter
 
         using var processorSet = Pcre2QualificationProcessorSet.Enter();
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
+        Console.WriteLine(
+            $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");
         var environment = CaptureBenchmarkEnvironment();
         var snapshot = LoadPcre2BenchmarkSnapshot();
         snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
@@ -153,7 +158,7 @@ internal static partial class BenchmarkInspectReporter
                         GC.WaitForPendingFinalizers();
                         GC.Collect();
 
-                        var order = sample % 2 == 0
+                        var order = (sample + (comparatorFirst ? 1 : 0)) % 2 == 0
                             ? Pcre2PairLaneOrder.ManagedFirst
                             : Pcre2PairLaneOrder.ComparatorFirst;
                         var interleaved = MeasurePcre2QualificationPair(

@@ -297,6 +297,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine("```powershell");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pcre2-comparator-case\",\"simple/foo-dense\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pcre2-comparator-case\",\"simple/foo-dense\",\"9\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pcre2-comparator-case-reversed\",\"simple/foo-dense\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-compatible-case\",\"common/email-match\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pcre2-special-case\",\"pcre2/branch-reset-basic\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pcre2-benchmark-case\",\"common/email-match\",\"200\",\"7\"");
