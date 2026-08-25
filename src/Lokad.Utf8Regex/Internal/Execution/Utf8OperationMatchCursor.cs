@@ -23,10 +23,7 @@ internal ref struct Utf8OperationMatchCursor
     internal static int DebugDeterministicScanStateSizeInBytes => Unsafe.SizeOf<Utf8AsciiDeterministicScanState>();
 
     private readonly EnumeratorMode _mode;
-    private readonly AsciiSimplePatternPlan _simplePatternPlan;
-    private readonly Utf8StructuralLinearProgram _structuralLinearProgram;
-    private readonly Utf8ExecutionProgram? _executionProgram;
-    private readonly Utf8SearchPlan _searchPlan;
+    private readonly Utf8OperationMatchCursorPlans _plans;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
     private readonly PreparedSubstringSearch? _literalSearch;
     private readonly Utf8EmittedKernelMatcher? _emittedKernelMatcher;
@@ -53,12 +50,10 @@ internal ref struct Utf8OperationMatchCursor
     private int _baseByteOffset;
     private int _baseUtf16Offset;
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = searchPlan;
+        ref readonly var searchPlan = ref regexPlan.SearchPlan;
+        _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = searchPlan.LiteralSearch;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
@@ -95,10 +90,7 @@ internal ref struct Utf8OperationMatchCursor
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, string decoded, Regex regex, Utf8BoundaryMap? boundaryMap)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = default;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
@@ -132,10 +124,7 @@ internal ref struct Utf8OperationMatchCursor
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Regex regex, string decoded, int startAt, Utf8BoundaryMap? boundaryMap)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = default;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
@@ -167,12 +156,15 @@ internal ref struct Utf8OperationMatchCursor
             : EnumeratorMode.FallbackRegex;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input,
+        Utf8PreparedRegex regexPlan,
+        bool useStructuralLinearProgram,
+        Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = simplePatternPlan;
-        _structuralLinearProgram = default;
-        _executionProgram = executionProgram;
-        _searchPlan = default;
+        ref readonly var searchPlan = ref regexPlan.SearchPlan;
+        ref readonly var structuralLinearProgram = ref regexPlan.StructuralLinearProgram;
+        _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
@@ -184,8 +176,8 @@ internal ref struct Utf8OperationMatchCursor
         _budget = budget;
         _literalUtf16Length = 0;
         _totalUtf16Length = input.Length;
-        _projectionPlan = default;
-        _program = default;
+        _projectionPlan = useStructuralLinearProgram ? default : searchPlan.ProjectionPlan;
+        _program = useStructuralLinearProgram ? default : searchPlan.EnumerationOperation;
         _fallbackEnumerator = default;
         _remaining = input;
         _consumed = 0;
@@ -194,43 +186,17 @@ internal ref struct Utf8OperationMatchCursor
         _deterministicScanState = default;
         _current = Utf8ValueMatch.NoMatch;
         _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
+        _asciiFixedTokenMatchLength = useStructuralLinearProgram &&
+            structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
+                ? structuralLinearProgram.DeterministicProgram.FixedWidthLength
+                : 0;
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
-        _mode = EnumeratorMode.AsciiSimplePattern;
-    }
-
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8ExecutionProgram? executionProgram, Utf8SearchPlan searchPlan, AsciiSimplePatternPlan simplePatternPlan, Utf8ExecutionDeadline budget)
-    {
-        _simplePatternPlan = simplePatternPlan;
-        _structuralLinearProgram = default;
-        _executionProgram = executionProgram;
-        _searchPlan = searchPlan;
-        _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
-        _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
-        _literal = null;
-        _input = input;
-        _boundaryMap = null;
-        _budget = budget;
-        _literalUtf16Length = 0;
-        _totalUtf16Length = input.Length;
-        _projectionPlan = searchPlan.ProjectionPlan;
-        _program = searchPlan.EnumerationOperation;
-        _fallbackEnumerator = default;
-        _remaining = input;
-        _consumed = 0;
-        _consumedUtf16 = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = 0;
-        _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
-        _mode = EnumeratorMode.AsciiSimplePattern;
+        _mode = useStructuralLinearProgram
+            ? (structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
+                ? EnumeratorMode.AsciiFixedTokenPattern
+                : EnumeratorMode.AsciiDeterministicPattern)
+            : EnumeratorMode.AsciiSimplePattern;
     }
 
     public Utf8ValueMatch CurrentValueMatch
@@ -293,12 +259,10 @@ internal ref struct Utf8OperationMatchCursor
         return true;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, byte[] literal, int literalUtf16Length, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, int literalUtf16Length, Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = searchPlan;
+        ref readonly var searchPlan = ref regexPlan.SearchPlan;
+        _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = searchPlan.LiteralSearch;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
@@ -324,27 +288,25 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.ExactUtf8Literal;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8ExecutionDeadline budget)
     {
-        this = new Utf8OperationMatchCursor(input, searchPlan, NativeExecutionKind.ExactUtf8Literals, budget);
+        this = new Utf8OperationMatchCursor(input, regexPlan, NativeExecutionKind.ExactUtf8Literals, budget);
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8SearchPlan searchPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
-        : this(input, searchPlan, executionKind, Utf8InputAnalyzer.IsAscii(input), budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+        : this(input, regexPlan, executionKind, Utf8InputAnalyzer.IsAscii(input), budget)
     {
     }
 
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
+        Utf8PreparedRegex regexPlan,
         NativeExecutionKind executionKind,
         bool inputIsAscii,
         Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = searchPlan;
+        ref readonly var searchPlan = ref regexPlan.SearchPlan;
+        _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
@@ -381,51 +343,9 @@ internal ref struct Utf8OperationMatchCursor
             : EnumeratorMode.ExactUtf8Literals;
     }
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8StructuralLinearProgram structuralLinearProgram, Utf8ExecutionDeadline budget)
-    {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = structuralLinearProgram;
-        _executionProgram = null;
-        _searchPlan = default;
-        _smallAsciiLiteralFamilySearch = default;
-        _literalSearch = null;
-        _alternateLiteralUtf16Lengths = null;
-        _hasBoundaryRequirements = false;
-        _hasTrailingLiteralRequirement = false;
-        _literal = null;
-        _input = input;
-        _boundaryMap = null;
-        _budget = budget;
-        _literalUtf16Length = 0;
-        _totalUtf16Length = input.Length;
-        _projectionPlan = default;
-        _program = default;
-        _fallbackEnumerator = default;
-        _remaining = input;
-        _consumed = 0;
-        _consumedUtf16 = 0;
-        _multiLiteralScanState = default;
-        _deterministicScanState = default;
-        _current = Utf8ValueMatch.NoMatch;
-        _asciiFixedTokenCurrentIndex = -1;
-        _asciiFixedTokenMatchLength = structuralLinearProgram.Kind == Utf8StructuralLinearProgramKind.AsciiFixedTokenPattern
-            ? structuralLinearProgram.DeterministicProgram.FixedWidthLength
-            : 0;
-        _baseByteOffset = 0;
-        _baseUtf16Offset = 0;
-        _mode = structuralLinearProgram.DeterministicProgram.HasValue
-            ? (structuralLinearProgram.DeterministicProgram.FixedWidthLength > 0
-                ? EnumeratorMode.AsciiFixedTokenPattern
-                : EnumeratorMode.AsciiDeterministicPattern)
-            : EnumeratorMode.Exhausted;
-    }
-
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8BoundaryMap? boundaryMap, Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = default;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = default;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
@@ -458,10 +378,7 @@ internal ref struct Utf8OperationMatchCursor
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
         Utf8ExecutionDeadline budget)
     {
-        _simplePatternPlan = default;
-        _structuralLinearProgram = default;
-        _executionProgram = null;
-        _searchPlan = default;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
         _smallAsciiLiteralFamilySearch = smallAsciiLiteralFamilySearch;
         _literalSearch = null;
         _alternateLiteralUtf16Lengths = null;
@@ -495,6 +412,7 @@ internal ref struct Utf8OperationMatchCursor
         Utf8ExecutionDeadline budget)
     {
         this = default;
+        _plans = Utf8OperationMatchCursorPlans.Empty;
         _input = input;
         _budget = budget;
         _emittedKernelMatcher = emittedKernelMatcher;
@@ -519,7 +437,8 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         _budget.Step();
-        var index = Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        var index = Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
         if (index < 0)
         {
             return false;
@@ -548,7 +467,8 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         _budget.Step();
-        var index = Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        var index = Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
         if (index < 0)
         {
             return false;
@@ -577,11 +497,12 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         _budget.Step();
+        ref readonly var searchPlan = ref _plans.SearchPlan;
         var index = _literalSearch is { } literalSearch &&
             !_hasBoundaryRequirements &&
             !_hasTrailingLiteralRequirement
             ? literalSearch.IndexOf(_remaining)
-            : Utf8SearchExecutor.FindFirst(in _searchPlan, _remaining);
+            : Utf8SearchExecutor.FindFirst(in searchPlan, _remaining);
         if (index < 0)
         {
             return false;
@@ -628,8 +549,9 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextExactUtf8Literals()
     {
+        ref readonly var searchPlan = ref _plans.SearchPlan;
         if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
-                in _searchPlan,
+                in searchPlan,
                 in _program,
                 _input,
                 ref _multiLiteralScanState,
@@ -654,8 +576,9 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiIgnoreCaseLiterals()
     {
+        ref readonly var searchPlan = ref _plans.SearchPlan;
         if (!Utf8SearchStrategyExecutor.TryFindNextLiteralFamilyMatch(
-                in _searchPlan,
+                in searchPlan,
                 in _program,
                 _input,
                 ref _multiLiteralScanState,
@@ -738,7 +661,17 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiSimplePattern()
     {
-        var relative = Utf8ExecutionInterpreter.FindNextSimplePattern(_remaining, _executionProgram, _searchPlan, _simplePatternPlan, 0, captures: null, _budget, out var matchLength);
+        ref readonly var searchPlan = ref _plans.SearchPlan;
+        ref readonly var simplePatternPlan = ref _plans.SimplePatternPlan;
+        var relative = Utf8ExecutionInterpreter.FindNextSimplePattern(
+            _remaining,
+            _plans.ExecutionProgram,
+            in searchPlan,
+            in simplePatternPlan,
+            0,
+            captures: null,
+            _budget,
+            out var matchLength);
         if (relative < 0)
         {
             return false;
@@ -760,8 +693,9 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiFixedTokenPattern()
     {
+        ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
         if (!Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicFixedWidthMatch(
-                _structuralLinearProgram,
+                in structuralLinearProgram,
                 _input,
                 ref _deterministicScanState,
                 _budget,
@@ -777,8 +711,9 @@ internal ref struct Utf8OperationMatchCursor
 
     private bool MoveNextAsciiDeterministicPattern()
     {
+        ref readonly var structuralLinearProgram = ref _plans.StructuralLinearProgram;
         if (!Utf8AsciiInstructionLinearExecutor.TryFindNextNonOverlappingDeterministicRawMatch(
-                _structuralLinearProgram,
+                in structuralLinearProgram,
                 _input,
                 ref _deterministicScanState,
                 _budget,

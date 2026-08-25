@@ -10,6 +10,7 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 internal sealed class Utf8PreparedRegex
 {
     private readonly Utf8FallbackDirectFamilyPlan _fallbackDirectFamily;
+    private readonly Utf8OperationMatchCursorPlans _operationMatchCursorPlans;
 
     public Utf8PreparedRegex(
         Utf8SemanticRegex semanticRegex,
@@ -45,14 +46,16 @@ internal sealed class Utf8PreparedRegex
         CompiledPatternCategory = compiledPatternCategory;
         ExecutionTree = executionTree;
         ExecutionProgram = executionProgram;
-        SearchPlan = searchPlan;
+        _operationMatchCursorPlans = new Utf8OperationMatchCursorPlans(
+            executionProgram,
+            searchPlan,
+            structuralLinearProgram,
+            simplePatternPlan);
         StructuralSearchPlan = structuralSearchPlan;
         DeterministicAnchor = deterministicAnchor;
         DeterministicGuards = deterministicGuards;
         FallbackVerifier = fallbackVerifier;
         StructuralVerifier = structuralVerifier;
-        StructuralLinearProgram = structuralLinearProgram;
-        SimplePatternPlan = simplePatternPlan;
         StructuralIdentifierFamilyPlan = structuralIdentifierFamilyPlan;
         StructuralTokenWindowPlan = structuralTokenWindowPlan;
         StructuralRepeatedSegmentPlan = structuralRepeatedSegmentPlan;
@@ -79,7 +82,7 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8ExecutionProgram? ExecutionProgram { get; }
 
-    public Utf8SearchPlan SearchPlan { get; }
+    public ref readonly Utf8SearchPlan SearchPlan => ref _operationMatchCursorPlans.SearchPlan;
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
 
@@ -91,9 +94,11 @@ internal sealed class Utf8PreparedRegex
 
     public Utf8StructuralVerifierPlan StructuralVerifier { get; }
 
-    public Utf8StructuralLinearProgram StructuralLinearProgram { get; }
+    public ref readonly Utf8StructuralLinearProgram StructuralLinearProgram => ref _operationMatchCursorPlans.StructuralLinearProgram;
 
-    public AsciiSimplePatternPlan SimplePatternPlan { get; }
+    public ref readonly AsciiSimplePatternPlan SimplePatternPlan => ref _operationMatchCursorPlans.SimplePatternPlan;
+
+    public Utf8OperationMatchCursorPlans OperationMatchCursorPlans => _operationMatchCursorPlans;
 
     public AsciiStructuralIdentifierFamilyPlan StructuralIdentifierFamilyPlan { get; }
 

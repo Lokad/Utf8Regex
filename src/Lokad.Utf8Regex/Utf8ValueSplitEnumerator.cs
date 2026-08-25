@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -51,84 +50,6 @@ public ref struct Utf8ValueSplitEnumerator
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        byte[] literal,
-        NativeExecutionKind executionKind,
-        int count,
-        int totalUtf16Length,
-        Utf8ExecutionDeadline budget)
-        : this(
-            input,
-            CreateLiteralCursor(input, searchPlan, literal, executionKind, budget),
-            count,
-            executionKind == NativeExecutionKind.ExactUtf8Literal
-                ? totalUtf16Length
-                : input.Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        int count,
-        int totalUtf16Length,
-        Utf8ExecutionDeadline budget)
-        : this(input, new Utf8OperationMatchCursor(input, searchPlan, budget), count, totalUtf16Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        int count,
-        NativeExecutionKind executionKind,
-        int totalUtf16Length,
-        bool inputIsAscii,
-        Utf8ExecutionDeadline budget)
-        : this(
-            input,
-            new Utf8OperationMatchCursor(input, searchPlan, executionKind, inputIsAscii, budget),
-            count,
-            totalUtf16Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? executionProgram,
-        AsciiSimplePatternPlan simplePatternPlan,
-        int count,
-        Utf8ExecutionDeadline budget)
-        : this(input, new Utf8OperationMatchCursor(input, executionProgram, simplePatternPlan, budget), count, input.Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        Utf8ExecutionProgram? executionProgram,
-        AsciiSimplePatternPlan simplePatternPlan,
-        int count,
-        Utf8ExecutionDeadline budget)
-        : this(
-            input,
-            new Utf8OperationMatchCursor(input, executionProgram, searchPlan, simplePatternPlan, budget),
-            count,
-            input.Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8StructuralLinearProgram structuralLinearProgram,
-        int count,
-        Utf8ExecutionDeadline budget)
-        : this(input, new Utf8OperationMatchCursor(input, structuralLinearProgram, budget), count, input.Length)
-    {
-    }
-
-    internal Utf8ValueSplitEnumerator(
-        ReadOnlySpan<byte> input,
         PreparedSmallAsciiLiteralFamilySearch smallAsciiLiteralFamilySearch,
         int count)
     {
@@ -151,7 +72,7 @@ public ref struct Utf8ValueSplitEnumerator
         Current = default;
     }
 
-    private Utf8ValueSplitEnumerator(
+    internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
         Utf8OperationMatchCursor matchCursor,
         int count,
@@ -303,23 +224,6 @@ public ref struct Utf8ValueSplitEnumerator
             lengthInBytes: _input.Length - _segmentStartBytes);
         _completed = true;
         return true;
-    }
-
-    private static Utf8OperationMatchCursor CreateLiteralCursor(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        byte[] literal,
-        NativeExecutionKind executionKind,
-        Utf8ExecutionDeadline budget)
-    {
-        return executionKind == NativeExecutionKind.ExactUtf8Literal
-            ? new Utf8OperationMatchCursor(
-                input,
-                searchPlan,
-                literal,
-                Utf8Validation.Validate(literal).Utf16Length,
-                budget)
-            : new Utf8OperationMatchCursor(input, searchPlan, literal, executionKind, budget);
     }
 
     private enum SplitSourceKind : byte

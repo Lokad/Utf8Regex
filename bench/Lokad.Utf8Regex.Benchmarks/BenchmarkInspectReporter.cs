@@ -635,8 +635,8 @@ internal static partial class BenchmarkInspectReporter
         if (regex.Inspection.ExecutionKind == NativeExecutionKind.ExactUtf8Literal && regex.Inspection.SearchPlan.LiteralUtf8 is { Length: > 0 } literal)
         {
             Measure("SearchOnlyCount", iterations, () => ExecuteExactUtf8LiteralSearchCount(regex.Inspection.SearchPlan, literal, context.InputBytes));
-            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(regex.Inspection.SearchPlan, literal, context.InputBytes));
-            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(regex.Inspection.SearchPlan, literal, context.InputBytes));
+            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(regex.Inspection.PreparedRegex, literal, context.InputBytes));
+            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(regex.Inspection.PreparedRegex, literal, context.InputBytes));
             if (regex.Inspection.SearchPlan.LiteralSearch is { } literalSearch)
             {
                 Measure("DirectSearchCount", iterations, () => ExecutePreparedSubstringCount(literalSearch, context.InputBytes));
@@ -651,8 +651,8 @@ internal static partial class BenchmarkInspectReporter
             Measure("BoundaryFilteredCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(regex.Inspection.SearchPlan.PreparedSearcher, regex.Inspection.SearchPlan, context.InputBytes));
             Measure("ConfirmedCount", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedCount(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: false));
             Measure("BudgetedConfirmedCount", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedCount(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: true));
-            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.SearchPlan, context.InputBytes));
-            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
+            Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.PreparedRegex, context.InputBytes));
+            Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.PreparedRegex, context.InputBytes));
             Measure("DirectFamilyIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("BoundaryFilteredIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryFilteredIndexSum(regex.Inspection.SearchPlan, context.InputBytes));
             Measure("ConfirmedIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyConfirmedIndexSum(regex.Inspection.SearchPlan, context.InputBytes, pollDeadline: false));
@@ -4444,8 +4444,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"TrailingBoundary  : {regex.Inspection.SearchPlan.TrailingBoundary}");
 
         Measure("SearchOnlyCount", iterations, () => ExecuteExactUtf8LiteralFamilySearchCount(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
-        Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
-        Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
+        Measure("DirectEnumeratorMoveNext", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(regex.Inspection.PreparedRegex, benchmarkCase.InputBytes));
+        Measure("DirectEnumeratorIndexSum", iterations, () => ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(regex.Inspection.PreparedRegex, benchmarkCase.InputBytes));
         Measure("DirectFamilyIncrementalIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyDirectIncrementalIndexSum(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
         Measure("BoundaryMapIndexSum", iterations, () => ExecuteExactUtf8LiteralFamilyBoundaryMapIndexSum(regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => ExecuteReplicaUtf8EnumerateMatchIndexSum(benchmarkCase));
@@ -4691,8 +4691,8 @@ internal static partial class BenchmarkInspectReporter
         Measure("FixedWidthIndexSum", iterations, () => ExecuteStructuralLinearFixedWidthIndexSum(program, input));
         Measure("RawStructuralCount", iterations, () => ExecuteStructuralLinearRawCount(program, input));
         Measure("RawStructuralScan", iterations, () => ExecuteStructuralLinearRawScan(program, input));
-        Measure("EnumeratorMoveNext", iterations, () => ExecuteStructuralLinearEnumeratorMoveNextCount(program, input));
-        Measure("EnumeratorIndexSum", iterations, () => ExecuteStructuralLinearEnumeratorIndexSum(program, input));
+        Measure("EnumeratorMoveNext", iterations, () => ExecuteStructuralLinearEnumeratorMoveNextCount(analysis, input));
+        Measure("EnumeratorIndexSum", iterations, () => ExecuteStructuralLinearEnumeratorIndexSum(analysis, input));
         Measure("ValidationOnly", iterations, () => ExecuteValidationOnly(input));
         Measure("PublicMoveNext", iterations, () => ExecutePublicEnumeratorMoveNextCount(regex, input));
         Measure("PublicIndexSum", iterations, () => ExecutePublicEnumeratorIndexSum(regex, input));
@@ -8278,10 +8278,15 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteStructuralLinearEnumeratorMoveNextCount(Utf8StructuralLinearProgram program, byte[] input)
+    private static int ExecuteStructuralLinearEnumeratorMoveNextCount(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var count = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                useStructuralLinearProgram: true,
+                budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             count++;
@@ -8290,10 +8295,15 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteStructuralLinearEnumeratorIndexSum(Utf8StructuralLinearProgram program, byte[] input)
+    private static int ExecuteStructuralLinearEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var sum = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, program, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                useStructuralLinearProgram: true,
+                budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;
@@ -8371,11 +8381,17 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(Utf8SearchPlan plan, byte[] literal, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
     {
         var count = 0;
         var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                literal,
+                literalUtf16Length,
+                budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             count++;
@@ -8384,11 +8400,17 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(Utf8SearchPlan plan, byte[] literal, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] literal, byte[] input)
     {
         var sum = 0;
         var literalUtf16Length = Utf8Validation.Validate(literal).Utf16Length;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, literal, literalUtf16Length, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                literal,
+                literalUtf16Length,
+                budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;
@@ -8589,10 +8611,11 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(Utf8SearchPlan plan, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorMoveNext(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var count = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(input, regexPlan, budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             count++;
@@ -8601,10 +8624,11 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-    private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(Utf8SearchPlan plan, byte[] input)
+    private static int ExecuteDirectExactUtf8LiteralFamilyEnumeratorIndexSum(Utf8PreparedRegex regexPlan, byte[] input)
     {
         var sum = 0;
-        var enumerator = new Utf8ValueMatchEnumerator(input, plan, budget: Utf8ExecutionDeadline.Infinite);
+        var enumerator = new Utf8ValueMatchEnumerator(
+            new Utf8OperationMatchCursor(input, regexPlan, budget: Utf8ExecutionDeadline.Infinite));
         while (enumerator.MoveNext())
         {
             sum += enumerator.Current.IndexInUtf16;

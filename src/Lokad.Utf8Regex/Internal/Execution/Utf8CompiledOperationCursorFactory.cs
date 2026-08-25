@@ -40,33 +40,32 @@ internal static class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, Utf8InputAnalyzer.Analyze(input).BoundaryMap, budget),
             NativeExecutionKind.ExactAsciiLiteral or
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
-                => new Utf8OperationMatchCursor(input, regexPlan.SearchPlan, literal, regexPlan.ExecutionKind, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, literal, regexPlan.ExecutionKind, budget),
             NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
                 => new Utf8OperationMatchCursor(
                     input,
-                    regexPlan.SearchPlan,
+                    regexPlan,
                     literal,
                     Utf8Validation.Validate(literal).Utf16Length,
                     budget),
             NativeExecutionKind.ExactUtf8Literals
-                => new Utf8OperationMatchCursor(input, regexPlan.SearchPlan, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8OperationMatchCursor(
                     input,
-                    regexPlan.SearchPlan,
+                    regexPlan,
                     regexPlan.ExecutionKind,
                     validation.IsAscii,
                     budget),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
-                => new Utf8OperationMatchCursor(input, regexPlan.StructuralLinearProgram, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => new Utf8OperationMatchCursor(
                     input,
-                    regexPlan.ExecutionProgram,
-                    regexPlan.SearchPlan,
-                    regexPlan.SimplePatternPlan,
+                    regexPlan,
+                    useStructuralLinearProgram: false,
                     budget),
             _ => CreateFallbackMatchEnumerator(
                 verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
@@ -91,35 +90,42 @@ internal static class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    regexPlan.SearchPlan,
-                    literal,
-                    regexPlan.ExecutionKind,
+                    CreateLiteralMatchCursor(input, regexPlan, literal, budget),
                     count,
-                    totalUtf16Length,
-                    budget),
+                    regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
+                        ? totalUtf16Length
+                        : input.Length),
             NativeExecutionKind.ExactUtf8Literals
-                => new Utf8ValueSplitEnumerator(input, regexPlan.SearchPlan, count, totalUtf16Length, budget),
+                => new Utf8ValueSplitEnumerator(
+                    input,
+                    new Utf8OperationMatchCursor(input, regexPlan, budget),
+                    count,
+                    totalUtf16Length),
             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    regexPlan.SearchPlan,
+                    new Utf8OperationMatchCursor(
+                        input,
+                        regexPlan,
+                        regexPlan.ExecutionKind,
+                        totalUtf16Length == input.Length,
+                        budget),
                     count,
-                    regexPlan.ExecutionKind,
-                    totalUtf16Length,
-                    totalUtf16Length == input.Length,
-                    budget),
+                    totalUtf16Length),
             NativeExecutionKind.AsciiSimplePattern when
                 regexPlan.StructuralLinearProgram.DeterministicProgram.HasValue &&
                 (validation.IsAscii || regexPlan.StructuralLinearProgram.AllowsUtf8ByteSafe)
-                => new Utf8ValueSplitEnumerator(input, regexPlan.StructuralLinearProgram, count, budget),
+                => new Utf8ValueSplitEnumerator(
+                    input,
+                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: true, budget),
+                    count,
+                    input.Length),
             NativeExecutionKind.AsciiSimplePattern when validation.IsAscii || regexPlan.SimplePatternPlan.IsUtf8ByteSafe
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    regexPlan.SearchPlan,
-                    regexPlan.ExecutionProgram,
-                    regexPlan.SimplePatternPlan,
+                    new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget),
                     count,
-                    budget),
+                    input.Length),
             _ => CreateFallbackSplitEnumerator(verifierRuntime, input, count),
         };
     }
@@ -134,6 +140,27 @@ internal static class Utf8CompiledOperationCursorFactory
             subject.GetDecodedString(),
             verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
             subject.Utf16ProjectionMap);
+    }
+
+    private static Utf8OperationMatchCursor CreateLiteralMatchCursor(
+        ReadOnlySpan<byte> input,
+        Utf8PreparedRegex regexPlan,
+        byte[] literal,
+        Utf8ExecutionDeadline budget)
+    {
+        return regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
+            ? new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                literal,
+                Utf8Validation.Validate(literal).Utf16Length,
+                budget)
+            : new Utf8OperationMatchCursor(
+                input,
+                regexPlan,
+                literal,
+                regexPlan.ExecutionKind,
+                budget);
     }
 
     private static Utf8ValueSplitEnumerator CreateFallbackSplitEnumerator(

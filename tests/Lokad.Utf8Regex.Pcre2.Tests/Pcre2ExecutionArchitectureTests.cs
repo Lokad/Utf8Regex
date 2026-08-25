@@ -26,6 +26,17 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
+    public void CoreMatchCursorReferencesRegexOwnedPlansInsteadOfEmbeddingThem()
+    {
+        Assert.True(
+            Utf8OperationMatchCursor.DebugSizeInBytes <
+            Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes);
+        Assert.True(
+            Utf8OperationMatchCursor.DebugSizeInBytes <
+            Utf8OperationMatchCursor.DebugStructuralLinearProgramSizeInBytes);
+    }
+
+    [Fact]
     public void CompiledProgramUsesTypedOperationBackendsWithOwnedPayloads()
     {
         var delegated = new Utf8Pcre2Regex("abc").DebugCompiledProgram;

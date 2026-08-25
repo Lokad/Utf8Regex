@@ -9,8 +9,8 @@ internal static class Utf8ExecutionInterpreter
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program,
-        Utf8SearchPlan searchPlan,
-        AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
         int startIndex,
         out int matchedLength)
     {
@@ -20,8 +20,8 @@ internal static class Utf8ExecutionInterpreter
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program,
-        Utf8SearchPlan searchPlan,
-        AsciiSimplePatternPlan plan,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
         int startIndex,
         Utf8CaptureSlots? captures,
         Utf8ExecutionDeadline budget,

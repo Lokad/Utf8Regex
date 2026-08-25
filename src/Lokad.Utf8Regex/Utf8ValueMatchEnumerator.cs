@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -25,16 +24,6 @@ public ref struct Utf8ValueMatchEnumerator
 
     internal Utf8ValueMatchEnumerator(
         ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        byte[] literal,
-        NativeExecutionKind executionKind,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, searchPlan, literal, executionKind, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
         string decoded,
         Regex regex,
         Utf8BoundaryMap? boundaryMap)
@@ -49,68 +38,6 @@ public ref struct Utf8ValueMatchEnumerator
         int startAt,
         Utf8BoundaryMap? boundaryMap)
         : this(new Utf8OperationMatchCursor(input, regex, decoded, startAt, boundaryMap))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? executionProgram,
-        AsciiSimplePatternPlan simplePatternPlan,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, executionProgram, simplePatternPlan, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8ExecutionProgram? executionProgram,
-        Utf8SearchPlan searchPlan,
-        AsciiSimplePatternPlan simplePatternPlan,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, executionProgram, searchPlan, simplePatternPlan, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        byte[] literal,
-        int literalUtf16Length,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, searchPlan, literal, literalUtf16Length, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, searchPlan, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8SearchPlan searchPlan,
-        NativeExecutionKind executionKind,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, searchPlan, executionKind, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8StructuralLinearProgram structuralLinearProgram,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, structuralLinearProgram, budget))
-    {
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Utf8BoundaryMap? boundaryMap,
-        Utf8ExecutionDeadline budget)
-        : this(new Utf8OperationMatchCursor(input, boundaryMap, budget))
     {
     }
 
