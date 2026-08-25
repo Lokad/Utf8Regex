@@ -379,6 +379,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2LiteralPrefixRepeat = 13,
     Pcre2PalindromeIsMatch = 14,
     Pcre2LeadingDotStarLiteralIsMatch = 15,
+    Pcre2SeparatedRunsIsMatch = 16,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -754,6 +755,18 @@ internal static class Pcre2CompiledProgramOverlay
         }
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
+            Pcre2SeparatedRunsIsMatchAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                backtrackingProgram) is { } separatedRuns)
+        {
+            operations = operations with
+            {
+                IsMatch = separatedRuns,
+            };
+        }
+
+        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot asciiRegularPrimary &&
             Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(syntaxTree.Root, legacy.Request))
         {
@@ -973,6 +986,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(leadingDotStarLiteralProgram.Fallback, ownedDotStarFallback.Program)))
         {
             throw new InvalidOperationException("A leading dot-star literal IsMatch backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram &&
+            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedSeparatedRunsFallback ||
+             !ReferenceEquals(separatedRunsProgram.Fallback, ownedSeparatedRunsFallback.Program)))
+        {
+            throw new InvalidOperationException("A separated-runs IsMatch backend must be owned by its compiled PCRE2 program.");
         }
     }
 }
@@ -2027,6 +2047,28 @@ internal static class Pcre2Runner
 
             result = ExecuteBacktracking(
                 leadingDotStarLiteralProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
+        if (program is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram)
+        {
+            if (matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            {
+                result = Pcre2SeparatedRunsIsMatchRunner.IsMatch(
+                    separatedRunsProgram,
+                    input.Bytes,
+                    start.Value);
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                separatedRunsProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,

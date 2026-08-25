@@ -19,6 +19,7 @@ public sealed class Utf8Pcre2Regex
     private readonly Pcre2LiteralPrefixRepeatDirectProgram? _literalPrefixRepeatIsMatchProgram;
     private readonly Pcre2PalindromeIsMatchDirectProgram? _palindromeIsMatchProgram;
     private readonly Pcre2LeadingDotStarLiteralIsMatchDirectProgram? _leadingDotStarLiteralIsMatchProgram;
+    private readonly Pcre2SeparatedRunsIsMatchDirectProgram? _separatedRunsIsMatchProgram;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -67,6 +68,11 @@ public sealed class Utf8Pcre2Regex
             Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
         {
             _leadingDotStarLiteralIsMatchProgram = leadingDotStarLiteralProgram;
+        }
+        else if (_program.Operations.IsMatch is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        {
+            _separatedRunsIsMatchProgram = separatedRunsProgram;
         }
     }
 
@@ -198,6 +204,15 @@ public sealed class Utf8Pcre2Regex
             _ = Utf8ValidatedInput.Create(input);
             return Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
                 _leadingDotStarLiteralIsMatchProgram,
+                input,
+                0);
+        }
+
+        if (_separatedRunsIsMatchProgram is not null)
+        {
+            _ = Utf8ValidatedInput.Create(input);
+            return Pcre2SeparatedRunsIsMatchRunner.IsMatch(
+                _separatedRunsIsMatchProgram,
                 input,
                 0);
         }
@@ -4088,6 +4103,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
             Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
+            Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)

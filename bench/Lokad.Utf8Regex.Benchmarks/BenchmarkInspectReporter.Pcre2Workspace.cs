@@ -120,6 +120,7 @@ internal static partial class BenchmarkInspectReporter
                 Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
                 Pcre2PalindromeIsMatchDirectProgram palindrome => palindrome.Fallback,
                 Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteral => leadingDotStarLiteral.Fallback,
+                Pcre2SeparatedRunsIsMatchDirectProgram separatedRuns => separatedRuns.Fallback,
                 _ => null,
             };
             if (program is not null)
