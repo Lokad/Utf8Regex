@@ -63,8 +63,7 @@ internal static class Pcre2Compiler
             foundation = Pcre2CompiledProgramOverlay.WithBacktracking(
                 foundation,
                 backtracking.SyntaxTree,
-                backtracking.Program,
-                backtracking.CaptureFreeProgram);
+                backtracking.Program);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -467,15 +466,12 @@ internal static class Pcre2CompiledProgramOverlay
     internal static Pcre2CompiledProgram WithBacktracking(
         Pcre2CompiledProgram legacy,
         Pcre2BacktrackingSyntaxTree syntaxTree,
-        Pcre2BacktrackingProgram backtrackingProgram,
-        Pcre2BacktrackingProgram captureFreeProgram)
+        Pcre2BacktrackingProgram backtrackingProgram)
     {
         var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
         var operations = legacy.Operations with
         {
-            IsMatch = ReferenceEquals(backtrackingProgram, captureFreeProgram)
-                ? direct
-                : new Pcre2BacktrackingDirectProgram(captureFreeProgram),
+            IsMatch = direct,
             Count = direct,
             Enumerate = direct,
             Match = direct,
