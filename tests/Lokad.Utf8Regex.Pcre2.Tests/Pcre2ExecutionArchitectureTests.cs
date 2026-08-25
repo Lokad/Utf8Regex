@@ -253,4 +253,30 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(2, regex.Count("one,two,"u8));
         Assert.Equal("one", match.GetGroup(1).GetValueString());
     }
+
+    [Fact]
+    public void IsMatchElidesCaptureWritesOnlyWhenCapturesCannotAffectMatching()
+    {
+        var captureOnly = new Utf8Pcre2Regex("^([a-z]+)@([a-z]+)$");
+        var backreference = new Utf8Pcre2Regex(@"^(a)\1$");
+
+        var captureOnlyIsMatch = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            captureOnly.DebugCompiledProgram.Operations.IsMatch);
+        var captureOnlyMatch = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            captureOnly.DebugCompiledProgram.Operations.Match);
+        var backreferenceIsMatch = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            backreference.DebugCompiledProgram.Operations.IsMatch);
+        var backreferenceMatch = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            backreference.DebugCompiledProgram.Operations.Match);
+
+        Assert.False(captureOnlyIsMatch.Program.HasCaptureWrites);
+        Assert.True(captureOnlyMatch.Program.HasCaptureWrites);
+        Assert.NotSame(captureOnlyIsMatch.Program, captureOnlyMatch.Program);
+        Assert.True(captureOnly.IsMatch("name@domain"u8));
+        Assert.Equal("name", captureOnly.MatchDetailed("name@domain"u8).GetGroup(1).GetValueString());
+
+        Assert.True(backreferenceIsMatch.Program.RequiresCaptureState);
+        Assert.Same(backreferenceIsMatch.Program, backreferenceMatch.Program);
+        Assert.True(backreference.IsMatch("aa"u8));
+    }
 }

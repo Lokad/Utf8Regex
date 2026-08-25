@@ -23,15 +23,19 @@ internal sealed class Pcre2CompiledBacktrackingOutcome : IPcre2BacktrackingCompi
 {
     internal Pcre2CompiledBacktrackingOutcome(
         Pcre2BacktrackingSyntaxTree syntaxTree,
-        Pcre2BacktrackingProgram program)
+        Pcre2BacktrackingProgram program,
+        Pcre2BacktrackingProgram captureFreeProgram)
     {
         SyntaxTree = syntaxTree;
         Program = program;
+        CaptureFreeProgram = captureFreeProgram;
     }
 
     internal Pcre2BacktrackingSyntaxTree SyntaxTree { get; }
 
     internal Pcre2BacktrackingProgram Program { get; }
+
+    internal Pcre2BacktrackingProgram CaptureFreeProgram { get; }
 }
 
 internal sealed class Pcre2BacktrackingSyntaxTree : IPcre2SyntaxTree
@@ -654,11 +658,25 @@ internal static class Pcre2BacktrackingCompiler
             nameEntries,
             parser.CaptureDefinitions,
             request,
-            groupNames);
+            groupNames,
+            emitCaptureWrites: true);
         var program = lowerer.Lower(root);
+        var captureFreeProgram = program;
+        if (!program.RequiresCaptureState && program.HasCaptureWrites)
+        {
+            captureFreeProgram = new Pcre2BacktrackingLowerer(
+                parser.CaptureCount,
+                nameEntries,
+                parser.CaptureDefinitions,
+                request,
+                groupNames,
+                emitCaptureWrites: false).Lower(root);
+        }
+
         return new Pcre2CompiledBacktrackingOutcome(
             new Pcre2BacktrackingSyntaxTree(root),
-            program);
+            program,
+            captureFreeProgram);
     }
 }
 
@@ -2147,6 +2165,7 @@ internal sealed class Pcre2BacktrackingLowerer
     private readonly Dictionary<string, int[]> _nameSlots;
     private readonly Pcre2CompileRequest _request;
     private readonly string[] _groupNames;
+    private readonly bool _emitCaptureWrites;
     private int _repeatCount;
     private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
@@ -2163,7 +2182,8 @@ internal sealed class Pcre2BacktrackingLowerer
         Pcre2NameEntry[] nameEntries,
         IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> captureDefinitions,
         Pcre2CompileRequest request,
-        string[] groupNames)
+        string[] groupNames,
+        bool emitCaptureWrites)
     {
         _captureCount = captureCount;
         _nameEntries = nameEntries;
@@ -2176,6 +2196,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 StringComparer.Ordinal);
         _request = request;
         _groupNames = groupNames;
+        _emitCaptureWrites = emitCaptureWrites;
     }
 
     internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root)
@@ -2366,10 +2387,16 @@ internal sealed class Pcre2BacktrackingLowerer
                 }
                 return;
             case Pcre2CaptureBacktrackingNode capture:
-                _hasCaptureWrites = true;
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
+                if (_emitCaptureWrites)
+                {
+                    _hasCaptureWrites = true;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
+                }
                 EmitNode(capture.Body, requiredFollowingLiteral);
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
+                if (_emitCaptureWrites)
+                {
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
+                }
                 return;
             case Pcre2BackreferenceBacktrackingNode backreference:
                 _requiresCaptureState = true;
@@ -2381,7 +2408,8 @@ internal sealed class Pcre2BacktrackingLowerer
                     _nameEntries,
                     _captureDefinitions,
                     _request,
-                    _groupNames);
+                    _groupNames,
+                    _emitCaptureWrites);
                 var assertionProgramId = _assertionPrograms.Count;
                 var assertionProgram = assertionLowerer.Lower(assertion.Body);
                 _assertionPrograms.Add(assertionProgram);
@@ -2565,7 +2593,8 @@ internal sealed class Pcre2BacktrackingLowerer
                 _nameEntries,
                 _captureDefinitions,
                 _request,
-                _groupNames);
+                _groupNames,
+                _emitCaptureWrites);
             var assertionProgramId = _assertionPrograms.Count;
             var assertionProgram = assertionLowerer.Lower(assertion.Body);
             _assertionPrograms.Add(assertionProgram);
