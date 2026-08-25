@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `F13376DE6DC5F65946DCCF72B7EC9D2FA69A28F7030F63B97D7FEDD39D956207`
-- Latest managed row measurement: `2026-08-25T19:44:18.1738432+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T19:44:18.1738432+00:00`
+- Snapshot SHA-256: `3A38C49E7B64C3E18C18994456EFB5F0117550147F131968A80EA777298EB12E`
+- Latest managed row measurement: `2026-08-25T19:45:14.3586146+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T19:45:14.3586146+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `38/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `30` managed faster, `0` equivalent, `2` native faster, `1` inconclusive, `67` unqualified, `26` excluded
-- Rows with paired qualification evidence: `33/100`
+- Comparator Status: `30` managed faster, `0` equivalent, `4` native faster, `1` inconclusive, `65` unqualified, `26` excluded
+- Rows with paired qualification evidence: `35/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `30/28`
+- Managed/comparator measurement environments represented: `31/29`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -146,8 +146,8 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/backslash-c-literal` | **Unqualified** | 5 B | 0.160 us | 0.059 us | 2.73x | — | +0.101 us | — | `—` | 0 B | — | 15.210 us | 31,424 B |
 | `pcre2/branch-reset-backref` | **Unqualified** | 23 B | 0.029 us | 0.155 us | 0.19x | — | -0.126 us | — | `—` | 0 B | — | 197.541 us | 124,200 B |
 | `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.164 us | 0.137 us | 1.20x | 1.19–1.21x | +0.027 us | 9 pairs; 33/40 ms; 199,675/291,778 ops/lane; IQR 1.006/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 42.999 us | 45,296 B |
-| `pcre2/conditional-lookahead` | **Unqualified** | 3 B | 0.297 us | 0.159 us | 1.88x | — | +0.139 us | — | `—` | 0 B | — | 18.627 us | 56,168 B |
-| `pcre2/conditional-negative-lookahead` | **Unqualified** | 3 B | 0.299 us | 0.131 us | 2.29x | — | +0.168 us | — | `—` | 0 B | — | 20.289 us | 56,208 B |
+| `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.172 us | 0.147 us | 1.21x | 1.12–1.23x | +0.030 us | 9 pairs; 31/41 ms; 183,236/281,045 ops/lane; IQR 1.042/1.082 | `Pcre2Backtracking` | 0 B | 0 B | 18.627 us | 56,168 B |
+| `pcre2/conditional-negative-lookahead` | **Native faster** | 3 B | 0.162 us | 0.136 us | 1.19x | 1.19–1.20x | +0.026 us | 9 pairs; 33/40 ms; 204,519/292,515 ops/lane; IQR 1.007/1.005 | `Pcre2Backtracking` | 0 B | 0 B | 20.289 us | 56,208 B |
 | `pcre2/grapheme-cluster` | **Unqualified** | 248 B | 0.744 us | 0.295 us | 2.52x | — | +0.448 us | — | `—` | 0 B | — | 32.632 us | 31,600 B |
 | `pcre2/recursive-optional` | **Inconclusive** | 6 B | 0.008 us | 0.430 us | 0.02x | 0.02–0.02x | -0.422 us | 15 pairs; 44/40 ms; 5,597,978/92,276 ops/lane; IQR 1.170/1.011 | `Pcre2Backtracking` | 0 B | 0 B | 59.478 us | 50,568 B |
 | `pcre2/recursive-palindrome` | **Managed faster** | 6 B | 0.007 us | 0.353 us | 0.02x | 0.02–0.02x | -0.345 us | 9 pairs; 41/40 ms; 5,844,760/113,389 ops/lane; IQR 1.028/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 58.892 us | 50,200 B |
@@ -258,6 +258,8 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-matchmany` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
 | `pcre2-special-ismatch` | `pcre2/conditional-accept-negative-lookahead` | `A35D94C331B2` | 198 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
+| `pcre2-special-ismatch` | `pcre2/conditional-lookahead` | `AAD9C10AEE8C` | 197 B | 152 B | 0 B | 3 chars | 0/ | 0/ |
+| `pcre2-special-ismatch` | `pcre2/conditional-negative-lookahead` | `AAD9C10AEE8C` | 197 B | 152 B | 0 B | 3 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/recursive-optional` | `1A8BE40346FB` | 195 B | 168 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/recursive-palindrome` | `183D6337793E` | 189 B | 168 B | 0 B | 0 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/subroutine-prefix-digits` | `801A4E18DD7D` | 177 B | 152 B | 0 B | 5 chars | 0/ | 0/ |
