@@ -4797,9 +4797,9 @@
           "ConstructionAllocatedBytes": 124200,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:15:51.8040978+00:00",
+          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:16:37.3203038+00:00",
           "PcreNetNativeEnvironment": {
-            "SourceCommit": "ee39d52f66f9",
+            "SourceCommit": "7d9a45c7f593",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -4807,8 +4807,8 @@
             "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
             "TieredPgo": "runtime-default"
           },
-          "PcreNetNativeEffectiveIterations": 2906,
-          "PcreNetNative": 0.10123881624225739,
+          "PcreNetNativeEffectiveIterations": 2105,
+          "PcreNetNative": 0.10389548693586698,
           "PcreNetNativeStatus": "Unqualified",
           "PcreNetNativeStatusReason": "The managed and comparator lanes were not collected by the paired qualification protocol.",
           "Utf8Pcre2": 1.10525
@@ -5066,9 +5066,9 @@
           "ConstructionAllocatedBytes": 124200,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:15:52.6499086+00:00",
+          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:16:37.431151+00:00",
           "PcreNetNativeEnvironment": {
-            "SourceCommit": "ee39d52f66f9",
+            "SourceCommit": "7d9a45c7f593",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -5077,7 +5077,7 @@
             "TieredPgo": "runtime-default"
           },
           "PcreNetNativeEffectiveIterations": 20000,
-          "PcreNetNative": 0.667855,
+          "PcreNetNative": 0.41943,
           "PcreNetNativeStatus": "Unqualified",
           "PcreNetNativeStatusReason": "The managed and comparator lanes were not collected by the paired qualification protocol.",
           "Utf8Pcre2": 0.44881499999999996
@@ -6224,9 +6224,9 @@
           "ConstructionAllocatedBytes": 123272,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:15:53.5387743+00:00",
+          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:16:37.5011466+00:00",
           "PcreNetNativeEnvironment": {
-            "SourceCommit": "ee39d52f66f9",
+            "SourceCommit": "7d9a45c7f593",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -6234,8 +6234,8 @@
             "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
             "TieredPgo": "runtime-default"
           },
-          "PcreNetNativeEffectiveIterations": 3875,
-          "PcreNetNative": 0.5934451612903225,
+          "PcreNetNativeEffectiveIterations": 3006,
+          "PcreNetNative": 0.4430472388556221,
           "PcreNetNativeStatus": "Unqualified",
           "PcreNetNativeStatusReason": "The managed and comparator lanes were not collected by the paired qualification protocol.",
           "Utf8Pcre2": 1.1092
@@ -7382,9 +7382,9 @@
           "ConstructionAllocatedBytes": 123125,
           "FirstCallAllocatedBytes": 24,
           "WarmAllocatedBytes": 0,
-          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:15:54.0558491+00:00",
+          "PcreNetNativeMeasuredAtUtc": "2026-08-25T15:16:37.5186436+00:00",
           "PcreNetNativeEnvironment": {
-            "SourceCommit": "ee39d52f66f9",
+            "SourceCommit": "7d9a45c7f593",
             "TrackedDirty": false,
             "HasUntrackedFiles": true,
             "Runtime": ".NET 10.0.11",
@@ -7393,7 +7393,7 @@
             "TieredPgo": "runtime-default"
           },
           "PcreNetNativeEffectiveIterations": 20000,
-          "PcreNetNative": 0.521555,
+          "PcreNetNative": 0.49696,
           "PcreNetNativeStatus": "Unqualified",
           "PcreNetNativeStatusReason": "The managed and comparator lanes were not collected by the paired qualification protocol.",
           "Utf8Pcre2": 0.9868899999999999
