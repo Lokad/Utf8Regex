@@ -375,6 +375,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2MultilinePrefix = 9,
     Pcre2AsciiOrderedLiteralWindow = 10,
     Pcre2AsciiLiteralAlternationRepeat = 11,
+    Pcre2SameStartLiteral = 12,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -633,6 +634,17 @@ internal static class Pcre2CompiledProgramOverlay
                 IsMatch = multilinePrefix,
                 Count = multilinePrefix,
                 Enumerate = multilinePrefix,
+            };
+        }
+        else if (Pcre2SameStartLiteralAnalyzer.TryCompile(
+                     syntaxTree.Root,
+                     legacy.Request,
+                     backtrackingProgram) is { } sameStartLiteral)
+        {
+            operations = operations with
+            {
+                Count = sameStartLiteral,
+                Enumerate = sameStartLiteral,
             };
         }
         else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot orderedWindowPrimary &&
@@ -894,6 +906,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
         {
             throw new InvalidOperationException("A literal-family backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram &&
+            (program.Operations.IsMatch is not Pcre2BacktrackingDirectProgram ownedBacktracking ||
+             !ReferenceEquals(sameStartLiteralProgram.Fallback, ownedBacktracking.Program)))
+        {
+            throw new InvalidOperationException("A same-start literal backend must be owned by its compiled PCRE2 program.");
         }
     }
 }
@@ -2461,6 +2480,25 @@ internal static class Pcre2GlobalOperationDriver
         Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor)
     {
+        if (compiledProgram.Operations.Enumerate is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram)
+        {
+            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+                ? Pcre2GlobalMatchCursor.CreateSameStartLiteral(
+                    sameStartLiteralProgram,
+                    input,
+                    start,
+                    compiledProgram.Request)
+                : Pcre2GlobalMatchCursor.CreateBacktracking(
+                    sameStartLiteralProgram.Fallback,
+                    compiledProgram.CandidateSearchPlan,
+                    input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request,
+                    collectDiagnostics: false);
+            return true;
+        }
+
         if (compiledProgram.Operations.Enumerate is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
         {
             cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
@@ -2617,6 +2655,13 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2CompileRequest request) =>
         new(Pcre2DirectGlobalMatchCursor.CreateMultilinePrefix(program, input, start, request));
 
+    internal static Pcre2GlobalMatchCursor CreateSameStartLiteral(
+        Pcre2SameStartLiteralDirectProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request) =>
+        new(Pcre2DirectGlobalMatchCursor.CreateSameStartLiteral(program, input, start, request));
+
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
@@ -2666,6 +2711,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2CharacterProgram? _characterProgram;
     private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
     private readonly Pcre2MultilinePrefixDirectProgram? _multilinePrefixProgram;
+    private readonly Pcre2SameStartLiteralDirectProgram? _sameStartLiteralProgram;
     private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
     private readonly Pcre2CandidateSearchPlan? _candidateSearch;
     private Utf8ValidatedInput _input;
@@ -2683,6 +2729,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Pcre2CharacterProgram? characterProgram,
         Pcre2SingleTokenRepeatProgram? singleTokenRepeatProgram,
         Pcre2MultilinePrefixDirectProgram? multilinePrefixProgram,
+        Pcre2SameStartLiteralDirectProgram? sameStartLiteralProgram,
         Pcre2BacktrackingProgram? backtrackingProgram,
         Pcre2CandidateSearchPlan? candidateSearch,
         Utf8ValidatedInput input,
@@ -2696,6 +2743,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         _characterProgram = characterProgram;
         _singleTokenRepeatProgram = singleTokenRepeatProgram;
         _multilinePrefixProgram = multilinePrefixProgram;
+        _sameStartLiteralProgram = sameStartLiteralProgram;
         _backtrackingProgram = backtrackingProgram;
         _candidateSearch = candidateSearch;
         _input = input;
@@ -2725,6 +2773,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             characterProgram: null,
             singleTokenRepeatProgram: null,
             multilinePrefixProgram: null,
+            sameStartLiteralProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
@@ -2745,6 +2794,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             program,
             singleTokenRepeatProgram: null,
             multilinePrefixProgram: null,
+            sameStartLiteralProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
@@ -2765,6 +2815,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             characterProgram: null,
             program,
             multilinePrefixProgram: null,
+            sameStartLiteralProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
@@ -2783,6 +2834,27 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             literalProgram: null,
             characterProgram: null,
             singleTokenRepeatProgram: null,
+            program,
+            sameStartLiteralProgram: null,
+            backtrackingProgram: null,
+            candidateSearch: default,
+            input,
+            start,
+            Pcre2MatchOptions.None,
+            request,
+            collectDiagnostics: false);
+
+    internal static Pcre2DirectGlobalMatchCursor CreateSameStartLiteral(
+        Pcre2SameStartLiteralDirectProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request) =>
+        new(
+            Pcre2DirectGlobalCursorKind.SameStartLiteral,
+            literalProgram: null,
+            characterProgram: null,
+            singleTokenRepeatProgram: null,
+            multilinePrefixProgram: null,
             program,
             backtrackingProgram: null,
             candidateSearch: default,
@@ -2806,6 +2878,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             characterProgram: null,
             singleTokenRepeatProgram: null,
             multilinePrefixProgram: null,
+            sameStartLiteralProgram: null,
             program,
             candidateSearch,
             input,
@@ -2895,6 +2968,16 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             multilinePrefixStart,
                             multilinePrefixEnd,
                             MatchBoundaryWasReset: false);
+                        break;
+                    case Pcre2DirectGlobalCursorKind.SameStartLiteral:
+                        var sameStartLiteralProgram = _sameStartLiteralProgram ??
+                            throw new InvalidOperationException("The PCRE2 same-start literal cursor has no execution program.");
+                        match = Pcre2SameStartLiteralRunner.Match(
+                            sameStartLiteralProgram,
+                            _input.Bytes,
+                            _restartPosition,
+                            _firstMatchingPosition,
+                            options);
                         break;
                     case Pcre2DirectGlobalCursorKind.Backtracking:
                         var backtrackingProgram = _backtrackingProgram ??
@@ -3007,6 +3090,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         SingleTokenRepeat = 3,
         Backtracking = 4,
         MultilinePrefix = 5,
+        SameStartLiteral = 6,
     }
 }
 
