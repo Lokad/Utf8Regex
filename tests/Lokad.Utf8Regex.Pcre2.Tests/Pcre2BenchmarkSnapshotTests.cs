@@ -31,7 +31,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PCRE2.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(6, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(7, root.GetProperty("SchemaVersion").GetInt32());
 
         var dependency = root.GetProperty("PcreNetNativeBaseline");
         Assert.Equal("PCRE.NET", dependency.GetProperty("PackageId").GetString());
@@ -40,6 +40,9 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Equal(
             "Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==",
             dependency.GetProperty("PackageSha512").GetString());
+        var buildFingerprint = dependency.GetProperty("BuildFingerprint");
+        AssertBuildFingerprint(buildFingerprint);
+        var buildFingerprintSha256 = buildFingerprint.GetProperty("Sha256").GetString();
 
         var families = root.GetProperty("ScalingFamilies");
         Assert.Equal(
@@ -86,7 +89,6 @@ public sealed class Pcre2BenchmarkSnapshotTests
             if (row.Value.TryGetProperty("PcreNetNativePair", out _))
             {
                 Assert.True(hasNative);
-                Assert.NotEqual("Unqualified", status);
                 Assert.NotEqual("Excluded", status);
             }
             else
@@ -101,7 +103,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             {
                 if (row.Value.TryGetProperty("PcreNetNativePair", out var pair))
                 {
-                    AssertPairedMeasurement(section.Name, row.Name, row.Value, pair);
+                    AssertPairedMeasurement(section.Name, row.Name, row.Value, pair, buildFingerprintSha256);
                 }
             }
         }
@@ -128,6 +130,9 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
         Assert.Contains("median sample durations and frozen operations per lane", page, StringComparison.Ordinal);
         Assert.Contains("| Package | Version | Native engine |", page, StringComparison.Ordinal);
+        Assert.Contains($"Native build fingerprint: `{buildFingerprintSha256}`", page, StringComparison.Ordinal);
+        Assert.Contains("## Qualified comparator plans", page, StringComparison.Ordinal);
+        Assert.Contains("Plan SHA-256", page, StringComparison.Ordinal);
         Assert.Contains("--qualify-pcre2-comparator-case-reversed", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"relative", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"absolute", page, StringComparison.Ordinal);
@@ -147,9 +152,10 @@ public sealed class Pcre2BenchmarkSnapshotTests
         string sectionName,
         string caseId,
         JsonElement row,
-        JsonElement pair)
+        JsonElement pair,
+        string? expectedBuildFingerprintSha256)
     {
-        Assert.Equal(4, pair.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal(5, pair.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal(sectionName, pair.GetProperty("Section").GetString());
         Assert.Equal(caseId, pair.GetProperty("CaseId").GetString());
         Assert.Equal(row.GetProperty("PcreNetNativeStatus").GetString(), pair.GetProperty("Status").GetString());
@@ -161,6 +167,10 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.StartsWith("10.47", pair.GetProperty("ComparatorEngineVersion").GetString(), StringComparison.Ordinal);
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ComparatorPackageSha512").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ComparatorProfile").GetString()));
+        var buildFingerprint = pair.GetProperty("ComparatorBuildFingerprint");
+        AssertBuildFingerprint(buildFingerprint);
+        Assert.Equal(expectedBuildFingerprintSha256, buildFingerprint.GetProperty("Sha256").GetString());
+        AssertPlanFingerprint(pair.GetProperty("ComparatorPlanFingerprint"));
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedRoute").GetString()));
         Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("ManagedPlan").GetString()));
         Assert.Equal("highest-efficiency-class", pair.GetProperty("ProcessorSetPolicy").GetString());
@@ -198,8 +208,13 @@ public sealed class Pcre2BenchmarkSnapshotTests
 
             Assert.True(managedMicroseconds[sample] > 0);
             Assert.True(comparatorMicroseconds[sample] > 0);
-            Assert.True(managedMilliseconds[sample] >= 20);
-            Assert.True(comparatorMilliseconds[sample] >= 20);
+            Assert.True(managedMilliseconds[sample] > 0);
+            Assert.True(comparatorMilliseconds[sample] > 0);
+            if (pair.GetProperty("Status").GetString() != "Unqualified")
+            {
+                Assert.True(managedMilliseconds[sample] >= 20);
+                Assert.True(comparatorMilliseconds[sample] >= 20);
+            }
             Assert.Equal(managedMicroseconds[sample] / comparatorMicroseconds[sample], ratios[sample], 12);
         }
 
@@ -212,11 +227,73 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Equal(24301, pair.GetProperty("BootstrapSeed").GetInt32());
         Assert.Equal(10_000, pair.GetProperty("BootstrapResamples").GetInt32());
 
-        if (pair.GetProperty("Status").GetString() == "Inconclusive")
+        if (pair.GetProperty("Status").GetString() is "Inconclusive" or "Unqualified")
         {
             Assert.False(string.IsNullOrWhiteSpace(pair.GetProperty("StatusReason").GetString()));
         }
     }
+
+    private static void AssertBuildFingerprint(JsonElement fingerprint)
+    {
+        AssertSha256(fingerprint.GetProperty("Sha256").GetString());
+        Assert.StartsWith("10.47", fingerprint.GetProperty("EngineVersion").GetString(), StringComparison.Ordinal);
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("ProcessArchitecture").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("OperatingSystemArchitecture").GetString()));
+        Assert.True(fingerprint.GetProperty("JitSupported").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("JitTarget").GetString()));
+        Assert.True(fingerprint.GetProperty("UnicodeSupported").GetBoolean());
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("UnicodeVersion").GetString()));
+        Assert.True(fingerprint.GetProperty("CompiledWidths").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("LinkSizeBytes").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("EffectiveLinkSizeBytes").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("DefaultHeapLimitKibibytes").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("DefaultMatchLimit").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("DefaultDepthLimit").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("ParenthesesLimit").GetUInt32() > 0);
+        Assert.True(fingerprint.GetProperty("CharacterTablesLengthBytes").GetUInt32() > 0);
+    }
+
+    private static void AssertPlanFingerprint(JsonElement fingerprint)
+    {
+        AssertSha256(fingerprint.GetProperty("Sha256").GetString());
+        Assert.True(fingerprint.GetProperty("PatternSizeBytes").GetUInt64() > 0);
+        Assert.True(fingerprint.GetProperty("FrameSizeBytes").GetUInt64() > 0);
+        Assert.Equal(0UL, fingerprint.GetProperty("JitSizeBytes").GetUInt64());
+        Assert.False(fingerprint.GetProperty("IsJitCompiled").GetBoolean());
+        Assert.True(fingerprint.GetProperty("CaptureCount").GetInt32() >= 0);
+        Assert.True(fingerprint.GetProperty("MinimumSubjectCharacters").GetUInt32() >= 0);
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("ArgumentOptions").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("EffectiveOptions").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(fingerprint.GetProperty("ExtraOptions").GetString()));
+
+        AssertOptionalCodeUnit(fingerprint, "FirstCodeType", "FirstCodeUnit");
+        AssertOptionalCodeUnit(fingerprint, "LastCodeType", "LastCodeUnit");
+        AssertOptionalUnsigned(fingerprint, "PatternMatchLimit");
+        AssertOptionalUnsigned(fingerprint, "PatternDepthLimit");
+        AssertOptionalUnsigned(fingerprint, "PatternHeapLimitKibibytes");
+    }
+
+    private static void AssertOptionalCodeUnit(JsonElement fingerprint, string typeName, string unitName)
+    {
+        var type = fingerprint.GetProperty(typeName).GetUInt32();
+        Assert.InRange(type, 0U, 2U);
+        Assert.Equal(type == 1, fingerprint.TryGetProperty(unitName, out var unit));
+        if (type == 1)
+        {
+            Assert.True(unit.GetUInt32() <= 0x10FFFF);
+        }
+    }
+
+    private static void AssertOptionalUnsigned(JsonElement fingerprint, string propertyName)
+    {
+        if (fingerprint.TryGetProperty(propertyName, out var value))
+        {
+            Assert.True(value.GetUInt32() >= 0);
+        }
+    }
+
+    private static void AssertSha256(string? value) =>
+        Assert.True(value is { Length: 64 } && value.All(Uri.IsHexDigit));
 
     private static double[] ReadSamples(JsonElement pair, string propertyName, int sampleCount)
     {
