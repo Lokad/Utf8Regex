@@ -356,6 +356,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2AsciiRegularIsMatch = 8,
     Pcre2MultilinePrefix = 9,
     Pcre2AsciiOrderedLiteralWindow = 10,
+    Pcre2AsciiLiteralAlternationRepeat = 11,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -628,6 +629,18 @@ internal static class Pcre2CompiledProgramOverlay
                 Count = orderedWindow,
             };
         }
+        else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot alternationRepeatPrimary &&
+            Pcre2AsciiLiteralAlternationRepeatAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                alternationRepeatPrimary.Regex,
+                backtrackingProgram) is { } alternationRepeat)
+        {
+            operations = operations with
+            {
+                Count = alternationRepeat,
+            };
+        }
         else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 syntaxTree.Root,
@@ -848,6 +861,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(orderedWindowPrimary.Regex, orderedWindowProgram.Regex)))
         {
             throw new InvalidOperationException("An ASCII ordered-window backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2AsciiLiteralAlternationRepeatDirectProgram alternationRepeatProgram &&
+            (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot alternationRepeatPrimary ||
+             !ReferenceEquals(alternationRepeatPrimary.Regex, alternationRepeatProgram.Regex)))
+        {
+            throw new InvalidOperationException("An ASCII literal-alternation repeat backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
@@ -2251,6 +2271,14 @@ internal static class Pcre2GlobalOperationDriver
             HasUnmeteredExecution(compiledProgram.Request))
         {
             result = orderedWindowProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+            return true;
+        }
+
+        if (program is Pcre2AsciiLiteralAlternationRepeatDirectProgram alternationRepeatProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = alternationRepeatProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
             return true;
         }
 
