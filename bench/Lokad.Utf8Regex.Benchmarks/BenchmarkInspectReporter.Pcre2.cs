@@ -1730,6 +1730,10 @@ internal static partial class BenchmarkInspectReporter
 
         public long ComparatorManagedAllocatedBytesPerOperation { get; set; }
 
+        public List<long> ManagedAllocationSampleBytes { get; set; } = [];
+
+        public List<long> ComparatorAllocationSampleBytes { get; set; } = [];
+
         public double ManagedWarmupMilliseconds { get; set; }
 
         public double ComparatorWarmupMilliseconds { get; set; }

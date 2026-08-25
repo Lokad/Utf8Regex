@@ -9,7 +9,8 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 6;
+    private const int Pcre2QualificationProtocolVersion = 7;
+    private const int Pcre2QualificationAllocationProbeSamples = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
@@ -214,10 +215,10 @@ internal static partial class BenchmarkInspectReporter
                         managedMedianMicroseconds);
                     var comparatorAllocationProbeIterations = GetPcre2QualificationAllocationProbeIterations(
                         comparatorMedianMicroseconds);
-                    var managedAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                    var managedAllocation = MeasurePcre2QualificationAllocation(
                         managedAllocationProbeIterations,
                         managedAction);
-                    var comparatorManagedAllocatedBytes = MeasureAllocatedBytesPerInvocation(
+                    var comparatorAllocation = MeasurePcre2QualificationAllocation(
                         comparatorAllocationProbeIterations,
                         comparatorAction);
 
@@ -253,8 +254,10 @@ internal static partial class BenchmarkInspectReporter
                         ComparatorWarmupMilliseconds = comparatorWarmup.Elapsed.TotalMilliseconds,
                         ManagedAllocationProbeIterations = managedAllocationProbeIterations,
                         ComparatorAllocationProbeIterations = comparatorAllocationProbeIterations,
-                        ManagedAllocatedBytesPerOperation = managedAllocatedBytes,
-                        ComparatorManagedAllocatedBytesPerOperation = comparatorManagedAllocatedBytes,
+                        ManagedAllocatedBytesPerOperation = managedAllocation.BytesPerOperation,
+                        ComparatorManagedAllocatedBytesPerOperation = comparatorAllocation.BytesPerOperation,
+                        ManagedAllocationSampleBytes = managedAllocation.SampleBytes,
+                        ComparatorAllocationSampleBytes = comparatorAllocation.SampleBytes,
                         LaneOrders = laneOrders,
                         ManagedSampleMicroseconds = managedMicroseconds,
                         ComparatorSampleMicroseconds = comparatorMicroseconds,
@@ -366,6 +369,35 @@ internal static partial class BenchmarkInspectReporter
             Math.Floor(targetProbeMicroseconds / Math.Max(microsecondsPerOperation, 0.001)),
             1,
             maximumProbeIterations);
+    }
+
+    private static Pcre2QualificationAllocationMeasurement MeasurePcre2QualificationAllocation(
+        int iterations,
+        Func<int> action)
+    {
+        _ = action();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        var samples = new List<long>(Pcre2QualificationAllocationProbeSamples);
+        var sink = 0;
+        for (var sample = 0; sample < Pcre2QualificationAllocationProbeSamples; sample++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var iteration = 0; iteration < iterations; iteration++)
+            {
+                sink ^= action();
+            }
+
+            samples.Add(GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+
+        GC.KeepAlive(sink);
+        var orderedSamples = samples.Order().ToArray();
+        return new Pcre2QualificationAllocationMeasurement(
+            orderedSamples[orderedSamples.Length / 2] / iterations,
+            samples);
     }
 
     private static Pcre2BenchmarkWorkspaceContract CaptureManagedPcre2WorkspaceContract() => new()
@@ -504,6 +536,10 @@ internal static partial class BenchmarkInspectReporter
         Pcre2QualificationBatch Comparator);
 
     private readonly record struct Pcre2QualificationWarmup(int Iterations, TimeSpan Elapsed);
+
+    private readonly record struct Pcre2QualificationAllocationMeasurement(
+        long BytesPerOperation,
+        List<long> SampleBytes);
 
     private sealed class Pcre2QualificationProcessorSet : IDisposable
     {
