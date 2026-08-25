@@ -9,14 +9,15 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `23122CCE6989ED41A51BC5046A9786C1289754F1D69FAA638679B0142B9F330B`
-- Latest managed row measurement: `2026-08-25T16:40:02.6767050+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T16:40:02.6767050+00:00`
+- Snapshot SHA-256: `29B63EE73D3BE9562568A78C775794C969BBCDE74E290395F65113A88CE5D109`
+- Latest managed row measurement: `2026-08-25T16:48:27.7016533+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T16:48:27.7016533+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `24/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `0` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `100` unqualified, `26` excluded
-- Rows with paired qualification evidence: `0/100`
+- Comparator Status: `6` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `94` unqualified, `26` excluded
+- Rows with paired qualification evidence: `6/100`
+- Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
 - Managed/comparator measurement environments represented: `16/14`
 
@@ -44,6 +45,8 @@ Comparator qualification lifecycle (`PcreMatchBuffer8Bit`): One buffer is constr
 
 Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0 does not expose retained match-data heap-frame high-water memory through its public API.
 
+Managed qualification lifecycle: The compiled regex is reused; each public invocation or global enumerator owns its transient state and returns rented storage on disposal or completion. The compiled regex may be invoked concurrently because capture, progress, timeout, and workspace state is invocation-local. The regex retains its immutable compiled plan, not invocation workspace; shared managed pools may retain returned arrays.
+
 `vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations, frozen operations per lane, and managed/comparator interquartile spread ratios; a spread above 1.10 makes Status inconclusive. Allocation columns report the median of five managed-thread allocation probes per public operation; they do not measure native retained memory. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.
 
 ## Compatible IsMatch
@@ -56,7 +59,7 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B | — |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B | — |
 | `common/email-match` | **Unqualified** | 34 B | 0.046 us | 0.268 us | 0.17x | — | -0.222 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 0.25x | 0 B | — |
-| `common/email-miss` | **Unqualified** | 35 B | 0.051 us | 0.311 us | 0.17x | — | -0.259 us | — | `—` | 0.638 us | 0.296 us | 0.313 us | 0.16x | 0 B | — |
+| `common/email-miss` | **Managed faster** | 35 B | 0.047 us | 0.294 us | 0.16x | 0.16–0.16x | -0.248 us | 9 pairs; 41/39 ms; 864,791/131,686 ops/lane; IQR 1.012/1.008 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 0.15x | 0 B | 0 B |
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B | — |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B | — |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
@@ -72,7 +75,7 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 | `literal/late` | **Unqualified** | 4,103 B | 0.247 us | 1.200 us | 0.21x | — | -0.953 us | — | `—` | 0.637 us | 0.155 us | 0.510 us | 0.48x | 0 B | — |
 | `literal/missing` | **Unqualified** | 4,096 B | 0.237 us | 0.965 us | 0.25x | — | -0.728 us | — | `—` | 0.632 us | 0.140 us | 0.513 us | 0.46x | 0 B | — |
 | `simple/ab-plus` | **Unqualified** | 16 B | 0.281 us | 0.088 us | 3.18x | — | +0.192 us | — | `—` | 0.371 us | 0.040 us | 0.048 us | 5.85x | 0 B | — |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.033 us | 0.125 us | 0.26x | — | -0.093 us | — | `—` | 0.301 us | 0.052 us | 0.070 us | 0.47x | 0 B | — |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.031 us | 0.126 us | 0.25x | 0.24–0.25x | -0.094 us | 9 pairs; 38/41 ms; 1,228,819/323,220 ops/lane; IQR 1.018/1.007 | `Pcre2Literal` | 0.301 us | 0.052 us | 0.070 us | 0.44x | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 0.335 us | 0.086 us | 3.89x | — | +0.249 us | — | `—` | 1.293 us | 0.053 us | 0.068 us | 4.93x | 0 B | — |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.055 us | 0.161 us | 0.34x | — | -0.106 us | — | `—` | 0.929 us | 0.070 us | 0.091 us | 0.60x | 0 B | — |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 0.552 us | 0.243 us | 2.27x | — | +0.309 us | — | `—` | 0.371 us | 0.043 us | 0.056 us | 9.81x | 0 B | — |
@@ -96,11 +99,11 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 | `industry/mariomka-uri-count` | **Unqualified** | 6,839,410 B | 27,766.882 us | 85,235.400 us | 0.33x | — | -57468.518 us | — | `—` | 11,221.527 us | 1,556.864 us | 7,443.482 us | 3.73x | 0 B | — |
 | `industry/rust-sherlock-holmes-window-count` | **Unqualified** | 594,930 B | 1,372.013 us | 558.029 us | 2.46x | — | +813.984 us | — | `—` | 44.616 us | 187.749 us | 311.021 us | 4.41x | 0 B | — |
 | `industry/rust-sherlock-ing-count` | **Excluded** | 594,930 B | 7,000.719 us | — | — | — | — | — | `—` | 8,297.556 us | 8,591.075 us | 9,062.328 us | 0.77x | 0 B | — |
-| `industry/rust-sherlock-letter-count` | **Unqualified** | 594,930 B | 1,512.231 us | 52,838.100 us | 0.03x | — | -51325.869 us | — | `—` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B | — |
+| `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 1,481.200 us | 52,926.100 us | 0.03x | 0.03–0.03x | -51436.823 us | 9 pairs; 39/53 ms; 26/1 ops/lane; IQR 1.011/1.008 | `Pcre2Character` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B | 0 B |
 | `industry/rust-sherlock-nonnewline-count` | **Unqualified** | 594,930 B | 152.928 us | 3,810.537 us | 0.04x | — | -3657.609 us | — | `—` | 146.972 us | 908.616 us | 1,427.111 us | 0.11x | 0 B | — |
 | `industry/rust-sherlock-word-holmes-count` | **Unqualified** | 594,930 B | 2,715.809 us | 13,773.712 us | 0.20x | — | -11057.904 us | — | `—` | 27.383 us | 6,190.496 us | 5,827.548 us | 0.47x | 0 B | — |
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.141 us | 0.617 us | 1.85x | — | +0.524 us | — | `—` | 0.555 us | 0.147 us | 0.158 us | 7.21x | 0 B | — |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.135 us | 0.473 us | 0.29x | — | -0.338 us | — | `—` | 0.189 us | 0.189 us | 0.196 us | 0.69x | 0 B | — |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.123 us | 0.451 us | 0.27x | 0.27–0.27x | -0.329 us | 9 pairs; 41/40 ms; 333,598/88,113 ops/lane; IQR 1.021/1.007 | `Pcre2Literal` | 0.189 us | 0.189 us | 0.196 us | 0.63x | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 1.075 us | 0.650 us | 1.65x | — | +0.425 us | — | `—` | 1.231 us | 0.194 us | 0.205 us | 5.25x | 0 B | — |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.552 us | 0.686 us | 0.81x | — | -0.133 us | — | `—` | 0.772 us | 0.265 us | 0.295 us | 1.87x | 0 B | — |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 1.278 us | 0.585 us | 2.19x | — | +0.694 us | — | `—` | 0.507 us | 0.085 us | 0.101 us | 12.66x | 0 B | — |
@@ -110,7 +113,7 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 2.912 us | 0.284 us | 10.25x | — | +2.628 us | — | `—` | 9.226 us | 0.201 us | 0.208 us | 13.97x | 0 B | — |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.329 us | 0.459 us | 0.72x | — | -0.131 us | — | `—` | 0.976 us | 0.215 us | 0.243 us | 1.35x | 0 B | — |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.350 us | 0.455 us | 0.77x | 0.77–0.77x | -0.104 us | 9 pairs; 42/40 ms; 119,012/88,716 ops/lane; IQR 1.011/1.008 | `Pcre2Literal` | 0.976 us | 0.215 us | 0.243 us | 1.44x | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 4.496 us | 0.322 us | 13.96x | — | +4.174 us | — | `—` | 16.080 us | 0.411 us | 0.433 us | 10.38x | 0 B | — |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.515 us | 0.695 us | 0.74x | — | -0.180 us | — | `—` | 13.023 us | 0.287 us | 0.339 us | 1.52x | 0 B | — |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 1.481 us | 0.577 us | 2.57x | — | +0.904 us | — | `—` | 11.926 us | 0.097 us | 0.205 us | 7.23x | 0 B | — |
@@ -120,7 +123,7 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Regex CPU | .NET predecoded CPU | .NET + decode CPU | vs decode | Utf8Pcre2 managed alloc | Comparator managed alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|---:|---:|
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.329 us | 0.291 us | 4.57x | — | +1.038 us | — | `—` | — | — | — | — | 0 B | — |
-| `simple/foo-dense` | **Unqualified** | 18 B | 0.154 us | 0.490 us | 0.31x | — | -0.336 us | — | `—` | — | — | — | — | 0 B | — |
+| `simple/foo-dense` | **Managed faster** | 18 B | 0.146 us | 0.459 us | 0.32x | 0.32–0.32x | -0.313 us | 9 pairs; 38/41 ms; 262,156/88,955 ops/lane; IQR 1.009/1.016 | `Pcre2Literal` | — | — | — | — | 0 B | 0 B |
 | `simple/foo-optional-bar` | **Unqualified** | 23 B | 1.454 us | 0.309 us | 4.71x | — | +1.145 us | — | `—` | — | — | — | — | 0 B | — |
 | `simple/httpclient-caseless` | **Unqualified** | 45 B | 0.338 us | 0.693 us | 0.49x | — | -0.355 us | — | `—` | — | — | — | — | 0 B | — |
 | `simple/loglevel-multiline` | **Unqualified** | 67 B | 1.276 us | 0.589 us | 2.17x | — | +0.687 us | — | `—` | — | — | — | — | 0 B | — |
@@ -224,7 +227,16 @@ Retained native match-data heap-frame high water: unavailable — PCRE.NET 1.5.0
 
 ## Qualified comparator plans
 
-No paired plan fingerprints are recorded.
+Plan data is captured through the comparator's public compiled-pattern information surface; JIT remains disabled for primary Status.
+
+| Section | Case | Plan SHA-256 | Pattern | Frame | JIT | Min subject | First type/unit | Last type/unit |
+|---|---|---|---:|---:|---:|---:|---|---|
+| `pcre2-managed-compatible-ismatch` | `common/email-miss` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
+| `pcre2-managed-compatible-ismatch` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
+| `pcre2-managed-compatible-count` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
+| `pcre2-managed-compatible-count` | `industry/rust-sherlock-letter-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-enumerate` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
+| `pcre2-managed-compatible-matchmany` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 
 ## Comparator exclusions
 
