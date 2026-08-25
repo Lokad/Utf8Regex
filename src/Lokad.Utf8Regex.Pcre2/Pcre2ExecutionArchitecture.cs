@@ -273,6 +273,8 @@ internal readonly record struct Pcre2CandidateWindowConstraint(
 
 internal readonly struct Pcre2CandidateSearchProgram
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2CandidateSearchProgram>();
+
     private Pcre2CandidateSearchProgram(
         Pcre2CandidateSearchKind kind,
         PreparedSearcher searcher,
