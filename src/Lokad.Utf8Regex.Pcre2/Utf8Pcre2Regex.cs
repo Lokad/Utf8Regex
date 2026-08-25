@@ -4027,6 +4027,7 @@ public sealed class Utf8Pcre2Regex
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
             Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
+            Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)

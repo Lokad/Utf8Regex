@@ -66,7 +66,7 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         Assert.IsType<Pcre2LiteralDirectProgram>(delegated.Operations.IsMatch);
         Assert.IsType<Pcre2Utf8ProgramSlot>(delegated.PrimaryUtf8);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.IsMatch);
+        Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(special.Operations.IsMatch);
         Assert.IsType<Pcre2EmptyUtf8ProgramSlot>(special.PrimaryUtf8);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(special.Operations.Match);
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, special.CandidateSearch.Kind);
@@ -248,6 +248,12 @@ public sealed class Pcre2ExecutionArchitectureTests
             default,
             new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
             Timeout.InfiniteTimeSpan);
+        var tightlyMetered = new Utf8Pcre2Regex(
+            @"(?|(abc)|(xyz))\1",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Timeout.InfiniteTimeSpan);
 
         AssertFiniteLiteralLanguagePlan(branchResetBasic);
         AssertFiniteLiteralLanguagePlan(branchReset);
@@ -264,6 +270,17 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(1, relativeBackreference.Count("abab xx"u8));
         Assert.Equal(2, unicodeBackreference.Count("éé λλ xx"u8));
         Assert.Equal(4, metered.Count("abc xyz xyz abc q"u8));
+        Assert.True(branchReset.IsMatch("xx xyzxyz"u8));
+        Assert.False(branchReset.IsMatch("xx abcxyz"u8));
+        Assert.False(branchReset.IsMatch("abcabc"u8, 1));
+        Assert.True(branchReset.IsMatch("xabcabc"u8, 1, Pcre2MatchOptions.Anchored));
+        Assert.True(metered.IsMatch("xx abc"u8));
+        Assert.True(unicodeBackreference.IsMatch("xx λλ"u8));
+        Assert.False(unicodeBackreference.IsMatch("xx éλ"u8));
+        Assert.True(ambiguousPrefixes.IsMatch("xx abcd"u8));
+        Assert.Equal(
+            Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcabc"u8)).ErrorKind);
         var ambiguousEnumerator = ambiguousPrefixes.EnumerateMatches("abcd"u8);
         Assert.True(ambiguousEnumerator.MoveNext());
         Assert.Equal(
@@ -336,6 +353,9 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal([(2, 2), (4, 4)], EnumerateByteRanges(resetAtEnd, "abab"u8));
         Assert.Equal([(2, 4)], EnumerateByteRanges(unicode, "éλ"u8));
         Assert.Equal([(3, 6), (10, 13)], EnumerateByteRanges(metered, "abc123 abc123"u8));
+        Assert.True(global.IsMatch("xx abc123"u8));
+        Assert.True(resetAtEnd.IsMatch("xx ab"u8));
+        Assert.False(unicode.IsMatch("éxλ"u8));
 
         Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
         Assert.Equal(3, alternative.MatchMany("foobar foobaz foobar"u8, matches, out var isMore));
@@ -347,7 +367,7 @@ public sealed class Pcre2ExecutionArchitectureTests
 
     private static void AssertFiniteLiteralBoundaryResetPlan(Utf8Pcre2Regex regex)
     {
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         var count = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(
             regex.DebugCompiledProgram.Operations.Count);
         var enumerate = Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(
@@ -374,7 +394,7 @@ public sealed class Pcre2ExecutionArchitectureTests
 
     private static void AssertFiniteLiteralLanguagePlan(Utf8Pcre2Regex regex)
     {
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);

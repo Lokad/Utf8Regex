@@ -256,14 +256,59 @@ internal sealed class Pcre2FiniteLiteralLanguageDirectProgram : Pcre2LiteralFami
         : base(compilation.Regex, fallback)
     {
         BoundaryProjection = compilation.BoundaryProjection;
+        BooleanSearch = compilation.BooleanSearch;
     }
 
     internal Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection { get; }
+
+    internal Pcre2FiniteLiteralBooleanSearch BooleanSearch { get; }
 }
 
 internal sealed record Pcre2FiniteLiteralLanguageCompilation(
     Utf8Regex Regex,
+    Pcre2FiniteLiteralBooleanSearch BooleanSearch,
     Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection);
+
+internal sealed class Pcre2FiniteLiteralBooleanSearch
+{
+    private readonly byte[][] _alternatives;
+    private readonly SearchValues<byte> _leadingBytes;
+
+    internal Pcre2FiniteLiteralBooleanSearch(byte[][] alternatives)
+    {
+        _alternatives = alternatives;
+        _leadingBytes = SearchValues.Create(
+            alternatives.Select(static alternative => alternative[0]).Distinct().ToArray());
+    }
+
+    internal bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        // Boolean existence does not require the earliest alternative. Scan
+        // candidate leading bytes directly and verify only at those positions.
+        var remaining = input[startOffsetInBytes..];
+        while (!remaining.IsEmpty)
+        {
+            var candidate = remaining.IndexOfAny(_leadingBytes);
+            if (candidate < 0)
+            {
+                return false;
+            }
+
+            var candidateInput = remaining[candidate..];
+            foreach (var alternative in _alternatives)
+            {
+                if (candidateInput[0] == alternative[0] && candidateInput.StartsWith(alternative))
+                {
+                    return true;
+                }
+            }
+
+            remaining = candidateInput[1..];
+        }
+
+        return false;
+    }
+}
 
 internal sealed class Pcre2FiniteLiteralBoundaryProjection
 {
@@ -573,10 +618,11 @@ internal static class Pcre2CompiledProgramOverlay
             var literalFamily = new Pcre2FiniteLiteralLanguageDirectProgram(
                 finiteLiteralCompilation,
                 backtrackingProgram);
-            // The original plan wins first-match searches, while the capture-free
-            // expansion wins when every non-overlapping match must be discovered.
+            // Boolean and capture-independent global operations need only the
+            // expanded language; capture-dependent operations retain the VM.
             operations = operations with
             {
+                IsMatch = literalFamily,
                 Count = literalFamily,
                 Enumerate = literalFamily,
             };
@@ -875,6 +921,9 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
             }
         }
 
+        var alternativeBytes = alternatives
+            .Select(static state => Encoding.UTF8.GetBytes(state.Value))
+            .ToArray();
         var escapedAlternatives = alternatives
             .Select(static state => Regex.Escape(state.Value))
             .ToArray();
@@ -884,12 +933,15 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, request.MatchTimeout);
         var boundaryProjection = alternatives.Any(static state => state.ReportedStartCharacterIndex != 0)
             ? new Pcre2FiniteLiteralBoundaryProjection(
-                alternatives.Select(static state => new Pcre2FiniteLiteralBoundaryAlternative(
-                    Encoding.UTF8.GetBytes(state.Value),
+                alternatives.Select((state, index) => new Pcre2FiniteLiteralBoundaryAlternative(
+                    alternativeBytes[index],
                     Encoding.UTF8.GetByteCount(state.Value.AsSpan(0, state.ReportedStartCharacterIndex))))
                 .ToArray())
             : null;
-        return new Pcre2FiniteLiteralLanguageCompilation(regex, boundaryProjection);
+        return new Pcre2FiniteLiteralLanguageCompilation(
+            regex,
+            new Pcre2FiniteLiteralBooleanSearch(alternativeBytes),
+            boundaryProjection);
 
         bool TryEvaluate(
             IPcre2BacktrackingNode node,
@@ -1705,6 +1757,14 @@ internal static class Pcre2Runner
                 start,
                 matchOptions,
                 compiledProgram.Request).Success;
+            return true;
+        }
+
+        if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = finiteLiteralProgram.BooleanSearch.IsMatch(input.Bytes, start.Value);
             return true;
         }
 
