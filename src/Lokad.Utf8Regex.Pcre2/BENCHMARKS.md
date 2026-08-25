@@ -9,14 +9,14 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `AD9BD5783F97E290DC08BD303EBBB33CD981A9BD483CEE395E94AF53A7E70465`
-- Latest managed row measurement: `2026-08-25T20:32:05.8317059+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:32:05.8317059+00:00`
+- Snapshot SHA-256: `9C32DC75E78577FC23E4417BF3054F8252563CB97F39E42AC8D30A6D0C0BBD4B`
+- Latest managed row measurement: `2026-08-25T20:33:51.9955750+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:33:51.9955750+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `47/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `99/126`
-- Comparator Status: `83` managed faster, `0` equivalent, `5` native faster, `6` inconclusive, `5` unqualified, `27` excluded
-- Rows with paired qualification evidence: `94/99`
+- Comparator Status: `85` managed faster, `0` equivalent, `5` native faster, `7` inconclusive, `2` unqualified, `27` excluded
+- Rows with paired qualification evidence: `97/99`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
 - Managed/comparator measurement environments represented: `35/34`
@@ -94,9 +94,9 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/leipzig-river-window-count` | **Excluded** | 16,013,977 B | 6,103.820 us | — | — | — | — | — | `—` | 6,189.620 us | 20,708.440 us | 26,222.200 us | 0.23x | 4 B | — |
 | `industry/leipzig-symbol-count` | **Inconclusive** | 16,013,977 B | 1,141.910 us | 264,679.300 us | 0.00x | 0.00–0.00x | -263571.826 us | 9 pairs; 45/265 ms; 39/1 ops/lane; IQR 1.071/1.013 | `Pcre2Character` | 1,336.310 us | 12,305.370 us | 16,502.327 us | 0.07x | 0 B | 0 B |
 | `industry/leipzig-twain-count` | **Managed faster** | 16,013,977 B | 3,825.870 us | 5,022.350 us | 0.76x | 0.75–0.77x | -1196.480 us | 9 pairs; 38/40 ms; 10/8 ops/lane; IQR 1.023/1.015 | `Pcre2Literal` | 719.607 us | 1,264.027 us | 6,198.100 us | 0.62x | 0 B | 0 B |
-| `industry/mariomka-email-count` | **Unqualified** | 6,839,410 B | 14,827.000 us | 107,631.200 us | 0.14x | — | -92804.200 us | — | `—` | 7,132.118 us | 236.335 us | 5,447.888 us | 2.72x | 0 B | — |
-| `industry/mariomka-ip-count` | **Unqualified** | 6,839,410 B | 14,989.200 us | 16,474.000 us | 0.91x | — | -1484.800 us | — | `—` | 3,159.179 us | 6,295.879 us | 11,488.879 us | 1.30x | 0 B | — |
-| `industry/mariomka-uri-count` | **Unqualified** | 6,839,410 B | 27,766.882 us | 85,235.400 us | 0.33x | — | -57468.518 us | — | `—` | 11,221.527 us | 1,556.864 us | 7,443.482 us | 3.73x | 0 B | — |
+| `industry/mariomka-email-count` | **Managed faster** | 6,839,410 B | 10,811.800 us | 86,641.600 us | 0.13x | 0.12–0.13x | -75567.225 us | 9 pairs; 43/87 ms; 4/1 ops/lane; IQR 1.032/1.008 | `Pcre2Backtracking` | 839.075 us | 314.680 us | 4,852.845 us | 2.23x | 0 B | 0 B |
+| `industry/mariomka-ip-count` | **Inconclusive** | 6,839,410 B | 11,982.567 us | 12,252.600 us | 0.98x | 0.97–0.99x | -263.800 us | 9 pairs; 36/37 ms; 3/3 ops/lane; IQR 1.009/1.011 | `Pcre2Backtracking` | 1,444.938 us | 4,785.212 us | 9,482.875 us | 1.26x | 0 B | 0 B |
+| `industry/mariomka-uri-count` | **Managed faster** | 6,839,410 B | 16,773.550 us | 78,548.300 us | 0.21x | 0.21–0.22x | -61863.850 us | 9 pairs; 34/79 ms; 2/1 ops/lane; IQR 1.011/1.005 | `Pcre2Backtracking` | 2,299.275 us | 1,420.550 us | 6,769.250 us | 2.48x | 0 B | 0 B |
 | `industry/rust-sherlock-holmes-window-count` | **Managed faster** | 594,930 B | 33.741 us | 539.792 us | 0.06x | 0.06–0.06x | -506.217 us | 9 pairs; 38/39 ms; 1,133/73 ops/lane; IQR 1.027/1.003 | `Pcre2Backtracking` | 44.616 us | 187.749 us | 311.021 us | 0.11x | 0 B | 0 B |
 | `industry/rust-sherlock-ing-count` | **Excluded** | 594,930 B | 7,000.719 us | — | — | — | — | — | `—` | 8,297.556 us | 8,591.075 us | 9,062.328 us | 0.77x | 0 B | — |
 | `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 1,481.200 us | 52,926.100 us | 0.03x | 0.03–0.03x | -51436.823 us | 9 pairs; 39/53 ms; 26/1 ops/lane; IQR 1.011/1.008 | `Pcre2Character` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B | 0 B |
@@ -271,6 +271,9 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-count` | `industry/leipzig-name-family-count` | `672B54609A3F` | 216 B | 136 B | 0 B | 3 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/leipzig-symbol-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/leipzig-twain-count` | `8A1ADF584CC9` | 169 B | 136 B | 0 B | 5 chars | 1/84 | 1/110 |
+| `pcre2-managed-compatible-count` | `industry/mariomka-email-count` | `1D742A03872D` | 265 B | 136 B | 0 B | 5 chars | 0/ | 1/46 |
+| `pcre2-managed-compatible-count` | `industry/mariomka-ip-count` | `94AD8473E42E` | 1,051 B | 136 B | 0 B | 11 chars | 0/ | 1/46 |
+| `pcre2-managed-compatible-count` | `industry/mariomka-uri-count` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-holmes-window-count` | `B40600CA7551` | 218 B | 136 B | 0 B | 12 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-letter-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-enumerate` | `simple/ab-plus` | `B1DA634BB0A0` | 171 B | 152 B | 0 B | 2 chars | 1/97 | 1/98 |
