@@ -267,7 +267,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         AssertFiniteLiteralLanguagePlan(unicodeBackreference);
         foreach (var repeated in new[] { optionalCapture, greedyRepeat, lazyRepeat })
         {
-            Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.IsMatch);
+            Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.IsMatch);
             Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Count);
             Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Enumerate);
             Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.Match);
@@ -292,6 +292,10 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(unicodeBackreference.IsMatch("xx λλ"u8));
         Assert.False(unicodeBackreference.IsMatch("xx éλ"u8));
         Assert.True(ambiguousPrefixes.IsMatch("xx abcd"u8));
+        Assert.True(optionalCapture.IsMatch("xx fooBAR"u8));
+        Assert.True(optionalCapture.IsMatch("xx foo"u8, 3));
+        Assert.False(optionalCapture.IsMatch("xx foo"u8, 4));
+        Assert.Throws<ArgumentException>(() => optionalCapture.IsMatch([0xFF]));
         var optionalMatch = optionalCapture.MatchDetailed("fooBAR"u8);
         Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
         Assert.Equal("BAR", optionalGroup.GetValueString());

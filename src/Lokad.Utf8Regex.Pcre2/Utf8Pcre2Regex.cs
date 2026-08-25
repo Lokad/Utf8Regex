@@ -15,6 +15,7 @@ public sealed class Utf8Pcre2Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
+    private readonly Pcre2FiniteLiteralBooleanSearch? _finiteLiteralBooleanSearch;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -44,6 +45,11 @@ public sealed class Utf8Pcre2Regex
             defaultExecutionLimits,
             Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout)));
         _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
+        if (_program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        {
+            _finiteLiteralBooleanSearch = finiteLiteralProgram.BooleanSearch;
+        }
     }
 
     private static Pcre2CompiledProgram CreateFoundationProgram(Pcre2CompileRequest request)
@@ -147,7 +153,15 @@ public sealed class Utf8Pcre2Regex
 
     /// <summary>Determines whether the well-formed UTF-8 subject contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
-        => IsMatch(input, 0, Pcre2MatchOptions.None);
+    {
+        if (_finiteLiteralBooleanSearch is not null)
+        {
+            _ = Utf8ValidatedInput.Create(input);
+            return _finiteLiteralBooleanSearch.IsMatch(input, 0);
+        }
+
+        return IsMatch(input, 0, Pcre2MatchOptions.None);
+    }
 
     /// <summary>Determines whether a match exists at or after a scalar-aligned UTF-8 byte offset.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)

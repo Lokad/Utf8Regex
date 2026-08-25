@@ -267,8 +267,7 @@ internal sealed class Pcre2FiniteLiteralLanguageDirectProgram : Pcre2LiteralFami
 internal sealed record Pcre2FiniteLiteralLanguageCompilation(
     Utf8Regex Regex,
     Pcre2FiniteLiteralBooleanSearch BooleanSearch,
-    Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection,
-    bool HasVariableRepeat);
+    Pcre2FiniteLiteralBoundaryProjection? BoundaryProjection);
 
 internal sealed class Pcre2FiniteLiteralBooleanSearch
 {
@@ -277,12 +276,30 @@ internal sealed class Pcre2FiniteLiteralBooleanSearch
 
     internal Pcre2FiniteLiteralBooleanSearch(byte[][] alternatives)
     {
-        _alternatives = alternatives;
-        _leadingBytes = alternatives.Select(static alternative => alternative[0]).Distinct().ToArray();
+        var minimal = new List<byte[]>(alternatives.Length);
+        foreach (var alternative in alternatives)
+        {
+            var covered = alternatives.Any(candidate =>
+                !ReferenceEquals(candidate, alternative) &&
+                candidate.Length <= alternative.Length &&
+                alternative.AsSpan().StartsWith(candidate));
+            if (!covered)
+            {
+                minimal.Add(alternative);
+            }
+        }
+
+        _alternatives = minimal.ToArray();
+        _leadingBytes = _alternatives.Select(static alternative => alternative[0]).Distinct().ToArray();
     }
 
     internal bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
+        if (_alternatives.Length == 1)
+        {
+            return input[startOffsetInBytes..].IndexOf(_alternatives[0]) >= 0;
+        }
+
         // Boolean existence does not require the earliest alternative. Scan
         // candidate leading bytes directly and verify only at those positions.
         var remaining = input[startOffsetInBytes..];
@@ -667,9 +684,7 @@ internal static class Pcre2CompiledProgramOverlay
             // expanded language; capture-dependent operations retain the VM.
             operations = operations with
             {
-                IsMatch = finiteLiteralCompilation.HasVariableRepeat
-                    ? operations.IsMatch
-                    : literalFamily,
+                IsMatch = literalFamily,
                 Count = literalFamily,
                 Enumerate = literalFamily,
             };
@@ -960,7 +975,6 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         {
             new(string.Empty, 0, []),
         };
-        var hasVariableRepeat = false;
         // An atomic group can be flattened only when it owns the root: without
         // a following continuation, no later failure can revisit its choice.
         var evaluationRoot = root is Pcre2AtomicBacktrackingNode rootAtomic
@@ -1003,8 +1017,7 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
         return new Pcre2FiniteLiteralLanguageCompilation(
             regex,
             new Pcre2FiniteLiteralBooleanSearch(alternativeBytes),
-            boundaryProjection,
-            hasVariableRepeat);
+            boundaryProjection);
 
         bool TryEvaluate(
             IPcre2BacktrackingNode node,
@@ -1078,7 +1091,6 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                     when repeat.Maximum != int.MaxValue &&
                          repeat.Maximum <= MaximumAlternatives &&
                          repeat.Preference != Pcre2RepeatPreference.Possessive:
-                    hasVariableRepeat |= repeat.Minimum != repeat.Maximum;
                     foreach (var input in inputs)
                     {
                         var statesByCount = new List<List<Pcre2FiniteLiteralState>>(repeat.Maximum + 1)
