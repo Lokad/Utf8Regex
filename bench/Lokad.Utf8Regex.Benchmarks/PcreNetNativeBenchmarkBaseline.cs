@@ -1,3 +1,7 @@
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Pcre2;
 using PCRE;
@@ -36,6 +40,101 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     }
 
     internal static string NativePcre2Version => PcreBuildInfo.Version;
+
+    internal static PcreNetNativeBuildFingerprint CaptureBuildFingerprint()
+    {
+        var fields = BuildFingerprintFields(
+            PcreBuildInfo.Version,
+            RuntimeInformation.ProcessArchitecture,
+            RuntimeInformation.OSArchitecture,
+            PcreBuildInfo.Jit,
+            PcreBuildInfo.JitTarget,
+            PcreBuildInfo.Unicode,
+            PcreBuildInfo.UnicodeVersion,
+            PcreBuildInfo.CompiledWidths,
+            PcreBuildInfo.LinkSize,
+            PcreBuildInfo.EffectiveLinkSize,
+            PcreBuildInfo.NewLine,
+            PcreBuildInfo.BackslashR,
+            PcreBuildInfo.HeapLimit,
+            PcreBuildInfo.MatchLimit,
+            PcreBuildInfo.DepthLimit,
+            PcreBuildInfo.ParensLimit,
+            PcreBuildInfo.TablesLength,
+            PcreBuildInfo.NeverBackslashC);
+        return new PcreNetNativeBuildFingerprint
+        {
+            Sha256 = ComputeFingerprintSha256(fields),
+            EngineVersion = PcreBuildInfo.Version,
+            ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            OperatingSystemArchitecture = RuntimeInformation.OSArchitecture.ToString(),
+            JitSupported = PcreBuildInfo.Jit,
+            JitTarget = PcreBuildInfo.JitTarget,
+            UnicodeSupported = PcreBuildInfo.Unicode,
+            UnicodeVersion = PcreBuildInfo.UnicodeVersion,
+            CompiledWidths = PcreBuildInfo.CompiledWidths,
+            LinkSizeBytes = PcreBuildInfo.LinkSize,
+            EffectiveLinkSizeBytes = PcreBuildInfo.EffectiveLinkSize,
+            DefaultNewline = PcreBuildInfo.NewLine.ToString(),
+            DefaultBackslashR = PcreBuildInfo.BackslashR.ToString(),
+            DefaultHeapLimitKibibytes = PcreBuildInfo.HeapLimit,
+            DefaultMatchLimit = PcreBuildInfo.MatchLimit,
+            DefaultDepthLimit = PcreBuildInfo.DepthLimit,
+            ParenthesesLimit = PcreBuildInfo.ParensLimit,
+            CharacterTablesLengthBytes = PcreBuildInfo.TablesLength,
+            BackslashCPermanentlyDisabled = PcreBuildInfo.NeverBackslashC,
+        };
+    }
+
+    internal PcreNetNativePlanFingerprint CapturePlanFingerprint()
+    {
+        var info = _regex.PatternInfo;
+        var fields = BuildFingerprintFields(
+            info.PatternSize,
+            info.FrameSize,
+            info.JitSize,
+            info.IsCompiled,
+            info.CaptureCount,
+            info.NamedGroupsCount,
+            info.MaxBackReference,
+            info.CanMatchEmptyString,
+            info.MaxLookBehind,
+            info.MinSubjectLength,
+            info.FirstCodeType,
+            info.FirstCodeUnit,
+            info.LastCodeType,
+            info.LastCodeUnit,
+            (uint)info.ArgOptions,
+            (uint)info.AllOptions,
+            (uint)info.ExtraOptions,
+            info.MatchLimit,
+            info.DepthLimit,
+            info.HeapLimit);
+        return new PcreNetNativePlanFingerprint
+        {
+            Sha256 = ComputeFingerprintSha256(fields),
+            PatternSizeBytes = info.PatternSize,
+            FrameSizeBytes = info.FrameSize,
+            JitSizeBytes = info.JitSize,
+            IsJitCompiled = info.IsCompiled,
+            CaptureCount = info.CaptureCount,
+            NamedGroupsCount = info.NamedGroupsCount,
+            MaximumBackReference = info.MaxBackReference,
+            CanMatchEmptyString = info.CanMatchEmptyString,
+            MaximumLookbehindCharacters = info.MaxLookBehind,
+            MinimumSubjectCharacters = info.MinSubjectLength,
+            FirstCodeType = info.FirstCodeType,
+            FirstCodeUnit = info.FirstCodeUnit,
+            LastCodeType = info.LastCodeType,
+            LastCodeUnit = info.LastCodeUnit,
+            ArgumentOptions = info.ArgOptions.ToString(),
+            EffectiveOptions = info.AllOptions.ToString(),
+            ExtraOptions = info.ExtraOptions.ToString(),
+            PatternMatchLimit = info.MatchLimit,
+            PatternDepthLimit = info.DepthLimit,
+            PatternHeapLimitKibibytes = info.HeapLimit,
+        };
+    }
 
     internal int Execute(Utf8Pcre2BenchmarkOperation operation) => operation switch
     {
@@ -180,4 +279,96 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         Pcre2BsrConvention.Unicode => PcreBackslashR.Unicode,
         _ => throw new ArgumentOutOfRangeException(nameof(value)),
     };
+
+    private static string ComputeFingerprintSha256(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private static string BuildFingerprintFields(params object?[] values) =>
+        string.Join('\n', values.Select(static value => Convert.ToString(value, CultureInfo.InvariantCulture)));
+}
+
+internal sealed class PcreNetNativeBuildFingerprint
+{
+    public required string Sha256 { get; init; }
+
+    public required string EngineVersion { get; init; }
+
+    public required string ProcessArchitecture { get; init; }
+
+    public required string OperatingSystemArchitecture { get; init; }
+
+    public bool JitSupported { get; init; }
+
+    public required string JitTarget { get; init; }
+
+    public bool UnicodeSupported { get; init; }
+
+    public required string UnicodeVersion { get; init; }
+
+    public uint CompiledWidths { get; init; }
+
+    public uint LinkSizeBytes { get; init; }
+
+    public uint EffectiveLinkSizeBytes { get; init; }
+
+    public required string DefaultNewline { get; init; }
+
+    public required string DefaultBackslashR { get; init; }
+
+    public uint DefaultHeapLimitKibibytes { get; init; }
+
+    public uint DefaultMatchLimit { get; init; }
+
+    public uint DefaultDepthLimit { get; init; }
+
+    public uint ParenthesesLimit { get; init; }
+
+    public uint CharacterTablesLengthBytes { get; init; }
+
+    public bool BackslashCPermanentlyDisabled { get; init; }
+}
+
+internal sealed class PcreNetNativePlanFingerprint
+{
+    public required string Sha256 { get; init; }
+
+    public ulong PatternSizeBytes { get; init; }
+
+    public ulong FrameSizeBytes { get; init; }
+
+    public ulong JitSizeBytes { get; init; }
+
+    public bool IsJitCompiled { get; init; }
+
+    public int CaptureCount { get; init; }
+
+    public uint NamedGroupsCount { get; init; }
+
+    public uint MaximumBackReference { get; init; }
+
+    public bool CanMatchEmptyString { get; init; }
+
+    public uint MaximumLookbehindCharacters { get; init; }
+
+    public uint MinimumSubjectCharacters { get; init; }
+
+    public uint FirstCodeType { get; init; }
+
+    public uint FirstCodeUnit { get; init; }
+
+    public uint LastCodeType { get; init; }
+
+    public uint LastCodeUnit { get; init; }
+
+    public required string ArgumentOptions { get; init; }
+
+    public required string EffectiveOptions { get; init; }
+
+    public required string ExtraOptions { get; init; }
+
+    public uint PatternMatchLimit { get; init; }
+
+    public uint PatternDepthLimit { get; init; }
+
+    public uint PatternHeapLimitKibibytes { get; init; }
 }

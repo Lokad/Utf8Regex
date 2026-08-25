@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
-    private const int Pcre2BenchmarkSchemaVersion = 6;
+    private const int Pcre2BenchmarkSchemaVersion = 7;
 
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
@@ -1696,6 +1696,10 @@ internal static partial class BenchmarkInspectReporter
 
         public required string ComparatorProfile { get; set; }
 
+        public PcreNetNativeBuildFingerprint? ComparatorBuildFingerprint { get; set; }
+
+        public PcreNetNativePlanFingerprint? ComparatorPlanFingerprint { get; set; }
+
         public string ProcessorSetPolicy { get; set; } = "unrecorded";
 
         public string ProcessorAffinityMask { get; set; } = "unrecorded";
@@ -1823,6 +1827,8 @@ internal static partial class BenchmarkInspectReporter
         public required string License { get; set; }
 
         public required string Profile { get; set; }
+
+        public PcreNetNativeBuildFingerprint? BuildFingerprint { get; set; }
     }
 
     private readonly record struct Pcre2TranslationRow(

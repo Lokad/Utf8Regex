@@ -9,7 +9,7 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 4;
+    private const int Pcre2QualificationProtocolVersion = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 35;
     private const double Pcre2QualificationMinimumSampleMilliseconds = 20;
@@ -224,6 +224,8 @@ internal static partial class BenchmarkInspectReporter
                         ComparatorPackageSha512 = PcreNetNativeBenchmarkBaseline.PackageSha512,
                         ComparatorEngineVersion = PcreNetNativeBenchmarkBaseline.NativePcre2Version,
                         ComparatorProfile = comparatorDependency.Profile,
+                        ComparatorBuildFingerprint = comparatorDependency.BuildFingerprint,
+                        ComparatorPlanFingerprint = comparator.CapturePlanFingerprint(),
                         ProcessorSetPolicy = processorSet.Policy,
                         ProcessorAffinityMask = processorSet.AffinityMask,
                         ProcessorEfficiencyClass = processorSet.EfficiencyClass,

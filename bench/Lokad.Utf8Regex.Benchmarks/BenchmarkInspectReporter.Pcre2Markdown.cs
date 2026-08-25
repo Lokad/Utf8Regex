@@ -277,6 +277,38 @@ internal static partial class BenchmarkInspectReporter
             }
         }
 
+        var pairedPlanRows = sectionRows
+            .SelectMany(static section => section.Value.Cases.Select(row => new
+            {
+                Section = section.Key,
+                CaseId = row.Key,
+                Pair = row.Value.PcreNetNativePair,
+            }))
+            .Where(static row => row.Pair?.ComparatorPlanFingerprint is not null)
+            .ToArray();
+        writer.WriteLine();
+        writer.WriteLine("## Qualified comparator plans");
+        writer.WriteLine();
+        if (pairedPlanRows.Length == 0)
+        {
+            writer.WriteLine("No paired plan fingerprints are recorded.");
+        }
+        else
+        {
+            writer.WriteLine("Plan data is captured through the comparator's public compiled-pattern information surface; JIT remains disabled for primary Status.");
+            writer.WriteLine();
+            writer.WriteLine("| Section | Case | Plan SHA-256 | Pattern | Frame | JIT | Min subject | First type/unit | Last type/unit |");
+            writer.WriteLine("|---|---|---|---:|---:|---:|---:|---|---|");
+            foreach (var row in pairedPlanRows)
+            {
+                var plan = row.Pair!.ComparatorPlanFingerprint!;
+                writer.WriteLine(
+                    $"| `{row.Section}` | `{row.CaseId}` | `{plan.Sha256[..12]}` | {plan.PatternSizeBytes:N0} B | " +
+                    $"{plan.FrameSizeBytes:N0} B | {plan.JitSizeBytes:N0} B | {plan.MinimumSubjectCharacters:N0} chars | " +
+                    $"{plan.FirstCodeType}/{plan.FirstCodeUnit} | {plan.LastCodeType}/{plan.LastCodeUnit} |");
+            }
+        }
+
         writer.WriteLine();
         writer.WriteLine("## Comparator exclusions");
         writer.WriteLine();
@@ -358,6 +390,19 @@ internal static partial class BenchmarkInspectReporter
 
         writer.WriteLine();
         writer.WriteLine("Admission evidence: the package has a dedicated `net10.0` asset with no managed dependencies, is strongly named, is built and tested on Windows/Linux/macOS, and its tagged source has been maintained since 2014. It bundles RID-specific native libraries, so `PrivateAssets=all` and benchmark-project-only placement are mandatory. Native replacement is left blank because PCRE.NET does not expose equivalent UTF-8 span substitution output; routing through its string API would bias the comparison.");
+        if (dependency?.BuildFingerprint is { } build)
+        {
+            writer.WriteLine();
+            writer.WriteLine(
+                $"Native build fingerprint: `{build.Sha256}`; process/OS architecture `{build.ProcessArchitecture}/{build.OperatingSystemArchitecture}`; " +
+                $"JIT support `{build.JitSupported}` targeting `{build.JitTarget}`; Unicode `{build.UnicodeVersion}`; compiled-width mask `{build.CompiledWidths}`; " +
+                $"link/effective-link size `{build.LinkSizeBytes}/{build.EffectiveLinkSizeBytes}` bytes.");
+            writer.WriteLine();
+            writer.WriteLine(
+                $"Build defaults: newline `{build.DefaultNewline}`, `\\R` `{build.DefaultBackslashR}`, heap `{build.DefaultHeapLimitKibibytes:N0}` KiB, " +
+                $"match/depth/parentheses limits `{build.DefaultMatchLimit:N0}/{build.DefaultDepthLimit:N0}/{build.ParenthesesLimit:N0}`, " +
+                $"character tables `{build.CharacterTablesLengthBytes:N0}` bytes.");
+        }
     }
 
     private static int GetPcre2MarkdownSectionOrder(string section) => section switch
