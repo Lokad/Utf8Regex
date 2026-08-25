@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `A97E74B90FF92664B5158993C31B9812C3A61F362F97560719A043E2468C05F8`
-- Latest managed row measurement: `2026-08-25T20:04:04.2768428+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:04:04.2768428+00:00`
+- Snapshot SHA-256: `9689CF2DB597E4C89AA115B9C64958E478E7FB00633996E3358556109C660740`
+- Latest managed row measurement: `2026-08-25T20:12:24.0699699+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:12:24.0699699+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `41/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `36` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `58` unqualified, `26` excluded
-- Rows with paired qualification evidence: `42/100`
+- Comparator Status: `38` managed faster, `0` equivalent, `5` native faster, `1` inconclusive, `56` unqualified, `26` excluded
+- Rows with paired qualification evidence: `44/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `34/32`
+- Managed/comparator measurement environments represented: `35/33`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -62,7 +62,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/email-miss` | **Managed faster** | 35 B | 0.047 us | 0.294 us | 0.16x | 0.16–0.16x | -0.248 us | 9 pairs; 41/39 ms; 864,791/131,686 ops/lane; IQR 1.012/1.008 | `Pcre2Backtracking` | 0.638 us | 0.296 us | 0.313 us | 0.15x | 0 B | 0 B |
 | `common/ip-match` | **Managed faster** | 15 B | 0.014 us | 0.238 us | 0.06x | 0.06–0.06x | -0.224 us | 9 pairs; 40/40 ms; 2,890,125/166,712 ops/lane; IQR 1.007/1.009 | `Pcre2Backtracking` | 0.055 us | 0.171 us | 0.183 us | 0.07x | 0 B | 0 B |
 | `common/ip-miss` | **Managed faster** | 15 B | 0.014 us | 0.253 us | 0.06x | 0.06–0.06x | -0.239 us | 9 pairs; 39/40 ms; 2,782,057/157,881 ops/lane; IQR 1.014/1.014 | `Pcre2Backtracking` | 0.058 us | 0.175 us | 0.194 us | 0.07x | 0 B | 0 B |
-| `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B | — |
+| `common/one-node-backtracking` | **Managed faster** | 52 B | 0.083 us | 0.125 us | 0.66x | 0.66–0.70x | -0.042 us | 9 pairs; 32/40 ms; 385,566/316,669 ops/lane; IQR 1.060/1.019 | `Pcre2Backtracking` | 0.103 us | 0.600 us | 0.598 us | 0.14x | 0 B | 0 B |
 | `common/uri-match` | **Managed faster** | 46 B | 0.017 us | 0.218 us | 0.08x | 0.08–0.08x | -0.201 us | 9 pairs; 41/39 ms; 2,469,950/179,361 ops/lane; IQR 1.005/1.005 | `Pcre2Backtracking` | 0.523 us | 0.169 us | 0.194 us | 0.09x | 0 B | 0 B |
 | `common/uri-miss` | **Managed faster** | 19 B | 0.036 us | 0.446 us | 0.08x | 0.08–0.08x | -0.410 us | 9 pairs; 41/42 ms; 1,148,042/94,239 ops/lane; IQR 1.020/1.037 | `Pcre2Backtracking` | 0.058 us | 0.176 us | 0.182 us | 0.20x | 0 B | 0 B |
 | `industry/boostdocs-credit-card-match` | **Managed faster** | 18 B | 0.019 us | 0.171 us | 0.11x | 0.11–0.12x | -0.152 us | 9 pairs; 40/37 ms; 2,092,214/218,867 ops/lane; IQR 1.027/1.011 | `Pcre2Backtracking` | 0.240 us | 0.095 us | 0.108 us | 0.18x | 0 B | 0 B |
@@ -143,7 +143,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 
 | Case | Status | Input | Utf8Pcre2 CPU | PCRE.NET / PCRE2 NFA CPU | R | 95% R | E | Paired samples | Managed route | Utf8Pcre2 managed alloc | Comparator managed alloc | Construction CPU | Construction alloc |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|---:|---:|---:|---:|
-| `pcre2/backslash-c-literal` | **Unqualified** | 5 B | 0.160 us | 0.059 us | 2.73x | — | +0.101 us | — | `—` | 0 B | — | 15.210 us | 31,424 B |
+| `pcre2/backslash-c-literal` | **Managed faster** | 5 B | 0.045 us | 0.121 us | 0.37x | 0.35–0.37x | -0.077 us | 9 pairs; 41/39 ms; 918,965/321,541 ops/lane; IQR 1.032/1.011 | `Pcre2Character` | 0 B | 0 B | 26.535 us | 31,656 B |
 | `pcre2/branch-reset-backref` | **Unqualified** | 23 B | 0.029 us | 0.155 us | 0.19x | — | -0.126 us | — | `—` | 0 B | — | 197.541 us | 124,200 B |
 | `pcre2/conditional-accept-negative-lookahead` | **Native faster** | 3 B | 0.164 us | 0.137 us | 1.20x | 1.19–1.21x | +0.027 us | 9 pairs; 33/40 ms; 199,675/291,778 ops/lane; IQR 1.006/1.004 | `Pcre2Backtracking` | 0 B | 0 B | 42.999 us | 45,296 B |
 | `pcre2/conditional-lookahead` | **Native faster** | 3 B | 0.172 us | 0.147 us | 1.21x | 1.12–1.23x | +0.030 us | 9 pairs; 31/41 ms; 183,236/281,045 ops/lane; IQR 1.042/1.082 | `Pcre2Backtracking` | 0 B | 0 B | 18.627 us | 56,168 B |
@@ -235,6 +235,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `common/email-miss` | `07140C873EAF` | 495 B | 248 B | 0 B | 5 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/ip-match` | `94AD8473E42E` | 1,051 B | 136 B | 0 B | 11 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/ip-miss` | `94AD8473E42E` | 1,051 B | 136 B | 0 B | 11 chars | 0/ | 1/46 |
+| `pcre2-managed-compatible-ismatch` | `common/one-node-backtracking` | `C6F9A2D1FE9C` | 165 B | 136 B | 0 B | 3 chars | 0/ | 1/46 |
 | `pcre2-managed-compatible-ismatch` | `common/uri-match` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `common/uri-miss` | `248FC1AD2C4F` | 353 B | 136 B | 0 B | 6 chars | 0/ | 1/47 |
 | `pcre2-managed-compatible-ismatch` | `industry/boostdocs-credit-card-match` | `772299501137` | 300 B | 152 B | 0 B | 18 chars | 0/ | 0/ |
@@ -260,6 +261,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-matchmany` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
+| `pcre2-special-ismatch` | `pcre2/backslash-c-literal` | `810830C9F57B` | 168 B | 136 B | 0 B | 2 chars | 1/97 | 1/101 |
 | `pcre2-special-ismatch` | `pcre2/conditional-accept-negative-lookahead` | `A35D94C331B2` | 198 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/conditional-lookahead` | `AAD9C10AEE8C` | 197 B | 152 B | 0 B | 3 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/conditional-negative-lookahead` | `AAD9C10AEE8C` | 197 B | 152 B | 0 B | 3 chars | 0/ | 0/ |
