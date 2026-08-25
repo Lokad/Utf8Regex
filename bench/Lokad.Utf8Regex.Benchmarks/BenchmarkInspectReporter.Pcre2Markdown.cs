@@ -84,9 +84,18 @@ internal static partial class BenchmarkInspectReporter
                 : "—";
         }
 
-        static string FormatNativePair(Pcre2CaseMeasurementJson row) => row.PcreNetNativePair is { } pair
-            ? $"{pair.SampleCount} pairs; {pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} batches"
-            : "—";
+        static string FormatNativePair(Pcre2CaseMeasurementJson row)
+        {
+            if (row.PcreNetNativePair is not { } pair)
+            {
+                return "—";
+            }
+
+            var managedMilliseconds = Median(pair.ManagedSampleMilliseconds);
+            var comparatorMilliseconds = Median(pair.ComparatorSampleMilliseconds);
+            return $"{pair.SampleCount} pairs; {managedMilliseconds:F0}/{comparatorMilliseconds:F0} ms; " +
+                   $"{pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} ops/lane";
+        }
 
         static string FormatManagedRoute(Pcre2CaseMeasurementJson row) =>
             row.PcreNetNativePair?.ManagedRoute ?? "—";
@@ -108,6 +117,16 @@ internal static partial class BenchmarkInspectReporter
             .GroupBy(static row => row.PcreNetNativeStatus)
             .ToDictionary(static group => group.Key, static group => group.Count());
         var pairedRows = allRows.Count(static row => row.PcreNetNativePair is not null);
+        var qualificationProcessorSets = allRows
+            .Select(static row => row.PcreNetNativePair)
+            .Where(static pair => pair is not null)
+            .Select(static pair => $"{pair!.ProcessorSetPolicy} {pair.ProcessorAffinityMask}" +
+                                   (pair.ProcessorEfficiencyClass is { } efficiencyClass
+                                       ? $" (class {efficiencyClass})"
+                                       : string.Empty))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
         var unavailableNativeRows = sectionRows
             .SelectMany(static section => section.Value.Cases.Select(row => new
             {
@@ -179,6 +198,11 @@ internal static partial class BenchmarkInspectReporter
             $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Unqualified)}` unqualified, " +
             $"`{GetStatusCount(statusCounts, Pcre2NativeComparisonStatus.Excluded)}` excluded");
         writer.WriteLine($"- Rows with paired qualification evidence: `{pairedRows}/{nativeRows.Length}`");
+        if (qualificationProcessorSets.Length > 0)
+        {
+            writer.WriteLine($"- Qualification processor sets: {string.Join(", ", qualificationProcessorSets.Select(static value => $"`{value}`"))}");
+        }
+
         writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
         writer.WriteLine($"- Managed/comparator measurement environments represented: `{managedEnvironments.Length}/{nativeEnvironments.Length}`");
         writer.WriteLine();
@@ -214,7 +238,7 @@ internal static partial class BenchmarkInspectReporter
         writer.WriteLine();
         WritePcreNetDependencyReview(writer, snapshot.PcreNetNativeBaseline);
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
+        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations and frozen operations per lane. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
 
         foreach (var (sectionName, section) in sectionRows)
         {
