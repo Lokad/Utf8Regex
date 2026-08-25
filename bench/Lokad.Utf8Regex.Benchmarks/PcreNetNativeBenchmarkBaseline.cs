@@ -89,6 +89,17 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     internal PcreNetNativePlanFingerprint CapturePlanFingerprint()
     {
         var info = _regex.PatternInfo;
+        var firstCodeType = info.FirstCodeType;
+        var firstCodeUnit = firstCodeType == 1
+            ? CaptureOptionalPatternInfo(() => info.FirstCodeUnit)
+            : null;
+        var lastCodeType = info.LastCodeType;
+        var lastCodeUnit = lastCodeType == 1
+            ? CaptureOptionalPatternInfo(() => info.LastCodeUnit)
+            : null;
+        var patternMatchLimit = CaptureOptionalPatternInfo(() => info.MatchLimit);
+        var patternDepthLimit = CaptureOptionalPatternInfo(() => info.DepthLimit);
+        var patternHeapLimit = CaptureOptionalPatternInfo(() => info.HeapLimit);
         var fields = BuildFingerprintFields(
             info.PatternSize,
             info.FrameSize,
@@ -100,16 +111,16 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             info.CanMatchEmptyString,
             info.MaxLookBehind,
             info.MinSubjectLength,
-            info.FirstCodeType,
-            info.FirstCodeUnit,
-            info.LastCodeType,
-            info.LastCodeUnit,
+            firstCodeType,
+            firstCodeUnit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
+            lastCodeType,
+            lastCodeUnit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
             (uint)info.ArgOptions,
             (uint)info.AllOptions,
             (uint)info.ExtraOptions,
-            info.MatchLimit,
-            info.DepthLimit,
-            info.HeapLimit);
+            patternMatchLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
+            patternDepthLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
+            patternHeapLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset");
         return new PcreNetNativePlanFingerprint
         {
             Sha256 = ComputeFingerprintSha256(fields),
@@ -123,16 +134,16 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             CanMatchEmptyString = info.CanMatchEmptyString,
             MaximumLookbehindCharacters = info.MaxLookBehind,
             MinimumSubjectCharacters = info.MinSubjectLength,
-            FirstCodeType = info.FirstCodeType,
-            FirstCodeUnit = info.FirstCodeUnit,
-            LastCodeType = info.LastCodeType,
-            LastCodeUnit = info.LastCodeUnit,
+            FirstCodeType = firstCodeType,
+            FirstCodeUnit = firstCodeUnit,
+            LastCodeType = lastCodeType,
+            LastCodeUnit = lastCodeUnit,
             ArgumentOptions = info.ArgOptions.ToString(),
             EffectiveOptions = info.AllOptions.ToString(),
             ExtraOptions = info.ExtraOptions.ToString(),
-            PatternMatchLimit = info.MatchLimit,
-            PatternDepthLimit = info.DepthLimit,
-            PatternHeapLimitKibibytes = info.HeapLimit,
+            PatternMatchLimit = patternMatchLimit,
+            PatternDepthLimit = patternDepthLimit,
+            PatternHeapLimitKibibytes = patternHeapLimit,
         };
     }
 
@@ -285,6 +296,19 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
 
     private static string BuildFingerprintFields(params object?[] values) =>
         string.Join('\n', values.Select(static value => Convert.ToString(value, CultureInfo.InvariantCulture)));
+
+    private static uint? CaptureOptionalPatternInfo(Func<uint> capture)
+    {
+        try
+        {
+            return capture();
+        }
+        catch (PcreException exception) when (
+            exception.Message.Contains("requested value is not set", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+    }
 }
 
 internal sealed class PcreNetNativeBuildFingerprint
@@ -354,11 +378,11 @@ internal sealed class PcreNetNativePlanFingerprint
 
     public uint FirstCodeType { get; init; }
 
-    public uint FirstCodeUnit { get; init; }
+    public uint? FirstCodeUnit { get; init; }
 
     public uint LastCodeType { get; init; }
 
-    public uint LastCodeUnit { get; init; }
+    public uint? LastCodeUnit { get; init; }
 
     public required string ArgumentOptions { get; init; }
 
@@ -366,9 +390,9 @@ internal sealed class PcreNetNativePlanFingerprint
 
     public required string ExtraOptions { get; init; }
 
-    public uint PatternMatchLimit { get; init; }
+    public uint? PatternMatchLimit { get; init; }
 
-    public uint PatternDepthLimit { get; init; }
+    public uint? PatternDepthLimit { get; init; }
 
-    public uint PatternHeapLimitKibibytes { get; init; }
+    public uint? PatternHeapLimitKibibytes { get; init; }
 }
