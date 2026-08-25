@@ -141,6 +141,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.Contains("median of five managed-thread allocation probes", page, StringComparison.Ordinal);
         Assert.Contains("Utf8Pcre2 managed alloc | Comparator managed alloc", page, StringComparison.Ordinal);
         Assert.Contains("--qualify-pcre2-comparator-case-reversed", page, StringComparison.Ordinal);
+        Assert.Contains("--verify-pcre2-qualification-consistency", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"relative", page, StringComparison.Ordinal);
         Assert.Contains("--emit-pcre2-priority-report\",\"absolute", page, StringComparison.Ordinal);
         Assert.All(operationRows, row => Assert.Contains($"`{row.Name}`", page, StringComparison.Ordinal));
