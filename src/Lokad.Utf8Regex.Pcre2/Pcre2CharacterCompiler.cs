@@ -230,6 +230,8 @@ internal readonly record struct Pcre2CharacterClassTerm(
 
 internal sealed class Pcre2CharacterClass
 {
+    private SearchValues<byte>? _asciiSearchValues;
+
     internal static Pcre2CharacterClass Empty { get; } = new([], false, AsciiCharClass.Empty);
 
     internal Pcre2CharacterClass(
@@ -247,6 +249,16 @@ internal sealed class Pcre2CharacterClass
     internal bool Negated { get; }
 
     internal AsciiCharClass AsciiSet { get; }
+
+    internal SearchValues<byte>? AsciiSearchValues => _asciiSearchValues;
+
+    internal void PrepareAsciiSearchValues()
+    {
+        if (_asciiSearchValues is null && !AsciiSet.IsEmpty)
+        {
+            _asciiSearchValues = SearchValues.Create(AsciiSet.GetMatchBytes());
+        }
+    }
 
     internal bool Matches(Rune scalar, bool ucp, bool caseless)
     {

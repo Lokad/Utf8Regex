@@ -285,4 +285,22 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal(1UL, result.Execution.VmPossessiveTokenScanSteps);
         Assert.Equal(3UL, result.Execution.VmPossessiveTokenScanCharacters);
     }
+
+    [Fact]
+    public void PossessiveCharacterRepeatUsesPreparedAsciiScanWithRuneFallback()
+    {
+        var regex = new Utf8Pcre2Regex("^([^@]+)@$");
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+            regex.DebugCompiledProgram.Operations.Match);
+        var instruction = Assert.Single(
+            direct.Program.Instructions,
+            static candidate =>
+                candidate.Kind == Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat);
+
+        Assert.NotNull(instruction.Token.CharacterClass.AsciiSearchValues);
+        Assert.True(regex.IsMatch("ascii@"u8));
+        var unicode = regex.DebugIsMatchWithDiagnostics("éé@"u8, 0);
+        Assert.True(unicode.IsMatch);
+        Assert.Equal(2UL, unicode.Execution.VmPossessiveTokenScanCharacters);
+    }
 }

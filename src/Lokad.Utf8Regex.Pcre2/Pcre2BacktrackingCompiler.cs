@@ -2368,6 +2368,12 @@ internal sealed class Pcre2BacktrackingLowerer
                 {
                     _autoPossessiveRepeatCount++;
                     var repeatedToken = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
+                    if (repeatedToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                        (repeatedToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                    {
+                        repeatedToken.CharacterClass.PrepareAsciiSearchValues();
+                    }
+
                     _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
                         repeatedToken,
                         repeat.Minimum,
@@ -3998,16 +4004,39 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
                         var possessiveCount = 0;
-                        while (possessiveCount < instruction.Maximum &&
-                               Pcre2CharacterRunner.TryMatchToken(
-                                   instruction.Token,
-                                   program.Request,
-                                   input,
-                                   inputIndex,
-                                   firstMatchingPosition,
-                                   matchOptions,
-                                   out var possessiveEnd))
+                        var asciiSearchValues =
+                            instruction.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                            (instruction.Token.Options & Pcre2CharacterOptions.Caseless) == 0
+                                ? instruction.Token.CharacterClass.AsciiSearchValues
+                                : null;
+                        while (possessiveCount < instruction.Maximum)
                         {
+                            if (asciiSearchValues is not null && inputIndex < input.Length)
+                            {
+                                var remainingMaximum = instruction.Maximum - possessiveCount;
+                                var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
+                                var stop = input.Slice(inputIndex, remainingLength).IndexOfAnyExcept(asciiSearchValues);
+                                var asciiCount = stop < 0 ? remainingLength : stop;
+                                inputIndex += asciiCount;
+                                possessiveCount += asciiCount;
+                                if (possessiveCount >= instruction.Maximum || inputIndex >= input.Length)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (!Pcre2CharacterRunner.TryMatchToken(
+                                    instruction.Token,
+                                    program.Request,
+                                    input,
+                                    inputIndex,
+                                    firstMatchingPosition,
+                                    matchOptions,
+                                    out var possessiveEnd))
+                            {
+                                break;
+                            }
+
                             inputIndex = possessiveEnd;
                             possessiveCount++;
                         }
