@@ -344,12 +344,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void AbPlusPatternUsesGenericBacktrackingForNonPartialSurface()
+    public void AbPlusPatternUsesDirectCaptureIndependentGlobalsAndVmForDetailedSurface()
     {
         var regex = new Utf8Pcre2Regex("(a)b+");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2Backtracking, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxabbbzz"u8));
         Assert.Equal(2, regex.Count("ab abb"u8));
 

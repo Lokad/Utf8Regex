@@ -16,6 +16,7 @@ public sealed class Utf8Pcre2Regex
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
     private readonly Pcre2FiniteLiteralBooleanSearch? _finiteLiteralBooleanSearch;
+    private readonly Pcre2LiteralPrefixRepeatDirectProgram? _literalPrefixRepeatIsMatchProgram;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -49,6 +50,11 @@ public sealed class Utf8Pcre2Regex
             Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
         {
             _finiteLiteralBooleanSearch = finiteLiteralProgram.BooleanSearch;
+        }
+        else if (_program.Operations.IsMatch is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram &&
+            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        {
+            _literalPrefixRepeatIsMatchProgram = literalPrefixRepeatProgram;
         }
     }
 
@@ -158,6 +164,15 @@ public sealed class Utf8Pcre2Regex
         {
             _ = Utf8ValidatedInput.Create(input);
             return _finiteLiteralBooleanSearch.IsMatch(input, 0);
+        }
+
+        if (_literalPrefixRepeatIsMatchProgram is not null)
+        {
+            _ = Utf8ValidatedInput.Create(input);
+            return Pcre2LiteralPrefixRepeatRunner.IsMatch(
+                _literalPrefixRepeatIsMatchProgram,
+                input,
+                0);
         }
 
         return IsMatch(input, 0, Pcre2MatchOptions.None);
@@ -4043,6 +4058,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
             Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
             Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
@@ -4069,6 +4085,7 @@ public sealed class Utf8Pcre2Regex
         {
             Pcre2BacktrackingDirectProgram direct => direct.Program,
             Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+            Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeat => literalPrefixRepeat.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
