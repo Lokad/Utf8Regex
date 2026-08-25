@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Pcre2;
@@ -15,12 +16,7 @@ public sealed class Utf8Pcre2Regex
 {
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
-    private readonly Pcre2FiniteLiteralBooleanSearch? _finiteLiteralBooleanSearch;
-    private readonly Pcre2LiteralPrefixRepeatDirectProgram? _literalPrefixRepeatIsMatchProgram;
-    private readonly Pcre2PalindromeIsMatchDirectProgram? _palindromeIsMatchProgram;
-    private readonly Pcre2LeadingDotStarLiteralIsMatchDirectProgram? _leadingDotStarLiteralIsMatchProgram;
-    private readonly Pcre2SeparatedRunsIsMatchDirectProgram? _separatedRunsIsMatchProgram;
-    private readonly Pcre2AsciiBoundedIsMatchDirectProgram? _asciiBoundedIsMatchProgram;
+    private readonly IPcre2DirectProgram? _unmeteredIsMatchProgram;
     private readonly Pcre2ReplacementComponent _replacementComponent = new();
 
     /// <summary>Compiles a PCRE2 pattern with default options, settings, limits, and timeout.</summary>
@@ -50,35 +46,17 @@ public sealed class Utf8Pcre2Regex
             defaultExecutionLimits,
             Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout)));
         _program = Pcre2Compiler.Compile(request, CreateFoundationProgram);
-        if (_program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
+        var isMatchProgram = _program.Operations.IsMatch;
+        if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
+            isMatchProgram is Pcre2FiniteLiteralLanguageDirectProgram or
+                Pcre2LiteralPrefixRepeatDirectProgram or
+                Pcre2PalindromeIsMatchDirectProgram or
+                Pcre2LeadingDotStarLiteralIsMatchDirectProgram or
+                Pcre2SeparatedRunsIsMatchDirectProgram or
+                Pcre2AsciiBoundedIsMatchDirectProgram or
+                Pcre2AsciiRegularIsMatchDirectProgram)
         {
-            _finiteLiteralBooleanSearch = finiteLiteralProgram.BooleanSearch;
-        }
-        else if (_program.Operations.IsMatch is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
-        {
-            _literalPrefixRepeatIsMatchProgram = literalPrefixRepeatProgram;
-        }
-        else if (_program.Operations.IsMatch is Pcre2PalindromeIsMatchDirectProgram palindromeProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
-        {
-            _palindromeIsMatchProgram = palindromeProgram;
-        }
-        else if (_program.Operations.IsMatch is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
-        {
-            _leadingDotStarLiteralIsMatchProgram = leadingDotStarLiteralProgram;
-        }
-        else if (_program.Operations.IsMatch is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
-        {
-            _separatedRunsIsMatchProgram = separatedRunsProgram;
-        }
-        else if (_program.Operations.IsMatch is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram &&
-            Pcre2GlobalOperationDriver.HasUnmeteredExecution(request))
-        {
-            _asciiBoundedIsMatchProgram = asciiBoundedProgram;
+            _unmeteredIsMatchProgram = isMatchProgram;
         }
     }
 
@@ -184,52 +162,58 @@ public sealed class Utf8Pcre2Regex
     /// <summary>Determines whether the well-formed UTF-8 subject contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input)
     {
-        if (_finiteLiteralBooleanSearch is not null)
+        if (_unmeteredIsMatchProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegular)
         {
-            _ = Utf8ValidatedInput.Create(input);
-            return _finiteLiteralBooleanSearch.IsMatch(input, 0);
+            if (asciiRegular.Regex.Inspection.ExecutionKind == NativeExecutionKind.FallbackRegex)
+            {
+                return asciiRegular.Regex.IsMatch(input);
+            }
+
+            var subject = Utf8ValidatedInput.Create(input);
+            if (asciiRegular.Regex.ByteOffsetExecution.TryIsMatchPrepared(
+                    subject,
+                    new Utf8BytePosition(0),
+                    out var result))
+            {
+                return result;
+            }
+
+            return IsMatch(input, 0, Pcre2MatchOptions.None);
         }
 
-        if (_literalPrefixRepeatIsMatchProgram is not null)
+        if (_unmeteredIsMatchProgram is not null)
         {
             _ = Utf8ValidatedInput.Create(input);
-            return Pcre2LiteralPrefixRepeatRunner.IsMatch(
-                _literalPrefixRepeatIsMatchProgram,
-                input,
-                0);
-        }
-
-        if (_palindromeIsMatchProgram is not null)
-        {
-            _ = Utf8ValidatedInput.Create(input);
-            return Pcre2PalindromeIsMatchRunner.IsMatch(_palindromeIsMatchProgram, input);
-        }
-
-        if (_leadingDotStarLiteralIsMatchProgram is not null)
-        {
-            _ = Utf8ValidatedInput.Create(input);
-            return Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
-                _leadingDotStarLiteralIsMatchProgram,
-                input,
-                0);
-        }
-
-        if (_separatedRunsIsMatchProgram is not null)
-        {
-            _ = Utf8ValidatedInput.Create(input);
-            return Pcre2SeparatedRunsIsMatchRunner.IsMatch(
-                _separatedRunsIsMatchProgram,
-                input,
-                0);
-        }
-
-        if (_asciiBoundedIsMatchProgram is not null)
-        {
-            _ = Utf8ValidatedInput.Create(input);
-            return Pcre2AsciiBoundedIsMatchRunner.IsMatch(
-                _asciiBoundedIsMatchProgram,
-                input,
-                0);
+            switch (_unmeteredIsMatchProgram.Kind)
+            {
+                case Pcre2DirectProgramKind.Pcre2LiteralFamily:
+                    return ((Pcre2FiniteLiteralLanguageDirectProgram)_unmeteredIsMatchProgram)
+                        .BooleanSearch.IsMatch(input, 0);
+                case Pcre2DirectProgramKind.Pcre2LiteralPrefixRepeat:
+                    return Pcre2LiteralPrefixRepeatRunner.IsMatch(
+                        (Pcre2LiteralPrefixRepeatDirectProgram)_unmeteredIsMatchProgram,
+                        input,
+                        0);
+                case Pcre2DirectProgramKind.Pcre2PalindromeIsMatch:
+                    return Pcre2PalindromeIsMatchRunner.IsMatch(
+                        (Pcre2PalindromeIsMatchDirectProgram)_unmeteredIsMatchProgram,
+                        input);
+                case Pcre2DirectProgramKind.Pcre2LeadingDotStarLiteralIsMatch:
+                    return Pcre2LeadingDotStarLiteralIsMatchRunner.IsMatch(
+                        (Pcre2LeadingDotStarLiteralIsMatchDirectProgram)_unmeteredIsMatchProgram,
+                        input,
+                        0);
+                case Pcre2DirectProgramKind.Pcre2SeparatedRunsIsMatch:
+                    return Pcre2SeparatedRunsIsMatchRunner.IsMatch(
+                        (Pcre2SeparatedRunsIsMatchDirectProgram)_unmeteredIsMatchProgram,
+                        input,
+                        0);
+                case Pcre2DirectProgramKind.Pcre2AsciiBoundedIsMatch:
+                    return Pcre2AsciiBoundedIsMatchRunner.IsMatch(
+                        (Pcre2AsciiBoundedIsMatchDirectProgram)_unmeteredIsMatchProgram,
+                        input,
+                        0);
+            }
         }
 
         return IsMatch(input, 0, Pcre2MatchOptions.None);

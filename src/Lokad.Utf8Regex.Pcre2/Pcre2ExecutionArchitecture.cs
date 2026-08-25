@@ -1061,6 +1061,7 @@ internal static class Pcre2AsciiRegularIsMatchAnalyzer
                     !term.Negated &&
                     term.Kind == Pcre2CharacterClassTermKind.Range &&
                     term.Range.High < 128),
+            Pcre2CharacterTokenKind.Any or Pcre2CharacterTokenKind.AnyNotNewline => true,
             Pcre2CharacterTokenKind.BeginningOfLine or Pcre2CharacterTokenKind.EndOfLine => true,
             _ => false,
         };
