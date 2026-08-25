@@ -74,7 +74,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
         Assert.Equal(26, operationRows.Count(static row =>
             row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
-        Assert.Equal(4, operationRows.Count(static row =>
+        Assert.Equal(6, operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNativePair", out _)));
         Assert.All(operationRows, static row =>
         {
@@ -123,7 +123,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
             page,
             StringComparison.Ordinal);
-        Assert.Contains("Rows with paired qualification evidence: `4/100`", page, StringComparison.Ordinal);
+        Assert.Contains("Rows with paired qualification evidence: `6/100`", page, StringComparison.Ordinal);
         Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
         Assert.Contains("| R | 95% R | E | Paired samples | Managed route |", page, StringComparison.Ordinal);
         Assert.Contains("median sample durations and frozen operations per lane", page, StringComparison.Ordinal);

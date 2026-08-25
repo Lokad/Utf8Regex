@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `6`
-- Snapshot SHA-256: `4459B48C0467FDA260AE723C5BC4AF98D930158E9AD0E775504607FD2E6D28E6`
-- Latest managed row measurement: `2026-08-25T10:56:30.1941015+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T10:56:30.1941015+00:00`
+- Snapshot SHA-256: `21B041862CBED930D853866E1E1079978ED8D7B8F6C2C140F947D8A1C5966D3C`
+- Latest managed row measurement: `2026-08-25T11:01:17.6148774+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T11:01:17.6148774+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `19/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `2` managed faster, `0` equivalent, `0` native faster, `2` inconclusive, `96` unqualified, `26` excluded
-- Rows with paired qualification evidence: `4/100`
+- Comparator Status: `3` managed faster, `0` equivalent, `1` native faster, `2` inconclusive, `94` unqualified, `26` excluded
+- Rows with paired qualification evidence: `6/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `2/2`
+- Managed/comparator measurement environments represented: `3/3`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -49,7 +49,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | `common/date-match` | **Unqualified** | 47 B | 0.246 us | 0.217 us | 1.13x | — | +0.029 us | — | `—` | 0.286 us | 0.079 us | 0.100 us | 2.48x | 120 B |
 | `common/date-miss` | **Unqualified** | 47 B | 0.709 us | 0.407 us | 1.74x | — | +0.303 us | — | `—` | 0.870 us | 0.517 us | 0.532 us | 1.33x | 120 B |
 | `common/email-match` | **Unqualified** | 34 B | 1.351 us | 0.370 us | 3.65x | — | +0.981 us | — | `—` | 0.350 us | 0.173 us | 0.189 us | 7.17x | 0 B |
-| `common/email-miss` | **Unqualified** | 35 B | 3.981 us | 0.250 us | 15.93x | — | +3.732 us | — | `—` | 0.211 us | 0.244 us | 0.254 us | 15.70x | 0 B |
+| `common/email-miss` | **Native faster** | 35 B | 3.864 us | 0.295 us | 13.07x | 12.83–13.20x | +3.572 us | 21 pairs; 36/34 ms; 9,220/114,526 ops/lane | `Pcre2Backtracking` | 0.211 us | 0.244 us | 0.254 us | 15.24x | 0 B |
 | `common/ip-match` | **Unqualified** | 15 B | 0.732 us | 0.195 us | 3.76x | — | +0.537 us | — | `—` | 0.198 us | 0.129 us | 0.144 us | 5.09x | 0 B |
 | `common/ip-miss` | **Unqualified** | 15 B | 0.656 us | 0.210 us | 3.13x | — | +0.447 us | — | `—` | 0.168 us | 0.137 us | 0.144 us | 4.54x | 0 B |
 | `common/one-node-backtracking` | **Unqualified** | 52 B | 0.193 us | 0.071 us | 2.71x | — | +0.122 us | — | `—` | 0.206 us | 0.497 us | 0.535 us | 0.36x | 0 B |
@@ -89,7 +89,7 @@ Admission evidence: the package has a dedicated `net10.0` asset with no managed 
 | `industry/mariomka-uri-count` | **Unqualified** | 6,839,410 B | 27,766.882 us | 85,235.400 us | 0.33x | — | -57468.518 us | — | `—` | 11,221.527 us | 1,556.864 us | 7,443.482 us | 3.73x | 0 B |
 | `industry/rust-sherlock-holmes-window-count` | **Unqualified** | 594,930 B | 1,701.026 us | 602.238 us | 2.82x | — | +1098.788 us | — | `—` | 44.616 us | 187.749 us | 311.021 us | 5.47x | 0 B |
 | `industry/rust-sherlock-ing-count` | **Excluded** | 594,930 B | 7,000.719 us | — | — | — | — | — | `—` | 8,297.556 us | 8,591.075 us | 9,062.328 us | 0.77x | 0 B |
-| `industry/rust-sherlock-letter-count` | **Unqualified** | 594,930 B | 1,643.127 us | 54,717.300 us | 0.03x | — | -53074.173 us | — | `—` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B |
+| `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 1,644.981 us | 52,392.600 us | 0.03x | 0.03–0.03x | -50738.886 us | 9 pairs; 35/52 ms; 21/1 ops/lane | `Pcre2Character` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B |
 | `industry/rust-sherlock-nonnewline-count` | **Unqualified** | 594,930 B | 152.928 us | 3,810.537 us | 0.04x | — | -3657.609 us | — | `—` | 146.972 us | 908.616 us | 1,427.111 us | 0.11x | 0 B |
 | `industry/rust-sherlock-word-holmes-count` | **Unqualified** | 594,930 B | 2,715.809 us | 13,773.712 us | 0.20x | — | -11057.904 us | — | `—` | 27.383 us | 6,190.496 us | 5,827.548 us | 0.47x | 0 B |
 | `simple/ab-plus` | **Unqualified** | 16 B | 1.141 us | 0.617 us | 1.85x | — | +0.524 us | — | `—` | 0.555 us | 0.147 us | 0.158 us | 7.21x | 0 B |
