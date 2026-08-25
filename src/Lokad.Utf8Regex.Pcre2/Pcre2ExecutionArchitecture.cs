@@ -354,6 +354,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2LiteralFamily = 6,
     Pcre2SingleTokenRepeat = 7,
     Pcre2AsciiRegularIsMatch = 8,
+    Pcre2MultilinePrefix = 9,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -602,7 +603,19 @@ internal static class Pcre2CompiledProgramOverlay
             Match = direct,
             Replace = direct,
         };
-        if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
+        if (Pcre2MultilinePrefixAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                backtrackingProgram) is { } multilinePrefix)
+        {
+            operations = operations with
+            {
+                IsMatch = multilinePrefix,
+                Count = multilinePrefix,
+                Enumerate = multilinePrefix,
+            };
+        }
+        else if (legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot primary &&
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 syntaxTree.Root,
                 legacy.Request,
@@ -1743,6 +1756,30 @@ internal static class Pcre2Runner
         out bool result)
     {
         var program = compiledProgram.Operations.IsMatch;
+        if (program is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
+        {
+            if (matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            {
+                result = Pcre2MultilinePrefixRunner.TryFind(
+                    multilinePrefixProgram,
+                    input.Bytes,
+                    start.Value,
+                    out _,
+                    out _);
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                multilinePrefixProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
         if (program is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram)
         {
             if (matchOptions == Pcre2MatchOptions.None &&
@@ -2177,6 +2214,17 @@ internal static class Pcre2GlobalOperationDriver
         out int result)
     {
         var program = compiledProgram.Operations.Count;
+        if (program is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram &&
+            matchOptions == Pcre2MatchOptions.None &&
+            HasUnmeteredExecution(compiledProgram.Request))
+        {
+            result = Pcre2MultilinePrefixRunner.Count(
+                multilinePrefixProgram,
+                input.Bytes,
+                start.Value);
+            return true;
+        }
+
         if (program is Pcre2FiniteLiteralLanguageDirectProgram
             {
                 BoundaryProjection: not null,
@@ -2287,6 +2335,25 @@ internal static class Pcre2GlobalOperationDriver
         Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor)
     {
+        if (compiledProgram.Operations.Enumerate is Pcre2MultilinePrefixDirectProgram multilinePrefixProgram)
+        {
+            cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
+                ? Pcre2GlobalMatchCursor.CreateMultilinePrefix(
+                    multilinePrefixProgram,
+                    input,
+                    start,
+                    compiledProgram.Request)
+                : Pcre2GlobalMatchCursor.CreateBacktracking(
+                    multilinePrefixProgram.Fallback,
+                    compiledProgram.CandidateSearchPlan,
+                    input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request,
+                    collectDiagnostics: false);
+            return true;
+        }
+
         if (compiledProgram.Operations.Enumerate is Pcre2LiteralFamilyDirectProgram literalFamilyProgram)
         {
             cursor = matchOptions == Pcre2MatchOptions.None && HasUnmeteredExecution(compiledProgram.Request)
@@ -2417,6 +2484,13 @@ internal ref struct Pcre2GlobalMatchCursor
         Pcre2CompileRequest request) =>
         new(Pcre2DirectGlobalMatchCursor.CreateSingleTokenRepeat(program, input, start, matchOptions, request));
 
+    internal static Pcre2GlobalMatchCursor CreateMultilinePrefix(
+        Pcre2MultilinePrefixDirectProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request) =>
+        new(Pcre2DirectGlobalMatchCursor.CreateMultilinePrefix(program, input, start, request));
+
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
         Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchPlan candidateSearch,
@@ -2465,6 +2539,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
     private readonly Pcre2LiteralProgram? _literalProgram;
     private readonly Pcre2CharacterProgram? _characterProgram;
     private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
+    private readonly Pcre2MultilinePrefixDirectProgram? _multilinePrefixProgram;
     private readonly Pcre2BacktrackingProgram? _backtrackingProgram;
     private readonly Pcre2CandidateSearchPlan? _candidateSearch;
     private Utf8ValidatedInput _input;
@@ -2481,6 +2556,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Pcre2LiteralProgram? literalProgram,
         Pcre2CharacterProgram? characterProgram,
         Pcre2SingleTokenRepeatProgram? singleTokenRepeatProgram,
+        Pcre2MultilinePrefixDirectProgram? multilinePrefixProgram,
         Pcre2BacktrackingProgram? backtrackingProgram,
         Pcre2CandidateSearchPlan? candidateSearch,
         Utf8ValidatedInput input,
@@ -2493,6 +2569,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         _literalProgram = literalProgram;
         _characterProgram = characterProgram;
         _singleTokenRepeatProgram = singleTokenRepeatProgram;
+        _multilinePrefixProgram = multilinePrefixProgram;
         _backtrackingProgram = backtrackingProgram;
         _candidateSearch = candidateSearch;
         _input = input;
@@ -2521,6 +2598,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             program,
             characterProgram: null,
             singleTokenRepeatProgram: null,
+            multilinePrefixProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
@@ -2540,6 +2618,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             literalProgram: null,
             program,
             singleTokenRepeatProgram: null,
+            multilinePrefixProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
@@ -2559,11 +2638,31 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             literalProgram: null,
             characterProgram: null,
             program,
+            multilinePrefixProgram: null,
             backtrackingProgram: null,
             candidateSearch: default,
             input,
             start,
             matchOptions,
+            request,
+            collectDiagnostics: false);
+
+    internal static Pcre2DirectGlobalMatchCursor CreateMultilinePrefix(
+        Pcre2MultilinePrefixDirectProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request) =>
+        new(
+            Pcre2DirectGlobalCursorKind.MultilinePrefix,
+            literalProgram: null,
+            characterProgram: null,
+            singleTokenRepeatProgram: null,
+            program,
+            backtrackingProgram: null,
+            candidateSearch: default,
+            input,
+            start,
+            Pcre2MatchOptions.None,
             request,
             collectDiagnostics: false);
 
@@ -2580,6 +2679,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
             literalProgram: null,
             characterProgram: null,
             singleTokenRepeatProgram: null,
+            multilinePrefixProgram: null,
             program,
             candidateSearch,
             input,
@@ -2652,6 +2752,23 @@ internal ref struct Pcre2DirectGlobalMatchCursor
                             repeatMatch.ConsumedStartOffsetInBytes,
                             repeatMatch.ConsumedEndOffsetInBytes,
                             repeatMatch.MatchBoundaryWasReset);
+                        break;
+                    case Pcre2DirectGlobalCursorKind.MultilinePrefix:
+                        var multilinePrefixProgram = _multilinePrefixProgram ??
+                            throw new InvalidOperationException("The PCRE2 multiline-prefix cursor has no execution program.");
+                        var multilinePrefixSuccess = Pcre2MultilinePrefixRunner.TryFind(
+                            multilinePrefixProgram,
+                            _input.Bytes,
+                            _restartPosition.Value,
+                            out var multilinePrefixStart,
+                            out var multilinePrefixEnd);
+                        match = new Pcre2DirectGlobalMatch(
+                            multilinePrefixSuccess,
+                            multilinePrefixStart,
+                            multilinePrefixEnd,
+                            multilinePrefixStart,
+                            multilinePrefixEnd,
+                            MatchBoundaryWasReset: false);
                         break;
                     case Pcre2DirectGlobalCursorKind.Backtracking:
                         var backtrackingProgram = _backtrackingProgram ??
@@ -2763,6 +2880,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Character = 2,
         SingleTokenRepeat = 3,
         Backtracking = 4,
+        MultilinePrefix = 5,
     }
 }
 

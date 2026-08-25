@@ -4028,6 +4028,7 @@ public sealed class Utf8Pcre2Regex
             Pcre2BacktrackingDirectProgram direct => direct.Program,
             Pcre2AsciiRegularIsMatchDirectProgram asciiRegular => asciiRegular.Fallback,
             Pcre2LiteralFamilyDirectProgram literalFamily => literalFamily.Fallback,
+            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
             _ => null,
         };
         if (backtrackingProgram is null)
@@ -4050,13 +4051,19 @@ public sealed class Utf8Pcre2Regex
     {
         ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (_program.Operations.Enumerate is not Pcre2BacktrackingDirectProgram backtrackingProgram)
+        var backtrackingProgram = _program.Operations.Enumerate switch
+        {
+            Pcre2BacktrackingDirectProgram direct => direct.Program,
+            Pcre2MultilinePrefixDirectProgram multilinePrefix => multilinePrefix.Fallback,
+            _ => null,
+        };
+        if (backtrackingProgram is null)
         {
             return new Pcre2CountDiagnostics(Count(input, startOffsetInBytes), default);
         }
 
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-            backtrackingProgram.Program,
+            backtrackingProgram,
             _program.CandidateSearchPlan,
             subject,
             start,
