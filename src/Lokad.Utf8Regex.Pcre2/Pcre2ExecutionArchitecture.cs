@@ -233,9 +233,9 @@ internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
     internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
-internal sealed class Pcre2RepeatedLiteralCaptureDirectProgram : Pcre2LiteralFamilyDirectProgram
+internal sealed class Pcre2FiniteLiteralLanguageDirectProgram : Pcre2LiteralFamilyDirectProgram
 {
-    internal Pcre2RepeatedLiteralCaptureDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
+    internal Pcre2FiniteLiteralLanguageDirectProgram(Utf8Regex regex, Pcre2BacktrackingProgram fallback)
         : base(regex, fallback)
     {
     }
@@ -513,12 +513,12 @@ internal static class Pcre2CompiledProgramOverlay
                 Enumerate = literalFamily,
             };
         }
-        else if (Pcre2RepeatedLiteralCaptureAnalyzer.TryCompile(
+        else if (Pcre2FiniteLiteralLanguageAnalyzer.TryCompile(
                      syntaxTree.Root,
-                     legacy.Request) is { } repeatedLiteralRegex)
+                     legacy.Request) is { } finiteLiteralRegex)
         {
-            var literalFamily = new Pcre2RepeatedLiteralCaptureDirectProgram(
-                repeatedLiteralRegex,
+            var literalFamily = new Pcre2FiniteLiteralLanguageDirectProgram(
+                finiteLiteralRegex,
                 backtrackingProgram);
             // The original plan wins first-match searches, while the capture-free
             // expansion wins when every non-overlapping match must be discovered.
@@ -695,7 +695,7 @@ internal static class Pcre2ProgramInvariant
         }
 
         if (directProgram is Pcre2LiteralFamilyDirectProgram literalFamilyProgram &&
-            directProgram is not Pcre2RepeatedLiteralCaptureDirectProgram &&
+            directProgram is not Pcre2FiniteLiteralLanguageDirectProgram &&
             (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot literalFamilyPrimary ||
              !ReferenceEquals(literalFamilyPrimary.Regex, literalFamilyProgram.Regex)))
         {
@@ -704,98 +704,179 @@ internal static class Pcre2ProgramInvariant
     }
 }
 
-internal static class Pcre2RepeatedLiteralCaptureAnalyzer
+internal static class Pcre2FiniteLiteralLanguageAnalyzer
 {
+    private const int MaximumAlternatives = 64;
+    private const int MaximumLiteralCharacters = 4096;
+
+    private sealed record Pcre2FiniteLiteralCapture(string Name, string Value);
+
+    private sealed record Pcre2FiniteLiteralState(
+        string Value,
+        Dictionary<int, Pcre2FiniteLiteralCapture> Captures);
+
     internal static Utf8Regex? TryCompile(
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request)
     {
-        if (request.Options != Pcre2CompileOptions.None ||
-            root is not Pcre2SequenceBacktrackingNode
-            {
-                Children: [var captureSource, Pcre2BackreferenceBacktrackingNode backreference],
-            } ||
-            backreference.Options != Pcre2CharacterOptions.None)
+        if (request.Options != Pcre2CompileOptions.None)
         {
             return null;
         }
 
-        var literals = new List<string>();
-        var pendingSources = new Stack<IPcre2BacktrackingNode>();
-        pendingSources.Push(captureSource);
-        while (pendingSources.TryPop(out var source))
+        // Large or non-finite languages retain the original VM instead of
+        // paying combinatorial construction cost for an auxiliary plan.
+        var initialStates = new List<Pcre2FiniteLiteralState>
         {
-            if (source is Pcre2AlternationBacktrackingNode alternation)
-            {
-                for (var i = alternation.Alternatives.Length - 1; i >= 0; i--)
-                {
-                    pendingSources.Push(alternation.Alternatives[i]);
-                }
-
-                continue;
-            }
-
-            if (source is not Pcre2CaptureBacktrackingNode capture)
-            {
-                return null;
-            }
-
-            var referencesCapture = backreference.Target.Kind switch
-            {
-                Pcre2BackreferenceTargetKind.Absolute => backreference.Target.Number == capture.Slot,
-                Pcre2BackreferenceTargetKind.Named =>
-                    backreference.Target.Name.Length != 0 &&
-                    string.Equals(backreference.Target.Name, capture.Name, StringComparison.Ordinal),
-                _ => false,
-            };
-            if (!referencesCapture)
-            {
-                return null;
-            }
-
-            var bodies = capture.Body is Pcre2AlternationBacktrackingNode bodyAlternation
-                ? bodyAlternation.Alternatives
-                : [capture.Body];
-            foreach (var body in bodies)
-            {
-                IPcre2BacktrackingNode[] tokens = body switch
-                {
-                    Pcre2TokenBacktrackingNode token => [token],
-                    Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence => sequence.Children,
-                    _ => [],
-                };
-                if (tokens.Length == 0)
-                {
-                    return null;
-                }
-
-                var builder = new StringBuilder();
-                foreach (var tokenNode in tokens)
-                {
-                    if (tokenNode is not Pcre2TokenBacktrackingNode token ||
-                        token.Token.Kind != Pcre2CharacterTokenKind.Literal ||
-                        token.Token.Options != Pcre2CharacterOptions.None)
-                    {
-                        return null;
-                    }
-
-                    builder.Append(token.Token.Literal.ToString());
-                }
-
-                literals.Add(builder.ToString());
-            }
-        }
-
-        if (literals.Count == 0)
+            new(string.Empty, []),
+        };
+        if (!TryEvaluate(root, initialStates, out var states) ||
+            states.Count == 0 ||
+            states.Any(static state => state.Value.Length == 0))
         {
             return null;
         }
 
-        var alternatives = literals
-            .Select(static literal => Regex.Escape(literal + literal))
-            .Distinct(StringComparer.Ordinal);
-        var pattern = $"(?:{string.Join('|', alternatives)})";
+        var alternatives = states
+            .Select(static state => Regex.Escape(state.Value))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var pattern = alternatives.Length == 1
+            ? alternatives[0]
+            : $"(?:{string.Join('|', alternatives)})";
         return new Utf8Regex(pattern, RegexOptions.CultureInvariant, request.MatchTimeout);
+
+        bool TryEvaluate(
+            IPcre2BacktrackingNode node,
+            List<Pcre2FiniteLiteralState> inputs,
+            out List<Pcre2FiniteLiteralState> outputs)
+        {
+            outputs = [];
+            switch (node)
+            {
+                case Pcre2TokenBacktrackingNode token
+                    when token.Token.Kind == Pcre2CharacterTokenKind.Literal &&
+                         token.Token.Options == Pcre2CharacterOptions.None:
+                    var literal = token.Token.Literal.ToString();
+                    foreach (var input in inputs)
+                    {
+                        if (input.Value.Length > MaximumLiteralCharacters - literal.Length)
+                        {
+                            return false;
+                        }
+
+                        outputs.Add(new Pcre2FiniteLiteralState(input.Value + literal, input.Captures));
+                    }
+                    return true;
+
+                case Pcre2SequenceBacktrackingNode sequence:
+                    outputs = inputs;
+                    foreach (var child in sequence.Children)
+                    {
+                        var childOutputs = new List<Pcre2FiniteLiteralState>();
+                        foreach (var input in outputs)
+                        {
+                            if (!TryEvaluate(child, [input], out var inputOutputs))
+                            {
+                                return false;
+                            }
+
+                            childOutputs.AddRange(inputOutputs);
+                            if (childOutputs.Count > MaximumAlternatives)
+                            {
+                                return false;
+                            }
+                        }
+
+                        outputs = childOutputs;
+                    }
+                    return true;
+
+                case Pcre2AlternationBacktrackingNode alternation:
+                    foreach (var input in inputs)
+                    {
+                        foreach (var alternative in alternation.Alternatives)
+                        {
+                            if (!TryEvaluate(alternative, [input], out var alternativeOutputs))
+                            {
+                                return false;
+                            }
+
+                            outputs.AddRange(alternativeOutputs);
+                            if (outputs.Count > MaximumAlternatives)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+
+                case Pcre2CaptureBacktrackingNode capture:
+                    foreach (var input in inputs)
+                    {
+                        if (!TryEvaluate(capture.Body, [input], out var captureOutputs))
+                        {
+                            return false;
+                        }
+
+                        foreach (var captureOutput in captureOutputs)
+                        {
+                            var captures = new Dictionary<int, Pcre2FiniteLiteralCapture>(captureOutput.Captures)
+                            {
+                                [capture.Slot] = new(
+                                    capture.Name,
+                                    captureOutput.Value[input.Value.Length..]),
+                            };
+                            outputs.Add(new Pcre2FiniteLiteralState(captureOutput.Value, captures));
+                            if (outputs.Count > MaximumAlternatives)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+
+                case Pcre2BackreferenceBacktrackingNode backreference
+                    when backreference.Options == Pcre2CharacterOptions.None:
+                    foreach (var input in inputs)
+                    {
+                        var slot = backreference.Target.Kind switch
+                        {
+                            Pcre2BackreferenceTargetKind.Absolute => backreference.Target.Number,
+                            Pcre2BackreferenceTargetKind.Relative when backreference.Target.Number > 0 =>
+                                backreference.Target.CaptureCountAtReference + backreference.Target.Number,
+                            Pcre2BackreferenceTargetKind.Relative =>
+                                backreference.Target.CaptureCountAtReference + backreference.Target.Number + 1,
+                            Pcre2BackreferenceTargetKind.Named => input.Captures
+                                .Where(pair => string.Equals(
+                                    pair.Value.Name,
+                                    backreference.Target.Name,
+                                    StringComparison.Ordinal))
+                                .Select(static pair => pair.Key)
+                                .DefaultIfEmpty()
+                                .Min(),
+                            _ => 0,
+                        };
+                        if (slot == 0 || !input.Captures.TryGetValue(slot, out var captured))
+                        {
+                            continue;
+                        }
+
+                        if (input.Value.Length > MaximumLiteralCharacters - captured.Value.Length)
+                        {
+                            return false;
+                        }
+
+                        outputs.Add(new Pcre2FiniteLiteralState(
+                            input.Value + captured.Value,
+                            input.Captures));
+                    }
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
     }
 }
 
