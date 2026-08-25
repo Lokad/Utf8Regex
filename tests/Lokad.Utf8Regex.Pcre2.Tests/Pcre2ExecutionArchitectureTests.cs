@@ -1,10 +1,30 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ExecutionArchitectureTests
 {
+    [Fact]
+    public void EnumeratorLayoutDiagnosticsReportEveryComponent()
+    {
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugUtf8PreparedEnumeratorSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugUtf8EnumeratorSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugManagedEnumeratorSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugMaterializedStateSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes > 0);
+        Assert.True(Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes > 0);
+        Assert.True(Utf8OperationMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2GlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2LiteralGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2CharacterGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2BacktrackingGlobalMatchCursor.DebugSizeInBytes > 0);
+        Assert.True(Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes > 0);
+    }
+
     [Fact]
     public void CompiledProgramUsesTypedOperationBackendsWithOwnedPayloads()
     {

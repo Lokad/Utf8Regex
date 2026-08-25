@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using global::Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Pcre2;
@@ -32,6 +33,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Utf8ExecKind      : {context.Utf8Pcre2Regex.DebugUtf8RegexExecutionKindName}");
         Console.WriteLine($"HasManagedRegex   : {context.Utf8Pcre2Regex.DebugHasManagedRegex}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
+        WritePcre2EnumeratorLayout();
         Console.WriteLine($"CandidateSearch   : {context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch.Kind}");
         Console.WriteLine($"HasUtf8Regex      : {context.Utf8Regex is not null}");
         Console.WriteLine($"HasRegex          : {context.Regex is not null}");
@@ -287,6 +289,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"SupportsBackends  : {benchmarkCase.SupportedBackends}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Pcre2Regex.DebugExecutionKindName}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
+        WritePcre2EnumeratorLayout();
 
         if (string.Equals(caseId, "literal/partial-probe", StringComparison.Ordinal))
         {
@@ -428,6 +431,30 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return 0;
+    }
+
+    private static void WritePcre2EnumeratorLayout()
+    {
+        Console.WriteLine($"ValueEnumeratorB  : {Utf8Pcre2ValueMatchEnumerator.DebugSizeInBytes}");
+        Console.WriteLine($"GlobalCursorB     : {Pcre2GlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"Utf8PreparedEnumB : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8PreparedEnumeratorSizeInBytes}");
+        Console.WriteLine($"Utf8EnumeratorB   : {Utf8Pcre2ValueMatchEnumerator.DebugUtf8EnumeratorSizeInBytes}");
+        Console.WriteLine($"Utf8OperationCurB : {Utf8OperationMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"Utf8SimplePlanB   : {Utf8OperationMatchCursor.DebugSimplePatternPlanSizeInBytes}");
+        Console.WriteLine($"Utf8StructPlanB   : {Utf8OperationMatchCursor.DebugStructuralLinearProgramSizeInBytes}");
+        Console.WriteLine($"Utf8SearchPlanB   : {Utf8OperationMatchCursor.DebugSearchPlanSizeInBytes}");
+        Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
+        Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
+        Console.WriteLine($"Utf8DfaStateB     : {Utf8OperationMatchCursor.DebugDeterministicScanStateSizeInBytes}");
+        Console.WriteLine($"ManagedEnumB      : {Utf8Pcre2ValueMatchEnumerator.DebugManagedEnumeratorSizeInBytes}");
+        Console.WriteLine($"MaterializedB     : {Utf8Pcre2ValueMatchEnumerator.DebugMaterializedStateSizeInBytes}");
+        Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
+        Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
+        Console.WriteLine($"LiteralFamilyCurB : {Pcre2LiteralFamilyGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"LiteralCursorB    : {Pcre2LiteralGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"CharacterCursorB  : {Pcre2CharacterGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"BacktrackCursorB  : {Pcre2BacktrackingGlobalMatchCursor.DebugSizeInBytes}");
+        Console.WriteLine($"DetailedCursorB   : {Pcre2BacktrackingDetailedGlobalMatchCursor.DebugSizeInBytes}");
     }
 
     private static int ExecutePcre2DirectLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)

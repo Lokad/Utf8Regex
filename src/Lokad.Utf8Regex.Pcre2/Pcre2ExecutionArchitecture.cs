@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -1877,6 +1878,8 @@ internal static class Pcre2GlobalOperationDriver
 
 internal ref struct Pcre2GlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
+
     private readonly Pcre2GlobalCursorKind _kind;
     private Pcre2LiteralFamilyGlobalMatchCursor _literalFamily;
     private Pcre2LiteralGlobalMatchCursor _literal;
@@ -2000,6 +2003,8 @@ internal ref struct Pcre2GlobalMatchCursor
 
 internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2LiteralFamilyGlobalMatchCursor>();
+
     private Utf8PreparedValueMatchEnumerator _enumerator;
     private Utf8ValidatedInput _input;
     private Utf8ProjectionCursor _projection;
@@ -2036,6 +2041,8 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
 
 internal ref struct Pcre2BacktrackingGlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2BacktrackingGlobalMatchCursor>();
+
     private readonly Pcre2BacktrackingProgram _program;
     private readonly Pcre2CandidateSearchProgram _candidateSearch;
     private Utf8ValidatedInput _input;
@@ -2152,6 +2159,8 @@ internal ref struct Pcre2BacktrackingGlobalMatchCursor
 
 internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2BacktrackingDetailedGlobalMatchCursor>();
+
     private readonly Pcre2BacktrackingProgram _program;
     private readonly Pcre2CandidateSearchProgram _candidateSearch;
     private Utf8ValidatedInput _input;
@@ -2246,6 +2255,8 @@ internal ref struct Pcre2BacktrackingDetailedGlobalMatchCursor
 
 internal ref struct Pcre2CharacterGlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2CharacterGlobalMatchCursor>();
+
     private readonly Pcre2CharacterProgram? _program;
     private readonly Pcre2SingleTokenRepeatProgram? _singleTokenRepeatProgram;
     private Utf8ValidatedInput _input;
@@ -2364,6 +2375,8 @@ internal ref struct Pcre2CharacterGlobalMatchCursor
 
 internal ref struct Pcre2LiteralGlobalMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Pcre2LiteralGlobalMatchCursor>();
+
     private readonly Pcre2LiteralProgram _program;
     private Utf8ValidatedInput _input;
     private readonly Pcre2CompileRequest _request;

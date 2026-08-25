@@ -1,12 +1,27 @@
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
+using System.Runtime.CompilerServices;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal ref struct Utf8OperationMatchCursor
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8OperationMatchCursor>();
+
+    internal static int DebugSimplePatternPlanSizeInBytes => Unsafe.SizeOf<AsciiSimplePatternPlan>();
+
+    internal static int DebugStructuralLinearProgramSizeInBytes => Unsafe.SizeOf<Utf8StructuralLinearProgram>();
+
+    internal static int DebugSearchPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchPlan>();
+
+    internal static int DebugSmallLiteralFamilySizeInBytes => Unsafe.SizeOf<PreparedSmallAsciiLiteralFamilySearch>();
+
+    internal static int DebugSearchOperationPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchOperationPlan>();
+
+    internal static int DebugDeterministicScanStateSizeInBytes => Unsafe.SizeOf<Utf8AsciiDeterministicScanState>();
+
     private readonly EnumeratorMode _mode;
     private readonly AsciiSimplePatternPlan _simplePatternPlan;
     private readonly Utf8StructuralLinearProgram _structuralLinearProgram;

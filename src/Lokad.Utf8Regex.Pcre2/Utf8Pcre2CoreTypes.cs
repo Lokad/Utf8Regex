@@ -746,6 +746,22 @@ internal readonly struct Pcre2MaterializedMatchEnumeratorState
 /// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.</remarks>
 public ref struct Utf8Pcre2ValueMatchEnumerator
 {
+    internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
+
+    internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
+
+    internal static int DebugUtf8PreparedEnumeratorSizeInBytes => Unsafe.SizeOf<Utf8PreparedValueMatchEnumerator>();
+
+    internal static int DebugUtf8EnumeratorSizeInBytes => Unsafe.SizeOf<Utf8ValueMatchEnumerator>();
+
+    internal static int DebugManagedEnumeratorSizeInBytes => Unsafe.SizeOf<Regex.ValueMatchEnumerator>();
+
+    internal static int DebugMaterializedStateSizeInBytes => Unsafe.SizeOf<Pcre2MaterializedMatchEnumeratorState>();
+
+    internal static int DebugValueDataSizeInBytes => Unsafe.SizeOf<Pcre2ValueData>();
+
+    internal static int DebugGroupDataSizeInBytes => Unsafe.SizeOf<Pcre2GroupData>();
+
     private readonly Pcre2ValueMatchEnumeratorMode _mode;
     private readonly ReadOnlySpan<byte> _input;
     private readonly Pcre2MaterializedMatchEnumeratorState _materializedMatches;
