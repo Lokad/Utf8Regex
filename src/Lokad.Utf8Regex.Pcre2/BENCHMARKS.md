@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `F65635A62BD82F0591DEAAED723C971EC8EAA71AFCE456A93F7CFC855B7698D4`
-- Latest managed row measurement: `2026-08-25T17:04:08.6998062+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:04:08.6998062+00:00`
+- Snapshot SHA-256: `485D41FC808049B161122C1548C6A62D88968C0F6298A76093A4BF54FB34F830`
+- Latest managed row measurement: `2026-08-25T17:07:34.8698085+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:07:34.8698085+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `26/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `10` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `90` unqualified, `26` excluded
-- Rows with paired qualification evidence: `10/100`
+- Comparator Status: `10` managed faster, `0` equivalent, `1` native faster, `0` inconclusive, `89` unqualified, `26` excluded
+- Rows with paired qualification evidence: `11/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `16/14`
+- Managed/comparator measurement environments represented: `17/15`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -97,7 +97,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `industry/mariomka-email-count` | **Unqualified** | 6,839,410 B | 14,827.000 us | 107,631.200 us | 0.14x | — | -92804.200 us | — | `—` | 7,132.118 us | 236.335 us | 5,447.888 us | 2.72x | 0 B | — |
 | `industry/mariomka-ip-count` | **Unqualified** | 6,839,410 B | 14,989.200 us | 16,474.000 us | 0.91x | — | -1484.800 us | — | `—` | 3,159.179 us | 6,295.879 us | 11,488.879 us | 1.30x | 0 B | — |
 | `industry/mariomka-uri-count` | **Unqualified** | 6,839,410 B | 27,766.882 us | 85,235.400 us | 0.33x | — | -57468.518 us | — | `—` | 11,221.527 us | 1,556.864 us | 7,443.482 us | 3.73x | 0 B | — |
-| `industry/rust-sherlock-holmes-window-count` | **Unqualified** | 594,930 B | 1,372.013 us | 558.029 us | 2.46x | — | +813.984 us | — | `—` | 44.616 us | 187.749 us | 311.021 us | 4.41x | 0 B | — |
+| `industry/rust-sherlock-holmes-window-count` | **Native faster** | 594,930 B | 1,271.552 us | 570.566 us | 2.25x | 2.22–2.35x | +699.897 us | 9 pairs; 42/42 ms; 33/74 ops/lane; IQR 1.075/1.063 | `Pcre2Backtracking` | 44.616 us | 187.749 us | 311.021 us | 4.09x | 0 B | 0 B |
 | `industry/rust-sherlock-ing-count` | **Excluded** | 594,930 B | 7,000.719 us | — | — | — | — | — | `—` | 8,297.556 us | 8,591.075 us | 9,062.328 us | 0.77x | 0 B | — |
 | `industry/rust-sherlock-letter-count` | **Managed faster** | 594,930 B | 1,481.200 us | 52,926.100 us | 0.03x | 0.03–0.03x | -51436.823 us | 9 pairs; 39/53 ms; 26/1 ops/lane; IQR 1.011/1.008 | `Pcre2Character` | 1,124.908 us | 12,370.932 us | 17,419.332 us | 0.09x | 0 B | 0 B |
 | `industry/rust-sherlock-nonnewline-count` | **Unqualified** | 594,930 B | 152.928 us | 3,810.537 us | 0.04x | — | -3657.609 us | — | `—` | 146.972 us | 908.616 us | 1,427.111 us | 0.11x | 0 B | — |
@@ -236,6 +236,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-ismatch` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
 | `pcre2-managed-compatible-count` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-count` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
+| `pcre2-managed-compatible-count` | `industry/rust-sherlock-holmes-window-count` | `B40600CA7551` | 218 B | 136 B | 0 B | 12 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-letter-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-enumerate` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-enumerate` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
