@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `90FC80CEA34F7E3280E26075A2FF6786EED841CC2581040CB8AAD9CC9383CCE5`
-- Latest managed row measurement: `2026-08-25T17:48:19.7325581+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:48:19.7325581+00:00`
+- Snapshot SHA-256: `E324D02FB175E5860FE6C6D584D35C13ACBBC8F95E06393CB3C2A927BE1B0D2C`
+- Latest managed row measurement: `2026-08-25T17:51:21.4183597+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T17:51:21.4183597+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `30/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `16` managed faster, `0` equivalent, `0` native faster, `0` inconclusive, `84` unqualified, `26` excluded
-- Rows with paired qualification evidence: `16/100`
+- Comparator Status: `16` managed faster, `0` equivalent, `3` native faster, `0` inconclusive, `81` unqualified, `26` excluded
+- Rows with paired qualification evidence: `19/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `19/17`
+- Managed/comparator measurement environments represented: `20/18`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -169,7 +169,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 1.883 us | — | — | — | — | — | `—` | 0 B | — | 16.105 us | 35,552 B |
 | `pcre2/kreset-global` | **Unqualified** | 26 B | 0.063 us | 0.475 us | 0.13x | — | -0.412 us | — | `—` | 0 B | — | 16.647 us | 35,376 B |
 | `pcre2/kreset-repeat` | **Excluded** | 14 B | 1.830 us | — | — | — | — | — | `—` | 0 B | — | 16.074 us | 34,016 B |
-| `pcre2/same-start-global` | **Unqualified** | 9 B | 1.955 us | 0.691 us | 2.83x | — | +1.264 us | — | `—` | 0 B | — | 16.539 us | 44,360 B |
+| `pcre2/same-start-global` | **Native faster** | 9 B | 1.272 us | 0.680 us | 1.87x | 1.86–1.88x | +0.592 us | 9 pairs; 40/40 ms; 31,433/58,461 ops/lane; IQR 1.006/1.002 | `Pcre2Backtracking` | 0 B | 0 B | 16.539 us | 44,360 B |
 
 ## PCRE2-only EnumerateMatches
 
@@ -187,7 +187,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 5.294 us | — | — | — | — | — | `—` | 0 B | — | 15.867 us | 35,552 B |
 | `pcre2/kreset-global` | **Unqualified** | 26 B | 0.380 us | 0.485 us | 0.78x | — | -0.106 us | — | `—` | 0 B | — | 16.110 us | 35,376 B |
 | `pcre2/kreset-repeat` | **Excluded** | 14 B | 5.249 us | — | — | — | — | — | `—` | 0 B | — | 15.778 us | 34,016 B |
-| `pcre2/same-start-global` | **Unqualified** | 9 B | 5.313 us | 0.435 us | 12.21x | — | +4.878 us | — | `—` | 0 B | — | 16.206 us | 44,360 B |
+| `pcre2/same-start-global` | **Native faster** | 9 B | 1.520 us | 0.690 us | 2.15x | 2.08–2.24x | +0.793 us | 9 pairs; 41/40 ms; 27,002/58,262 ops/lane; IQR 1.035/1.036 | `Pcre2Backtracking` | 0 B | 0 B | 16.206 us | 44,360 B |
 
 ## PCRE2-only MatchMany
 
@@ -205,7 +205,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/kreset-captured-repeat` | **Excluded** | 14 B | 1.905 us | — | — | — | — | — | `—` | 0 B | — | 15.935 us | 35,552 B |
 | `pcre2/kreset-global` | **Unqualified** | 26 B | 0.179 us | 0.484 us | 0.37x | — | -0.305 us | — | `—` | 0 B | — | 16.314 us | 35,376 B |
 | `pcre2/kreset-repeat` | **Excluded** | 14 B | 1.859 us | — | — | — | — | — | `—` | 0 B | — | 15.115 us | 34,016 B |
-| `pcre2/same-start-global` | **Unqualified** | 9 B | 1.749 us | 0.433 us | 4.04x | — | +1.316 us | — | `—` | 0 B | — | 18.739 us | 44,360 B |
+| `pcre2/same-start-global` | **Native faster** | 9 B | 1.338 us | 0.690 us | 1.92x | 1.86–1.97x | +0.633 us | 9 pairs; 41/39 ms; 30,817/56,048 ops/lane; IQR 1.025/1.025 | `Pcre2Backtracking` | 0 B | 0 B | 18.739 us | 44,360 B |
 
 ## PCRE2-only Replace
 
@@ -247,6 +247,9 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-matchmany` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
+| `pcre2-special-count` | `pcre2/same-start-global` | `DD8CF42003A9` | 191 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
+| `pcre2-special-enumerate` | `pcre2/same-start-global` | `DD8CF42003A9` | 191 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
+| `pcre2-special-matchmany` | `pcre2/same-start-global` | `DD8CF42003A9` | 191 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
 
 ## Comparator exclusions
 
