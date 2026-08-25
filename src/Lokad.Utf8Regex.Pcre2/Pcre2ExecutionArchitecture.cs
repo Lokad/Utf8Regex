@@ -377,6 +377,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2AsciiLiteralAlternationRepeat = 11,
     Pcre2SameStartLiteral = 12,
     Pcre2LiteralPrefixRepeat = 13,
+    Pcre2PalindromeIsMatch = 14,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -728,6 +729,18 @@ internal static class Pcre2CompiledProgramOverlay
         }
 
         if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
+            Pcre2PalindromeIsMatchAnalyzer.TryCompile(
+                syntaxTree.Root,
+                legacy.Request,
+                backtrackingProgram) is { } palindrome)
+        {
+            operations = operations with
+            {
+                IsMatch = palindrome,
+            };
+        }
+
+        if (operations.IsMatch is Pcre2BacktrackingDirectProgram &&
             legacy.PrimaryUtf8 is Pcre2Utf8ProgramSlot asciiRegularPrimary &&
             Pcre2AsciiRegularIsMatchAnalyzer.CanReuseCoreExecution(syntaxTree.Root, legacy.Request))
         {
@@ -933,6 +946,13 @@ internal static class Pcre2ProgramInvariant
              !ReferenceEquals(literalPrefixRepeatProgram.Fallback, ownedMatchBacktracking.Program)))
         {
             throw new InvalidOperationException("A literal-prefix repeat backend must be owned by its compiled PCRE2 program.");
+        }
+
+        if (directProgram is Pcre2PalindromeIsMatchDirectProgram palindromeProgram &&
+            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedPalindromeFallback ||
+             !ReferenceEquals(palindromeProgram.Fallback, ownedPalindromeFallback.Program)))
+        {
+            throw new InvalidOperationException("A palindrome IsMatch backend must be owned by its compiled PCRE2 program.");
         }
     }
 }
@@ -1945,6 +1965,26 @@ internal static class Pcre2Runner
 
             result = ExecuteBacktracking(
                 literalPrefixRepeatProgram.Fallback,
+                compiledProgram.CandidateSearch,
+                ref input,
+                start,
+                matchOptions,
+                compiledProgram.Request).Success;
+            return true;
+        }
+
+        if (program is Pcre2PalindromeIsMatchDirectProgram palindromeProgram)
+        {
+            if (start.Value == 0 &&
+                matchOptions == Pcre2MatchOptions.None &&
+                Pcre2GlobalOperationDriver.HasUnmeteredExecution(compiledProgram.Request))
+            {
+                result = Pcre2PalindromeIsMatchRunner.IsMatch(palindromeProgram, input.Bytes);
+                return true;
+            }
+
+            result = ExecuteBacktracking(
+                palindromeProgram.Fallback,
                 compiledProgram.CandidateSearch,
                 ref input,
                 start,
