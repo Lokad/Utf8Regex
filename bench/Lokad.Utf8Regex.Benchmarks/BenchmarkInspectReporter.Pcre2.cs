@@ -12,7 +12,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class BenchmarkInspectReporter
 {
     private const string Pcre2BenchmarkSnapshotFileName = "PCRE2.Benchmarks.json";
-    private const int Pcre2BenchmarkSchemaVersion = 8;
+    private const int Pcre2BenchmarkSchemaVersion = 9;
 
     public static int RunInspectUtf8Pcre2Case(string caseId)
     {
@@ -1763,6 +1763,10 @@ internal static partial class BenchmarkInspectReporter
         public double ExcessMedianMicroseconds { get; set; }
 
         public double OrderEffectRatio { get; set; }
+
+        public double ManagedInterquartileSpreadRatio { get; set; }
+
+        public double ComparatorInterquartileSpreadRatio { get; set; }
 
         public int BootstrapSeed { get; set; }
 

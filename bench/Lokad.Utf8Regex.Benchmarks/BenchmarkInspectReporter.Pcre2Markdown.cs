@@ -94,7 +94,8 @@ internal static partial class BenchmarkInspectReporter
             var managedMilliseconds = Median(pair.ManagedSampleMilliseconds);
             var comparatorMilliseconds = Median(pair.ComparatorSampleMilliseconds);
             return $"{pair.SampleCount} pairs; {managedMilliseconds:F0}/{comparatorMilliseconds:F0} ms; " +
-                   $"{pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} ops/lane";
+                   $"{pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} ops/lane; " +
+                   $"IQR {pair.ManagedInterquartileSpreadRatio:F3}/{pair.ComparatorInterquartileSpreadRatio:F3}";
         }
 
         static string FormatManagedRoute(Pcre2CaseMeasurementJson row) =>
@@ -258,7 +259,7 @@ internal static partial class BenchmarkInspectReporter
                 $"{managedWorkspaceContract.ConcurrencyContract} {managedWorkspaceContract.RetainedMemoryContract}");
         }
         writer.WriteLine();
-        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations and frozen operations per lane. Allocation columns report the median of five managed-thread allocation probes per public operation; they do not measure native retained memory. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
+        writer.WriteLine("`vs decode` is `Utf8Pcre2 / .NET + decode`; `R` is `Utf8Pcre2 / PCRE.NET-PCRE2 NFA`; lower is better. Rows without a 95% interval and paired-sample description contain independently measured discovery data only and cannot determine a winner. `E` is the paired median managed-minus-comparator excess when paired evidence exists and the difference between discovery medians otherwise. Paired-sample descriptions show managed/comparator median sample durations, frozen operations per lane, and managed/comparator interquartile spread ratios; a spread above 1.10 makes Status inconclusive. Allocation columns report the median of five managed-thread allocation probes per public operation; they do not measure native retained memory. A dash means that the other engine cannot perform equivalent work or the snapshot does not contain that comparator. Times are medians in microseconds per public operation.");
 
         foreach (var (sectionName, section) in sectionRows)
         {

@@ -87,6 +87,15 @@ internal static partial class BenchmarkInspectReporter
                 errors.Add($"{label}: the stored lane-order effect is stale.");
             }
 
+
+            var managedSpread = InterquartileSpread(pair.ManagedSampleMicroseconds);
+            var comparatorSpread = InterquartileSpread(pair.ComparatorSampleMicroseconds);
+            if (!NearlyEqual(managedSpread, pair.ManagedInterquartileSpreadRatio) ||
+                !NearlyEqual(comparatorSpread, pair.ComparatorInterquartileSpreadRatio))
+            {
+                errors.Add($"{label}: a stored lane interquartile spread is stale.");
+            }
+
             var durationsQualified = pair.ManagedSampleMilliseconds.All(
                                          static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds) &&
                                      pair.ComparatorSampleMilliseconds.All(
@@ -95,6 +104,8 @@ internal static partial class BenchmarkInspectReporter
                 pair.RatioLower95,
                 pair.RatioUpper95,
                 recomputedOrderEffect,
+                managedSpread,
+                comparatorSpread,
                 durationsQualified);
             if (pair.Status != expectedStatus)
             {
@@ -105,16 +116,7 @@ internal static partial class BenchmarkInspectReporter
                 Pcre2FastLaneMaximumMedianMicroseconds)
             {
                 fastRows++;
-                var managedSpread = InterquartileSpread(pair.ManagedSampleMicroseconds);
-                var comparatorSpread = InterquartileSpread(pair.ComparatorSampleMicroseconds);
                 maximumFastSpread = Math.Max(maximumFastSpread, Math.Max(managedSpread, comparatorSpread));
-                if (managedSpread > Pcre2FastLaneMaximumInterquartileSpread ||
-                    comparatorSpread > Pcre2FastLaneMaximumInterquartileSpread)
-                {
-                    errors.Add(
-                        $"{label}: fast-lane interquartile spread is {managedSpread:F3}/{comparatorSpread:F3}, " +
-                        $"above {Pcre2FastLaneMaximumInterquartileSpread:F2}.");
-                }
             }
         }
 
@@ -153,11 +155,19 @@ internal static partial class BenchmarkInspectReporter
         double lowerRatio,
         double upperRatio,
         double orderEffectRatio,
+        double managedInterquartileSpread,
+        double comparatorInterquartileSpread,
         bool sampleDurationsQualified)
     {
         if (!sampleDurationsQualified)
         {
             return Pcre2NativeComparisonStatus.Unqualified;
+        }
+
+        if (managedInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread ||
+            comparatorInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread)
+        {
+            return Pcre2NativeComparisonStatus.Inconclusive;
         }
 
         if (orderEffectRatio is < 0.98 or > 1.02)

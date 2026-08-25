@@ -9,7 +9,7 @@ internal static partial class BenchmarkInspectReporter
 {
     private const int Pcre2QualificationBootstrapSeed = 24301;
     private const int Pcre2QualificationBootstrapResamples = 10_000;
-    private const int Pcre2QualificationProtocolVersion = 7;
+    private const int Pcre2QualificationProtocolVersion = 8;
     private const int Pcre2QualificationAllocationProbeSamples = 5;
     private const int Pcre2QualificationInterleaveSlices = 8;
     private const double Pcre2QualificationTargetSampleMilliseconds = 40;
@@ -199,6 +199,8 @@ internal static partial class BenchmarkInspectReporter
                         .Select(static sample => sample.Ratio)
                         .ToArray();
                     var orderEffectRatio = Median(managedFirstRatios) / Median(comparatorFirstRatios);
+                    var managedInterquartileSpread = InterquartileSpread(managedMicroseconds);
+                    var comparatorInterquartileSpread = InterquartileSpread(comparatorMicroseconds);
                     var sampleDurationsQualified = managedMilliseconds.All(
                                                        static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds) &&
                                                    comparatorMilliseconds.All(
@@ -207,6 +209,8 @@ internal static partial class BenchmarkInspectReporter
                         bootstrap.Lower,
                         bootstrap.Upper,
                         orderEffectRatio,
+                        managedInterquartileSpread,
+                        comparatorInterquartileSpread,
                         sampleDurationsQualified);
                     var excesses = managedMicroseconds
                         .Select((value, index) => value - comparatorMicroseconds[index])
@@ -273,6 +277,8 @@ internal static partial class BenchmarkInspectReporter
                         RatioUpper95 = Math.Exp(bootstrap.Upper),
                         ExcessMedianMicroseconds = Median(excesses),
                         OrderEffectRatio = orderEffectRatio,
+                        ManagedInterquartileSpreadRatio = managedInterquartileSpread,
+                        ComparatorInterquartileSpreadRatio = comparatorInterquartileSpread,
                         BootstrapSeed = Pcre2QualificationBootstrapSeed,
                         BootstrapResamples = Pcre2QualificationBootstrapResamples,
                         ResultChecksum = expected.ToString(),
@@ -308,6 +314,8 @@ internal static partial class BenchmarkInspectReporter
                     double lowerLogRatio,
                     double upperLogRatio,
                     double orderEffectRatio,
+                    double managedInterquartileSpread,
+                    double comparatorInterquartileSpread,
                     bool sampleDurationsQualified)
                 {
                     if (!sampleDurationsQualified)
@@ -315,6 +323,15 @@ internal static partial class BenchmarkInspectReporter
                         return (
                             Pcre2NativeComparisonStatus.Unqualified,
                             $"At least one paired lane sample was shorter than {Pcre2QualificationMinimumSampleMilliseconds:F0} ms.");
+                    }
+
+                    if (managedInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread ||
+                        comparatorInterquartileSpread > Pcre2FastLaneMaximumInterquartileSpread)
+                    {
+                        return (
+                            Pcre2NativeComparisonStatus.Inconclusive,
+                            $"Lane interquartile spreads are {managedInterquartileSpread:F3}/{comparatorInterquartileSpread:F3}; " +
+                            $"the maximum is {Pcre2FastLaneMaximumInterquartileSpread:F2}.");
                     }
 
                     if (orderEffectRatio is < 0.98 or > 1.02)
