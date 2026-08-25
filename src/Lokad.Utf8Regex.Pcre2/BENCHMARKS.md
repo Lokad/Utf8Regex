@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `A8CFC48728166C02534AA77957BD66246FEC1C5BF3B55C603A6129AE0D8248CC`
-- Latest managed row measurement: `2026-08-25T18:20:50.0083761+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:20:50.0083761+00:00`
+- Snapshot SHA-256: `916F4A09BBE1E14EAB8DF695AF04E48E037D2C82FF2612CA76AC2C132DADFC3D`
+- Latest managed row measurement: `2026-08-25T18:21:37.4797021+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T18:21:37.4797021+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `32/60`
 - Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
-- Comparator Status: `23` managed faster, `0` equivalent, `1` native faster, `0` inconclusive, `76` unqualified, `26` excluded
-- Rows with paired qualification evidence: `24/100`
+- Comparator Status: `23` managed faster, `0` equivalent, `2` native faster, `0` inconclusive, `75` unqualified, `26` excluded
+- Rows with paired qualification evidence: `25/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `22/20`
+- Managed/comparator measurement environments represented: `23/21`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -149,7 +149,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `pcre2/conditional-lookahead` | **Unqualified** | 3 B | 0.297 us | 0.159 us | 1.88x | — | +0.139 us | — | `—` | 0 B | — | 18.627 us | 56,168 B |
 | `pcre2/conditional-negative-lookahead` | **Unqualified** | 3 B | 0.299 us | 0.131 us | 2.29x | — | +0.168 us | — | `—` | 0 B | — | 20.289 us | 56,208 B |
 | `pcre2/grapheme-cluster` | **Unqualified** | 248 B | 0.744 us | 0.295 us | 2.52x | — | +0.448 us | — | `—` | 0 B | — | 32.632 us | 31,600 B |
-| `pcre2/recursive-optional` | **Unqualified** | 6 B | 3.076 us | 0.379 us | 8.12x | — | +2.697 us | — | `—` | 0 B | — | 21.815 us | 49,792 B |
+| `pcre2/recursive-optional` | **Native faster** | 6 B | 1.701 us | 0.438 us | 3.87x | 3.85–3.89x | +1.262 us | 9 pairs; 41/40 ms; 23,929/91,543 ops/lane; IQR 1.005/1.008 | `Pcre2Backtracking` | 0 B | 0 B | 21.815 us | 49,792 B |
 | `pcre2/recursive-palindrome` | **Unqualified** | 6 B | 2.165 us | 0.371 us | 5.84x | — | +1.794 us | — | `—` | 0 B | — | 21.970 us | 49,424 B |
 | `pcre2/subroutine-prefix-digits` | **Native faster** | 5 B | 0.159 us | 0.136 us | 1.17x | 1.16–1.18x | +0.024 us | 9 pairs; 33/40 ms; 208,510/294,839 ops/lane; IQR 1.010/1.010 | `Pcre2Backtracking` | 0 B | 0 B | 21.353 us | 41,376 B |
 
@@ -251,6 +251,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-matchmany` | `simple/foo-dense` | `27887C10BCDC` | 165 B | 136 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/foo-optional-bar` | `C6F78F9E7B0E` | 186 B | 152 B | 0 B | 3 chars | 1/102 | 1/111 |
 | `pcre2-managed-compatible-matchmany` | `simple/loglevel-multiline` | `F31F751A2DCB` | 177 B | 136 B | 0 B | 8 chars | 2/ | 1/32 |
+| `pcre2-special-ismatch` | `pcre2/recursive-optional` | `1A8BE40346FB` | 195 B | 168 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-special-ismatch` | `pcre2/subroutine-prefix-digits` | `801A4E18DD7D` | 177 B | 152 B | 0 B | 5 chars | 0/ | 0/ |
 | `pcre2-special-count` | `pcre2/same-start-global` | `DD8CF42003A9` | 191 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
 | `pcre2-special-enumerate` | `pcre2/same-start-global` | `DD8CF42003A9` | 191 B | 152 B | 0 B | 0 chars | 0/ | 0/ |
