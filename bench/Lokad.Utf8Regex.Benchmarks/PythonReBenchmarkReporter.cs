@@ -490,15 +490,19 @@ internal static partial class PythonReBenchmarkReporter
         var repeatedValue = context.SupportsRepeatedCoreStringReplay
             ? context.ExecuteRepeatedCoreStringProjection()
             : expected;
+        var countedRepeatedValue = context.SupportsRepeatedCoreStringReplay
+            ? context.ExecuteCountedRepeatedCoreStringProjection()
+            : expected;
         if (expected != prepared ||
             expected != collected ||
             expected != streaming ||
-            expected != repeatedValue)
+            expected != repeatedValue ||
+            expected != countedRepeatedValue)
         {
             throw new InvalidOperationException(
                 $"PythonRe FindAll phase diagnostic '{id}' produced incomparable sinks: " +
                 $"public={expected}, prepared={prepared}, collected={collected}, streaming={streaming}, " +
-                $"repeated-value={repeatedValue}.");
+                $"repeated-value={repeatedValue}, counted-repeated-value={countedRepeatedValue}.");
         }
 
         Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
@@ -536,6 +540,7 @@ internal static partial class PythonReBenchmarkReporter
             if (context.SupportsRepeatedCoreStringReplay)
             {
                 PrintOperation("RepeatedValueProjection", MeasureRetainedPhaseOperation(context.ProjectRepeatedCoreStrings, effectiveIterations, samples));
+                PrintOperation("CountedRepeatedProjection", MeasureRetainedPhaseOperation(context.CountAndProjectRepeatedCoreStrings, effectiveIterations, samples));
             }
         }
 
@@ -3344,6 +3349,9 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecuteRepeatedCoreStringProjection() => Checksum(ProjectRepeatedCoreStrings());
 
+    internal int ExecuteCountedRepeatedCoreStringProjection() =>
+        Checksum(CountAndProjectRepeatedCoreStrings());
+
     internal Utf8PythonFindAllResult ProjectRepeatedCoreStrings()
     {
         if (!SupportsRepeatedCoreStringReplay)
@@ -3352,6 +3360,23 @@ internal sealed class PythonReBenchmarkContext
         }
 
         var values = new string[_preparedCoreRanges.Length];
+        Array.Fill(values, _repeatedCoreString);
+        return new Utf8PythonFindAllResult
+        {
+            Shape = Utf8PythonFindAllShape.FullMatch,
+            ScalarValues = values,
+            TupleValues = [],
+        };
+    }
+
+    internal Utf8PythonFindAllResult CountAndProjectRepeatedCoreStrings()
+    {
+        if (!SupportsRepeatedCoreStringReplay)
+        {
+            throw new InvalidOperationException("Counted repeated-value FindAll replay is not available for this case.");
+        }
+
+        var values = new string[GetCoreFindAllRegex().Count(InputBytes)];
         Array.Fill(values, _repeatedCoreString);
         return new Utf8PythonFindAllResult
         {
