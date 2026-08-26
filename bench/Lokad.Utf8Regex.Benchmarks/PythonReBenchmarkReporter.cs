@@ -2269,7 +2269,7 @@ internal sealed class PythonReBenchmarkContext
             var oneShotDotAllSuffix = Array.Empty<byte>();
             _supportsAsciiDotAllFullMatchReplay =
                 benchmarkCase.Operation == PythonReBenchmarkOperation.FullMatch &&
-                TryGetAsciiDotAllFullMatchReplay(
+                PythonReTranslator.TryGetAsciiDotAllFullMatchPlan(
                     oneShotParseResult.Root,
                     oneShotParseResult.Options,
                     out oneShotDotAllPrefix,
@@ -2376,6 +2376,8 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath
                 ? "strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges"
                 : "anchored value ranges"),
+        PythonReBenchmarkOperation.FullMatch when _pythonRegex.DebugUsesAsciiDotAllFullMatchFastPath =>
+            "strict UTF-8 validation; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges",
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             _pythonRegex.DebugFullMatchBackend,
             _pythonRegex.DebugUtf8FullMatchExecutionKind,
@@ -3630,68 +3632,6 @@ internal sealed class PythonReBenchmarkContext
             indexInBytes + lengthInBytes,
             match.IndexInUtf16,
             match.IndexInUtf16 + match.LengthInUtf16);
-    }
-
-    private static bool TryGetAsciiDotAllFullMatchReplay(
-        PythonReNode node,
-        PythonReCompileOptions options,
-        out byte[] prefix,
-        out byte[] suffix)
-    {
-        prefix = [];
-        suffix = [];
-        if ((options & PythonReCompileOptions.DotAll) == 0 ||
-            (options & PythonReCompileOptions.IgnoreCase) != 0 ||
-            node is not PythonReSequenceNode sequence)
-        {
-            return false;
-        }
-
-        var wildcardIndex = -1;
-        for (var index = 0; index < sequence.Elements.Count; index++)
-        {
-            if (sequence.Elements[index] is PythonReQuantifierNode
-                {
-                    Inner: PythonReRawNode { Kind: PythonReRawKind.Dot },
-                    Min: 0,
-                    Max: null,
-                    Flavor: PythonReQuantifierFlavor.Greedy,
-                })
-            {
-                if (wildcardIndex >= 0)
-                {
-                    return false;
-                }
-
-                wildcardIndex = index;
-            }
-        }
-
-        if (wildcardIndex <= 0 || wildcardIndex >= sequence.Elements.Count - 1)
-        {
-            return false;
-        }
-
-        var prefixBuilder = new StringBuilder();
-        var suffixBuilder = new StringBuilder();
-        for (var index = 0; index < sequence.Elements.Count; index++)
-        {
-            if (index == wildcardIndex)
-            {
-                continue;
-            }
-
-            if (sequence.Elements[index] is not PythonReLiteralNode { Value: <= '\u007f' } literal)
-            {
-                return false;
-            }
-
-            (index < wildcardIndex ? prefixBuilder : suffixBuilder).Append(literal.Value);
-        }
-
-        prefix = Encoding.ASCII.GetBytes(prefixBuilder.ToString());
-        suffix = Encoding.ASCII.GetBytes(suffixBuilder.ToString());
-        return prefix.Length > 0 && suffix.Length > 0;
     }
 
     private Utf8Regex GetOneShotCoreRegex() => _oneShotCoreRegex ??

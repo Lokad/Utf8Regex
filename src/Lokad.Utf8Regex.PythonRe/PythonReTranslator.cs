@@ -238,6 +238,74 @@ internal static class PythonReTranslator
         return true;
     }
 
+    public static bool TryGetAsciiDotAllFullMatchPlan(
+        PythonReNode node,
+        PythonReCompileOptions options,
+        out byte[] prefixUtf8,
+        out byte[] suffixUtf8)
+    {
+        prefixUtf8 = [];
+        suffixUtf8 = [];
+        if ((options & PythonReCompileOptions.DotAll) == 0 ||
+            (options & PythonReCompileOptions.IgnoreCase) != 0 ||
+            node is not PythonReSequenceNode sequence)
+        {
+            return false;
+        }
+
+        var wildcardIndex = -1;
+        for (var index = 0; index < sequence.Elements.Count; index++)
+        {
+            if (sequence.Elements[index] is PythonReQuantifierNode
+                {
+                    Inner: PythonReRawNode { Kind: PythonReRawKind.Dot },
+                    Min: 0,
+                    Max: null,
+                    Flavor: PythonReQuantifierFlavor.Greedy,
+                })
+            {
+                if (wildcardIndex >= 0)
+                {
+                    return false;
+                }
+
+                wildcardIndex = index;
+            }
+        }
+
+        if (wildcardIndex <= 0 || wildcardIndex >= sequence.Elements.Count - 1)
+        {
+            return false;
+        }
+
+        var prefix = new StringBuilder();
+        var suffix = new StringBuilder();
+        for (var index = 0; index < sequence.Elements.Count; index++)
+        {
+            if (index == wildcardIndex)
+            {
+                continue;
+            }
+
+            if (!TryGetExactLiteral(sequence.Elements[index], out var segment) ||
+                segment.Any(static character => character > 0x7f))
+            {
+                return false;
+            }
+
+            (index < wildcardIndex ? prefix : suffix).Append(segment);
+        }
+
+        if (prefix.Length == 0 || suffix.Length == 0)
+        {
+            return false;
+        }
+
+        prefixUtf8 = Encoding.ASCII.GetBytes(prefix.ToString());
+        suffixUtf8 = Encoding.ASCII.GetBytes(suffix.ToString());
+        return true;
+    }
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);

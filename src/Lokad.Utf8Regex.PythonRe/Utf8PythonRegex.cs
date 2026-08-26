@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.PythonRe;
@@ -103,6 +104,8 @@ public sealed class Utf8PythonRegex
     private readonly char? _separatedCaptureTupleSeparator;
     private readonly string? _repeatedExactFindAllString;
     private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
+    private readonly byte[]? _asciiDotAllFullMatchPrefix;
+    private readonly byte[]? _asciiDotAllFullMatchSuffix;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -208,6 +211,22 @@ public sealed class Utf8PythonRegex
                 out var asciiLiteralPrefixDigitMatchPrefix)
                 ? asciiLiteralPrefixDigitMatchPrefix
                 : null;
+        byte[]? asciiDotAllFullMatchPrefix = null;
+        byte[]? asciiDotAllFullMatchSuffix = null;
+        if (MatchTimeout == Timeout.InfiniteTimeSpan &&
+            parseResult.CaptureGroupCount == 0 &&
+            PythonReTranslator.TryGetAsciiDotAllFullMatchPlan(
+                parseResult.Root,
+                parseResult.Options,
+                out var candidatePrefix,
+                out var candidateSuffix))
+        {
+            asciiDotAllFullMatchPrefix = candidatePrefix;
+            asciiDotAllFullMatchSuffix = candidateSuffix;
+        }
+
+        _asciiDotAllFullMatchPrefix = asciiDotAllFullMatchPrefix;
+        _asciiDotAllFullMatchSuffix = asciiDotAllFullMatchSuffix;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
@@ -362,6 +381,15 @@ public sealed class Utf8PythonRegex
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
+        if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null)
+        {
+            return FullMatchAsciiDotAll(
+                input,
+                startOffsetInBytes,
+                _asciiDotAllFullMatchPrefix,
+                _asciiDotAllFullMatchSuffix);
+        }
+
         var utf8FullRegex = GetUtf8FullRegex();
         if (utf8FullRegex is not null)
         {
@@ -1985,7 +2013,40 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
         _asciiLiteralPrefixDigitMatchPrefix is not null;
 
+    internal bool DebugUsesAsciiDotAllFullMatchFastPath =>
+        _asciiDotAllFullMatchPrefix is not null;
+
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
+
+    private static Utf8PythonValueMatch FullMatchAsciiDotAll(
+        ReadOnlySpan<byte> input,
+        int startOffsetInBytes,
+        ReadOnlySpan<byte> prefix,
+        ReadOnlySpan<byte> suffix)
+    {
+        var validation = Utf8InputAnalyzer.ValidateOnly(input);
+        var tail = input[startOffsetInBytes..];
+        if (tail.Length < prefix.Length ||
+            tail.Length - prefix.Length < suffix.Length ||
+            !tail.StartsWith(prefix) ||
+            !tail.EndsWith(suffix))
+        {
+            return default;
+        }
+
+        var startOffsetInUtf16 = startOffsetInBytes == 0
+            ? 0
+            : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        return Utf8PythonValueMatch.Create(input, new PythonReGroupData
+        {
+            Number = 0,
+            Success = true,
+            StartOffsetInBytes = startOffsetInBytes,
+            EndOffsetInBytes = input.Length,
+            StartOffsetInUtf16 = startOffsetInUtf16,
+            EndOffsetInUtf16 = validation.Utf16Length,
+        });
+    }
 
     private Utf8Regex? CreateUtf8FullRegex()
     {

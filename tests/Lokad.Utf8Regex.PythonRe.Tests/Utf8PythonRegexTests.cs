@@ -362,6 +362,7 @@ public sealed class Utf8PythonRegexTests
 
         var match = regex.FullMatch(input, startOffsetInBytes);
 
+        Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
         Assert.True(match.Success);
         Assert.True(match.HasContiguousByteRange);
         Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
@@ -378,6 +379,22 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
         var overlapping = new Utf8PythonRegex("aba.*aba", PythonReCompileOptions.DotAll);
+        var ignoreCase = new Utf8PythonRegex(
+            "start.*end",
+            PythonReCompileOptions.DotAll | PythonReCompileOptions.IgnoreCase);
+        var captured = new Utf8PythonRegex("start(.*)end", PythonReCompileOptions.DotAll);
+        var reluctant = new Utf8PythonRegex("start.*?end", PythonReCompileOptions.DotAll);
+        var finiteTimeout = new Utf8PythonRegex(
+            "start.*end",
+            PythonReCompileOptions.DotAll,
+            TimeSpan.FromSeconds(1));
+
+        Assert.True(regex.DebugUsesAsciiDotAllFullMatchFastPath);
+        Assert.True(overlapping.DebugUsesAsciiDotAllFullMatchFastPath);
+        Assert.False(ignoreCase.DebugUsesAsciiDotAllFullMatchFastPath);
+        Assert.False(captured.DebugUsesAsciiDotAllFullMatchFastPath);
+        Assert.False(reluctant.DebugUsesAsciiDotAllFullMatchFastPath);
+        Assert.False(finiteTimeout.DebugUsesAsciiDotAllFullMatchFastPath);
 
         Assert.False(regex.FullMatch("xstartend"u8).Success);
         Assert.False(regex.FullMatch("startendx"u8).Success);
@@ -389,10 +406,9 @@ public sealed class Utf8PythonRegexTests
             new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'r', (byte)'t', 0xC3, 0x28, (byte)'e', (byte)'n', (byte)'d' }));
 
         Assert.False(new Utf8PythonRegex("start.*end").FullMatch("start\nend"u8).Success);
-        Assert.True(new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll | PythonReCompileOptions.IgnoreCase)
-            .FullMatch("START\nEND"u8).Success);
-        Assert.Equal("middle", new Utf8PythonRegex("start(.*)end", PythonReCompileOptions.DotAll)
-            .FullMatchDetailed("startmiddleend"u8).GetGroup(1).Value.GetValueString());
+        Assert.True(ignoreCase.FullMatch("START\nEND"u8).Success);
+        Assert.Equal("middle", captured.FullMatchDetailed("startmiddleend"u8)
+            .GetGroup(1).Value.GetValueString());
     }
 
     [Fact]
