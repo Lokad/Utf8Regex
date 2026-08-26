@@ -10,8 +10,8 @@ dotnet add package Lokad.Utf8Regex.Pcre2
 dotnet add package Lokad.Utf8Regex.PythonRe
 ```
 
-The [PCRE2 support](src/Lokad.Utf8Regex.Pcre2/README.md) is optional.
-The [Python `re` support](src/Lokad.Utf8Regex.PythonRe/README.md) is optional.
+The [PCRE2 support](src/Lokad.Utf8Regex.Pcre2/README.md) is optional ([benchmarks](src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md)).
+The [Python `re` support](src/Lokad.Utf8Regex.PythonRe/README.md) is optional ([benchmarks](src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md)).
 Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Support Scope
