@@ -49,7 +49,7 @@ internal static partial class BenchmarkInspectReporter
         const int slotCount = 64;
         var stride = Math.Max(matchToken.Length, missToken.Length) + 1;
         var inputLength = Math.Max(512, checked(slotCount * stride));
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
 
         Console.WriteLine($"Family            : {familyName}");
         Console.WriteLine($"Pattern           : {pattern}");

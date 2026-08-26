@@ -12,7 +12,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
 
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine($"RequestedIterations: {requestedIterations}");
@@ -111,7 +111,7 @@ internal static partial class BenchmarkInspectReporter
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
 
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine($"Iterations        : {iterations}");

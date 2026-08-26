@@ -28,7 +28,7 @@ internal static partial class BenchmarkInspectReporter
                 $"Unknown PCRE2 IsMatch scaling family '{familyName}'. " +
                 "Expected email, uri, or finite-backref."),
         };
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
 
         Console.WriteLine($"Family            : {familyName}");
         Console.WriteLine($"Pattern           : {pattern}");

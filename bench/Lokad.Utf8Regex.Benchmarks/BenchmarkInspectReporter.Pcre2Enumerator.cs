@@ -30,7 +30,7 @@ internal static partial class BenchmarkInspectReporter
                 $"Count={matchCount}; enumerated={enumeratedCount}.");
         }
 
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
         Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");

@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -64,7 +62,7 @@ internal static partial class BenchmarkInspectReporter
             return 1;
         }
 
-        using var processorSet = Pcre2QualificationProcessorSet.Enter();
+        using var processorSet = BenchmarkProcessorScope.EnterHighestEfficiencyClass();
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
         Console.WriteLine(
             $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");
@@ -601,161 +599,4 @@ internal static partial class BenchmarkInspectReporter
         long BytesPerOperation,
         List<long> SampleBytes);
 
-    private sealed class Pcre2QualificationProcessorSet : IDisposable
-    {
-        private const int CpuSetInformationType = 0;
-        private const int MinimumCpuSetInformationSize = 20;
-        private readonly Process? _process;
-        private readonly nint _originalAffinity;
-
-        private Pcre2QualificationProcessorSet(
-            Process? process,
-            nint originalAffinity,
-            string policy,
-            string affinityMask,
-            int? efficiencyClass,
-            string description)
-        {
-            _process = process;
-            _originalAffinity = originalAffinity;
-            Policy = policy;
-            AffinityMask = affinityMask;
-            EfficiencyClass = efficiencyClass;
-            Description = description;
-        }
-
-        internal string Policy { get; }
-
-        internal string AffinityMask { get; }
-
-        internal int? EfficiencyClass { get; }
-
-        internal string Description { get; }
-
-        internal static Pcre2QualificationProcessorSet Enter()
-        {
-            if (!OperatingSystem.IsWindows())
-            {
-                return new(
-                    null,
-                    0,
-                    "scheduler-default",
-                    "unavailable",
-                    null,
-                    "scheduler default (processor efficiency classes unavailable)");
-            }
-
-            var process = Process.GetCurrentProcess();
-            var originalAffinity = process.ProcessorAffinity;
-            var originalMask = unchecked((ulong)originalAffinity.ToInt64());
-            var selected = ReadHighestEfficiencyProcessorMask(originalMask);
-            if (selected.Mask == 0 || BitOperations.PopCount(selected.Mask) < 2)
-            {
-                process.Dispose();
-                return new(
-                    null,
-                    0,
-                    "scheduler-default",
-                    FormatMask(originalMask),
-                    selected.EfficiencyClass,
-                    $"scheduler default ({FormatMask(originalMask)})");
-            }
-
-            process.ProcessorAffinity = new nint(unchecked((long)selected.Mask));
-            return new(
-                process,
-                originalAffinity,
-                "highest-efficiency-class",
-                FormatMask(selected.Mask),
-                selected.EfficiencyClass,
-                $"highest efficiency class {selected.EfficiencyClass} ({FormatMask(selected.Mask)})");
-        }
-
-        public void Dispose()
-        {
-            if (_process is null)
-            {
-                return;
-            }
-
-            if (OperatingSystem.IsWindows())
-            {
-                _process.ProcessorAffinity = _originalAffinity;
-            }
-
-            _process.Dispose();
-        }
-
-        private static (ulong Mask, int? EfficiencyClass) ReadHighestEfficiencyProcessorMask(ulong allowedMask)
-        {
-            _ = GetSystemCpuSetInformation(nint.Zero, 0, out var requiredLength, nint.Zero, 0);
-            if (requiredLength == 0 || requiredLength > int.MaxValue)
-            {
-                return (0, null);
-            }
-
-            var buffer = Marshal.AllocHGlobal((int)requiredLength);
-            try
-            {
-                if (!GetSystemCpuSetInformation(buffer, requiredLength, out var returnedLength, nint.Zero, 0))
-                {
-                    return (0, null);
-                }
-
-                int? highestEfficiencyClass = null;
-                var selectedMask = 0UL;
-                var offset = 0;
-                while (offset < returnedLength)
-                {
-                    var entry = nint.Add(buffer, offset);
-                    var entrySize = Marshal.ReadInt32(entry, 0);
-                    if (entrySize < MinimumCpuSetInformationSize || entrySize > returnedLength - offset)
-                    {
-                        return (0, null);
-                    }
-
-                    var type = Marshal.ReadInt32(entry, 4);
-                    if (type == CpuSetInformationType && Marshal.ReadInt16(entry, 12) == 0)
-                    {
-                        var logicalProcessor = Marshal.ReadByte(entry, 14);
-                        var efficiencyClass = Marshal.ReadByte(entry, 18);
-                        if (logicalProcessor < 64)
-                        {
-                            var processorMask = 1UL << logicalProcessor;
-                            if ((processorMask & allowedMask) != 0 &&
-                                (highestEfficiencyClass is null || efficiencyClass >= highestEfficiencyClass))
-                            {
-                                if (efficiencyClass > highestEfficiencyClass)
-                                {
-                                    selectedMask = 0;
-                                }
-
-                                highestEfficiencyClass = efficiencyClass;
-                                selectedMask |= processorMask;
-                            }
-                        }
-                    }
-
-                    offset += entrySize;
-                }
-
-                return (selectedMask, highestEfficiencyClass);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
-            }
-        }
-
-        private static string FormatMask(ulong mask) => $"0x{mask:X}";
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetSystemCpuSetInformation(
-            nint information,
-            uint bufferLength,
-            out uint returnedLength,
-            nint process,
-            uint flags);
-    }
 }
