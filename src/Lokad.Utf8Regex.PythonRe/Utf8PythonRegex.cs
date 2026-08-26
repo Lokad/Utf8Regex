@@ -774,12 +774,13 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
         {
-            if (startOffsetInBytes == 0 &&
-                _repeatedExactFindAllString is not null &&
+            if (_repeatedExactFindAllString is not null &&
                 _findAllBackend == PythonReDirectBackendKind.Utf8Regex &&
                 _utf8Regex is not null)
             {
-                var values = new string[_utf8Regex.Count(input)];
+                var validatedInput = Utf8ValidatedInput.Create(input);
+                var start = validatedInput.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+                var values = new string[_utf8Regex.ByteOffsetExecution.CountPrepared(validatedInput, start)];
                 Array.Fill(values, _repeatedExactFindAllString);
                 return new Utf8PythonFindAllResult
                 {
