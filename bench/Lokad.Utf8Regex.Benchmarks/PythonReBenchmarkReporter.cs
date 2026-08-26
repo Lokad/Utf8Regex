@@ -718,11 +718,19 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
         if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
         {
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllUtf8, effectiveIterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(
+                context.ExecutePythonReFindAllUtf8,
+                effectiveIterations,
+                samples,
+                minimumWarmupCalls: 100_000));
         }
         else
         {
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, effectiveIterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(
+                context.ExecutePythonReFindAllStrings,
+                effectiveIterations,
+                samples,
+                minimumWarmupCalls: 100_000));
         }
 
         PrintOperation("DecodeComparator", MeasurePhaseOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
@@ -742,7 +750,11 @@ internal static partial class PythonReBenchmarkReporter
             if (context.SupportsRepeatedCoreStringReplay)
             {
                 PrintOperation("RepeatedValueProjection", MeasureRetainedPhaseOperation(context.ProjectRepeatedCoreStrings, effectiveIterations, samples));
-                PrintOperation("CountedRepeatedProjection", MeasureRetainedPhaseOperation(context.CountAndProjectRepeatedCoreStrings, effectiveIterations, samples));
+                PrintOperation("CountedRepeatedProjection", MeasureRetainedPhaseOperation(
+                    context.CountAndProjectRepeatedCoreStrings,
+                    effectiveIterations,
+                    samples,
+                    minimumWarmupCalls: 100_000));
             }
         }
 
@@ -1805,7 +1817,9 @@ internal static partial class PythonReBenchmarkReporter
     private static PythonReOperationMeasurement MeasureRetainedPhaseOperation<T>(
         Func<T> operation,
         int iterations,
-        int samples) => MeasureRetainedOperation(operation, iterations, samples, minimumWarmupCalls: 1_024);
+        int samples,
+        int minimumWarmupCalls = 1_024) =>
+        MeasureRetainedOperation(operation, iterations, samples, minimumWarmupCalls);
 
     private static void Print(PythonReBenchmarkCase benchmarkCase, PythonReCaseMeasurement measurement)
     {
