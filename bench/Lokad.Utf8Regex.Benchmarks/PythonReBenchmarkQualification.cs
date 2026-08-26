@@ -1268,7 +1268,9 @@ internal static partial class PythonReBenchmarkReporter
         ulong expectedConsumptionToken,
         int minimumCalls = PythonReQualificationMinimumWarmupCalls)
     {
-        const int maximumBatches = 32;
+        var batchesRequiredForCallFloor = checked(
+            (int)(((long)minimumCalls + iterations - 1) / iterations));
+        var maximumBatches = Math.Max(32, batchesRequiredForCallFloor);
         var started = Stopwatch.GetTimestamp();
         var batches = 0;
         do
