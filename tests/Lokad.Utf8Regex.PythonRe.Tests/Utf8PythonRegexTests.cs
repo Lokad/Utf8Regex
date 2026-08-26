@@ -71,6 +71,24 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(2, regex.Count("foo xx foo"u8));
     }
 
+    [Fact]
+    public void ExactUnicodeLiteralContainingSpacePreservesCountSemantics()
+    {
+        var regex = new Utf8PythonRegex("Шерлок Холмс");
+
+        Assert.Equal(2, regex.Count("Шерлок Холмс и снова Шерлок Холмс"u8));
+        Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
+    }
+
+    [Fact]
+    public void VerboseEscapedSpaceRemainsSignificant()
+    {
+        var regex = new Utf8PythonRegex(@"(?x)Шерлок\ Холмс");
+
+        Assert.Equal(1, regex.Count("Шерлок Холмс"u8));
+        Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
+    }
+
     [Theory]
     [InlineData(@"(?<=ab)c")]
     [InlineData(@"(?m)^foo$")]
