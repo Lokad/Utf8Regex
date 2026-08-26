@@ -2536,9 +2536,21 @@ public sealed class Utf8Regex
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literalReplacementUtf8,
         out int replacementCount)
+        => ReplaceLiteralWithCount(
+            input,
+            literalReplacementUtf8,
+            int.MaxValue,
+            out replacementCount);
+
+    internal byte[] ReplaceLiteralWithCount(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literalReplacementUtf8,
+        int maximumReplacementCount,
+        out int replacementCount)
     {
         try
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
             var validation = TryUseAsciiInputValidationShortcut(input)
                 ? default
                 : Utf8Validation.Validate(input);
@@ -2551,8 +2563,15 @@ public sealed class Utf8Regex
                     input,
                     literal,
                     literalReplacementUtf8,
+                    maximumReplacementCount,
                     CreateExecutionBudget(),
                     out replacementCount);
+            }
+
+            if (maximumReplacementCount != int.MaxValue)
+            {
+                throw new InvalidOperationException(
+                    "Bounded literal replacement requires the exact ASCII literal execution route.");
             }
 
             return ReplaceLiteralBytesCore(input, validation, literalReplacementUtf8, out replacementCount);

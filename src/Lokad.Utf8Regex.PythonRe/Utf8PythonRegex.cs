@@ -2252,7 +2252,7 @@ public sealed class Utf8PythonRegex
         out byte[] resultBytes,
         out int replacementCount)
     {
-        if (count != 0 ||
+        if (count < 0 ||
             startOffsetInBytes != 0 ||
             !_canUseZeroOffsetUtf8ValueFastPath ||
             _utf8Regex is null ||
@@ -2275,7 +2275,12 @@ public sealed class Utf8PythonRegex
             return false;
         }
 
-        resultBytes = _utf8Regex.ReplaceLiteralWithCount(input, literalBytes, out replacementCount);
+        var maximumReplacementCount = count == 0 ? int.MaxValue : count;
+        resultBytes = _utf8Regex.ReplaceLiteralWithCount(
+            input,
+            literalBytes,
+            maximumReplacementCount,
+            out replacementCount);
         return true;
     }
 
