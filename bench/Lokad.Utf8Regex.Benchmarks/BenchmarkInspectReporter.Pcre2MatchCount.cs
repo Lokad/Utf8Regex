@@ -205,9 +205,9 @@ internal static partial class BenchmarkInspectReporter
 
         GC.KeepAlive(sink);
         return new Pcre2DiagnosticPairMeasurement(
-            Median(firstMicrosecondsBySample),
-            Median(secondMicrosecondsBySample),
-            Median(pairedDeltas));
+            BenchmarkPairedStatistics.Median(firstMicrosecondsBySample),
+            BenchmarkPairedStatistics.Median(secondMicrosecondsBySample),
+            BenchmarkPairedStatistics.Median(pairedDeltas));
     }
 
     private readonly record struct Pcre2DiagnosticPairMeasurement(

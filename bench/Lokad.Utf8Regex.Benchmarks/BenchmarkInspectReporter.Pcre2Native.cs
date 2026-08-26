@@ -73,8 +73,8 @@ internal static partial class BenchmarkInspectReporter
                 }
 
                 GC.KeepAlive(sink);
-                var defaultMedian = Median(defaultSamples);
-                var disabledMedian = Median(disabledSamples);
+                var defaultMedian = BenchmarkPairedStatistics.Median(defaultSamples);
+                var disabledMedian = BenchmarkPairedStatistics.Median(disabledSamples);
                 var defaultPlan = defaultBaseline.CapturePlanFingerprint();
                 var disabledPlan = disabledBaseline.CapturePlanFingerprint();
 
@@ -163,8 +163,8 @@ internal static partial class BenchmarkInspectReporter
                 }
 
                 GC.KeepAlive(sink);
-                var reusedMedian = Median(reusedSamples);
-                var freshMedian = Median(freshSamples);
+                var reusedMedian = BenchmarkPairedStatistics.Median(reusedSamples);
+                var freshMedian = BenchmarkPairedStatistics.Median(freshSamples);
                 var reusedAllocation = MeasurePcre2QualificationAllocation(
                     GetPcre2QualificationAllocationProbeIterations(reusedMedian),
                     reusedAction);

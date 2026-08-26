@@ -67,7 +67,8 @@ internal static partial class BenchmarkInspectReporter
                 errors.Add($"{label}: a stored paired ratio does not match its lane samples.");
             }
 
-            var recomputedRatioMedian = Math.Exp(Median(recomputedRatios.Select(static ratio => Math.Log(ratio))));
+            var recomputedRatioMedian = Math.Exp(BenchmarkPairedStatistics.Median(
+                recomputedRatios.Select(static ratio => Math.Log(ratio))));
             if (!NearlyEqual(recomputedRatioMedian, pair.RatioMedian))
             {
                 errors.Add($"{label}: the stored median ratio is stale.");
@@ -81,15 +82,17 @@ internal static partial class BenchmarkInspectReporter
                 .Select((order, index) => (Order: order, Ratio: recomputedRatios[index]))
                 .Where(static sample => sample.Order == Pcre2PairLaneOrder.ComparatorFirst)
                 .Select(static sample => sample.Ratio);
-            var recomputedOrderEffect = Median(managedFirstRatios) / Median(comparatorFirstRatios);
+            var recomputedOrderEffect = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+                BenchmarkPairedStatistics.Median(comparatorFirstRatios);
             if (!NearlyEqual(recomputedOrderEffect, pair.OrderEffectRatio))
             {
                 errors.Add($"{label}: the stored lane-order effect is stale.");
             }
 
 
-            var managedSpread = InterquartileSpread(pair.ManagedSampleMicroseconds);
-            var comparatorSpread = InterquartileSpread(pair.ComparatorSampleMicroseconds);
+            var managedSpread = BenchmarkPairedStatistics.InterquartileSpread(pair.ManagedSampleMicroseconds);
+            var comparatorSpread = BenchmarkPairedStatistics.InterquartileSpread(
+                pair.ComparatorSampleMicroseconds);
             if (!NearlyEqual(managedSpread, pair.ManagedInterquartileSpreadRatio) ||
                 !NearlyEqual(comparatorSpread, pair.ComparatorInterquartileSpreadRatio))
             {
@@ -188,14 +191,6 @@ internal static partial class BenchmarkInspectReporter
         return lowerRatio >= 0.98 && upperRatio <= 1.02
             ? Pcre2NativeComparisonStatus.Equivalent
             : Pcre2NativeComparisonStatus.Inconclusive;
-    }
-
-    private static double InterquartileSpread(IEnumerable<double> values)
-    {
-        var sorted = values.Order().ToArray();
-        var lower = sorted[(int)Math.Floor((sorted.Length - 1) * 0.25)];
-        var upper = sorted[(int)Math.Ceiling((sorted.Length - 1) * 0.75)];
-        return upper / lower;
     }
 
     private static bool NearlyEqual(double left, double right) =>

@@ -91,8 +91,8 @@ internal static partial class BenchmarkInspectReporter
                 return "—";
             }
 
-            var managedMilliseconds = Median(pair.ManagedSampleMilliseconds);
-            var comparatorMilliseconds = Median(pair.ComparatorSampleMilliseconds);
+            var managedMilliseconds = BenchmarkPairedStatistics.Median(pair.ManagedSampleMilliseconds);
+            var comparatorMilliseconds = BenchmarkPairedStatistics.Median(pair.ComparatorSampleMilliseconds);
             return $"{pair.SampleCount} pairs; {managedMilliseconds:F0}/{comparatorMilliseconds:F0} ms; " +
                    $"{pair.ManagedBatchCount:N0}/{pair.ComparatorBatchCount:N0} ops/lane; " +
                    $"IQR {pair.ManagedInterquartileSpreadRatio:F3}/{pair.ComparatorInterquartileSpreadRatio:F3}";

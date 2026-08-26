@@ -193,8 +193,11 @@ internal static partial class BenchmarkInspectReporter
 
                     GC.KeepAlive(sinks);
                     var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
-                    var bootstrap = BootstrapMedianLogRatio(logRatios);
-                    var ratioMedian = Math.Exp(Median(logRatios));
+                    var bootstrap = BenchmarkPairedStatistics.BootstrapMedianLogRatio(
+                        logRatios,
+                        Pcre2QualificationBootstrapSeed,
+                        Pcre2QualificationBootstrapResamples);
+                    var ratioMedian = Math.Exp(BenchmarkPairedStatistics.Median(logRatios));
                     var managedFirstRatios = laneOrders
                         .Select((order, index) => (Order: order, Ratio: ratios[index]))
                         .Where(static sample => sample.Order == Pcre2PairLaneOrder.ManagedFirst)
@@ -205,9 +208,12 @@ internal static partial class BenchmarkInspectReporter
                         .Where(static sample => sample.Order == Pcre2PairLaneOrder.ComparatorFirst)
                         .Select(static sample => sample.Ratio)
                         .ToArray();
-                    var orderEffectRatio = Median(managedFirstRatios) / Median(comparatorFirstRatios);
-                    var managedInterquartileSpread = InterquartileSpread(managedMicroseconds);
-                    var comparatorInterquartileSpread = InterquartileSpread(comparatorMicroseconds);
+                    var orderEffectRatio = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+                        BenchmarkPairedStatistics.Median(comparatorFirstRatios);
+                    var managedInterquartileSpread = BenchmarkPairedStatistics.InterquartileSpread(
+                        managedMicroseconds);
+                    var comparatorInterquartileSpread = BenchmarkPairedStatistics.InterquartileSpread(
+                        comparatorMicroseconds);
                     var sampleDurationsQualified = managedMilliseconds.All(
                                                        static duration => duration >= Pcre2QualificationMinimumSampleMilliseconds) &&
                                                    comparatorMilliseconds.All(
@@ -222,8 +228,8 @@ internal static partial class BenchmarkInspectReporter
                     var excesses = managedMicroseconds
                         .Select((value, index) => value - comparatorMicroseconds[index])
                         .ToArray();
-                    var managedMedianMicroseconds = Median(managedMicroseconds);
-                    var comparatorMedianMicroseconds = Median(comparatorMicroseconds);
+                    var managedMedianMicroseconds = BenchmarkPairedStatistics.Median(managedMicroseconds);
+                    var comparatorMedianMicroseconds = BenchmarkPairedStatistics.Median(comparatorMicroseconds);
                     var managedAllocationProbeIterations = GetPcre2QualificationAllocationProbeIterations(
                         managedMedianMicroseconds);
                     var comparatorAllocationProbeIterations = GetPcre2QualificationAllocationProbeIterations(
@@ -282,7 +288,7 @@ internal static partial class BenchmarkInspectReporter
                         RatioMedian = ratioMedian,
                         RatioLower95 = Math.Exp(bootstrap.Lower),
                         RatioUpper95 = Math.Exp(bootstrap.Upper),
-                        ExcessMedianMicroseconds = Median(excesses),
+                        ExcessMedianMicroseconds = BenchmarkPairedStatistics.Median(excesses),
                         OrderEffectRatio = orderEffectRatio,
                         ManagedInterquartileSpreadRatio = managedInterquartileSpread,
                         ComparatorInterquartileSpreadRatio = comparatorInterquartileSpread,
@@ -294,27 +300,6 @@ internal static partial class BenchmarkInspectReporter
                         Status = status,
                         StatusReason = statusReason,
                     };
-                }
-
-                (double Lower, double Upper) BootstrapMedianLogRatio(double[] logRatios)
-                {
-                    var random = new Random(Pcre2QualificationBootstrapSeed);
-                    var bootstrapMedians = new double[Pcre2QualificationBootstrapResamples];
-                    var resample = new double[logRatios.Length];
-                    for (var bootstrapIndex = 0; bootstrapIndex < bootstrapMedians.Length; bootstrapIndex++)
-                    {
-                        for (var sampleIndex = 0; sampleIndex < resample.Length; sampleIndex++)
-                        {
-                            resample[sampleIndex] = logRatios[random.Next(logRatios.Length)];
-                        }
-
-                        bootstrapMedians[bootstrapIndex] = Median(resample);
-                    }
-
-                    Array.Sort(bootstrapMedians);
-                    var lowerIndex = (int)Math.Floor((bootstrapMedians.Length - 1) * 0.025);
-                    var upperIndex = (int)Math.Ceiling((bootstrapMedians.Length - 1) * 0.975);
-                    return (bootstrapMedians[lowerIndex], bootstrapMedians[upperIndex]);
                 }
 
                 static (Pcre2NativeComparisonStatus Status, string? Reason) DeriveStatus(
@@ -572,20 +557,6 @@ internal static partial class BenchmarkInspectReporter
 
     private static int GetPcre2QualificationSliceCount(int total, int slices, int slice)
         => total / slices + (slice < total % slices ? 1 : 0);
-
-    private static double Median(IEnumerable<double> values)
-    {
-        var sorted = values.Order().ToArray();
-        if (sorted.Length == 0)
-        {
-            throw new InvalidOperationException("Cannot compute the median of an empty sample.");
-        }
-
-        var midpoint = sorted.Length / 2;
-        return sorted.Length % 2 == 0
-            ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
-            : sorted[midpoint];
-    }
 
     private readonly record struct Pcre2QualificationBatch(TimeSpan Elapsed, int Sink);
 
