@@ -16,8 +16,8 @@ Enumeration, split, and replacement rows include the result materialization need
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T09:25:29.9909524+00:00`
-- Snapshot SHA-256: `47784620918ACB9BB1C413BA66AC3AD742653336D4ABFAD2F2B0627DE3E72F4C`
+- Generated: `2026-08-26T09:30:59.8107030+00:00`
+- Snapshot SHA-256: `3596256EFFE0CA00FFCA3EE71682C3F1154019685683F1F6975850FF2A123E34`
 - Schema: `4`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `1` inconclusive, `27` unqualified
@@ -51,7 +51,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `literal/ismatch` | `IsMatch` | Unqualified | 14.562 us | 12.284 us | 1.19x | 14.877 us | 12.075 us | 131,512 B |
 | `literal/search` | `Search` | Unqualified | 12.860 us | 12.224 us | 1.05x | 14.380 us | 12.183 us | 131,564 B |
 | `literal/search-miss` | `Search` | Unqualified | 14.456 us | 12.207 us | 1.18x | 14.464 us | 10.417 us | 131,096 B |
-| `prefix/match` | `Match` | Inconclusive | 4.009 us | 0.128 us | 32.02x | 0.781 us | 1.444 us | 33,024 B |
+| `prefix/match` | `Match` | Inconclusive | 4.256 us | 0.125 us | 34.39x | 0.781 us | 1.444 us | 33,024 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | Unqualified | 214.404 us | 9,837.727 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | Unqualified | 209.053 us | 10,068.573 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
 | `replacement/fixed-string` | `ReplaceString` | Unqualified | 158.222 us | 112.937 us | 1.40x | 116.107 us | 157.065 us | 147,938 B |
