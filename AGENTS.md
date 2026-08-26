@@ -189,7 +189,8 @@ PythonRe benchmark snapshot and diagnostics:
   bounded warm calls before sampling so late tier transitions do not enter the
   paired evidence. Other one-shot rows receive at least 100,000 warm calls;
   result-heavy/global rows remain warmed by duration. Every managed lane gets
-  a bounded post-warm duration confirmation and is rescaled before sampling if
+  its applicable warmup again after final calibration, then a bounded
+  fastest-of-three duration confirmation. It is rescaled before sampling if
   the settled route falls below 30 ms.
 - Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
 - The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.

@@ -167,16 +167,15 @@ internal static partial class PythonReBenchmarkReporter
                 expectedSemanticDigest,
                 expectedConsumptionToken),
             shortOneShotMinimumIterations);
-        if (shortOneShotMinimumIterations > 1)
-        {
-            managedWarmup = WarmManagedLane(
-                context,
-                managedIterations,
-                expectedChecksum,
-                expectedSemanticDigest,
-                expectedConsumptionToken,
-                PythonReQualificationShortOneShotWarmupCalls);
-        }
+        managedWarmup = WarmManagedLane(
+            context,
+            managedIterations,
+            expectedChecksum,
+            expectedSemanticDigest,
+            expectedConsumptionToken,
+            shortOneShotMinimumIterations > 1
+                ? PythonReQualificationShortOneShotWarmupCalls
+                : GetOneShotWarmupCalls(benchmarkCase));
 
         managedIterations = ConfirmManagedSampleDuration(
             context,
