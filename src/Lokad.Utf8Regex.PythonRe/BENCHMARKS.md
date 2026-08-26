@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:13:22.8072695+00:00`
-- Snapshot SHA-256: `6455C73C1E3011EFBD2B71FEB3C0AB06F76C905ED8F877A42EAC1649FA85640F`
+- Generated: `2026-08-26T11:13:38.5220174+00:00`
+- Snapshot SHA-256: `83E6F6D2EF0E75B9963281BDCA9C5E6D5C89EE22C8857E3DDAC71B3BCA3B641B`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `1` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `27` unqualified
+- Public Status: `2` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `26` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -65,7 +65,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
 | `unicode/count` | `Count` | Historical | Unqualified | 92.217 us | 211.684 us | 0.44x | 271.193 us | 185.111 us | 0 B |
-| `unicode/fullmatch` | `FullMatch` | Historical | Unqualified | 27.265 us | 12.613 us | 2.16x | 19.217 us | 25.377 us | 14,360 B |
+| `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 12.936 us | 13.967 us | 0.93x | 19.217 us | 25.377 us | 14,360 B |
 | `zero-width/count` | `Count` | Historical | Unqualified | 18.474 us | 584.444 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
 
 ## Operation ownership and managed route
