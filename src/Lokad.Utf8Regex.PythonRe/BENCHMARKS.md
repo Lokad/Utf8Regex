@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:20:54.0142781+00:00`
-- Snapshot SHA-256: `ECB687E042F2C19BFC911620B29FA458C4719E1AF6163FC8E175A25B1CBE3AD9`
+- Generated: `2026-08-26T11:21:12.1290927+00:00`
+- Snapshot SHA-256: `887AEA614E6F2B955169EB1CC2B644D1BC2A5B3804627214BDAA09CDD52CEF58`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `1` managed faster, `0` equivalent, `0` CPython faster, `1` inconclusive, `26` unqualified
@@ -65,7 +65,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
 | `unicode/count` | `Count` | Historical | Unqualified | 92.217 us | 211.684 us | 0.44x | 271.193 us | 185.111 us | 0 B |
-| `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 12.971 us | 14.179 us | 0.90x | 19.217 us | 25.377 us | 14,360 B |
+| `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 12.790 us | 14.889 us | 0.85x | 19.217 us | 25.377 us | 14,360 B |
 | `zero-width/count` | `Count` | Historical | Unqualified | 18.474 us | 584.444 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
 
 ## Operation ownership and managed route
