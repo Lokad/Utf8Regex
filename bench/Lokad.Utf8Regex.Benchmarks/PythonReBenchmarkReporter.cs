@@ -487,11 +487,18 @@ internal static partial class PythonReBenchmarkReporter
         var prepared = context.ExecutePreparedCoreRangeProjection();
         var collected = context.ExecuteCoreCollectedProjection();
         var streaming = context.ExecuteCoreStreamingProjection();
-        if (expected != prepared || expected != collected || expected != streaming)
+        var repeatedValue = context.SupportsRepeatedCoreStringReplay
+            ? context.ExecuteRepeatedCoreStringProjection()
+            : expected;
+        if (expected != prepared ||
+            expected != collected ||
+            expected != streaming ||
+            expected != repeatedValue)
         {
             throw new InvalidOperationException(
                 $"PythonRe FindAll phase diagnostic '{id}' produced incomparable sinks: " +
-                $"public={expected}, prepared={prepared}, collected={collected}, streaming={streaming}.");
+                $"public={expected}, prepared={prepared}, collected={collected}, streaming={streaming}, " +
+                $"repeated-value={repeatedValue}.");
         }
 
         Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
@@ -526,6 +533,10 @@ internal static partial class PythonReBenchmarkReporter
             PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCoreStrings, effectiveIterations, samples));
             PrintOperation("CollectedProjection", MeasureRetainedPhaseOperation(context.ProjectCollectedCoreStrings, effectiveIterations, samples));
             PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.StreamCoreStrings, effectiveIterations, samples));
+            if (context.SupportsRepeatedCoreStringReplay)
+            {
+                PrintOperation("RepeatedValueProjection", MeasureRetainedPhaseOperation(context.ProjectRepeatedCoreStrings, effectiveIterations, samples));
+            }
         }
 
         PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedCoreChecksumTraversal, effectiveIterations, samples));
@@ -1743,6 +1754,8 @@ internal sealed class PythonReBenchmarkContext
     private readonly PythonReBenchmarkRange[] _preparedCoreRanges;
     private readonly Utf8PythonFindAllResult _preparedCoreStrings;
     private readonly Utf8PythonFindAllUtf8Result _preparedCoreUtf8;
+    private readonly bool _supportsRepeatedCoreStringReplay;
+    private readonly string _repeatedCoreString;
     private readonly bool _supportsCapturedFindAllPhases;
     private readonly PythonReBenchmarkCaptureRange[] _preparedCaptureRanges;
     private readonly int[]? _preparedUtf8Offsets;
@@ -1785,6 +1798,14 @@ internal sealed class PythonReBenchmarkContext
             _preparedCoreRanges = CollectCoreRanges().ToArray();
             _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
             _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);
+            _supportsRepeatedCoreStringReplay =
+                benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
+                _preparedCoreStrings.ScalarValues.Length > 0 &&
+                _preparedCoreStrings.ScalarValues.AsSpan(1).IndexOfAnyExcept(
+                    _preparedCoreStrings.ScalarValues[0]) < 0;
+            _repeatedCoreString = _supportsRepeatedCoreStringReplay
+                ? _preparedCoreStrings.ScalarValues[0]
+                : string.Empty;
             _supportsCapturedFindAllPhases = false;
             _preparedCaptureRanges = [];
             _preparedUtf8Offsets = [];
@@ -1802,6 +1823,8 @@ internal sealed class PythonReBenchmarkContext
             _preparedCoreRanges = [];
             _preparedCoreStrings = default;
             _preparedCoreUtf8 = default;
+            _supportsRepeatedCoreStringReplay = false;
+            _repeatedCoreString = string.Empty;
             _supportsCapturedFindAllPhases = true;
             _preparedCaptureRanges = CollectCapturedRanges();
             _preparedUtf8Offsets = GetUtf8Offsets(_decoded);
@@ -1866,6 +1889,8 @@ internal sealed class PythonReBenchmarkContext
             _preparedCoreRanges = [];
             _preparedCoreStrings = default;
             _preparedCoreUtf8 = default;
+            _supportsRepeatedCoreStringReplay = false;
+            _repeatedCoreString = string.Empty;
             _supportsCapturedFindAllPhases = false;
             _preparedCaptureRanges = [];
             _preparedUtf8Offsets = [];
@@ -1934,6 +1959,8 @@ internal sealed class PythonReBenchmarkContext
     internal bool SupportsCaptureFreeFindAllPhases => _coreFindAllRegex is not null;
 
     internal bool SupportsCapturedFindAllPhases => _supportsCapturedFindAllPhases;
+
+    internal bool SupportsRepeatedCoreStringReplay => _supportsRepeatedCoreStringReplay;
 
     internal int PreparedCoreRangeCount => _preparedCoreRanges.Length;
 
@@ -3232,6 +3259,25 @@ internal sealed class PythonReBenchmarkContext
 
     internal Utf8PythonFindAllResult ProjectPreparedCoreStrings() =>
         ProjectCoreRangeStrings(_preparedCoreRanges);
+
+    internal int ExecuteRepeatedCoreStringProjection() => Checksum(ProjectRepeatedCoreStrings());
+
+    internal Utf8PythonFindAllResult ProjectRepeatedCoreStrings()
+    {
+        if (!SupportsRepeatedCoreStringReplay)
+        {
+            throw new InvalidOperationException("Repeated-value FindAll replay is not available for this case.");
+        }
+
+        var values = new string[_preparedCoreRanges.Length];
+        Array.Fill(values, _repeatedCoreString);
+        return new Utf8PythonFindAllResult
+        {
+            Shape = Utf8PythonFindAllShape.FullMatch,
+            ScalarValues = values,
+            TupleValues = [],
+        };
+    }
 
     internal Utf8PythonFindAllUtf8Result ProjectPreparedCoreUtf8() =>
         ProjectCoreRangeUtf8(_preparedCoreRanges);
