@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:48:34.7163633+00:00`
-- Snapshot SHA-256: `F53EE1AC28ED863470D6154A1CC089C860D844E1F19FF6F435C5B3F8026642B0`
+- Generated: `2026-08-26T12:50:01.0394658+00:00`
+- Snapshot SHA-256: `779B9A2765AB2260CE219D445876F35AC3F7FA72F062CFA678A2F8341BF5A07E`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
@@ -83,7 +83,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `findall/many-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/one-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/unicode-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex; exact-literal range enumeration; repeated immutable string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex; exact-literal count; repeated immutable string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `iteration/finditer-detailed` | `_sre scanner + Python detailed projection` | `strict UTF-8 decode; .NET Regex; detailed iteration shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
