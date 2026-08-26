@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:18:57.3771632+00:00`
-- Snapshot SHA-256: `CCA9EC0C6F7278C54066FC6EC321CC6F8C86464DB13DC8E146E7794C9D5A4285`
+- Generated: `2026-08-26T12:19:35.7284977+00:00`
+- Snapshot SHA-256: `1345F14BF080029AC83059B16198E2455B4D02860D396308F60135865013183D`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `11` managed faster, `0` equivalent, `2` CPython faster, `7` inconclusive, `8` unqualified
+- Public Status: `15` managed faster, `0` equivalent, `2` CPython faster, `7` inconclusive, `4` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -58,10 +58,10 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 1.836 us | 0.174 us | 10.39x | 0.781 us | 1.444 us | 33,024 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | Historical | Unqualified | 214.404 us | 9,837.727 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | Historical | Unqualified | 209.053 us | 10,068.573 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
-| `replacement/fixed-string` | `ReplaceString` | Historical | Unqualified | 158.222 us | 112.937 us | 1.40x | 116.107 us | 157.065 us | 147,938 B |
-| `replacement/fixed-utf8` | `ReplaceUtf8` | Historical | Unqualified | 159.901 us | 122.880 us | 1.30x | 126.579 us | 162.701 us | 188,922 B |
-| `replacement/subn-string` | `SubnString` | Historical | Unqualified | 127.518 us | 62.295 us | 2.05x | 64.130 us | 121.769 us | 74,209 B |
-| `replacement/subn-utf8` | `SubnUtf8` | Historical | Unqualified | 130.351 us | 61.397 us | 2.12x | 62.087 us | 120.898 us | 94,713 B |
+| `replacement/fixed-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 51.849 us | 104.605 us | 0.50x | 116.107 us | 157.065 us | 123,392 B |
+| `replacement/fixed-utf8` | `ReplaceUtf8` | EagerMaterializedResult | Managed faster | 47.646 us | 104.298 us | 0.46x | 126.579 us | 162.701 us | 41,448 B |
+| `replacement/subn-string` | `SubnString` | EagerMaterializedResult | Managed faster | 26.561 us | 53.566 us | 0.49x | 64.130 us | 121.769 us | 61,952 B |
+| `replacement/subn-utf8` | `SubnUtf8` | EagerMaterializedResult | Managed faster | 23.279 us | 53.010 us | 0.44x | 62.087 us | 120.898 us | 20,968 B |
 | `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
 | `unicode/count` | `Count` | ScalarResult | Managed faster | 24.629 us | 204.347 us | 0.12x | 271.193 us | 185.111 us | 0 B |
