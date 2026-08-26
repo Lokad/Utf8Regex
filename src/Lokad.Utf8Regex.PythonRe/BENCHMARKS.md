@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:01:26.6986130+00:00`
-- Snapshot SHA-256: `347555CC7B5667FF1E89726AB5B27232B9032736BC41E89CA687AF7CD10FE008`
+- Generated: `2026-08-26T12:04:17.7868237+00:00`
+- Snapshot SHA-256: `9A8989FFDD8F1DD8D97D51F668365F98D51415D12ADE58C1BED445100AA8BE83`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
@@ -79,9 +79,9 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/full-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `findall/many-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/many-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct separated-capture tuple shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/many-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `findall/one-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/one-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/unicode-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex/ExactUtf8Literal; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |

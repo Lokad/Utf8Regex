@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 6,
-  "GeneratedAtUtc": "2026-08-26T12:01:26.698613+00:00",
+  "GeneratedAtUtc": "2026-08-26T12:04:17.7868237+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
     "Sha256": "0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B",
@@ -413,7 +413,7 @@
       "Samples": 7,
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
-      "ManagedRoute": "strict UTF-8 decode; .NET Regex; findall string shaping",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct separated-capture tuple shaping",
       "ByteControlEligible": false,
       "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
@@ -571,7 +571,7 @@
       "Samples": 7,
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
-      "ManagedRoute": "strict UTF-8 decode; .NET Regex; findall string shaping",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping",
       "ByteControlEligible": false,
       "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
