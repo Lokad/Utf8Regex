@@ -159,8 +159,17 @@ internal static class PythonReTranslator
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups);
         var builder = new StringBuilder();
         AppendNode(parseResult.Root, builder, emittedGroupNames);
+        var translatedPattern = builder.ToString();
+        if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
+        {
+            // Regex.Escape protects spaces for IgnorePatternWhitespace. Outside
+            // verbose mode a raw space is equivalent and keeps exact literals
+            // visible to the UTF-8 planner instead of forcing fallback.
+            translatedPattern = translatedPattern.Replace(@"\ ", " ", StringComparison.Ordinal);
+        }
+
         return new PythonReTranslation(
-            builder.ToString(),
+            translatedPattern,
             ToRegexOptions(parseResult.Options),
             parseResult.CaptureGroupCount,
             emittedGroupNames);

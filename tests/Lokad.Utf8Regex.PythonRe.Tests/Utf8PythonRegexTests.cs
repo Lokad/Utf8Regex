@@ -76,6 +76,8 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex("Шерлок Холмс");
 
+        Assert.Equal("Шерлок Холмс", regex.DebugTranslatedPattern);
+        Assert.Equal("ExactUtf8Literal", regex.DebugUtf8ExecutionKind);
         Assert.Equal(2, regex.Count("Шерлок Холмс и снова Шерлок Холмс"u8));
         Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
     }
@@ -85,6 +87,7 @@ public sealed class Utf8PythonRegexTests
     {
         var regex = new Utf8PythonRegex(@"(?x)Шерлок\ Холмс");
 
+        Assert.Equal(@"Шерлок\ Холмс", regex.DebugTranslatedPattern);
         Assert.Equal(1, regex.Count("Шерлок Холмс"u8));
         Assert.Equal(0, regex.Count("ШерлокХолмс"u8));
     }
