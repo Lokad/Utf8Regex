@@ -22,13 +22,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T15:15:39.3020287+00:00`
-- Snapshot SHA-256: `5A9A76CF2145DAE7C94B84DC36980C4AF2BF91546A042609C760D2F709655425`
+- Generated: `2026-08-26T15:22:26.8559341+00:00`
+- Snapshot SHA-256: `93265ECBDE906C50DB75EE33498394E6641557FDD81044FA9F07BE108D2BCEDF`
 - Schema: `8`
 - Catalog SHA-256: `59DB20C3C982E7DB1FE73B4986EC28198F9A519D2456FFE642449DFF3F8F3B32`
 - Cases: `84`
-- Public Status: `22` managed faster, `0` equivalent, `4` CPython faster, `56` inconclusive, `2` unqualified
-- Historical point measurement environments represented: `13`
+- Public Status: `25` managed faster, `0` equivalent, `6` CPython faster, `50` inconclusive, `3` unqualified
+- Historical point measurement environments represented: `10`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -131,18 +131,18 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 206.199 us | 353.349 us | 0.58x | 359.520 us | 335.570 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 108.439 us | 335.475 us | 0.32x | 3,139.237 us | 153.941 us | 406,736 B |
 | `zero-width/count` | `Count` | ScalarResult | Managed faster | 17.574 us | 553.707 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
-| `count/zero` | `Count` | ScalarResult | Inconclusive | 2.936 us | 49.251 us | 0.06x | 49.878 us | 1.081 us | 17,528 B |
-| `count/one` | `Count` | ScalarResult | Inconclusive | 0.472 us | 1.465 us | 0.31x | 1.418 us | 1.035 us | 0 B |
-| `count/empty-progression` | `Count` | ScalarResult | Inconclusive | 170.043 us | 180.982 us | 0.93x | 182.817 us | 65.156 us | 430,312 B |
-| `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 35.726 us | 23.464 us | 1.52x | 42.228 us | 32.600 us | 8,216 B |
-| `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 2.435 us | 49.361 us | 0.05x | 49.729 us | 1.149 us | 17,456 B |
-| `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 1.550 us | 21.060 us | 0.07x | 21.488 us | 1.047 us | 8,288 B |
-| `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | Inconclusive | 17.459 us | 9.935 us | 1.76x | 22.023 us | 95.400 us | 4,120 B |
-| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 62.354 us | 26.694 us | 2.34x | 30.635 us | 54.610 us | 239,168 B |
-| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 51.266 us | 38.229 us | 1.37x | 35.815 us | 133.261 us | 209,648 B |
-| `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 42.603 us | 67.070 us | 0.64x | 59.297 us | 179.642 us | 58,120 B |
-| `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Inconclusive | 49.695 us | 201.335 us | 0.34x | 123.249 us | 160.253 us | 46,640 B |
-| `finditer/zero-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 0.812 us | 82.843 us | 0.01x | 84.653 us | 0.986 us | 8,728 B |
+| `count/zero` | `Count` | ScalarResult | Inconclusive | 2.748 us | 49.921 us | 0.05x | 50.859 us | 1.161 us | 17,432 B |
+| `count/one` | `Count` | ScalarResult | Unqualified | 0.420 us | 1.111 us | 0.38x | 1.475 us | 1.116 us | 0 B |
+| `count/empty-progression` | `Count` | ScalarResult | Inconclusive | 186.247 us | 180.940 us | 0.94x | 188.349 us | 73.541 us | 430,312 B |
+| `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 30.427 us | 23.430 us | 1.30x | 25.283 us | 31.181 us | 8,216 B |
+| `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 2.439 us | 49.273 us | 0.05x | 51.524 us | 1.706 us | 17,456 B |
+| `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 1.809 us | 21.124 us | 0.08x | 22.611 us | 1.026 us | 8,288 B |
+| `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | CPython faster | 17.300 us | 10.108 us | 1.73x | 10.674 us | 71.831 us | 4,120 B |
+| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 62.786 us | 27.944 us | 2.28x | 28.178 us | 80.188 us | 239,168 B |
+| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 52.791 us | 36.840 us | 1.42x | 42.166 us | 96.178 us | 209,648 B |
+| `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 41.446 us | 60.677 us | 0.70x | 64.074 us | 88.452 us | 58,120 B |
+| `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Inconclusive | 48.033 us | 121.503 us | 0.39x | 127.430 us | 102.261 us | 46,640 B |
+| `finditer/zero-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 0.564 us | 84.266 us | 0.01x | 87.823 us | 0.605 us | 8,728 B |
 
 ### Replace and Subn
 
@@ -154,13 +154,13 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `replacement/subn-utf8` | `SubnUtf8` | EagerMaterializedResult | Managed faster | 25.925 us | 53.623 us | 0.48x | 62.087 us | 120.898 us | 20,968 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | EagerMaterializedResult | Inconclusive | 251.022 us | 9,848.200 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | EagerMaterializedResult | Inconclusive | 289.710 us | 9,923.240 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
-| `replacement/no-match-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.492 us | 1.355 us | 1.11x | 1.723 us | 7.467 us | 20,480 B |
-| `replacement/one-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.434 us | 9,286.420 us | 0.00x | 8,925.992 us | 4.645 us | 9,024 B |
-| `replacement/named-template-string` | `ReplaceString` | EagerMaterializedResult | Unqualified | 1.219 us | 0.553 us | 2.13x | 1.463 us | 0.994 us | 720 B |
-| `replacement/unmatched-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 17.917 us | 32.185 us | 0.53x | 42.555 us | 55.847 us | 3,768 B |
-| `replacement/limited-string` | `ReplaceStringLimited` | EagerMaterializedResult | Inconclusive | 0.989 us | 0.305 us | 3.24x | 0.639 us | 5.996 us | 16,912 B |
-| `replacement/empty-progression-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 34.536 us | 14.503 us | 2.35x | 14.899 us | 17.288 us | 113,392 B |
-| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | EagerMaterializedResult | Inconclusive | 78.005 us | 3,413.248 us | 0.03x | 2,883.008 us | 47.345 us | 219,840 B |
+| `replacement/no-match-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.697 us | 1.315 us | 1.29x | 1.760 us | 7.544 us | 20,480 B |
+| `replacement/one-template-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 0.858 us | 8,946.350 us | 0.00x | 9,208.909 us | 4.552 us | 9,024 B |
+| `replacement/named-template-string` | `ReplaceString` | EagerMaterializedResult | Unqualified | 0.393 us | 0.550 us | 0.71x | 0.738 us | 1.013 us | 720 B |
+| `replacement/unmatched-template-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 15.958 us | 30.115 us | 0.53x | 32.309 us | 26.724 us | 3,768 B |
+| `replacement/limited-string` | `ReplaceStringLimited` | EagerMaterializedResult | Inconclusive | 0.922 us | 0.290 us | 3.15x | 0.651 us | 6.122 us | 16,912 B |
+| `replacement/empty-progression-string` | `ReplaceString` | EagerMaterializedResult | CPython faster | 33.172 us | 14.523 us | 2.27x | 15.395 us | 45.950 us | 113,392 B |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | EagerMaterializedResult | Inconclusive | 58.050 us | 2,628.267 us | 0.02x | 2,880.355 us | 186.608 us | 219,840 B |
 
 ### Split
 
@@ -168,13 +168,13 @@ Historical point rows span more than one measurement environment. Consult the JS
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `split/no-captures` | `SplitStrings` | EagerMaterializedResult | Managed faster | 74.370 us | 115.228 us | 0.65x | 126.317 us | 74.816 us | 171,328 B |
 | `split/captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 136.868 us | 137.931 us | 0.99x | 142.175 us | 134.880 us | 499,032 B |
-| `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.593 us | 8.965 us | 0.06x | 10.041 us | 5.796 us | 8,792 B |
-| `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.566 us | 4.444 us | 0.13x | 7.098 us | 5.004 us | 8,408 B |
-| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 0.859 us | 0.387 us | 2.28x | 0.729 us | 6.570 us | 12,032 B |
-| `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 45.990 us | 56.408 us | 0.82x | 56.888 us | 93.665 us | 182,032 B |
-| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 142.786 us | 41.788 us | 3.42x | 43.172 us | 150.097 us | 239,120 B |
-| `split/unicode` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 16.335 us | 25.025 us | 0.64x | 28.146 us | 86.917 us | 26,104 B |
-| `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Inconclusive | 65.144 us | 84.117 us | 0.76x | 83.457 us | 57.825 us | 313,360 B |
+| `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.781 us | 8.864 us | 0.09x | 12.599 us | 6.263 us | 8,792 B |
+| `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.614 us | 4.337 us | 0.14x | 5.209 us | 8.565 us | 8,408 B |
+| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 0.689 us | 0.371 us | 1.86x | 1.402 us | 19.035 us | 12,032 B |
+| `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 60.086 us | 67.611 us | 0.98x | 61.871 us | 114.940 us | 182,032 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 148.168 us | 42.411 us | 3.48x | 72.923 us | 223.310 us | 239,120 B |
+| `split/unicode` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 17.329 us | 24.922 us | 0.70x | 29.746 us | 57.306 us | 26,104 B |
+| `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Inconclusive | 61.990 us | 81.760 us | 0.74x | 82.944 us | 59.984 us | 313,360 B |
 
 ### Real-corpus workloads
 
