@@ -42,7 +42,7 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(6, root.GetProperty("SchemaVersion").GetInt32());
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
@@ -62,6 +62,7 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("Operation").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("ComparatorOwner").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("ManagedRoute").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("ByteControlReason").GetString()));
             Assert.True(benchmarkCase.Value.GetProperty("InputUtf8Bytes").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("Samples").GetInt32() >= 5);
@@ -91,8 +92,14 @@ public sealed class PythonReBenchmarkSnapshotTests
                 status,
                 new[] { "Unqualified", "Inconclusive", "Equivalent", "ManagedFaster", "CpythonFaster" });
             Assert.False(string.IsNullOrWhiteSpace(qualification.GetProperty("StatusReason").GetString()));
-            Assert.Equal("Not engine-comparable", qualification.GetProperty("EngineEvidenceBasis").GetString());
-            Assert.Equal("Unqualified", qualification.GetProperty("EngineConclusion").GetString());
+            Assert.Contains(
+                qualification.GetProperty("EngineEvidenceBasis").GetString(),
+                new[] { "Not engine-comparable", "Byte control" });
+            Assert.Contains(
+                qualification.GetProperty("EngineConclusion").GetString(),
+                new[] { "NotApplicable", "Unqualified", "Inconclusive", "Equivalent", "ManagedFaster", "CpythonFaster" });
+            Assert.False(string.IsNullOrWhiteSpace(
+                qualification.GetProperty("EngineConclusionReason").GetString()));
             var pairedEvidence = qualification.GetProperty("PairedEvidence");
             if (pairedEvidence.ValueKind == JsonValueKind.Null)
             {
@@ -114,6 +121,10 @@ public sealed class PythonReBenchmarkSnapshotTests
             "ExactAsciiLiteral",
             cases.GetProperty("literal/search-miss").GetProperty("ManagedRoute").GetString(),
             StringComparison.Ordinal);
+        Assert.True(cases.GetProperty("literal/search-miss").GetProperty("ByteControlEligible").GetBoolean());
+        Assert.True(cases.GetProperty("prefix/match").GetProperty("ByteControlEligible").GetBoolean());
+        Assert.False(cases.GetProperty("unicode/fullmatch").GetProperty("ByteControlEligible").GetBoolean());
+        Assert.False(cases.GetProperty("family/count").GetProperty("ByteControlEligible").GetBoolean());
         Assert.Contains(
             "strict UTF-8 decode",
             cases.GetProperty("replacement/subn-string").GetProperty("ManagedRoute").GetString(),
@@ -136,6 +147,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
         Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
+        Assert.Contains("`Rbyte` is representation-neutral engine evidence", page, StringComparison.Ordinal);
         Assert.Contains("## Operation ownership and managed route", page, StringComparison.Ordinal);
         var statusCounts = cases.EnumerateObject()
             .GroupBy(
@@ -179,7 +191,7 @@ public sealed class PythonReBenchmarkSnapshotTests
 
     private static void AssertPairedEvidence(JsonElement evidence, string status)
     {
-        Assert.Equal(2, evidence.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal(3, evidence.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal("CPythonPredecodedElapsed", evidence.GetProperty("Baseline").GetString());
         Assert.Contains(
             evidence.GetProperty("ResultContract").GetString(),
@@ -226,6 +238,18 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Equal(3, evidence.GetProperty("CpythonEmptyLoopMicroseconds").GetArrayLength());
         Assert.Equal(3, evidence.GetProperty("ManagedTrivialCallMicroseconds").GetArrayLength());
         Assert.Equal(3, evidence.GetProperty("CpythonTrivialCallMicroseconds").GetArrayLength());
+        var byteControl = evidence.GetProperty("ByteControl");
+        if (byteControl.ValueKind != JsonValueKind.Null)
+        {
+            Assert.True(byteControl.GetProperty("CpythonIterations").GetInt32() > 0);
+            Assert.True(byteControl.GetProperty("CpythonMedianMicroseconds").GetDouble() > 0);
+            Assert.True(byteControl.GetProperty("RatioMedian").GetDouble() > 0);
+            Assert.Equal(samples.Length, byteControl.GetProperty("Samples").GetArrayLength());
+            Assert.Equal(3, byteControl.GetProperty("CpythonEmptyLoopMicroseconds").GetArrayLength());
+            Assert.Equal(3, byteControl.GetProperty("CpythonTrivialCallMicroseconds").GetArrayLength());
+            Assert.False(string.IsNullOrWhiteSpace(
+                byteControl.GetProperty("EngineConclusionReason").GetString()));
+        }
 
         var cpython = evidence.GetProperty("CpythonEnvironment");
         Assert.Equal("CPython", cpython.GetProperty("Implementation").GetString());

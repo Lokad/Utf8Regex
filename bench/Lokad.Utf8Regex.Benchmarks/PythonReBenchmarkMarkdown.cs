@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -103,6 +103,8 @@ internal static partial class PythonReBenchmarkReporter
         if (hasCompleteCpythonBaseline)
         {
             writer.WriteLine("Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.");
+            writer.WriteLine();
+            writer.WriteLine("Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the identical bytes. `Rbyte` is representation-neutral engine evidence and never sets public Status; rows without equivalent byte semantics carry an explicit exclusion reason.");
             writer.WriteLine();
         }
 
@@ -208,12 +210,19 @@ internal static partial class PythonReBenchmarkReporter
             writer.WriteLine();
             writer.WriteLine("These fields prevent a composed host-language operation or a managed decode fallback from being mislabeled as a regex-engine result.");
             writer.WriteLine();
-            writer.WriteLine("| Case | CPython operation owner | Managed route |");
-            writer.WriteLine("|---|---|---|");
+            writer.WriteLine("| Case | CPython operation owner | Managed route | Byte control / engine evidence |");
+            writer.WriteLine("|---|---|---|---|");
             foreach (var (caseId, measurement) in rows)
             {
+                var byteControl = measurement.Qualification?.PairedEvidence?.ByteControl;
+                var byteSummary = byteControl is null
+                    ? measurement.ByteControlReason
+                    : $"Rbyte {byteControl.RatioMedian:F2}x " +
+                      $"[{byteControl.RatioLower95:F2}, {byteControl.RatioUpper95:F2}]; " +
+                      $"{byteControl.EngineConclusion}";
                 writer.WriteLine(
-                    $"| `{caseId}` | `{measurement.ComparatorOwner}` | `{measurement.ManagedRoute}` |");
+                    $"| `{caseId}` | `{measurement.ComparatorOwner}` | `{measurement.ManagedRoute}` | " +
+                    $"{byteSummary} |");
             }
 
             writer.WriteLine();

@@ -12,7 +12,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
-    private const int PythonReBenchmarkSchemaVersion = 5;
+    private const int PythonReBenchmarkSchemaVersion = 6;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
 
@@ -252,10 +252,11 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshotPath = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not PythonReBenchmarkSchemaVersion)
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and
+            not PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
-                $"PythonRe migration requires a schema-3, schema-4, or " +
+                $"PythonRe migration requires a schema-3, schema-4, schema-5, or " +
                 $"schema-{PythonReBenchmarkSchemaVersion} snapshot.");
             return 1;
         }
@@ -266,9 +267,18 @@ internal static partial class PythonReBenchmarkReporter
                 candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal)) ??
                 throw new InvalidOperationException($"PythonRe snapshot contains unknown case '{caseId}'.");
             var context = new PythonReBenchmarkContext(benchmarkCase);
+            var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
+                benchmarkCase,
+                context.InputBytes);
             measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation);
             measurement.ManagedRoute = context.DescribeManagedRoute();
-            measurement.Qualification ??= PythonReQualificationMeasurement.CreateHistoricalUnqualified();
+            measurement.ByteControlEligible = byteControl.IsEligible;
+            measurement.ByteControlReason = byteControl.Reason;
+            measurement.Qualification = measurement.Qualification?.PairedEvidence is null
+                ? PythonReQualificationMeasurement.CreateUnqualified(
+                    measurement.Qualification?.StatusReason ??
+                    "Historical independent-median evidence predates paired qualification protocol v3.")
+                : measurement.Qualification;
         }
 
         WriteSnapshot(new PythonReBenchmarkSnapshot
@@ -815,6 +825,9 @@ internal static partial class PythonReBenchmarkReporter
     {
         var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
         var context = new PythonReBenchmarkContext(benchmarkCase);
+        var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
+            benchmarkCase,
+            context.InputBytes);
         var pythonResult = context.ExecutePythonRe();
         var decodeResult = context.ExecuteDecodeThenRegex();
         var predecodedResult = context.ExecutePredecodedRegex();
@@ -844,6 +857,8 @@ internal static partial class PythonReBenchmarkReporter
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
             ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
             ManagedRoute = context.DescribeManagedRoute(),
+            ByteControlEligible = byteControl.IsEligible,
+            ByteControlReason = byteControl.Reason,
             Environment = CaptureEnvironment(),
             PythonRe = MeasurePythonReOperation(context, effectiveIterations, samples, pythonResult),
             DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
@@ -1299,7 +1314,39 @@ internal static class PythonReBenchmarkCatalog
         PythonReBenchmarkOperation.SplitStrings => "_sre C Pattern.split",
         _ => throw new ArgumentOutOfRangeException(nameof(operation)),
     };
+
+    internal static PythonReByteControlEligibility GetByteControlEligibility(
+        PythonReBenchmarkCase benchmarkCase,
+        ReadOnlySpan<byte> inputBytes)
+    {
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.IsMatch and
+            not PythonReBenchmarkOperation.Search and
+            not PythonReBenchmarkOperation.Match and
+            not PythonReBenchmarkOperation.FullMatch)
+        {
+            return new(
+                false,
+                "Excluded: the first byte-control profile is limited to one-shot matching operations.");
+        }
+
+        if (benchmarkCase.Pattern.Any(static character => character > 0x7f) ||
+            inputBytes.ContainsAnyExceptInRange((byte)0, (byte)0x7f))
+        {
+            return new(false, "Excluded: pattern or subject is not entirely ASCII.");
+        }
+
+        if ((benchmarkCase.Options & ~PythonReCompileOptions.Ascii) != PythonReCompileOptions.None)
+        {
+            return new(false, "Excluded: flags are not proven equivalent for CPython bytes patterns.");
+        }
+
+        return new(
+            true,
+            "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.");
+    }
 }
+
+internal readonly record struct PythonReByteControlEligibility(bool IsEligible, string Reason);
 
 internal sealed class PythonReBenchmarkContext
 {
@@ -2830,6 +2877,8 @@ internal sealed class PythonReCaseMeasurement
     public required bool IncludesResultMaterialization { get; init; }
     public string ComparatorOwner { get; set; } = string.Empty;
     public string ManagedRoute { get; set; } = string.Empty;
+    public bool ByteControlEligible { get; set; }
+    public string ByteControlReason { get; set; } = string.Empty;
     public required PythonReBenchmarkEnvironment Environment { get; init; }
     public required PythonReOperationMeasurement PythonRe { get; init; }
     public required PythonReOperationMeasurement DecodeThenRegex { get; init; }
@@ -2841,12 +2890,13 @@ internal sealed class PythonReCaseMeasurement
 internal sealed class PythonReQualificationMeasurement
 {
     private const string HistoricalReason =
-        "Historical independent-median evidence predates paired qualification protocol v2.";
+        "Historical independent-median evidence predates paired qualification protocol v3.";
 
     public required string Status { get; init; }
     public required string StatusReason { get; init; }
     public required string EngineEvidenceBasis { get; init; }
     public required string EngineConclusion { get; init; }
+    public string EngineConclusionReason { get; init; } = "No engine-comparable evidence is available.";
     public PythonRePairedEvidence? PairedEvidence { get; init; }
 
     internal static PythonReQualificationMeasurement CreateHistoricalUnqualified() => new()
@@ -2854,7 +2904,8 @@ internal sealed class PythonReQualificationMeasurement
         Status = "Unqualified",
         StatusReason = HistoricalReason,
         EngineEvidenceBasis = "Not engine-comparable",
-        EngineConclusion = "Unqualified",
+        EngineConclusion = "NotApplicable",
+        EngineConclusionReason = "Historical evidence has no engine-comparable control.",
         PairedEvidence = null,
     };
 
@@ -2863,7 +2914,8 @@ internal sealed class PythonReQualificationMeasurement
         Status = "Unqualified",
         StatusReason = reason,
         EngineEvidenceBasis = "Not engine-comparable",
-        EngineConclusion = "Unqualified",
+        EngineConclusion = "NotApplicable",
+        EngineConclusionReason = reason,
         PairedEvidence = null,
     };
 }
@@ -2908,8 +2960,41 @@ internal sealed class PythonRePairedEvidence
     public required double[] CpythonEmptyLoopMicroseconds { get; init; }
     public double[] ManagedTrivialCallMicroseconds { get; init; } = [];
     public double[] CpythonTrivialCallMicroseconds { get; init; } = [];
+    public PythonReByteControlEvidence? ByteControl { get; init; }
     public required CpythonStreamEnvironment CpythonEnvironment { get; init; }
     public required PythonReBenchmarkEnvironment ManagedEnvironment { get; init; }
+}
+
+internal sealed class PythonReByteControlEvidence
+{
+    public required string EligibilityReason { get; init; }
+    public required int CpythonIterations { get; init; }
+    public required int CpythonWarmupCalls { get; init; }
+    public required double CpythonWarmupMilliseconds { get; init; }
+    public required double CpythonMedianMicroseconds { get; init; }
+    public required double RatioMedian { get; init; }
+    public required double RatioLower95 { get; init; }
+    public required double RatioUpper95 { get; init; }
+    public required double OrderEffect { get; init; }
+    public required double ManagedInterquartileSpread { get; init; }
+    public required double CpythonInterquartileSpread { get; init; }
+    public required double ManagedTrivialCallFraction { get; init; }
+    public required double CpythonTrivialCallFraction { get; init; }
+    public required string EngineConclusion { get; init; }
+    public required string EngineConclusionReason { get; init; }
+    public required PythonReByteControlSampleEvidence[] Samples { get; init; }
+    public required double[] CpythonEmptyLoopMicroseconds { get; init; }
+    public required double[] CpythonTrivialCallMicroseconds { get; init; }
+}
+
+internal sealed class PythonReByteControlSampleEvidence
+{
+    public required string Order { get; init; }
+    public required double CpythonMicroseconds { get; init; }
+    public required double Ratio { get; init; }
+    public required double CpythonElapsedMilliseconds { get; init; }
+    public required double CpythonProcessCpuMilliseconds { get; init; }
+    public required int[] CpythonGcCollections { get; init; }
 }
 
 internal sealed class PythonRePairedSampleEvidence

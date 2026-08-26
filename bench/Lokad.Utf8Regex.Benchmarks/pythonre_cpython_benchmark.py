@@ -26,7 +26,7 @@ from typing import Any
 
 
 PROTOCOL_VERSION = 1
-STREAM_PROTOCOL_VERSION = 2
+STREAM_PROTOCOL_VERSION = 3
 WARMUP_SECONDS = 0.1
 MAX_WARMUP_CALLS = 65_536
 STREAM_CALIBRATION_PILOT_NANOSECONDS = 5_000_000
@@ -260,6 +260,12 @@ class CaseRunner:
         self.utf16_offsets = build_utf16_offsets(self.input_text)
         self.replacement = request["Replacement"]
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
+        self.byte_pattern: re.Pattern[bytes] | None = None
+        if request.get("EnableByteControl", False):
+            byte_flags = flags_from_options(request["Options"])
+            if byte_flags & re.UNICODE:
+                raise ValueError("The CPython bytes control does not support re.UNICODE.")
+            self.byte_pattern = re.compile(request["Pattern"].encode("ascii", "strict"), byte_flags)
         self.callback_checksum = 0
         self.callback_digest = SEMANTIC_DIGEST_OFFSET
         self.evaluator = self.replace_callback
@@ -454,6 +460,58 @@ class CaseRunner:
                         + utf16_offsets[end]
                     )
         return time.perf_counter_ns() - started, result, consumption_checksum
+
+    def execute_bytes_qualification_batch(self, iterations: int) -> tuple[int, Any, int]:
+        pattern = self.byte_pattern
+        if pattern is None:
+            raise ValueError("This case has no eligible CPython bytes control.")
+
+        operation = self.operation
+        input_bytes = self.input_bytes
+        consumption_checksum = 0
+        result: re.Match[bytes] | bool | None = None
+        started = time.perf_counter_ns()
+        if operation == "IsMatch":
+            for _ in range(iterations):
+                result = pattern.search(input_bytes) is not None
+        elif operation == "Search":
+            for _ in range(iterations):
+                result = pattern.search(input_bytes)
+                consumption_checksum += self.byte_consumption_token(result)
+        elif operation == "Match":
+            for _ in range(iterations):
+                result = pattern.match(input_bytes)
+                consumption_checksum += self.byte_consumption_token(result)
+        elif operation == "FullMatch":
+            for _ in range(iterations):
+                result = pattern.fullmatch(input_bytes)
+                consumption_checksum += self.byte_consumption_token(result)
+        else:
+            raise ValueError(f"Unsupported CPython bytes-control operation: {operation}")
+        return time.perf_counter_ns() - started, result, consumption_checksum
+
+    def byte_checksum(self, result: Any) -> int:
+        if self.operation == "IsMatch":
+            return 1 if result else 0
+        return simple_match_checksum(result, self.utf16_offsets)
+
+    def byte_semantic_digest(self, result: Any) -> int:
+        operation = self.operation
+        digest = digest_add(SEMANTIC_DIGEST_OFFSET, SEMANTIC_OPERATION_TAGS[operation])
+        if operation == "IsMatch":
+            return digest_add(digest, 1 if result else 0)
+        if result is None:
+            return digest_add(digest, 0)
+        start, end = result.span()
+        digest = digest_add(digest, 1, start, end, start, end)
+        return digest_string(digest, result.group().decode("ascii", "strict"))
+
+    @staticmethod
+    def byte_consumption_token(result: re.Match[bytes] | None) -> int:
+        if result is None:
+            return 1
+        start, end = result.span()
+        return 2 + start + end + start + end
 
     def consumption_token(self, result: Any) -> int:
         if self.operation not in {"Search", "Match", "FullMatch"}:
@@ -781,6 +839,26 @@ def measure_stream_lane(
                 "CPython streaming result consumption disagrees with preflight: "
                 f"expected {expected_consumption_checksum}, actual {consumption_checksum}."
             )
+    elif lane == "Bytes":
+        elapsed, result, consumption_checksum = runner.execute_bytes_qualification_batch(iterations)
+        checksum = runner.byte_checksum(result)
+        semantic_digest = runner.byte_semantic_digest(result)
+        if checksum != expected_checksum:
+            raise RuntimeError(
+                "CPython bytes-control result disagrees with preflight: "
+                f"expected {expected_checksum}, actual {checksum}."
+            )
+        if semantic_digest != expected_semantic_digest:
+            raise RuntimeError(
+                "CPython bytes-control semantic digest disagrees with preflight: "
+                f"expected {expected_semantic_digest}, actual {semantic_digest}."
+            )
+        expected_consumption_checksum = expected_consumption_token * iterations
+        if consumption_checksum != expected_consumption_checksum:
+            raise RuntimeError(
+                "CPython bytes-control result consumption disagrees with preflight: "
+                f"expected {expected_consumption_checksum}, actual {consumption_checksum}."
+            )
     elif lane == "EmptyLoop":
         elapsed, checksum = runner.execute_empty_batch(iterations)
         semantic_digest = 0
@@ -841,6 +919,14 @@ def run_stream_worker() -> int:
                 expected_semantic_digest = runner.semantic_digest(predecoded_result)
                 expected_consumption_token = runner.consumption_token(predecoded_result)
                 decoded_semantic_digest = runner.semantic_digest(decoded_result)
+                byte_control_checksum = None
+                byte_control_semantic_digest = None
+                byte_control_consumption_token = None
+                if runner.byte_pattern is not None:
+                    _, byte_result, byte_consumption = runner.execute_bytes_qualification_batch(1)
+                    byte_control_checksum = runner.byte_checksum(byte_result)
+                    byte_control_semantic_digest = runner.byte_semantic_digest(byte_result)
+                    byte_control_consumption_token = byte_consumption
                 if expected_checksum != decoded_checksum:
                     raise RuntimeError(
                         "CPython predecoded/decode preflight checksums differ: "
@@ -858,6 +944,10 @@ def run_stream_worker() -> int:
                         "Checksum": expected_checksum,
                         "SemanticDigest": expected_semantic_digest,
                         "ConsumptionChecksum": expected_consumption_token,
+                        "ByteControlAvailable": runner.byte_pattern is not None,
+                        "ByteControlChecksum": byte_control_checksum,
+                        "ByteControlSemanticDigest": byte_control_semantic_digest,
+                        "ByteControlConsumptionChecksum": byte_control_consumption_token,
                         "InputUtf8Bytes": len(runner.input_bytes),
                         "InputCodePoints": len(runner.input_text),
                         "InputUtf16CodeUnits": runner.utf16_offsets[-1],

@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 5,
+  "SchemaVersion": 6,
   "GeneratedAtUtc": "2026-08-26T09:59:10.9180685+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
@@ -19,6 +19,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.search \u002B Python detailed projection",
       "ManagedRoute": "Utf8Regex/FallbackRegex; detailed capture projection",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -81,7 +83,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -95,6 +98,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
       "ManagedRoute": "Utf8Regex/FallbackRegex; Python-style count progression",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -157,7 +162,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -171,6 +177,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
       "ManagedRoute": "Utf8Regex/ExactUtf8Literals; Python-style count progression",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -233,7 +241,8 @@
         "Status": "Unqualified",
         "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Paired evidence predates the consumed-result qualification contract.",
         "PairedEvidence": null
       }
     },
@@ -247,6 +256,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
       "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -309,7 +320,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -323,6 +335,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
       "ManagedRoute": "Utf8Regex/FallbackRegex; findall UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -385,7 +399,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -399,6 +414,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
       "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -461,7 +478,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -475,6 +493,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
       "ManagedRoute": "Utf8Regex/FallbackRegex; findall UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -537,7 +557,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -551,6 +572,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
       "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -613,7 +636,8 @@
         "Status": "Unqualified",
         "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Paired evidence predates the consumed-result qualification contract.",
         "PairedEvidence": null
       }
     },
@@ -627,6 +651,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex; findall UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -689,7 +715,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -703,6 +730,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall",
       "ManagedRoute": "Utf8Regex/ExactUtf8Literal; findall string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -765,7 +794,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -779,6 +809,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
       "ManagedRoute": "Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -841,7 +873,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -855,6 +888,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre scanner \u002B Python detailed projection",
       "ManagedRoute": "Utf8Regex/FallbackRegex; detailed iteration shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -917,7 +952,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -931,6 +967,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.fullmatch",
       "ManagedRoute": "Utf8Regex/AsciiSimplePattern; full-match value ranges",
+      "ByteControlEligible": true,
+      "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -993,7 +1031,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1007,6 +1046,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.search",
       "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; boolean result",
+      "ByteControlEligible": true,
+      "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1069,7 +1110,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1083,6 +1125,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.search",
       "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; value ranges",
+      "ByteControlEligible": true,
+      "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1145,7 +1189,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1159,6 +1204,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.search",
       "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; value ranges",
+      "ByteControlEligible": true,
+      "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1221,7 +1268,8 @@
         "Status": "Unqualified",
         "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Paired evidence predates the consumed-result qualification contract.",
         "PairedEvidence": null
       }
     },
@@ -1235,6 +1283,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.match",
       "ManagedRoute": "Utf8Regex/FallbackRegex; anchored value ranges",
+      "ByteControlEligible": true,
+      "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1297,7 +1347,8 @@
         "Status": "Unqualified",
         "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Paired evidence predates the consumed-result qualification contract.",
         "PairedEvidence": null
       }
     },
@@ -1311,6 +1362,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.subn \u002B Python callback",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex callback replacement; string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1373,7 +1426,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1387,6 +1441,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.subn \u002B Python callback",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1449,7 +1505,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1463,6 +1520,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.sub",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1525,7 +1584,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1539,6 +1599,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.sub",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1601,7 +1663,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1615,6 +1678,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.subn",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1677,7 +1742,8 @@
         "Status": "Unqualified",
         "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Paired evidence predates the consumed-result qualification contract.",
         "PairedEvidence": null
       }
     },
@@ -1691,6 +1757,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.subn",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1753,7 +1821,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1767,6 +1836,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.split",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex split; string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1829,7 +1900,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1843,6 +1915,8 @@
       "IncludesResultMaterialization": true,
       "ComparatorOwner": "_sre C Pattern.split",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex split; string shaping",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1905,7 +1979,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1919,6 +1994,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
       "ManagedRoute": "Utf8Regex/ExactUtf8Literal; Python-style count progression",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1981,7 +2058,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -1995,6 +2073,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.fullmatch",
       "ManagedRoute": "strict UTF-8 decode; .NET Regex; full-match value ranges",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: pattern or subject is not entirely ASCII.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -2057,7 +2137,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     },
@@ -2071,6 +2152,8 @@
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
       "ManagedRoute": "strict UTF-8 decode; adapter ASCII-boundary loop; scalar result",
+      "ByteControlEligible": false,
+      "ByteControlReason": "Excluded: the first byte-control profile is limited to one-shot matching operations.",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -2133,7 +2216,8 @@
         "Status": "Unqualified",
         "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "EngineEvidenceBasis": "Not engine-comparable",
-        "EngineConclusion": "Unqualified",
+        "EngineConclusion": "NotApplicable",
+        "EngineConclusionReason": "Historical independent-median evidence predates paired qualification protocol v2.",
         "PairedEvidence": null
       }
     }

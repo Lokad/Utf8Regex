@@ -16,11 +16,13 @@ Enumeration, split, and replacement rows include the result materialization need
 
 Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.
 
+Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the identical bytes. `Rbyte` is representation-neutral engine evidence and never sets public Status; rows without equivalent byte semantics carry an explicit exclusion reason.
+
 ## Snapshot summary
 
 - Generated: `2026-08-26T09:59:10.9180685+00:00`
-- Snapshot SHA-256: `4EAC98F5FA4C33AC87B405702AB3F046FA9071149AAD661FC05C4215E54DEAF6`
-- Schema: `5`
+- Snapshot SHA-256: `37AFE3C43F51CD8AEBADF2387FDA8F163581936EA0138908911302A87F9C0FB0`
+- Schema: `6`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
 - Measurement environments represented: `1`
@@ -70,36 +72,36 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 
 These fields prevent a composed host-language operation or a managed decode fallback from being mislabeled as a regex-engine result.
 
-| Case | CPython operation owner | Managed route |
-|---|---|---|
-| `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` |
-| `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` |
-| `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` |
-| `findall/full-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
-| `findall/full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` |
-| `findall/many-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
-| `findall/many-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` |
-| `findall/one-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
-| `findall/unicode-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` |
-| `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex/ExactUtf8Literal; findall string shaping` |
-| `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` |
-| `iteration/finditer-detailed` | `_sre scanner + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed iteration shaping` |
-| `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` |
-| `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` |
-| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` |
-| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` |
-| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` |
-| `replacement/evaluator-string` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping` |
-| `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` |
-| `replacement/fixed-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; string shaping` |
-| `replacement/fixed-utf8` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` |
-| `replacement/subn-string` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; string shaping` |
-| `replacement/subn-utf8` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` |
-| `split/captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` |
-| `split/no-captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` |
-| `unicode/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literal; Python-style count progression` |
-| `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` |
-| `zero-width/count` | `_sre scanner + Python finditer/sum` | `strict UTF-8 decode; adapter ASCII-boundary loop; scalar result` |
+| Case | CPython operation owner | Managed route | Byte control / engine evidence |
+|---|---|---|---|
+| `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/full-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/many-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/many-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/one-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/unicode-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex/ExactUtf8Literal; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `iteration/finditer-detailed` | `_sre scanner + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed iteration shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `replacement/evaluator-string` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/fixed-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/fixed-utf8` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/subn-string` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/subn-utf8` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/no-captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `unicode/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literal; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |
+| `zero-width/count` | `_sre scanner + Python finditer/sum` | `strict UTF-8 decode; adapter ASCII-boundary loop; scalar result` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 
 ## Reproduce and refresh
 

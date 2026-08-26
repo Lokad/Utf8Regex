@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static partial class PythonReBenchmarkReporter
 {
-    private const int PythonReQualificationProtocolVersion = 2;
+    private const int PythonReQualificationProtocolVersion = 3;
     private const string PythonReQualificationProcessorPolicy =
         "single-least-contended-highest-efficiency-processor";
     private const int PythonReQualificationBootstrapSeed = 31302;
@@ -72,11 +72,17 @@ internal static partial class PythonReBenchmarkReporter
         using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         using var currentProcess = Process.GetCurrentProcess();
         var context = new PythonReBenchmarkContext(benchmarkCase);
+        var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
+            benchmarkCase,
+            context.InputBytes);
         var expectedChecksum = context.ExecutePythonRe();
         var expectedSemanticDigest = context.ExecutePythonReSemanticDigest();
         var expectedConsumptionToken = context.ExecutePythonReConsumptionToken();
         using var worker = new CpythonStreamWorker();
-        var prepared = worker.Prepare(benchmarkCase, context.InputBytes);
+        var prepared = worker.Prepare(
+            benchmarkCase,
+            context.InputBytes,
+            byteControlEligibility.IsEligible);
         if (prepared.Checksum != expectedChecksum ||
             prepared.SemanticDigest != expectedSemanticDigest ||
             prepared.ConsumptionChecksum != expectedConsumptionToken)
@@ -86,6 +92,20 @@ internal static partial class PythonReBenchmarkReporter
                 $"checksum={expectedChecksum}/{prepared.Checksum}, " +
                 $"semantic digest={expectedSemanticDigest:X16}/{prepared.SemanticDigest:X16}, " +
                 $"consumption={expectedConsumptionToken}/{prepared.ConsumptionChecksum}.");
+        }
+
+        if (prepared.ByteControlAvailable != byteControlEligibility.IsEligible ||
+            byteControlEligibility.IsEligible &&
+            (prepared.ByteControlChecksum != expectedChecksum ||
+             prepared.ByteControlSemanticDigest != expectedSemanticDigest ||
+             prepared.ByteControlConsumptionChecksum != expectedConsumptionToken))
+        {
+            throw new InvalidOperationException(
+                $"PythonRe benchmark '{caseId}' disagrees with its CPython bytes-control preflight: " +
+                $"available={byteControlEligibility.IsEligible}/{prepared.ByteControlAvailable}, " +
+                $"checksum={expectedChecksum}/{prepared.ByteControlChecksum}, " +
+                $"semantic digest={expectedSemanticDigest:X16}/{prepared.ByteControlSemanticDigest:X16}, " +
+                $"consumption={expectedConsumptionToken}/{prepared.ByteControlConsumptionChecksum}.");
         }
 
         for (var warmupCall = 0; warmupCall < 64; warmupCall++)
@@ -109,6 +129,12 @@ internal static partial class PythonReBenchmarkReporter
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
             PythonReQualificationMaximumIterations);
+        var preliminaryByteCalibration = byteControlEligibility.IsEligible
+            ? worker.Calibrate(
+                CpythonStreamLane.Bytes,
+                PythonReQualificationTargetSampleMilliseconds,
+                PythonReQualificationMaximumIterations)
+            : null;
         var managedWarmup = WarmManagedLane(
             context,
             preliminaryManagedIterations,
@@ -121,6 +147,14 @@ internal static partial class PythonReBenchmarkReporter
             minimumMilliseconds: 100,
             minimumCalls: PythonReQualificationMinimumWarmupCalls,
             maximumBatches: 32);
+        var byteWarmup = preliminaryByteCalibration is not null
+            ? worker.Warm(
+                CpythonStreamLane.Bytes,
+                preliminaryByteCalibration.Iterations,
+                minimumMilliseconds: 100,
+                minimumCalls: PythonReQualificationMinimumWarmupCalls,
+                maximumBatches: 32)
+            : null;
         var managedIterations = CalibrateManagedBatch(
             context,
             expectedChecksum,
@@ -131,6 +165,13 @@ internal static partial class PythonReBenchmarkReporter
             PythonReQualificationTargetSampleMilliseconds,
             PythonReQualificationMaximumIterations);
         var cpythonIterations = cpythonCalibration.Iterations;
+        var byteCalibration = byteControlEligibility.IsEligible
+            ? worker.Calibrate(
+                CpythonStreamLane.Bytes,
+                PythonReQualificationTargetSampleMilliseconds,
+                PythonReQualificationMaximumIterations)
+            : null;
+        var byteIterations = byteCalibration?.Iterations ?? 0;
 
         var laneOrders = new List<PythonRePairLaneOrder>(samples);
         var managedMicroseconds = new List<double>(samples);
@@ -143,6 +184,11 @@ internal static partial class PythonReBenchmarkReporter
         var cpythonGcCollections = new List<int[]>(samples);
         var managedAllocatedBytes = new List<long>(samples);
         var ratios = new List<double>(samples);
+        var byteMicroseconds = new List<double>(samples);
+        var byteMilliseconds = new List<double>(samples);
+        var byteProcessCpuMilliseconds = new List<double>(samples);
+        var byteGcCollections = new List<int[]>(samples);
+        var byteRatios = new List<double>(samples);
 
         for (var sample = 0; sample < samples; sample++)
         {
@@ -151,6 +197,7 @@ internal static partial class PythonReBenchmarkReporter
                 : PythonRePairLaneOrder.CpythonFirst;
             PythonReManagedSample managed;
             CpythonStreamResponse cpython;
+            CpythonStreamResponse? bytes = null;
             if (order == PythonRePairLaneOrder.ManagedFirst)
             {
                 managed = MeasureManagedSample(
@@ -161,9 +208,18 @@ internal static partial class PythonReBenchmarkReporter
                     expectedConsumptionToken,
                     currentProcess);
                 cpython = worker.Measure(CpythonStreamLane.Predecoded, cpythonIterations);
+                if (byteControlEligibility.IsEligible)
+                {
+                    bytes = worker.Measure(CpythonStreamLane.Bytes, byteIterations);
+                }
             }
             else
             {
+                if (byteControlEligibility.IsEligible)
+                {
+                    bytes = worker.Measure(CpythonStreamLane.Bytes, byteIterations);
+                }
+
                 cpython = worker.Measure(CpythonStreamLane.Predecoded, cpythonIterations);
                 managed = MeasureManagedSample(
                     context,
@@ -187,6 +243,15 @@ internal static partial class PythonReBenchmarkReporter
             cpythonGcCollections.Add(cpython.GcCollections);
             managedAllocatedBytes.Add(managed.Batch.AllocatedBytes / managedIterations);
             ratios.Add(managedPerOperation / cpythonPerOperation);
+            if (bytes is not null)
+            {
+                var bytePerOperation = bytes.ElapsedNanoseconds / (double)byteIterations / 1_000;
+                byteMicroseconds.Add(bytePerOperation);
+                byteMilliseconds.Add(bytes.ElapsedNanoseconds / 1_000_000d);
+                byteProcessCpuMilliseconds.Add(bytes.ProcessCpuNanoseconds / 1_000_000d);
+                byteGcCollections.Add(bytes.GcCollections);
+                byteRatios.Add(managedPerOperation / bytePerOperation);
+            }
         }
 
         const int floorSamples = 3;
@@ -194,6 +259,8 @@ internal static partial class PythonReBenchmarkReporter
         var cpythonFloorMicroseconds = new List<double>(floorSamples);
         var managedTrivialMicroseconds = new List<double>(floorSamples);
         var cpythonTrivialMicroseconds = new List<double>(floorSamples);
+        var byteEmptyMicroseconds = new List<double>(floorSamples);
+        var byteTrivialMicroseconds = new List<double>(floorSamples);
         for (var sample = 0; sample < floorSamples; sample++)
         {
             var managedFloor = MeasureManagedEmptyLoop(managedIterations);
@@ -206,6 +273,17 @@ internal static partial class PythonReBenchmarkReporter
             managedTrivialMicroseconds.Add(managedTrivial.Elapsed.TotalMicroseconds / managedIterations);
             cpythonTrivialMicroseconds.Add(
                 cpythonTrivial.ElapsedNanoseconds / (double)cpythonIterations / 1_000);
+            if (byteControlEligibility.IsEligible)
+            {
+                var byteEmpty = worker.Measure(CpythonStreamLane.EmptyLoop, byteIterations);
+                var byteTrivial = worker.Measure(CpythonStreamLane.BoundTrivialCall, byteIterations);
+                byteEmptyMicroseconds.Add(
+                    byteEmpty.ElapsedNanoseconds / (double)byteIterations / 1_000);
+                byteTrivialMicroseconds.Add(
+                    byteTrivial.ElapsedNanoseconds / (double)byteIterations / 1_000);
+                s_sink ^= byteEmpty.Checksum ^ byteTrivial.Checksum;
+            }
+
             s_sink ^= managedFloor.Checksum ^ cpythonFloor.Checksum ^
                 managedTrivial.Checksum ^ cpythonTrivial.Checksum;
         }
@@ -255,6 +333,24 @@ internal static partial class PythonReBenchmarkReporter
             cpythonSpread,
             managedFloorFraction,
             cpythonFloorFraction);
+        var byteControlEvidence = CreatePythonReByteControlEvidence(
+            byteControlEligibility,
+            context.DescribeManagedRoute(),
+            worktreeQualified,
+            placementQualified,
+            byteIterations,
+            byteWarmup,
+            laneOrders,
+            managedMicroseconds,
+            managedMilliseconds,
+            byteMicroseconds,
+            byteMilliseconds,
+            byteProcessCpuMilliseconds,
+            byteGcCollections,
+            byteRatios,
+            byteEmptyMicroseconds,
+            managedTrivialMicroseconds,
+            byteTrivialMicroseconds);
         var measuredAtUtc = DateTimeOffset.UtcNow;
         var managedEnvironment = CaptureEnvironment();
         var caseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, context.InputBytes);
@@ -329,6 +425,7 @@ internal static partial class PythonReBenchmarkReporter
             CpythonEmptyLoopMicroseconds = cpythonFloorMicroseconds.ToArray(),
             ManagedTrivialCallMicroseconds = managedTrivialMicroseconds.ToArray(),
             CpythonTrivialCallMicroseconds = cpythonTrivialMicroseconds.ToArray(),
+            ByteControl = byteControlEvidence,
             CpythonEnvironment = worker.Environment,
             ManagedEnvironment = managedEnvironment,
         };
@@ -336,8 +433,12 @@ internal static partial class PythonReBenchmarkReporter
         {
             Status = status.Status.ToString(),
             StatusReason = status.Reason ?? "Qualified paired evidence.",
-            EngineEvidenceBasis = "Not engine-comparable",
-            EngineConclusion = "Unqualified",
+            EngineEvidenceBasis = byteControlEvidence is null
+                ? "Not engine-comparable"
+                : "Byte control",
+            EngineConclusion = byteControlEvidence?.EngineConclusion ?? "NotApplicable",
+            EngineConclusionReason = byteControlEvidence?.EngineConclusionReason ??
+                byteControlEligibility.Reason,
             PairedEvidence = pairedEvidence,
         };
 
@@ -377,6 +478,19 @@ internal static partial class PythonReBenchmarkReporter
             $"CPython={BenchmarkPairedStatistics.Median(cpythonProcessCpuMilliseconds):F1} ms (diagnostic)");
         Console.WriteLine($"Status             : {FormatStatus(status.Status)}");
         Console.WriteLine($"Status reason      : {status.Reason ?? "qualified paired evidence"}");
+        Console.WriteLine(
+            $"Byte control       : {(byteControlEligibility.IsEligible ? "eligible" : "excluded")}; " +
+            byteControlEligibility.Reason);
+        if (byteControlEvidence is not null)
+        {
+            Console.WriteLine(
+                $"Rbyte             : {byteControlEvidence.RatioMedian:F3} " +
+                $"[{byteControlEvidence.RatioLower95:F3}, {byteControlEvidence.RatioUpper95:F3}]");
+            Console.WriteLine(
+                $"Engine conclusion : {byteControlEvidence.EngineConclusion}; " +
+                byteControlEvidence.EngineConclusionReason);
+        }
+
         Console.WriteLine($"CPython            : {worker.Environment.Implementation} " +
                           $"{worker.Environment.Version}; {worker.Environment.ExecutableSha256}");
         Console.WriteLine("Raw pairs:");
@@ -386,6 +500,9 @@ internal static partial class PythonReBenchmarkReporter
                 $"  {sample + 1,2}: {laneOrders[sample],12}; " +
                 $"managed={managedMicroseconds[sample],10:F3} us; " +
                 $"CPython={cpythonMicroseconds[sample],10:F3} us; R={ratios[sample]:F3}; " +
+                (byteControlEvidence is null
+                    ? string.Empty
+                    : $"bytes={byteMicroseconds[sample],10:F3} us; Rbyte={byteRatios[sample]:F3}; ") +
                 $"GC={FormatGcCollections(managedGcCollections[sample])}/" +
                 $"{FormatGcCollections(cpythonGcCollections[sample])}");
         }
@@ -480,6 +597,128 @@ internal static partial class PythonReBenchmarkReporter
         return iterations;
     }
 
+    private static PythonReByteControlEvidence? CreatePythonReByteControlEvidence(
+        PythonReByteControlEligibility eligibility,
+        string managedRoute,
+        bool worktreeQualified,
+        bool placementQualified,
+        int iterations,
+        CpythonStreamResponse? warmup,
+        IReadOnlyList<PythonRePairLaneOrder> laneOrders,
+        IReadOnlyList<double> managedMicroseconds,
+        IReadOnlyList<double> managedMilliseconds,
+        IReadOnlyList<double> byteMicroseconds,
+        IReadOnlyList<double> byteMilliseconds,
+        IReadOnlyList<double> byteProcessCpuMilliseconds,
+        IReadOnlyList<int[]> byteGcCollections,
+        IReadOnlyList<double> ratios,
+        IReadOnlyList<double> byteEmptyMicroseconds,
+        IReadOnlyList<double> managedTrivialMicroseconds,
+        IReadOnlyList<double> byteTrivialMicroseconds)
+    {
+        if (!eligibility.IsEligible)
+        {
+            return null;
+        }
+
+        if (warmup is null || byteMicroseconds.Count != managedMicroseconds.Count)
+        {
+            throw new InvalidOperationException("An eligible PythonRe byte control has incomplete samples.");
+        }
+
+        var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
+        var interval = BenchmarkPairedStatistics.BootstrapMedianLogRatio(
+            logRatios,
+            PythonReQualificationBootstrapSeed,
+            PythonReQualificationBootstrapResamples);
+        var managedFirstRatios = laneOrders
+            .Select((order, index) => new PythonReOrderedRatio(order, ratios[index]))
+            .Where(static sample => sample.Order == PythonRePairLaneOrder.ManagedFirst)
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var cpythonFirstRatios = laneOrders
+            .Select((order, index) => new PythonReOrderedRatio(order, ratios[index]))
+            .Where(static sample => sample.Order == PythonRePairLaneOrder.CpythonFirst)
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var managedMedian = BenchmarkPairedStatistics.Median(managedMicroseconds);
+        var byteMedian = BenchmarkPairedStatistics.Median(byteMicroseconds);
+        var managedTrivialFraction =
+            BenchmarkPairedStatistics.Median(managedTrivialMicroseconds) / managedMedian;
+        var byteTrivialFraction =
+            BenchmarkPairedStatistics.Median(byteTrivialMicroseconds) / byteMedian;
+        var ratioLower = Math.Exp(interval.Lower);
+        var ratioUpper = Math.Exp(interval.Upper);
+        var orderEffect = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+            BenchmarkPairedStatistics.Median(cpythonFirstRatios);
+        var managedSpread = BenchmarkPairedStatistics.InterquartileSpread(managedMicroseconds);
+        var byteSpread = BenchmarkPairedStatistics.InterquartileSpread(byteMicroseconds);
+        var durationQualified = managedMilliseconds.All(
+                                    static duration =>
+                                        duration >= PythonReQualificationMinimumSampleMilliseconds) &&
+                                byteMilliseconds.All(
+                                    static duration =>
+                                        duration >= PythonReQualificationMinimumSampleMilliseconds);
+        var nativeManagedRoute = managedRoute.StartsWith("Utf8Regex/", StringComparison.Ordinal) &&
+                                 !managedRoute.Contains("/FallbackRegex", StringComparison.Ordinal);
+        PythonReStatusResult engineStatus;
+        if (!nativeManagedRoute)
+        {
+            engineStatus = new PythonReStatusResult(
+                PythonRePublicStatus.Unqualified,
+                "The managed byte control does not use a native UTF-8 core route.");
+        }
+        else
+        {
+            engineStatus = DeriveStatus(
+                worktreeQualified,
+                placementQualified,
+                durationQualified,
+                structuredDigestQualified: true,
+                ratioLower,
+                ratioUpper,
+                orderEffect,
+                managedSpread,
+                byteSpread,
+                managedTrivialFraction,
+                byteTrivialFraction);
+        }
+
+        return new PythonReByteControlEvidence
+        {
+            EligibilityReason = eligibility.Reason,
+            CpythonIterations = iterations,
+            CpythonWarmupCalls = warmup.Iterations,
+            CpythonWarmupMilliseconds = warmup.ElapsedNanoseconds / 1_000_000d,
+            CpythonMedianMicroseconds = byteMedian,
+            RatioMedian = Math.Exp(BenchmarkPairedStatistics.Median(logRatios)),
+            RatioLower95 = ratioLower,
+            RatioUpper95 = ratioUpper,
+            OrderEffect = orderEffect,
+            ManagedInterquartileSpread = managedSpread,
+            CpythonInterquartileSpread = byteSpread,
+            ManagedTrivialCallFraction = managedTrivialFraction,
+            CpythonTrivialCallFraction = byteTrivialFraction,
+            EngineConclusion = nativeManagedRoute
+                ? engineStatus.Status.ToString()
+                : "NotApplicable",
+            EngineConclusionReason = engineStatus.Reason ?? "Qualified byte-control evidence.",
+            Samples = Enumerable.Range(0, byteMicroseconds.Count)
+                .Select(index => new PythonReByteControlSampleEvidence
+                {
+                    Order = laneOrders[index].ToString(),
+                    CpythonMicroseconds = byteMicroseconds[index],
+                    Ratio = ratios[index],
+                    CpythonElapsedMilliseconds = byteMilliseconds[index],
+                    CpythonProcessCpuMilliseconds = byteProcessCpuMilliseconds[index],
+                    CpythonGcCollections = byteGcCollections[index],
+                })
+                .ToArray(),
+            CpythonEmptyLoopMicroseconds = byteEmptyMicroseconds.ToArray(),
+            CpythonTrivialCallMicroseconds = byteTrivialMicroseconds.ToArray(),
+        };
+    }
+
     private static int VerifyPythonReSemanticDigests()
     {
         var supplementaryCase = new PythonReBenchmarkCase(
@@ -495,13 +734,24 @@ internal static partial class PythonReBenchmarkReporter
         foreach (var benchmarkCase in cases)
         {
             var context = new PythonReBenchmarkContext(benchmarkCase);
+            var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
+                benchmarkCase,
+                context.InputBytes);
             var expectedChecksum = context.ExecutePythonRe();
             var expectedSemanticDigest = context.ExecutePythonReSemanticDigest();
             var expectedConsumptionToken = context.ExecutePythonReConsumptionToken();
-            var prepared = worker.Prepare(benchmarkCase, context.InputBytes);
+            var prepared = worker.Prepare(
+                benchmarkCase,
+                context.InputBytes,
+                byteControlEligibility.IsEligible);
             if (prepared.Checksum != expectedChecksum ||
                 prepared.SemanticDigest != expectedSemanticDigest ||
-                prepared.ConsumptionChecksum != expectedConsumptionToken)
+                prepared.ConsumptionChecksum != expectedConsumptionToken ||
+                prepared.ByteControlAvailable != byteControlEligibility.IsEligible ||
+                byteControlEligibility.IsEligible &&
+                (prepared.ByteControlChecksum != expectedChecksum ||
+                 prepared.ByteControlSemanticDigest != expectedSemanticDigest ||
+                 prepared.ByteControlConsumptionChecksum != expectedConsumptionToken))
             {
                 Console.Error.WriteLine(
                     $"{benchmarkCase.Id}: checksum={expectedChecksum}/{prepared.Checksum}; " +
@@ -526,6 +776,30 @@ internal static partial class PythonReBenchmarkReporter
         var verified = 0;
         foreach (var (caseId, measurement) in snapshot.Cases)
         {
+            var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal));
+            if (benchmarkCase is null)
+            {
+                Console.Error.WriteLine($"{caseId}: snapshot row has no current catalog case.");
+                return 1;
+            }
+
+            var inputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
+            var byteControlEligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
+                benchmarkCase,
+                inputBytes);
+            var currentContext = new PythonReBenchmarkContext(benchmarkCase);
+            if (measurement.ByteControlEligible != byteControlEligibility.IsEligible ||
+                !measurement.ByteControlReason.Equals(byteControlEligibility.Reason, StringComparison.Ordinal) ||
+                !measurement.ComparatorOwner.Equals(
+                    PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+                    StringComparison.Ordinal) ||
+                !measurement.ManagedRoute.Equals(currentContext.DescribeManagedRoute(), StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine($"{caseId}: ownership, route, or byte eligibility is stale.");
+                return 1;
+            }
+
             var qualification = measurement.Qualification;
             if (qualification is null)
             {
@@ -543,18 +817,17 @@ internal static partial class PythonReBenchmarkReporter
                     return 1;
                 }
 
+                if (!qualification.EngineEvidenceBasis.Equals(
+                        "Not engine-comparable",
+                        StringComparison.Ordinal) ||
+                    !qualification.EngineConclusion.Equals("NotApplicable", StringComparison.Ordinal))
+                {
+                    Console.Error.WriteLine($"{caseId}: a row without paired evidence has an engine conclusion.");
+                    return 1;
+                }
+
                 continue;
             }
-
-            var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
-                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal));
-            if (benchmarkCase is null)
-            {
-                Console.Error.WriteLine($"{caseId}: paired evidence has no current catalog case.");
-                return 1;
-            }
-
-            var inputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
             if (!evidence.CaseDefinitionSha256.Equals(
                     ComputePythonReCaseDefinitionSha256(benchmarkCase, inputBytes),
                     StringComparison.Ordinal) ||
@@ -701,6 +974,14 @@ internal static partial class PythonReBenchmarkReporter
                 return 1;
             }
 
+            VerifyPythonReByteControl(
+                caseId,
+                measurement,
+                qualification,
+                evidence,
+                byteControlEligibility,
+                managedMicroseconds);
+
             var expectedQualificationId = ComputePythonReQualificationId(
                 evidence.CaseDefinitionSha256,
                 evidence.CatalogSha256,
@@ -724,6 +1005,142 @@ internal static partial class PythonReBenchmarkReporter
             $"Verified {verified} paired PythonRe qualifications; " +
             $"{snapshot.Cases.Count - verified} rows remain explicitly Unqualified.");
         return 0;
+    }
+
+    private static void VerifyPythonReByteControl(
+        string caseId,
+        PythonReCaseMeasurement measurement,
+        PythonReQualificationMeasurement qualification,
+        PythonRePairedEvidence evidence,
+        PythonReByteControlEligibility eligibility,
+        IReadOnlyList<double> managedMicroseconds)
+    {
+        var byteControl = evidence.ByteControl;
+        if (!eligibility.IsEligible)
+        {
+            if (byteControl is not null ||
+                !qualification.EngineEvidenceBasis.Equals(
+                    "Not engine-comparable",
+                    StringComparison.Ordinal) ||
+                !qualification.EngineConclusion.Equals("NotApplicable", StringComparison.Ordinal) ||
+                !qualification.EngineConclusionReason.Equals(eligibility.Reason, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"{caseId}: an ineligible byte control has engine evidence.");
+            }
+
+            return;
+        }
+
+        if (byteControl is null || byteControl.Samples.Length != evidence.Samples.Length ||
+            byteControl.CpythonEmptyLoopMicroseconds.Length != 3 ||
+            byteControl.CpythonTrivialCallMicroseconds.Length != 3)
+        {
+            throw new InvalidOperationException($"{caseId}: eligible byte-control evidence is incomplete.");
+        }
+
+        var byteMicroseconds = byteControl.Samples
+            .Select(static sample => sample.CpythonMicroseconds)
+            .ToArray();
+        var ratios = byteControl.Samples.Select(static sample => sample.Ratio).ToArray();
+        for (var index = 0; index < byteControl.Samples.Length; index++)
+        {
+            if (!byteControl.Samples[index].Order.Equals(
+                    evidence.Samples[index].Order,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"{caseId}: byte-control lane order is stale.");
+            }
+
+            VerifyPythonReStatistic(
+                $"{caseId} byte sample {index + 1} ratio",
+                managedMicroseconds[index] / byteMicroseconds[index],
+                ratios[index]);
+        }
+
+        var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
+        var interval = BenchmarkPairedStatistics.BootstrapMedianLogRatio(
+            logRatios,
+            PythonReQualificationBootstrapSeed,
+            PythonReQualificationBootstrapResamples);
+        var managedFirstRatios = byteControl.Samples
+            .Where(static sample => sample.Order.Equals("ManagedFirst", StringComparison.Ordinal))
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var cpythonFirstRatios = byteControl.Samples
+            .Where(static sample => sample.Order.Equals("CpythonFirst", StringComparison.Ordinal))
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var managedMedian = BenchmarkPairedStatistics.Median(managedMicroseconds);
+        var byteMedian = BenchmarkPairedStatistics.Median(byteMicroseconds);
+        var ratioLower = Math.Exp(interval.Lower);
+        var ratioUpper = Math.Exp(interval.Upper);
+        var orderEffect = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+            BenchmarkPairedStatistics.Median(cpythonFirstRatios);
+        var managedSpread = BenchmarkPairedStatistics.InterquartileSpread(managedMicroseconds);
+        var byteSpread = BenchmarkPairedStatistics.InterquartileSpread(byteMicroseconds);
+        var managedTrivialFraction =
+            BenchmarkPairedStatistics.Median(evidence.ManagedTrivialCallMicroseconds) / managedMedian;
+        var byteTrivialFraction =
+            BenchmarkPairedStatistics.Median(byteControl.CpythonTrivialCallMicroseconds) / byteMedian;
+        VerifyPythonReStatistic(caseId + " byte median", byteMedian, byteControl.CpythonMedianMicroseconds);
+        VerifyPythonReStatistic(
+            caseId + " byte ratio median",
+            Math.Exp(BenchmarkPairedStatistics.Median(logRatios)),
+            byteControl.RatioMedian);
+        VerifyPythonReStatistic(caseId + " byte interval lower", ratioLower, byteControl.RatioLower95);
+        VerifyPythonReStatistic(caseId + " byte interval upper", ratioUpper, byteControl.RatioUpper95);
+        VerifyPythonReStatistic(caseId + " byte order", orderEffect, byteControl.OrderEffect);
+        VerifyPythonReStatistic(
+            caseId + " byte managed spread",
+            managedSpread,
+            byteControl.ManagedInterquartileSpread);
+        VerifyPythonReStatistic(caseId + " byte spread", byteSpread, byteControl.CpythonInterquartileSpread);
+        VerifyPythonReStatistic(
+            caseId + " byte managed trivial floor",
+            managedTrivialFraction,
+            byteControl.ManagedTrivialCallFraction);
+        VerifyPythonReStatistic(
+            caseId + " byte trivial floor",
+            byteTrivialFraction,
+            byteControl.CpythonTrivialCallFraction);
+
+        var nativeManagedRoute = measurement.ManagedRoute.StartsWith("Utf8Regex/", StringComparison.Ordinal) &&
+                                 !measurement.ManagedRoute.Contains("/FallbackRegex", StringComparison.Ordinal);
+        var durationsQualified = evidence.Samples.All(sample =>
+                                     sample.ManagedElapsedMilliseconds >=
+                                     PythonReQualificationMinimumSampleMilliseconds) &&
+                                 byteControl.Samples.All(sample =>
+                                     sample.CpythonElapsedMilliseconds >=
+                                     PythonReQualificationMinimumSampleMilliseconds);
+        var expectedEngineStatus = nativeManagedRoute
+            ? DeriveStatus(
+                evidence.WorktreeQualified,
+                IsPythonReQualifiedProcessorPolicy(evidence.CpuPolicy),
+                durationsQualified,
+                structuredDigestQualified: true,
+                ratioLower,
+                ratioUpper,
+                orderEffect,
+                managedSpread,
+                byteSpread,
+                managedTrivialFraction,
+                byteTrivialFraction)
+            : new PythonReStatusResult(
+                PythonRePublicStatus.Unqualified,
+                "The managed byte control does not use a native UTF-8 core route.");
+        var expectedConclusion = nativeManagedRoute
+            ? expectedEngineStatus.Status.ToString()
+            : "NotApplicable";
+        var expectedReason = expectedEngineStatus.Reason ?? "Qualified byte-control evidence.";
+        if (!qualification.EngineEvidenceBasis.Equals("Byte control", StringComparison.Ordinal) ||
+            !qualification.EngineConclusion.Equals(expectedConclusion, StringComparison.Ordinal) ||
+            !qualification.EngineConclusionReason.Equals(expectedReason, StringComparison.Ordinal) ||
+            !byteControl.EngineConclusion.Equals(expectedConclusion, StringComparison.Ordinal) ||
+            !byteControl.EngineConclusionReason.Equals(expectedReason, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"{caseId}: byte-control engine conclusion is stale.");
+        }
     }
 
     private static bool IsPythonReQualifiedProcessorPolicy(string policy) =>
@@ -1137,7 +1554,10 @@ internal static partial class PythonReBenchmarkReporter
 
         internal CpythonStreamEnvironment Environment { get; }
 
-        internal CpythonStreamResponse Prepare(PythonReBenchmarkCase benchmarkCase, byte[] inputBytes) => Send(
+        internal CpythonStreamResponse Prepare(
+            PythonReBenchmarkCase benchmarkCase,
+            byte[] inputBytes,
+            bool enableByteControl) => Send(
             new CpythonStreamCommand
             {
                 ProtocolVersion = PythonReQualificationProtocolVersion,
@@ -1147,6 +1567,7 @@ internal static partial class PythonReBenchmarkReporter
                 Operation = benchmarkCase.Operation.ToString(),
                 InputBase64 = Convert.ToBase64String(inputBytes),
                 Replacement = benchmarkCase.Replacement,
+                EnableByteControl = enableByteControl,
             },
             "Prepared");
 
@@ -1303,6 +1724,7 @@ internal enum CpythonStreamLane : byte
     Predecoded = 0,
     EmptyLoop = 1,
     BoundTrivialCall = 2,
+    Bytes = 3,
 }
 
 internal enum PythonRePairLaneOrder : byte
@@ -1348,6 +1770,7 @@ internal sealed class CpythonStreamCommand
     public string? Operation { get; init; }
     public string? InputBase64 { get; init; }
     public string? Replacement { get; init; }
+    public bool EnableByteControl { get; init; }
     public string? Lane { get; init; }
     public int? Iterations { get; init; }
     public long? TargetNanoseconds { get; init; }
@@ -1370,6 +1793,10 @@ internal sealed class CpythonStreamResponse
     public int Checksum { get; init; }
     public ulong SemanticDigest { get; init; }
     public ulong ConsumptionChecksum { get; init; }
+    public bool ByteControlAvailable { get; init; }
+    public int? ByteControlChecksum { get; init; }
+    public ulong? ByteControlSemanticDigest { get; init; }
+    public ulong? ByteControlConsumptionChecksum { get; init; }
     public int[] GcCollections { get; init; } = [];
     public string? ErrorType { get; init; }
     public string? Message { get; init; }
