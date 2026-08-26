@@ -1209,7 +1209,9 @@ internal static partial class PythonReBenchmarkReporter
         var currentCpython = worker.Environment;
         var currentManaged = CaptureEnvironment();
         var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
-        var verified = 0;
+        var pairedEvidenceRows = 0;
+        var missingEvidenceRows = 0;
+        var statisticallyUnqualifiedRows = 0;
         foreach (var (caseId, measurement) in snapshot.Cases)
         {
             var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
@@ -1262,6 +1264,7 @@ internal static partial class PythonReBenchmarkReporter
                     return 1;
                 }
 
+                missingEvidenceRows++;
                 continue;
             }
             var freshness = GetPythonReQualificationFreshness(
@@ -1402,12 +1405,17 @@ internal static partial class PythonReBenchmarkReporter
                 return 1;
             }
 
-            verified++;
+            pairedEvidenceRows++;
+            if (qualification.Status.Equals("Unqualified", StringComparison.Ordinal))
+            {
+                statisticallyUnqualifiedRows++;
+            }
         }
 
         Console.WriteLine(
-            $"Verified {verified} paired PythonRe qualifications; " +
-            $"{snapshot.Cases.Count - verified} rows remain explicitly Unqualified.");
+            $"Verified {pairedEvidenceRows} paired PythonRe evidence rows; " +
+            $"missing paired-evidence rows: {missingEvidenceRows}; " +
+            $"statistically Unqualified paired rows: {statisticallyUnqualifiedRows}.");
         return 0;
     }
 
