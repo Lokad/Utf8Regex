@@ -860,7 +860,7 @@ internal static partial class PythonReBenchmarkReporter
         if (!context.SupportsReplacementPhases)
         {
             Console.Error.WriteLine(
-                $"PythonRe replacement phase diagnostics currently require a non-empty-match pattern " +
+                $"PythonRe replacement phase diagnostics currently require a capture-free pattern " +
                 $"and a literal replacement; '{id}' is unsupported.");
             return 1;
         }
@@ -1942,6 +1942,7 @@ internal sealed class PythonReBenchmarkContext
     private readonly string _optionalCaptureValue;
     private readonly bool _supportsReplacementPhases;
     private readonly Utf8Regex? _coreReplacementRegex;
+    private readonly Regex? _replacementNonEmptyAtSamePositionRegex;
     private readonly PythonReReplacementPlan _preparedReplacementPlan;
     private readonly string _preparedDotNetReplacement;
     private readonly string _preparedLiteralReplacement;
@@ -2168,8 +2169,7 @@ internal sealed class PythonReBenchmarkContext
                 PythonReBenchmarkOperation.ReplaceUtf8 or
                 PythonReBenchmarkOperation.SubnString or
                 PythonReBenchmarkOperation.SubnUtf8 &&
-            _captureCount == 0 &&
-            !_regex.IsMatch(string.Empty))
+            _captureCount == 0)
         {
             var plan = PythonReReplacementParser.Parse(
                 benchmarkCase.Replacement,
@@ -2180,6 +2180,14 @@ internal sealed class PythonReBenchmarkContext
             _coreReplacementRegex = _supportsReplacementPhases
                 ? new Utf8Regex(translatedPattern, regexOptions)
                 : null;
+            _replacementNonEmptyAtSamePositionRegex = _supportsReplacementPhases &&
+                PythonReTranslator.CanMatchEmpty(parsed.Root) &&
+                PythonReTranslator.CanMatchNonEmpty(parsed.Root)
+                    ? new Regex(
+                        @"\G(?:(?:" + translatedPattern + @"))(?!\G)",
+                        regexOptions,
+                        Regex.InfiniteMatchTimeout)
+                    : null;
             _preparedReplacementPlan = plan;
             _preparedDotNetReplacement = plan.ToDotNetReplacementString();
             _preparedLiteralReplacement = string.Concat(
@@ -2193,6 +2201,7 @@ internal sealed class PythonReBenchmarkContext
         {
             _supportsReplacementPhases = false;
             _coreReplacementRegex = null;
+            _replacementNonEmptyAtSamePositionRegex = null;
             _preparedReplacementPlan = default;
             _preparedDotNetReplacement = string.Empty;
             _preparedLiteralReplacement = string.Empty;
@@ -3741,7 +3750,32 @@ internal sealed class PythonReBenchmarkContext
             builder.Append(_preparedLiteralReplacement);
             replacementCount++;
             lastIndex = checked(match.Index + match.Length);
-            searchIndex = lastIndex;
+            if (match.Length > 0)
+            {
+                searchIndex = lastIndex;
+                continue;
+            }
+
+            if (_replacementNonEmptyAtSamePositionRegex is not null && match.Index < subject.Length)
+            {
+                var nonEmptyMatch = _replacementNonEmptyAtSamePositionRegex.Match(subject, match.Index);
+                if (nonEmptyMatch.Success && nonEmptyMatch.Index == match.Index && nonEmptyMatch.Length > 0)
+                {
+                    builder.Append(_preparedLiteralReplacement);
+                    replacementCount++;
+                    lastIndex = checked(nonEmptyMatch.Index + nonEmptyMatch.Length);
+                    searchIndex = lastIndex;
+                    continue;
+                }
+            }
+
+            if (match.Index >= subject.Length)
+            {
+                break;
+            }
+
+            searchIndex = checked(
+                match.Index + Rune.GetRuneAt(subject, match.Index).Utf16SequenceLength);
         }
 
         builder.Append(subject.AsSpan(lastIndex));
