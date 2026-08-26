@@ -84,14 +84,15 @@ internal sealed class BenchmarkProcessorScope : IDisposable
         }
 
         var appliedMask = singleProcessor
-            ? 1UL << BitOperations.TrailingZeroCount(selected.Mask)
+            ? SelectLeastContendedProcessorMask(process, selected.Mask)
             : selected.Mask;
         process.ProcessorAffinity = new nint(unchecked((long)appliedMask));
         var policy = singleProcessor
-            ? "single-highest-efficiency-processor"
+            ? "single-least-contended-highest-efficiency-processor"
             : "highest-efficiency-class";
         var description = singleProcessor
-            ? $"one processor from efficiency class {selected.EfficiencyClass} ({FormatMask(appliedMask)})"
+            ? $"least-contended processor from efficiency class {selected.EfficiencyClass} " +
+              $"({FormatMask(appliedMask)})"
             : $"highest efficiency class {selected.EfficiencyClass} ({FormatMask(appliedMask)})";
         return new(
             process,
@@ -160,6 +161,41 @@ internal sealed class BenchmarkProcessorScope : IDisposable
             {
                 Marshal.FreeHGlobal(buffer);
             }
+        }
+
+        static ulong SelectLeastContendedProcessorMask(Process process, ulong candidateMask)
+        {
+            // The first logical processor is commonly burdened by system work. Probe only
+            // equal-efficiency candidates; the child comparator inherits the selected mask.
+            const int probeSamples = 3;
+            const int probeSpinIterations = 250_000;
+            var bestMask = 0UL;
+            var bestMedianTicks = long.MaxValue;
+            Span<long> elapsedTicks = stackalloc long[probeSamples];
+            while (candidateMask != 0)
+            {
+                var logicalProcessor = BitOperations.TrailingZeroCount(candidateMask);
+                var processorMask = 1UL << logicalProcessor;
+                candidateMask &= ~processorMask;
+                process.ProcessorAffinity = new nint(unchecked((long)processorMask));
+                Thread.SpinWait(10_000);
+
+                for (var sample = 0; sample < probeSamples; sample++)
+                {
+                    var started = Stopwatch.GetTimestamp();
+                    Thread.SpinWait(probeSpinIterations);
+                    elapsedTicks[sample] = Stopwatch.GetTimestamp() - started;
+                }
+
+                elapsedTicks.Sort();
+                if (elapsedTicks[probeSamples / 2] < bestMedianTicks)
+                {
+                    bestMedianTicks = elapsedTicks[probeSamples / 2];
+                    bestMask = processorMask;
+                }
+            }
+
+            return bestMask;
         }
     }
 

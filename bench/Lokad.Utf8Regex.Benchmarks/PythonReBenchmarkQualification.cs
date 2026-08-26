@@ -10,6 +10,8 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static partial class PythonReBenchmarkReporter
 {
     private const int PythonReQualificationProtocolVersion = 2;
+    private const string PythonReQualificationProcessorPolicy =
+        "single-least-contended-highest-efficiency-processor";
     private const int PythonReQualificationBootstrapSeed = 31302;
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
@@ -240,7 +242,7 @@ internal static partial class PythonReBenchmarkReporter
                                      static duration => duration >= PythonReQualificationMinimumSampleMilliseconds) &&
                                  cpythonMilliseconds.All(
                                      static duration => duration >= PythonReQualificationMinimumSampleMilliseconds);
-        var placementQualified = processorScope.Policy == "single-highest-efficiency-processor";
+        var placementQualified = processorScope.Policy == PythonReQualificationProcessorPolicy;
         var status = DeriveStatus(
             worktreeQualified,
             placementQualified,
@@ -679,7 +681,7 @@ internal static partial class PythonReBenchmarkReporter
                 sample.CpythonElapsedMilliseconds >= PythonReQualificationMinimumSampleMilliseconds);
             var expectedStatus = DeriveStatus(
                 evidence.WorktreeQualified,
-                evidence.CpuPolicy.Equals("single-highest-efficiency-processor", StringComparison.Ordinal),
+                IsPythonReQualifiedProcessorPolicy(evidence.CpuPolicy),
                 durationsQualified,
                 structuredDigestQualified: true,
                 ratioLower,
@@ -722,6 +724,10 @@ internal static partial class PythonReBenchmarkReporter
             $"{snapshot.Cases.Count - verified} rows remain explicitly Unqualified.");
         return 0;
     }
+
+    private static bool IsPythonReQualifiedProcessorPolicy(string policy) =>
+        policy.Equals(PythonReQualificationProcessorPolicy, StringComparison.Ordinal) ||
+        policy.Equals("single-highest-efficiency-processor", StringComparison.Ordinal);
 
     private static bool VerifyPythonReInterpreterFile(string path, string expectedSha256)
     {

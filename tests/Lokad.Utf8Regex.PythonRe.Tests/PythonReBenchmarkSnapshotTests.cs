@@ -172,7 +172,13 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("QualificationId").GetString() ?? string.Empty);
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CaseDefinitionSha256").GetString() ?? string.Empty);
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CatalogSha256").GetString() ?? string.Empty);
-        Assert.Equal("single-highest-efficiency-processor", evidence.GetProperty("CpuPolicy").GetString());
+        Assert.Contains(
+            evidence.GetProperty("CpuPolicy").GetString(),
+            new[]
+            {
+                "single-highest-efficiency-processor",
+                "single-least-contended-highest-efficiency-processor",
+            });
         Assert.True(evidence.GetProperty("ManagedIterations").GetInt32() > 0);
         Assert.True(evidence.GetProperty("CpythonIterations").GetInt32() > 0);
         Assert.True(evidence.GetProperty("ManagedWarmupCalls").GetInt32() > 0);
