@@ -98,6 +98,15 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-replacement-phases", StringComparison.Ordinal))
+        {
+            exitCode = MeasureReplacementPhases(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 7));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-construction-pattern", StringComparison.Ordinal))
         {
             exitCode = MeasureConstructionPattern(
@@ -454,30 +463,30 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
         if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
         {
-            PrintOperation("PythonRePublic", MeasureRetainedOperation(context.ExecutePythonReFindAllUtf8, effectiveIterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllUtf8, effectiveIterations, samples));
         }
         else
         {
-            PrintOperation("PythonRePublic", MeasureRetainedOperation(context.ExecutePythonReFindAllStrings, effectiveIterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, effectiveIterations, samples));
         }
 
-        PrintOperation("DecodeComparator", MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
-        PrintOperation("CoreEnumerateOnly", MeasureOperation(context.ExecuteCoreEnumerationOnly, effectiveIterations, samples));
-        PrintOperation("CoreCollectRanges", MeasureRetainedOperation(context.CollectCoreRangesArray, effectiveIterations, samples));
+        PrintOperation("DecodeComparator", MeasurePhaseOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
+        PrintOperation("CoreEnumerateOnly", MeasurePhaseOperation(context.ExecuteCoreEnumerationOnly, effectiveIterations, samples));
+        PrintOperation("CoreCollectRanges", MeasureRetainedPhaseOperation(context.CollectCoreRangesArray, effectiveIterations, samples));
         if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
         {
-            PrintOperation("PreparedProjection", MeasureRetainedOperation(context.ProjectPreparedCoreUtf8, effectiveIterations, samples));
-            PrintOperation("CollectedProjection", MeasureRetainedOperation(context.ProjectCollectedCoreUtf8, effectiveIterations, samples));
-            PrintOperation("StreamingProjection", MeasureRetainedOperation(context.StreamCoreUtf8, effectiveIterations, samples));
+            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCoreUtf8, effectiveIterations, samples));
+            PrintOperation("CollectedProjection", MeasureRetainedPhaseOperation(context.ProjectCollectedCoreUtf8, effectiveIterations, samples));
+            PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.StreamCoreUtf8, effectiveIterations, samples));
         }
         else
         {
-            PrintOperation("PreparedProjection", MeasureRetainedOperation(context.ProjectPreparedCoreStrings, effectiveIterations, samples));
-            PrintOperation("CollectedProjection", MeasureRetainedOperation(context.ProjectCollectedCoreStrings, effectiveIterations, samples));
-            PrintOperation("StreamingProjection", MeasureRetainedOperation(context.StreamCoreStrings, effectiveIterations, samples));
+            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCoreStrings, effectiveIterations, samples));
+            PrintOperation("CollectedProjection", MeasureRetainedPhaseOperation(context.ProjectCollectedCoreStrings, effectiveIterations, samples));
+            PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.StreamCoreStrings, effectiveIterations, samples));
         }
 
-        PrintOperation("ChecksumTraversal", MeasureOperation(context.ExecutePreparedCoreChecksumTraversal, effectiveIterations, samples));
+        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedCoreChecksumTraversal, effectiveIterations, samples));
         return 0;
     }
 
@@ -512,26 +521,118 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
         Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
         Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
-        PrintOperation("Utf8DecodeOnly", MeasureRetainedOperation(context.DecodeInput, iterations, samples));
-        PrintOperation("PredecodedDiscovery", MeasureOperation(context.ExecuteCapturedDiscoveryOnly, iterations, samples));
-        PrintOperation("CaptureRangeCollect", MeasureRetainedOperation(context.CollectCapturedRanges, iterations, samples));
+        PrintOperation("Utf8DecodeOnly", MeasureRetainedPhaseOperation(context.DecodeInput, iterations, samples));
+        PrintOperation("PredecodedDiscovery", MeasurePhaseOperation(context.ExecuteCapturedDiscoveryOnly, iterations, samples));
+        PrintOperation("CaptureRangeCollect", MeasureRetainedPhaseOperation(context.CollectCapturedRanges, iterations, samples));
         if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
         {
-            PrintOperation("CoordinateMapOnly", MeasureRetainedOperation(context.CreateUtf8CoordinateMap, iterations, samples));
-            PrintOperation("PreparedProjection", MeasureRetainedOperation(context.ProjectPreparedCapturedUtf8, iterations, samples));
-            PrintOperation("PreparedFinalShape", MeasureRetainedOperation(context.ShapePreparedCapturedUtf8, iterations, samples));
-            PrintOperation("PredecodedProjection", MeasureRetainedOperation(context.ProjectPredecodedCapturedUtf8, iterations, samples));
-            PrintOperation("PythonRePublic", MeasureRetainedOperation(context.ExecutePythonReFindAllUtf8, iterations, samples));
+            PrintOperation("CoordinateMapOnly", MeasureRetainedPhaseOperation(context.CreateUtf8CoordinateMap, iterations, samples));
+            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCapturedUtf8, iterations, samples));
+            PrintOperation("PreparedFinalShape", MeasureRetainedPhaseOperation(context.ShapePreparedCapturedUtf8, iterations, samples));
+            PrintOperation("PredecodedProjection", MeasureRetainedPhaseOperation(context.ProjectPredecodedCapturedUtf8, iterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllUtf8, iterations, samples));
         }
         else
         {
-            PrintOperation("PreparedProjection", MeasureRetainedOperation(context.ProjectPreparedCapturedStrings, iterations, samples));
-            PrintOperation("PreparedFinalShape", MeasureRetainedOperation(context.ShapePreparedCapturedStrings, iterations, samples));
-            PrintOperation("PredecodedProjection", MeasureRetainedOperation(context.ProjectPredecodedCapturedStrings, iterations, samples));
-            PrintOperation("PythonRePublic", MeasureRetainedOperation(context.ExecutePythonReFindAllStrings, iterations, samples));
+            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCapturedStrings, iterations, samples));
+            PrintOperation("PreparedFinalShape", MeasureRetainedPhaseOperation(context.ShapePreparedCapturedStrings, iterations, samples));
+            PrintOperation("PredecodedProjection", MeasureRetainedPhaseOperation(context.ProjectPredecodedCapturedStrings, iterations, samples));
+            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, iterations, samples));
         }
 
-        PrintOperation("ChecksumTraversal", MeasureOperation(context.ExecutePreparedCapturedProjectionChecksum, iterations, samples));
+        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedCapturedProjectionChecksum, iterations, samples));
+        return 0;
+    }
+
+    private static int MeasureReplacementPhases(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.ReplaceString and
+            not PythonReBenchmarkOperation.ReplaceUtf8 and
+            not PythonReBenchmarkOperation.SubnString and
+            not PythonReBenchmarkOperation.SubnUtf8)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe replacement phase diagnostics require a fixed Replace/Subn operation; " +
+                $"'{id}' uses {benchmarkCase.Operation}.");
+            return 1;
+        }
+
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
+        using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        if (!context.SupportsReplacementPhases)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe replacement phase diagnostics currently require a non-empty-match pattern " +
+                $"and a literal replacement; '{id}' is unsupported.");
+            return 1;
+        }
+
+        var expected = context.ExecutePythonReReplacementChecksum();
+        var predecoded = context.ExecutePredecodedRequiredReplacementChecksum();
+        var decoded = context.ExecuteDecodedRequiredReplacementChecksum();
+        var utf8Core = context.ExecuteUtf8CoreRequiredReplacementChecksum();
+        var onePass = context.ExecuteDecodedOnePassLiteralReplacementChecksum();
+        if (expected != predecoded || expected != decoded || expected != utf8Core || expected != onePass)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe replacement phase diagnostic '{id}' produced incomparable sinks: " +
+                $"public={expected}, predecoded={predecoded}, decoded={decoded}, " +
+                $"UTF-8 core={utf8Core}, one-pass={onePass}.");
+        }
+
+        if (context.ExecuteUtf8CoreReplacementOutputChecksum() !=
+                context.ExecutePreparedReplacementOutputChecksum() ||
+            context.ExecuteUtf8CoreReplacementCount() != context.PreparedReplacementMatchCount)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe replacement phase diagnostic '{id}' produced incomparable UTF-8 core components.");
+        }
+
+        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
+        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
+        Console.WriteLine($"ManagedRoute       : {context.DescribeManagedRoute()}");
+        Console.WriteLine($"Utf8CoreRoute      : {context.ReplacementCoreExecutionKind}");
+        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
+        Console.WriteLine($"MatchCount         : {context.PreparedReplacementMatchCount}");
+        Console.WriteLine($"ReturnsCount       : {context.ReturnsReplacementCount}");
+        Console.WriteLine($"OutputUtf8Bytes    : {context.PreparedReplacementOutputUtf8Bytes}");
+        Console.WriteLine($"Iterations         : {effectiveIterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
+        Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
+        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
+        PrintOperation("ReplacementParse", MeasureRetainedPhaseOperation(context.ParseReplacement, effectiveIterations, samples));
+        PrintOperation("ReplacementTranslate", MeasureRetainedPhaseOperation(context.TranslateReplacement, effectiveIterations, samples));
+        PrintOperation("Utf8DecodeOnly", MeasureRetainedPhaseOperation(context.DecodeInput, effectiveIterations, samples));
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.SubnString or PythonReBenchmarkOperation.SubnUtf8)
+        {
+            PrintOperation("PredecodedCount", MeasurePhaseOperation(context.ExecutePredecodedReplacementCount, effectiveIterations, samples));
+            PrintOperation("Utf8CoreCount", MeasurePhaseOperation(context.ExecuteUtf8CoreReplacementCount, effectiveIterations, samples));
+        }
+
+        PrintOperation("PredecodedReplace", MeasureRetainedPhaseOperation(context.ExecutePredecodedReplacementText, effectiveIterations, samples));
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.ReplaceUtf8 or PythonReBenchmarkOperation.SubnUtf8)
+        {
+            PrintOperation("PreparedUtf8Encode", MeasureRetainedPhaseOperation(context.EncodePreparedReplacementUtf8, effectiveIterations, samples));
+        }
+
+        PrintOperation("PredecodedRequired", MeasureRetainedPhaseOperation(context.ExecutePredecodedRequiredReplacement, effectiveIterations, samples));
+        PrintOperation("DecodeRequired", MeasureRetainedPhaseOperation(context.ExecuteDecodedRequiredReplacement, effectiveIterations, samples));
+        PrintOperation("Utf8CoreReplace", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreReplacementOutput, effectiveIterations, samples));
+        PrintOperation("Utf8CoreRequired", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreRequiredReplacement, effectiveIterations, samples));
+        PrintOperation("PredecodedOnePass", MeasureRetainedPhaseOperation(context.ExecutePredecodedOnePassLiteralReplacement, effectiveIterations, samples));
+        PrintOperation("DecodeOnePass", MeasureRetainedPhaseOperation(context.ExecuteDecodedOnePassLiteralReplacement, effectiveIterations, samples));
+        PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReReplacement, effectiveIterations, samples));
+        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedReplacementChecksum, effectiveIterations, samples));
         return 0;
     }
 
@@ -1100,7 +1201,8 @@ internal static partial class PythonReBenchmarkReporter
     private static PythonReOperationMeasurement MeasureOperation(
         Func<int> operation,
         int iterations,
-        int samples)
+        int samples,
+        int minimumWarmupCalls = 0)
     {
         var warmup = Stopwatch.StartNew();
         var warmupCalls = 0;
@@ -1109,7 +1211,8 @@ internal static partial class PythonReBenchmarkReporter
             s_sink ^= operation();
             warmupCalls++;
         }
-        while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
+        while ((warmup.ElapsedMilliseconds < 100 || warmupCalls < minimumWarmupCalls) &&
+               warmupCalls < 65_536);
 
         var microseconds = new double[samples];
         var allocations = new long[samples];
@@ -1145,7 +1248,8 @@ internal static partial class PythonReBenchmarkReporter
     private static PythonReOperationMeasurement MeasureRetainedOperation<T>(
         Func<T> operation,
         int iterations,
-        int samples)
+        int samples,
+        int minimumWarmupCalls = 0)
     {
         var warmup = Stopwatch.StartNew();
         var warmupCalls = 0;
@@ -1154,7 +1258,8 @@ internal static partial class PythonReBenchmarkReporter
             s_retainedSink = operation();
             warmupCalls++;
         }
-        while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
+        while ((warmup.ElapsedMilliseconds < 100 || warmupCalls < minimumWarmupCalls) &&
+               warmupCalls < 65_536);
 
         var microseconds = new double[samples];
         var allocations = new long[samples];
@@ -1187,6 +1292,16 @@ internal static partial class PythonReBenchmarkReporter
             WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
         };
     }
+
+    private static PythonReOperationMeasurement MeasurePhaseOperation(
+        Func<int> operation,
+        int iterations,
+        int samples) => MeasureOperation(operation, iterations, samples, minimumWarmupCalls: 1_024);
+
+    private static PythonReOperationMeasurement MeasureRetainedPhaseOperation<T>(
+        Func<T> operation,
+        int iterations,
+        int samples) => MeasureRetainedOperation(operation, iterations, samples, minimumWarmupCalls: 1_024);
 
     private static void Print(PythonReBenchmarkCase benchmarkCase, PythonReCaseMeasurement measurement)
     {
@@ -1500,6 +1615,12 @@ internal sealed class PythonReBenchmarkContext
     private readonly int[]? _preparedUtf8Offsets;
     private readonly Utf8PythonFindAllResult _preparedCapturedStrings;
     private readonly Utf8PythonFindAllUtf8Result _preparedCapturedUtf8;
+    private readonly bool _supportsReplacementPhases;
+    private readonly Utf8Regex? _coreReplacementRegex;
+    private readonly PythonReReplacementPlan _preparedReplacementPlan;
+    private readonly string _preparedDotNetReplacement;
+    private readonly string _preparedLiteralReplacement;
+    private readonly PythonReBenchmarkReplacementResult? _preparedReplacementResult;
     private readonly string _decoded;
     private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
@@ -1555,6 +1676,40 @@ internal sealed class PythonReBenchmarkContext
             _preparedCapturedStrings = default;
             _preparedCapturedUtf8 = default;
         }
+
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.ReplaceString or
+                PythonReBenchmarkOperation.ReplaceUtf8 or
+                PythonReBenchmarkOperation.SubnString or
+                PythonReBenchmarkOperation.SubnUtf8 &&
+            _captureCount == 0 &&
+            !_regex.IsMatch(string.Empty))
+        {
+            var plan = PythonReReplacementParser.Parse(
+                benchmarkCase.Replacement,
+                _captureCount,
+                new Dictionary<string, int>(StringComparer.Ordinal));
+            _supportsReplacementPhases = plan.Tokens.All(
+                static token => token.Kind == PythonReReplacementTokenKind.Literal);
+            _coreReplacementRegex = _supportsReplacementPhases
+                ? new Utf8Regex(benchmarkCase.Pattern, regexOptions)
+                : null;
+            _preparedReplacementPlan = plan;
+            _preparedDotNetReplacement = plan.ToDotNetReplacementString();
+            _preparedLiteralReplacement = string.Concat(
+                plan.Tokens.Select(static token => token.RequiredText));
+            _preparedReplacementResult = _supportsReplacementPhases
+                ? ExecutePredecodedRequiredReplacement()
+                : null;
+        }
+        else
+        {
+            _supportsReplacementPhases = false;
+            _coreReplacementRegex = null;
+            _preparedReplacementPlan = default;
+            _preparedDotNetReplacement = string.Empty;
+            _preparedLiteralReplacement = string.Empty;
+            _preparedReplacementResult = null;
+        }
     }
 
     internal byte[] InputBytes { get; }
@@ -1577,6 +1732,18 @@ internal sealed class PythonReBenchmarkContext
         range => range.Success
             ? s_strictUtf8.GetByteCount(_decoded.AsSpan(range.StartOffsetInUtf16, range.LengthInUtf16))
             : 0);
+
+    internal bool SupportsReplacementPhases => _supportsReplacementPhases;
+
+    internal string ReplacementCoreExecutionKind => GetCoreReplacementRegex()
+        .Inspection.ExecutionKind.ToString();
+
+    internal int PreparedReplacementMatchCount => _regex.Count(_decoded);
+
+    internal bool ReturnsReplacementCount => IsSubnOperation;
+
+    internal int PreparedReplacementOutputUtf8Bytes => GetPreparedReplacementResult().ResultBytes?.Length ??
+        s_strictUtf8.GetByteCount(GetPreparedReplacementResult().ResultText);
 
     internal string DescribeManagedRoute() => _case.Operation switch
     {
@@ -2385,6 +2552,229 @@ internal sealed class PythonReBenchmarkContext
         if (!SupportsCapturedFindAllPhases)
         {
             throw new InvalidOperationException("Captured FindAll phase controls are not available for this case.");
+        }
+    }
+
+    internal PythonReReplacementPlan ParseReplacement()
+    {
+        EnsureReplacementPhases();
+        return PythonReReplacementParser.Parse(
+            _case.Replacement,
+            _captureCount,
+            new Dictionary<string, int>(StringComparer.Ordinal));
+    }
+
+    internal string TranslateReplacement()
+    {
+        EnsureReplacementPhases();
+        return _preparedReplacementPlan.ToDotNetReplacementString();
+    }
+
+    internal int ExecutePredecodedReplacementCount()
+    {
+        EnsureReplacementPhases();
+        return _regex.Count(_decoded);
+    }
+
+    internal string ExecutePredecodedReplacementText()
+    {
+        EnsureReplacementPhases();
+        return _regex.Replace(_decoded, _preparedDotNetReplacement);
+    }
+
+    internal byte[] EncodePreparedReplacementUtf8()
+    {
+        EnsureReplacementPhases();
+        return s_strictUtf8.GetBytes(GetPreparedReplacementResult().ResultText);
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecutePredecodedRequiredReplacement()
+    {
+        EnsureReplacementPhases();
+        return ExecuteRequiredReplacement(_decoded);
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecuteDecodedRequiredReplacement()
+    {
+        EnsureReplacementPhases();
+        return ExecuteRequiredReplacement(s_strictUtf8.GetString(InputBytes));
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecuteUtf8CoreRequiredReplacement()
+    {
+        EnsureReplacementPhases();
+        var regex = GetCoreReplacementRegex();
+        var replacementCount = IsSubnOperation
+            ? regex.Count(InputBytes)
+            : (int?)null;
+        if (IsUtf8ReplacementOperation)
+        {
+            return new PythonReBenchmarkReplacementResult(
+                string.Empty,
+                regex.Replace(InputBytes, _case.Replacement),
+                replacementCount);
+        }
+
+        return new PythonReBenchmarkReplacementResult(
+            regex.ReplaceToString(InputBytes, _case.Replacement),
+            null,
+            replacementCount);
+    }
+
+    internal int ExecuteUtf8CoreReplacementCount()
+    {
+        EnsureReplacementPhases();
+        return GetCoreReplacementRegex().Count(InputBytes);
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecuteUtf8CoreReplacementOutput()
+    {
+        EnsureReplacementPhases();
+        var regex = GetCoreReplacementRegex();
+        return IsUtf8ReplacementOperation
+            ? new PythonReBenchmarkReplacementResult(
+                string.Empty,
+                regex.Replace(InputBytes, _case.Replacement),
+                null)
+            : new PythonReBenchmarkReplacementResult(
+                regex.ReplaceToString(InputBytes, _case.Replacement),
+                null,
+                null);
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecutePredecodedOnePassLiteralReplacement()
+    {
+        EnsureReplacementPhases();
+        return ExecuteOnePassLiteralReplacement(_decoded);
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecuteDecodedOnePassLiteralReplacement()
+    {
+        EnsureReplacementPhases();
+        return ExecuteOnePassLiteralReplacement(s_strictUtf8.GetString(InputBytes));
+    }
+
+    internal PythonReBenchmarkReplacementResult ExecutePythonReReplacement()
+    {
+        EnsureReplacementPhases();
+        return _case.Operation switch
+        {
+            PythonReBenchmarkOperation.ReplaceString => new(
+                _pythonRegex.ReplaceToString(InputBytes, _case.Replacement),
+                null,
+                null),
+            PythonReBenchmarkOperation.ReplaceUtf8 => new(
+                string.Empty,
+                _pythonRegex.Replace(InputBytes, _case.Replacement),
+                null),
+            PythonReBenchmarkOperation.SubnString => CreateStringReplacementResult(
+                _pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+            PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
+                _pythonRegex.Subn(InputBytes, _case.Replacement)),
+            _ => throw new InvalidOperationException(),
+        };
+    }
+
+    internal int ExecutePythonReReplacementChecksum() => Checksum(ExecutePythonReReplacement());
+
+    internal int ExecutePredecodedRequiredReplacementChecksum() =>
+        Checksum(ExecutePredecodedRequiredReplacement());
+
+    internal int ExecuteDecodedRequiredReplacementChecksum() =>
+        Checksum(ExecuteDecodedRequiredReplacement());
+
+    internal int ExecuteUtf8CoreRequiredReplacementChecksum() =>
+        Checksum(ExecuteUtf8CoreRequiredReplacement());
+
+    internal int ExecuteUtf8CoreReplacementOutputChecksum() =>
+        Checksum(ExecuteUtf8CoreReplacementOutput());
+
+    internal int ExecuteDecodedOnePassLiteralReplacementChecksum() =>
+        Checksum(ExecuteDecodedOnePassLiteralReplacement());
+
+    internal int ExecutePreparedReplacementChecksum() => Checksum(GetPreparedReplacementResult());
+
+    internal int ExecutePreparedReplacementOutputChecksum()
+    {
+        var result = GetPreparedReplacementResult();
+        return Checksum(result with { ReplacementCount = null });
+    }
+
+    private PythonReBenchmarkReplacementResult ExecuteRequiredReplacement(string subject)
+    {
+        var replacementCount = IsSubnOperation
+            ? _regex.Count(subject)
+            : (int?)null;
+        var resultText = _regex.Replace(subject, _preparedDotNetReplacement);
+        return CreateReplacementResult(resultText, replacementCount);
+    }
+
+    private PythonReBenchmarkReplacementResult ExecuteOnePassLiteralReplacement(string subject)
+    {
+        var builder = new StringBuilder(subject.Length);
+        var replacementCount = 0;
+        var lastIndex = 0;
+        var searchIndex = 0;
+        while (searchIndex <= subject.Length)
+        {
+            var match = _regex.Match(subject, searchIndex);
+            if (!match.Success)
+            {
+                break;
+            }
+
+            builder.Append(subject.AsSpan(lastIndex, match.Index - lastIndex));
+            builder.Append(_preparedLiteralReplacement);
+            replacementCount++;
+            lastIndex = checked(match.Index + match.Length);
+            searchIndex = lastIndex;
+        }
+
+        builder.Append(subject.AsSpan(lastIndex));
+        return CreateReplacementResult(
+            builder.ToString(),
+            IsSubnOperation ? replacementCount : null);
+    }
+
+    private PythonReBenchmarkReplacementResult CreateReplacementResult(
+        string resultText,
+        int? replacementCount) => IsUtf8ReplacementOperation
+        ? new PythonReBenchmarkReplacementResult(
+            resultText,
+            s_strictUtf8.GetBytes(resultText),
+            replacementCount)
+        : new PythonReBenchmarkReplacementResult(resultText, null, replacementCount);
+
+    private static PythonReBenchmarkReplacementResult CreateStringReplacementResult(
+        Utf8PythonSubnResult result) => new(
+            result.ResultText,
+            null,
+            result.ReplacementCount);
+
+    private static PythonReBenchmarkReplacementResult CreateUtf8ReplacementResult(
+        Utf8PythonSubnUtf8Result result) => new(
+            string.Empty,
+            result.ResultBytes,
+            result.ReplacementCount);
+
+    private bool IsSubnOperation => _case.Operation is
+        PythonReBenchmarkOperation.SubnString or PythonReBenchmarkOperation.SubnUtf8;
+
+    private bool IsUtf8ReplacementOperation => _case.Operation is
+        PythonReBenchmarkOperation.ReplaceUtf8 or PythonReBenchmarkOperation.SubnUtf8;
+
+    private PythonReBenchmarkReplacementResult GetPreparedReplacementResult() =>
+        _preparedReplacementResult ??
+        throw new InvalidOperationException("Prepared replacement controls are not available for this case.");
+
+    private Utf8Regex GetCoreReplacementRegex() => _coreReplacementRegex ??
+        throw new InvalidOperationException("UTF-8 core replacement controls are not available for this case.");
+
+    private void EnsureReplacementPhases()
+    {
+        if (!SupportsReplacementPhases)
+        {
+            throw new InvalidOperationException("Replacement phase controls are not available for this case.");
         }
     }
 
@@ -3207,6 +3597,16 @@ internal sealed class PythonReBenchmarkContext
             : checksum;
     }
 
+    private int Checksum(PythonReBenchmarkReplacementResult result)
+    {
+        var checksum = IsUtf8ReplacementOperation
+            ? Checksum(result.ResultBytes ?? [])
+            : Checksum(result.ResultText);
+        return result.ReplacementCount is int replacementCount
+            ? Combine(checksum, replacementCount)
+            : checksum;
+    }
+
     private static int Checksum(string?[] values)
     {
         var checksum = values.Length;
@@ -3362,6 +3762,11 @@ internal sealed record BclSubnResult(
     byte[]? ResultBytes,
     int ReplacementCount,
     int? CallbackChecksum);
+
+internal readonly record struct PythonReBenchmarkReplacementResult(
+    string ResultText,
+    byte[]? ResultBytes,
+    int? ReplacementCount);
 
 internal readonly record struct PythonReBenchmarkBatch(
     TimeSpan Elapsed,

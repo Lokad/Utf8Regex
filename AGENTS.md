@@ -157,7 +157,14 @@ PythonRe benchmark snapshot and diagnostics:
 - Use `--measure-pythonre-shaping-case <id> [iterations] [samples]` to split
   detailed-match discovery, direct public projection, and staged projection.
 - Use `--measure-pythonre-findall-phases <id> [iterations] [samples]` to split
-  capture-free core enumeration, range collection, and returned-value shaping.
+  capture-free core enumeration or captured managed discovery, range
+  collection, coordinate mapping, and returned-value shaping. Timed result
+  lanes retain outputs and report checksum traversal separately.
+- Use `--measure-pythonre-replacement-phases <id> [iterations] [samples]` for
+  fixed Replace/Subn rows. It separates replacement parsing/translation,
+  decode, count, replacement, UTF-8 encoding, current required work, a native
+  UTF-8-core control, and a one-pass literal replay. The cumulative lanes are
+  attribution controls, not additive estimates or Status evidence.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
 - Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema
