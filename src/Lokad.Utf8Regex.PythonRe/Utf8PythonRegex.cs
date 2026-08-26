@@ -388,11 +388,28 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null)
         {
-            return FullMatchAsciiDotAll(
-                input,
-                startOffsetInBytes,
-                _asciiDotAllFullMatchPrefix,
-                _asciiDotAllFullMatchSuffix);
+            var validation = Utf8InputAnalyzer.ValidateOnly(input);
+            var tail = input[startOffsetInBytes..];
+            if (tail.Length < _asciiDotAllFullMatchPrefix.Length ||
+                tail.Length - _asciiDotAllFullMatchPrefix.Length < _asciiDotAllFullMatchSuffix.Length ||
+                !tail.StartsWith(_asciiDotAllFullMatchPrefix) ||
+                !tail.EndsWith(_asciiDotAllFullMatchSuffix))
+            {
+                return default;
+            }
+
+            var startOffsetInUtf16 = startOffsetInBytes == 0
+                ? 0
+                : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+            return Utf8PythonValueMatch.Create(input, new PythonReGroupData
+            {
+                Number = 0,
+                Success = true,
+                StartOffsetInBytes = startOffsetInBytes,
+                EndOffsetInBytes = input.Length,
+                StartOffsetInUtf16 = startOffsetInUtf16,
+                EndOffsetInUtf16 = validation.Utf16Length,
+            });
         }
 
         var utf8FullRegex = GetUtf8FullRegex();
@@ -2025,36 +2042,6 @@ public sealed class Utf8PythonRegex
         _asciiDotAllFullMatchPrefix is not null;
 
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
-
-    private static Utf8PythonValueMatch FullMatchAsciiDotAll(
-        ReadOnlySpan<byte> input,
-        int startOffsetInBytes,
-        ReadOnlySpan<byte> prefix,
-        ReadOnlySpan<byte> suffix)
-    {
-        var validation = Utf8InputAnalyzer.ValidateOnly(input);
-        var tail = input[startOffsetInBytes..];
-        if (tail.Length < prefix.Length ||
-            tail.Length - prefix.Length < suffix.Length ||
-            !tail.StartsWith(prefix) ||
-            !tail.EndsWith(suffix))
-        {
-            return default;
-        }
-
-        var startOffsetInUtf16 = startOffsetInBytes == 0
-            ? 0
-            : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        return Utf8PythonValueMatch.Create(input, new PythonReGroupData
-        {
-            Number = 0,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = input.Length,
-            StartOffsetInUtf16 = startOffsetInUtf16,
-            EndOffsetInUtf16 = validation.Utf16Length,
-        });
-    }
 
     private Utf8Regex? CreateUtf8FullRegex()
     {
