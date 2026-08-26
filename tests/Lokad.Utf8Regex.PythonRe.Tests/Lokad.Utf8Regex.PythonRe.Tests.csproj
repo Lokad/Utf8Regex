@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\PythonReQualificationFreshness.cs"
+             Link="PythonReQualificationFreshness.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Corpus\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
