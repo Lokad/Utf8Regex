@@ -183,6 +183,10 @@ PythonRe benchmark snapshot and diagnostics:
 - Use `--verify-pythonre-qualifications` to recompute paired statistics and
   Status and reject stale source, catalog, runner, interpreter, or pair identity.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
+- Paired PythonRe qualification applies a one-million-call floor only to
+  one-shot subjects at or below 128 UTF-8 bytes. This keeps routes that tier
+  below 50 ns over the 20 ms sample gate while leaving larger rows calibrated
+  by duration.
 - Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
 - The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
 

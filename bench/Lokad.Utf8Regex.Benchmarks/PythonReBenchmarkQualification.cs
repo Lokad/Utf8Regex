@@ -15,6 +15,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapSeed = 31302;
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
+    private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
     private const double PythonReQualificationTargetSampleMilliseconds = 50;
     private const double PythonReQualificationPilotMilliseconds = 5;
@@ -155,11 +156,13 @@ internal static partial class PythonReBenchmarkReporter
                 minimumCalls: PythonReQualificationMinimumWarmupCalls,
                 maximumBatches: 32)
             : null;
-        var managedIterations = CalibrateManagedBatch(
-            context,
-            expectedChecksum,
-            expectedSemanticDigest,
-            expectedConsumptionToken);
+        var managedIterations = Math.Max(
+            CalibrateManagedBatch(
+                context,
+                expectedChecksum,
+                expectedSemanticDigest,
+                expectedConsumptionToken),
+            GetShortOneShotMinimumIterations(benchmarkCase));
         var cpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
@@ -595,6 +598,23 @@ internal static partial class PythonReBenchmarkReporter
             PythonReQualificationMaximumIterations);
 
         return iterations;
+    }
+
+    private static int GetShortOneShotMinimumIterations(PythonReBenchmarkCase benchmarkCase)
+    {
+        if (Encoding.UTF8.GetByteCount(benchmarkCase.Input) > 128 ||
+            benchmarkCase.Operation is not (PythonReBenchmarkOperation.IsMatch or
+                PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.Match or
+                PythonReBenchmarkOperation.FullMatch))
+        {
+            return 1;
+        }
+
+        // Very short native routes can tier again after ordinary calibration.
+        // This bounded floor keeps a later sub-50-ns route above the 20 ms
+        // evidence threshold without lengthening the larger catalog rows.
+        return PythonReQualificationShortOneShotMinimumIterations;
     }
 
     private static PythonReByteControlEvidence? CreatePythonReByteControlEvidence(
