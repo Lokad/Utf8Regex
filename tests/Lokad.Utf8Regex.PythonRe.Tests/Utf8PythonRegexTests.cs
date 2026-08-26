@@ -354,6 +354,48 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void DotAllFullMatchPreservesWholeSuffixCoordinates()
+    {
+        var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
+        var input = "πstart\n東京𝒜end"u8.ToArray();
+        var startOffsetInBytes = "π"u8.Length;
+
+        var match = regex.FullMatch(input, startOffsetInBytes);
+
+        Assert.True(match.Success);
+        Assert.True(match.HasContiguousByteRange);
+        Assert.Equal(startOffsetInBytes, match.StartOffsetInBytes);
+        Assert.Equal(input.Length, match.EndOffsetInBytes);
+        Assert.Equal("π".Length, match.StartOffsetInUtf16);
+        Assert.Equal("πstart\n東京𝒜end".Length, match.EndOffsetInUtf16);
+        Assert.Equal("start\n東京𝒜end", match.GetValueString());
+        Assert.True(regex.FullMatch("startend"u8).Success);
+        Assert.True(regex.FullMatch("start\0end"u8).Success);
+    }
+
+    [Fact]
+    public void DotAllFullMatchPreservesPrefixSuffixAndInputContracts()
+    {
+        var regex = new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll);
+        var overlapping = new Utf8PythonRegex("aba.*aba", PythonReCompileOptions.DotAll);
+
+        Assert.False(regex.FullMatch("xstartend"u8).Success);
+        Assert.False(regex.FullMatch("startendx"u8).Success);
+        Assert.False(regex.FullMatch("start-END"u8).Success);
+        Assert.False(regex.FullMatch("starend"u8).Success);
+        Assert.False(overlapping.FullMatch("aba"u8).Success);
+        Assert.True(overlapping.FullMatch("abaaba"u8).Success);
+        Assert.Throws<ArgumentException>(() => regex.FullMatch(
+            new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'r', (byte)'t', 0xC3, 0x28, (byte)'e', (byte)'n', (byte)'d' }));
+
+        Assert.False(new Utf8PythonRegex("start.*end").FullMatch("start\nend"u8).Success);
+        Assert.True(new Utf8PythonRegex("start.*end", PythonReCompileOptions.DotAll | PythonReCompileOptions.IgnoreCase)
+            .FullMatch("START\nEND"u8).Success);
+        Assert.Equal("middle", new Utf8PythonRegex("start(.*)end", PythonReCompileOptions.DotAll)
+            .FullMatchDetailed("startmiddleend"u8).GetGroup(1).Value.GetValueString());
+    }
+
+    [Fact]
     public void FullMatchUsesManagedRegexWhenCoreWouldFallBack()
     {
         var regex = new Utf8PythonRegex("(?:Шерлок )+");
