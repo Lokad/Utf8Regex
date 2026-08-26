@@ -449,6 +449,40 @@ internal static partial class PythonReBenchmarkReporter
                 $"PythonRe scaling '{benchmarkCase.Id}' failed its CPython structured preflight.");
         }
 
+        for (var warmupCall = 0; warmupCall < 64; warmupCall++)
+        {
+            var batch = context.MeasurePythonReQualificationBatch(1);
+            VerifyManagedResult(
+                batch,
+                expectedChecksum,
+                expectedSemanticDigest,
+                expectedConsumptionToken,
+                1,
+                "published scaling tiering warmup");
+        }
+
+        var preliminaryManagedIterations = CalibrateOneShotManagedIterations(
+            context,
+            minimumIterations: 1,
+            expectedChecksum,
+            expectedSemanticDigest,
+            expectedConsumptionToken);
+        var preliminaryCpythonIterations = worker.Calibrate(
+            CpythonStreamLane.Predecoded,
+            PythonReScalingTargetSampleMilliseconds,
+            PythonReScalingMaximumIterations).Iterations;
+        _ = WarmOneShotManaged(
+            context,
+            preliminaryManagedIterations,
+            expectedChecksum,
+            expectedSemanticDigest,
+            expectedConsumptionToken);
+        _ = worker.Warm(
+            CpythonStreamLane.Predecoded,
+            preliminaryCpythonIterations,
+            minimumMilliseconds: 20,
+            minimumCalls: 1_024,
+            maximumBatches: 8);
         var managedIterations = CalibrateOneShotManagedIterations(
             context,
             minimumIterations: 1,
