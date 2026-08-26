@@ -3853,10 +3853,10 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true)),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true)),
         PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecuteRegexReplaceEvaluator(input),
-        PythonReBenchmarkOperation.SplitStrings => Checksum(_regex.Split(input)),
-        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(_regex.Split(
+        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializeSplitStrings(input)),
+        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializeSplitStrings(
             input,
-            _case.Coverage.MaxSplit + 1)),
+            _case.Coverage.MaxSplit)),
         PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializeSplitDetailed(input)),
         _ => throw new InvalidOperationException(),
     };
@@ -3948,12 +3948,23 @@ internal sealed class PythonReBenchmarkContext
         return matches.ToArray();
     }
 
-    private Utf8PythonSplitItem[] MaterializeSplitDetailed(string input)
+    private string?[] MaterializeSplitStrings(string input, int maxSplit = 0) =>
+        MaterializeSplitDetailed(input, maxSplit)
+            .Select(static item => item.ValueText)
+            .ToArray();
+
+    private Utf8PythonSplitItem[] MaterializeSplitDetailed(string input, int maxSplit = 0)
     {
         var parts = new List<Utf8PythonSplitItem>();
         var lastIndex = 0;
+        var splitCount = 0;
         foreach (Match match in _regex.Matches(input))
         {
+            if (maxSplit > 0 && splitCount >= maxSplit)
+            {
+                break;
+            }
+
             parts.Add(new Utf8PythonSplitItem
             {
                 ValueText = input[lastIndex..match.Index],
@@ -3972,6 +3983,7 @@ internal sealed class PythonReBenchmarkContext
             }
 
             lastIndex = match.Index + match.Length;
+            splitCount++;
         }
 
         parts.Add(new Utf8PythonSplitItem
