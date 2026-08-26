@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:23:27.8705438+00:00`
-- Snapshot SHA-256: `B60721F75A64551AACFDA2CBEE5DCE3999396701A133385B490B11F8EA0AD402`
+- Generated: `2026-08-26T11:23:44.5427364+00:00`
+- Snapshot SHA-256: `A24B3A2941BE9DB6DBAB02CEA61EA545CAFA6D50AE70FA1E6C4F388E9A1EDC0B`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `4` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `22` unqualified
+- Public Status: `4` managed faster, `0` equivalent, `0` CPython faster, `3` inconclusive, `21` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -46,7 +46,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `findall/full-utf8` | `FindAllUtf8` | Historical | Unqualified | 268.899 us | 309.247 us | 0.87x | 406.854 us | 318.232 us | 165,936 B |
 | `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 388.206 us | 196.091 us | 1.98x | 201.521 us | 449.797 us | 1,331,488 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 412.906 us | 789.879 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
-| `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 278.100 us | 124.845 us | 2.23x | 126.792 us | 359.547 us | 936,224 B |
+| `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 217.286 us | 135.375 us | 1.54x | 126.792 us | 359.547 us | 936,224 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 299.098 us | 359.654 us | 0.83x | 359.520 us | 335.570 us | 785,704 B |
 | `findall/unicode-full-strings` | `FindAllStrings` | Historical | Unqualified | 45.029 us | 21.572 us | 2.09x | 24.031 us | 42.099 us | 24,600 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | Historical | Unqualified | 58.445 us | 38.623 us | 1.51x | 47.145 us | 60.234 us | 24,600 B |
