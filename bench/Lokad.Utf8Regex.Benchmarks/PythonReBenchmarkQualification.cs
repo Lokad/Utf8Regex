@@ -15,6 +15,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapSeed = 31302;
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
+    private const int PythonReQualificationOneShotWarmupCalls = 20_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
@@ -142,7 +143,8 @@ internal static partial class PythonReBenchmarkReporter
             preliminaryManagedIterations,
             expectedChecksum,
             expectedSemanticDigest,
-            expectedConsumptionToken);
+            expectedConsumptionToken,
+            GetOneShotWarmupCalls(benchmarkCase));
         var cpythonWarmup = worker.Warm(
             CpythonStreamLane.Predecoded,
             preliminaryCpythonCalibration.Iterations,
@@ -628,6 +630,14 @@ internal static partial class PythonReBenchmarkReporter
         // evidence threshold without lengthening the larger catalog rows.
         return PythonReQualificationShortOneShotMinimumIterations;
     }
+
+    private static int GetOneShotWarmupCalls(PythonReBenchmarkCase benchmarkCase) =>
+        benchmarkCase.Operation is PythonReBenchmarkOperation.IsMatch or
+            PythonReBenchmarkOperation.Search or
+            PythonReBenchmarkOperation.Match or
+            PythonReBenchmarkOperation.FullMatch
+            ? PythonReQualificationOneShotWarmupCalls
+            : PythonReQualificationMinimumWarmupCalls;
 
     private static PythonReByteControlEvidence? CreatePythonReByteControlEvidence(
         PythonReByteControlEligibility eligibility,
