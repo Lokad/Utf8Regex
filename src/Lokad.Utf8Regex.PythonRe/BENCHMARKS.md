@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:22:37.8718829+00:00`
-- Snapshot SHA-256: `368937FA5D7672D245EE4070503561BBBEEE13B1D1C682EEA1FEA20DC46121EA`
+- Generated: `2026-08-26T11:22:55.1227600+00:00`
+- Snapshot SHA-256: `6B6FD3E0EFCB78E5767BD6F6D733AC27CA2A123E226594E73B5658A0F2EBB04C`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `4` managed faster, `0` equivalent, `0` CPython faster, `1` inconclusive, `23` unqualified
@@ -52,7 +52,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `findall/unicode-full-utf8` | `FindAllUtf8` | Historical | Unqualified | 58.445 us | 38.623 us | 1.51x | 47.145 us | 60.234 us | 24,600 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | Historical | Unqualified | 173.765 us | 3,466.165 us | 0.05x | 3,139.237 us | 153.941 us | 406,736 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.038 us | 0.211 us | 0.18x | 0.245 us | 0.094 us | 0 B |
-| `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 1.893 us | 12.116 us | 0.15x | 14.877 us | 12.075 us | 0 B |
+| `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 1.875 us | 12.107 us | 0.15x | 14.877 us | 12.075 us | 0 B |
 | `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.852 us | 12.279 us | 0.15x | 14.380 us | 12.183 us | 0 B |
 | `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.802 us | 12.212 us | 0.15x | 14.464 us | 10.417 us | 0 B |
 | `prefix/match` | `Match` | Historical | Unqualified | 1.626 us | 0.170 us | 9.59x | 0.781 us | 1.444 us | 33,024 B |
@@ -87,7 +87,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `iteration/finditer-detailed` | `_sre scanner + Python detailed projection` | `strict UTF-8 decode; .NET Regex; detailed iteration shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.16x [0.16, 0.16]; ManagedFaster |
-| `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Rbyte 0.15x [0.11, 0.16]; Inconclusive |
+| `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Rbyte 0.15x [0.15, 0.16]; ManagedFaster |
 | `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.13, 0.16]; ManagedFaster |
 | `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.15, 0.16]; ManagedFaster |
 | `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
