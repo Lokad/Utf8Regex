@@ -16,6 +16,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
     private const int PythonReQualificationOneShotWarmupCalls = 100_000;
+    private const int PythonReQualificationReplacementWarmupCalls = 10_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
@@ -144,7 +145,7 @@ internal static partial class PythonReBenchmarkReporter
             expectedChecksum,
             expectedSemanticDigest,
             expectedConsumptionToken,
-            GetOneShotWarmupCalls(benchmarkCase));
+            GetManagedWarmupCalls(benchmarkCase));
         var cpythonWarmup = worker.Warm(
             CpythonStreamLane.Predecoded,
             preliminaryCpythonCalibration.Iterations,
@@ -175,7 +176,7 @@ internal static partial class PythonReBenchmarkReporter
             expectedConsumptionToken,
             shortOneShotMinimumIterations > 1
                 ? PythonReQualificationShortOneShotWarmupCalls
-                : GetOneShotWarmupCalls(benchmarkCase));
+                : GetManagedWarmupCalls(benchmarkCase));
 
         managedIterations = ConfirmManagedSampleDuration(
             context,
@@ -637,13 +638,21 @@ internal static partial class PythonReBenchmarkReporter
         return PythonReQualificationShortOneShotMinimumIterations;
     }
 
-    private static int GetOneShotWarmupCalls(PythonReBenchmarkCase benchmarkCase) =>
-        benchmarkCase.Operation is PythonReBenchmarkOperation.IsMatch or
-            PythonReBenchmarkOperation.Search or
-            PythonReBenchmarkOperation.Match or
-            PythonReBenchmarkOperation.FullMatch
-            ? PythonReQualificationOneShotWarmupCalls
-            : PythonReQualificationMinimumWarmupCalls;
+    private static int GetManagedWarmupCalls(PythonReBenchmarkCase benchmarkCase) =>
+        benchmarkCase.Operation switch
+        {
+            PythonReBenchmarkOperation.IsMatch or
+                PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.Match or
+                PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
+            PythonReBenchmarkOperation.ReplaceString or
+                PythonReBenchmarkOperation.ReplaceUtf8 or
+                PythonReBenchmarkOperation.SubnString or
+                PythonReBenchmarkOperation.SubnUtf8 or
+                PythonReBenchmarkOperation.SubnEvaluatorString or
+                PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,
+            _ => PythonReQualificationMinimumWarmupCalls,
+        };
 
     private static int ConfirmManagedSampleDuration(
         PythonReBenchmarkContext context,

@@ -187,11 +187,13 @@ PythonRe benchmark snapshot and diagnostics:
   one-shot subjects at or below 128 UTF-8 bytes. This keeps routes that tier
   below 50 ns over the 20 ms sample gate. Those rows also receive five million
   bounded warm calls before sampling so late tier transitions do not enter the
-  paired evidence. Other one-shot rows receive at least 100,000 warm calls;
-  result-heavy/global rows remain warmed by duration. Every managed lane gets
-  its applicable warmup again after final calibration, then a bounded
-  fastest-of-three duration confirmation. It is rescaled before sampling if
-  the settled route falls below 30 ms.
+  paired evidence. Other one-shot rows receive at least 100,000 warm calls.
+  Replacement rows receive at least 10,000 warm calls because the counted
+  exact-literal route was observed to tier after the former duration-only
+  warmup; other result-heavy/global rows remain warmed by duration. Every
+  managed lane gets its applicable warmup again after final calibration, then
+  a bounded fastest-of-three duration confirmation. It is rescaled before
+  sampling if the settled route falls below 30 ms.
 - Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
 - The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.
 
