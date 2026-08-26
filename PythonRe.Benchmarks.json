@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 6,
-  "GeneratedAtUtc": "2026-08-26T11:03:49.8232719+00:00",
+  "GeneratedAtUtc": "2026-08-26T11:04:11.0868597+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
     "Sha256": "0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B",
@@ -2046,12 +2046,431 @@
         }
       },
       "Qualification": {
-        "Status": "Unqualified",
-        "StatusReason": "Paired evidence predates the current managed source revision.",
-        "EngineEvidenceBasis": "Not engine-comparable",
+        "Status": "Inconclusive",
+        "StatusReason": "Lane interquartile spreads are 1.520/1.004; the maximum is 1.10.",
+        "EngineEvidenceBasis": "Byte control",
         "EngineConclusion": "NotApplicable",
-        "EngineConclusionReason": "Paired evidence predates the current managed source revision.",
-        "PairedEvidence": null
+        "EngineConclusionReason": "The managed byte control does not use a native UTF-8 core route.",
+        "PairedEvidence": {
+          "ProtocolVersion": 3,
+          "QualificationId": "97AC71BD1FEF245E88C4C44BC19FAA53016CD8BCE213C4903E5FFA597BA728EF",
+          "MeasuredAtUtc": "2026-08-26T11:04:11.0868597+00:00",
+          "SourceCommit": "5572280e62c2",
+          "Baseline": "CPythonPredecodedElapsed",
+          "ResultContract": "ConsumedGroupZeroRanges",
+          "InitialLane": "PythonRe",
+          "WorktreeQualified": true,
+          "CaseDefinitionSha256": "02816FDA2CF17CCBC7EB056E9E42C0FDEE2BE99814CB003ADB314BEDAE970B99",
+          "CatalogSha256": "9BF404F3BFF3C1802EF94C2EAF98118E50655B0198D8B94E72A0CF717DA0D077",
+          "SemanticDigestAlgorithm": "structured-u64-mix-v1",
+          "SemanticDigest": "8EA717AD6183B834",
+          "CpuPolicy": "single-least-contended-highest-efficiency-processor",
+          "CpuAffinityMask": "0x400",
+          "CpuEfficiencyClass": 1,
+          "ManagedIterations": 23736,
+          "CpythonIterations": 285225,
+          "ManagedWarmupCalls": 69459,
+          "ManagedWarmupMilliseconds": 148.532,
+          "CpythonWarmupCalls": 570424,
+          "CpythonWarmupMilliseconds": 100.8827,
+          "ManagedMedianMicroseconds": 1.7877443545669027,
+          "CpythonMedianMicroseconds": 0.17530160399684458,
+          "StrongRatioMedian": 10.17511051996761,
+          "StrongRatioLower95": 9.684370623964984,
+          "StrongRatioUpper95": 14.932518288234858,
+          "StrongDifferenceMicroseconds": 1.6124427505700583,
+          "OrderEffect": 0.9869246303454456,
+          "ManagedInterquartileSpread": 1.5201462137909316,
+          "CpythonInterquartileSpread": 1.0043228445399288,
+          "ManagedHarnessFloorFraction": 0.0003558475652721055,
+          "CpythonHarnessFloorFraction": 0.09523123815009482,
+          "ManagedMedianAllocatedBytes": 33024,
+          "Samples": [
+            {
+              "Order": "ManagedFirst",
+              "ManagedMicroseconds": 2.612125042130098,
+              "CpythonMicroseconds": 0.17530160399684458,
+              "StrongRatio": 14.90074809684637,
+              "ManagedElapsedMilliseconds": 62.0014,
+              "CpythonElapsedMilliseconds": 50.0004,
+              "ManagedProcessCpuMilliseconds": 62.5,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "CpythonFirst",
+              "ManagedMicroseconds": 2.938945062352545,
+              "CpythonMicroseconds": 0.17592917871855554,
+              "StrongRatio": 16.705273586561507,
+              "ManagedElapsedMilliseconds": 69.7588,
+              "CpythonElapsedMilliseconds": 50.1794,
+              "ManagedProcessCpuMilliseconds": 62.5,
+              "CpythonProcessCpuMilliseconds": 62.5,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "ManagedFirst",
+              "ManagedMicroseconds": 2.6035642062689583,
+              "CpythonMicroseconds": 0.17435533350863353,
+              "StrongRatio": 14.93251828823486,
+              "ManagedElapsedMilliseconds": 61.7982,
+              "CpythonElapsedMilliseconds": 49.7305,
+              "ManagedProcessCpuMilliseconds": 62.5,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                46,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "CpythonFirst",
+              "ManagedMicroseconds": 1.7831353218739467,
+              "CpythonMicroseconds": 0.17568481023753177,
+              "StrongRatio": 10.149627161637298,
+              "ManagedElapsedMilliseconds": 42.3245,
+              "CpythonElapsedMilliseconds": 50.1097,
+              "ManagedProcessCpuMilliseconds": 31.25,
+              "CpythonProcessCpuMilliseconds": 62.5,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "ManagedFirst",
+              "ManagedMicroseconds": 1.7877443545669027,
+              "CpythonMicroseconds": 0.17569778245244982,
+              "StrongRatio": 10.17511051996761,
+              "ManagedElapsedMilliseconds": 42.4339,
+              "CpythonElapsedMilliseconds": 50.1134,
+              "ManagedProcessCpuMilliseconds": 46.875,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                46,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "CpythonFirst",
+              "ManagedMicroseconds": 1.833160599932592,
+              "CpythonMicroseconds": 0.17508353054606013,
+              "StrongRatio": 10.470205816704919,
+              "ManagedElapsedMilliseconds": 43.5119,
+              "CpythonElapsedMilliseconds": 49.9382,
+              "ManagedProcessCpuMilliseconds": 31.25,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "ManagedFirst",
+              "ManagedMicroseconds": 1.7127064374789351,
+              "CpythonMicroseconds": 0.1732509422385836,
+              "StrongRatio": 9.88569767845978,
+              "ManagedElapsedMilliseconds": 40.6528,
+              "CpythonElapsedMilliseconds": 49.4155,
+              "ManagedProcessCpuMilliseconds": 46.875,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "CpythonFirst",
+              "ManagedMicroseconds": 1.6941986855409505,
+              "CpythonMicroseconds": 0.174941537382768,
+              "StrongRatio": 9.684370623964984,
+              "ManagedElapsedMilliseconds": 40.2135,
+              "CpythonElapsedMilliseconds": 49.8977,
+              "ManagedProcessCpuMilliseconds": 31.25,
+              "CpythonProcessCpuMilliseconds": 62.5,
+              "ManagedGcCollections": [
+                46,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            },
+            {
+              "Order": "ManagedFirst",
+              "ManagedMicroseconds": 1.6064669700033702,
+              "CpythonMicroseconds": 0.17785818213690946,
+              "StrongRatio": 9.032291630906045,
+              "ManagedElapsedMilliseconds": 38.1311,
+              "CpythonElapsedMilliseconds": 50.7296,
+              "ManagedProcessCpuMilliseconds": 46.875,
+              "CpythonProcessCpuMilliseconds": 46.875,
+              "ManagedGcCollections": [
+                45,
+                0,
+                0
+              ],
+              "CpythonGcCollections": [
+                0,
+                0,
+                0
+              ],
+              "ManagedAllocatedBytes": 33024
+            }
+          ],
+          "ManagedEmptyLoopMicroseconds": [
+            0.012061846983485003,
+            0.000636164475901584,
+            0.0006277384563532187
+          ],
+          "CpythonEmptyLoopMicroseconds": [
+            0.01668682618985012,
+            0.016806731527741255,
+            0.01669418879831712
+          ],
+          "ManagedTrivialCallMicroseconds": [
+            0.010979103471520054,
+            0.00113329962925514,
+            0.0011290866194809573
+          ],
+          "CpythonTrivialCallMicroseconds": [
+            0.02737032167586993,
+            0.027277061968621265,
+            0.02726584275571917
+          ],
+          "ByteControl": {
+            "EligibilityReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
+            "CpythonIterations": 244517,
+            "CpythonWarmupCalls": 488250,
+            "CpythonWarmupMilliseconds": 101.0586,
+            "CpythonMedianMicroseconds": 0.2052810234053256,
+            "RatioMedian": 8.671656857251815,
+            "RatioLower95": 8.315559391627774,
+            "RatioUpper95": 12.858481601963806,
+            "OrderEffect": 0.9862018321454559,
+            "ManagedInterquartileSpread": 1.5201462137909316,
+            "CpythonInterquartileSpread": 1.0111045315401215,
+            "ManagedTrivialCallFraction": 0.0006339271195907046,
+            "CpythonTrivialCallFraction": 0.13266540092878332,
+            "EngineConclusion": "NotApplicable",
+            "EngineConclusionReason": "The managed byte control does not use a native UTF-8 core route.",
+            "Samples": [
+              {
+                "Order": "ManagedFirst",
+                "CpythonMicroseconds": 0.2054000335355006,
+                "Ratio": 12.717257135591595,
+                "CpythonElapsedMilliseconds": 50.2238,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "CpythonFirst",
+                "CpythonMicroseconds": 0.2047125557732182,
+                "Ratio": 14.356447513694889,
+                "CpythonElapsedMilliseconds": 50.0557,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "ManagedFirst",
+                "CpythonMicroseconds": 0.2024783552881804,
+                "Ratio": 12.858481601963804,
+                "CpythonElapsedMilliseconds": 49.5094,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "CpythonFirst",
+                "CpythonMicroseconds": 0.2060008097596486,
+                "Ratio": 8.655962682643915,
+                "CpythonElapsedMilliseconds": 50.3707,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "ManagedFirst",
+                "CpythonMicroseconds": 0.20615948993321526,
+                "Ratio": 8.671656857251815,
+                "CpythonElapsedMilliseconds": 50.4095,
+                "CpythonProcessCpuMilliseconds": 62.5,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "CpythonFirst",
+                "CpythonMicroseconds": 0.2052810234053256,
+                "Ratio": 8.930005168149577,
+                "CpythonElapsedMilliseconds": 50.1947,
+                "CpythonProcessCpuMilliseconds": 62.5,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "ManagedFirst",
+                "CpythonMicroseconds": 0.2032766637902477,
+                "Ratio": 8.425494621685655,
+                "CpythonElapsedMilliseconds": 49.7046,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "CpythonFirst",
+                "CpythonMicroseconds": 0.20373839037776514,
+                "Ratio": 8.315559391627774,
+                "CpythonElapsedMilliseconds": 49.8175,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "Order": "ManagedFirst",
+                "CpythonMicroseconds": 0.20750827140853192,
+                "Ratio": 7.741700892687011,
+                "CpythonElapsedMilliseconds": 50.7393,
+                "CpythonProcessCpuMilliseconds": 46.875,
+                "CpythonGcCollections": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "CpythonEmptyLoopMicroseconds": [
+              0.01875534216434849,
+              0.016572262869248355,
+              0.016855678746263043
+            ],
+            "CpythonTrivialCallMicroseconds": [
+              0.027257409505269573,
+              0.027233689273138472,
+              0.027097911392663904
+            ]
+          },
+          "CpythonEnvironment": {
+            "Implementation": "CPython",
+            "Version": "3.13.2",
+            "VersionDetail": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+            "HexVersion": 51184368,
+            "Git": [
+              "CPython",
+              "tags/v3.13.2",
+              "4f8bb39"
+            ],
+            "CacheTag": "cpython-313",
+            "Compiler": "MSC v.1942 64 bit (AMD64)",
+            "SoAbi": "cp313-win_amd64",
+            "DebugBuild": false,
+            "GilEnabled": true,
+            "Executable": "C:\\Python313\\python.exe",
+            "ExecutableSha256": "7D96A4ED35D6E596CD9DD8933FEAFC66349CC21F75BE3B15C89FD336E50140C1",
+            "RuntimeLibrary": "C:\\Python313\\python313.dll",
+            "RuntimeLibrarySha256": "BF68CF819A1E865170430C10E91C18B427AEF88DB1DA1742020443864AA2B749",
+            "Platform": "Windows-11-10.0.26200-SP0",
+            "Architecture": "AMD64",
+            "RunnerSha256": "225387E35353432757CD9165C5FDD5E3AD6B658D7CBECF0161EB3392BE4727EF",
+            "Timer": {
+              "Implementation": "QueryPerformanceCounter()",
+              "ResolutionSeconds": 1E-07,
+              "Monotonic": true,
+              "Adjustable": false
+            }
+          },
+          "ManagedEnvironment": {
+            "SourceCommit": "5572280e62c2",
+            "TrackedDirty": false,
+            "HasUntrackedFiles": false,
+            "Runtime": ".NET 10.0.11",
+            "OperatingSystem": "Microsoft Windows 10.0.26200",
+            "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+          }
+        }
       }
     },
     "replacement/evaluator-string": {
