@@ -1480,6 +1480,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.Count or
             PythonReBenchmarkOperation.CountFromOffset => 500,
             PythonReBenchmarkOperation.FindAllStrings or
+            PythonReBenchmarkOperation.FindAllStringsFromOffset or
             PythonReBenchmarkOperation.FindAllUtf8 or
             PythonReBenchmarkOperation.FindIterDetailed or
             PythonReBenchmarkOperation.FindAllStructural => 1_000,
@@ -2139,6 +2140,10 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall string shaping"),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => DescribeBackend(
+            _pythonRegex.DebugFindAllBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "findall string shaping from a nonzero byte offset"),
         PythonReBenchmarkOperation.FindAllUtf8 when _captureCount > 0 =>
             "strict UTF-8 decode; .NET Regex; findall UTF-8 shaping",
         PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
@@ -2310,6 +2315,22 @@ internal sealed class PythonReBenchmarkContext
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
                     result = _pythonRegex.FindAllToStrings(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
+            }
+            case PythonReBenchmarkOperation.FindAllStringsFromOffset:
+            {
+                Utf8PythonFindAllResult result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FindAllToStrings(
+                        InputBytes,
+                        _case.Coverage.StartOffsetInBytes);
                 }
 
                 return Complete(
@@ -2666,6 +2687,9 @@ internal sealed class PythonReBenchmarkContext
             InputBytes,
             _case.Coverage.StartOffsetInBytes),
         PythonReBenchmarkOperation.FindAllStrings => Checksum(_pythonRegex.FindAllToStrings(InputBytes)),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(_pythonRegex.FindAllToStrings(
+            InputBytes,
+            _case.Coverage.StartOffsetInBytes)),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
         PythonReBenchmarkOperation.FindIterDetailed => Checksum(_pythonRegex.FindIterDetailed(InputBytes)),
         PythonReBenchmarkOperation.FindAllStructural => Checksum(_pythonRegex.FindAll(InputBytes)),
@@ -2717,6 +2741,9 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FindAllStrings => SemanticDigest(
             _case.Operation,
             _pythonRegex.FindAllToStrings(InputBytes)),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.FindAllToStrings(InputBytes, _case.Coverage.StartOffsetInBytes)),
         PythonReBenchmarkOperation.FindAllUtf8 => SemanticDigest(
             _case.Operation,
             _pythonRegex.FindAllToUtf8(InputBytes)),
@@ -3839,6 +3866,9 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.Count => _regex.Count(input),
         PythonReBenchmarkOperation.CountFromOffset => _regex.Count(input, _startOffsetInUtf16),
         PythonReBenchmarkOperation.FindAllStrings => Checksum(MaterializeFindAllStrings(input)),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(MaterializeFindAllStrings(
+            input,
+            _startOffsetInUtf16)),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(MaterializeFindAllUtf8(input)),
         PythonReBenchmarkOperation.FindIterDetailed => Checksum(MaterializeFindIterDetailed(input)),
         PythonReBenchmarkOperation.FindAllStructural => Checksum(MaterializeFindAllStructural(input)),
@@ -3861,12 +3891,12 @@ internal sealed class PythonReBenchmarkContext
         _ => throw new InvalidOperationException(),
     };
 
-    private BclFindAllResult MaterializeFindAllStrings(string input)
+    private BclFindAllResult MaterializeFindAllStrings(string input, int startOffsetInUtf16 = 0)
     {
         if (_captureCount <= 1)
         {
             var values = new List<string>();
-            foreach (Match match in _regex.Matches(input))
+            foreach (Match match in _regex.Matches(input, startOffsetInUtf16))
             {
                 values.Add(_captureCount == 0 ? match.Value : match.Groups[1].Value);
             }
@@ -3875,7 +3905,7 @@ internal sealed class PythonReBenchmarkContext
         }
 
         var tuples = new List<string[]>();
-        foreach (Match match in _regex.Matches(input))
+        foreach (Match match in _regex.Matches(input, startOffsetInUtf16))
         {
             var tuple = new string[_captureCount];
             for (var group = 0; group < tuple.Length; group++)

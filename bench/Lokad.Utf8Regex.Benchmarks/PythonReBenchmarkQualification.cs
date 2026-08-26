@@ -947,6 +947,7 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
             PythonReBenchmarkOperation.FindAllStrings or
+                PythonReBenchmarkOperation.FindAllStringsFromOffset or
                 PythonReBenchmarkOperation.FindAllUtf8 or
                 PythonReBenchmarkOperation.FindAllStructural =>
                 calibratedIterations >= PythonReQualificationShortFindAllCalibrationIterations

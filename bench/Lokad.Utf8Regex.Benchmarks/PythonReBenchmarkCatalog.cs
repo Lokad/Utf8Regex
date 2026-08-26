@@ -28,6 +28,7 @@ internal enum PythonReBenchmarkOperation : byte
     ReplaceEvaluatorString = 20,
     SplitStringsLimited = 21,
     SplitDetailed = 22,
+    FindAllStringsFromOffset = 23,
 }
 
 internal sealed record PythonReBenchmarkCase(
@@ -377,6 +378,11 @@ internal static class PythonReBenchmarkCatalog
             new string('x', 4_096) + "12345", string.Empty, true,
             C("Count, FindAll, and FindIter", "ASCII digit run", "Medium ASCII one-match enumeration", "One",
                 "StringValues", FindAllOwner, "OperationExcluded", "ManagedFallback", firstMilestoneSentinel: false)),
+        new("findall/from-offset-strings", "cat", PythonReCompileOptions.None,
+            PythonReBenchmarkOperation.FindAllStringsFromOffset, Repeat("cat ", 1_024), string.Empty, true,
+            C("Count, FindAll, and FindIter", "Exact literal with start offset", "Medium ASCII suffix enumeration", "Many",
+                "StringValuesFromOffset", FindAllOwner, "OperationExcluded", "ExactAsciiLiteral", startOffsetInBytes: 2_048,
+                firstMilestoneSentinel: false)),
         new("findall/empty-progression-strings", "x*", PythonReCompileOptions.None, PythonReBenchmarkOperation.FindAllStrings,
             new string('y', 512), string.Empty, true,
             C("Count, FindAll, and FindIter", "Empty-capable repeat", "Medium ASCII empty-match progression", "ManyEmpty",
@@ -411,6 +417,10 @@ internal static class PythonReBenchmarkCatalog
             PythonReBenchmarkOperation.ReplaceString, "prefix token suffix", @"[\g<word>]", true,
             C("Replace and Subn", "Named template expansion", "Short ASCII three replacements", "Few",
                 "NamedReplacementTemplateString", SubOwner, "OperationExcluded", "ManagedFallback", firstMilestoneSentinel: false)),
+        new("replacement/unmatched-template-string", "(a)?b", PythonReCompileOptions.None,
+            PythonReBenchmarkOperation.ReplaceString, Repeat("b ab ", 128), @"[\1]", true,
+            C("Replace and Subn", "Unmatched optional-group expansion", "Medium ASCII matched/unmatched groups", "Many",
+                "ReplacementTemplateString", SubOwner, "OperationExcluded", "ManagedFallback", firstMilestoneSentinel: false)),
         new("replacement/limited-string", "cat", PythonReCompileOptions.None, PythonReBenchmarkOperation.ReplaceStringLimited,
             Repeat("cat fox cat dog ", 256), "tiger", true,
             C("Replace and Subn", "Bounded exact literal replacement", "Medium ASCII many candidates", "Three",

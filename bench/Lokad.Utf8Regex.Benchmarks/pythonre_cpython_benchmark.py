@@ -58,6 +58,7 @@ SEMANTIC_OPERATION_TAGS = {
     "ReplaceEvaluatorString": 21,
     "SplitStringsLimited": 22,
     "SplitDetailed": 23,
+    "FindAllStringsFromOffset": 24,
 }
 
 
@@ -321,6 +322,8 @@ class CaseRunner:
             return sum(1 for _ in self.pattern.finditer(input_text, self.start_offset))
         if operation == "FindAllStrings":
             return self.pattern.findall(input_text)
+        if operation == "FindAllStringsFromOffset":
+            return self.pattern.findall(input_text, self.start_offset)
         if operation == "FindAllUtf8":
             return self.encode_findall(self.pattern.findall(input_text))
         if operation == "FindIterDetailed":
@@ -394,6 +397,10 @@ class CaseRunner:
         elif operation == "FindAllStrings":
             for _ in range(iterations):
                 result = pattern.findall(input_text)
+        elif operation == "FindAllStringsFromOffset":
+            start_offset = self.start_offset
+            for _ in range(iterations):
+                result = pattern.findall(input_text, start_offset)
         elif operation == "FindAllUtf8":
             if pattern.groups <= 1:
                 for _ in range(iterations):
@@ -683,7 +690,7 @@ class CaseRunner:
             return detailed_checksum(result)
         if operation in {"Count", "CountFromOffset"}:
             return result
-        if operation == "FindAllStrings":
+        if operation in {"FindAllStrings", "FindAllStringsFromOffset"}:
             return findall_checksum(result, self.pattern.groups, False)
         if operation == "FindAllUtf8":
             return findall_checksum(result, self.pattern.groups, True)
@@ -756,7 +763,7 @@ class CaseRunner:
             return digest_detailed(digest, result)
         if operation in {"Count", "CountFromOffset"}:
             return digest_add(digest, result)
-        if operation == "FindAllStrings":
+        if operation in {"FindAllStrings", "FindAllStringsFromOffset"}:
             return digest_findall(digest, result, self.pattern.groups, False)
         if operation == "FindAllUtf8":
             return digest_findall(digest, result, self.pattern.groups, True)

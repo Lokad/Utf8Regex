@@ -77,6 +77,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-replace-evaluator-string-eager-v1",
             PythonReBenchmarkOperation.SplitStringsLimited => "managed-split-strings-limited-eager-v1",
             PythonReBenchmarkOperation.SplitDetailed => "managed-split-detailed-eager-v1",
+            PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-strings-from-offset-eager-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });
 
@@ -109,6 +110,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.ReplaceEvaluatorString => "cpython-pattern-sub-callback-string-v1",
             PythonReBenchmarkOperation.SplitStringsLimited => "cpython-pattern-split-limited-strings-v1",
             PythonReBenchmarkOperation.SplitDetailed => "cpython-pattern-split-detailed-projection-v1",
+            PythonReBenchmarkOperation.FindAllStringsFromOffset => "cpython-pattern-findall-strings-from-offset-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });
 
