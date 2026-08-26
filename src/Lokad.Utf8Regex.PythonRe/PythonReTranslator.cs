@@ -21,6 +21,17 @@ internal static class PythonReTranslator
 
     public static bool CanUseManagedSplitFastPath(PythonReNode node) => CapturesAreMandatory(node);
 
+    public static bool CanUseManagedEmptyReplacementFastPath(PythonReNode node) =>
+        node is PythonReQuantifierNode
+        {
+            Inner: var repeated,
+            Min: 0,
+            Max: null or > 0,
+            Flavor: PythonReQuantifierFlavor.Greedy,
+        } &&
+        TryGetExactLiteral(repeated, out var literal) &&
+        literal.Length > 0;
+
     public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
 
     public static bool TryGetCaseSensitiveExactLiteral(

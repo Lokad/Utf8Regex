@@ -95,6 +95,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseManagedSplitFastPath;
+    private readonly bool _canUseManagedEmptyReplacementFastPath;
     private readonly int _singleTrailingCapturePrefixLength;
     private readonly string? _optionalExactCaptureFindAllValue;
     private readonly int _optionalExactCapturePresentMatchLength;
@@ -164,6 +165,9 @@ public sealed class Utf8PythonRegex
                 (parseResult.CaptureGroupCount == 0 ||
                     parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root))) ||
             (!_canMatchNonEmpty && parseResult.CaptureGroupCount == 0);
+        _canUseManagedEmptyReplacementFastPath =
+            parseResult.CaptureGroupCount == 0 &&
+            PythonReTranslator.CanUseManagedEmptyReplacementFastPath(parseResult.Root);
         _singleTrailingCapturePrefixLength = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 1 &&
             PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
@@ -1173,11 +1177,11 @@ public sealed class Utf8PythonRegex
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
-        if (!_canMatchEmpty)
+        if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-            if (TryReplaceViaUtf8Literal(
+            if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
                     count,
@@ -1207,11 +1211,11 @@ public sealed class Utf8PythonRegex
     /// <summary>Replaces matches after a byte offset and returns a string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
-        if (!_canMatchEmpty)
+        if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-            if (TryReplaceViaUtf8Literal(
+            if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
                     count,
@@ -1247,9 +1251,9 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-        if (!_canMatchEmpty)
+        if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
-            if (TryReplaceViaUtf8Literal(
+            if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
                     count,
@@ -1354,9 +1358,9 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
-        if (!_canMatchEmpty)
+        if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
-            if (TryReplaceViaUtf8Literal(
+            if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
                     count,
@@ -1933,6 +1937,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesAsciiWordBoundaryCount => _canCountAsciiWordBoundariesDirectly;
 
     internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly;
+
+    internal bool DebugUsesManagedEmptyReplacementFastPath => _canUseManagedEmptyReplacementFastPath;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 

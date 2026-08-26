@@ -801,7 +801,10 @@ public sealed class Utf8PythonRegexTests
         var repeated = new Utf8PythonRegex("x*");
         var grouped = new Utf8PythonRegex("(?:ab)*");
 
+        Assert.True(repeated.DebugUsesManagedEmptyReplacementFastPath);
+        Assert.True(grouped.DebugUsesManagedEmptyReplacementFastPath);
         Assert.Equal("-a-b--d-", repeated.ReplaceToString("abxd"u8, "-"));
+        Assert.Equal("-a-b--d-", System.Text.Encoding.UTF8.GetString(repeated.Replace("abxd"u8, "-")));
         var repeatedSubn = repeated.SubnToString("abxd"u8, "-");
         Assert.Equal("-a-b--d-", repeatedSubn.ResultText);
         Assert.Equal(5, repeatedSubn.ReplacementCount);
@@ -817,6 +820,8 @@ public sealed class Utf8PythonRegexTests
         var alternation = new Utf8PythonRegex("x*|y");
         var reluctant = new Utf8PythonRegex("x*?");
 
+        Assert.False(alternation.DebugUsesManagedEmptyReplacementFastPath);
+        Assert.False(reluctant.DebugUsesManagedEmptyReplacementFastPath);
         Assert.Equal("---", alternation.ReplaceToString("y"u8, "-"));
         Assert.Equal("-----", reluctant.ReplaceToString("xx"u8, "-"));
     }

@@ -2385,6 +2385,14 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugUtf8ExecutionKind,
             "group-zero structural match shaping"),
         PythonReBenchmarkOperation.ReplaceString or
+            PythonReBenchmarkOperation.SubnString
+            when _pythonRegex.DebugUsesManagedEmptyReplacementFastPath =>
+            "strict UTF-8 decode; direct .NET Regex greedy exact-repeat replacement; string shaping",
+        PythonReBenchmarkOperation.ReplaceUtf8 or
+            PythonReBenchmarkOperation.SubnUtf8
+            when _pythonRegex.DebugUsesManagedEmptyReplacementFastPath =>
+            "strict UTF-8 decode; direct .NET Regex greedy exact-repeat replacement; UTF-8 shaping",
+        PythonReBenchmarkOperation.ReplaceString or
             PythonReBenchmarkOperation.ReplaceStringLimited or
             PythonReBenchmarkOperation.SubnString =>
             DescribeBackend(
