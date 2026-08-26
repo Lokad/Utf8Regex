@@ -84,11 +84,22 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Processor").GetString()));
 
             var qualification = benchmarkCase.Value.GetProperty("Qualification");
-            Assert.Equal("Unqualified", qualification.GetProperty("Status").GetString());
+            var status = qualification.GetProperty("Status").GetString();
+            Assert.Contains(
+                status,
+                new[] { "Unqualified", "Inconclusive", "Equivalent", "ManagedFaster", "CpythonFaster" });
             Assert.False(string.IsNullOrWhiteSpace(qualification.GetProperty("StatusReason").GetString()));
             Assert.Equal("Not engine-comparable", qualification.GetProperty("EngineEvidenceBasis").GetString());
             Assert.Equal("Unqualified", qualification.GetProperty("EngineConclusion").GetString());
-            Assert.Equal(JsonValueKind.Null, qualification.GetProperty("PairedEvidence").ValueKind);
+            var pairedEvidence = qualification.GetProperty("PairedEvidence");
+            if (pairedEvidence.ValueKind == JsonValueKind.Null)
+            {
+                Assert.Equal("Unqualified", status);
+            }
+            else
+            {
+                AssertPairedEvidence(pairedEvidence);
+            }
         }
 
         Assert.True(cases.GetProperty("capture/search-detailed").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
@@ -108,8 +119,22 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
         Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
-        Assert.Contains("Public Status: `0` managed faster", page, StringComparison.Ordinal);
-        Assert.Contains("`28` unqualified", page, StringComparison.Ordinal);
+        var statusCounts = cases.EnumerateObject()
+            .GroupBy(
+                static benchmarkCase => benchmarkCase.Value
+                    .GetProperty("Qualification")
+                    .GetProperty("Status")
+                    .GetString() ?? throw new InvalidOperationException("PythonRe Status must be a string."),
+                StringComparer.Ordinal)
+            .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
+        Assert.Contains(
+            $"Public Status: `{statusCounts.GetValueOrDefault("ManagedFaster")}` managed faster, " +
+            $"`{statusCounts.GetValueOrDefault("Equivalent")}` equivalent, " +
+            $"`{statusCounts.GetValueOrDefault("CpythonFaster")}` CPython faster, " +
+            $"`{statusCounts.GetValueOrDefault("Inconclusive")}` inconclusive, " +
+            $"`{statusCounts.GetValueOrDefault("Unqualified")}` unqualified",
+            page,
+            StringComparison.Ordinal);
         Assert.DoesNotContain(" CPU |", page, StringComparison.Ordinal);
         Assert.All(cpythonVersions, version => Assert.Contains($"CPython {version}", page, StringComparison.Ordinal));
     }
@@ -132,6 +157,48 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.InRange(measurement.GetProperty("EffectiveIterations").GetInt32(), 1, maximumIterations);
         Assert.True(measurement.GetProperty("WarmupCalls").GetInt32() > 0);
         Assert.True(measurement.GetProperty("WarmupMilliseconds").GetDouble() > 0);
+    }
+
+    private static void AssertPairedEvidence(JsonElement evidence)
+    {
+        Assert.Equal(2, evidence.GetProperty("ProtocolVersion").GetInt32());
+        Assert.Equal("CPythonPredecodedElapsed", evidence.GetProperty("Baseline").GetString());
+        Assert.True(evidence.GetProperty("WorktreeQualified").GetBoolean());
+        Assert.Equal("structured-u64-mix-v1", evidence.GetProperty("SemanticDigestAlgorithm").GetString());
+        Assert.Matches("^[0-9A-F]{16}$", evidence.GetProperty("SemanticDigest").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("QualificationId").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CaseDefinitionSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CatalogSha256").GetString() ?? string.Empty);
+        Assert.Equal("single-highest-efficiency-processor", evidence.GetProperty("CpuPolicy").GetString());
+        Assert.True(evidence.GetProperty("ManagedIterations").GetInt32() > 0);
+        Assert.True(evidence.GetProperty("CpythonIterations").GetInt32() > 0);
+        Assert.True(evidence.GetProperty("ManagedWarmupCalls").GetInt32() > 0);
+        Assert.True(evidence.GetProperty("CpythonWarmupCalls").GetInt32() > 0);
+        Assert.True(evidence.GetProperty("StrongRatioMedian").GetDouble() > 0);
+        Assert.True(evidence.GetProperty("StrongRatioLower95").GetDouble() > 0);
+        Assert.True(evidence.GetProperty("StrongRatioUpper95").GetDouble() > 0);
+        Assert.True(evidence.GetProperty("ManagedMedianAllocatedBytes").GetInt64() >= 0);
+
+        var samples = evidence.GetProperty("Samples").EnumerateArray().ToArray();
+        Assert.Contains(samples.Length, new[] { 9, 17 });
+        Assert.All(samples, sample =>
+        {
+            Assert.Contains(sample.GetProperty("Order").GetString(), new[] { "ManagedFirst", "CpythonFirst" });
+            Assert.True(sample.GetProperty("ManagedMicroseconds").GetDouble() > 0);
+            Assert.True(sample.GetProperty("CpythonMicroseconds").GetDouble() > 0);
+            Assert.True(sample.GetProperty("StrongRatio").GetDouble() > 0);
+            Assert.True(sample.GetProperty("ManagedElapsedMilliseconds").GetDouble() >= 20);
+            Assert.True(sample.GetProperty("CpythonElapsedMilliseconds").GetDouble() >= 20);
+            Assert.Equal(3, sample.GetProperty("ManagedGcCollections").GetArrayLength());
+            Assert.Equal(3, sample.GetProperty("CpythonGcCollections").GetArrayLength());
+        });
+        Assert.Equal(3, evidence.GetProperty("ManagedEmptyLoopMicroseconds").GetArrayLength());
+        Assert.Equal(3, evidence.GetProperty("CpythonEmptyLoopMicroseconds").GetArrayLength());
+
+        var cpython = evidence.GetProperty("CpythonEnvironment");
+        Assert.Equal("CPython", cpython.GetProperty("Implementation").GetString());
+        Assert.Matches("^[0-9A-F]{64}$", cpython.GetProperty("ExecutableSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", cpython.GetProperty("RunnerSha256").GetString() ?? string.Empty);
     }
 
     private static string FindRepositoryFile(string fileName)
