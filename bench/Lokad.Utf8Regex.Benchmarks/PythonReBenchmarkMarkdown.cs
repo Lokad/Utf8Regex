@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 or 7 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -113,6 +113,10 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine($"- Generated: `{snapshot.GeneratedAtUtc.ToUniversalTime():O}`");
         writer.WriteLine($"- Snapshot SHA-256: `{ComputePythonReSnapshotSha256()}`");
         writer.WriteLine($"- Schema: `{snapshot.SchemaVersion}`");
+        if (!string.IsNullOrWhiteSpace(snapshot.CatalogSha256))
+        {
+            writer.WriteLine($"- Catalog SHA-256: `{snapshot.CatalogSha256}`");
+        }
         writer.WriteLine($"- Cases: `{rows.Length}`");
         writer.WriteLine(
             $"- Public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
@@ -247,7 +251,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-benchmark-markdown\"");
         writer.WriteLine("```");
         writer.WriteLine();
-        writer.WriteLine("The benchmark catalog and projection logic live in [`PythonReBenchmarkReporter.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs).");
+        writer.WriteLine("The case definitions live in [`PythonReBenchmarkCatalog.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkCatalog.cs); timed projection logic lives in [`PythonReBenchmarkReporter.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs).");
         return writer.ToString();
 
         int GetStatusCount(string status) => statusCounts.GetValueOrDefault(status);

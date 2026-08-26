@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -386,13 +387,22 @@ internal static partial class PythonReBenchmarkReporter
         var managedEnvironment = CaptureEnvironment();
         var caseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, context.InputBytes);
         var catalogSha256 = ComputePythonReCatalogSha256();
+        var managedProductSha256 = ComputePythonReManagedProductSha256();
+        var managedOperationProtocolSha256 =
+            ComputePythonReManagedOperationProtocolSha256(benchmarkCase.Operation);
+        var cpythonOperationProtocolSha256 =
+            ComputePythonReCpythonOperationProtocolSha256(benchmarkCase.Operation);
+        var sharedProtocolSha256 = ComputePythonReSharedProtocolSha256();
         var pairedEvidence = new PythonRePairedEvidence
         {
             ProtocolVersion = PythonReQualificationProtocolVersion,
             QualificationId = ComputePythonReQualificationId(
                 caseDefinitionSha256,
-                catalogSha256,
-                managedEnvironment.SourceCommit,
+                managedProductSha256,
+                managedOperationProtocolSha256,
+                cpythonOperationProtocolSha256,
+                sharedProtocolSha256,
+                managedEnvironment,
                 worker.Environment,
                 processorScope.Policy,
                 processorScope.AffinityMask,
@@ -402,17 +412,16 @@ internal static partial class PythonReBenchmarkReporter
             MeasuredAtUtc = measuredAtUtc,
             SourceCommit = managedEnvironment.SourceCommit,
             Baseline = "CPythonPredecodedElapsed",
-            ResultContract = benchmarkCase.Operation is PythonReBenchmarkOperation.Search or
-                PythonReBenchmarkOperation.Match or PythonReBenchmarkOperation.FullMatch
-                    ? "ConsumedGroupZeroRanges"
-                    : benchmarkCase.IncludesResultMaterialization
-                        ? "EagerMaterializedResult"
-                        : "ScalarResult",
+            ResultContract = GetPythonReResultContract(benchmarkCase),
             InitialLane = cpythonFirst ? "CPython" : "PythonRe",
             WorktreeQualified = worktreeQualified,
             CaseDefinitionSha256 = caseDefinitionSha256,
             CatalogSha256 = catalogSha256,
-            SemanticDigestAlgorithm = "structured-u64-mix-v1",
+            ManagedProductSha256 = managedProductSha256,
+            ManagedOperationProtocolSha256 = managedOperationProtocolSha256,
+            CpythonOperationProtocolSha256 = cpythonOperationProtocolSha256,
+            SharedProtocolSha256 = sharedProtocolSha256,
+            SemanticDigestAlgorithm = PythonReSemanticDigestAlgorithm,
             SemanticDigest = expectedSemanticDigest.ToString("X16", System.Globalization.CultureInfo.InvariantCulture),
             CpuPolicy = processorScope.Policy,
             CpuAffinityMask = processorScope.AffinityMask,
@@ -576,23 +585,37 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var currentManaged = CaptureEnvironment();
-        var currentCatalogSha256 = ComputePythonReCatalogSha256();
+        var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
         var measured = 0;
         var skipped = 0;
         foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
         {
             var snapshot = LoadPythonReBenchmarkSnapshot();
-            var measurement = snapshot.Cases[benchmarkCase.Id];
-            if (CanResumePythonReQualification(
+            snapshot.Cases.TryGetValue(benchmarkCase.Id, out var measurement);
+            var freshness = GetPythonReQualificationFreshness(
                     benchmarkCase,
                     measurement,
-                    currentCatalogSha256,
+                    currentManagedProductSha256,
                     currentCpython,
-                    currentManaged,
-                    extendedSamples))
+                    currentManaged);
+            if (freshness == PythonReQualificationFreshness.Current &&
+                measurement is not null &&
+                !ShouldExtendPythonReQualification(measurement.Qualification, extendedSamples))
             {
                 Console.WriteLine($"Skip current         : {benchmarkCase.Id}");
                 skipped++;
+                continue;
+            }
+
+            Console.WriteLine(
+                $"Qualification state  : {benchmarkCase.Id}: " +
+                PythonReQualificationFreshnessEvaluator.Format(freshness));
+
+            if (measurement is null)
+            {
+                Console.Error.WriteLine(
+                    $"PythonRe snapshot has no row for new catalog case '{benchmarkCase.Id}'. " +
+                    "Refresh that case before qualification.");
                 continue;
             }
 
@@ -641,60 +664,55 @@ internal static partial class PythonReBenchmarkReporter
 #endif
     }
 
-    private static bool CanResumePythonReQualification(
+    private static PythonReQualificationFreshness GetPythonReQualificationFreshness(
         PythonReBenchmarkCase benchmarkCase,
-        PythonReCaseMeasurement measurement,
-        string currentCatalogSha256,
+        PythonReCaseMeasurement? measurement,
+        string currentManagedProductSha256,
         CpythonStreamEnvironment currentCpython,
-        PythonReBenchmarkEnvironment currentManaged,
-        int extendedSamples)
+        PythonReBenchmarkEnvironment currentManaged)
     {
-        var qualification = measurement.Qualification;
+        var qualification = measurement?.Qualification;
         var evidence = qualification?.PairedEvidence;
-        if (qualification is null ||
-            evidence is null ||
-            evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
-            !evidence.WorktreeQualified ||
-            !evidence.CatalogSha256.Equals(currentCatalogSha256, StringComparison.Ordinal) ||
-            !evidence.CaseDefinitionSha256.Equals(
-                ComputePythonReCaseDefinitionSha256(
+        var managedMetadataMatches = measurement is not null &&
+            measurement.ComparatorOwner.Equals(
+                PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+                StringComparison.Ordinal) &&
+            measurement.ManagedRoute.Equals(
+                new PythonReBenchmarkContext(benchmarkCase).DescribeManagedRoute(),
+                StringComparison.Ordinal);
+        var resultContractMatches = evidence is not null &&
+            evidence.ResultContract.Equals(GetPythonReResultContract(benchmarkCase), StringComparison.Ordinal);
+        return PythonReQualificationFreshnessEvaluator.Evaluate(
+            new PythonReQualificationFreshnessInput(
+                HasEvidence: evidence is not null,
+                StoredCaseDefinitionSha256: evidence?.CaseDefinitionSha256 ?? string.Empty,
+                CurrentCaseDefinitionSha256: ComputePythonReCaseDefinitionSha256(
                     benchmarkCase,
                     Encoding.UTF8.GetBytes(benchmarkCase.Input)),
-                StringComparison.Ordinal) ||
-            !measurement.ComparatorOwner.Equals(
-                PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
-                StringComparison.Ordinal) ||
-            !measurement.ManagedRoute.Equals(
-                new PythonReBenchmarkContext(benchmarkCase).DescribeManagedRoute(),
-                StringComparison.Ordinal) ||
-            !PythonReEnvironmentsMatch(evidence.CpythonEnvironment, currentCpython) ||
-            !evidence.ManagedEnvironment.Runtime.Equals(currentManaged.Runtime, StringComparison.Ordinal) ||
-            !evidence.ManagedEnvironment.OperatingSystem.Equals(
-                currentManaged.OperatingSystem,
-                StringComparison.Ordinal) ||
-            !evidence.ManagedEnvironment.Processor.Equals(currentManaged.Processor, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        var managedSourceChanges = RunGit(
-            "diff",
-            "--name-only",
-            evidence.SourceCommit,
-            "HEAD",
-            "--",
-            "Directory.Build.props",
-            "global.json",
-            "src/Lokad.Utf8Regex",
-            "src/Lokad.Utf8Regex.PythonRe",
-            "bench/Lokad.Utf8Regex.Benchmarks",
-            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
-        if (managedSourceChanges is null || !string.IsNullOrWhiteSpace(managedSourceChanges))
-        {
-            return false;
-        }
-
-        return !ShouldExtendPythonReQualification(qualification, extendedSamples);
+                StoredManagedProductSha256: evidence?.ManagedProductSha256 ?? string.Empty,
+                CurrentManagedProductSha256: currentManagedProductSha256,
+                StoredManagedOperationProtocolSha256: resultContractMatches
+                    ? evidence!.ManagedOperationProtocolSha256
+                    : string.Empty,
+                CurrentManagedOperationProtocolSha256:
+                    ComputePythonReManagedOperationProtocolSha256(benchmarkCase.Operation),
+                StoredCpythonOperationProtocolSha256:
+                    evidence?.CpythonOperationProtocolSha256 ?? string.Empty,
+                CurrentCpythonOperationProtocolSha256:
+                    ComputePythonReCpythonOperationProtocolSha256(benchmarkCase.Operation),
+                StoredSharedProtocolSha256: evidence is
+                    {
+                        ProtocolVersion: PythonReQualificationProtocolVersion,
+                        WorktreeQualified: true,
+                    }
+                    ? evidence.SharedProtocolSha256
+                    : string.Empty,
+                CurrentSharedProtocolSha256: ComputePythonReSharedProtocolSha256(),
+                ManagedMetadataMatches: managedMetadataMatches,
+                RuntimeMatches: evidence is not null &&
+                    PythonReManagedRuntimeMatches(evidence.ManagedEnvironment, currentManaged),
+                InterpreterMatches: evidence is not null &&
+                    PythonReInterpreterMatches(evidence.CpythonEnvironment, currentCpython)));
     }
 
     private static bool ShouldExtendPythonReQualification(
@@ -713,24 +731,48 @@ internal static partial class PythonReBenchmarkReporter
              qualification.StatusReason.StartsWith("Removable harness floors", StringComparison.Ordinal));
     }
 
-    private static bool PythonReEnvironmentsMatch(
-        CpythonStreamEnvironment stored,
-        CpythonStreamEnvironment current) =>
-        stored.VersionDetail.Equals(current.VersionDetail, StringComparison.Ordinal) &&
-        stored.Git.SequenceEqual(current.Git, StringComparer.Ordinal) &&
-        stored.Compiler.Equals(current.Compiler, StringComparison.Ordinal) &&
-        stored.SoAbi.Equals(current.SoAbi, StringComparison.Ordinal) &&
-        stored.DebugBuild == current.DebugBuild &&
-        stored.GilEnabled == current.GilEnabled &&
-        stored.ExecutableSha256.Equals(current.ExecutableSha256, StringComparison.Ordinal) &&
-        stored.RuntimeLibrarySha256.Equals(current.RuntimeLibrarySha256, StringComparison.Ordinal) &&
-        stored.Platform.Equals(current.Platform, StringComparison.Ordinal) &&
-        stored.Architecture.Equals(current.Architecture, StringComparison.Ordinal) &&
-        stored.RunnerSha256.Equals(current.RunnerSha256, StringComparison.Ordinal) &&
-        stored.Timer.Implementation.Equals(current.Timer.Implementation, StringComparison.Ordinal) &&
-        stored.Timer.ResolutionSeconds.Equals(current.Timer.ResolutionSeconds) &&
-        stored.Timer.Monotonic == current.Timer.Monotonic &&
-        stored.Timer.Adjustable == current.Timer.Adjustable;
+    private static int EmitPythonReFreshnessReport()
+    {
+        var snapshot = LoadPythonReBenchmarkSnapshot();
+        using var worker = new CpythonStreamWorker();
+        var currentManaged = CaptureEnvironment();
+        var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
+        var counts = new Dictionary<PythonReQualificationFreshness, int>();
+
+        foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
+        {
+            snapshot.Cases.TryGetValue(benchmarkCase.Id, out var measurement);
+            var freshness = GetPythonReQualificationFreshness(
+                benchmarkCase,
+                measurement,
+                currentManagedProductSha256,
+                worker.Environment,
+                currentManaged);
+            counts[freshness] = counts.GetValueOrDefault(freshness) + 1;
+            Console.WriteLine(
+                $"{benchmarkCase.Id,-46} " +
+                PythonReQualificationFreshnessEvaluator.Format(freshness));
+        }
+
+        foreach (var snapshotCase in snapshot.Cases.Keys.Except(
+                     PythonReBenchmarkCatalog.Cases.Select(static benchmarkCase => benchmarkCase.Id),
+                     StringComparer.Ordinal))
+        {
+            Console.WriteLine($"{snapshotCase,-46} snapshot-only case");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            string.Join(
+                "; ",
+                counts.OrderBy(static pair => pair.Key).Select(pair =>
+                    $"{PythonReQualificationFreshnessEvaluator.Format(pair.Key)}={pair.Value}")));
+        return counts.Keys.All(static freshness =>
+            freshness is PythonReQualificationFreshness.Current or
+                PythonReQualificationFreshness.NewCase)
+            ? 0
+            : 1;
+    }
 
     private static int EmitPythonRePriorityReport()
     {
@@ -1133,8 +1175,19 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshot = LoadPythonReBenchmarkSnapshot();
         var currentCatalogSha256 = ComputePythonReCatalogSha256();
-        var currentRunnerSha256 = Convert.ToHexString(SHA256.HashData(
-            File.ReadAllBytes(FindRepositoryFile(CpythonRunnerRelativePath))));
+        if (snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion ||
+            !snapshot.CatalogSha256.Equals(currentCatalogSha256, StringComparison.Ordinal))
+        {
+            Console.Error.WriteLine(
+                $"PythonRe qualification verification requires a current schema-{PythonReBenchmarkSchemaVersion} " +
+                "snapshot and catalog provenance.");
+            return 1;
+        }
+
+        using var worker = new CpythonStreamWorker();
+        var currentCpython = worker.Environment;
+        var currentManaged = CaptureEnvironment();
+        var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
         var verified = 0;
         foreach (var (caseId, measurement) in snapshot.Cases)
         {
@@ -1190,51 +1243,21 @@ internal static partial class PythonReBenchmarkReporter
 
                 continue;
             }
-            if (!evidence.CaseDefinitionSha256.Equals(
-                    ComputePythonReCaseDefinitionSha256(benchmarkCase, inputBytes),
-                    StringComparison.Ordinal) ||
-                !evidence.CatalogSha256.Equals(currentCatalogSha256, StringComparison.Ordinal) ||
-                !evidence.CpythonEnvironment.RunnerSha256.Equals(currentRunnerSha256, StringComparison.Ordinal))
+            var freshness = GetPythonReQualificationFreshness(
+                benchmarkCase,
+                measurement,
+                currentManagedProductSha256,
+                currentCpython,
+                currentManaged);
+            if (freshness != PythonReQualificationFreshness.Current)
             {
-                Console.Error.WriteLine($"{caseId}: catalog, case, or runner fingerprint is stale.");
-                return 1;
-            }
-
-            var managedSourceChanges = RunGit(
-                "diff",
-                "--name-only",
-                evidence.SourceCommit,
-                "HEAD",
-                "--",
-                "Directory.Build.props",
-                "global.json",
-                "src/Lokad.Utf8Regex",
-                "src/Lokad.Utf8Regex.PythonRe",
-                "bench/Lokad.Utf8Regex.Benchmarks",
-                ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
-            if (managedSourceChanges is null || !string.IsNullOrWhiteSpace(managedSourceChanges))
-            {
-                Console.Error.WriteLine($"{caseId}: managed source differs from measured commit {evidence.SourceCommit}.");
-                if (!string.IsNullOrWhiteSpace(managedSourceChanges))
-                {
-                    Console.Error.WriteLine(managedSourceChanges);
-                }
-                return 1;
-            }
-
-            if (!VerifyPythonReInterpreterFile(
-                    evidence.CpythonEnvironment.Executable,
-                    evidence.CpythonEnvironment.ExecutableSha256) ||
-                !VerifyPythonReInterpreterFile(
-                    evidence.CpythonEnvironment.RuntimeLibrary,
-                    evidence.CpythonEnvironment.RuntimeLibrarySha256))
-            {
-                Console.Error.WriteLine($"{caseId}: CPython executable or runtime-library fingerprint is stale.");
+                Console.Error.WriteLine(
+                    $"{caseId}: " + PythonReQualificationFreshnessEvaluator.Format(freshness) + ".");
                 return 1;
             }
 
             if (evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
-                !evidence.SemanticDigestAlgorithm.Equals("structured-u64-mix-v1", StringComparison.Ordinal) ||
+                !evidence.SemanticDigestAlgorithm.Equals(PythonReSemanticDigestAlgorithm, StringComparison.Ordinal) ||
                 evidence.Samples.Length is not 9 and not 17 ||
                 evidence.ManagedTrivialCallMicroseconds.Length != 3 ||
                 evidence.CpythonTrivialCallMicroseconds.Length != 3 ||
@@ -1244,12 +1267,7 @@ internal static partial class PythonReBenchmarkReporter
                 return 1;
             }
 
-            var expectedResultContract = benchmarkCase.Operation is PythonReBenchmarkOperation.Search or
-                PythonReBenchmarkOperation.Match or PythonReBenchmarkOperation.FullMatch
-                    ? "ConsumedGroupZeroRanges"
-                    : benchmarkCase.IncludesResultMaterialization
-                        ? "EagerMaterializedResult"
-                        : "ScalarResult";
+            var expectedResultContract = GetPythonReResultContract(benchmarkCase);
             if (!evidence.ResultContract.Equals(expectedResultContract, StringComparison.Ordinal))
             {
                 Console.Error.WriteLine($"{caseId}: paired result contract is stale.");
@@ -1346,8 +1364,11 @@ internal static partial class PythonReBenchmarkReporter
 
             var expectedQualificationId = ComputePythonReQualificationId(
                 evidence.CaseDefinitionSha256,
-                evidence.CatalogSha256,
-                evidence.SourceCommit,
+                evidence.ManagedProductSha256,
+                evidence.ManagedOperationProtocolSha256,
+                evidence.CpythonOperationProtocolSha256,
+                evidence.SharedProtocolSha256,
+                evidence.ManagedEnvironment,
                 evidence.CpythonEnvironment,
                 evidence.CpuPolicy,
                 evidence.CpuAffinityMask,
@@ -1508,17 +1529,6 @@ internal static partial class PythonReBenchmarkReporter
     private static bool IsPythonReQualifiedProcessorPolicy(string policy) =>
         policy.Equals(PythonReQualificationProcessorPolicy, StringComparison.Ordinal) ||
         policy.Equals("single-highest-efficiency-processor", StringComparison.Ordinal);
-
-    private static bool VerifyPythonReInterpreterFile(string path, string expectedSha256)
-    {
-        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(expectedSha256) || !File.Exists(path))
-        {
-            return false;
-        }
-
-        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
-        return actual.Equals(expectedSha256, StringComparison.Ordinal);
-    }
 
     private static void VerifyPythonReStatistic(string name, double expected, double actual)
     {
@@ -1805,6 +1815,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = measuredAtUtc,
+            CatalogSha256 = ComputePythonReCatalogSha256(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
         });
@@ -1821,6 +1832,20 @@ internal static partial class PythonReBenchmarkReporter
                 benchmarkCase.Operation.ToString(),
                 benchmarkCase.Replacement,
                 benchmarkCase.IncludesResultMaterialization.ToString(),
+                GetPythonReResultContract(benchmarkCase),
+                Convert.ToHexString(SHA256.HashData(inputBytes))));
+
+    private static string ComputeLegacyPythonReCaseDefinitionSha256(
+        PythonReBenchmarkCase benchmarkCase,
+        byte[] inputBytes) => ComputePythonReSha256(
+            string.Join(
+                '\n',
+                benchmarkCase.Id,
+                benchmarkCase.Pattern,
+                ((int)benchmarkCase.Options).ToString(CultureInfo.InvariantCulture),
+                benchmarkCase.Operation.ToString(),
+                benchmarkCase.Replacement,
+                benchmarkCase.IncludesResultMaterialization.ToString(),
                 Convert.ToHexString(SHA256.HashData(inputBytes))));
 
     private static string ComputePythonReCatalogSha256()
@@ -1834,8 +1859,11 @@ internal static partial class PythonReBenchmarkReporter
 
     private static string ComputePythonReQualificationId(
         string caseDefinitionSha256,
-        string catalogSha256,
-        string sourceCommit,
+        string managedProductSha256,
+        string managedOperationProtocolSha256,
+        string cpythonOperationProtocolSha256,
+        string sharedProtocolSha256,
+        PythonReBenchmarkEnvironment managed,
         CpythonStreamEnvironment cpython,
         string cpuPolicy,
         string cpuAffinityMask,
@@ -1846,6 +1874,38 @@ internal static partial class PythonReBenchmarkReporter
                 '\n',
                 PythonReQualificationProtocolVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 caseDefinitionSha256,
+                managedProductSha256,
+                managedOperationProtocolSha256,
+                cpythonOperationProtocolSha256,
+                sharedProtocolSha256,
+                managed.Runtime,
+                managed.OperatingSystem,
+                managed.Processor,
+                cpython.VersionDetail,
+                string.Join('|', cpython.Git),
+                cpython.ExecutableSha256,
+                cpython.RuntimeLibrarySha256,
+                cpuPolicy,
+                cpuAffinityMask,
+                cpuEfficiencyClass?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
+                    "unavailable",
+                cpythonFirst ? "CPython" : "PythonRe",
+                samples.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
+    private static string ComputeLegacyPythonReQualificationId(
+        string caseDefinitionSha256,
+        string catalogSha256,
+        string sourceCommit,
+        CpythonStreamEnvironment cpython,
+        string cpuPolicy,
+        string cpuAffinityMask,
+        int? cpuEfficiencyClass,
+        bool cpythonFirst,
+        int samples) => ComputePythonReSha256(
+            string.Join(
+                '\n',
+                PythonReQualificationProtocolVersion.ToString(CultureInfo.InvariantCulture),
+                caseDefinitionSha256,
                 catalogSha256,
                 sourceCommit,
                 cpython.VersionDetail,
@@ -1855,10 +1915,9 @@ internal static partial class PythonReBenchmarkReporter
                 cpython.RunnerSha256,
                 cpuPolicy,
                 cpuAffinityMask,
-                cpuEfficiencyClass?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
-                    "unavailable",
+                cpuEfficiencyClass?.ToString(CultureInfo.InvariantCulture) ?? "unavailable",
                 cpythonFirst ? "CPython" : "PythonRe",
-                samples.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                samples.ToString(CultureInfo.InvariantCulture)));
 
     private static string ComputePythonReSha256(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
