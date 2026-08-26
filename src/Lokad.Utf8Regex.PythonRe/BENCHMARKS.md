@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:08:54.7146852+00:00`
-- Snapshot SHA-256: `3AE75EDBA39BA3B2A9B77A27D56392825CBE35EDE5F86868A38856512BAA2977`
+- Generated: `2026-08-26T12:09:19.9805644+00:00`
+- Snapshot SHA-256: `3E39514958F6FD3F6390D436E88C99D2ED3C7B0F1D7CF87E1B8FC29591DDED17`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `5` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `21` unqualified
+- Public Status: `6` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `20` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -60,7 +60,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | Historical | Unqualified | 209.053 us | 10,068.573 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
 | `replacement/fixed-string` | `ReplaceString` | Historical | Unqualified | 158.222 us | 112.937 us | 1.40x | 116.107 us | 157.065 us | 147,938 B |
 | `replacement/fixed-utf8` | `ReplaceUtf8` | Historical | Unqualified | 159.901 us | 122.880 us | 1.30x | 126.579 us | 162.701 us | 188,922 B |
-| `replacement/subn-string` | `SubnString` | Historical | Unqualified | 127.518 us | 62.295 us | 2.05x | 64.130 us | 121.769 us | 74,209 B |
+| `replacement/subn-string` | `SubnString` | EagerMaterializedResult | Managed faster | 26.135 us | 54.653 us | 0.48x | 64.130 us | 121.769 us | 61,952 B |
 | `replacement/subn-utf8` | `SubnUtf8` | Historical | Unqualified | 130.351 us | 61.397 us | 2.12x | 62.087 us | 120.898 us | 94,713 B |
 | `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
