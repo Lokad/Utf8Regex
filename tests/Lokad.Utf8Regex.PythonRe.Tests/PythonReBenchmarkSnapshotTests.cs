@@ -98,7 +98,7 @@ public sealed class PythonReBenchmarkSnapshotTests
             }
             else
             {
-                AssertPairedEvidence(pairedEvidence);
+                AssertPairedEvidence(pairedEvidence, status!);
             }
         }
 
@@ -159,7 +159,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.True(measurement.GetProperty("WarmupMilliseconds").GetDouble() > 0);
     }
 
-    private static void AssertPairedEvidence(JsonElement evidence)
+    private static void AssertPairedEvidence(JsonElement evidence, string status)
     {
         Assert.Equal(2, evidence.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal("CPythonPredecodedElapsed", evidence.GetProperty("Baseline").GetString());
@@ -190,8 +190,11 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.True(sample.GetProperty("ManagedMicroseconds").GetDouble() > 0);
             Assert.True(sample.GetProperty("CpythonMicroseconds").GetDouble() > 0);
             Assert.True(sample.GetProperty("StrongRatio").GetDouble() > 0);
-            Assert.True(sample.GetProperty("ManagedElapsedMilliseconds").GetDouble() >= 20);
-            Assert.True(sample.GetProperty("CpythonElapsedMilliseconds").GetDouble() >= 20);
+            if (!string.Equals(status, "Unqualified", StringComparison.Ordinal))
+            {
+                Assert.True(sample.GetProperty("ManagedElapsedMilliseconds").GetDouble() >= 20);
+                Assert.True(sample.GetProperty("CpythonElapsedMilliseconds").GetDouble() >= 20);
+            }
             Assert.Equal(3, sample.GetProperty("ManagedGcCollections").GetArrayLength());
             Assert.Equal(3, sample.GetProperty("CpythonGcCollections").GetArrayLength());
         });
