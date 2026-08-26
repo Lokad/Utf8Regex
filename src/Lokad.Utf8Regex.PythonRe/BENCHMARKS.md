@@ -25,13 +25,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 - Schema: `6`
 - Cases: `28`
 - Public Status: `1` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `27` unqualified
-- Measurement environments represented: `1`
+- Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
-- CPython environments represented: `1`
-- CPython baseline: `CPython 3.13.2` at `C:\Python313\python.exe` on Windows-11-10.0.26200-SP0
+- Historical CPython point environments represented: `1`
+- Historical CPython point baseline: `CPython 3.13.2` at `C:\Python313\python.exe` on Windows-11-10.0.26200-SP0
 
-Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel.
+Historical independent point columns were measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
 
 ## Results
 

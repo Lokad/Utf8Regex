@@ -120,7 +120,7 @@ internal static partial class PythonReBenchmarkReporter
             $"`{GetStatusCount("CpythonFaster")}` CPython faster, " +
             $"`{GetStatusCount("Inconclusive")}` inconclusive, " +
             $"`{GetStatusCount("Unqualified")}` unqualified");
-        writer.WriteLine($"- Measurement environments represented: `{environments.Length}`");
+        writer.WriteLine($"- Historical point measurement environments represented: `{environments.Length}`");
         writer.WriteLine($"- Corpus: [`{snapshot.Corpus.SourceFile}`](../../{snapshot.Corpus.SourceFile}) (`{snapshot.Corpus.VectorCount}` vectors, SHA-256 `{snapshot.Corpus.Sha256}`)");
         writer.WriteLine($"- Corpus provenance limitation: {snapshot.Corpus.Limitation}");
         if (hasCompleteCpythonBaseline)
@@ -136,10 +136,10 @@ internal static partial class PythonReBenchmarkReporter
                     environment.Platform,
                 })
                 .ToArray();
-            writer.WriteLine($"- CPython environments represented: `{cpythonEnvironments.Length}`");
+            writer.WriteLine($"- Historical CPython point environments represented: `{cpythonEnvironments.Length}`");
             foreach (var environment in cpythonEnvironments)
             {
-                writer.WriteLine($"- CPython baseline: `{environment.Implementation} {environment.Version}` at `{environment.Executable}` on {environment.Platform}");
+                writer.WriteLine($"- Historical CPython point baseline: `{environment.Implementation} {environment.Version}` at `{environment.Executable}` on {environment.Platform}");
             }
         }
         writer.WriteLine();
@@ -147,11 +147,14 @@ internal static partial class PythonReBenchmarkReporter
         if (environments.Length == 1)
         {
             var environment = environments[0];
-            writer.WriteLine($"Measured from source `{environment.SourceCommit}` on {environment.Runtime}, {environment.OperatingSystem}, {environment.Processor}.");
+            writer.WriteLine(
+                $"Historical independent point columns were measured from source `{environment.SourceCommit}` " +
+                $"on {environment.Runtime}, {environment.OperatingSystem}, {environment.Processor}. " +
+                "Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.");
         }
         else
         {
-            writer.WriteLine("Rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.");
+            writer.WriteLine("Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.");
         }
 
         writer.WriteLine();
