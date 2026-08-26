@@ -42,7 +42,7 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(3, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
@@ -82,6 +82,13 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Runtime").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("OperatingSystem").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(environment.GetProperty("Processor").GetString()));
+
+            var qualification = benchmarkCase.Value.GetProperty("Qualification");
+            Assert.Equal("Unqualified", qualification.GetProperty("Status").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(qualification.GetProperty("StatusReason").GetString()));
+            Assert.Equal("Not engine-comparable", qualification.GetProperty("EngineEvidenceBasis").GetString());
+            Assert.Equal("Unqualified", qualification.GetProperty("EngineConclusion").GetString());
+            Assert.Equal(JsonValueKind.Null, qualification.GetProperty("PairedEvidence").ValueKind);
         }
 
         Assert.True(cases.GetProperty("capture/search-detailed").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
@@ -100,7 +107,10 @@ public sealed class PythonReBenchmarkSnapshotTests
             .ToArray();
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
-        Assert.Contains("CPython + decode CPU", page, StringComparison.Ordinal);
+        Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
+        Assert.Contains("Public Status: `0` managed faster", page, StringComparison.Ordinal);
+        Assert.Contains("`28` unqualified", page, StringComparison.Ordinal);
+        Assert.DoesNotContain(" CPU |", page, StringComparison.Ordinal);
         Assert.All(cpythonVersions, version => Assert.Contains($"CPython {version}", page, StringComparison.Ordinal));
     }
 

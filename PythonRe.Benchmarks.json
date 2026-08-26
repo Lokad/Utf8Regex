@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 3,
+  "SchemaVersion": 4,
   "GeneratedAtUtc": "2026-08-21T10:14:37.8911438+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
@@ -74,6 +74,13 @@
           "WarmupCalls": 38266,
           "WarmupMilliseconds": 100.0013
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "class-run/count": {
@@ -141,6 +148,13 @@
           "WarmupCalls": 73,
           "WarmupMilliseconds": 100.979
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "family/count": {
@@ -208,6 +222,13 @@
           "WarmupCalls": 82,
           "WarmupMilliseconds": 100.3315
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/full-strings": {
@@ -275,6 +296,13 @@
           "WarmupCalls": 455,
           "WarmupMilliseconds": 100.036
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/full-utf8": {
@@ -342,6 +370,13 @@
           "WarmupCalls": 272,
           "WarmupMilliseconds": 100.1233
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/many-capture-strings": {
@@ -409,6 +444,13 @@
           "WarmupCalls": 492,
           "WarmupMilliseconds": 100.0209
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/many-capture-utf8": {
@@ -476,6 +518,13 @@
           "WarmupCalls": 112,
           "WarmupMilliseconds": 100.2346
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/one-capture-strings": {
@@ -543,6 +592,13 @@
           "WarmupCalls": 688,
           "WarmupMilliseconds": 100.0642
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/unicode-capture-utf8": {
@@ -610,6 +666,13 @@
           "WarmupCalls": 281,
           "WarmupMilliseconds": 100.214
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/unicode-full-strings": {
@@ -677,6 +740,13 @@
           "WarmupCalls": 3481,
           "WarmupMilliseconds": 100.0359
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "findall/unicode-full-utf8": {
@@ -744,6 +814,13 @@
           "WarmupCalls": 2100,
           "WarmupMilliseconds": 100.0325
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "iteration/finditer-detailed": {
@@ -811,6 +888,13 @@
           "WarmupCalls": 36,
           "WarmupMilliseconds": 103.8203
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "literal/fullmatch": {
@@ -878,6 +962,13 @@
           "WarmupCalls": 65536,
           "WarmupMilliseconds": 24.123
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "literal/ismatch": {
@@ -945,6 +1036,13 @@
           "WarmupCalls": 6667,
           "WarmupMilliseconds": 100.0095
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "literal/search": {
@@ -1012,6 +1110,13 @@
           "WarmupCalls": 6936,
           "WarmupMilliseconds": 100.0123
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "literal/search-miss": {
@@ -1079,6 +1184,13 @@
           "WarmupCalls": 6950,
           "WarmupMilliseconds": 100.0712
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "prefix/match": {
@@ -1146,6 +1258,13 @@
           "WarmupCalls": 65536,
           "WarmupMilliseconds": 64.4327
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/evaluator-string": {
@@ -1213,6 +1332,13 @@
           "WarmupCalls": 11,
           "WarmupMilliseconds": 107.4035
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/evaluator-utf8": {
@@ -1280,6 +1406,13 @@
           "WarmupCalls": 11,
           "WarmupMilliseconds": 104.7734
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/fixed-string": {
@@ -1347,6 +1480,13 @@
           "WarmupCalls": 858,
           "WarmupMilliseconds": 100.015
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/fixed-utf8": {
@@ -1414,6 +1554,13 @@
           "WarmupCalls": 757,
           "WarmupMilliseconds": 100.3238
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/subn-string": {
@@ -1481,6 +1628,13 @@
           "WarmupCalls": 1672,
           "WarmupMilliseconds": 100.0447
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "replacement/subn-utf8": {
@@ -1548,6 +1702,13 @@
           "WarmupCalls": 1618,
           "WarmupMilliseconds": 100.0324
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "split/captures": {
@@ -1615,6 +1776,13 @@
           "WarmupCalls": 703,
           "WarmupMilliseconds": 100.0266
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "split/no-captures": {
@@ -1682,6 +1850,13 @@
           "WarmupCalls": 789,
           "WarmupMilliseconds": 100.0114
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "unicode/count": {
@@ -1749,6 +1924,13 @@
           "WarmupCalls": 370,
           "WarmupMilliseconds": 100.0659
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "unicode/fullmatch": {
@@ -1816,6 +1998,13 @@
           "WarmupCalls": 5343,
           "WarmupMilliseconds": 100.0098
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     },
     "zero-width/count": {
@@ -1883,6 +2072,13 @@
           "WarmupCalls": 168,
           "WarmupMilliseconds": 100.3933
         }
+      },
+      "Qualification": {
+        "Status": "Unqualified",
+        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "EngineEvidenceBasis": "Not engine-comparable",
+        "EngineConclusion": "Unqualified",
+        "PairedEvidence": null
       }
     }
   }

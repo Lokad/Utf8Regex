@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -63,15 +63,11 @@ internal static partial class PythonReBenchmarkReporter
         var writer = new StringWriter(CultureInfo.InvariantCulture);
         var rows = snapshot.Cases.ToArray();
         var hasCompleteCpythonBaseline = rows.All(static row => row.Value.Cpython is not null);
-        var comparableRows = rows
-            .Where(row => hasCompleteCpythonBaseline
-                ? row.Value.Cpython is { } cpython && cpython.DecodeThenRe.MedianMicroseconds > 0
-                : row.Value.DecodeThenRegex.MedianMicroseconds > 0)
-            .ToArray();
-        var parityCount = comparableRows.Count(row =>
-            row.Value.PythonRe.MedianMicroseconds <= (hasCompleteCpythonBaseline
-                ? (row.Value.Cpython ?? throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.")).DecodeThenRe.MedianMicroseconds
-                : row.Value.DecodeThenRegex.MedianMicroseconds));
+        var statusCounts = rows
+            .GroupBy(
+                static row => row.Value.Qualification?.Status ?? "Unqualified",
+                StringComparer.Ordinal)
+            .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
         var environments = rows
             .Select(static row => row.Value.Environment)
             .DistinctBy(static environment => new
@@ -94,24 +90,28 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("- `PythonRe`: `Utf8PythonRegex` over UTF-8 input.");
         if (hasCompleteCpythonBaseline)
         {
-            writer.WriteLine("- `CPython predecoded`: the official CPython `re` engine over an already-decoded `str`.");
-            writer.WriteLine("- `CPython + decode`: strict UTF-8 decoding on every operation followed by the precompiled CPython `re.Pattern`; this is the primary Python-oracle baseline.");
+            writer.WriteLine("- `CPython predecoded`: the official CPython `re.Pattern` / `_sre` implementation over an already-decoded `str`; this is the strong Status baseline.");
+            writer.WriteLine("- `CPython + decode`: strict UTF-8 decoding on every operation followed by the precompiled CPython `re.Pattern`; this is contextual end-to-end evidence and cannot set Status.");
         }
         writer.WriteLine("- `.NET predecoded`: `System.Text.RegularExpressions.Regex` over an already-decoded `string`.");
         writer.WriteLine("- `.NET + decode`: strict UTF-8 decoding on every operation followed by `.NET Regex`; this is retained as managed-core context.");
         writer.WriteLine();
         writer.WriteLine(hasCompleteCpythonBaseline
-            ? "Enumeration, split, and replacement rows include the result materialization needed by the public operation. These rows answer whether Python-compatible API semantics add acceptable cost. CPython is measured inside its own long-lived process because `_sre` is a CPython core module, not a standalone engine API; interpreter startup and pattern compilation are excluded. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements. Use the PCRE2 page for the separate native PCRE2 engine comparison."
+            ? "Enumeration, split, and replacement rows include the result materialization needed by the public operation. CPython is measured inside its own long-lived process because `_sre` is a CPython core module, not a standalone engine API; interpreter startup and pattern compilation are excluded. Status requires alternating paired elapsed-time samples against predecoded CPython, equal requested work, stable lanes, bounded harness-floor sensitivity, and exact source/runtime provenance. Historical independent medians remain visible for discovery but are Unqualified. Use the PCRE2 page for the separate native PCRE2 engine comparison."
             : "Enumeration, split, and replacement rows include the result materialization needed by the public operation. This legacy schema-2 snapshot predates the direct CPython baseline; the next complete refresh migrates it to schema 3 with official CPython `re` measurements. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements.");
         writer.WriteLine();
         writer.WriteLine("## Snapshot summary");
         writer.WriteLine();
         writer.WriteLine($"- Generated: `{snapshot.GeneratedAtUtc.ToUniversalTime():O}`");
         writer.WriteLine($"- Snapshot SHA-256: `{ComputePythonReSnapshotSha256()}`");
+        writer.WriteLine($"- Schema: `{snapshot.SchemaVersion}`");
         writer.WriteLine($"- Cases: `{rows.Length}`");
-        writer.WriteLine(hasCompleteCpythonBaseline
-            ? $"- At or below the decode-then-CPython median: `{parityCount}/{comparableRows.Length}`"
-            : $"- At or below the decode-then-.NET median: `{parityCount}/{comparableRows.Length}`");
+        writer.WriteLine(
+            $"- Public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
+            $"`{GetStatusCount("Equivalent")}` equivalent, " +
+            $"`{GetStatusCount("CpythonFaster")}` CPython faster, " +
+            $"`{GetStatusCount("Inconclusive")}` inconclusive, " +
+            $"`{GetStatusCount("Unqualified")}` unqualified");
         writer.WriteLine($"- Measurement environments represented: `{environments.Length}`");
         writer.WriteLine($"- Corpus: [`{snapshot.Corpus.SourceFile}`](../../{snapshot.Corpus.SourceFile}) (`{snapshot.Corpus.VectorCount}` vectors, SHA-256 `{snapshot.Corpus.Sha256}`)");
         writer.WriteLine($"- Corpus provenance limitation: {snapshot.Corpus.Limitation}");
@@ -151,22 +151,28 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         if (hasCompleteCpythonBaseline)
         {
-            writer.WriteLine("`vs CPython` is `PythonRe / CPython + decode`; lower is better, and `1.00x` is exact median parity. The CPython runner times inside the interpreter after startup and pattern compilation, and calibrates each CPython sample toward 100 ms up to the row's .NET iteration ceiling. Times are medians in microseconds per public operation.");
+            writer.WriteLine("`Rstrong` is `PythonRe / CPython predecoded`; lower is better. Only a qualified paired 95% interval wholly below `0.98`, wholly within `0.98-1.02`, or wholly above `1.02` can establish Managed faster, Equivalent, or CPython faster. The old scalar medians shown for Unqualified rows are discovery evidence only. All times are elapsed microseconds per public operation, not CPU time.");
             writer.WriteLine();
-            writer.WriteLine("| Case | Operation | Input | PythonRe CPU | CPython predecoded CPU | CPython + decode CPU | vs CPython | .NET + decode CPU | vs .NET | PythonRe alloc |");
-            writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|");
+            writer.WriteLine("| Case | Operation | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |");
+            writer.WriteLine("|---|---|---|---:|---:|---:|---:|---:|---:|");
             foreach (var (caseId, measurement) in rows)
             {
                 var cpython = measurement.Cpython ??
                     throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.");
+                var qualification = measurement.Qualification;
+                var paired = qualification?.PairedEvidence;
+                var managedMicroseconds = paired?.ManagedMedianMicroseconds ??
+                    measurement.PythonRe.MedianMicroseconds;
+                var cpythonMicroseconds = paired?.CpythonMedianMicroseconds ??
+                    cpython.PredecodedRe.MedianMicroseconds;
+                var strongRatio = paired?.StrongRatioMedian ?? managedMicroseconds / cpythonMicroseconds;
                 writer.WriteLine(
-                    $"| `{caseId}` | `{measurement.Operation}` | {measurement.InputUtf8Bytes:N0} B | " +
-                    $"{FormatPythonReMicroseconds(measurement.PythonRe.MedianMicroseconds)} | " +
-                    $"{FormatPythonReMicroseconds(cpython.PredecodedRe.MedianMicroseconds)} | " +
+                    $"| `{caseId}` | `{measurement.Operation}` | {FormatPythonReStatus(qualification)} | " +
+                    $"{FormatPythonReMicroseconds(managedMicroseconds)} | " +
+                    $"{FormatPythonReMicroseconds(cpythonMicroseconds)} | " +
+                    $"{strongRatio:F2}x | " +
                     $"{FormatPythonReMicroseconds(cpython.DecodeThenRe.MedianMicroseconds)} | " +
-                    $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, cpython.DecodeThenRe.MedianMicroseconds)} | " +
                     $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
-                    $"{FormatPythonReRatio(measurement.PythonRe.MedianMicroseconds, measurement.DecodeThenRegex.MedianMicroseconds)} | " +
                     $"{measurement.PythonRe.MedianAllocatedBytes:N0} B |");
             }
         }
@@ -194,6 +200,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("Run from the repository root in `Release` through `./bench.ps1`:");
         writer.WriteLine();
         writer.WriteLine("```powershell");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case\",\"literal/search\",\"9\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case-reversed\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");
@@ -202,6 +210,19 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         writer.WriteLine("The benchmark catalog and projection logic live in [`PythonReBenchmarkReporter.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs).");
         return writer.ToString();
+
+        int GetStatusCount(string status) => statusCounts.GetValueOrDefault(status);
+    }
+
+    private static string FormatPythonReStatus(PythonReQualificationMeasurement? qualification)
+    {
+        var status = qualification?.Status ?? "Unqualified";
+        return status switch
+        {
+            "ManagedFaster" => "Managed faster",
+            "CpythonFaster" => "CPython faster",
+            _ => status,
+        };
     }
 
     private static string FormatPythonReMicroseconds(double value) => $"{value:N3} us";

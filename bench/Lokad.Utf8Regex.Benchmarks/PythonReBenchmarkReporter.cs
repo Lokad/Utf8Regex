@@ -12,6 +12,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
+    private const int PythonReBenchmarkSchemaVersion = 4;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
 
@@ -114,6 +115,12 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--migrate-pythonre-benchmark-snapshot", StringComparison.Ordinal))
+        {
+            exitCode = MigratePythonReBenchmarkSnapshot();
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pythonre-benchmark-markdown", StringComparison.Ordinal))
         {
             exitCode = EmitPythonReBenchmarkMarkdown();
@@ -149,7 +156,7 @@ internal static partial class PythonReBenchmarkReporter
 
         var snapshot = new PythonReBenchmarkSnapshot
         {
-            SchemaVersion = 3,
+            SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
@@ -177,11 +184,11 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(SnapshotFileName));
-        if (snapshot is null || snapshot.SchemaVersion != 3)
+        if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
-                "PythonRe selective refresh requires a schema-3 snapshot with CPython baselines. " +
-                "Run --refresh-pythonre-benchmarks once to migrate the complete catalog.");
+                $"PythonRe selective refresh requires a schema-{PythonReBenchmarkSchemaVersion} snapshot. " +
+                "Run --migrate-pythonre-benchmark-snapshot once to migrate the current snapshot.");
             return 1;
         }
 
@@ -191,13 +198,42 @@ internal static partial class PythonReBenchmarkReporter
         snapshot.Cases[id] = measurement;
         WriteSnapshot(new PythonReBenchmarkSnapshot
         {
-            SchemaVersion = 3,
+            SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
         });
         Console.WriteLine();
         Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
+        return 0;
+    }
+
+    private static int MigratePythonReBenchmarkSnapshot()
+    {
+        var snapshotPath = FindRepositoryFile(SnapshotFileName);
+        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not PythonReBenchmarkSchemaVersion)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe migration requires a schema-3 or schema-{PythonReBenchmarkSchemaVersion} snapshot.");
+            return 1;
+        }
+
+        foreach (var measurement in snapshot.Cases.Values)
+        {
+            measurement.Qualification ??= PythonReQualificationMeasurement.CreateHistoricalUnqualified();
+        }
+
+        WriteSnapshot(new PythonReBenchmarkSnapshot
+        {
+            SchemaVersion = PythonReBenchmarkSchemaVersion,
+            GeneratedAtUtc = snapshot.GeneratedAtUtc,
+            Corpus = snapshot.Corpus,
+            Cases = snapshot.Cases,
+        });
+        Console.WriteLine(
+            $"Migrated {SnapshotFileName} to schema {PythonReBenchmarkSchemaVersion}; " +
+            "historical rows remain Unqualified.");
         return 0;
     }
 
@@ -730,6 +766,7 @@ internal static partial class PythonReBenchmarkReporter
             DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
             PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples),
             Cpython = cpython,
+            Qualification = PythonReQualificationMeasurement.CreateHistoricalUnqualified(),
         };
     }
 
@@ -2155,6 +2192,81 @@ internal sealed class PythonReCaseMeasurement
     public required PythonReOperationMeasurement DecodeThenRegex { get; init; }
     public required PythonReOperationMeasurement PredecodedRegex { get; init; }
     public CpythonBenchmarkMeasurement? Cpython { get; init; }
+    public PythonReQualificationMeasurement? Qualification { get; set; }
+}
+
+internal sealed class PythonReQualificationMeasurement
+{
+    private const string HistoricalReason =
+        "Historical independent-median evidence predates paired qualification protocol v2.";
+
+    public required string Status { get; init; }
+    public required string StatusReason { get; init; }
+    public required string EngineEvidenceBasis { get; init; }
+    public required string EngineConclusion { get; init; }
+    public PythonRePairedEvidence? PairedEvidence { get; init; }
+
+    internal static PythonReQualificationMeasurement CreateHistoricalUnqualified() => new()
+    {
+        Status = "Unqualified",
+        StatusReason = HistoricalReason,
+        EngineEvidenceBasis = "Not engine-comparable",
+        EngineConclusion = "Unqualified",
+        PairedEvidence = null,
+    };
+}
+
+internal sealed class PythonRePairedEvidence
+{
+    public required int ProtocolVersion { get; init; }
+    public required string QualificationId { get; init; }
+    public required DateTimeOffset MeasuredAtUtc { get; init; }
+    public required string SourceCommit { get; init; }
+    public required string Baseline { get; init; }
+    public required string InitialLane { get; init; }
+    public required string CaseDefinitionSha256 { get; init; }
+    public required string CatalogSha256 { get; init; }
+    public required string CpuPolicy { get; init; }
+    public required string CpuAffinityMask { get; init; }
+    public required int? CpuEfficiencyClass { get; init; }
+    public required int ManagedIterations { get; init; }
+    public required int CpythonIterations { get; init; }
+    public required int ManagedWarmupCalls { get; init; }
+    public required double ManagedWarmupMilliseconds { get; init; }
+    public required int CpythonWarmupCalls { get; init; }
+    public required double CpythonWarmupMilliseconds { get; init; }
+    public required double ManagedMedianMicroseconds { get; init; }
+    public required double CpythonMedianMicroseconds { get; init; }
+    public required double StrongRatioMedian { get; init; }
+    public required double StrongRatioLower95 { get; init; }
+    public required double StrongRatioUpper95 { get; init; }
+    public required double StrongDifferenceMicroseconds { get; init; }
+    public required double OrderEffect { get; init; }
+    public required double ManagedInterquartileSpread { get; init; }
+    public required double CpythonInterquartileSpread { get; init; }
+    public required double ManagedHarnessFloorFraction { get; init; }
+    public required double CpythonHarnessFloorFraction { get; init; }
+    public required long ManagedMedianAllocatedBytes { get; init; }
+    public required PythonRePairedSampleEvidence[] Samples { get; init; }
+    public required double[] ManagedEmptyLoopMicroseconds { get; init; }
+    public required double[] CpythonEmptyLoopMicroseconds { get; init; }
+    public required CpythonStreamEnvironment CpythonEnvironment { get; init; }
+    public required PythonReBenchmarkEnvironment ManagedEnvironment { get; init; }
+}
+
+internal sealed class PythonRePairedSampleEvidence
+{
+    public required string Order { get; init; }
+    public required double ManagedMicroseconds { get; init; }
+    public required double CpythonMicroseconds { get; init; }
+    public required double StrongRatio { get; init; }
+    public required double ManagedElapsedMilliseconds { get; init; }
+    public required double CpythonElapsedMilliseconds { get; init; }
+    public required double ManagedProcessCpuMilliseconds { get; init; }
+    public required double CpythonProcessCpuMilliseconds { get; init; }
+    public required int[] ManagedGcCollections { get; init; }
+    public required int[] CpythonGcCollections { get; init; }
+    public required long ManagedAllocatedBytes { get; init; }
 }
 
 internal sealed class PythonReOperationMeasurement
