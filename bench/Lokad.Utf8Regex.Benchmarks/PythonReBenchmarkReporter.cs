@@ -118,6 +118,15 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-one-shot-scaling", StringComparison.Ordinal))
+        {
+            exitCode = MeasureOneShotScaling(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 20), 1_000_000),
+                Math.Min(ParsePositive(args, 3, 3), 7));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-construction-pattern", StringComparison.Ordinal))
         {
             exitCode = MeasureConstructionPattern(
@@ -1836,6 +1845,8 @@ internal sealed class PythonReBenchmarkContext
         s_strictUtf8.GetByteCount(GetPreparedReplacementResult().ResultText);
 
     internal bool SupportsOneShotPhases => _supportsOneShotPhases;
+
+    internal bool UsesZeroOffsetUtf8ValueFastPath => _pythonRegex.DebugUsesZeroOffsetUtf8ValueFastPath;
 
     internal string OneShotCoreExecutionKind => GetOneShotCoreRegex()
         .Inspection.ExecutionKind.ToString();

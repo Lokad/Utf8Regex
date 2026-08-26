@@ -169,6 +169,11 @@ PythonRe benchmark snapshot and diagnostics:
   ASCII exact-literal Search/Match rows. It compares validation, raw literal
   search, direct core matching, generic zero-offset matching, predecoded
   `Regex`, and the public adapter while checking identical byte/UTF-16 ranges.
+- Use `--measure-pythonre-one-shot-scaling <id> [minimum-iterations] [samples]`
+  for the literal Search pair. It measures 64 B through 64 KiB hit-at-start,
+  hit-late, and miss subjects against predecoded and bytes CPython controls in
+  one long-lived worker, then reports robust slopes, local slopes, residuals,
+  and modeled break-even sizes. It is diagnostic evidence, not Status.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
 - Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema
