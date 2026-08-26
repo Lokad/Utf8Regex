@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 10,
-  "GeneratedAtUtc": "2026-08-26T15:42:30.8127349+00:00",
+  "GeneratedAtUtc": "2026-08-26T15:52:42.9513603+00:00",
   "CatalogSha256": "2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A",
   "CatalogCaseIds": [
     "literal/ismatch",
@@ -43437,6 +43437,375 @@
       }
     }
   },
-  "Lifecycle": {},
+  "Lifecycle": {
+    "captured": {
+      "Pattern": "(?P\u003Cword\u003E[A-Za-z]\u002B)-(?P=word)",
+      "InputUtf8Bytes": 11,
+      "InputSha256": "A9EF456A30226FCA4F15AC1A86025F8624540F46655552515E35CE3A2A3A5739",
+      "Iterations": 64,
+      "Samples": 7,
+      "ManagedEnvironment": {
+        "SourceCommit": "7b1996b864ff",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 10.0.11",
+        "OperatingSystem": "Microsoft Windows 10.0.26200",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+      },
+      "CpythonEnvironment": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "tags/v3.13.2",
+          "4f8bb39"
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "MSC v.1942 64 bit (AMD64)",
+        "SoAbi": "cp313-win_amd64",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "C:\\Python313\\python.exe",
+        "ExecutableSha256": "7D96A4ED35D6E596CD9DD8933FEAFC66349CC21F75BE3B15C89FD336E50140C1",
+        "RuntimeLibrary": "C:\\Python313\\python313.dll",
+        "RuntimeLibrarySha256": "BF68CF819A1E865170430C10E91C18B427AEF88DB1DA1742020443864AA2B749",
+        "Platform": "Windows-11-10.0.26200-SP0",
+        "Architecture": "AMD64",
+        "RunnerSha256": "1CABA6B99B9CF1741BB66B8066E1C562DCFC0AEC326CF595CB325472301FFCA3",
+        "Timer": {
+          "Implementation": "QueryPerformanceCounter()",
+          "ResolutionSeconds": 1E-07,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ParseTranslate": {
+        "MedianMicroseconds": 1.00625,
+        "MinimumMicroseconds": 1,
+        "MaximumMicroseconds": 1.0796875,
+        "ManagedAllocatedBytes": 3104,
+        "WarmupCalls": 65536,
+        "WarmupMilliseconds": 71.3535
+      },
+      "BackendCreation": {
+        "MedianMicroseconds": 47.5171875,
+        "MinimumMicroseconds": 46.5609375,
+        "MaximumMicroseconds": 52.5015625,
+        "ManagedAllocatedBytes": 42528,
+        "WarmupCalls": 2050,
+        "WarmupMilliseconds": 121.7691
+      },
+      "AdapterConstruction": {
+        "MedianMicroseconds": 48.1015625,
+        "MinimumMicroseconds": 47.9125,
+        "MaximumMicroseconds": 63.9640625,
+        "ManagedAllocatedBytes": 52688,
+        "WarmupCalls": 1108,
+        "WarmupMilliseconds": 147.1405
+      },
+      "ConstructFirstSearch": {
+        "MedianMicroseconds": 53.0265625,
+        "MinimumMicroseconds": 50.775,
+        "MaximumMicroseconds": 56.6796875,
+        "ManagedAllocatedBytes": 53768,
+        "WarmupCalls": 1825,
+        "WarmupMilliseconds": 123.9829
+      },
+      "CpythonCompile": {
+        "MedianMicroseconds": 35.3078125,
+        "MinimumMicroseconds": 35.2328125,
+        "MaximumMicroseconds": 45.1828125,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 4.699
+      },
+      "CpythonCompileFirstSearch": {
+        "MedianMicroseconds": 35.678125,
+        "MinimumMicroseconds": 35.4171875,
+        "MaximumMicroseconds": 42.3421875,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 5.6487
+      }
+    },
+    "fallback": {
+      "Pattern": "header:[0-9]\u002B",
+      "InputUtf8Bytes": 12,
+      "InputSha256": "4FB774C07C73BD8063311EFAB94F44FC1D15BF9BA7D9E7E97F995AD216FE7866",
+      "Iterations": 64,
+      "Samples": 7,
+      "ManagedEnvironment": {
+        "SourceCommit": "7b1996b864ff",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 10.0.11",
+        "OperatingSystem": "Microsoft Windows 10.0.26200",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+      },
+      "CpythonEnvironment": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "tags/v3.13.2",
+          "4f8bb39"
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "MSC v.1942 64 bit (AMD64)",
+        "SoAbi": "cp313-win_amd64",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "C:\\Python313\\python.exe",
+        "ExecutableSha256": "7D96A4ED35D6E596CD9DD8933FEAFC66349CC21F75BE3B15C89FD336E50140C1",
+        "RuntimeLibrary": "C:\\Python313\\python313.dll",
+        "RuntimeLibrarySha256": "BF68CF819A1E865170430C10E91C18B427AEF88DB1DA1742020443864AA2B749",
+        "Platform": "Windows-11-10.0.26200-SP0",
+        "Architecture": "AMD64",
+        "RunnerSha256": "1CABA6B99B9CF1741BB66B8066E1C562DCFC0AEC326CF595CB325472301FFCA3",
+        "Timer": {
+          "Implementation": "QueryPerformanceCounter()",
+          "ResolutionSeconds": 1E-07,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ParseTranslate": {
+        "MedianMicroseconds": 4.540625,
+        "MinimumMicroseconds": 4.0078125,
+        "MaximumMicroseconds": 5.1171875,
+        "ManagedAllocatedBytes": 2208,
+        "WarmupCalls": 42558,
+        "WarmupMilliseconds": 127.6347
+      },
+      "BackendCreation": {
+        "MedianMicroseconds": 134.734375,
+        "MinimumMicroseconds": 128.9859375,
+        "MaximumMicroseconds": 139.09375,
+        "ManagedAllocatedBytes": 225096,
+        "WarmupCalls": 404,
+        "WarmupMilliseconds": 180.5497
+      },
+      "AdapterConstruction": {
+        "MedianMicroseconds": 147.190625,
+        "MinimumMicroseconds": 143.921875,
+        "MaximumMicroseconds": 177.2578125,
+        "ManagedAllocatedBytes": 233152,
+        "WarmupCalls": 683,
+        "WarmupMilliseconds": 168.4332
+      },
+      "ConstructFirstSearch": {
+        "MedianMicroseconds": 466.83125,
+        "MinimumMicroseconds": 141.575,
+        "MaximumMicroseconds": 616.4421875,
+        "ManagedAllocatedBytes": 234040,
+        "WarmupCalls": 623,
+        "WarmupMilliseconds": 274.1309
+      },
+      "CpythonCompile": {
+        "MedianMicroseconds": 24.2484375,
+        "MinimumMicroseconds": 23.909375,
+        "MaximumMicroseconds": 32.4359375,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 3.1841
+      },
+      "CpythonCompileFirstSearch": {
+        "MedianMicroseconds": 24.8578125,
+        "MinimumMicroseconds": 24.7171875,
+        "MaximumMicroseconds": 38.1234375,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 3.2247
+      }
+    },
+    "literal": {
+      "Pattern": "needle",
+      "InputUtf8Bytes": 20,
+      "InputSha256": "A6210F750C0027DD992EC81137CC16A3B8DB92E20A67CF58103B7F93846D2AC0",
+      "Iterations": 64,
+      "Samples": 7,
+      "ManagedEnvironment": {
+        "SourceCommit": "7b1996b864ff",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 10.0.11",
+        "OperatingSystem": "Microsoft Windows 10.0.26200",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+      },
+      "CpythonEnvironment": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "tags/v3.13.2",
+          "4f8bb39"
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "MSC v.1942 64 bit (AMD64)",
+        "SoAbi": "cp313-win_amd64",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "C:\\Python313\\python.exe",
+        "ExecutableSha256": "7D96A4ED35D6E596CD9DD8933FEAFC66349CC21F75BE3B15C89FD336E50140C1",
+        "RuntimeLibrary": "C:\\Python313\\python313.dll",
+        "RuntimeLibrarySha256": "BF68CF819A1E865170430C10E91C18B427AEF88DB1DA1742020443864AA2B749",
+        "Platform": "Windows-11-10.0.26200-SP0",
+        "Architecture": "AMD64",
+        "RunnerSha256": "1CABA6B99B9CF1741BB66B8066E1C562DCFC0AEC326CF595CB325472301FFCA3",
+        "Timer": {
+          "Implementation": "QueryPerformanceCounter()",
+          "ResolutionSeconds": 1E-07,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ParseTranslate": {
+        "MedianMicroseconds": 1.3875,
+        "MinimumMicroseconds": 1.38125,
+        "MaximumMicroseconds": 1.4375,
+        "ManagedAllocatedBytes": 1328,
+        "WarmupCalls": 61791,
+        "WarmupMilliseconds": 101.5374
+      },
+      "BackendCreation": {
+        "MedianMicroseconds": 34.409375,
+        "MinimumMicroseconds": 31.625,
+        "MaximumMicroseconds": 62.74375,
+        "ManagedAllocatedBytes": 49352,
+        "WarmupCalls": 2901,
+        "WarmupMilliseconds": 117.967
+      },
+      "AdapterConstruction": {
+        "MedianMicroseconds": 38.6125,
+        "MinimumMicroseconds": 37.628125,
+        "MaximumMicroseconds": 45.3265625,
+        "ManagedAllocatedBytes": 54848,
+        "WarmupCalls": 2457,
+        "WarmupMilliseconds": 117.7424
+      },
+      "ConstructFirstSearch": {
+        "MedianMicroseconds": 40.1796875,
+        "MinimumMicroseconds": 39.640625,
+        "MaximumMicroseconds": 53.9265625,
+        "ManagedAllocatedBytes": 54848,
+        "WarmupCalls": 2406,
+        "WarmupMilliseconds": 118.8825
+      },
+      "CpythonCompile": {
+        "MedianMicroseconds": 14.784375,
+        "MinimumMicroseconds": 14.5328125,
+        "MaximumMicroseconds": 31.278125,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 1.9482
+      },
+      "CpythonCompileFirstSearch": {
+        "MedianMicroseconds": 14.75625,
+        "MinimumMicroseconds": 14.6859375,
+        "MaximumMicroseconds": 14.85625,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 1.9458
+      }
+    },
+    "unicode": {
+      "Pattern": "\u0428\u0435\u0440\u043B\u043E\u043A \u0425\u043E\u043B\u043C\u0441",
+      "InputUtf8Bytes": 37,
+      "InputSha256": "A3C482AE7492D78FDC25633111454BB2B4BE25C92A8019FFF8EADFCBA3DE6A15",
+      "Iterations": 64,
+      "Samples": 7,
+      "ManagedEnvironment": {
+        "SourceCommit": "7b1996b864ff",
+        "TrackedDirty": false,
+        "HasUntrackedFiles": false,
+        "Runtime": ".NET 10.0.11",
+        "OperatingSystem": "Microsoft Windows 10.0.26200",
+        "Processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+      },
+      "CpythonEnvironment": {
+        "Implementation": "CPython",
+        "Version": "3.13.2",
+        "VersionDetail": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+        "HexVersion": 51184368,
+        "Git": [
+          "CPython",
+          "tags/v3.13.2",
+          "4f8bb39"
+        ],
+        "CacheTag": "cpython-313",
+        "Compiler": "MSC v.1942 64 bit (AMD64)",
+        "SoAbi": "cp313-win_amd64",
+        "DebugBuild": false,
+        "GilEnabled": true,
+        "Executable": "C:\\Python313\\python.exe",
+        "ExecutableSha256": "7D96A4ED35D6E596CD9DD8933FEAFC66349CC21F75BE3B15C89FD336E50140C1",
+        "RuntimeLibrary": "C:\\Python313\\python313.dll",
+        "RuntimeLibrarySha256": "BF68CF819A1E865170430C10E91C18B427AEF88DB1DA1742020443864AA2B749",
+        "Platform": "Windows-11-10.0.26200-SP0",
+        "Architecture": "AMD64",
+        "RunnerSha256": "1CABA6B99B9CF1741BB66B8066E1C562DCFC0AEC326CF595CB325472301FFCA3",
+        "Timer": {
+          "Implementation": "QueryPerformanceCounter()",
+          "ResolutionSeconds": 1E-07,
+          "Monotonic": true,
+          "Adjustable": false
+        }
+      },
+      "ParseTranslate": {
+        "MedianMicroseconds": 0.5125,
+        "MinimumMicroseconds": 0.4296875,
+        "MaximumMicroseconds": 2.7625,
+        "ManagedAllocatedBytes": 1808,
+        "WarmupCalls": 65536,
+        "WarmupMilliseconds": 31.5847
+      },
+      "BackendCreation": {
+        "MedianMicroseconds": 24.9640625,
+        "MinimumMicroseconds": 24.80625,
+        "MaximumMicroseconds": 28.98125,
+        "ManagedAllocatedBytes": 35256,
+        "WarmupCalls": 3264,
+        "WarmupMilliseconds": 116.7219
+      },
+      "AdapterConstruction": {
+        "MedianMicroseconds": 29.7,
+        "MinimumMicroseconds": 29.4875,
+        "MaximumMicroseconds": 33.73125,
+        "ManagedAllocatedBytes": 42096,
+        "WarmupCalls": 1807,
+        "WarmupMilliseconds": 113.8226
+      },
+      "ConstructFirstSearch": {
+        "MedianMicroseconds": 31.146875,
+        "MinimumMicroseconds": 30.3703125,
+        "MaximumMicroseconds": 34.990625,
+        "ManagedAllocatedBytes": 43128,
+        "WarmupCalls": 2928,
+        "WarmupMilliseconds": 114.3935
+      },
+      "CpythonCompile": {
+        "MedianMicroseconds": 20.9234375,
+        "MinimumMicroseconds": 20.7546875,
+        "MaximumMicroseconds": 28.8625,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 2.7321
+      },
+      "CpythonCompileFirstSearch": {
+        "MedianMicroseconds": 21.0421875,
+        "MinimumMicroseconds": 20.9890625,
+        "MaximumMicroseconds": 21.3359375,
+        "ManagedAllocatedBytes": null,
+        "WarmupCalls": 128,
+        "WarmupMilliseconds": 2.7325
+      }
+    }
+  },
   "ScalingFamilies": {}
 }

@@ -22,12 +22,12 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T15:42:30.8127349+00:00`
-- Snapshot SHA-256: `442044E64928EF7D8E0C339E5F30A63094E4D2DF1183144290B2CBD38524B0AA`
+- Generated: `2026-08-26T15:52:42.9513603+00:00`
+- Snapshot SHA-256: `44F8AF768D70A8E762572F076D0CE40DC4DC647FF72BA68CFE5E9BBBA747E6D0`
 - Schema: `10`
 - Catalog SHA-256: `2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A`
 - Cases: `90`
-- Lifecycle families: `0`
+- Lifecycle families: `4`
 - Scaling families: `0`
 - Public Status: `26` managed faster, `0` equivalent, `6` CPython faster, `53` inconclusive, `5` unqualified
 - Historical point measurement environments represented: `11`
@@ -59,7 +59,7 @@ This catalog currently covers `90` operation rows over `45` distinct patterns. Z
 | Replace and Subn | 13 |
 | Split | 9 |
 | Real-corpus workloads | 4 |
-| Construction and first call | 0 |
+| Construction and first call | 4 |
 | Scaling evidence | 0 |
 | Comparator and semantic exclusions | 0 |
 
@@ -206,7 +206,12 @@ Historical point rows span more than one measurement environment. Consult the JS
 
 These are contextual uncached-construction throughput measurements. They never alter warm public Status. CPython construction calls the standard-library compiler directly so the `re.compile` cache cannot turn construction into a cache lookup; first-search rows construct a fresh pattern and execute one successful search in the same timed operation.
 
-No lifecycle families have been published yet.
+| Family | Pattern | Input | Parse + translate | Core backend create | Adapter construct | Adapter construct + first search | CPython compile | CPython compile + first search |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `captured` | `(?P<word>[A-Za-z]+)-(?P=word)` | 11 B | 1.006 us / 3,104 B | 47.517 us / 42,528 B | 48.102 us / 52,688 B | 53.027 us / 53,768 B | 35.308 us | 35.678 us |
+| `fallback` | `header:[0-9]+` | 12 B | 4.541 us / 2,208 B | 134.734 us / 225,096 B | 147.191 us / 233,152 B | 466.831 us / 234,040 B | 24.248 us | 24.858 us |
+| `literal` | `needle` | 20 B | 1.387 us / 1,328 B | 34.409 us / 49,352 B | 38.612 us / 54,848 B | 40.180 us / 54,848 B | 14.784 us | 14.756 us |
+| `unicode` | `Шерлок Холмс` | 37 B | 0.512 us / 1,808 B | 24.964 us / 35,256 B | 29.700 us / 42,096 B | 31.147 us / 43,128 B | 20.923 us | 21.042 us |
 
 ### Scaling evidence
 
