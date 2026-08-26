@@ -881,6 +881,28 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void GreedyAsciiLiteralStarFindAllPreservesScalarSafeEmptyProgression()
+    {
+        var regex = new Utf8PythonRegex("x*");
+
+        Assert.Equal(["", "", "", ""], regex.FindAllToStrings("yyy"u8).ScalarValues);
+        Assert.Equal(["xx", "", "xx", ""], regex.FindAllToStrings("xxyxx"u8).ScalarValues);
+        Assert.Equal(["", "x", "", ""], regex.FindAllToStrings("πx𝒜"u8).ScalarValues);
+        Assert.Equal(
+            ["x", "", ""],
+            regex.FindAllToStrings("πx𝒜"u8, "π"u8.Length).ScalarValues);
+        Assert.Equal([""], regex.FindAllToStrings(ReadOnlySpan<byte>.Empty).ScalarValues);
+
+        Assert.Equal(["X", ""], new Utf8PythonRegex("x*", PythonReCompileOptions.IgnoreCase)
+            .FindAllToStrings("X"u8).ScalarValues);
+        Assert.Equal(["", "x", "", "x", ""], new Utf8PythonRegex("x*?")
+            .FindAllToStrings("xx"u8).ScalarValues);
+
+        var malformedTail = new byte[] { (byte)'x', 0xF0, 0x28, 0x8C, 0xBC };
+        Assert.Throws<ArgumentException>(() => regex.FindAllToStrings(malformedTail));
+    }
+
+    [Fact]
     public void LiteralReplacementPreservesGreedyExactRepeatProgression()
     {
         var repeated = new Utf8PythonRegex("x*");
