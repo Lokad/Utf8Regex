@@ -2809,6 +2809,8 @@ internal sealed class PythonRePairedEvidence
     public required PythonRePairedSampleEvidence[] Samples { get; init; }
     public required double[] ManagedEmptyLoopMicroseconds { get; init; }
     public required double[] CpythonEmptyLoopMicroseconds { get; init; }
+    public double[] ManagedTrivialCallMicroseconds { get; init; } = [];
+    public double[] CpythonTrivialCallMicroseconds { get; init; } = [];
     public required CpythonStreamEnvironment CpythonEnvironment { get; init; }
     public required PythonReBenchmarkEnvironment ManagedEnvironment { get; init; }
 }

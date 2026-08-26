@@ -18,8 +18,8 @@ Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRang
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T09:37:11.7523748+00:00`
-- Snapshot SHA-256: `55983F5BEAE50FDEE468A63A678C81051DBB930A78A57B0370423917658BE5FD`
+- Generated: `2026-08-26T09:40:04.6364451+00:00`
+- Snapshot SHA-256: `C295119BC0B0A8F3B40C41CD1FBBA1C489D19011EBFEBC636599CCE8722A0B31`
 - Schema: `4`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified

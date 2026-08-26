@@ -101,6 +101,10 @@ def digest_bytes(seed: int, value: bytes) -> int:
     return seed
 
 
+def bound_trivial(value: int) -> int:
+    return value
+
+
 def build_utf16_offsets(value: str) -> tuple[int, ...]:
     offsets = [0]
     utf16_offset = 0
@@ -470,7 +474,16 @@ class CaseRunner:
         result = 0
         started = time.perf_counter_ns()
         for iteration in range(iterations):
-            result = iteration
+            result ^= iteration
+        return time.perf_counter_ns() - started, result
+
+    @staticmethod
+    def execute_bound_trivial_batch(iterations: int) -> tuple[int, int]:
+        result = 0
+        invoke = bound_trivial
+        started = time.perf_counter_ns()
+        for iteration in range(iterations):
+            result ^= invoke(iteration)
         return time.perf_counter_ns() - started, result
 
     def encode_findall(self, values: list[Any]) -> list[Any]:
@@ -770,6 +783,10 @@ def measure_stream_lane(
             )
     elif lane == "EmptyLoop":
         elapsed, checksum = runner.execute_empty_batch(iterations)
+        semantic_digest = 0
+        consumption_checksum = 0
+    elif lane == "BoundTrivialCall":
+        elapsed, checksum = runner.execute_bound_trivial_batch(iterations)
         semantic_digest = 0
         consumption_checksum = 0
     else:

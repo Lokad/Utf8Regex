@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -187,14 +188,22 @@ internal static partial class PythonReBenchmarkReporter
         const int floorSamples = 3;
         var managedFloorMicroseconds = new List<double>(floorSamples);
         var cpythonFloorMicroseconds = new List<double>(floorSamples);
+        var managedTrivialMicroseconds = new List<double>(floorSamples);
+        var cpythonTrivialMicroseconds = new List<double>(floorSamples);
         for (var sample = 0; sample < floorSamples; sample++)
         {
             var managedFloor = MeasureManagedEmptyLoop(managedIterations);
             var cpythonFloor = worker.Measure(CpythonStreamLane.EmptyLoop, cpythonIterations);
+            var managedTrivial = MeasureManagedTrivialCall(managedIterations);
+            var cpythonTrivial = worker.Measure(CpythonStreamLane.BoundTrivialCall, cpythonIterations);
             managedFloorMicroseconds.Add(managedFloor.Elapsed.TotalMicroseconds / managedIterations);
             cpythonFloorMicroseconds.Add(
                 cpythonFloor.ElapsedNanoseconds / (double)cpythonIterations / 1_000);
-            s_sink ^= managedFloor.Checksum ^ cpythonFloor.Checksum;
+            managedTrivialMicroseconds.Add(managedTrivial.Elapsed.TotalMicroseconds / managedIterations);
+            cpythonTrivialMicroseconds.Add(
+                cpythonTrivial.ElapsedNanoseconds / (double)cpythonIterations / 1_000);
+            s_sink ^= managedFloor.Checksum ^ cpythonFloor.Checksum ^
+                managedTrivial.Checksum ^ cpythonTrivial.Checksum;
         }
 
         var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
@@ -314,6 +323,8 @@ internal static partial class PythonReBenchmarkReporter
                 .ToArray(),
             ManagedEmptyLoopMicroseconds = managedFloorMicroseconds.ToArray(),
             CpythonEmptyLoopMicroseconds = cpythonFloorMicroseconds.ToArray(),
+            ManagedTrivialCallMicroseconds = managedTrivialMicroseconds.ToArray(),
+            CpythonTrivialCallMicroseconds = cpythonTrivialMicroseconds.ToArray(),
             CpythonEnvironment = worker.Environment,
             ManagedEnvironment = managedEnvironment,
         };
@@ -349,6 +360,10 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Order effect       : {orderEffect:F3}");
         Console.WriteLine($"IQR spread         : managed={managedSpread:F3}; CPython={cpythonSpread:F3}");
         Console.WriteLine($"Harness floor      : managed={managedFloorFraction:P2}; CPython={cpythonFloorFraction:P2}");
+        Console.WriteLine(
+            $"Bound trivial call : managed=" +
+            $"{BenchmarkPairedStatistics.Median(managedTrivialMicroseconds) / managedMedian:P2}; " +
+            $"CPython={BenchmarkPairedStatistics.Median(cpythonTrivialMicroseconds) / cpythonMedian:P2}");
         Console.WriteLine(
             $"Managed alloc      : " +
             $"{BenchmarkPairedStatistics.Median(managedAllocatedBytes.Select(static value => (double)value)):F0} B/op");
@@ -571,6 +586,8 @@ internal static partial class PythonReBenchmarkReporter
             if (evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
                 !evidence.SemanticDigestAlgorithm.Equals("structured-u64-mix-v1", StringComparison.Ordinal) ||
                 evidence.Samples.Length is not 9 and not 17 ||
+                evidence.ManagedTrivialCallMicroseconds.Length != 3 ||
+                evidence.CpythonTrivialCallMicroseconds.Length != 3 ||
                 !evidence.WorktreeQualified)
             {
                 Console.Error.WriteLine($"{caseId}: paired protocol metadata is not qualification-compatible.");
@@ -799,6 +816,23 @@ internal static partial class PythonReBenchmarkReporter
         GC.KeepAlive(checksum);
         return new PythonReEmptyBatch(elapsed, checksum);
     }
+
+    private static PythonReEmptyBatch MeasureManagedTrivialCall(int iterations)
+    {
+        var checksum = 0;
+        var started = Stopwatch.GetTimestamp();
+        for (var iteration = 0; iteration < iterations; iteration++)
+        {
+            checksum ^= InvokePythonReTrivial(iteration);
+        }
+
+        var elapsed = Stopwatch.GetElapsedTime(started);
+        GC.KeepAlive(checksum);
+        return new PythonReEmptyBatch(elapsed, checksum);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InvokePythonReTrivial(int value) => value;
 
     private static void VerifyManagedResult(
         PythonReBenchmarkBatch batch,
@@ -1245,6 +1279,7 @@ internal enum CpythonStreamLane : byte
 {
     Predecoded = 0,
     EmptyLoop = 1,
+    BoundTrivialCall = 2,
 }
 
 internal enum PythonRePairLaneOrder : byte

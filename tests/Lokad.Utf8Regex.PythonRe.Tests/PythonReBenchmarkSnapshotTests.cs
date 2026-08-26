@@ -197,6 +197,8 @@ public sealed class PythonReBenchmarkSnapshotTests
         });
         Assert.Equal(3, evidence.GetProperty("ManagedEmptyLoopMicroseconds").GetArrayLength());
         Assert.Equal(3, evidence.GetProperty("CpythonEmptyLoopMicroseconds").GetArrayLength());
+        Assert.Equal(3, evidence.GetProperty("ManagedTrivialCallMicroseconds").GetArrayLength());
+        Assert.Equal(3, evidence.GetProperty("CpythonTrivialCallMicroseconds").GetArrayLength());
 
         var cpython = evidence.GetProperty("CpythonEnvironment");
         Assert.Equal("CPython", cpython.GetProperty("Implementation").GetString());
