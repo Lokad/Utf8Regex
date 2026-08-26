@@ -142,6 +142,15 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-split-phases", StringComparison.Ordinal))
+        {
+            exitCode = MeasureSplitPhases(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 7));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-one-shot-phases", StringComparison.Ordinal))
         {
             exitCode = MeasureOneShotPhases(
@@ -911,6 +920,76 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("DecodeOnePass", MeasureRetainedPhaseOperation(context.ExecuteDecodedOnePassLiteralReplacement, effectiveIterations, samples));
         PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReReplacement, effectiveIterations, samples));
         PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedReplacementChecksum, effectiveIterations, samples));
+        return 0;
+    }
+
+    private static int MeasureSplitPhases(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.SplitStrings and
+            not PythonReBenchmarkOperation.SplitStringsLimited)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe split phase diagnostics require a string Split operation; " +
+                $"'{id}' uses {benchmarkCase.Operation}.");
+            return 1;
+        }
+
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
+        using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        if (!context.SupportsSplitPhases)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe split phase diagnostics currently require a capture-free, zero-offset case; " +
+                $"'{id}' is unsupported.");
+            return 1;
+        }
+
+        var expected = context.ExecutePythonReSplitChecksum();
+        var predecoded = context.ExecutePredecodedSplitChecksum();
+        var direct = context.ExecuteDirectRegexSplitChecksum();
+        var prepared = context.ExecutePreparedSplitProjectionChecksum();
+        var streaming = context.ExecuteStreamingSplitProjectionChecksum();
+        if (expected != predecoded ||
+            expected != direct ||
+            expected != prepared ||
+            expected != streaming)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe split phase diagnostic '{id}' produced incomparable sinks: " +
+                $"public={expected}, predecoded={predecoded}, direct={direct}, " +
+                $"prepared={prepared}, streaming={streaming}.");
+        }
+
+        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
+        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
+        Console.WriteLine($"ManagedRoute       : {context.DescribeManagedRoute()}");
+        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
+        Console.WriteLine($"SplitCount         : {context.PreparedSplitCount}");
+        Console.WriteLine($"OutputValueCount   : {context.PreparedSplitValueCount}");
+        Console.WriteLine($"OutputUtf8Bytes    : {context.PreparedSplitOutputUtf8Bytes}");
+        Console.WriteLine($"Iterations         : {effectiveIterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
+        Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
+        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
+        PrintOperation("Utf8DecodeOnly", MeasureRetainedPhaseOperation(context.DecodeInput, effectiveIterations, samples));
+        PrintOperation("PredecodedDiscovery", MeasurePhaseOperation(context.ExecuteSplitDiscoveryOnly, effectiveIterations, samples));
+        PrintOperation("CollectRanges", MeasureRetainedPhaseOperation(context.CollectSplitRangesArray, effectiveIterations, samples));
+        PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedSplitStrings, effectiveIterations, samples));
+        PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.ProjectStreamingSplitStrings, effectiveIterations, samples));
+        PrintOperation("RegexSplitDirect", MeasureRetainedPhaseOperation(context.ExecuteDirectRegexSplitStrings, effectiveIterations, samples));
+        PrintOperation("PredecodedRequired", MeasureRetainedPhaseOperation(context.ExecutePredecodedSplitStrings, effectiveIterations, samples));
+        PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReSplitStrings, effectiveIterations, samples));
+        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedSplitProjectionChecksum, effectiveIterations, samples));
         return 0;
     }
 
@@ -1855,6 +1934,9 @@ internal sealed class PythonReBenchmarkContext
     private readonly string _preparedLiteralReplacement;
     private readonly byte[] _preparedLiteralReplacementUtf8;
     private readonly PythonReBenchmarkReplacementResult? _preparedReplacementResult;
+    private readonly bool _supportsSplitPhases;
+    private readonly PythonReBenchmarkCaptureRange[] _preparedSplitRanges;
+    private readonly string?[] _preparedSplitStrings;
     private readonly Utf8Regex? _oneShotCoreRegex;
     private readonly bool _supportsOneShotPhases;
     private readonly bool _supportsExactLiteralOneShotReplay;
@@ -2049,6 +2131,18 @@ internal sealed class PythonReBenchmarkContext
             _preparedReplacementResult = null;
         }
 
+        _supportsSplitPhases = benchmarkCase.Operation is
+                PythonReBenchmarkOperation.SplitStrings or
+                PythonReBenchmarkOperation.SplitStringsLimited &&
+            _captureCount == 0 &&
+            benchmarkCase.Coverage.StartOffsetInBytes == 0;
+        _preparedSplitRanges = _supportsSplitPhases
+            ? CollectSplitRangesArray()
+            : [];
+        _preparedSplitStrings = _supportsSplitPhases
+            ? ProjectSplitStrings(_preparedSplitRanges)
+            : [];
+
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.Search or PythonReBenchmarkOperation.Match &&
             InputBytes.AsSpan().ContainsAnyExceptInRange((byte)0, (byte)0x7f) == false)
         {
@@ -2102,6 +2196,15 @@ internal sealed class PythonReBenchmarkContext
             : 0);
 
     internal bool SupportsReplacementPhases => _supportsReplacementPhases;
+
+    internal bool SupportsSplitPhases => _supportsSplitPhases;
+
+    internal int PreparedSplitCount => _preparedSplitRanges.Length;
+
+    internal int PreparedSplitValueCount => _preparedSplitStrings.Length;
+
+    internal int PreparedSplitOutputUtf8Bytes => _preparedSplitStrings.Sum(
+        static value => value is null ? 0 : s_strictUtf8.GetByteCount(value));
 
     internal bool SupportsTrailingCaptureReplay => _supportsTrailingCaptureReplay;
 
@@ -4019,6 +4122,134 @@ internal sealed class PythonReBenchmarkContext
         }
 
         return matches.ToArray();
+    }
+
+    internal string?[] ExecutePythonReSplitStrings() => _case.Operation switch
+    {
+        PythonReBenchmarkOperation.SplitStrings => _pythonRegex.SplitToStrings(InputBytes),
+        PythonReBenchmarkOperation.SplitStringsLimited => _pythonRegex.SplitToStrings(
+            InputBytes,
+            _case.Coverage.MaxSplit),
+        _ => throw new InvalidOperationException(),
+    };
+
+    internal string?[] ExecutePredecodedSplitStrings() =>
+        MaterializeSplitStrings(_decoded, GetSplitLimit());
+
+    internal string?[] ExecuteDirectRegexSplitStrings() => GetSplitLimit() == 0
+        ? _regex.Split(_decoded)
+        : _regex.Split(_decoded, GetSplitLimit() + 1);
+
+    internal string?[] ProjectPreparedSplitStrings() =>
+        ProjectSplitStrings(_preparedSplitRanges);
+
+    internal string?[] ProjectStreamingSplitStrings()
+    {
+        EnsureSplitPhases();
+        var parts = new List<string?>();
+        var lastIndex = 0;
+        var splitCount = 0;
+        var maxSplit = GetSplitLimit();
+        foreach (var match in _regex.EnumerateMatches(_decoded))
+        {
+            if (maxSplit > 0 && splitCount >= maxSplit)
+            {
+                break;
+            }
+
+            parts.Add(_decoded[lastIndex..match.Index]);
+            lastIndex = match.Index + match.Length;
+            splitCount++;
+        }
+
+        parts.Add(_decoded[lastIndex..]);
+        return parts.ToArray();
+    }
+
+    internal PythonReBenchmarkCaptureRange[] CollectSplitRangesArray()
+    {
+        EnsureSplitOperation();
+        var ranges = new List<PythonReBenchmarkCaptureRange>();
+        var maxSplit = GetSplitLimit();
+        foreach (var match in _regex.EnumerateMatches(_decoded))
+        {
+            if (maxSplit > 0 && ranges.Count >= maxSplit)
+            {
+                break;
+            }
+
+            ranges.Add(new PythonReBenchmarkCaptureRange(true, match.Index, match.Length));
+        }
+
+        return ranges.ToArray();
+    }
+
+    internal int ExecuteSplitDiscoveryOnly()
+    {
+        EnsureSplitPhases();
+        var checksum = 0;
+        var splitCount = 0;
+        var maxSplit = GetSplitLimit();
+        foreach (var match in _regex.EnumerateMatches(_decoded))
+        {
+            if (maxSplit > 0 && splitCount >= maxSplit)
+            {
+                break;
+            }
+
+            checksum = Combine(checksum, match.Index);
+            checksum = Combine(checksum, match.Length);
+            splitCount++;
+        }
+
+        return Combine(checksum, splitCount);
+    }
+
+    internal int ExecutePythonReSplitChecksum() => Checksum(ExecutePythonReSplitStrings());
+
+    internal int ExecutePredecodedSplitChecksum() => Checksum(ExecutePredecodedSplitStrings());
+
+    internal int ExecuteDirectRegexSplitChecksum() => Checksum(ExecuteDirectRegexSplitStrings());
+
+    internal int ExecutePreparedSplitProjectionChecksum() => Checksum(ProjectPreparedSplitStrings());
+
+    internal int ExecuteStreamingSplitProjectionChecksum() => Checksum(ProjectStreamingSplitStrings());
+
+    private string?[] ProjectSplitStrings(ReadOnlySpan<PythonReBenchmarkCaptureRange> ranges)
+    {
+        EnsureSplitPhases();
+        var parts = new string?[ranges.Length + 1];
+        var lastIndex = 0;
+        for (var index = 0; index < ranges.Length; index++)
+        {
+            var range = ranges[index];
+            parts[index] = _decoded[lastIndex..range.StartOffsetInUtf16];
+            lastIndex = range.EndOffsetInUtf16;
+        }
+
+        parts[^1] = _decoded[lastIndex..];
+        return parts;
+    }
+
+    private int GetSplitLimit() => _case.Operation == PythonReBenchmarkOperation.SplitStringsLimited
+        ? _case.Coverage.MaxSplit
+        : 0;
+
+    private void EnsureSplitOperation()
+    {
+        if (_case.Operation is not PythonReBenchmarkOperation.SplitStrings and
+            not PythonReBenchmarkOperation.SplitStringsLimited)
+        {
+            throw new InvalidOperationException("The benchmark case is not a string Split operation.");
+        }
+    }
+
+    private void EnsureSplitPhases()
+    {
+        if (!SupportsSplitPhases)
+        {
+            throw new InvalidOperationException("Split phase controls are not available for this case.");
+        }
     }
 
     private string?[] MaterializeSplitStrings(string input, int maxSplit = 0) =>

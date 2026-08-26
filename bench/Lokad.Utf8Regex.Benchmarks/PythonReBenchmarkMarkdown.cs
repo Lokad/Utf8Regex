@@ -359,6 +359,11 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pythonre-coverage-report\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-coverage-contract\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-one-shot-phases\",\"literal/search-early\",\"20\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-shaping-case\",\"capture/search-detailed\",\"20\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-findall-phases\",\"findall/full-strings\",\"20\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-replacement-phases\",\"replacement/fixed-string\",\"20\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-split-phases\",\"split/zero-width\",\"20\",\"5\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-lifecycle\",\"32\",\"5\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-scaling\",\"5\"");
