@@ -70,6 +70,21 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--resume-pythonre-qualifications", StringComparison.Ordinal))
+        {
+            exitCode = ResumePythonReQualifications(
+                Math.Min(ParsePositive(args, 1, 9), 17),
+                Math.Min(ParsePositive(args, 2, 17), 17),
+                Math.Min(ParsePositive(args, 3, 4), PythonReBenchmarkCatalog.Cases.Count));
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--emit-pythonre-priority-report", StringComparison.Ordinal))
+        {
+            exitCode = EmitPythonRePriorityReport();
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--verify-pythonre-semantic-digests", StringComparison.Ordinal))
         {
             exitCode = VerifyPythonReSemanticDigests();

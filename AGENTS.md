@@ -145,6 +145,15 @@ PythonRe benchmark snapshot and diagnostics:
 - Use `--qualify-pythonre-case <id> [samples]` to checkpoint paired evidence
   and Status into the snapshot; use `--qualify-pythonre-case-reversed` for the
   predeclared reversed-first repeat.
+- Use `--resume-pythonre-qualifications [initial-samples] [extended-samples]
+  [maximum-cases]` for a bounded milestone batch. It skips only exact current
+  source/catalog/runner/runtime/interpreter matches, checkpoints every case,
+  and automatically replaces an inconclusive 9-pair row with the predeclared
+  17-pair extension. The default maximum is four cases so interrupted or noisy
+  experiments stay manageable.
+- Use `--emit-pythonre-priority-report` to rank qualified public CPython wins
+  separately by relative and absolute gap, and to list qualified bytes-control
+  engine wins without merging the two queues.
 - Use `--measure-pythonre-paired-case <id> [samples]` for the bounded
   long-lived-worker comparison against predecoded CPython. It calibrates the
   two runtimes independently, alternates whole paired lanes on one logical

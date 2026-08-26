@@ -236,6 +236,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case-reversed\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pythonre-case\",\"literal/search\",\"9\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--resume-pythonre-qualifications\",\"9\",\"17\",\"4\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pythonre-priority-report\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");

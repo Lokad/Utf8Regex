@@ -546,6 +546,252 @@ internal static partial class PythonReBenchmarkReporter
 #endif
     }
 
+    private static int ResumePythonReQualifications(
+        int initialSamples,
+        int extendedSamples,
+        int maximumCases)
+    {
+#if DEBUG
+        Console.Error.WriteLine("PythonRe qualification resume requires a Release build.");
+        return 1;
+#else
+        if (initialSamples < 9 || extendedSamples < initialSamples)
+        {
+            Console.Error.WriteLine(
+                "PythonRe qualification resume requires 9-17 initial samples and an equal or larger extension.");
+            return 1;
+        }
+
+        CpythonStreamEnvironment currentCpython;
+        using (var worker = new CpythonStreamWorker())
+        {
+            currentCpython = worker.Environment;
+        }
+
+        var currentManaged = CaptureEnvironment();
+        var currentCatalogSha256 = ComputePythonReCatalogSha256();
+        var measured = 0;
+        var skipped = 0;
+        foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
+        {
+            var snapshot = LoadPythonReBenchmarkSnapshot();
+            var measurement = snapshot.Cases[benchmarkCase.Id];
+            if (CanResumePythonReQualification(
+                    benchmarkCase,
+                    measurement,
+                    currentCatalogSha256,
+                    currentCpython,
+                    currentManaged,
+                    extendedSamples))
+            {
+                Console.WriteLine($"Skip current         : {benchmarkCase.Id}");
+                skipped++;
+                continue;
+            }
+
+            if (measured >= maximumCases)
+            {
+                break;
+            }
+
+            Console.WriteLine(
+                $"Qualify             : {benchmarkCase.Id} ({initialSamples} paired samples)");
+            var result = MeasurePairedCase(
+                benchmarkCase.Id,
+                initialSamples,
+                cpythonFirst: false,
+                PythonReQualificationWriteMode.Snapshot);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            measurement = LoadPythonReBenchmarkSnapshot().Cases[benchmarkCase.Id];
+            if (ShouldExtendPythonReQualification(measurement.Qualification, extendedSamples))
+            {
+                Console.WriteLine(
+                    $"Extend              : {benchmarkCase.Id} ({extendedSamples} paired samples)");
+                result = MeasurePairedCase(
+                    benchmarkCase.Id,
+                    extendedSamples,
+                    cpythonFirst: false,
+                    PythonReQualificationWriteMode.Snapshot);
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+
+            measured++;
+        }
+
+        var remaining = LoadPythonReBenchmarkSnapshot().Cases.Values.Count(
+            measurement => measurement.Qualification?.PairedEvidence is null);
+        Console.WriteLine(
+            $"Qualification batch : measured={measured}; skipped={skipped}; " +
+            $"remaining-unqualified={remaining}");
+        return 0;
+#endif
+    }
+
+    private static bool CanResumePythonReQualification(
+        PythonReBenchmarkCase benchmarkCase,
+        PythonReCaseMeasurement measurement,
+        string currentCatalogSha256,
+        CpythonStreamEnvironment currentCpython,
+        PythonReBenchmarkEnvironment currentManaged,
+        int extendedSamples)
+    {
+        var qualification = measurement.Qualification;
+        var evidence = qualification?.PairedEvidence;
+        if (qualification is null ||
+            evidence is null ||
+            evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
+            !evidence.WorktreeQualified ||
+            !evidence.CatalogSha256.Equals(currentCatalogSha256, StringComparison.Ordinal) ||
+            !evidence.CaseDefinitionSha256.Equals(
+                ComputePythonReCaseDefinitionSha256(
+                    benchmarkCase,
+                    Encoding.UTF8.GetBytes(benchmarkCase.Input)),
+                StringComparison.Ordinal) ||
+            !measurement.ComparatorOwner.Equals(
+                PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+                StringComparison.Ordinal) ||
+            !measurement.ManagedRoute.Equals(
+                new PythonReBenchmarkContext(benchmarkCase).DescribeManagedRoute(),
+                StringComparison.Ordinal) ||
+            !PythonReEnvironmentsMatch(evidence.CpythonEnvironment, currentCpython) ||
+            !evidence.ManagedEnvironment.Runtime.Equals(currentManaged.Runtime, StringComparison.Ordinal) ||
+            !evidence.ManagedEnvironment.OperatingSystem.Equals(
+                currentManaged.OperatingSystem,
+                StringComparison.Ordinal) ||
+            !evidence.ManagedEnvironment.Processor.Equals(currentManaged.Processor, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var managedSourceChanges = RunGit(
+            "diff",
+            "--name-only",
+            evidence.SourceCommit,
+            "HEAD",
+            "--",
+            "Directory.Build.props",
+            "global.json",
+            "src/Lokad.Utf8Regex",
+            "src/Lokad.Utf8Regex.PythonRe",
+            "bench/Lokad.Utf8Regex.Benchmarks",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
+        if (managedSourceChanges is null || !string.IsNullOrWhiteSpace(managedSourceChanges))
+        {
+            return false;
+        }
+
+        return !ShouldExtendPythonReQualification(qualification, extendedSamples);
+    }
+
+    private static bool ShouldExtendPythonReQualification(
+        PythonReQualificationMeasurement? qualification,
+        int extendedSamples)
+    {
+        var evidence = qualification?.PairedEvidence;
+        if (qualification is null || evidence is null || evidence.Samples.Length >= extendedSamples)
+        {
+            return false;
+        }
+
+        return qualification.Status.Equals("Inconclusive", StringComparison.Ordinal) ||
+            qualification.Status.Equals("Unqualified", StringComparison.Ordinal) &&
+            (qualification.StatusReason.StartsWith("At least one lane sample", StringComparison.Ordinal) ||
+             qualification.StatusReason.StartsWith("Removable harness floors", StringComparison.Ordinal));
+    }
+
+    private static bool PythonReEnvironmentsMatch(
+        CpythonStreamEnvironment stored,
+        CpythonStreamEnvironment current) =>
+        stored.VersionDetail.Equals(current.VersionDetail, StringComparison.Ordinal) &&
+        stored.Git.SequenceEqual(current.Git, StringComparer.Ordinal) &&
+        stored.Compiler.Equals(current.Compiler, StringComparison.Ordinal) &&
+        stored.SoAbi.Equals(current.SoAbi, StringComparison.Ordinal) &&
+        stored.DebugBuild == current.DebugBuild &&
+        stored.GilEnabled == current.GilEnabled &&
+        stored.ExecutableSha256.Equals(current.ExecutableSha256, StringComparison.Ordinal) &&
+        stored.RuntimeLibrarySha256.Equals(current.RuntimeLibrarySha256, StringComparison.Ordinal) &&
+        stored.Platform.Equals(current.Platform, StringComparison.Ordinal) &&
+        stored.Architecture.Equals(current.Architecture, StringComparison.Ordinal) &&
+        stored.RunnerSha256.Equals(current.RunnerSha256, StringComparison.Ordinal) &&
+        stored.Timer.Implementation.Equals(current.Timer.Implementation, StringComparison.Ordinal) &&
+        stored.Timer.ResolutionSeconds.Equals(current.Timer.ResolutionSeconds) &&
+        stored.Timer.Monotonic == current.Timer.Monotonic &&
+        stored.Timer.Adjustable == current.Timer.Adjustable;
+
+    private static int EmitPythonRePriorityReport()
+    {
+        var snapshot = LoadPythonReBenchmarkSnapshot();
+        var qualifiedWins = snapshot.Cases
+            .Where(static pair =>
+                pair.Value.Qualification is
+                {
+                    Status: "CpythonFaster",
+                    PairedEvidence: not null,
+                })
+            .ToArray();
+        var engineWins = snapshot.Cases
+            .Where(static pair =>
+                pair.Value.Qualification is
+                {
+                    EngineConclusion: "CpythonFaster",
+                    PairedEvidence.ByteControl: not null,
+                })
+            .ToArray();
+
+        Console.WriteLine("Qualified public CPython wins by relative gap:");
+        PrintPublicPriorities(qualifiedWins.OrderByDescending(
+            static pair => pair.Value.Qualification!.PairedEvidence!.StrongRatioMedian));
+        Console.WriteLine("Qualified public CPython wins by absolute recurring gap:");
+        PrintPublicPriorities(qualifiedWins.OrderByDescending(
+            static pair => pair.Value.Qualification!.PairedEvidence!.StrongDifferenceMicroseconds));
+        Console.WriteLine("Qualified bytes-control CPython engine wins by relative gap:");
+        foreach (var (caseId, measurement) in engineWins.OrderByDescending(
+                     static pair => pair.Value.Qualification!.PairedEvidence!.ByteControl!.RatioMedian))
+        {
+            var evidence = measurement.Qualification!.PairedEvidence!;
+            var bytes = evidence.ByteControl!;
+            Console.WriteLine(
+                $"  {caseId}: Rbyte={bytes.RatioMedian:F3} " +
+                $"[{bytes.RatioLower95:F3}, {bytes.RatioUpper95:F3}]; " +
+                $"route={measurement.ManagedRoute}");
+        }
+
+        if (engineWins.Length == 0)
+        {
+            Console.WriteLine("  none");
+        }
+
+        return 0;
+
+        static void PrintPublicPriorities(
+            IEnumerable<KeyValuePair<string, PythonReCaseMeasurement>> priorities)
+        {
+            var count = 0;
+            foreach (var (caseId, measurement) in priorities)
+            {
+                var evidence = measurement.Qualification!.PairedEvidence!;
+                Console.WriteLine(
+                    $"  {caseId}: Rstrong={evidence.StrongRatioMedian:F3} " +
+                    $"[{evidence.StrongRatioLower95:F3}, {evidence.StrongRatioUpper95:F3}]; " +
+                    $"Estrong={evidence.StrongDifferenceMicroseconds:+0.000;-0.000;0.000} us; " +
+                    $"owner={measurement.ComparatorOwner}; route={measurement.ManagedRoute}");
+                count++;
+            }
+
+            if (count == 0)
+            {
+                Console.WriteLine("  none");
+            }
+        }
+    }
+
     private static int CalibrateManagedBatch(
         PythonReBenchmarkContext context,
         int expectedChecksum,
