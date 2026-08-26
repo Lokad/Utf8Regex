@@ -17,6 +17,8 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationMaximumIterations = 10_000_000;
     private const int PythonReQualificationOneShotWarmupCalls = 100_000;
     private const int PythonReQualificationFindAllWarmupCalls = 10_000;
+    private const int PythonReQualificationShortFindAllWarmupCalls = 100_000;
+    private const int PythonReQualificationShortFindAllCalibrationIterations = 2_000;
     private const int PythonReQualificationReplacementWarmupCalls = 10_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
@@ -181,7 +183,7 @@ internal static partial class PythonReBenchmarkReporter
             expectedConsumptionToken,
             shortOneShotMinimumIterations > 1
                 ? PythonReQualificationShortOneShotWarmupCalls
-                : GetManagedWarmupCalls(benchmarkCase));
+                : GetManagedWarmupCalls(benchmarkCase, calibratedManagedIterations));
 
         managedIterations = ConfirmManagedSampleDuration(
             context,
@@ -891,7 +893,9 @@ internal static partial class PythonReBenchmarkReporter
         return PythonReQualificationShortOneShotMinimumIterations;
     }
 
-    private static int GetManagedWarmupCalls(PythonReBenchmarkCase benchmarkCase) =>
+    private static int GetManagedWarmupCalls(
+        PythonReBenchmarkCase benchmarkCase,
+        int calibratedIterations = 0) =>
         benchmarkCase.Operation switch
         {
             PythonReBenchmarkOperation.IsMatch or
@@ -899,7 +903,10 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
             PythonReBenchmarkOperation.FindAllStrings or
-                PythonReBenchmarkOperation.FindAllUtf8 => PythonReQualificationFindAllWarmupCalls,
+                PythonReBenchmarkOperation.FindAllUtf8 =>
+                calibratedIterations >= PythonReQualificationShortFindAllCalibrationIterations
+                    ? PythonReQualificationShortFindAllWarmupCalls
+                    : PythonReQualificationFindAllWarmupCalls,
             PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
                 PythonReBenchmarkOperation.SubnString or
