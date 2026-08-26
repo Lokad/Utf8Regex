@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:51:12.3003294+00:00`
-- Snapshot SHA-256: `754AD6691ADCDDEBD26D491AFBF7620754411A5946BD9CF2C851F9E60A58CD40`
+- Generated: `2026-08-26T12:51:30.9644615+00:00`
+- Snapshot SHA-256: `74461AEAD67A3F898C572C96E189EF80F3A9C3A7D7CA1F5005E9EA278544AFAF`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
+- Public Status: `1` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `27` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -48,7 +48,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 412.906 us | 789.879 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
 | `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 278.100 us | 124.845 us | 2.23x | 126.792 us | 359.547 us | 936,224 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 299.098 us | 359.654 us | 0.83x | 359.520 us | 335.570 us | 785,704 B |
-| `findall/unicode-full-strings` | `FindAllStrings` | Historical | Unqualified | 45.029 us | 21.572 us | 2.09x | 24.031 us | 42.099 us | 24,600 B |
+| `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 4.449 us | 15.684 us | 0.28x | 24.031 us | 42.099 us | 4,120 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | Historical | Unqualified | 58.445 us | 38.623 us | 1.51x | 47.145 us | 60.234 us | 24,600 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | Historical | Unqualified | 173.765 us | 3,466.165 us | 0.05x | 3,139.237 us | 153.941 us | 406,736 B |
 | `literal/fullmatch` | `FullMatch` | Historical | Unqualified | 0.195 us | 0.207 us | 0.94x | 0.245 us | 0.094 us | 0 B |
