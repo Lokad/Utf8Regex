@@ -19,8 +19,8 @@ Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRang
 ## Snapshot summary
 
 - Generated: `2026-08-26T09:59:10.9180685+00:00`
-- Snapshot SHA-256: `2BA0312D6F0B2B5300494B0E457DE34854EE522217135DADFDBE8F7B71E04C5D`
-- Schema: `4`
+- Snapshot SHA-256: `4EAC98F5FA4C33AC87B405702AB3F046FA9071149AAD661FC05C4215E54DEAF6`
+- Schema: `5`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
 - Measurement environments represented: `1`
@@ -65,6 +65,41 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `unicode/count` | `Count` | Historical | Unqualified | 92.217 us | 211.684 us | 0.44x | 271.193 us | 185.111 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | Historical | Unqualified | 27.265 us | 12.613 us | 2.16x | 19.217 us | 25.377 us | 14,360 B |
 | `zero-width/count` | `Count` | Historical | Unqualified | 18.474 us | 584.444 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
+
+## Operation ownership and managed route
+
+These fields prevent a composed host-language operation or a managed decode fallback from being mislabeled as a regex-engine result.
+
+| Case | CPython operation owner | Managed route |
+|---|---|---|
+| `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` |
+| `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` |
+| `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` |
+| `findall/full-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
+| `findall/full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` |
+| `findall/many-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
+| `findall/many-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/FallbackRegex; findall UTF-8 shaping` |
+| `findall/one-capture-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` |
+| `findall/unicode-capture-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `strict UTF-8 decode; .NET Regex; findall UTF-8 shaping` |
+| `findall/unicode-full-strings` | `_sre C Pattern.findall` | `Utf8Regex/ExactUtf8Literal; findall string shaping` |
+| `findall/unicode-full-utf8` | `_sre C Pattern.findall + Python UTF-8 projection` | `Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping` |
+| `iteration/finditer-detailed` | `_sre scanner + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed iteration shaping` |
+| `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` |
+| `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` |
+| `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` |
+| `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` |
+| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` |
+| `replacement/evaluator-string` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping` |
+| `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` |
+| `replacement/fixed-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; string shaping` |
+| `replacement/fixed-utf8` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` |
+| `replacement/subn-string` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; string shaping` |
+| `replacement/subn-utf8` | `_sre C Pattern.subn` | `strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping` |
+| `split/captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` |
+| `split/no-captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` |
+| `unicode/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literal; Python-style count progression` |
+| `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` |
+| `zero-width/count` | `_sre scanner + Python finditer/sum` | `strict UTF-8 decode; adapter ASCII-boundary loop; scalar result` |
 
 ## Reproduce and refresh
 

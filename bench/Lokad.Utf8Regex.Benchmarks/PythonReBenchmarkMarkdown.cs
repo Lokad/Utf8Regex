@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 or 4 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -202,6 +202,23 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         writer.WriteLine();
+        if (snapshot.SchemaVersion >= 5)
+        {
+            writer.WriteLine("## Operation ownership and managed route");
+            writer.WriteLine();
+            writer.WriteLine("These fields prevent a composed host-language operation or a managed decode fallback from being mislabeled as a regex-engine result.");
+            writer.WriteLine();
+            writer.WriteLine("| Case | CPython operation owner | Managed route |");
+            writer.WriteLine("|---|---|---|");
+            foreach (var (caseId, measurement) in rows)
+            {
+                writer.WriteLine(
+                    $"| `{caseId}` | `{measurement.ComparatorOwner}` | `{measurement.ManagedRoute}` |");
+            }
+
+            writer.WriteLine();
+        }
+
         writer.WriteLine("## Reproduce and refresh");
         writer.WriteLine();
         writer.WriteLine("Run from the repository root in `Release` through `./bench.ps1`:");

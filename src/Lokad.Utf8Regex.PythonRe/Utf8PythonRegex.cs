@@ -1632,6 +1632,23 @@ public sealed class Utf8PythonRegex
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
+    internal PythonReDirectBackendKind DebugSearchBackend => _searchBackend;
+
+    internal PythonReDirectBackendKind DebugMatchBackend => _matchBackend;
+
+    internal PythonReDirectBackendKind DebugFullMatchBackend => GetUtf8FullRegex() is not null
+        ? PythonReDirectBackendKind.Utf8Regex
+        : PythonReDirectBackendKind.ManagedRegex;
+
+    internal PythonReDirectBackendKind DebugCountBackend => _countBackend;
+
+    internal bool DebugUsesAsciiWordBoundaryCount => _canCountAsciiWordBoundariesDirectly;
+
+    internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
+
+    internal string? DebugUtf8FullMatchExecutionKind =>
+        GetUtf8FullRegex()?.Inspection.ExecutionKind.ToString();
+
     internal bool DebugIsUtf8FullRegexValueCreated => _lazyUtf8FullRegex?.IsValueCreated ?? false;
 
     internal bool DebugIsManagedNonEmptyAtSamePositionRegexValueCreated =>
@@ -1643,10 +1660,8 @@ public sealed class Utf8PythonRegex
 
     internal string DebugDescribeExecutionPlan()
     {
-        var fullMatchBackend = GetUtf8FullRegex() is not null
-            ? PythonReDirectBackendKind.Utf8Regex
-            : PythonReDirectBackendKind.ManagedRegex;
-        return $"Search={_searchBackend}, Match={_matchBackend}, FullMatch={fullMatchBackend}, Count={_countBackend}";
+        return $"Search={_searchBackend}, Match={_matchBackend}, " +
+               $"FullMatch={DebugFullMatchBackend}, Count={_countBackend}";
     }
 
     internal PythonReDirectBackendKind DebugFindAllBackend => _findAllBackend;

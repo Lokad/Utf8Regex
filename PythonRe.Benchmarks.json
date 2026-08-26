@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 4,
+  "SchemaVersion": 5,
   "GeneratedAtUtc": "2026-08-26T09:59:10.9180685+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
@@ -17,6 +17,8 @@
       "EffectiveIterations": 20000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.search \u002B Python detailed projection",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; detailed capture projection",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -91,6 +93,8 @@
       "EffectiveIterations": 500,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; Python-style count progression",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -165,6 +169,8 @@
       "EffectiveIterations": 500,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
+      "ManagedRoute": "Utf8Regex/ExactUtf8Literals; Python-style count progression",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -239,6 +245,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -313,6 +321,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; findall UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -387,6 +397,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -461,6 +473,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; findall UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -535,6 +549,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; findall string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -609,6 +625,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex; findall UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -683,6 +701,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall",
+      "ManagedRoute": "Utf8Regex/ExactUtf8Literal; findall string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -757,6 +777,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.findall \u002B Python UTF-8 projection",
+      "ManagedRoute": "Utf8Regex/ExactUtf8Literal; findall UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -831,6 +853,8 @@
       "EffectiveIterations": 1000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre scanner \u002B Python detailed projection",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; detailed iteration shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -905,6 +929,8 @@
       "EffectiveIterations": 20000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.fullmatch",
+      "ManagedRoute": "Utf8Regex/AsciiSimplePattern; full-match value ranges",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -979,6 +1005,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.search",
+      "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; boolean result",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1053,6 +1081,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.search",
+      "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; value ranges",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1127,6 +1157,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.search",
+      "ManagedRoute": "Utf8Regex/ExactAsciiLiteral; value ranges",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1201,6 +1233,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.match",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; anchored value ranges",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1275,6 +1309,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.subn \u002B Python callback",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex callback replacement; string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1349,6 +1385,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.subn \u002B Python callback",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1423,6 +1461,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.sub",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1497,6 +1537,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.sub",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1571,6 +1613,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.subn",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1645,6 +1689,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.subn",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1719,6 +1765,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.split",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex split; string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1793,6 +1841,8 @@
       "EffectiveIterations": 2000,
       "Samples": 7,
       "IncludesResultMaterialization": true,
+      "ComparatorOwner": "_sre C Pattern.split",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex split; string shaping",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1867,6 +1917,8 @@
       "EffectiveIterations": 500,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
+      "ManagedRoute": "Utf8Regex/ExactUtf8Literal; Python-style count progression",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -1941,6 +1993,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre C Pattern.fullmatch",
+      "ManagedRoute": "strict UTF-8 decode; .NET Regex; full-match value ranges",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,
@@ -2015,6 +2069,8 @@
       "EffectiveIterations": 5000,
       "Samples": 7,
       "IncludesResultMaterialization": false,
+      "ComparatorOwner": "_sre scanner \u002B Python finditer/sum",
+      "ManagedRoute": "strict UTF-8 decode; adapter ASCII-boundary loop; scalar result",
       "Environment": {
         "SourceCommit": "9730cc32f96c",
         "TrackedDirty": false,

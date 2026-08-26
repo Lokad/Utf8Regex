@@ -12,7 +12,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
-    private const int PythonReBenchmarkSchemaVersion = 4;
+    private const int PythonReBenchmarkSchemaVersion = 5;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
 
@@ -252,15 +252,22 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshotPath = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not PythonReBenchmarkSchemaVersion)
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
-                $"PythonRe migration requires a schema-3 or schema-{PythonReBenchmarkSchemaVersion} snapshot.");
+                $"PythonRe migration requires a schema-3, schema-4, or " +
+                $"schema-{PythonReBenchmarkSchemaVersion} snapshot.");
             return 1;
         }
 
-        foreach (var measurement in snapshot.Cases.Values)
+        foreach (var (caseId, measurement) in snapshot.Cases)
         {
+            var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal)) ??
+                throw new InvalidOperationException($"PythonRe snapshot contains unknown case '{caseId}'.");
+            var context = new PythonReBenchmarkContext(benchmarkCase);
+            measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation);
+            measurement.ManagedRoute = context.DescribeManagedRoute();
             measurement.Qualification ??= PythonReQualificationMeasurement.CreateHistoricalUnqualified();
         }
 
@@ -835,6 +842,8 @@ internal static partial class PythonReBenchmarkReporter
             EffectiveIterations = effectiveIterations,
             Samples = samples,
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
+            ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+            ManagedRoute = context.DescribeManagedRoute(),
             Environment = CaptureEnvironment(),
             PythonRe = MeasurePythonReOperation(context, effectiveIterations, samples, pythonResult),
             DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
@@ -1266,6 +1275,30 @@ internal static class PythonReBenchmarkCatalog
 
         return builder.ToString();
     }
+
+    internal static string GetComparatorOwner(PythonReBenchmarkOperation operation) => operation switch
+    {
+        PythonReBenchmarkOperation.IsMatch or PythonReBenchmarkOperation.Search =>
+            "_sre C Pattern.search",
+        PythonReBenchmarkOperation.Match => "_sre C Pattern.match",
+        PythonReBenchmarkOperation.FullMatch => "_sre C Pattern.fullmatch",
+        PythonReBenchmarkOperation.SearchDetailed =>
+            "_sre C Pattern.search + Python detailed projection",
+        PythonReBenchmarkOperation.Count => "_sre scanner + Python finditer/sum",
+        PythonReBenchmarkOperation.FindAllStrings => "_sre C Pattern.findall",
+        PythonReBenchmarkOperation.FindAllUtf8 =>
+            "_sre C Pattern.findall + Python UTF-8 projection",
+        PythonReBenchmarkOperation.FindIterDetailed =>
+            "_sre scanner + Python detailed projection",
+        PythonReBenchmarkOperation.ReplaceString or PythonReBenchmarkOperation.ReplaceUtf8 =>
+            "_sre C Pattern.sub",
+        PythonReBenchmarkOperation.SubnString or PythonReBenchmarkOperation.SubnUtf8 =>
+            "_sre C Pattern.subn",
+        PythonReBenchmarkOperation.SubnEvaluatorString or PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
+            "_sre C Pattern.subn + Python callback",
+        PythonReBenchmarkOperation.SplitStrings => "_sre C Pattern.split",
+        _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+    };
 }
 
 internal sealed class PythonReBenchmarkContext
@@ -1311,6 +1344,68 @@ internal sealed class PythonReBenchmarkContext
     internal bool SupportsCaptureFreeFindAllPhases => _coreFindAllRegex is not null;
 
     internal int PreparedCoreRangeCount => _preparedCoreRanges.Length;
+
+    internal string DescribeManagedRoute() => _case.Operation switch
+    {
+        PythonReBenchmarkOperation.IsMatch => DescribeBackend(
+            _pythonRegex.DebugSearchBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "boolean result"),
+        PythonReBenchmarkOperation.Search => DescribeBackend(
+            _pythonRegex.DebugSearchBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "value ranges"),
+        PythonReBenchmarkOperation.Match => DescribeBackend(
+            _pythonRegex.DebugMatchBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "anchored value ranges"),
+        PythonReBenchmarkOperation.FullMatch => DescribeBackend(
+            _pythonRegex.DebugFullMatchBackend,
+            _pythonRegex.DebugUtf8FullMatchExecutionKind,
+            "full-match value ranges"),
+        PythonReBenchmarkOperation.SearchDetailed => DescribeBackend(
+            _pythonRegex.DebugSearchBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "detailed capture projection"),
+        PythonReBenchmarkOperation.Count when _pythonRegex.DebugUsesAsciiWordBoundaryCount =>
+            "strict UTF-8 decode; adapter ASCII-boundary loop; scalar result",
+        PythonReBenchmarkOperation.Count => DescribeBackend(
+            _pythonRegex.DebugCountBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "Python-style count progression"),
+        PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(
+            _pythonRegex.DebugFindAllBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "findall string shaping"),
+        PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
+            _pythonRegex.DebugFindAllBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "findall UTF-8 shaping"),
+        PythonReBenchmarkOperation.FindIterDetailed => DescribeBackend(
+            _pythonRegex.DebugFindAllBackend,
+            _pythonRegex.DebugUtf8ExecutionKind,
+            "detailed iteration shaping"),
+        PythonReBenchmarkOperation.ReplaceString or
+            PythonReBenchmarkOperation.SubnString =>
+            "strict UTF-8 decode; .NET Regex replacement; string shaping",
+        PythonReBenchmarkOperation.ReplaceUtf8 or
+            PythonReBenchmarkOperation.SubnUtf8 =>
+            "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
+        PythonReBenchmarkOperation.SubnEvaluatorString =>
+            "strict UTF-8 decode; .NET Regex callback replacement; string shaping",
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
+            "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
+        PythonReBenchmarkOperation.SplitStrings =>
+            "strict UTF-8 decode; .NET Regex split; string shaping",
+        _ => throw new ArgumentOutOfRangeException(),
+    };
+
+    private static string DescribeBackend(
+        PythonReDirectBackendKind backend,
+        string? executionKind,
+        string projection) => backend == PythonReDirectBackendKind.Utf8Regex
+            ? $"Utf8Regex/{executionKind ?? "unknown"}; {projection}"
+            : $"strict UTF-8 decode; .NET Regex; {projection}";
 
     internal PythonReBenchmarkBatch MeasurePythonReBatch(int iterations)
     {
@@ -2733,6 +2828,8 @@ internal sealed class PythonReCaseMeasurement
     public required int EffectiveIterations { get; init; }
     public required int Samples { get; init; }
     public required bool IncludesResultMaterialization { get; init; }
+    public string ComparatorOwner { get; set; } = string.Empty;
+    public string ManagedRoute { get; set; } = string.Empty;
     public required PythonReBenchmarkEnvironment Environment { get; init; }
     public required PythonReOperationMeasurement PythonRe { get; init; }
     public required PythonReOperationMeasurement DecodeThenRegex { get; init; }

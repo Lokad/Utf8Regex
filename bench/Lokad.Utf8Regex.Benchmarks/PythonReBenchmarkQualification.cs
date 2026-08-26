@@ -529,7 +529,8 @@ internal static partial class PythonReBenchmarkReporter
             var qualification = measurement.Qualification;
             if (qualification is null)
             {
-                Console.Error.WriteLine($"{caseId}: schema-4 row has no qualification state.");
+                Console.Error.WriteLine(
+                    $"{caseId}: schema-{PythonReBenchmarkSchemaVersion} row has no qualification state.");
                 return 1;
             }
 

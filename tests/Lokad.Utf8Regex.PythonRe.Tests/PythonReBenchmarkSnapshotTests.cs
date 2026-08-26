@@ -42,7 +42,7 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(4, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(5, root.GetProperty("SchemaVersion").GetInt32());
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
@@ -60,6 +60,8 @@ public sealed class PythonReBenchmarkSnapshotTests
         {
             Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("Pattern").GetString()));
             Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("Operation").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("ComparatorOwner").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(benchmarkCase.Value.GetProperty("ManagedRoute").GetString()));
             Assert.True(benchmarkCase.Value.GetProperty("InputUtf8Bytes").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("Samples").GetInt32() >= 5);
@@ -104,6 +106,21 @@ public sealed class PythonReBenchmarkSnapshotTests
 
         Assert.True(cases.GetProperty("capture/search-detailed").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
         Assert.True(cases.GetProperty("literal/fullmatch").GetProperty("EffectiveIterations").GetInt32() >= 20_000);
+        Assert.Contains(
+            "FallbackRegex",
+            cases.GetProperty("prefix/match").GetProperty("ManagedRoute").GetString(),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "ExactAsciiLiteral",
+            cases.GetProperty("literal/search-miss").GetProperty("ManagedRoute").GetString(),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "strict UTF-8 decode",
+            cases.GetProperty("replacement/subn-string").GetProperty("ManagedRoute").GetString(),
+            StringComparison.Ordinal);
+        Assert.Equal(
+            "_sre scanner + Python finditer/sum",
+            cases.GetProperty("family/count").GetProperty("ComparatorOwner").GetString());
 
         var snapshotPath = FindRepositoryFile("PythonRe.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"));
@@ -119,6 +136,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
         Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
+        Assert.Contains("## Operation ownership and managed route", page, StringComparison.Ordinal);
         var statusCounts = cases.EnumerateObject()
             .GroupBy(
                 static benchmarkCase => benchmarkCase.Value
