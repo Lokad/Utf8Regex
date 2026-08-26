@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:47:06.7941877+00:00`
-- Snapshot SHA-256: `9C2A5A2D251DCA34D706325D6952F6C4108E97D768B4A79742326A27278C92BE`
+- Generated: `2026-08-26T11:47:43.1757652+00:00`
+- Snapshot SHA-256: `AD86CCCA6276ED52B978AF50EDA9D44600EA9B9EBD233DEEB8C2CB82011F3FCC`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `4` managed faster, `0` equivalent, `1` CPython faster, `3` inconclusive, `20` unqualified
+- Public Status: `5` managed faster, `0` equivalent, `1` CPython faster, `3` inconclusive, `19` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -41,7 +41,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `capture/search-detailed` | `SearchDetailed` | Historical | Unqualified | 0.501 us | 2.489 us | 0.20x | 2.602 us | 0.350 us | 896 B |
 | `class-run/count` | `Count` | Historical | Unqualified | 504.865 us | 1,415.960 us | 0.36x | 1,424.645 us | 620.138 us | 172,056 B |
-| `family/count` | `Count` | Historical | Unqualified | 68.200 us | 1,240.842 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
+| `family/count` | `Count` | ScalarResult | Managed faster | 64.021 us | 1,169.519 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
 | `findall/full-strings` | `FindAllStrings` | Historical | Unqualified | 244.742 us | 303.417 us | 0.81x | 219.217 us | 248.829 us | 165,936 B |
 | `findall/full-utf8` | `FindAllUtf8` | Historical | Unqualified | 268.899 us | 309.247 us | 0.87x | 406.854 us | 318.232 us | 165,936 B |
 | `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 388.206 us | 196.091 us | 1.98x | 201.521 us | 449.797 us | 1,331,488 B |
