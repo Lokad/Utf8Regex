@@ -439,7 +439,8 @@ internal static partial class PythonReBenchmarkReporter
                        Math.Max(pilot.Elapsed.TotalMilliseconds, 0.000_001)),
             1,
             PythonReQualificationMaximumIterations);
-        const int confirmationAttempts = 2;
+        const int confirmationAttempts = 3;
+        var fastestMillisecondsPerOperation = double.PositiveInfinity;
         for (var attempt = 0; attempt < confirmationAttempts; attempt++)
         {
             var confirmation = context.MeasurePythonReQualificationBatch(iterations);
@@ -450,9 +451,12 @@ internal static partial class PythonReBenchmarkReporter
                 expectedConsumptionToken,
                 iterations,
                 "calibration confirmation");
-            if (confirmation.Elapsed.TotalMilliseconds is >= 30 and <= 50)
+            fastestMillisecondsPerOperation = Math.Min(
+                fastestMillisecondsPerOperation,
+                confirmation.Elapsed.TotalMilliseconds / iterations);
+            if (confirmation.Elapsed.TotalMilliseconds >= 30)
             {
-                break;
+                continue;
             }
 
             iterations = (int)Math.Clamp(
@@ -462,6 +466,12 @@ internal static partial class PythonReBenchmarkReporter
                 1,
                 PythonReQualificationMaximumIterations);
         }
+
+        iterations = (int)Math.Clamp(
+            Math.Ceiling(PythonReQualificationTargetSampleMilliseconds /
+                         Math.Max(fastestMillisecondsPerOperation, 0.000_000_001)),
+            1,
+            PythonReQualificationMaximumIterations);
 
         return iterations;
     }

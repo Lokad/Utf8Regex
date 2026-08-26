@@ -938,7 +938,8 @@ def run_stream_worker() -> int:
                     ),
                 )
                 calibrated: dict[str, Any] | None = None
-                for _ in range(2):
+                fastest_nanoseconds_per_operation = math.inf
+                for _ in range(3):
                     calibrated = measure_stream_lane(
                         runner,
                         lane,
@@ -947,21 +948,36 @@ def run_stream_worker() -> int:
                         expected_semantic_digest,
                         expected_consumption_token,
                     )
-                    if 30_000_000 <= calibrated["ElapsedNanoseconds"] <= 50_000_000:
-                        break
-                    calibrated_iterations = min(
-                        maximum_iterations,
-                        max(
-                            1,
-                            round(
-                                calibrated_iterations
-                                * target_nanoseconds
-                                / max(calibrated["ElapsedNanoseconds"], 1)
-                            ),
-                        ),
+                    fastest_nanoseconds_per_operation = min(
+                        fastest_nanoseconds_per_operation,
+                        calibrated["ElapsedNanoseconds"] / calibrated_iterations,
                     )
+                    if calibrated["ElapsedNanoseconds"] < 30_000_000:
+                        calibrated_iterations = min(
+                            maximum_iterations,
+                            max(
+                                1,
+                                round(
+                                    calibrated_iterations
+                                    * target_nanoseconds
+                                    / max(calibrated["ElapsedNanoseconds"], 1)
+                                ),
+                            ),
+                        )
                 if calibrated is None:
                     raise RuntimeError("CPython streaming calibration produced no confirmation.")
+                calibrated_iterations = min(
+                    maximum_iterations,
+                    max(1, math.ceil(target_nanoseconds / fastest_nanoseconds_per_operation)),
+                )
+                calibrated = measure_stream_lane(
+                    runner,
+                    lane,
+                    calibrated_iterations,
+                    expected_checksum,
+                    expected_semantic_digest,
+                    expected_consumption_token,
+                )
                 calibrated.update(
                     {
                         "ProtocolVersion": STREAM_PROTOCOL_VERSION,
