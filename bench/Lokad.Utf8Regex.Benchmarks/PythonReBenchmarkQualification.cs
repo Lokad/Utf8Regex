@@ -21,6 +21,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationShortFindAllWarmupCalls = 100_000;
     private const int PythonReQualificationShortFindAllCalibrationIterations = 2_000;
     private const int PythonReQualificationReplacementWarmupCalls = 10_000;
+    private const int PythonReQualificationSplitWarmupCalls = 10_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
     private const int PythonReQualificationShortOneShotCalibrationIterations = 50_000;
@@ -961,6 +962,11 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReBenchmarkOperation.SubnUtf8 or
                 PythonReBenchmarkOperation.SubnEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,
+            // The direct split routes can tier after the default 1,024 calls.
+            // Warming through that transition keeps the calibrated batch above
+            // the qualification duration floor after its steady-state speedup.
+            PythonReBenchmarkOperation.SplitStrings or
+                PythonReBenchmarkOperation.SplitDetailed => PythonReQualificationSplitWarmupCalls,
             _ => PythonReQualificationMinimumWarmupCalls,
         };
 
