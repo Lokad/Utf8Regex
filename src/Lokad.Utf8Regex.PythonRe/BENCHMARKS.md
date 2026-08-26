@@ -20,13 +20,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T14:51:44.6477805+00:00`
-- Snapshot SHA-256: `430E55992C222A6249766D46AD49E5F3C04D867A5747BDAD56AA303FCF6A4E40`
+- Generated: `2026-08-26T15:12:32.1473510+00:00`
+- Snapshot SHA-256: `994613CC21FAD3D49E68278651135854FAEBC924BE39BC8852502F5861E862FC`
 - Schema: `8`
-- Catalog SHA-256: `D0236D4E83DAD1BCB1AEAFA31EB09AB484A18E893910863A0EB0E1E378573929`
-- Cases: `58`
-- Public Status: `22` managed faster, `0` equivalent, `2` CPython faster, `33` inconclusive, `1` unqualified
-- Historical point measurement environments represented: `9`
+- Catalog SHA-256: `ABC1034FAF24EAD6571BA6DE5324A6A7A454CC14D690834A60F75746DC01DC96`
+- Cases: `82`
+- Public Status: `22` managed faster, `0` equivalent, `4` CPython faster, `54` inconclusive, `2` unqualified
+- Historical point measurement environments represented: `12`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -34,16 +34,16 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Coverage summary
 
-This catalog currently covers `58` operation rows over `33` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
+This catalog currently covers `82` operation rows over `39` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
 
 | Axis | Covered values |
 |---|---|
-| Operation families | `Count`, `FindAllStrings`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceString`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SearchFromOffset`, `SplitStrings`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
+| Operation families | `Count`, `CountFromOffset`, `FindAllStrings`, `FindAllStructural`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceEvaluatorString`, `ReplaceString`, `ReplaceStringLimited`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SearchFromOffset`, `SplitDetailed`, `SplitStrings`, `SplitStringsLimited`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
 | Flags | `Ascii`, `DotAll`, `IgnoreCase`, `Multiline`, `None`, `Unicode`, `Verbose` |
-| Feature families | `ASCII class run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Callback replacement`, `Captured separator`, `Dot-all wildcard`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `Named capture and backreference`, `Numeric capture and backreference`, `One capture`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode word category`, `Verbose classes` |
+| Feature families | `ASCII class run`, `ASCII digit run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Bounded exact literal replacement`, `Bounded separator class`, `Callback replacement`, `Captured separator`, `Captured separator metadata`, `Dot-all wildcard`, `Empty-capable repeat`, `Empty-match replacement`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `Named capture`, `Named capture and backreference`, `Named template expansion`, `Numeric capture and backreference`, `Numeric template expansion`, `One capture`, `Optional capture`, `Optional captured separator`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode separator class`, `Unicode word category`, `Verbose classes` |
 | Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `GeneralNative`, `ManagedFallback`, `SimpleNative` |
-| Result cardinalities | `Many`, `ManyEmpty`, `One`, `Zero` |
-| Input-width classes | `Ascii`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte`, `FourByte`, `ThreeByte` |
+| Result cardinalities | `Few`, `Four`, `Many`, `ManyEmpty`, `One`, `Three`, `Two`, `Zero` |
+| Input-width classes | `Ascii`, `Ascii+ThreeByte`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte`, `FourByte`, `ThreeByte` |
 | Corpus provenance | `Synthetic catalog generator` |
 | Claim classes | `Composed`, `Public` |
 
@@ -51,9 +51,9 @@ This catalog currently covers `58` operation rows over `33` distinct patterns. Z
 |---|---:|
 | Direct matching | 36 |
 | Detailed and scalar projections | 1 |
-| Count, FindAll, and FindIter | 13 |
-| Replace and Subn | 6 |
-| Split | 2 |
+| Count, FindAll, and FindIter | 24 |
+| Replace and Subn | 12 |
+| Split | 9 |
 | Real-corpus workloads | 0 |
 | Construction and first call | 0 |
 | Scaling evidence | 0 |
@@ -129,6 +129,17 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 206.199 us | 353.349 us | 0.58x | 359.520 us | 335.570 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 108.439 us | 335.475 us | 0.32x | 3,139.237 us | 153.941 us | 406,736 B |
 | `zero-width/count` | `Count` | ScalarResult | Managed faster | 17.574 us | 553.707 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
+| `count/zero` | `Count` | ScalarResult | Inconclusive | 2.936 us | 49.251 us | 0.06x | 49.878 us | 1.081 us | 17,528 B |
+| `count/one` | `Count` | ScalarResult | Inconclusive | 0.472 us | 1.465 us | 0.31x | 1.418 us | 1.035 us | 0 B |
+| `count/empty-progression` | `Count` | ScalarResult | Inconclusive | 170.043 us | 180.982 us | 0.93x | 182.817 us | 65.156 us | 430,312 B |
+| `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 35.726 us | 23.464 us | 1.52x | 42.228 us | 32.600 us | 8,216 B |
+| `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 2.435 us | 49.361 us | 0.05x | 49.729 us | 1.149 us | 17,456 B |
+| `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 1.550 us | 21.060 us | 0.07x | 21.488 us | 1.047 us | 8,288 B |
+| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 62.354 us | 26.694 us | 2.34x | 30.635 us | 54.610 us | 239,168 B |
+| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 51.266 us | 38.229 us | 1.37x | 35.815 us | 133.261 us | 209,648 B |
+| `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 42.603 us | 67.070 us | 0.64x | 59.297 us | 179.642 us | 58,120 B |
+| `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Inconclusive | 49.695 us | 201.335 us | 0.34x | 123.249 us | 160.253 us | 46,640 B |
+| `finditer/zero-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 0.812 us | 82.843 us | 0.01x | 84.653 us | 0.986 us | 8,728 B |
 
 ### Replace and Subn
 
@@ -140,6 +151,12 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `replacement/subn-utf8` | `SubnUtf8` | EagerMaterializedResult | Managed faster | 25.925 us | 53.623 us | 0.48x | 62.087 us | 120.898 us | 20,968 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | EagerMaterializedResult | Inconclusive | 251.022 us | 9,848.200 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | EagerMaterializedResult | Inconclusive | 289.710 us | 9,923.240 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
+| `replacement/no-match-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.492 us | 1.355 us | 1.11x | 1.723 us | 7.467 us | 20,480 B |
+| `replacement/one-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.434 us | 9,286.420 us | 0.00x | 8,925.992 us | 4.645 us | 9,024 B |
+| `replacement/named-template-string` | `ReplaceString` | EagerMaterializedResult | Unqualified | 1.219 us | 0.553 us | 2.13x | 1.463 us | 0.994 us | 720 B |
+| `replacement/limited-string` | `ReplaceStringLimited` | EagerMaterializedResult | Inconclusive | 0.989 us | 0.305 us | 3.24x | 0.639 us | 5.996 us | 16,912 B |
+| `replacement/empty-progression-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 34.536 us | 14.503 us | 2.35x | 14.899 us | 17.288 us | 113,392 B |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | EagerMaterializedResult | Inconclusive | 78.005 us | 3,413.248 us | 0.03x | 2,883.008 us | 47.345 us | 219,840 B |
 
 ### Split
 
@@ -147,6 +164,13 @@ Historical point rows span more than one measurement environment. Consult the JS
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `split/no-captures` | `SplitStrings` | EagerMaterializedResult | Managed faster | 74.370 us | 115.228 us | 0.65x | 126.317 us | 74.816 us | 171,328 B |
 | `split/captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 136.868 us | 137.931 us | 0.99x | 142.175 us | 134.880 us | 499,032 B |
+| `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.593 us | 8.965 us | 0.06x | 10.041 us | 5.796 us | 8,792 B |
+| `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.566 us | 4.444 us | 0.13x | 7.098 us | 5.004 us | 8,408 B |
+| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | Inconclusive | 0.859 us | 0.387 us | 2.28x | 0.729 us | 6.570 us | 12,032 B |
+| `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 45.990 us | 56.408 us | 0.82x | 56.888 us | 93.665 us | 182,032 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | CPython faster | 142.786 us | 41.788 us | 3.42x | 43.172 us | 150.097 us | 239,120 B |
+| `split/unicode` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 16.335 us | 25.025 us | 0.64x | 28.146 us | 86.917 us | 26,104 B |
+| `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Inconclusive | 65.144 us | 84.117 us | 0.76x | 83.457 us | 57.825 us | 313,360 B |
 
 ### Real-corpus workloads
 
@@ -229,6 +253,30 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/no-captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/captures` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `count/zero` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `count/one` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactAsciiLiteral; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `count/empty-progression` | `_sre scanner + Python finditer/sum` | `strict UTF-8 decode; .NET Regex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `count/from-offset` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactAsciiLiteral; Python-style count progression from a nonzero byte offset` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/zero-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/one-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/empty-progression-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/optional-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/named-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/structural-many` | `_sre scanner + Python group-zero projection` | `Utf8Regex/FallbackRegex; group-zero structural match shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `finditer/zero-detailed` | `_sre scanner + Python detailed projection` | `strict UTF-8 decode; .NET Regex; detailed iteration shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/no-match-string` | `_sre C Pattern.sub` | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/one-template-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/named-template-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/limited-string` | `_sre C Pattern.sub` | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/empty-progression-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/evaluator-replace-string` | `_sre C Pattern.sub + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping without count` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/no-separator` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/one-separator` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/limited` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex bounded split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/optional-capture` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/zero-width` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/unicode` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `split/detailed` | `_sre C Pattern.split + Python split-item metadata projection` | `strict UTF-8 decode; .NET Regex split; item-metadata shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 
 ## Reproduce and refresh
 
