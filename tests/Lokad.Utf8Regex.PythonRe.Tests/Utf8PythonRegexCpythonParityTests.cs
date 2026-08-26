@@ -158,6 +158,19 @@ public sealed class Utf8PythonRegexCpythonParityTests
     }
 
     [Fact]
+    public void EmptyOnlySplitPatternsFollowCpythonProgression()
+    {
+        AssertSplit(["", "a", "b", "c", ""], new Utf8PythonRegex("").SplitToStrings("abc"u8));
+        AssertSplit(["", "a", "bc"], new Utf8PythonRegex("").SplitToStrings("abc"u8, maxSplit: 2));
+        AssertSplit(
+            ["", "alpha", " ", "beta", ""],
+            new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii).SplitToStrings("alpha beta"u8));
+        AssertSplit(["a", ":b", ":"], new Utf8PythonRegex(@"(?=:)").SplitToStrings("a:b:"u8));
+        AssertSplit(["abc"], new Utf8PythonRegex(@"(?!)").SplitToStrings("abc"u8));
+        AssertSplit(["", "𝒜", "b", ""], new Utf8PythonRegex("").SplitToStrings("𝒜b"u8));
+    }
+
+    [Fact]
     public void ReplacementTemplateErrorsFollowCpythonExamples()
     {
         AssertTemplateError("x", @"\400", "x", "octal escape value \\400 outside of range 0-0o377");
