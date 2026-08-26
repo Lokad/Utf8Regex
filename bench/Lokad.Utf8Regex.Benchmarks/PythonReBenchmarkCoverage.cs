@@ -21,13 +21,19 @@ internal static partial class PythonReBenchmarkReporter
     private static int EmitPythonReCoverageReport()
     {
         var cases = PythonReBenchmarkCatalog.Cases;
+        var snapshot = LoadPythonReBenchmarkSnapshot();
         Console.WriteLine($"Catalog SHA-256     : {ComputePythonReCatalogSha256()}");
         Console.WriteLine($"Cases               : {cases.Count}");
         Console.WriteLine($"Distinct patterns   : {cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count()}");
         Console.WriteLine($"First sentinels     : {cases.Count(static item => item.Coverage.FirstMilestoneSentinel)}");
         PrintCoverageGroups("Sections", s_pythonReCoverageSections.Select(section => new KeyValuePair<string, int>(
             section,
-            cases.Count(item => item.Coverage.Section.Equals(section, StringComparison.Ordinal)))));
+            section switch
+            {
+                "Construction and first call" => snapshot.Lifecycle.Count,
+                "Scaling evidence" => snapshot.ScalingFamilies.Count,
+                _ => cases.Count(item => item.Coverage.Section.Equals(section, StringComparison.Ordinal)),
+            })));
         PrintCoverageGroups("Operations", Group(static item => item.Operation.ToString()));
         PrintCoverageGroups("Flags", Group(static item => item.Options.ToString()));
         PrintCoverageGroups("Feature families", Group(static item => item.Coverage.FeatureFamily));
@@ -64,9 +70,9 @@ internal static partial class PythonReBenchmarkReporter
             ValidatePythonReCoverageCase(benchmarkCase, failures);
         }
 
-        if (cases.Count < 28)
+        if (cases.Count is < 70 or > 90)
         {
-            failures.Add($"Catalog has {cases.Count} cases; the first milestone established 28 sentinels.");
+            failures.Add($"Catalog has {cases.Count} cases; the representative bound is 70-90.");
         }
 
         if (cases.Count(static item => item.Coverage.FirstMilestoneSentinel) != 28)
@@ -74,9 +80,9 @@ internal static partial class PythonReBenchmarkReporter
             failures.Add("Exactly 28 cases must remain marked as first-milestone sentinels.");
         }
 
-        if (cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count() < 15)
+        if (cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count() < 35)
         {
-            failures.Add("Catalog must retain at least 15 distinct first-milestone patterns.");
+            failures.Add("Catalog must retain at least 35 distinct representative patterns.");
         }
 
         var snapshot = LoadPythonReBenchmarkSnapshot();
@@ -107,6 +113,16 @@ internal static partial class PythonReBenchmarkReporter
             failures.Add($"Snapshot-only case '{snapshotId}' has no catalog definition.");
         }
 
+        if (snapshot.Lifecycle.Count < 4)
+        {
+            failures.Add("Snapshot must publish at least four construction/first-call families.");
+        }
+
+        if (snapshot.ScalingFamilies.Count < 7)
+        {
+            failures.Add("Snapshot must publish at least seven bounded scaling families.");
+        }
+
         if (failures.Count != 0)
         {
             foreach (var failure in failures)
@@ -120,7 +136,8 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine(
             $"Verified PythonRe coverage contract: {cases.Count} cases, " +
             $"{cases.Select(static item => item.Pattern).Distinct(StringComparer.Ordinal).Count()} patterns, " +
-            "28 first-milestone sentinels.");
+            $"28 first-milestone sentinels, {snapshot.Lifecycle.Count} lifecycle families, " +
+            $"and {snapshot.ScalingFamilies.Count} scaling families.");
         return 0;
     }
 
