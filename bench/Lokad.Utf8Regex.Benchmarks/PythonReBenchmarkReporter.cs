@@ -14,7 +14,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
-    private const int PythonReBenchmarkSchemaVersion = 9;
+    private const int PythonReBenchmarkSchemaVersion = 10;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
     private static object? s_retainedSink;
@@ -242,6 +242,14 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--refresh-pythonre-lifecycle", StringComparison.Ordinal))
+        {
+            exitCode = RefreshPythonReLifecycle(
+                Math.Min(ParsePositive(args, 1, 32), 128),
+                Math.Min(ParsePositive(args, 2, 5), 9));
+            return true;
+        }
+
         exitCode = 0;
         return false;
     }
@@ -265,6 +273,8 @@ internal static partial class PythonReBenchmarkReporter
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
+            Lifecycle = [],
+            ScalingFamilies = [],
         };
         WriteSnapshot(snapshot);
         Console.WriteLine();
@@ -309,6 +319,8 @@ internal static partial class PythonReBenchmarkReporter
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
+            Lifecycle = snapshot.Lifecycle,
+            ScalingFamilies = snapshot.ScalingFamilies,
         });
         Console.WriteLine();
         Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
@@ -319,11 +331,11 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshotPath = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and not 8 and
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and not 8 and not 9 and
             not PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
-                $"PythonRe migration requires a schema-3 through schema-7 or " +
+                $"PythonRe migration requires a schema-3 through schema-{PythonReBenchmarkSchemaVersion - 1} or " +
                 $"schema-{PythonReBenchmarkSchemaVersion} snapshot.");
             return 1;
         }
@@ -359,7 +371,7 @@ internal static partial class PythonReBenchmarkReporter
                 continue;
             }
 
-            if (snapshot.SchemaVersion is 7 or 8)
+            if (snapshot.SchemaVersion is 7 or 8 or 9)
             {
                 migrated++;
                 continue;
@@ -396,6 +408,8 @@ internal static partial class PythonReBenchmarkReporter
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
+            Lifecycle = snapshot.Lifecycle,
+            ScalingFamilies = snapshot.ScalingFamilies,
         });
         Console.WriteLine(
             $"Migrated {SnapshotFileName} to schema {PythonReBenchmarkSchemaVersion}; " +
@@ -519,6 +533,8 @@ internal static partial class PythonReBenchmarkReporter
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
+            Lifecycle = snapshot.Lifecycle,
+            ScalingFamilies = snapshot.ScalingFamilies,
         });
         Console.WriteLine($"Invalidated {invalidated} PythonRe paired qualifications.");
         return 0;
@@ -4792,6 +4808,8 @@ internal sealed class PythonReBenchmarkSnapshot
     public string[] CatalogCaseIds { get; init; } = [];
     public required PythonReCorpusProvenance Corpus { get; init; }
     public required SortedDictionary<string, PythonReCaseMeasurement> Cases { get; init; }
+    public SortedDictionary<string, PythonReLifecycleMeasurement> Lifecycle { get; init; } = new(StringComparer.Ordinal);
+    public SortedDictionary<string, PythonReScalingFamilyMeasurement> ScalingFamilies { get; init; } = new(StringComparer.Ordinal);
 }
 
 internal sealed class PythonReCorpusProvenance

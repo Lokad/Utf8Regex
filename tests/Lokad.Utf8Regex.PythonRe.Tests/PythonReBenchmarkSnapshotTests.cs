@@ -24,7 +24,9 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(9, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(10, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(JsonValueKind.Object, root.GetProperty("Lifecycle").ValueKind);
+        Assert.Equal(JsonValueKind.Object, root.GetProperty("ScalingFamilies").ValueKind);
         var catalogSha256 = root.GetProperty("CatalogSha256").GetString() ?? string.Empty;
         Assert.Matches("^[0-9A-F]{64}$", catalogSha256);
 
@@ -159,6 +161,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Contains("### Reused subjects and corpus identities", page, StringComparison.Ordinal);
         Assert.Contains("### Direct matching", page, StringComparison.Ordinal);
         Assert.Contains("### Scaling evidence", page, StringComparison.Ordinal);
+        Assert.Contains("contextual uncached-construction throughput", page, StringComparison.Ordinal);
         var statusCounts = cases.EnumerateObject()
             .GroupBy(
                 static benchmarkCase => benchmarkCase.Value

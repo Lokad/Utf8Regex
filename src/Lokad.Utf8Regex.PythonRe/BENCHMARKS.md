@@ -23,10 +23,12 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 ## Snapshot summary
 
 - Generated: `2026-08-26T15:42:30.8127349+00:00`
-- Snapshot SHA-256: `25B30A88F3770CDB0A5E772ADD993AA2BA3F9E9D9E20376A01C08048A849B5F8`
-- Schema: `9`
+- Snapshot SHA-256: `442044E64928EF7D8E0C339E5F30A63094E4D2DF1183144290B2CBD38524B0AA`
+- Schema: `10`
 - Catalog SHA-256: `2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A`
 - Cases: `90`
+- Lifecycle families: `0`
+- Scaling families: `0`
 - Public Status: `26` managed faster, `0` equivalent, `6` CPython faster, `53` inconclusive, `5` unqualified
 - Historical point measurement environments represented: `11`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
@@ -202,11 +204,13 @@ Historical point rows span more than one measurement environment. Consult the JS
 
 ### Construction and first call
 
-No benchmark rows are cataloged in this section yet.
+These are contextual uncached-construction throughput measurements. They never alter warm public Status. CPython construction calls the standard-library compiler directly so the `re.compile` cache cannot turn construction into a cache lookup; first-search rows construct a fresh pattern and execute one successful search in the same timed operation.
+
+No lifecycle families have been published yet.
 
 ### Scaling evidence
 
-No benchmark rows are cataloged in this section yet.
+No scaling families have been published yet.
 
 ### Comparator and semantic exclusions
 
@@ -324,6 +328,7 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ./bench.ps1 -CommandArgs "--verify-pythonre-coverage-contract"
 ./bench.ps1 -CommandArgs "--measure-pythonre-case","literal/search","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmark-case","literal/search","200","7"
+./bench.ps1 -CommandArgs "--refresh-pythonre-lifecycle","32","5"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmarks","200","7"
 ./bench.ps1 -CommandArgs "--verify-pythonre-benchmark-markdown"
 ```

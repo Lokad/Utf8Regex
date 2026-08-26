@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 or 10 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -133,6 +133,8 @@ internal static partial class PythonReBenchmarkReporter
             writer.WriteLine($"- Catalog SHA-256: `{snapshot.CatalogSha256}`");
         }
         writer.WriteLine($"- Cases: `{rows.Length}`");
+        writer.WriteLine($"- Lifecycle families: `{snapshot.Lifecycle.Count}`");
+        writer.WriteLine($"- Scaling families: `{snapshot.ScalingFamilies.Count}`");
         writer.WriteLine(
             $"- Public Status: `{GetStatusCount("ManagedFaster")}` managed faster, " +
             $"`{GetStatusCount("Equivalent")}` equivalent, " +
@@ -190,9 +192,15 @@ internal static partial class PythonReBenchmarkReporter
             writer.WriteLine("|---|---:|");
             foreach (var section in s_pythonReCoverageSections)
             {
-                writer.WriteLine(
-                    $"| {section} | " +
-                    $"{coverageRows.Count(row => row.Value.Coverage!.Section.Equals(section, StringComparison.Ordinal))} |");
+                var count = section switch
+                {
+                    "Construction and first call" => snapshot.Lifecycle.Count,
+                    "Scaling evidence" => snapshot.ScalingFamilies.Count,
+                    _ => coverageRows.Count(row => row.Value.Coverage!.Section.Equals(
+                        section,
+                        StringComparison.Ordinal)),
+                };
+                writer.WriteLine($"| {section} | {count} |");
             }
 
             writer.WriteLine();
@@ -242,6 +250,18 @@ internal static partial class PythonReBenchmarkReporter
                 : ["Results"];
             foreach (var section in resultSections)
             {
+                if (section.Equals("Construction and first call", StringComparison.Ordinal))
+                {
+                    WriteLifecycleSection();
+                    continue;
+                }
+
+                if (section.Equals("Scaling evidence", StringComparison.Ordinal))
+                {
+                    WriteScalingSection();
+                    continue;
+                }
+
                 var sectionRows = snapshot.SchemaVersion >= 8
                     ? rows.Where(row => row.Value.Coverage?.Section.Equals(
                         section,
@@ -340,6 +360,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-coverage-contract\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-lifecycle\",\"32\",\"5\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-benchmark-markdown\"");
         writer.WriteLine("```");
@@ -358,6 +379,51 @@ internal static partial class PythonReBenchmarkReporter
                     .Select(static value => $"`{value}`"));
             writer.WriteLine($"| {axis} | {formatted} |");
         }
+
+        void WriteLifecycleSection()
+        {
+            writer.WriteLine("### Construction and first call");
+            writer.WriteLine();
+            writer.WriteLine("These are contextual uncached-construction throughput measurements. They never alter warm public Status. CPython construction calls the standard-library compiler directly so the `re.compile` cache cannot turn construction into a cache lookup; first-search rows construct a fresh pattern and execute one successful search in the same timed operation.");
+            writer.WriteLine();
+            if (snapshot.Lifecycle.Count == 0)
+            {
+                writer.WriteLine("No lifecycle families have been published yet.");
+                writer.WriteLine();
+                return;
+            }
+
+            writer.WriteLine("| Family | Pattern | Input | Parse + translate | Core backend create | Adapter construct | Adapter construct + first search | CPython compile | CPython compile + first search |");
+            writer.WriteLine("|---|---|---:|---:|---:|---:|---:|---:|---:|");
+            foreach (var (id, lifecycle) in snapshot.Lifecycle)
+            {
+                writer.WriteLine(
+                    $"| `{id}` | `{lifecycle.Pattern}` | {lifecycle.InputUtf8Bytes:N0} B | " +
+                    $"{FormatLifecycle(lifecycle.ParseTranslate)} | " +
+                    $"{FormatLifecycle(lifecycle.BackendCreation)} | " +
+                    $"{FormatLifecycle(lifecycle.AdapterConstruction)} | " +
+                    $"{FormatLifecycle(lifecycle.ConstructFirstSearch)} | " +
+                    $"{FormatLifecycle(lifecycle.CpythonCompile)} | " +
+                    $"{FormatLifecycle(lifecycle.CpythonCompileFirstSearch)} |");
+            }
+
+            writer.WriteLine();
+        }
+
+        void WriteScalingSection()
+        {
+            writer.WriteLine("### Scaling evidence");
+            writer.WriteLine();
+            writer.WriteLine(snapshot.ScalingFamilies.Count == 0
+                ? "No scaling families have been published yet."
+                : $"The snapshot contains `{snapshot.ScalingFamilies.Count}` bounded scaling families; each family is rendered with its own dimension and stable-route evidence.");
+            writer.WriteLine();
+        }
+
+        static string FormatLifecycle(PythonReLifecycleTiming timing) =>
+            timing.ManagedAllocatedBytes is long allocated
+                ? $"{timing.MedianMicroseconds:N3} us / {allocated:N0} B"
+                : $"{timing.MedianMicroseconds:N3} us";
     }
 
     private static string FormatPythonReStatus(PythonReQualificationMeasurement? qualification)

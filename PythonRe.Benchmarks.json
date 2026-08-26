@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 9,
+  "SchemaVersion": 10,
   "GeneratedAtUtc": "2026-08-26T15:42:30.8127349+00:00",
   "CatalogSha256": "2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A",
   "CatalogCaseIds": [
@@ -43436,5 +43436,7 @@
         }
       }
     }
-  }
+  },
+  "Lifecycle": {},
+  "ScalingFamilies": {}
 }

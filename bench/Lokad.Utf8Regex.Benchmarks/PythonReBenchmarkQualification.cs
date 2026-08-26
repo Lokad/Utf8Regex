@@ -1840,6 +1840,8 @@ internal static partial class PythonReBenchmarkReporter
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
+            Lifecycle = snapshot.Lifecycle,
+            ScalingFamilies = snapshot.ScalingFamilies,
         });
     }
 
@@ -2102,6 +2104,24 @@ internal static partial class PythonReBenchmarkReporter
             },
             "Measured");
 
+        internal CpythonStreamResponse MeasureLifecycle(
+            string pattern,
+            string input,
+            int options,
+            int iterations,
+            int samples) => Send(
+            new CpythonStreamCommand
+            {
+                ProtocolVersion = PythonReQualificationProtocolVersion,
+                Kind = "MeasureLifecycle",
+                Pattern = pattern,
+                InputBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(input)),
+                Options = options,
+                Iterations = iterations,
+                Samples = samples,
+            },
+            "LifecycleMeasured");
+
         public void Dispose()
         {
             if (_disposed)
@@ -2270,6 +2290,7 @@ internal sealed class CpythonStreamCommand
     public int? MinimumMilliseconds { get; init; }
     public int? MinimumCalls { get; init; }
     public int? MaximumBatches { get; init; }
+    public int? Samples { get; init; }
 }
 
 internal sealed class CpythonStreamResponse
@@ -2289,6 +2310,7 @@ internal sealed class CpythonStreamResponse
     public int? ByteControlChecksum { get; init; }
     public ulong? ByteControlSemanticDigest { get; init; }
     public ulong? ByteControlConsumptionChecksum { get; init; }
+    public PythonReCpythonLifecycleResponse? Lifecycle { get; init; }
     public int[] GcCollections { get; init; } = [];
     public string? ErrorType { get; init; }
     public string? Message { get; init; }

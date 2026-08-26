@@ -975,6 +975,70 @@ def require_positive_integer(command: dict[str, Any], name: str, maximum: int) -
     return value
 
 
+def measure_lifecycle_operation(
+    operation: Any,
+    iterations: int,
+    samples: int,
+) -> dict[str, Any]:
+    warmup_started = time.perf_counter_ns()
+    warmup_calls = 0
+    checksum = 0
+    while warmup_calls < max(32, iterations * 2):
+        checksum ^= operation()
+        warmup_calls += 1
+        if time.perf_counter_ns() - warmup_started >= 20_000_000:
+            break
+
+    warmup_elapsed = time.perf_counter_ns() - warmup_started
+    microseconds: list[float] = []
+    for _ in range(samples):
+        local = 0
+        started = time.perf_counter_ns()
+        for _ in range(iterations):
+            local ^= operation()
+        elapsed = time.perf_counter_ns() - started
+        checksum ^= local
+        microseconds.append(elapsed / iterations / 1_000)
+
+    if checksum == -1:
+        raise RuntimeError("Unreachable lifecycle checksum sentinel.")
+    microseconds.sort()
+    return {
+        "MedianMicroseconds": statistics.median(microseconds),
+        "MinimumMicroseconds": microseconds[0],
+        "MaximumMicroseconds": microseconds[-1],
+        "ManagedAllocatedBytes": None,
+        "WarmupCalls": warmup_calls,
+        "WarmupMilliseconds": warmup_elapsed / 1_000_000,
+    }
+
+
+def measure_lifecycle(command: dict[str, Any]) -> dict[str, Any]:
+    pattern = command.get("Pattern")
+    encoded_input = command.get("InputBase64")
+    options = command.get("Options")
+    if not isinstance(pattern, str) or not isinstance(encoded_input, str) or not isinstance(options, int):
+        raise ValueError("Lifecycle pattern, input, and options are required.")
+    input_text = base64.b64decode(encoded_input, validate=True).decode("utf-8", "strict")
+    iterations = require_positive_integer(command, "Iterations", 128)
+    samples = require_positive_integer(command, "Samples", 9)
+    flags = flags_from_options(options)
+    compiler = re._compiler
+
+    def compile_pattern() -> int:
+        return compiler.compile(pattern, flags).groups
+
+    def compile_first_search() -> int:
+        return 1 if compiler.compile(pattern, flags).search(input_text) is not None else 0
+
+    first_search_matched = compile_first_search() == 1
+    return {
+        "FirstSearchMatched": first_search_matched,
+        "Compile": measure_lifecycle_operation(compile_pattern, iterations, samples),
+        "CompileFirstSearch": measure_lifecycle_operation(compile_first_search, iterations, samples),
+    }
+
+
 def measure_stream_lane(
     runner: CaseRunner,
     lane: str,
@@ -1129,6 +1193,16 @@ def run_stream_worker() -> int:
                     }
                 )
                 return 0
+
+            if kind == "MeasureLifecycle":
+                write_stream_message(
+                    {
+                        "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                        "Kind": "LifecycleMeasured",
+                        "Lifecycle": measure_lifecycle(command),
+                    }
+                )
+                continue
 
             if runner is None:
                 raise RuntimeError("Prepare must complete before timing commands.")
