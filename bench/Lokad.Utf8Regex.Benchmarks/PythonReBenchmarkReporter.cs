@@ -2042,6 +2042,9 @@ internal sealed class PythonReBenchmarkContext
 
     internal bool UsesZeroOffsetUtf8ValueFastPath => _pythonRegex.DebugUsesZeroOffsetUtf8ValueFastPath;
 
+    internal bool UsesAsciiLiteralPrefixDigitMatchFastPath =>
+        _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath;
+
     internal string OneShotCoreExecutionKind => GetOneShotCoreRegex()
         .Inspection.ExecutionKind.ToString();
 

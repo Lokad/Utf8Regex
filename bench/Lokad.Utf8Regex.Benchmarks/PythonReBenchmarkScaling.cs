@@ -6,6 +6,8 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const double PythonReScalingTargetSampleMilliseconds = 10;
     private const int PythonReScalingMaximumIterations = 2_000_000;
+    private const int PythonReScalingShortRouteCalibrationIterations = 10_000;
+    private const int PythonReScalingShortRouteWarmupCalls = 1_000_000;
 
     private static int MeasureOneShotScaling(string id, int minimumIterations, int samples)
     {
@@ -27,10 +29,10 @@ internal static partial class PythonReBenchmarkReporter
             return 1;
         }
 
-        if (sourceCase.Id is not "literal/search" and not "literal/search-miss")
+        if (sourceCase.Id is not "literal/search" and not "literal/search-miss" and not "prefix/match")
         {
             Console.Error.WriteLine(
-                "PythonRe one-shot scaling currently requires literal/search or literal/search-miss.");
+                "PythonRe one-shot scaling currently requires literal/search, literal/search-miss, or prefix/match.");
             return 1;
         }
 
@@ -47,7 +49,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             foreach (var inputSize in inputSizes)
             {
-                var subject = BuildOneShotScalingSubject(sourceCase.Pattern, position, inputSize);
+                var subject = BuildOneShotScalingSubject(sourceCase, position, inputSize);
                 var benchmarkCase = sourceCase with
                 {
                     Id = $"scaling/{DescribeOneShotPosition(position)}/{inputSize}",
@@ -126,10 +128,12 @@ internal static partial class PythonReBenchmarkReporter
         CpythonStreamWorker worker)
     {
         var context = new PythonReBenchmarkContext(benchmarkCase);
-        if (!context.SupportsOneShotPhases || !context.UsesZeroOffsetUtf8ValueFastPath)
+        if (!context.SupportsOneShotPhases ||
+            !context.UsesZeroOffsetUtf8ValueFastPath &&
+            !context.UsesAsciiLiteralPrefixDigitMatchFastPath)
         {
             throw new InvalidOperationException(
-                $"PythonRe one-shot scaling '{benchmarkCase.Id}' did not retain the direct exact-literal route.");
+                $"PythonRe one-shot scaling '{benchmarkCase.Id}' did not retain its direct one-shot route.");
         }
 
         var eligibility = PythonReBenchmarkCatalog.GetByteControlEligibility(
@@ -294,9 +298,13 @@ internal static partial class PythonReBenchmarkReporter
         ulong expectedSemanticDigest,
         ulong expectedConsumptionToken)
     {
+        var minimumCalls = iterations >= PythonReScalingShortRouteCalibrationIterations
+            ? PythonReScalingShortRouteWarmupCalls
+            : 1_024;
+        var maximumCalls = Math.Max((long)minimumCalls, iterations * 8L);
         var elapsed = Stopwatch.StartNew();
         var calls = 0;
-        while ((elapsed.ElapsedMilliseconds < 20 || calls < 1_024) && calls < iterations * 8L)
+        while ((elapsed.ElapsedMilliseconds < 20 || calls < minimumCalls) && calls < maximumCalls)
         {
             var batch = context.MeasurePythonReQualificationBatch(iterations);
             VerifyManagedResult(
@@ -311,10 +319,29 @@ internal static partial class PythonReBenchmarkReporter
     }
 
     private static string BuildOneShotScalingSubject(
-        string pattern,
+        PythonReBenchmarkCase sourceCase,
         PythonReOneShotPosition position,
         int inputSize)
     {
+        if (sourceCase.Id == "prefix/match")
+        {
+            const string match = "header:12345";
+            const string incomplete = "header:";
+            if (inputSize < match.Length)
+            {
+                throw new InvalidOperationException("PythonRe prefix Match scaling input is too short.");
+            }
+
+            return position switch
+            {
+                PythonReOneShotPosition.HitAtStart => match + new string('x', inputSize - match.Length),
+                PythonReOneShotPosition.HitLate => new string('x', inputSize - match.Length) + match,
+                PythonReOneShotPosition.Miss => incomplete + new string('x', inputSize - incomplete.Length),
+                _ => throw new ArgumentOutOfRangeException(nameof(position)),
+            };
+        }
+
+        var pattern = sourceCase.Pattern;
         if (pattern != "needle" || inputSize < pattern.Length)
         {
             throw new InvalidOperationException(
