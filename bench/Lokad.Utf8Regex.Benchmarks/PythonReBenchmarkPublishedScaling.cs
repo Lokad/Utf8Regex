@@ -767,18 +767,18 @@ internal static partial class PythonReBenchmarkReporter
             .ToArray();
 
     private static PythonReScalingPointDefinition[] CreateOutputGrowthScalingPoints() =>
-        new[] { 0, 4, 16, 64 }
+        new[] { 16, 256, 4_096, 16_384 }
             .Select(replacementLength =>
             {
-                var outputBytes = 256 * (replacementLength + 1);
+                var outputBytes = replacementLength + 9;
                 return ScalingPoint(
                     $"{outputBytes} B output",
                     outputBytes,
-                    workUnits: 256,
+                    workUnits: 1,
                     outputBytes,
-                    "x",
+                    "!",
                     PythonReBenchmarkOperation.ReplaceString,
-                    string.Concat(Enumerable.Repeat("x,", 256)),
+                    "left!right",
                     new string('r', replacementLength),
                     includesResultMaterialization: true,
                     "Output growth");
@@ -802,21 +802,22 @@ internal static partial class PythonReBenchmarkReporter
 
     private static PythonReScalingPointDefinition[] CreateUnicodeDensityScalingPoints()
     {
+        const int scalarCount = 16_384;
         const string suffix = "needle";
         return
         [
-            ScalingPoint("1-byte scalar", 1, 1, 0, "(?P<target>needle)",
-                PythonReBenchmarkOperation.SearchDetailed, new string('x', 65_536) + suffix,
+            ScalingPoint("1-byte scalars", 1, scalarCount, 0, "(?P<target>needle)",
+                PythonReBenchmarkOperation.SearchDetailed, new string('x', scalarCount) + suffix,
                 string.Empty, true, "Unicode coordinate density"),
-            ScalingPoint("2-byte scalar", 2, 1, 0, "(?P<target>needle)",
-                PythonReBenchmarkOperation.SearchDetailed, new string('Ж', 32_768) + suffix,
+            ScalingPoint("2-byte scalars", 2, scalarCount, 0, "(?P<target>needle)",
+                PythonReBenchmarkOperation.SearchDetailed, new string('Ж', scalarCount) + suffix,
                 string.Empty, true, "Unicode coordinate density"),
-            ScalingPoint("3-byte scalar", 3, 1, 0, "(?P<target>needle)",
-                PythonReBenchmarkOperation.SearchDetailed, new string('東', 21_845) + "x" + suffix,
+            ScalingPoint("3-byte scalars", 3, scalarCount, 0, "(?P<target>needle)",
+                PythonReBenchmarkOperation.SearchDetailed, new string('東', scalarCount) + suffix,
                 string.Empty, true, "Unicode coordinate density"),
-            ScalingPoint("4-byte scalar", 4, 1, 0, "(?P<target>needle)",
+            ScalingPoint("4-byte scalars", 4, scalarCount, 0, "(?P<target>needle)",
                 PythonReBenchmarkOperation.SearchDetailed,
-                string.Concat(Enumerable.Repeat("😀", 16_384)) + suffix,
+                string.Concat(Enumerable.Repeat("😀", scalarCount)) + suffix,
                 string.Empty, true, "Unicode coordinate density"),
         ];
     }
