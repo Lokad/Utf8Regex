@@ -22,13 +22,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T15:52:42.9513603+00:00`
-- Snapshot SHA-256: `44F8AF768D70A8E762572F076D0CE40DC4DC647FF72BA68CFE5E9BBBA747E6D0`
+- Generated: `2026-08-26T16:12:16.1014968+00:00`
+- Snapshot SHA-256: `69AD709459D33AB835FDA6F657D226F534552F5CCFF9FA77AB59285CCB630AC6`
 - Schema: `10`
 - Catalog SHA-256: `2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A`
 - Cases: `90`
 - Lifecycle families: `4`
-- Scaling families: `0`
+- Scaling families: `7`
 - Public Status: `26` managed faster, `0` equivalent, `6` CPython faster, `53` inconclusive, `5` unqualified
 - Historical point measurement environments represented: `11`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
@@ -60,7 +60,7 @@ This catalog currently covers `90` operation rows over `45` distinct patterns. Z
 | Split | 9 |
 | Real-corpus workloads | 4 |
 | Construction and first call | 4 |
-| Scaling evidence | 0 |
+| Scaling evidence | 7 |
 | Comparator and semantic exclusions | 0 |
 
 ### Reused subjects and corpus identities
@@ -217,7 +217,93 @@ These are contextual uncached-construction throughput measurements. They never a
 
 These bounded, warmed families vary one named dimension while preserving equivalent managed and CPython result contracts. They are mechanism and complexity guards, not extra warm-Status rows: a point ratio never declares an implementation winner, and a passing fit gate only says that the local trend is stable enough to interpret. A rejected family remains visible but cannot support a scaling claim. The JSON retains every alternating paired sample, lane order, batch duration, managed allocation, GC deltas, warmup, and CPU placement so noisy curves remain auditable.
 
-No scaling families have been published yet.
+| Family | Dimension | Operation | Points | Managed route | Fit gate | Maximum residual M / C | Maximum spread M / C | Max order effect | Min lane |
+|---|---|---|---:|---|---|---:|---:|---:|---:|
+| `candidate-position` | candidate byte position | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Reject** | 2.2% / 57.7% | 1.405 / 1.122 | 2.049 | 9.7 ms |
+| `capture-count` | capture group count | `SearchDetailed` | 4 | `Utf8Regex/AsciiSimplePattern; detailed capture projection` | **Reject** | 7.4% / 7.4% | 1.121 / 1.195 | 1.095 | 8.8 ms |
+| `input-length` | UTF-8 input bytes | `Search` | 4 | `Utf8Regex/ExactAsciiLiteral; value ranges` | **Reject** | 111.1% / 1.4% | 1.056 / 1.017 | 1.036 | 9.5 ms |
+| `match-count` | discovered match count | `Count` | 4 | `Utf8Regex/ExactAsciiLiteral; Python-style count progression` | **Reject** | 19.3% / 6.2% | 1.181 / 1.171 | 1.229 | 6.1 ms |
+| `output-growth` | replacement output UTF-8 bytes | `ReplaceString` | 4 | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | **Reject** | 37.3% / 1.8% | 1.192 / 1.214 | 1.336 | 6.9 ms |
+| `unicode-coordinate-density` | UTF-8 bytes per scalar | `SearchDetailed` | 4 | `Utf8Regex/ExactAsciiLiteral; detailed capture projection` | **Reject** | 237.8% / 7.2% | 2.197 / 1.213 | 2.352 | 7.7 ms |
+| `zero-width-progression` | zero-width-aware result count | `FindAllStrings` | 4 | `strict UTF-8 decode; .NET Regex; findall string shaping` | **Reject** | 45.6% / 25.5% | 1.300 / 1.173 | 1.459 | 2.8 ms |
+
+#### `candidate-position`
+
+Dimension: candidate byte position. Result contract: `ConsumedGroupZeroRanges`. Samples: `5`. Fit gate: **Reject** — maximum relative residual is 2.2%/57.7%; maximum spread is 1.405/1.122; maximum symmetric order effect is 2.049. Robust slopes are 0.000016 us/unit managed and 0.000194 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| byte 0 | 0 | 65,536 B | 1 | 0 B | 1.030 us | 0.156 us | 6.610x [6.218, 6.864] | 1.009 | 0 B |
+| byte 16384 | 16,384 | 65,536 B | 1 | 0 B | 1.257 us | 3.153 us | 0.395x [0.387, 0.402] | 1.004 | 0 B |
+| byte 32768 | 32,768 | 65,536 B | 1 | 0 B | 1.568 us | 6.177 us | 0.230x [0.204, 0.715] | 2.049 | 0 B |
+| byte 65530 | 65,530 | 65,536 B | 1 | 0 B | 2.066 us | 13.480 us | 0.154x [0.151, 0.350] | 1.280 | 0 B |
+
+#### `capture-count`
+
+Dimension: capture group count. Result contract: `EagerMaterializedResult`. Samples: `5`. Fit gate: **Reject** — maximum spread is 1.121/1.195. Robust slopes are 0.062382 us/unit managed and 0.110203 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 captures | 0 | 8 B | 1 | 0 B | 0.140 us | 0.412 us | 0.334x [0.312, 0.390] | 1.038 | 432 B |
+| 2 captures | 2 | 8 B | 3 | 0 B | 0.294 us | 0.653 us | 0.445x [0.365, 0.546] | 1.095 | 848 B |
+| 4 captures | 4 | 8 B | 5 | 0 B | 0.382 us | 0.899 us | 0.438x [0.387, 0.568] | 1.000 | 1,240 B |
+| 8 captures | 8 | 8 B | 9 | 0 B | 0.653 us | 1.214 us | 0.473x [0.447, 0.558] | 0.923 | 2,024 B |
+
+#### `input-length`
+
+Dimension: UTF-8 input bytes. Result contract: `ConsumedGroupZeroRanges`. Samples: `5`. Fit gate: **Reject** — maximum relative residual is 111.1%/1.4%. Robust slopes are 0.000024 us/unit managed and 0.000183 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 64 B | 64 | 64 B | 0 | 0 B | 0.219 us | 0.099 us | 2.215x [2.105, 2.256] | 0.970 | 0 B |
+| 1024 B | 1,024 | 1,024 B | 0 | 0 B | 0.075 us | 0.278 us | 0.269x [0.262, 0.282] | 1.036 | 0 B |
+| 16384 B | 16,384 | 16,384 B | 0 | 0 B | 0.430 us | 3.083 us | 0.139x [0.139, 0.140] | 0.995 | 0 B |
+| 65536 B | 65,536 | 65,536 B | 0 | 0 B | 1.851 us | 12.071 us | 0.154x [0.146, 0.158] | 0.978 | 0 B |
+
+#### `match-count`
+
+Dimension: discovered match count. Result contract: `ScalarResult`. Samples: `5`. Fit gate: **Reject** — maximum spread is 1.181/1.171; maximum symmetric order effect is 1.229. Robust slopes are 0.006171 us/unit managed and 0.042671 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 matches | 0 | 65,536 B | 0 | 0 B | 1.459 us | 13.328 us | 0.108x [0.099, 0.126] | 0.978 | 0 B |
+| 16 matches | 16 | 65,536 B | 16 | 0 B | 1.987 us | 15.284 us | 0.136x [0.123, 0.191] | 1.229 | 0 B |
+| 64 matches | 64 | 65,536 B | 64 | 0 B | 2.341 us | 15.615 us | 0.133x [0.130, 0.158] | 0.925 | 0 B |
+| 256 matches | 256 | 65,536 B | 256 | 0 B | 2.726 us | 24.909 us | 0.110x [0.108, 0.116] | 1.019 | 0 B |
+
+#### `output-growth`
+
+Dimension: replacement output UTF-8 bytes. Result contract: `EagerMaterializedResult`. Samples: `5`. Fit gate: **Reject** — maximum relative residual is 37.3%/1.8%; maximum spread is 1.192/1.214; maximum symmetric order effect is 1.336. Robust slopes are 0.001682 us/unit managed and 0.000037 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 25 B output | 25 | 10 B | 1 | 25 B | 0.172 us | 0.166 us | 1.048x [0.787, 1.251] | 1.027 | 648 B |
+| 265 B output | 265 | 10 B | 1 | 265 B | 0.704 us | 0.179 us | 4.035x [3.221, 4.772] | 0.991 | 4,424 B |
+| 4105 B output | 4,105 | 10 B | 1 | 4,105 B | 7.374 us | 0.312 us | 28.524x [18.815, 30.966] | 0.749 | 58,472 B |
+| 16393 B output | 16,393 | 10 B | 1 | 16,393 B | 26.789 us | 0.771 us | 34.073x [27.000, 48.172] | 0.761 | 252,888 B |
+
+#### `unicode-coordinate-density`
+
+Dimension: UTF-8 bytes per scalar. Result contract: `EagerMaterializedResult`. Samples: `5`. Fit gate: **Reject** — maximum relative residual is 237.8%/7.2%; maximum spread is 2.197/1.213; maximum symmetric order effect is 2.352. Robust slopes are 58.227311 us/unit managed and 0.334789 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1-byte scalars | 1 | 16,390 B | 16,384 | 0 B | 3.576 us | 3.503 us | 0.858x [0.645, 1.461] | 0.604 | 33,432 B |
+| 2-byte scalars | 2 | 32,774 B | 16,384 | 0 B | 44.797 us | 3.929 us | 11.635x [11.120, 12.591] | 0.932 | 101,104 B |
+| 3-byte scalars | 3 | 49,158 B | 16,384 | 0 B | 77.196 us | 4.350 us | 19.307x [15.974, 23.275] | 0.814 | 101,104 B |
+| 4-byte scalars | 4 | 65,542 B | 16,384 | 0 B | 229.278 us | 4.248 us | 57.787x [44.398, 119.920] | 2.352 | 201,456 B |
+
+#### `zero-width-progression`
+
+Dimension: zero-width-aware result count. Result contract: `EagerMaterializedResult`. Samples: `5`. Fit gate: **Reject** — maximum relative residual is 45.6%/25.5%; maximum spread is 1.300/1.173; maximum symmetric order effect is 1.459; minimum lane duration is 2.811 ms. Robust slopes are 0.155984 us/unit managed and 0.072200 us/unit CPython.
+
+| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 48 results | 48 | 32 B | 48 | 0 B | 12.082 us | 3.757 us | 3.188x [2.797, 5.035] | 0.989 | 20,816 B |
+| 192 results | 192 | 128 B | 192 | 0 B | 23.532 us | 16.067 us | 1.510x [1.422, 2.113] | 0.931 | 82,880 B |
+| 768 results | 768 | 512 B | 768 | 0 B | 93.415 us | 60.006 us | 1.557x [1.348, 2.236] | 1.151 | 330,992 B |
+| 3072 results | 3,072 | 2,048 B | 3,072 | 0 B | 588.587 us | 209.744 us | 2.397x [1.679, 6.740] | 1.459 | 1,323,296 B |
+
 
 ### Comparator and semantic exclusions
 

@@ -19,6 +19,17 @@ public sealed class PythonReBenchmarkSnapshotTests
         "split/captures",
     ];
 
+    private static readonly string[] s_scalingFamilyIds =
+    [
+        "candidate-position",
+        "capture-count",
+        "input-length",
+        "match-count",
+        "output-growth",
+        "unicode-coordinate-density",
+        "zero-width-progression",
+    ];
+
     [Fact]
     public void PythonReBenchmarkSnapshotPreservesComparativeEvidence()
     {
@@ -26,7 +37,15 @@ public sealed class PythonReBenchmarkSnapshotTests
         var root = document.RootElement;
         Assert.Equal(10, root.GetProperty("SchemaVersion").GetInt32());
         Assert.Equal(JsonValueKind.Object, root.GetProperty("Lifecycle").ValueKind);
-        Assert.Equal(JsonValueKind.Object, root.GetProperty("ScalingFamilies").ValueKind);
+        var scalingFamilies = root.GetProperty("ScalingFamilies");
+        Assert.Equal(JsonValueKind.Object, scalingFamilies.ValueKind);
+        Assert.Equal(
+            s_scalingFamilyIds,
+            scalingFamilies.EnumerateObject().Select(static family => family.Name).ToArray());
+        foreach (var family in scalingFamilies.EnumerateObject())
+        {
+            AssertScalingFamily(family.Value);
+        }
         var catalogSha256 = root.GetProperty("CatalogSha256").GetString() ?? string.Empty;
         Assert.Matches("^[0-9A-F]{64}$", catalogSha256);
 
@@ -161,6 +180,10 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Contains("### Reused subjects and corpus identities", page, StringComparison.Ordinal);
         Assert.Contains("### Direct matching", page, StringComparison.Ordinal);
         Assert.Contains("### Scaling evidence", page, StringComparison.Ordinal);
+        Assert.Contains("every alternating paired sample", page, StringComparison.Ordinal);
+        Assert.Contains("--verify-pythonre-scaling", page, StringComparison.Ordinal);
+        Assert.All(s_scalingFamilyIds, familyId =>
+            Assert.Contains($"#### `{familyId}`", page, StringComparison.Ordinal));
         Assert.Contains("contextual uncached-construction throughput", page, StringComparison.Ordinal);
         var statusCounts = cases.EnumerateObject()
             .GroupBy(
@@ -200,6 +223,73 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.InRange(measurement.GetProperty("EffectiveIterations").GetInt32(), 1, maximumIterations);
         Assert.True(measurement.GetProperty("WarmupCalls").GetInt32() > 0);
         Assert.True(measurement.GetProperty("WarmupMilliseconds").GetDouble() > 0);
+    }
+
+    private static void AssertScalingFamily(JsonElement family)
+    {
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("Dimension").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("Operation").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("ResultContract").GetString()));
+        Assert.Equal(5, family.GetProperty("Samples").GetInt32());
+        Assert.Contains(family.GetProperty("FitGate").GetString(), new[] { "Pass", "Reject" });
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("FitGateReason").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("ManagedRoute").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("CpuPolicy").GetString()));
+        Assert.False(string.IsNullOrWhiteSpace(family.GetProperty("CpuAffinityMask").GetString()));
+        Assert.True(family.GetProperty("MaximumOrderEffect").GetDouble() > 0);
+        Assert.True(family.GetProperty("MinimumLaneElapsedMilliseconds").GetDouble() > 0);
+
+        var managedEnvironment = family.GetProperty("ManagedEnvironment");
+        Assert.False(managedEnvironment.GetProperty("TrackedDirty").GetBoolean());
+        Assert.False(managedEnvironment.GetProperty("HasUntrackedFiles").GetBoolean());
+        Assert.Matches("^[0-9a-fA-F]{12,64}$", managedEnvironment.GetProperty("SourceCommit").GetString() ?? string.Empty);
+        var cpythonEnvironment = family.GetProperty("CpythonEnvironment");
+        Assert.Equal("CPython", cpythonEnvironment.GetProperty("Implementation").GetString());
+        Assert.Matches("^[0-9A-F]{64}$", cpythonEnvironment.GetProperty("ExecutableSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", cpythonEnvironment.GetProperty("RunnerSha256").GetString() ?? string.Empty);
+
+        var points = family.GetProperty("Points").EnumerateArray().ToArray();
+        Assert.Equal(4, points.Length);
+        foreach (var point in points)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(point.GetProperty("Label").GetString()));
+            Assert.True(point.GetProperty("Scale").GetInt32() >= 0);
+            Assert.True(point.GetProperty("InputUtf8Bytes").GetInt32() > 0);
+            Assert.Matches("^[0-9A-F]{64}$", point.GetProperty("InputSha256").GetString() ?? string.Empty);
+            Assert.Matches("^[0-9A-F]{16}$", point.GetProperty("SemanticDigest").GetString() ?? string.Empty);
+            Assert.True(point.GetProperty("ManagedIterations").GetInt32() > 0);
+            Assert.True(point.GetProperty("CpythonIterations").GetInt32() > 0);
+            Assert.True(point.GetProperty("ManagedWarmupCalls").GetInt32() > 0);
+            Assert.True(point.GetProperty("CpythonWarmupCalls").GetInt32() > 0);
+            Assert.True(point.GetProperty("ManagedMedianMicroseconds").GetDouble() > 0);
+            Assert.True(point.GetProperty("CpythonMedianMicroseconds").GetDouble() > 0);
+            Assert.True(point.GetProperty("RatioMedian").GetDouble() > 0);
+            Assert.True(point.GetProperty("RatioLower95").GetDouble() > 0);
+            Assert.True(point.GetProperty("RatioUpper95").GetDouble() > 0);
+            Assert.True(point.GetProperty("OrderEffect").GetDouble() > 0);
+            Assert.True(point.GetProperty("ManagedAllocatedBytes").GetInt64() >= 0);
+
+            var samples = point.GetProperty("Samples").EnumerateArray().ToArray();
+            Assert.Equal(5, samples.Length);
+            for (var index = 0; index < samples.Length; index++)
+            {
+                var sample = samples[index];
+                Assert.Contains(sample.GetProperty("Order").GetString(), new[] { "ManagedFirst", "CpythonFirst" });
+                if (index > 0)
+                {
+                    Assert.NotEqual(samples[index - 1].GetProperty("Order").GetString(), sample.GetProperty("Order").GetString());
+                }
+
+                Assert.True(sample.GetProperty("ManagedMicroseconds").GetDouble() > 0);
+                Assert.True(sample.GetProperty("CpythonMicroseconds").GetDouble() > 0);
+                Assert.True(sample.GetProperty("Ratio").GetDouble() > 0);
+                Assert.True(sample.GetProperty("ManagedElapsedMilliseconds").GetDouble() > 0);
+                Assert.True(sample.GetProperty("CpythonElapsedMilliseconds").GetDouble() > 0);
+                Assert.True(sample.GetProperty("ManagedAllocatedBytes").GetInt64() >= 0);
+                Assert.Equal(3, sample.GetProperty("ManagedGcCollections").GetArrayLength());
+                Assert.Equal(3, sample.GetProperty("CpythonGcCollections").GetArrayLength());
+            }
+        }
     }
 
     private static void AssertPairedEvidence(JsonElement evidence, string status)
