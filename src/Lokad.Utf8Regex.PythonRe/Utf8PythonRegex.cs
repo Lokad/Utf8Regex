@@ -156,9 +156,11 @@ public sealed class Utf8PythonRegex
         _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root);
         _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
-        _canUseManagedSplitFastPath = !_canMatchEmpty &&
-            (parseResult.CaptureGroupCount == 0 ||
-                parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root));
+        _canUseManagedSplitFastPath =
+            (!_canMatchEmpty &&
+                (parseResult.CaptureGroupCount == 0 ||
+                    parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root))) ||
+            (!_canMatchNonEmpty && parseResult.CaptureGroupCount == 0);
         _singleTrailingCapturePrefixLength = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 1 &&
             PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
@@ -1593,7 +1595,11 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
-        if (_canUseManagedSplitFastPath && startOffsetInBytes == 0 && maxSplit >= 0)
+        // Regex.Split advances empty matches by UTF-16 code unit, whereas Python advances by scalar.
+        if (_canUseManagedSplitFastPath &&
+            (!_canMatchEmpty || input.IndexOfAnyInRange((byte)0xF0, (byte)0xF4) < 0) &&
+            startOffsetInBytes == 0 &&
+            maxSplit >= 0)
         {
             return maxSplit is 0 or int.MaxValue
                 ? _managedRegex.Split(subject)

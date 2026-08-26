@@ -1413,6 +1413,10 @@ public sealed class Utf8PythonRegexTests
 
         Assert.False(new Utf8PythonRegex(@"(?P<separator>:+)").DebugUsesManagedSplitFastPath);
         Assert.False(new Utf8PythonRegex(@"(:*)").DebugUsesManagedSplitFastPath);
+        Assert.True(new Utf8PythonRegex("").DebugUsesManagedSplitFastPath);
+        Assert.True(new Utf8PythonRegex(@"(?=:)").DebugUsesManagedSplitFastPath);
+        Assert.False(new Utf8PythonRegex(@"\b|:+").DebugUsesManagedSplitFastPath);
+        Assert.False(new Utf8PythonRegex("x*|y").DebugUsesManagedSplitFastPath);
     }
 
     [Fact]
