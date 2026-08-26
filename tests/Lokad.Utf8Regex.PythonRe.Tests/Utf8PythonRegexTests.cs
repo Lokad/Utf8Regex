@@ -1417,6 +1417,15 @@ public sealed class Utf8PythonRegexTests
         Assert.True(new Utf8PythonRegex(@"(?=:)").DebugUsesManagedSplitFastPath);
         Assert.False(new Utf8PythonRegex(@"\b|:+").DebugUsesManagedSplitFastPath);
         Assert.False(new Utf8PythonRegex("x*|y").DebugUsesManagedSplitFastPath);
+
+        var asciiBoundary = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
+        Assert.True(asciiBoundary.DebugUsesAsciiWordBoundarySplit);
+        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], asciiBoundary.SplitToStrings("alpha beta"u8));
+        Assert.Equal<string?[]>(["", "alpha beta"], asciiBoundary.SplitToStrings("alpha beta"u8, maxSplit: 1));
+        Assert.Equal<string?[]>(["π", "alpha", " 𝒜", "beta", ""], asciiBoundary.SplitToStrings("πalpha 𝒜beta"u8));
+        var detailed = asciiBoundary.SplitDetailed("alpha beta"u8);
+        Assert.All(detailed, static item => Assert.False(item.IsCapture));
+        Assert.Equal<string?[]>(["", "alpha", " ", "beta", ""], detailed.Select(static item => item.ValueText).ToArray());
     }
 
     [Fact]

@@ -2321,6 +2321,8 @@ internal sealed class PythonReBenchmarkContext
             "strict UTF-8 decode; .NET Regex callback replacement; string shaping without count",
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
             "strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping",
+        PythonReBenchmarkOperation.SplitStrings when _pythonRegex.DebugUsesAsciiWordBoundarySplit =>
+            "strict UTF-8 decode; adapter ASCII-boundary split; string shaping",
         PythonReBenchmarkOperation.SplitStrings =>
             "strict UTF-8 decode; .NET Regex split; string shaping",
         PythonReBenchmarkOperation.SplitStringsLimited =>

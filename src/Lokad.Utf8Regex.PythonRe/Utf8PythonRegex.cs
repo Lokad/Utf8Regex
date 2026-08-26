@@ -1595,6 +1595,14 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
+        if (_canCountAsciiWordBoundariesDirectly &&
+            MatchTimeout == Timeout.InfiniteTimeSpan &&
+            startOffsetInBytes == 0 &&
+            maxSplit >= 0)
+        {
+            return SplitAsciiWordBoundaries(subject, maxSplit);
+        }
+
         // Regex.Split advances empty matches by UTF-16 code unit, whereas Python advances by scalar.
         if (_canUseManagedSplitFastPath &&
             (!_canMatchEmpty || input.IndexOfAnyInRange((byte)0xF0, (byte)0xF4) < 0) &&
@@ -1650,6 +1658,33 @@ public sealed class Utf8PythonRegex
         return parts.ToArray();
     }
 
+    private static string?[] SplitAsciiWordBoundaries(string subject, int maxSplit)
+    {
+        var parts = new List<string?>();
+        var lastIndex = 0;
+        var splitCount = 0;
+        var leftIsWord = false;
+        for (var position = 0; position <= subject.Length; position++)
+        {
+            var rightIsWord = position < subject.Length && IsAsciiWord(subject[position]);
+            if (leftIsWord != rightIsWord)
+            {
+                parts.Add(subject[lastIndex..position]);
+                lastIndex = position;
+                splitCount++;
+                if (maxSplit > 0 && splitCount >= maxSplit)
+                {
+                    break;
+                }
+            }
+
+            leftIsWord = rightIsWord;
+        }
+
+        parts.Add(subject[lastIndex..]);
+        return parts.ToArray();
+    }
+
     /// <summary>Splits the complete input and describes values and captured separators.</summary>
     public Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<byte> input) => SplitDetailed(input, 0, 0);
 
@@ -1662,6 +1697,26 @@ public sealed class Utf8PythonRegex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
+        if (_canCountAsciiWordBoundariesDirectly &&
+            MatchTimeout == Timeout.InfiniteTimeSpan &&
+            startOffsetInBytes == 0 &&
+            maxSplit >= 0)
+        {
+            var values = SplitAsciiWordBoundaries(subject, maxSplit);
+            var items = new Utf8PythonSplitItem[values.Length];
+            for (var index = 0; index < items.Length; index++)
+            {
+                items[index] = new Utf8PythonSplitItem
+                {
+                    ValueText = values[index],
+                    IsCapture = false,
+                    CaptureGroupNumber = 0,
+                };
+            }
+
+            return items;
+        }
+
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var parts = new List<Utf8PythonSplitItem>();
         var lastIndex = startOffsetInUtf16;
@@ -1836,6 +1891,8 @@ public sealed class Utf8PythonRegex
     internal PythonReDirectBackendKind DebugCountBackend => _countBackend;
 
     internal bool DebugUsesAsciiWordBoundaryCount => _canCountAsciiWordBoundariesDirectly;
+
+    internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 
