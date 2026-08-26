@@ -2058,7 +2058,9 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.Match => DescribeBackend(
             _pythonRegex.DebugMatchBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
-            "anchored value ranges"),
+            _pythonRegex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath
+                ? "strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges"
+                : "anchored value ranges"),
         PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             _pythonRegex.DebugFullMatchBackend,
             _pythonRegex.DebugUtf8FullMatchExecutionKind,
@@ -2953,27 +2955,23 @@ internal sealed class PythonReBenchmarkContext
             throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
         }
 
-        if (!InputBytes.AsSpan().StartsWith(_oneShotAsciiPrefix))
-        {
-            return default;
-        }
-
-        var end = _oneShotAsciiPrefix.Length;
-        var digitStart = end;
-        while ((uint)end < (uint)InputBytes.Length && InputBytes[end] is >= (byte)'0' and <= (byte)'9')
-        {
-            end++;
-        }
-
-        return end == digitStart
+        var end = PythonReAsciiPrefixDigitMatcher.MatchUnchecked(InputBytes, _oneShotAsciiPrefix);
+        return end == 0
             ? default
             : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
     }
 
     internal PythonReBenchmarkValueResult ExecuteValidatedAsciiPrefixDigitOneShot()
     {
-        _ = ExecuteOneShotValidation();
-        return ExecuteRawAsciiPrefixDigitOneShot();
+        if (!SupportsAsciiPrefixDigitOneShotReplay)
+        {
+            throw new InvalidOperationException("The ASCII prefix-digit one-shot replay is unavailable.");
+        }
+
+        var end = PythonReAsciiPrefixDigitMatcher.MatchValidated(InputBytes, _oneShotAsciiPrefix);
+        return end == 0
+            ? default
+            : new PythonReBenchmarkValueResult(true, 0, end, 0, end);
     }
 
     internal PythonReBenchmarkValueResult ExecuteCoreDirectOneShot()

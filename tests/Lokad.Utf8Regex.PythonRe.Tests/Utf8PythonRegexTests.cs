@@ -771,6 +771,47 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void MatchUsesValidatedAsciiLiteralPrefixDigitRoute()
+    {
+        var regex = new Utf8PythonRegex("header:[0-9]+");
+        var match = regex.Match("header:12345 café"u8);
+
+        Assert.True(regex.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(12, match.EndOffsetInBytes);
+        Assert.Equal(0, match.StartOffsetInUtf16);
+        Assert.Equal(12, match.EndOffsetInUtf16);
+        Assert.Equal("header:12345", match.GetValueString());
+        Assert.False(regex.Match("header: tail"u8).Success);
+        Assert.False(regex.Match("other:123"u8).Success);
+
+        var invalid = "header:123"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
+        Assert.Throws<ArgumentException>(() => regex.Match(invalid));
+    }
+
+    [Fact]
+    public void MatchRetainsFallbackOutsideAsciiLiteralPrefixDigitRoute()
+    {
+        var regex = new Utf8PythonRegex("header:[0-9]+");
+        var ignoreCase = new Utf8PythonRegex("header:[0-9]+", PythonReCompileOptions.IgnoreCase);
+        var reluctant = new Utf8PythonRegex("header:[0-9]+?");
+        var captured = new Utf8PythonRegex("header:([0-9]+)");
+        var finiteTimeout = new Utf8PythonRegex("header:[0-9]+", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
+
+        Assert.False(ignoreCase.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.False(reluctant.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.False(captured.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.False(finiteTimeout.DebugUsesAsciiLiteralPrefixDigitMatchFastPath);
+        Assert.Equal(1, reluctant.Match("header:123"u8).EndOffsetInBytes - "header:"u8.Length);
+
+        var offsetMatch = regex.Match("skipheader:123 tail"u8, "skip"u8.Length);
+        Assert.True(offsetMatch.Success);
+        Assert.Equal("skip"u8.Length, offsetMatch.StartOffsetInBytes);
+        Assert.Equal("skipheader:123"u8.Length, offsetMatch.EndOffsetInBytes);
+    }
+
+    [Fact]
     public void FindAllStringsRetainsMatchedValuesOutsideExactCaseSensitiveRoute()
     {
         var globalIgnoreCase = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase);

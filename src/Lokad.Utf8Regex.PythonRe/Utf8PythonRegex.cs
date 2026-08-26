@@ -98,6 +98,7 @@ public sealed class Utf8PythonRegex
     private readonly int _singleTrailingCapturePrefixLength;
     private readonly char? _separatedCaptureTupleSeparator;
     private readonly string? _repeatedExactFindAllString;
+    private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -175,6 +176,14 @@ public sealed class Utf8PythonRegex
                 parseResult.Options,
                 out var exactFindAllString)
                 ? exactFindAllString
+                : null;
+        _asciiLiteralPrefixDigitMatchPrefix = MatchTimeout == Timeout.InfiniteTimeSpan &&
+            parseResult.CaptureGroupCount == 0 &&
+            PythonReTranslator.TryGetAsciiLiteralPrefixDigitRepeat(
+                parseResult.Root,
+                parseResult.Options,
+                out var asciiLiteralPrefixDigitMatchPrefix)
+                ? asciiLiteralPrefixDigitMatchPrefix
                 : null;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
@@ -284,6 +293,24 @@ public sealed class Utf8PythonRegex
     /// <summary>Matches exactly at a zero-based UTF-8 byte offset.</summary>
     public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
+        if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null)
+        {
+            var end = PythonReAsciiPrefixDigitMatcher.MatchValidated(
+                input,
+                _asciiLiteralPrefixDigitMatchPrefix);
+            return end == 0
+                ? default
+                : Utf8PythonValueMatch.Create(input, new PythonReGroupData
+                {
+                    Number = 0,
+                    Success = true,
+                    StartOffsetInBytes = 0,
+                    EndOffsetInBytes = end,
+                    StartOffsetInUtf16 = 0,
+                    EndOffsetInUtf16 = end,
+                });
+        }
+
         if (_utf8Regex is not null)
         {
             ValidateStartOffset(input, startOffsetInBytes);
@@ -1824,6 +1851,9 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
 
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
+
+    internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
+        _asciiLiteralPrefixDigitMatchPrefix is not null;
 
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
 
