@@ -947,12 +947,15 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
             PythonReBenchmarkOperation.FindAllStrings or
-                PythonReBenchmarkOperation.FindAllUtf8 =>
+                PythonReBenchmarkOperation.FindAllUtf8 or
+                PythonReBenchmarkOperation.FindAllStructural =>
                 calibratedIterations >= PythonReQualificationShortFindAllCalibrationIterations
                     ? PythonReQualificationShortFindAllWarmupCalls
                     : PythonReQualificationFindAllWarmupCalls,
             PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
+                PythonReBenchmarkOperation.ReplaceStringLimited or
+                PythonReBenchmarkOperation.ReplaceEvaluatorString or
                 PythonReBenchmarkOperation.SubnString or
                 PythonReBenchmarkOperation.SubnUtf8 or
                 PythonReBenchmarkOperation.SubnEvaluatorString or
@@ -2050,6 +2053,8 @@ internal static partial class PythonReBenchmarkReporter
                 InputBase64 = Convert.ToBase64String(inputBytes),
                 Replacement = benchmarkCase.Replacement,
                 StartOffsetInBytes = benchmarkCase.Coverage.StartOffsetInBytes,
+                ReplacementCount = benchmarkCase.Coverage.ReplacementCount,
+                MaxSplit = benchmarkCase.Coverage.MaxSplit,
                 EnableByteControl = enableByteControl,
             },
             "Prepared");
@@ -2254,6 +2259,8 @@ internal sealed class CpythonStreamCommand
     public string? InputBase64 { get; init; }
     public string? Replacement { get; init; }
     public int? StartOffsetInBytes { get; init; }
+    public int? ReplacementCount { get; init; }
+    public int? MaxSplit { get; init; }
     public bool EnableByteControl { get; init; }
     public string? Lane { get; init; }
     public int? Iterations { get; init; }

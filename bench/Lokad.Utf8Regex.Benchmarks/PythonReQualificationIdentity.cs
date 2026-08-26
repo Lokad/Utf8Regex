@@ -71,6 +71,12 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SubnEvaluatorString => "managed-subn-evaluator-string-eager-v1",
             PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "managed-subn-evaluator-utf8-eager-v1",
             PythonReBenchmarkOperation.SplitStrings => "managed-split-strings-eager-v1",
+            PythonReBenchmarkOperation.CountFromOffset => "managed-count-from-offset-scalar-v1",
+            PythonReBenchmarkOperation.FindAllStructural => "managed-findall-structural-group-zero-eager-v1",
+            PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-string-limited-eager-v1",
+            PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-replace-evaluator-string-eager-v1",
+            PythonReBenchmarkOperation.SplitStringsLimited => "managed-split-strings-limited-eager-v1",
+            PythonReBenchmarkOperation.SplitDetailed => "managed-split-detailed-eager-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });
 
@@ -97,6 +103,12 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SubnEvaluatorString => "cpython-pattern-subn-callback-string-v1",
             PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "cpython-pattern-subn-callback-utf8-v1",
             PythonReBenchmarkOperation.SplitStrings => "cpython-pattern-split-strings-v1",
+            PythonReBenchmarkOperation.CountFromOffset => "cpython-finditer-from-offset-sum-v1",
+            PythonReBenchmarkOperation.FindAllStructural => "cpython-finditer-group-zero-structural-v1",
+            PythonReBenchmarkOperation.ReplaceStringLimited => "cpython-pattern-sub-limited-string-v1",
+            PythonReBenchmarkOperation.ReplaceEvaluatorString => "cpython-pattern-sub-callback-string-v1",
+            PythonReBenchmarkOperation.SplitStringsLimited => "cpython-pattern-split-limited-strings-v1",
+            PythonReBenchmarkOperation.SplitDetailed => "cpython-pattern-split-detailed-projection-v1",
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         });
 

@@ -52,6 +52,12 @@ SEMANTIC_OPERATION_TAGS = {
     "SplitStrings": 15,
     "SubnEvaluatorUtf8": 16,
     "SearchFromOffset": 17,
+    "CountFromOffset": 18,
+    "FindAllStructural": 19,
+    "ReplaceStringLimited": 20,
+    "ReplaceEvaluatorString": 21,
+    "SplitStringsLimited": 22,
+    "SplitDetailed": 23,
 }
 
 
@@ -268,6 +274,12 @@ class CaseRunner:
             raise ValueError("StartOffsetInBytes must be a UTF-8 scalar boundary.") from error
         self.start_offset_in_bytes = start_offset_in_bytes
         self.replacement = request["Replacement"]
+        self.replacement_count = request.get("ReplacementCount", -1)
+        self.max_split = request.get("MaxSplit", -1)
+        if not isinstance(self.replacement_count, int) or isinstance(self.replacement_count, bool):
+            raise ValueError("ReplacementCount must be an integer.")
+        if not isinstance(self.max_split, int) or isinstance(self.max_split, bool):
+            raise ValueError("MaxSplit must be an integer.")
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
         self.byte_pattern: re.Pattern[bytes] | None = None
         if request.get("EnableByteControl", False):
@@ -305,6 +317,8 @@ class CaseRunner:
             )
         if operation == "Count":
             return sum(1 for _ in self.pattern.finditer(input_text))
+        if operation == "CountFromOffset":
+            return sum(1 for _ in self.pattern.finditer(input_text, self.start_offset))
         if operation == "FindAllStrings":
             return self.pattern.findall(input_text)
         if operation == "FindAllUtf8":
@@ -314,10 +328,16 @@ class CaseRunner:
                 materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
                 for match in self.pattern.finditer(input_text)
             ]
+        if operation == "FindAllStructural":
+            return self.materialize_structural(input_text)
         if operation == "ReplaceString":
             return self.pattern.sub(self.replacement, input_text)
         if operation == "ReplaceUtf8":
             return self.pattern.sub(self.replacement, input_text).encode("utf-8")
+        if operation == "ReplaceStringLimited":
+            return self.pattern.sub(self.replacement, input_text, count=self.replacement_count)
+        if operation == "ReplaceEvaluatorString":
+            return self.replace_evaluator(input_text)
         if operation == "SubnString":
             return self.pattern.subn(self.replacement, input_text)
         if operation == "SubnUtf8":
@@ -329,6 +349,10 @@ class CaseRunner:
             return self.subn_evaluator(input_text, True)
         if operation == "SplitStrings":
             return self.pattern.split(input_text)
+        if operation == "SplitStringsLimited":
+            return self.pattern.split(input_text, maxsplit=self.max_split)
+        if operation == "SplitDetailed":
+            return self.materialize_split_detailed(input_text)
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
     def execute_predecoded_batch(self, iterations: int) -> tuple[int, Any]:
@@ -363,6 +387,10 @@ class CaseRunner:
         elif operation == "Count":
             for _ in range(iterations):
                 result = sum(1 for _ in pattern.finditer(input_text))
+        elif operation == "CountFromOffset":
+            start_offset = self.start_offset
+            for _ in range(iterations):
+                result = sum(1 for _ in pattern.finditer(input_text, start_offset))
         elif operation == "FindAllStrings":
             for _ in range(iterations):
                 result = pattern.findall(input_text)
@@ -382,12 +410,25 @@ class CaseRunner:
                     materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
                     for match in pattern.finditer(input_text)
                 ]
+        elif operation == "FindAllStructural":
+            for _ in range(iterations):
+                result = self.materialize_structural(input_text)
         elif operation == "ReplaceString":
             for _ in range(iterations):
                 result = pattern.sub(self.replacement, input_text)
         elif operation == "ReplaceUtf8":
             for _ in range(iterations):
                 result = pattern.sub(self.replacement, input_text).encode("utf-8")
+        elif operation == "ReplaceStringLimited":
+            replacement_count = self.replacement_count
+            for _ in range(iterations):
+                result = pattern.sub(self.replacement, input_text, count=replacement_count)
+        elif operation == "ReplaceEvaluatorString":
+            for _ in range(iterations):
+                self.callback_checksum = 0
+                self.callback_digest = SEMANTIC_DIGEST_OFFSET
+                result_text = pattern.sub(self.evaluator, input_text)
+                result = result_text, self.callback_checksum, self.callback_digest
         elif operation == "SubnString":
             for _ in range(iterations):
                 result = pattern.subn(self.replacement, input_text)
@@ -415,6 +456,13 @@ class CaseRunner:
         elif operation == "SplitStrings":
             for _ in range(iterations):
                 result = pattern.split(input_text)
+        elif operation == "SplitStringsLimited":
+            max_split = self.max_split
+            for _ in range(iterations):
+                result = pattern.split(input_text, maxsplit=max_split)
+        elif operation == "SplitDetailed":
+            for _ in range(iterations):
+                result = self.materialize_split_detailed(input_text)
         else:
             raise ValueError(f"Unsupported PythonRe operation: {operation}")
         return time.perf_counter_ns() - started, result
@@ -574,6 +622,30 @@ class CaseRunner:
             return [value.encode("utf-8") for value in values]
         return [tuple(value.encode("utf-8") for value in item) for item in values]
 
+    def materialize_structural(self, input_text: str) -> list[tuple[bool, int, int, int, int, str]]:
+        values: list[tuple[bool, int, int, int, int, str]] = []
+        for match in self.pattern.finditer(input_text):
+            start, end = match.span()
+            values.append(
+                (
+                    True,
+                    self.utf8_offsets[start],
+                    self.utf8_offsets[end],
+                    self.utf16_offsets[start],
+                    self.utf16_offsets[end],
+                    match.group(),
+                )
+            )
+        return values
+
+    def materialize_split_detailed(self, input_text: str) -> list[tuple[str | None, bool, int]]:
+        values = self.pattern.split(input_text)
+        stride = self.pattern.groups + 1
+        return [
+            (value, index % stride != 0, index % stride)
+            for index, value in enumerate(values)
+        ]
+
     def replace_callback(self, match: re.Match[str]) -> str:
         detailed = materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
         self.callback_checksum = combine(
@@ -595,6 +667,12 @@ class CaseRunner:
             self.callback_digest,
         )
 
+    def replace_evaluator(self, input_text: str) -> tuple[str, int, int]:
+        self.callback_checksum = 0
+        self.callback_digest = SEMANTIC_DIGEST_OFFSET
+        result = self.pattern.sub(self.evaluator, input_text)
+        return result, self.callback_checksum, self.callback_digest
+
     def checksum(self, result: Any) -> int:
         operation = self.operation
         if operation == "IsMatch":
@@ -603,7 +681,7 @@ class CaseRunner:
             return simple_match_checksum(result, self.utf16_offsets)
         if operation == "SearchDetailed":
             return detailed_checksum(result)
-        if operation == "Count":
+        if operation in {"Count", "CountFromOffset"}:
             return result
         if operation == "FindAllStrings":
             return findall_checksum(result, self.pattern.groups, False)
@@ -614,8 +692,22 @@ class CaseRunner:
             for match in result:
                 checksum = combine(checksum, detailed_checksum(match))
             return checksum
-        if operation in {"ReplaceString", "ReplaceUtf8"}:
+        if operation == "FindAllStructural":
+            checksum = len(result)
+            for success, _, _, start_utf16, end_utf16, value in result:
+                checksum = combine(
+                    checksum,
+                    1 if success else 0,
+                    start_utf16,
+                    end_utf16,
+                    checksum_string(value),
+                )
+            return checksum
+        if operation in {"ReplaceString", "ReplaceUtf8", "ReplaceStringLimited"}:
             return checksum_bytes(result) if isinstance(result, bytes) else checksum_string(result)
+        if operation == "ReplaceEvaluatorString":
+            value, callback_checksum, _ = result
+            return combine(checksum_string(value), callback_checksum)
         if operation in {"SubnString", "SubnUtf8"}:
             value, count = result
             value_checksum = checksum_bytes(value) if isinstance(value, bytes) else checksum_string(value)
@@ -624,10 +716,21 @@ class CaseRunner:
             value, count, callback_checksum, _ = result
             value_checksum = checksum_bytes(value) if isinstance(value, bytes) else checksum_string(value)
             return combine(combine(value_checksum, count), callback_checksum)
-        if operation == "SplitStrings":
+        if operation in {"SplitStrings", "SplitStringsLimited"}:
             checksum = len(result)
             for value in result:
                 checksum = combine(checksum, -1 if value is None else checksum_string(value))
+            return checksum
+        if operation == "SplitDetailed":
+            checksum = len(result)
+            for value, is_capture, capture_group_number in result:
+                checksum = combine(
+                    checksum,
+                    -1 if value is None else checksum_string(value),
+                    1 if is_capture else 0,
+                    capture_group_number,
+                    0,
+                )
             return checksum
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
@@ -651,7 +754,7 @@ class CaseRunner:
             return digest_string(digest, result.group())
         if operation == "SearchDetailed":
             return digest_detailed(digest, result)
-        if operation == "Count":
+        if operation in {"Count", "CountFromOffset"}:
             return digest_add(digest, result)
         if operation == "FindAllStrings":
             return digest_findall(digest, result, self.pattern.groups, False)
@@ -662,8 +765,25 @@ class CaseRunner:
             for match in result:
                 digest = digest_detailed(digest, match)
             return digest
-        if operation in {"ReplaceString", "ReplaceUtf8"}:
+        if operation == "FindAllStructural":
+            digest = digest_add(digest, len(result))
+            for success, start_bytes, end_bytes, start_utf16, end_utf16, value in result:
+                digest = digest_add(
+                    digest,
+                    1 if success else 0,
+                    start_bytes,
+                    end_bytes,
+                    start_utf16,
+                    end_utf16,
+                )
+                digest = digest_string(digest, value)
+            return digest
+        if operation in {"ReplaceString", "ReplaceUtf8", "ReplaceStringLimited"}:
             return digest_bytes(digest, result) if isinstance(result, bytes) else digest_string(digest, result)
+        if operation == "ReplaceEvaluatorString":
+            value, _, callback_digest = result
+            digest = digest_string(digest, value)
+            return digest_add(digest, callback_digest)
         if operation in {"SubnString", "SubnUtf8"}:
             value, count = result
             digest = digest_bytes(digest, value) if isinstance(value, bytes) else digest_string(digest, value)
@@ -672,7 +792,7 @@ class CaseRunner:
             value, count, _, callback_digest = result
             digest = digest_bytes(digest, value) if isinstance(value, bytes) else digest_string(digest, value)
             return digest_add(digest, count, callback_digest)
-        if operation == "SplitStrings":
+        if operation in {"SplitStrings", "SplitStringsLimited"}:
             digest = digest_add(digest, len(result))
             for value in result:
                 if value is None:
@@ -680,6 +800,20 @@ class CaseRunner:
                 else:
                     digest = digest_add(digest, 1)
                     digest = digest_string(digest, value)
+            return digest
+        if operation == "SplitDetailed":
+            digest = digest_add(digest, len(result))
+            for value, is_capture, capture_group_number in result:
+                if value is None:
+                    digest = digest_add(digest, 0)
+                else:
+                    digest = digest_add(digest, 1)
+                    digest = digest_string(digest, value)
+                digest = digest_add(
+                    digest,
+                    1 if is_capture else 0,
+                    capture_group_number,
+                )
             return digest
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
