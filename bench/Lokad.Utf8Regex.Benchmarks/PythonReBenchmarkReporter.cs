@@ -765,17 +765,21 @@ internal static partial class PythonReBenchmarkReporter
         var separatedCaptures = context.SupportsSeparatedCapturesReplay
             ? context.ExecuteSeparatedCapturesReplayChecksum()
             : expected;
+        var optionalConstantCapture = context.SupportsOptionalConstantCaptureReplay
+            ? context.ExecuteOptionalConstantCaptureReplayChecksum()
+            : expected;
         if (expected != predecoded ||
             expected != prepared ||
             expected != finalShape ||
             expected != trailingCapture ||
-            expected != separatedCaptures)
+            expected != separatedCaptures ||
+            expected != optionalConstantCapture)
         {
             throw new InvalidOperationException(
                 $"PythonRe captured FindAll phase diagnostic '{benchmarkCase.Id}' produced incomparable sinks: " +
                 $"public={expected}, predecoded={predecoded}, prepared={prepared}, " +
                 $"final={finalShape}, trailing-capture={trailingCapture}, " +
-                $"separated-captures={separatedCaptures}.");
+                $"separated-captures={separatedCaptures}, optional-constant-capture={optionalConstantCapture}.");
         }
 
         Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
@@ -815,6 +819,11 @@ internal static partial class PythonReBenchmarkReporter
             if (context.SupportsSeparatedCapturesReplay)
             {
                 PrintOperation("SeparatedCapturesReplay", MeasureRetainedPhaseOperation(context.ProjectSeparatedCaptureStrings, iterations, samples));
+            }
+
+            if (context.SupportsOptionalConstantCaptureReplay)
+            {
+                PrintOperation("OptionalCaptureReplay", MeasureRetainedPhaseOperation(context.ProjectOptionalConstantCaptureStrings, iterations, samples));
             }
 
             PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, iterations, samples));
@@ -1927,6 +1936,10 @@ internal sealed class PythonReBenchmarkContext
     private readonly int _trailingCapturePrefixLength;
     private readonly bool _supportsSeparatedCapturesReplay;
     private readonly char _captureSeparator;
+    private readonly bool _supportsOptionalConstantCaptureReplay;
+    private readonly int _optionalCapturePresentMatchLength;
+    private readonly int _optionalCaptureAbsentMatchLength;
+    private readonly string _optionalCaptureValue;
     private readonly bool _supportsReplacementPhases;
     private readonly Utf8Regex? _coreReplacementRegex;
     private readonly PythonReReplacementPlan _preparedReplacementPlan;
@@ -2008,6 +2021,10 @@ internal sealed class PythonReBenchmarkContext
             _trailingCapturePrefixLength = 0;
             _supportsSeparatedCapturesReplay = false;
             _captureSeparator = default;
+            _supportsOptionalConstantCaptureReplay = false;
+            _optionalCapturePresentMatchLength = 0;
+            _optionalCaptureAbsentMatchLength = 0;
+            _optionalCaptureValue = string.Empty;
         }
         else if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
                  _captureCount > 0 && !_regex.IsMatch(string.Empty))
@@ -2075,6 +2092,54 @@ internal sealed class PythonReBenchmarkContext
             }
 
             _captureSeparator = captureSeparator;
+            _supportsOptionalConstantCaptureReplay = benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
+                _captureCount == 1;
+            var optionalCapturePresentMatchLength = -1;
+            var optionalCaptureAbsentMatchLength = -1;
+            var optionalCaptureValue = string.Empty;
+            var sawPresentCapture = false;
+            var sawAbsentCapture = false;
+            if (_supportsOptionalConstantCaptureReplay)
+            {
+                foreach (Match match in _regex.Matches(_decoded))
+                {
+                    var group = match.Groups[1];
+                    if (group.Success)
+                    {
+                        if (sawPresentCapture &&
+                            (match.Length != optionalCapturePresentMatchLength ||
+                             !group.Value.Equals(optionalCaptureValue, StringComparison.Ordinal)))
+                        {
+                            _supportsOptionalConstantCaptureReplay = false;
+                            break;
+                        }
+
+                        sawPresentCapture = true;
+                        optionalCapturePresentMatchLength = match.Length;
+                        optionalCaptureValue = group.Value;
+                    }
+                    else
+                    {
+                        if (sawAbsentCapture && match.Length != optionalCaptureAbsentMatchLength)
+                        {
+                            _supportsOptionalConstantCaptureReplay = false;
+                            break;
+                        }
+
+                        sawAbsentCapture = true;
+                        optionalCaptureAbsentMatchLength = match.Length;
+                    }
+                }
+
+                _supportsOptionalConstantCaptureReplay &=
+                    sawPresentCapture &&
+                    sawAbsentCapture &&
+                    optionalCapturePresentMatchLength != optionalCaptureAbsentMatchLength;
+            }
+
+            _optionalCapturePresentMatchLength = Math.Max(0, optionalCapturePresentMatchLength);
+            _optionalCaptureAbsentMatchLength = Math.Max(0, optionalCaptureAbsentMatchLength);
+            _optionalCaptureValue = optionalCaptureValue;
         }
         else
         {
@@ -2093,6 +2158,10 @@ internal sealed class PythonReBenchmarkContext
             _trailingCapturePrefixLength = 0;
             _supportsSeparatedCapturesReplay = false;
             _captureSeparator = default;
+            _supportsOptionalConstantCaptureReplay = false;
+            _optionalCapturePresentMatchLength = 0;
+            _optionalCaptureAbsentMatchLength = 0;
+            _optionalCaptureValue = string.Empty;
         }
 
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.ReplaceString or
@@ -2207,6 +2276,8 @@ internal sealed class PythonReBenchmarkContext
         static value => value is null ? 0 : s_strictUtf8.GetByteCount(value));
 
     internal bool SupportsTrailingCaptureReplay => _supportsTrailingCaptureReplay;
+
+    internal bool SupportsOptionalConstantCaptureReplay => _supportsOptionalConstantCaptureReplay;
 
     internal bool SupportsSeparatedCapturesReplay => _supportsSeparatedCapturesReplay;
 
@@ -3095,6 +3166,33 @@ internal sealed class PythonReBenchmarkContext
         };
     }
 
+    internal Utf8PythonFindAllResult ProjectOptionalConstantCaptureStrings()
+    {
+        if (!SupportsOptionalConstantCaptureReplay)
+        {
+            throw new InvalidOperationException("The optional constant-capture replay is not available for this case.");
+        }
+
+        List<string> values = new(_preparedCaptureRanges.Length);
+        foreach (var match in _regex.EnumerateMatches(_decoded, 0))
+        {
+            values.Add(match.Length switch
+            {
+                var length when length == _optionalCapturePresentMatchLength => _optionalCaptureValue,
+                var length when length == _optionalCaptureAbsentMatchLength => string.Empty,
+                _ => throw new InvalidOperationException(
+                    "The optional constant-capture replay encountered an unprepared full-match shape."),
+            });
+        }
+
+        return new Utf8PythonFindAllResult
+        {
+            Shape = Utf8PythonFindAllShape.SingleGroup,
+            ScalarValues = values.ToArray(),
+            TupleValues = [],
+        };
+    }
+
     internal Utf8PythonFindAllUtf8Result ProjectPreparedCapturedUtf8() =>
         ProjectCapturedUtf8(_preparedCaptureRanges, _preparedUtf8Offsets);
 
@@ -3200,6 +3298,8 @@ internal sealed class PythonReBenchmarkContext
     internal int ExecuteTrailingCaptureReplayChecksum() => Checksum(ProjectTrailingCaptureStrings());
 
     internal int ExecuteSeparatedCapturesReplayChecksum() => Checksum(ProjectSeparatedCaptureStrings());
+
+    internal int ExecuteOptionalConstantCaptureReplayChecksum() => Checksum(ProjectOptionalConstantCaptureStrings());
 
     internal int ExecutePreparedCapturedFinalShapeChecksum() => _case.Operation switch
     {
