@@ -83,6 +83,31 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ExactUnicodeLiteralSearchPreservesCoordinatesAndInputContracts()
+    {
+        var regex = new Utf8PythonRegex("Шерлок");
+        var input = "π Шерлок 𝒜"u8.ToArray();
+
+        var search = regex.Search(input);
+        var match = regex.Match("Шерлок далее"u8);
+
+        Assert.True(search.Success);
+        Assert.Equal("π ".Length, search.StartOffsetInUtf16);
+        Assert.Equal("π Шерлок".Length, search.EndOffsetInUtf16);
+        Assert.Equal("π "u8.Length, search.StartOffsetInBytes);
+        Assert.Equal("π Шерлок"u8.Length, search.EndOffsetInBytes);
+        Assert.Equal("Шерлок", search.GetValueString());
+        Assert.True(match.Success);
+        Assert.Equal("Шерлок"u8.Length, match.EndOffsetInBytes);
+        Assert.False(regex.Search("Ватсон"u8).Success);
+        Assert.False(regex.Match("π Шерлок"u8).Success);
+
+        var malformedTail = "Шерлок"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
+        Assert.Throws<ArgumentException>(() => regex.Search(malformedTail));
+        Assert.Throws<ArgumentException>(() => regex.Match(malformedTail));
+    }
+
+    [Fact]
     public void VerboseEscapedSpaceRemainsSignificant()
     {
         var regex = new Utf8PythonRegex(@"(?x)Шерлок\ Холмс");
