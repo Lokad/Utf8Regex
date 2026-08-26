@@ -1086,30 +1086,33 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
         Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
         Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
-        PrintOperation("ValidationOnly", MeasureRetainedPhaseOperation(context.ExecuteOneShotValidation, effectiveIterations, samples));
-        PrintOperation("Utf8DecodeOnly", MeasureRetainedPhaseOperation(context.DecodeInput, effectiveIterations, samples));
+        var phaseWarmupCalls = context.InputBytes.Length <= 32 * 1_024 ? 250_000 : 1_024;
+        PythonReOperationMeasurement MeasurePhase<T>(Func<T> operation) =>
+            MeasureRetainedOperation(operation, effectiveIterations, samples, phaseWarmupCalls);
+        PrintOperation("ValidationOnly", MeasurePhase(context.ExecuteOneShotValidation));
+        PrintOperation("Utf8DecodeOnly", MeasurePhase(context.DecodeInput));
         if (context.SupportsExactLiteralOneShotReplay)
         {
-            PrintOperation("RawExactLiteral", MeasureRetainedPhaseOperation(context.ExecuteCoreRawOneShot, effectiveIterations, samples));
-            PrintOperation("ValidatedExactLiteral", MeasureRetainedPhaseOperation(context.ExecuteValidatedCoreRawOneShot, effectiveIterations, samples));
+            PrintOperation("RawExactLiteral", MeasurePhase(context.ExecuteCoreRawOneShot));
+            PrintOperation("ValidatedExactLiteral", MeasurePhase(context.ExecuteValidatedCoreRawOneShot));
         }
 
         if (context.SupportsAsciiPrefixDigitOneShotReplay)
         {
-            PrintOperation("RawPrefixDigits", MeasureRetainedPhaseOperation(context.ExecuteRawAsciiPrefixDigitOneShot, effectiveIterations, samples));
-            PrintOperation("ValidatedPrefixDigits", MeasureRetainedPhaseOperation(context.ExecuteValidatedAsciiPrefixDigitOneShot, effectiveIterations, samples));
+            PrintOperation("RawPrefixDigits", MeasurePhase(context.ExecuteRawAsciiPrefixDigitOneShot));
+            PrintOperation("ValidatedPrefixDigits", MeasurePhase(context.ExecuteValidatedAsciiPrefixDigitOneShot));
         }
 
         if (context.SupportsAsciiDotAllFullMatchReplay)
         {
-            PrintOperation("RawDotAllFullMatch", MeasureRetainedPhaseOperation(context.ExecuteRawAsciiDotAllFullMatch, effectiveIterations, samples));
-            PrintOperation("ValidatedDotAllFullMatch", MeasureRetainedPhaseOperation(context.ExecuteValidatedAsciiDotAllFullMatch, effectiveIterations, samples));
+            PrintOperation("RawDotAllFullMatch", MeasurePhase(context.ExecuteRawAsciiDotAllFullMatch));
+            PrintOperation("ValidatedDotAllFullMatch", MeasurePhase(context.ExecuteValidatedAsciiDotAllFullMatch));
         }
 
-        PrintOperation("CoreDirect", MeasureRetainedPhaseOperation(context.ExecuteCoreDirectOneShot, effectiveIterations, samples));
-        PrintOperation("CoreOffsetZero", MeasureRetainedPhaseOperation(context.ExecuteCoreOffsetZeroOneShot, effectiveIterations, samples));
-        PrintOperation("PredecodedRegex", MeasureRetainedPhaseOperation(context.ExecutePredecodedOneShot, effectiveIterations, samples));
-        PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReOneShot, effectiveIterations, samples));
+        PrintOperation("CoreDirect", MeasurePhase(context.ExecuteCoreDirectOneShot));
+        PrintOperation("CoreOffsetZero", MeasurePhase(context.ExecuteCoreOffsetZeroOneShot));
+        PrintOperation("PredecodedRegex", MeasurePhase(context.ExecutePredecodedOneShot));
+        PrintOperation("PythonRePublic", MeasurePhase(context.ExecutePythonReOneShot));
         return 0;
     }
 
@@ -1751,13 +1754,14 @@ internal static partial class PythonReBenchmarkReporter
     {
         var warmup = Stopwatch.StartNew();
         var warmupCalls = 0;
+        var maximumWarmupCalls = Math.Max(65_536, minimumWarmupCalls);
         do
         {
             s_retainedSink = operation();
             warmupCalls++;
         }
         while ((warmup.ElapsedMilliseconds < 100 || warmupCalls < minimumWarmupCalls) &&
-               warmupCalls < 65_536);
+               warmupCalls < maximumWarmupCalls);
 
         var microseconds = new double[samples];
         var allocations = new long[samples];
