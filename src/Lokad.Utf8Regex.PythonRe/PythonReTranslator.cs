@@ -109,6 +109,50 @@ internal static class PythonReTranslator
         return false;
     }
 
+    public static bool TryGetAsciiLiteralPrefixDigitRepeat(
+        PythonReNode node,
+        PythonReCompileOptions options,
+        out byte[] prefixUtf8)
+    {
+        prefixUtf8 = [];
+        if ((options & PythonReCompileOptions.IgnoreCase) != 0 ||
+            node is not PythonReSequenceNode { Elements.Count: > 1 } sequence ||
+            sequence.Elements[^1] is not PythonReQuantifierNode
+            {
+                Inner: PythonReCharacterClassNode
+                {
+                    IsNegated: false,
+                    Items: [PythonReCharacterClassRangeItem { StartScalar: '0', EndScalar: '9' }],
+                },
+                Min: 1,
+                Max: null,
+                Flavor: PythonReQuantifierFlavor.Greedy,
+            })
+        {
+            return false;
+        }
+
+        var literal = new StringBuilder();
+        for (var index = 0; index < sequence.Elements.Count - 1; index++)
+        {
+            if (!TryGetExactLiteral(sequence.Elements[index], out var segment) ||
+                segment.Any(static character => character > 0x7f))
+            {
+                return false;
+            }
+
+            literal.Append(segment);
+        }
+
+        if (literal.Length == 0)
+        {
+            return false;
+        }
+
+        prefixUtf8 = Encoding.ASCII.GetBytes(literal.ToString());
+        return true;
+    }
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
