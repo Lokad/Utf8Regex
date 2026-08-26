@@ -26,6 +26,24 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-paired-case", StringComparison.Ordinal))
+        {
+            exitCode = MeasurePairedCase(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 9), 17),
+                cpythonFirst: false);
+            return true;
+        }
+
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-paired-case-reversed", StringComparison.Ordinal))
+        {
+            exitCode = MeasurePairedCase(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 9), 17),
+                cpythonFirst: true);
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-shaping-case", StringComparison.Ordinal))
         {
             exitCode = MeasureShapingCase(

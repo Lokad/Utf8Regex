@@ -138,6 +138,15 @@ PythonRe benchmark snapshot and diagnostics:
 - `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
 - `src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md` is generated from that snapshot and is the self-contained published view for the Python-compatible adapter. Do not edit its tables by hand.
 - Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
+- Use `--measure-pythonre-paired-case <id> [samples]` for the bounded
+  long-lived-worker comparison against predecoded CPython. It calibrates the
+  two runtimes independently, alternates whole paired lanes on one logical
+  processor, records raw samples and harness floors, and does not rewrite the
+  snapshot.
+- Use `--measure-pythonre-paired-case-reversed <id> [samples]` for the same
+  diagnostic with CPython first. Run it only after a normal paired result
+  fails the lane-order gate; cross-process sub-sample slicing is deliberately
+  not used because it disturbed cache residency in bounded trials.
 - Use `--measure-pythonre-shaping-case <id> [iterations] [samples]` to split
   detailed-match discovery, direct public projection, and staged projection.
 - Use `--measure-pythonre-findall-phases <id> [iterations] [samples]` to split
