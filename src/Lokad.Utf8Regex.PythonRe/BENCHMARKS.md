@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:56:47.2030680+00:00`
-- Snapshot SHA-256: `734605AFCA18038C0F7C49DC9ED80088E148B884CA1FB3252834A1AB4600E778`
+- Generated: `2026-08-26T12:57:34.9680470+00:00`
+- Snapshot SHA-256: `13912BC31E48FB761CFAD76E13A8A6F5250DA6BD193B99500A7DAAB626F82A07`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `8` managed faster, `0` equivalent, `1` CPython faster, `3` inconclusive, `16` unqualified
+- Public Status: `11` managed faster, `0` equivalent, `1` CPython faster, `4` inconclusive, `12` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -44,12 +44,12 @@ Historical independent point columns were measured from source `9730cc32f96c` on
 | `family/count` | `Count` | ScalarResult | Managed faster | 64.802 us | 1,188.974 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
 | `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 182.238 us | 206.084 us | 0.88x | 219.217 us | 248.829 us | 165,936 B |
 | `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 169.190 us | 303.243 us | 0.56x | 406.854 us | 318.232 us | 165,936 B |
-| `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 388.206 us | 196.091 us | 1.98x | 201.521 us | 449.797 us | 1,331,488 B |
+| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 183.432 us | 191.044 us | 0.96x | 201.521 us | 449.797 us | 299,296 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 412.906 us | 789.879 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
-| `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 278.100 us | 124.845 us | 2.23x | 126.792 us | 359.547 us | 936,224 B |
+| `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 112.377 us | 123.314 us | 0.91x | 126.792 us | 359.547 us | 149,792 B |
 | `findall/unicode-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 299.098 us | 359.654 us | 0.83x | 359.520 us | 335.570 us | 785,704 B |
-| `findall/unicode-full-strings` | `FindAllStrings` | Historical | Unqualified | 45.029 us | 21.572 us | 2.09x | 24.031 us | 42.099 us | 24,600 B |
-| `findall/unicode-full-utf8` | `FindAllUtf8` | Historical | Unqualified | 58.445 us | 38.623 us | 1.51x | 47.145 us | 60.234 us | 24,600 B |
+| `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 4.527 us | 15.463 us | 0.29x | 24.031 us | 42.099 us | 4,120 B |
+| `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 29.778 us | 36.007 us | 0.82x | 47.145 us | 60.234 us | 24,600 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | Historical | Unqualified | 173.765 us | 3,466.165 us | 0.05x | 3,139.237 us | 153.941 us | 406,736 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.035 us | 0.213 us | 0.16x | 0.245 us | 0.094 us | 0 B |
 | `literal/ismatch` | `IsMatch` | ScalarResult | Inconclusive | 1.867 us | 12.263 us | 0.15x | 14.877 us | 12.075 us | 0 B |
