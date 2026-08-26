@@ -656,10 +656,12 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         if (benchmarkCase.Operation is not PythonReBenchmarkOperation.FindAllStrings and
+            not PythonReBenchmarkOperation.FindAllStringsFromOffset and
             not PythonReBenchmarkOperation.FindAllUtf8)
         {
             Console.Error.WriteLine(
-                $"PythonRe FindAll phase diagnostics require FindAllStrings or FindAllUtf8; '{id}' uses {benchmarkCase.Operation}.");
+                $"PythonRe FindAll phase diagnostics require FindAllStrings, " +
+                $"FindAllStringsFromOffset, or FindAllUtf8; '{id}' uses {benchmarkCase.Operation}.");
             return 1;
         }
 
@@ -2029,7 +2031,10 @@ internal sealed class PythonReBenchmarkContext
                     parsed.CaptureGroupCount,
                     parsed.NamedGroups).ToDotNetReplacementString()
                 : benchmarkCase.Replacement;
-        if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
+        if (benchmarkCase.Operation is
+                PythonReBenchmarkOperation.FindAllStrings or
+                PythonReBenchmarkOperation.FindAllStringsFromOffset or
+                PythonReBenchmarkOperation.FindAllUtf8 &&
             _captureCount == 0)
         {
             _coreFindAllRegex = new Utf8Regex(translatedPattern, regexOptions);
@@ -2037,7 +2042,9 @@ internal sealed class PythonReBenchmarkContext
             _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
             _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);
             _supportsRepeatedCoreStringReplay =
-                benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
+                benchmarkCase.Operation is
+                    PythonReBenchmarkOperation.FindAllStrings or
+                    PythonReBenchmarkOperation.FindAllStringsFromOffset &&
                 _preparedCoreStrings.ScalarValues.Length > 0 &&
                 _preparedCoreStrings.ScalarValues.AsSpan(1).IndexOfAnyExcept(
                     _preparedCoreStrings.ScalarValues[0]) < 0;
@@ -3348,7 +3355,9 @@ internal sealed class PythonReBenchmarkContext
 
     internal Utf8PythonFindAllResult ExecutePythonReFindAllStrings()
     {
-        return _pythonRegex.FindAllToStrings(InputBytes);
+        return _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
+            ? _pythonRegex.FindAllToStrings(InputBytes, _case.Coverage.StartOffsetInBytes)
+            : _pythonRegex.FindAllToStrings(InputBytes);
     }
 
     internal Utf8PythonFindAllUtf8Result ExecutePythonReFindAllUtf8()
@@ -3941,7 +3950,7 @@ internal sealed class PythonReBenchmarkContext
     internal int ExecuteCoreEnumerationOnly()
     {
         var checksum = 0;
-        var enumerator = GetCoreFindAllRegex().EnumerateMatches(InputBytes);
+        var enumerator = EnumerateCoreMatches();
         while (enumerator.MoveNext())
         {
             var match = enumerator.Current;
@@ -3978,7 +3987,8 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecutePreparedCoreChecksumTraversal() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(_preparedCoreStrings),
+        PythonReBenchmarkOperation.FindAllStrings or
+        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(_preparedCoreStrings),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_preparedCoreUtf8),
         _ => throw new InvalidOperationException(),
     };
@@ -4015,7 +4025,14 @@ internal sealed class PythonReBenchmarkContext
             throw new InvalidOperationException("Counted repeated-value FindAll replay is not available for this case.");
         }
 
-        var values = new string[GetCoreFindAllRegex().Count(InputBytes)];
+        var regex = GetCoreFindAllRegex();
+        var subject = Utf8ValidatedInput.Create(InputBytes);
+        var startOffsetInBytes = _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
+            ? _case.Coverage.StartOffsetInBytes
+            : 0;
+        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+        var count = regex.ByteOffsetExecution.CountPrepared(subject, start);
+        var values = new string[count];
         Array.Fill(values, _repeatedCoreString);
         return new Utf8PythonFindAllResult
         {
@@ -4042,7 +4059,9 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecuteCoreStreamingProjection()
     {
-        if (_case.Operation == PythonReBenchmarkOperation.FindAllStrings)
+        if (_case.Operation is
+            PythonReBenchmarkOperation.FindAllStrings or
+            PythonReBenchmarkOperation.FindAllStringsFromOffset)
         {
             return Checksum(StreamCoreStrings());
         }
@@ -4053,7 +4072,7 @@ internal sealed class PythonReBenchmarkContext
     internal Utf8PythonFindAllResult StreamCoreStrings()
     {
         var values = new List<string>();
-        foreach (var match in GetCoreFindAllRegex().EnumerateMatches(InputBytes))
+        foreach (var match in EnumerateCoreMatches())
         {
             if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
             {
@@ -4074,7 +4093,7 @@ internal sealed class PythonReBenchmarkContext
     internal Utf8PythonFindAllUtf8Result StreamCoreUtf8()
     {
         var byteValues = new List<byte[]>();
-        foreach (var match in GetCoreFindAllRegex().EnumerateMatches(InputBytes))
+        foreach (var match in EnumerateCoreMatches())
         {
             if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
             {
@@ -4095,7 +4114,7 @@ internal sealed class PythonReBenchmarkContext
     private List<PythonReBenchmarkRange> CollectCoreRanges()
     {
         var ranges = new List<PythonReBenchmarkRange>();
-        foreach (var match in GetCoreFindAllRegex().EnumerateMatches(InputBytes))
+        foreach (var match in EnumerateCoreMatches())
         {
             if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
             {
@@ -4114,12 +4133,22 @@ internal sealed class PythonReBenchmarkContext
 
     private int ProjectCoreRanges(ReadOnlySpan<PythonReBenchmarkRange> ranges)
     {
-        if (_case.Operation == PythonReBenchmarkOperation.FindAllStrings)
+        if (_case.Operation is
+            PythonReBenchmarkOperation.FindAllStrings or
+            PythonReBenchmarkOperation.FindAllStringsFromOffset)
         {
             return Checksum(ProjectCoreRangeStrings(ranges));
         }
 
         return Checksum(ProjectCoreRangeUtf8(ranges));
+    }
+
+    private Utf8ValueMatchEnumerator EnumerateCoreMatches()
+    {
+        var regex = GetCoreFindAllRegex();
+        return _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
+            ? regex.EnumerateMatchesFromUtf16Offset(InputBytes, _startOffsetInUtf16)
+            : regex.EnumerateMatches(InputBytes);
     }
 
     private Utf8PythonFindAllResult ProjectCoreRangeStrings(
