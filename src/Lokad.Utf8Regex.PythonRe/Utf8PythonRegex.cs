@@ -107,6 +107,7 @@ public sealed class Utf8PythonRegex
     private readonly byte[]? _asciiDotAllFullMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchSuffix;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
+    private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
     private readonly PythonReDirectBackendKind _matchBackend;
@@ -262,8 +263,12 @@ public sealed class Utf8PythonRegex
             // Fall back to managed Regex if the translated pattern cannot be executed by Utf8Regex.
         }
 
-        _canUseZeroOffsetUtf8ValueFastPath =
+        _canUseZeroOffsetUtf8SearchValueFastPath =
             isExactLiteral &&
+            _utf8Regex?.Inspection.ExecutionKind is
+                NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+        _canUseZeroOffsetUtf8ValueFastPath =
+            _canUseZeroOffsetUtf8SearchValueFastPath &&
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
         _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
@@ -318,7 +323,7 @@ public sealed class Utf8PythonRegex
         if (_utf8Regex is not null)
         {
             ValidateStartOffset(input, startOffsetInBytes);
-            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8ValueFastPath
+            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
                 ? _utf8Regex.Match(input)
                 : _utf8Regex.MatchFromUtf16Offset(
                     input,
@@ -359,7 +364,7 @@ public sealed class Utf8PythonRegex
             var startOffsetInUtf16 = startOffsetInBytes == 0
                 ? 0
                 : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8ValueFastPath
+            var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
                 ? _utf8Regex.Match(input)
                 : _utf8Regex.MatchFromUtf16Offset(input, startOffsetInUtf16);
             if (!match.Success || match.IndexInUtf16 != startOffsetInUtf16)
@@ -1971,6 +1976,9 @@ public sealed class Utf8PythonRegex
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
+
+    internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
+        _canUseZeroOffsetUtf8SearchValueFastPath;
 
     internal string? DebugUtf8FullMatchExecutionKind =>
         GetUtf8FullRegex()?.Inspection.ExecutionKind.ToString();

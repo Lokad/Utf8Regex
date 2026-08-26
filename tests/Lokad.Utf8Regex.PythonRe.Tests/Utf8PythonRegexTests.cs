@@ -91,6 +91,8 @@ public sealed class Utf8PythonRegexTests
         var search = regex.Search(input);
         var match = regex.Match("Шерлок далее"u8);
 
+        Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
+        Assert.False(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
         Assert.True(search.Success);
         Assert.Equal("π ".Length, search.StartOffsetInUtf16);
         Assert.Equal("π Шерлок".Length, search.EndOffsetInUtf16);
