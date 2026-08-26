@@ -32,6 +32,31 @@ internal static class PythonReTranslator
         TryGetExactLiteral(repeated, out var literal) &&
         literal.Length > 0;
 
+    public static bool TryGetAsciiGreedyStarFindAllByte(
+        PythonReNode node,
+        PythonReCompileOptions options,
+        out byte repeatedByte)
+    {
+        if ((options & PythonReCompileOptions.IgnoreCase) == 0 &&
+            node is PythonReQuantifierNode
+            {
+                Inner: var repeated,
+                Min: 0,
+                Max: null,
+                Flavor: PythonReQuantifierFlavor.Greedy,
+            } &&
+            TryGetExactLiteral(repeated, out var literal) &&
+            literal is [var character] &&
+            character <= 0x7f)
+        {
+            repeatedByte = (byte)character;
+            return true;
+        }
+
+        repeatedByte = default;
+        return false;
+    }
+
     public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
 
     public static bool TryGetCaseSensitiveExactLiteral(

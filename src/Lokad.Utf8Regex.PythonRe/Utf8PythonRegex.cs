@@ -103,6 +103,7 @@ public sealed class Utf8PythonRegex
     private readonly int _optionalExactCaptureAbsentMatchLength;
     private readonly char? _separatedCaptureTupleSeparator;
     private readonly string? _repeatedExactFindAllString;
+    private readonly byte? _asciiGreedyStarFindAllByte;
     private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchPrefix;
     private readonly byte[]? _asciiDotAllFullMatchSuffix;
@@ -203,6 +204,14 @@ public sealed class Utf8PythonRegex
                 parseResult.Options,
                 out var exactFindAllString)
                 ? exactFindAllString
+                : null;
+        _asciiGreedyStarFindAllByte = MatchTimeout == Timeout.InfiniteTimeSpan &&
+            parseResult.CaptureGroupCount == 0 &&
+            PythonReTranslator.TryGetAsciiGreedyStarFindAllByte(
+                parseResult.Root,
+                parseResult.Options,
+                out var asciiGreedyStarFindAllByte)
+                ? asciiGreedyStarFindAllByte
                 : null;
         _asciiLiteralPrefixDigitMatchPrefix = MatchTimeout == Timeout.InfiniteTimeSpan &&
             parseResult.CaptureGroupCount == 0 &&
@@ -772,6 +781,11 @@ public sealed class Utf8PythonRegex
     public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
+        if (_asciiGreedyStarFindAllByte is { } repeatedByte)
+        {
+            return PythonReAsciiGreedyStarFindAll.Execute(input, startOffsetInBytes, repeatedByte);
+        }
+
         if (_translation.CaptureGroupCount == 0)
         {
             if (_repeatedExactFindAllString is not null &&
@@ -2031,6 +2045,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
 
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
+
+    internal bool DebugUsesAsciiGreedyStarFindAllFastPath => _asciiGreedyStarFindAllByte.HasValue;
 
     internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
         _repeatedExactFindAllString is not null &&

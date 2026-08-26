@@ -2470,16 +2470,21 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugUsesCountedRepeatedExactStringFindAllFastPath
                 ? "Utf8Regex; exact-literal count; repeated immutable string shaping"
                 : "Utf8Regex; exact-literal range enumeration; repeated immutable string shaping",
+        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesAsciiGreedyStarFindAllFastPath =>
+            "strict UTF-8 validation; direct ASCII greedy-star progression; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
             "strict UTF-8 decode; .NET Regex; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(
             _pythonRegex.DebugFindAllBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "findall string shaping"),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => DescribeBackend(
-            _pythonRegex.DebugFindAllBackend,
-            _pythonRegex.DebugUtf8ExecutionKind,
-            "findall string shaping from a nonzero byte offset"),
+        PythonReBenchmarkOperation.FindAllStringsFromOffset =>
+            _pythonRegex.DebugUsesAsciiGreedyStarFindAllFastPath
+                ? "strict UTF-8 validation; direct ASCII greedy-star progression from a nonzero byte offset; findall string shaping"
+                : DescribeBackend(
+                    _pythonRegex.DebugFindAllBackend,
+                    _pythonRegex.DebugUtf8ExecutionKind,
+                    "findall string shaping from a nonzero byte offset"),
         PythonReBenchmarkOperation.FindAllUtf8 when _captureCount > 0 =>
             "strict UTF-8 decode; .NET Regex; findall UTF-8 shaping",
         PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
