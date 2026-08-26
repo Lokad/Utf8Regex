@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:54:53.5868829+00:00`
-- Snapshot SHA-256: `580B185FB2D0C1C0F231BF36B88E623B9F798C38AC9BCE6D1BE324EFD9F6575E`
+- Generated: `2026-08-26T12:56:47.2030680+00:00`
+- Snapshot SHA-256: `734605AFCA18038C0F7C49DC9ED80088E148B884CA1FB3252834A1AB4600E778`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `5` managed faster, `0` equivalent, `1` CPython faster, `2` inconclusive, `20` unqualified
+- Public Status: `8` managed faster, `0` equivalent, `1` CPython faster, `3` inconclusive, `16` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -40,10 +40,10 @@ Historical independent point columns were measured from source `9730cc32f96c` on
 | Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `capture/search-detailed` | `SearchDetailed` | EagerMaterializedResult | Inconclusive | 0.268 us | 0.811 us | 0.33x | 2.602 us | 0.350 us | 896 B |
-| `class-run/count` | `Count` | Historical | Unqualified | 504.865 us | 1,415.960 us | 0.36x | 1,424.645 us | 620.138 us | 172,056 B |
+| `class-run/count` | `Count` | ScalarResult | Inconclusive | 399.054 us | 1,353.800 us | 0.29x | 1,424.645 us | 620.138 us | 172,056 B |
 | `family/count` | `Count` | ScalarResult | Managed faster | 64.802 us | 1,188.974 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
-| `findall/full-strings` | `FindAllStrings` | Historical | Unqualified | 244.742 us | 303.417 us | 0.81x | 219.217 us | 248.829 us | 165,936 B |
-| `findall/full-utf8` | `FindAllUtf8` | Historical | Unqualified | 268.899 us | 309.247 us | 0.87x | 406.854 us | 318.232 us | 165,936 B |
+| `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 182.238 us | 206.084 us | 0.88x | 219.217 us | 248.829 us | 165,936 B |
+| `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 169.190 us | 303.243 us | 0.56x | 406.854 us | 318.232 us | 165,936 B |
 | `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 388.206 us | 196.091 us | 1.98x | 201.521 us | 449.797 us | 1,331,488 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 412.906 us | 789.879 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
 | `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 278.100 us | 124.845 us | 2.23x | 126.792 us | 359.547 us | 936,224 B |
@@ -64,7 +64,7 @@ Historical independent point columns were measured from source `9730cc32f96c` on
 | `replacement/subn-utf8` | `SubnUtf8` | Historical | Unqualified | 130.351 us | 61.397 us | 2.12x | 62.087 us | 120.898 us | 94,713 B |
 | `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
-| `unicode/count` | `Count` | Historical | Unqualified | 92.217 us | 211.684 us | 0.44x | 271.193 us | 185.111 us | 0 B |
+| `unicode/count` | `Count` | ScalarResult | Managed faster | 25.061 us | 205.214 us | 0.12x | 271.193 us | 185.111 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 13.289 us | 14.613 us | 0.91x | 19.217 us | 25.377 us | 14,360 B |
 | `zero-width/count` | `Count` | Historical | Unqualified | 18.474 us | 584.444 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
 
