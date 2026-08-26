@@ -20,13 +20,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T14:30:42.6421102+00:00`
-- Snapshot SHA-256: `CD4E12F7BD7E2E0C74F1BBA7CC9AC1F1165277E1C3CE9BE5D6D40F2D56D4813A`
+- Generated: `2026-08-26T14:32:42.2486573+00:00`
+- Snapshot SHA-256: `4A257D1033A5F117D7AD5BDABD8B4D97577DE81DF6EF612E5B1508D6E0B32FD1`
 - Schema: `8`
 - Catalog SHA-256: `C731F1AE719DADD259748DD98AD02A698CFACD7EA3503D3E6CB594129543E3F1`
-- Cases: `32`
-- Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `12` inconclusive, `1` unqualified
-- Historical point measurement environments represented: `2`
+- Cases: `36`
+- Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `16` inconclusive, `1` unqualified
+- Historical point measurement environments represented: `3`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -34,14 +34,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Coverage summary
 
-This catalog currently covers `32` operation rows over `17` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
+This catalog currently covers `36` operation rows over `20` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
 
 | Axis | Covered values |
 |---|---|
 | Operation families | `Count`, `FindAllStrings`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceString`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SplitStrings`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
-| Flags | `Ascii`, `IgnoreCase`, `None` |
-| Feature families | `ASCII class run`, `ASCII word boundary`, `Anchors and fixed classes`, `Callback replacement`, `Captured separator`, `Exact literal`, `Exact literal replacement`, `Ignore-case literal`, `Literal alternation`, `Mixed-width captures`, `One capture`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Separated captures`, `Separator class`, `Unicode literal` |
-| Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `ManagedFallback`, `SimpleNative` |
+| Flags | `Ascii`, `DotAll`, `IgnoreCase`, `Multiline`, `None`, `Verbose` |
+| Feature families | `ASCII class run`, `ASCII word boundary`, `Anchors and fixed classes`, `Callback replacement`, `Captured separator`, `Dot-all wildcard`, `Exact literal`, `Exact literal replacement`, `Ignore-case literal`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `One capture`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Separated captures`, `Separator class`, `Unicode literal`, `Verbose classes` |
+| Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `GeneralNative`, `ManagedFallback`, `SimpleNative` |
 | Result cardinalities | `Many`, `ManyEmpty`, `One`, `Zero` |
 | Input-width classes | `Ascii`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte` |
 | Corpus provenance | `Synthetic catalog generator` |
@@ -49,7 +49,7 @@ This catalog currently covers `32` operation rows over `17` distinct patterns. Z
 
 | Result section | Rows |
 |---|---:|
-| Direct matching | 10 |
+| Direct matching | 14 |
 | Detailed and scalar projections | 1 |
 | Count, FindAll, and FindIter | 13 |
 | Replace and Subn | 6 |
@@ -79,6 +79,10 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `anchor/fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | Unqualified | 0.142 us | 0.118 us | 1.15x | 0.215 us | 0.102 us | 56 B |
 | `ignorecase/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.102 us | 0.217 us | 0.46x | 0.252 us | 0.165 us | 280 B |
 | `ignorecase/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.041 us | 0.169 us | 0.25x | 0.263 us | 0.070 us | 64 B |
+| `multiline/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.195 us | 0.319 us | 0.61x | 0.262 us | 0.132 us | 272 B |
+| `multiline/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.055 us | 0.221 us | 0.25x | 0.414 us | 0.109 us | 64 B |
+| `dotall/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 4.643 us | 0.218 us | 21.88x | 0.367 us | 8.799 us | 8,232 B |
+| `verbose/fullmatch-hit` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 0.061 us | 0.195 us | 0.31x | 0.239 us | 0.143 us | 48 B |
 
 ### Detailed and scalar projections
 
@@ -155,6 +159,10 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `anchor/fullmatch-miss` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.86x [0.84, 8.70]; Unqualified |
 | `ignorecase/search-hit` | `_sre C Pattern.search` | `Utf8Regex/AsciiLiteralIgnoreCase; value ranges` | Rbyte 0.41x [0.39, 0.46]; Inconclusive |
 | `ignorecase/search-miss` | `_sre C Pattern.search` | `Utf8Regex/AsciiLiteralIgnoreCase; value ranges` | Rbyte 0.17x [0.16, 0.19]; Inconclusive |
+| `multiline/search-hit` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Rbyte 0.41x [0.31, 0.92]; Inconclusive |
+| `multiline/search-miss` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Rbyte 0.23x [0.20, 0.24]; ManagedFaster |
+| `dotall/fullmatch-hit` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Rbyte 19.62x [19.35, 26.19]; NotApplicable |
+| `verbose/fullmatch-hit` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Rbyte 0.28x [0.27, 0.29]; NotApplicable |
 | `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
