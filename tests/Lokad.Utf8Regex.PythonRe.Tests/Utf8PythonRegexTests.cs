@@ -738,6 +738,37 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void FindAllStringsProjectsSingleTrailingCaptureFromValueMatches()
+    {
+        var regex = new Utf8PythonRegex("item-([0-9]+)");
+        var input = "skip item-12 item-345 item-6"u8;
+
+        var all = regex.FindAllToStrings(input);
+        var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip item-12 "u8.Length);
+
+        Assert.True(regex.DebugUsesSingleTrailingCaptureFindAllFastPath);
+        Assert.Equal(["12", "345", "6"], all.ScalarValues);
+        Assert.Equal(["345", "6"], afterFirst.ScalarValues);
+    }
+
+    [Theory]
+    [InlineData("([0-9]+)-item", "12-item 345-item", "12", "345")]
+    [InlineData("([0-9])+", "12 345", "2", "5")]
+    public void FindAllStringsRetainsGeneralCaptureProjection(
+        string pattern,
+        string input,
+        string first,
+        string second)
+    {
+        var regex = new Utf8PythonRegex(pattern);
+
+        var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
+
+        Assert.False(regex.DebugUsesSingleTrailingCaptureFindAllFastPath);
+        Assert.Equal([first, second], result.ScalarValues);
+    }
+
+    [Fact]
     public void EmptyThenNonEmptyCompanionPreservesCapturesContextAndConcurrentReuse()
     {
         var captured = new Utf8PythonRegex("(?P<word>x*|y)");

@@ -126,7 +126,7 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.False(cases.GetProperty("unicode/fullmatch").GetProperty("ByteControlEligible").GetBoolean());
         Assert.False(cases.GetProperty("family/count").GetProperty("ByteControlEligible").GetBoolean());
         Assert.Contains(
-            "strict UTF-8 decode",
+            "Utf8Regex/ExactAsciiLiteral",
             cases.GetProperty("replacement/subn-string").GetProperty("ManagedRoute").GetString(),
             StringComparison.Ordinal);
         Assert.Equal(

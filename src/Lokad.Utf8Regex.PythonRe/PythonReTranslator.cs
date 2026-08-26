@@ -23,6 +23,43 @@ internal static class PythonReTranslator
 
     public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
 
+    public static bool TryGetSingleTrailingCapturePrefixLength(PythonReNode node, out int prefixLength)
+    {
+        if (node is PythonReGroupNode
+            {
+                Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
+            })
+        {
+            prefixLength = 0;
+            return true;
+        }
+
+        if (node is not PythonReSequenceNode { Elements.Count: > 0 } sequence ||
+            sequence.Elements[^1] is not PythonReGroupNode
+            {
+                Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
+            })
+        {
+            prefixLength = 0;
+            return false;
+        }
+
+        var length = 0;
+        for (var index = 0; index < sequence.Elements.Count - 1; index++)
+        {
+            if (!TryGetExactLiteral(sequence.Elements[index], out var segment))
+            {
+                prefixLength = 0;
+                return false;
+            }
+
+            length = checked(length + segment.Length);
+        }
+
+        prefixLength = length;
+        return true;
+    }
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);

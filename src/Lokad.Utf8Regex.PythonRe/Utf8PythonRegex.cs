@@ -95,6 +95,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canMatchNonEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseManagedSplitFastPath;
+    private readonly int _singleTrailingCapturePrefixLength;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -155,6 +156,11 @@ public sealed class Utf8PythonRegex
         _canUseManagedSplitFastPath = !_canMatchEmpty &&
             (parseResult.CaptureGroupCount == 0 ||
                 parseResult.NamedGroups.Count == 0 && PythonReTranslator.CanUseManagedSplitFastPath(parseResult.Root));
+        _singleTrailingCapturePrefixLength = !_canMatchEmpty &&
+            parseResult.CaptureGroupCount == 1 &&
+            PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
+                ? capturePrefixLength
+                : -1;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
@@ -690,6 +696,25 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
+            if (_singleTrailingCapturePrefixLength >= 0)
+            {
+                List<string> directValues = [];
+                foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+                {
+                    var captureStart = match.Index + _singleTrailingCapturePrefixLength;
+                    directValues.Add(subject.Substring(
+                        captureStart,
+                        match.Length - _singleTrailingCapturePrefixLength));
+                }
+
+                return new Utf8PythonFindAllResult
+                {
+                    Shape = Utf8PythonFindAllShape.SingleGroup,
+                    ScalarValues = directValues.ToArray(),
+                    TupleValues = [],
+                };
+            }
+
             List<string> collected = [];
             var searchIndex = startOffsetInUtf16;
             while (searchIndex <= subject.Length)
@@ -1750,6 +1775,8 @@ public sealed class Utf8PythonRegex
     internal PythonReDirectBackendKind DebugSplitBackend => PythonReDirectBackendKind.ManagedRegex;
 
     internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
+
+    internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
 
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
 
