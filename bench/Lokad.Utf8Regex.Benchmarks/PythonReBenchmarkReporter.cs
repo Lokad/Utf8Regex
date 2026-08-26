@@ -1822,14 +1822,17 @@ internal sealed class PythonReBenchmarkContext
         _decoded = benchmarkCase.Input;
         _replacementBytes = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
         _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
-        var regexOptions = ToRegexOptions(benchmarkCase.Options);
-        _regex = new Regex(benchmarkCase.Pattern, regexOptions, Regex.InfiniteMatchTimeout);
-        _fullRegex = new Regex($@"\A(?:{benchmarkCase.Pattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
+        var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
+        var translation = PythonReTranslator.Translate(parsed);
+        var translatedPattern = translation.Pattern;
+        var regexOptions = translation.RegexOptions;
+        _regex = new Regex(translatedPattern, regexOptions, Regex.InfiniteMatchTimeout);
+        _fullRegex = new Regex($@"\A(?:{translatedPattern})\z", regexOptions, Regex.InfiniteMatchTimeout);
         _captureCount = _regex.GetGroupNumbers().Length - 1;
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
             _captureCount == 0)
         {
-            _coreFindAllRegex = new Utf8Regex(benchmarkCase.Pattern, regexOptions);
+            _coreFindAllRegex = new Utf8Regex(translatedPattern, regexOptions);
             _preparedCoreRanges = CollectCoreRanges().ToArray();
             _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
             _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);
@@ -1951,7 +1954,7 @@ internal sealed class PythonReBenchmarkContext
             _supportsReplacementPhases = plan.Tokens.All(
                 static token => token.Kind == PythonReReplacementTokenKind.Literal);
             _coreReplacementRegex = _supportsReplacementPhases
-                ? new Utf8Regex(benchmarkCase.Pattern, regexOptions)
+                ? new Utf8Regex(translatedPattern, regexOptions)
                 : null;
             _preparedReplacementPlan = plan;
             _preparedDotNetReplacement = plan.ToDotNetReplacementString();
@@ -1976,7 +1979,7 @@ internal sealed class PythonReBenchmarkContext
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.Search or PythonReBenchmarkOperation.Match &&
             InputBytes.AsSpan().ContainsAnyExceptInRange((byte)0, (byte)0x7f) == false)
         {
-            var oneShotCoreRegex = new Utf8Regex(benchmarkCase.Pattern, regexOptions);
+            var oneShotCoreRegex = new Utf8Regex(translatedPattern, regexOptions);
             _oneShotCoreRegex = oneShotCoreRegex;
             _supportsOneShotPhases = true;
             _supportsExactLiteralOneShotReplay =
@@ -4212,32 +4215,6 @@ internal sealed class PythonReBenchmarkContext
     private static int Combine(int seed, int value1, int value2, int value3, int value4) =>
         Combine(Combine(Combine(Combine(seed, value1), value2), value3), value4);
 
-    private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
-    {
-        var result = RegexOptions.CultureInvariant;
-        if ((options & PythonReCompileOptions.IgnoreCase) != 0)
-        {
-            result |= RegexOptions.IgnoreCase;
-        }
-        if ((options & PythonReCompileOptions.Multiline) != 0)
-        {
-            result |= RegexOptions.Multiline;
-        }
-        if ((options & PythonReCompileOptions.DotAll) != 0)
-        {
-            result |= RegexOptions.Singleline;
-        }
-        if ((options & PythonReCompileOptions.Verbose) != 0)
-        {
-            result |= RegexOptions.IgnorePatternWhitespace;
-        }
-        if ((options & PythonReCompileOptions.Ascii) != 0)
-        {
-            result |= RegexOptions.ECMAScript;
-        }
-
-        return result;
-    }
 }
 
 internal sealed record BclFindAllResult(Utf8PythonFindAllShape Shape, string[] ScalarValues, string[][] TupleValues);

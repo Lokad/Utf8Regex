@@ -178,7 +178,8 @@ internal static partial class PythonReBenchmarkReporter
             return "NonAscii";
         }
 
-        return (benchmarkCase.Options & ~PythonReCompileOptions.Ascii) == PythonReCompileOptions.None
+        return (benchmarkCase.Options & (PythonReCompileOptions.Locale | PythonReCompileOptions.Unicode)) ==
+            PythonReCompileOptions.None
             ? "Eligible"
             : "FlagsExcluded";
     }
