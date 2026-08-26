@@ -24,6 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\PythonReBenchmarkCatalog.cs"
+             Link="PythonReBenchmarkCatalog.cs" />
     <Compile Include="..\..\bench\Lokad.Utf8Regex.Benchmarks\PythonReQualificationFreshness.cs"
              Link="PythonReQualificationFreshness.cs" />
   </ItemGroup>

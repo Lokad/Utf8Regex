@@ -61,7 +61,19 @@ internal static partial class PythonReBenchmarkReporter
     private static string BuildPythonReBenchmarkMarkdown(PythonReBenchmarkSnapshot snapshot)
     {
         var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var rows = snapshot.Cases.ToArray();
+        var orderedIds = snapshot.CatalogCaseIds.Length == 0
+            ? snapshot.Cases.Keys.ToArray()
+            : snapshot.CatalogCaseIds;
+        var rows = orderedIds
+            .Where(snapshot.Cases.ContainsKey)
+            .Select(caseId => new KeyValuePair<string, PythonReCaseMeasurement>(
+                caseId,
+                snapshot.Cases[caseId]))
+            .Concat(snapshot.Cases.Where(pair => !orderedIds.Contains(pair.Key, StringComparer.Ordinal)))
+            .ToArray();
+        var catalogById = PythonReBenchmarkCatalog.Cases.ToDictionary(
+            static benchmarkCase => benchmarkCase.Id,
+            StringComparer.Ordinal);
         var hasCompleteCpythonBaseline = rows.All(static row => row.Value.Cpython is not null);
         var statusCounts = rows
             .GroupBy(
@@ -148,6 +160,41 @@ internal static partial class PythonReBenchmarkReporter
         }
         writer.WriteLine();
 
+        if (snapshot.SchemaVersion >= 8)
+        {
+            var coverageRows = rows.Where(static row => row.Value.Coverage is not null).ToArray();
+            writer.WriteLine("## Coverage summary");
+            writer.WriteLine();
+            writer.WriteLine(
+                $"This catalog currently covers `{coverageRows.Length}` operation rows over " +
+                $"`{coverageRows.Select(static row => row.Value.Pattern).Distinct(StringComparer.Ordinal).Count()}` " +
+                "distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.");
+            writer.WriteLine();
+            writer.WriteLine("| Axis | Covered values |");
+            writer.WriteLine("|---|---|");
+            WriteCoverageAxis("Operation families", coverageRows.Select(static row => row.Value.Operation));
+            WriteCoverageAxis("Flags", coverageRows.Select(static row => row.Value.Options));
+            WriteCoverageAxis("Feature families", coverageRows.Select(static row => row.Value.Coverage!.FeatureFamily));
+            WriteCoverageAxis("Managed route classes", coverageRows.Select(static row => row.Value.Coverage!.IntendedManagedRouteClass));
+            WriteCoverageAxis("Result cardinalities", coverageRows.Select(static row => row.Value.Coverage!.ExpectedResultCardinality));
+            WriteCoverageAxis(
+                "Input-width classes",
+                coverageRows.Select(row => GetPythonReInputWidthClass(catalogById[row.Key].Input)));
+            WriteCoverageAxis("Corpus provenance", coverageRows.Select(static row => row.Value.Coverage!.CorpusProvenance));
+            WriteCoverageAxis("Claim classes", coverageRows.Select(static row => row.Value.Coverage!.ClaimClass));
+            writer.WriteLine();
+            writer.WriteLine("| Result section | Rows |");
+            writer.WriteLine("|---|---:|");
+            foreach (var section in s_pythonReCoverageSections)
+            {
+                writer.WriteLine(
+                    $"| {section} | " +
+                    $"{coverageRows.Count(row => row.Value.Coverage!.Section.Equals(section, StringComparison.Ordinal))} |");
+            }
+
+            writer.WriteLine();
+        }
+
         if (environments.Length == 1)
         {
             var environment = environments[0];
@@ -168,28 +215,50 @@ internal static partial class PythonReBenchmarkReporter
         {
             writer.WriteLine("`Rstrong` is `PythonRe / CPython predecoded`; lower is better. Only a qualified paired 95% interval wholly below `0.98`, wholly within `0.98-1.02`, or wholly above `1.02` can establish Managed faster, Equivalent, or CPython faster. The old scalar medians shown for Unqualified rows are discovery evidence only. All times are elapsed microseconds per public operation, not CPU time.");
             writer.WriteLine();
-            writer.WriteLine("| Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |");
-            writer.WriteLine("|---|---|---|---|---:|---:|---:|---:|---:|---:|");
-            foreach (var (caseId, measurement) in rows)
+            var resultSections = snapshot.SchemaVersion >= 8
+                ? s_pythonReCoverageSections
+                : ["Results"];
+            foreach (var section in resultSections)
             {
-                var cpython = measurement.Cpython ??
-                    throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.");
-                var qualification = measurement.Qualification;
-                var paired = qualification?.PairedEvidence;
-                var managedMicroseconds = paired?.ManagedMedianMicroseconds ??
-                    measurement.PythonRe.MedianMicroseconds;
-                var cpythonMicroseconds = paired?.CpythonMedianMicroseconds ??
-                    cpython.PredecodedRe.MedianMicroseconds;
-                var strongRatio = paired?.StrongRatioMedian ?? managedMicroseconds / cpythonMicroseconds;
-                writer.WriteLine(
-                    $"| `{caseId}` | `{measurement.Operation}` | {paired?.ResultContract ?? "Historical"} | " +
-                    $"{FormatPythonReStatus(qualification)} | " +
-                    $"{FormatPythonReMicroseconds(managedMicroseconds)} | " +
-                    $"{FormatPythonReMicroseconds(cpythonMicroseconds)} | " +
-                    $"{strongRatio:F2}x | " +
-                    $"{FormatPythonReMicroseconds(cpython.DecodeThenRe.MedianMicroseconds)} | " +
-                    $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
-                    $"{(paired?.ManagedMedianAllocatedBytes ?? measurement.PythonRe.MedianAllocatedBytes):N0} B |");
+                var sectionRows = snapshot.SchemaVersion >= 8
+                    ? rows.Where(row => row.Value.Coverage?.Section.Equals(
+                        section,
+                        StringComparison.Ordinal) == true).ToArray()
+                    : rows;
+                writer.WriteLine($"### {section}");
+                writer.WriteLine();
+                if (sectionRows.Length == 0)
+                {
+                    writer.WriteLine("No benchmark rows are cataloged in this section yet.");
+                    writer.WriteLine();
+                    continue;
+                }
+
+                writer.WriteLine("| Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |");
+                writer.WriteLine("|---|---|---|---|---:|---:|---:|---:|---:|---:|");
+                foreach (var (caseId, measurement) in sectionRows)
+                {
+                    var cpython = measurement.Cpython ??
+                        throw new InvalidOperationException("A complete CPython snapshot contains a missing row baseline.");
+                    var qualification = measurement.Qualification;
+                    var paired = qualification?.PairedEvidence;
+                    var managedMicroseconds = paired?.ManagedMedianMicroseconds ??
+                        measurement.PythonRe.MedianMicroseconds;
+                    var cpythonMicroseconds = paired?.CpythonMedianMicroseconds ??
+                        cpython.PredecodedRe.MedianMicroseconds;
+                    var strongRatio = paired?.StrongRatioMedian ?? managedMicroseconds / cpythonMicroseconds;
+                    writer.WriteLine(
+                        $"| `{caseId}` | `{measurement.Operation}` | {paired?.ResultContract ?? "Historical"} | " +
+                        $"{FormatPythonReStatus(qualification)} | " +
+                        $"{FormatPythonReMicroseconds(managedMicroseconds)} | " +
+                        $"{FormatPythonReMicroseconds(cpythonMicroseconds)} | " +
+                        $"{strongRatio:F2}x | " +
+                        $"{FormatPythonReMicroseconds(cpython.DecodeThenRe.MedianMicroseconds)} | " +
+                        $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
+                        $"{(paired?.ManagedMedianAllocatedBytes ?? measurement.PythonRe.MedianAllocatedBytes):N0} B |");
+                }
+
+                writer.WriteLine();
             }
         }
         else
@@ -245,6 +314,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pythonre-case\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--resume-pythonre-qualifications\",\"9\",\"17\",\"4\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pythonre-priority-report\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--emit-pythonre-coverage-report\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-coverage-contract\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");
@@ -255,6 +326,16 @@ internal static partial class PythonReBenchmarkReporter
         return writer.ToString();
 
         int GetStatusCount(string status) => statusCounts.GetValueOrDefault(status);
+
+        void WriteCoverageAxis(string axis, IEnumerable<string> values)
+        {
+            var formatted = string.Join(
+                ", ",
+                values.Distinct(StringComparer.Ordinal)
+                    .OrderBy(static value => value, StringComparer.Ordinal)
+                    .Select(static value => $"`{value}`"));
+            writer.WriteLine($"| {axis} | {formatted} |");
+        }
     }
 
     private static string FormatPythonReStatus(PythonReQualificationMeasurement? qualification)

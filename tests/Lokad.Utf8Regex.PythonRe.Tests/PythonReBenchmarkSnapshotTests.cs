@@ -1,40 +1,22 @@
 using System.Text.Json;
 using System.Security.Cryptography;
+using Lokad.Utf8Regex.Benchmarks;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReBenchmarkSnapshotTests
 {
-    private static readonly string[] s_caseIds =
+    private static readonly string[] s_mandatorySentinelIds =
     [
         "capture/search-detailed",
-        "class-run/count",
         "family/count",
-        "findall/full-strings",
-        "findall/full-utf8",
-        "findall/many-capture-strings",
-        "findall/many-capture-utf8",
         "findall/one-capture-strings",
         "findall/unicode-capture-utf8",
-        "findall/unicode-full-strings",
-        "findall/unicode-full-utf8",
-        "iteration/finditer-detailed",
-        "literal/fullmatch",
         "literal/ismatch",
-        "literal/search",
         "literal/search-miss",
         "prefix/match",
-        "replacement/evaluator-string",
-        "replacement/evaluator-utf8",
-        "replacement/fixed-string",
-        "replacement/fixed-utf8",
-        "replacement/subn-string",
         "replacement/subn-utf8",
         "split/captures",
-        "split/no-captures",
-        "unicode/count",
-        "unicode/fullmatch",
-        "zero-width/count",
     ];
 
     [Fact]
@@ -42,7 +24,7 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(7, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(8, root.GetProperty("SchemaVersion").GetInt32());
         var catalogSha256 = root.GetProperty("CatalogSha256").GetString() ?? string.Empty;
         Assert.Matches("^[0-9A-F]{64}$", catalogSha256);
 
@@ -54,9 +36,23 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.False(string.IsNullOrWhiteSpace(corpus.GetProperty("Limitation").GetString()));
 
         var cases = root.GetProperty("Cases");
+        var catalogCaseIds = PythonReBenchmarkCatalog.Cases
+            .Select(static benchmarkCase => benchmarkCase.Id)
+            .ToArray();
         Assert.Equal(
-            s_caseIds,
+            catalogCaseIds,
+            root.GetProperty("CatalogCaseIds").EnumerateArray()
+                .Select(static element => element.GetString())
+                .ToArray());
+        Assert.Equal(
+            catalogCaseIds.OrderBy(static id => id, StringComparer.Ordinal),
             cases.EnumerateObject().Select(static property => property.Name).OrderBy(static name => name, StringComparer.Ordinal).ToArray());
+        Assert.True(catalogCaseIds.Length >= 28);
+        Assert.True(PythonReBenchmarkCatalog.Cases
+            .Select(static benchmarkCase => benchmarkCase.Pattern)
+            .Distinct(StringComparer.Ordinal)
+            .Count() >= 15);
+        Assert.All(s_mandatorySentinelIds, id => Assert.Contains(id, catalogCaseIds));
 
         foreach (var benchmarkCase in cases.EnumerateObject())
         {
@@ -68,6 +64,12 @@ public sealed class PythonReBenchmarkSnapshotTests
             Assert.True(benchmarkCase.Value.GetProperty("InputUtf8Bytes").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("EffectiveIterations").GetInt32() > 0);
             Assert.True(benchmarkCase.Value.GetProperty("Samples").GetInt32() >= 5);
+            var coverage = benchmarkCase.Value.GetProperty("Coverage");
+            Assert.False(string.IsNullOrWhiteSpace(coverage.GetProperty("Section").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(coverage.GetProperty("FeatureFamily").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(coverage.GetProperty("InputShape").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(coverage.GetProperty("ProjectionKind").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(coverage.GetProperty("ClaimClass").GetString()));
             AssertCompleteMeasurement(benchmarkCase.Value.GetProperty("PythonRe"));
             AssertCompleteMeasurement(benchmarkCase.Value.GetProperty("DecodeThenRegex"));
             AssertCompleteMeasurement(benchmarkCase.Value.GetProperty("PredecodedRegex"));
@@ -148,10 +150,13 @@ public sealed class PythonReBenchmarkSnapshotTests
             .ToArray();
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.Contains($"Catalog SHA-256: `{catalogSha256}`", page, StringComparison.Ordinal);
-        Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
+        Assert.All(catalogCaseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
         Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
         Assert.Contains("`Rbyte` is representation-neutral engine evidence", page, StringComparison.Ordinal);
         Assert.Contains("## Operation ownership and managed route", page, StringComparison.Ordinal);
+        Assert.Contains("## Coverage summary", page, StringComparison.Ordinal);
+        Assert.Contains("### Direct matching", page, StringComparison.Ordinal);
+        Assert.Contains("### Scaling evidence", page, StringComparison.Ordinal);
         var statusCounts = cases.EnumerateObject()
             .GroupBy(
                 static benchmarkCase => benchmarkCase.Value
