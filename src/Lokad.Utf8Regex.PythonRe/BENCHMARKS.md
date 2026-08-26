@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:38:47.0009556+00:00`
-- Snapshot SHA-256: `3C3DD01CCD4270D58E042F9ED98D77E2E70133FFE13E61CFD75C9DDCD55CBA23`
+- Generated: `2026-08-26T12:41:17.0981866+00:00`
+- Snapshot SHA-256: `CD273F7CC485F3AAAC62BB44FB8EBC12B8056C808CD8BD769475E2AC1330C380`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
@@ -90,7 +90,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
 | `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
 | `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
 | `replacement/evaluator-string` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/fixed-string` | `_sre C Pattern.sub` | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |

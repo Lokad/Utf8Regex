@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 6,
-  "GeneratedAtUtc": "2026-08-26T12:38:47.0009556+00:00",
+  "GeneratedAtUtc": "2026-08-26T12:41:17.0981866+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
     "Sha256": "0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B",
@@ -1282,7 +1282,7 @@
       "Samples": 7,
       "IncludesResultMaterialization": false,
       "ComparatorOwner": "_sre C Pattern.match",
-      "ManagedRoute": "Utf8Regex/FallbackRegex; anchored value ranges",
+      "ManagedRoute": "Utf8Regex/FallbackRegex; strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges",
       "ByteControlEligible": true,
       "ByteControlReason": "Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical.",
       "Environment": {
