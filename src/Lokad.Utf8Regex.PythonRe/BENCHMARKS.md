@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:47:00.1483483+00:00`
-- Snapshot SHA-256: `0DA9834F1866D4EAA8EB140C2E2FA6B9F5936BE25F8CBA2583138F9D8950880C`
+- Generated: `2026-08-26T12:48:34.7163633+00:00`
+- Snapshot SHA-256: `F53EE1AC28ED863470D6154A1CC089C860D844E1F19FF6F435C5B3F8026642B0`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `0` managed faster, `0` equivalent, `0` CPython faster, `0` inconclusive, `28` unqualified
