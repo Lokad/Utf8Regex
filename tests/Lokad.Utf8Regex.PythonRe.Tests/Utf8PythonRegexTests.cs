@@ -1235,14 +1235,24 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void ExactLiteralReplacementRetainsGeneralPathsForLimitsOffsetsAndGroups()
+    public void ExactLiteralReplacementHonorsLimitsOffsetsAndGroups()
     {
         var regex = new Utf8PythonRegex("cat");
         var input = "cat cat cat"u8;
 
         Assert.Equal("dog cat cat", regex.ReplaceToString(input, "dog", count: 1));
+        Assert.Equal(
+            "🐈 🐈 cat",
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "🐈", count: 2)));
+        var subn = regex.SubnToString(input, "dog", count: 2);
+        Assert.Equal(("dog dog cat", 2), (subn.ResultText, subn.ReplacementCount));
+        Assert.Equal("dog dog dog", regex.ReplaceToString(input, "dog", count: 99));
         Assert.Equal("cat dog dog", regex.ReplaceToString(input, "dog", count: 0, startOffsetInBytes: 4));
         Assert.Equal("<cat> <cat> <cat>", regex.ReplaceToString(input, @"<\g<0>>"));
+
+        var malformedTail = new byte[] { (byte)'c', (byte)'a', (byte)'t', 0xC3, 0x28 };
+        Assert.Throws<ArgumentException>(() =>
+            regex.ReplaceToString(malformedTail, "dog", count: 1));
     }
 
     [Fact]
