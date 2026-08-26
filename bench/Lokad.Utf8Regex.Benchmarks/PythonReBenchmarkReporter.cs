@@ -293,17 +293,7 @@ internal static partial class PythonReBenchmarkReporter
 
         foreach (var (caseId, measurement) in snapshot.Cases)
         {
-            var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
-                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal)) ??
-                throw new InvalidOperationException($"PythonRe snapshot contains unknown case '{caseId}'.");
-            var context = new PythonReBenchmarkContext(benchmarkCase);
-            var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
-                benchmarkCase,
-                context.InputBytes);
-            measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation);
-            measurement.ManagedRoute = context.DescribeManagedRoute();
-            measurement.ByteControlEligible = byteControl.IsEligible;
-            measurement.ByteControlReason = byteControl.Reason;
+            RefreshMeasurementMetadata(caseId, measurement);
             measurement.Qualification = measurement.Qualification?.PairedEvidence is null
                 ? PythonReQualificationMeasurement.CreateUnqualified(
                     measurement.Qualification?.StatusReason ??
@@ -335,8 +325,10 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var invalidated = 0;
-        foreach (var measurement in snapshot.Cases.Values)
+        foreach (var (caseId, measurement) in snapshot.Cases)
         {
+            RefreshMeasurementMetadata(caseId, measurement);
+
             if (measurement.Qualification?.PairedEvidence is null)
             {
                 continue;
@@ -356,6 +348,21 @@ internal static partial class PythonReBenchmarkReporter
         });
         Console.WriteLine($"Invalidated {invalidated} PythonRe paired qualifications.");
         return 0;
+    }
+
+    private static void RefreshMeasurementMetadata(string caseId, PythonReCaseMeasurement measurement)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal)) ??
+            throw new InvalidOperationException($"PythonRe snapshot contains unknown case '{caseId}'.");
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
+            benchmarkCase,
+            context.InputBytes);
+        measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation);
+        measurement.ManagedRoute = context.DescribeManagedRoute();
+        measurement.ByteControlEligible = byteControl.IsEligible;
+        measurement.ByteControlReason = byteControl.Reason;
     }
 
     private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot)
