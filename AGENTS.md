@@ -165,6 +165,10 @@ PythonRe benchmark snapshot and diagnostics:
   decode, count, replacement, UTF-8 encoding, current required work, a native
   UTF-8-core control, and a one-pass literal replay. The cumulative lanes are
   attribution controls, not additive estimates or Status evidence.
+- Use `--measure-pythonre-one-shot-phases <id> [iterations] [samples]` for
+  ASCII exact-literal Search/Match rows. It compares validation, raw literal
+  search, direct core matching, generic zero-offset matching, predecoded
+  `Regex`, and the public adapter while checking identical byte/UTF-16 ranges.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
 - Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema

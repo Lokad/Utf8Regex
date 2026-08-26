@@ -4,6 +4,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Input;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -101,6 +103,15 @@ internal static partial class PythonReBenchmarkReporter
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-replacement-phases", StringComparison.Ordinal))
         {
             exitCode = MeasureReplacementPhases(
+                args[1],
+                ParsePositive(args, 2, 200),
+                ParsePositive(args, 3, 7));
+            return true;
+        }
+
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-one-shot-phases", StringComparison.Ordinal))
+        {
+            exitCode = MeasureOneShotPhases(
                 args[1],
                 ParsePositive(args, 2, 200),
                 ParsePositive(args, 3, 7));
@@ -633,6 +644,68 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("DecodeOnePass", MeasureRetainedPhaseOperation(context.ExecuteDecodedOnePassLiteralReplacement, effectiveIterations, samples));
         PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReReplacement, effectiveIterations, samples));
         PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedReplacementChecksum, effectiveIterations, samples));
+        return 0;
+    }
+
+    private static int MeasureOneShotPhases(string id, int iterations, int samples)
+    {
+        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
+        if (benchmarkCase is null)
+        {
+            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
+            return 1;
+        }
+
+        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.Search and
+            not PythonReBenchmarkOperation.Match)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe one-shot phase diagnostics require Search or Match; " +
+                $"'{id}' uses {benchmarkCase.Operation}.");
+            return 1;
+        }
+
+        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
+        using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
+        var context = new PythonReBenchmarkContext(benchmarkCase);
+        if (!context.SupportsOneShotPhases)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe one-shot phase diagnostics currently require an ASCII exact-literal route; " +
+                $"'{id}' is unsupported.");
+            return 1;
+        }
+
+        var expected = context.ExecutePythonReOneShot();
+        var direct = context.ExecuteCoreDirectOneShot();
+        var offset = context.ExecuteCoreOffsetZeroOneShot();
+        var raw = context.ExecuteCoreRawOneShot();
+        var predecoded = context.ExecutePredecodedOneShot();
+        if (expected != direct || expected != offset || expected != raw || expected != predecoded)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe one-shot phase diagnostic '{id}' produced incomparable results: " +
+                $"public={expected}, direct={direct}, offset={offset}, raw={raw}, predecoded={predecoded}.");
+        }
+
+        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
+        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
+        Console.WriteLine($"ManagedRoute       : {context.DescribeManagedRoute()}");
+        Console.WriteLine($"CoreRoute          : {context.OneShotCoreExecutionKind}");
+        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
+        Console.WriteLine($"Result             : {expected}");
+        Console.WriteLine($"Iterations         : {effectiveIterations}");
+        Console.WriteLine($"Samples            : {samples}");
+        Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
+        Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
+        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
+        PrintOperation("ValidationOnly", MeasureRetainedPhaseOperation(context.ExecuteOneShotValidation, effectiveIterations, samples));
+        PrintOperation("RawExactLiteral", MeasureRetainedPhaseOperation(context.ExecuteCoreRawOneShot, effectiveIterations, samples));
+        PrintOperation("CoreDirect", MeasureRetainedPhaseOperation(context.ExecuteCoreDirectOneShot, effectiveIterations, samples));
+        PrintOperation("CoreOffsetZero", MeasureRetainedPhaseOperation(context.ExecuteCoreOffsetZeroOneShot, effectiveIterations, samples));
+        PrintOperation("PredecodedRegex", MeasureRetainedPhaseOperation(context.ExecutePredecodedOneShot, effectiveIterations, samples));
+        PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReOneShot, effectiveIterations, samples));
         return 0;
     }
 
@@ -1621,6 +1694,8 @@ internal sealed class PythonReBenchmarkContext
     private readonly string _preparedDotNetReplacement;
     private readonly string _preparedLiteralReplacement;
     private readonly PythonReBenchmarkReplacementResult? _preparedReplacementResult;
+    private readonly Utf8Regex? _oneShotCoreRegex;
+    private readonly bool _supportsOneShotPhases;
     private readonly string _decoded;
     private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
@@ -1710,6 +1785,21 @@ internal sealed class PythonReBenchmarkContext
             _preparedLiteralReplacement = string.Empty;
             _preparedReplacementResult = null;
         }
+
+        if (benchmarkCase.Operation is PythonReBenchmarkOperation.Search or PythonReBenchmarkOperation.Match &&
+            InputBytes.AsSpan().ContainsAnyExceptInRange((byte)0, (byte)0x7f) == false)
+        {
+            var oneShotCoreRegex = new Utf8Regex(benchmarkCase.Pattern, regexOptions);
+            _oneShotCoreRegex = oneShotCoreRegex;
+            _supportsOneShotPhases =
+                oneShotCoreRegex.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
+                oneShotCoreRegex.Inspection.DebugTryMatchExactLiteral(InputBytes, out _);
+        }
+        else
+        {
+            _oneShotCoreRegex = null;
+            _supportsOneShotPhases = false;
+        }
     }
 
     internal byte[] InputBytes { get; }
@@ -1744,6 +1834,11 @@ internal sealed class PythonReBenchmarkContext
 
     internal int PreparedReplacementOutputUtf8Bytes => GetPreparedReplacementResult().ResultBytes?.Length ??
         s_strictUtf8.GetByteCount(GetPreparedReplacementResult().ResultText);
+
+    internal bool SupportsOneShotPhases => _supportsOneShotPhases;
+
+    internal string OneShotCoreExecutionKind => GetOneShotCoreRegex()
+        .Inspection.ExecutionKind.ToString();
 
     internal string DescribeManagedRoute() => _case.Operation switch
     {
@@ -2552,6 +2647,102 @@ internal sealed class PythonReBenchmarkContext
         if (!SupportsCapturedFindAllPhases)
         {
             throw new InvalidOperationException("Captured FindAll phase controls are not available for this case.");
+        }
+    }
+
+    internal Utf8ValidationResult ExecuteOneShotValidation()
+    {
+        EnsureOneShotPhases();
+        return Utf8InputAnalyzer.ValidateOnly(InputBytes);
+    }
+
+    internal PythonReBenchmarkValueResult ExecuteCoreRawOneShot()
+    {
+        EnsureOneShotPhases();
+        var regex = GetOneShotCoreRegex();
+        if (!regex.Inspection.DebugTryMatchExactLiteral(InputBytes, out var match))
+        {
+            throw new InvalidOperationException("The exact-literal raw control is unavailable.");
+        }
+
+        return ProjectCoreOneShot(match);
+    }
+
+    internal PythonReBenchmarkValueResult ExecuteCoreDirectOneShot()
+    {
+        EnsureOneShotPhases();
+        return ProjectCoreOneShot(GetOneShotCoreRegex().Match(InputBytes));
+    }
+
+    internal PythonReBenchmarkValueResult ExecuteCoreOffsetZeroOneShot()
+    {
+        EnsureOneShotPhases();
+        return ProjectCoreOneShot(GetOneShotCoreRegex().MatchFromUtf16Offset(InputBytes, 0));
+    }
+
+    internal PythonReBenchmarkValueResult ExecutePythonReOneShot()
+    {
+        EnsureOneShotPhases();
+        var match = _case.Operation == PythonReBenchmarkOperation.Search
+            ? _pythonRegex.Search(InputBytes)
+            : _pythonRegex.Match(InputBytes);
+        return match.Success
+            ? new PythonReBenchmarkValueResult(
+                true,
+                match.StartOffsetInBytes,
+                match.EndOffsetInBytes,
+                match.StartOffsetInUtf16,
+                match.EndOffsetInUtf16)
+            : default;
+    }
+
+    internal PythonReBenchmarkValueResult ExecutePredecodedOneShot()
+    {
+        EnsureOneShotPhases();
+        var match = _regex.Match(_decoded);
+        if (!match.Success ||
+            _case.Operation == PythonReBenchmarkOperation.Match && match.Index != 0)
+        {
+            return default;
+        }
+
+        return new PythonReBenchmarkValueResult(
+            true,
+            match.Index,
+            match.Index + match.Length,
+            match.Index,
+            match.Index + match.Length);
+    }
+
+    private PythonReBenchmarkValueResult ProjectCoreOneShot(Utf8ValueMatch match)
+    {
+        if (!match.Success ||
+            _case.Operation == PythonReBenchmarkOperation.Match && match.IndexInUtf16 != 0)
+        {
+            return default;
+        }
+
+        if (!match.TryGetByteRange(out var indexInBytes, out var lengthInBytes))
+        {
+            throw new InvalidOperationException("The exact-literal one-shot control has no byte range.");
+        }
+
+        return new PythonReBenchmarkValueResult(
+            true,
+            indexInBytes,
+            indexInBytes + lengthInBytes,
+            match.IndexInUtf16,
+            match.IndexInUtf16 + match.LengthInUtf16);
+    }
+
+    private Utf8Regex GetOneShotCoreRegex() => _oneShotCoreRegex ??
+        throw new InvalidOperationException("One-shot phase controls are not available for this case.");
+
+    private void EnsureOneShotPhases()
+    {
+        if (!SupportsOneShotPhases)
+        {
+            throw new InvalidOperationException("One-shot phase controls are not available for this case.");
         }
     }
 
@@ -3767,6 +3958,13 @@ internal readonly record struct PythonReBenchmarkReplacementResult(
     string ResultText,
     byte[]? ResultBytes,
     int? ReplacementCount);
+
+internal readonly record struct PythonReBenchmarkValueResult(
+    bool Success,
+    int StartOffsetInBytes,
+    int EndOffsetInBytes,
+    int StartOffsetInUtf16,
+    int EndOffsetInUtf16);
 
 internal readonly record struct PythonReBenchmarkBatch(
     TimeSpan Elapsed,
