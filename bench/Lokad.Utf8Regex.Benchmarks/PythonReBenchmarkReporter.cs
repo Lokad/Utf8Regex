@@ -600,13 +600,19 @@ internal static partial class PythonReBenchmarkReporter
         var predecoded = context.ExecutePredecodedRequiredReplacementChecksum();
         var decoded = context.ExecuteDecodedRequiredReplacementChecksum();
         var utf8Core = context.ExecuteUtf8CoreRequiredReplacementChecksum();
+        var countedUtf8Core = context.ExecuteUtf8CoreCountedLiteralReplacementChecksum();
         var onePass = context.ExecuteDecodedOnePassLiteralReplacementChecksum();
-        if (expected != predecoded || expected != decoded || expected != utf8Core || expected != onePass)
+        if (expected != predecoded ||
+            expected != decoded ||
+            expected != utf8Core ||
+            expected != countedUtf8Core ||
+            expected != onePass)
         {
             throw new InvalidOperationException(
                 $"PythonRe replacement phase diagnostic '{id}' produced incomparable sinks: " +
                 $"public={expected}, predecoded={predecoded}, decoded={decoded}, " +
-                $"UTF-8 core={utf8Core}, one-pass={onePass}.");
+                $"UTF-8 core={utf8Core}, counted UTF-8 core={countedUtf8Core}, " +
+                $"one-pass={onePass}.");
         }
 
         if (context.ExecuteUtf8CoreReplacementOutputChecksum() !=
@@ -649,6 +655,7 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("DecodeRequired", MeasureRetainedPhaseOperation(context.ExecuteDecodedRequiredReplacement, effectiveIterations, samples));
         PrintOperation("Utf8CoreReplace", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreReplacementOutput, effectiveIterations, samples));
         PrintOperation("Utf8CoreRequired", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreRequiredReplacement, effectiveIterations, samples));
+        PrintOperation("Utf8CoreCounted", MeasureRetainedPhaseOperation(context.ExecuteUtf8CoreCountedLiteralReplacement, effectiveIterations, samples));
         PrintOperation("PredecodedOnePass", MeasureRetainedPhaseOperation(context.ExecutePredecodedOnePassLiteralReplacement, effectiveIterations, samples));
         PrintOperation("DecodeOnePass", MeasureRetainedPhaseOperation(context.ExecuteDecodedOnePassLiteralReplacement, effectiveIterations, samples));
         PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReReplacement, effectiveIterations, samples));
@@ -1702,6 +1709,7 @@ internal sealed class PythonReBenchmarkContext
     private readonly PythonReReplacementPlan _preparedReplacementPlan;
     private readonly string _preparedDotNetReplacement;
     private readonly string _preparedLiteralReplacement;
+    private readonly byte[] _preparedLiteralReplacementUtf8;
     private readonly PythonReBenchmarkReplacementResult? _preparedReplacementResult;
     private readonly Utf8Regex? _oneShotCoreRegex;
     private readonly bool _supportsOneShotPhases;
@@ -1781,6 +1789,7 @@ internal sealed class PythonReBenchmarkContext
             _preparedDotNetReplacement = plan.ToDotNetReplacementString();
             _preparedLiteralReplacement = string.Concat(
                 plan.Tokens.Select(static token => token.RequiredText));
+            _preparedLiteralReplacementUtf8 = s_strictUtf8.GetBytes(_preparedLiteralReplacement);
             _preparedReplacementResult = _supportsReplacementPhases
                 ? ExecutePredecodedRequiredReplacement()
                 : null;
@@ -1792,6 +1801,7 @@ internal sealed class PythonReBenchmarkContext
             _preparedReplacementPlan = default;
             _preparedDotNetReplacement = string.Empty;
             _preparedLiteralReplacement = string.Empty;
+            _preparedLiteralReplacementUtf8 = [];
             _preparedReplacementResult = null;
         }
 
@@ -1895,10 +1905,16 @@ internal sealed class PythonReBenchmarkContext
             "strict UTF-8 decode; .NET Regex; detailed iteration shaping",
         PythonReBenchmarkOperation.ReplaceString or
             PythonReBenchmarkOperation.SubnString =>
-            "strict UTF-8 decode; .NET Regex replacement; string shaping",
+            DescribeBackend(
+                _pythonRegex.DebugReplaceBackend,
+                _pythonRegex.DebugUtf8ExecutionKind,
+                "replacement; string shaping"),
         PythonReBenchmarkOperation.ReplaceUtf8 or
             PythonReBenchmarkOperation.SubnUtf8 =>
-            "strict UTF-8 decode; .NET Regex replacement; UTF-8 shaping",
+            DescribeBackend(
+                _pythonRegex.DebugReplaceBackend,
+                _pythonRegex.DebugUtf8ExecutionKind,
+                "replacement; UTF-8 shaping"),
         PythonReBenchmarkOperation.SubnEvaluatorString =>
             "strict UTF-8 decode; .NET Regex callback replacement; string shaping",
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
@@ -2823,6 +2839,19 @@ internal sealed class PythonReBenchmarkContext
             replacementCount);
     }
 
+    internal PythonReBenchmarkReplacementResult ExecuteUtf8CoreCountedLiteralReplacement()
+    {
+        EnsureReplacementPhases();
+        var bytes = GetCoreReplacementRegex().ReplaceLiteralWithCount(
+            InputBytes,
+            _preparedLiteralReplacementUtf8,
+            out var replacementCount);
+        var returnedCount = IsSubnOperation ? replacementCount : (int?)null;
+        return IsUtf8ReplacementOperation
+            ? new PythonReBenchmarkReplacementResult(string.Empty, bytes, returnedCount)
+            : new PythonReBenchmarkReplacementResult(s_strictUtf8.GetString(bytes), null, returnedCount);
+    }
+
     internal int ExecuteUtf8CoreReplacementCount()
     {
         EnsureReplacementPhases();
@@ -2887,6 +2916,9 @@ internal sealed class PythonReBenchmarkContext
 
     internal int ExecuteUtf8CoreRequiredReplacementChecksum() =>
         Checksum(ExecuteUtf8CoreRequiredReplacement());
+
+    internal int ExecuteUtf8CoreCountedLiteralReplacementChecksum() =>
+        Checksum(ExecuteUtf8CoreCountedLiteralReplacement());
 
     internal int ExecuteUtf8CoreReplacementOutputChecksum() =>
         Checksum(ExecuteUtf8CoreReplacementOutput());

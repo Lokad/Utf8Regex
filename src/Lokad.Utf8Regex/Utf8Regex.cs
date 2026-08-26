@@ -2513,7 +2513,14 @@ public sealed class Utf8Regex
     private byte[] ReplaceLiteralBytesCore(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        byte[] replacementBytes)
+        ReadOnlySpan<byte> replacementBytes) =>
+        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _);
+
+    private byte[] ReplaceLiteralBytesCore(
+        ReadOnlySpan<byte> input,
+        Utf8ValidationResult validation,
+        ReadOnlySpan<byte> replacementBytes,
+        out int replacementCount)
     {
         var budget = CreateExecutionBudget();
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
@@ -2522,13 +2529,44 @@ public sealed class Utf8Regex
             input,
             validation,
             budget);
-        return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor);
+        return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor, out replacementCount);
+    }
+
+    internal byte[] ReplaceLiteralWithCount(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> literalReplacementUtf8,
+        out int replacementCount)
+    {
+        try
+        {
+            var validation = TryUseAsciiInputValidationShortcut(input)
+                ? default
+                : Utf8Validation.Validate(input);
+            _ = Utf8Validation.Validate(literalReplacementUtf8);
+            if (!UsesRightToLeft() &&
+                _preparedRegex.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral &&
+                _preparedRegex.LiteralUtf8 is { Length: > 0 } literal)
+            {
+                return Utf8ExactLiteralReplacement.Replace(
+                    input,
+                    literal,
+                    literalReplacementUtf8,
+                    CreateExecutionBudget(),
+                    out replacementCount);
+            }
+
+            return ReplaceLiteralBytesCore(input, validation, literalReplacementUtf8, out replacementCount);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     private OperationStatus TryReplaceLiteralBytesCore(
         ReadOnlySpan<byte> input,
         Utf8ValidationResult validation,
-        byte[] replacementBytes,
+        ReadOnlySpan<byte> replacementBytes,
         Span<byte> destination,
         out int bytesWritten)
     {

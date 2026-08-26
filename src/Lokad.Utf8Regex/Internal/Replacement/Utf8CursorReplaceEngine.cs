@@ -7,12 +7,19 @@ internal static class Utf8CursorReplaceEngine
     internal static byte[] Replace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> replacement,
-        ref Utf8OperationMatchCursor cursor)
+        ref Utf8OperationMatchCursor cursor) => Replace(input, replacement, ref cursor, out _);
+
+    internal static byte[] Replace(
+        ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> replacement,
+        ref Utf8OperationMatchCursor cursor,
+        out int replacementCount)
     {
         var ledger = new Utf8ReplacementRangeLedger();
         try
         {
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
+            replacementCount = ledger.Count;
             if (ledger.Count == 0)
             {
                 return input.ToArray();

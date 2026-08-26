@@ -214,6 +214,24 @@ internal static class PythonReReplacementParser
 
 internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReReplacementToken> Tokens)
 {
+    public bool TryGetLiteralText(out string literalText)
+    {
+        var builder = new StringBuilder();
+        foreach (var token in Tokens)
+        {
+            if (token.Kind != PythonReReplacementTokenKind.Literal)
+            {
+                literalText = string.Empty;
+                return false;
+            }
+
+            builder.Append(token.RequiredText);
+        }
+
+        literalText = builder.ToString();
+        return true;
+    }
+
     public string ToDotNetReplacementString()
     {
         if (Tokens.Count == 0)

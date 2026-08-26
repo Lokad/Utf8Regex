@@ -879,6 +879,37 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ExactLiteralReplacementUsesCountedUtf8PathForUnlimitedZeroOffsetOperations()
+    {
+        var regex = new Utf8PythonRegex("cat");
+        var input = "é cat fox cat 𝒜"u8;
+        const string expected = "é $🐈 fox $🐈 𝒜";
+
+        var replacedText = regex.ReplaceToString(input, "$🐈");
+        var replacedUtf8 = regex.Replace(input, "$🐈");
+        var subnText = regex.SubnToString(input, "$🐈");
+        var subnUtf8 = regex.Subn(input, "$🐈");
+
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugReplaceBackend);
+        Assert.Equal(expected, replacedText);
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(replacedUtf8));
+        Assert.Equal((expected, 2), (subnText.ResultText, subnText.ReplacementCount));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(subnUtf8.ResultBytes));
+        Assert.Equal(2, subnUtf8.ReplacementCount);
+    }
+
+    [Fact]
+    public void ExactLiteralReplacementRetainsGeneralPathsForLimitsOffsetsAndGroups()
+    {
+        var regex = new Utf8PythonRegex("cat");
+        var input = "cat cat cat"u8;
+
+        Assert.Equal("dog cat cat", regex.ReplaceToString(input, "dog", count: 1));
+        Assert.Equal("cat dog dog", regex.ReplaceToString(input, "dog", count: 0, startOffsetInBytes: 4));
+        Assert.Equal("<cat> <cat> <cat>", regex.ReplaceToString(input, @"<\g<0>>"));
+    }
+
+    [Fact]
     public void SubnUsesManagedBackendForUnlimitedReplacement()
     {
         var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
