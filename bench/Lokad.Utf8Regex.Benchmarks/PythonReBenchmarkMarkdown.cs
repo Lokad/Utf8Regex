@@ -361,6 +361,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-lifecycle\",\"32\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-scaling\",\"5\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-scaling\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--verify-pythonre-benchmark-markdown\"");
         writer.WriteLine("```");
@@ -414,11 +416,55 @@ internal static partial class PythonReBenchmarkReporter
         {
             writer.WriteLine("### Scaling evidence");
             writer.WriteLine();
-            writer.WriteLine(snapshot.ScalingFamilies.Count == 0
-                ? "No scaling families have been published yet."
-                : $"The snapshot contains `{snapshot.ScalingFamilies.Count}` bounded scaling families; each family is rendered with its own dimension and stable-route evidence.");
+            writer.WriteLine("These bounded, warmed families vary one named dimension while preserving equivalent managed and CPython result contracts. They are mechanism and complexity guards, not extra warm-Status rows: a point ratio never declares an implementation winner, and a passing fit gate only says that the local trend is stable enough to interpret. A rejected family remains visible but cannot support a scaling claim.");
+            writer.WriteLine();
+            if (snapshot.ScalingFamilies.Count == 0)
+            {
+                writer.WriteLine("No scaling families have been published yet.");
+                writer.WriteLine();
+                return;
+            }
+
+            writer.WriteLine("| Family | Dimension | Operation | Points | Managed route | Fit gate | Maximum residual M / C | Maximum spread M / C |");
+            writer.WriteLine("|---|---|---|---:|---|---|---:|---:|");
+            foreach (var (id, family) in snapshot.ScalingFamilies)
+            {
+                writer.WriteLine(
+                    $"| `{id}` | {family.Dimension} | `{family.Operation}` | {family.Points.Count} | " +
+                    $"`{EscapeMarkdownTable(family.ManagedRoute)}` | **{family.FitGate}** | " +
+                    $"{family.ManagedMaximumRelativeResidual:P1} / {family.CpythonMaximumRelativeResidual:P1} | " +
+                    $"{family.ManagedMaximumSpread:F3} / {family.CpythonMaximumSpread:F3} |");
+            }
+
+            writer.WriteLine();
+            foreach (var (id, family) in snapshot.ScalingFamilies)
+            {
+                writer.WriteLine($"#### `{id}`");
+                writer.WriteLine();
+                writer.WriteLine(
+                    $"Dimension: {family.Dimension}. Result contract: `{family.ResultContract}`. " +
+                    $"Samples: `{family.Samples}`. Fit gate: **{family.FitGate}** — {family.FitGateReason} " +
+                    $"Robust slopes are {family.ManagedSlopePerScaleUnit:N6} us/unit managed and " +
+                    $"{family.CpythonSlopePerScaleUnit:N6} us/unit CPython.");
+                writer.WriteLine();
+                writer.WriteLine("| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Managed allocation |");
+                writer.WriteLine("|---|---:|---:|---:|---:|---:|---:|---:|---:|");
+                foreach (var point in family.Points)
+                {
+                    writer.WriteLine(
+                        $"| {point.Label} | {point.Scale:N0} | {point.InputUtf8Bytes:N0} B | " +
+                        $"{point.WorkUnits:N0} | {point.OutputUtf8Bytes:N0} B | " +
+                        $"{point.ManagedMedianMicroseconds:N3} us | {point.CpythonMedianMicroseconds:N3} us | " +
+                        $"{point.RatioMedian:F3}x [{point.RatioLower95:F3}, {point.RatioUpper95:F3}] | " +
+                        $"{point.ManagedAllocatedBytes:N0} B |");
+                }
+
+                writer.WriteLine();
+            }
             writer.WriteLine();
         }
+
+        static string EscapeMarkdownTable(string value) => value.Replace("|", "&#124;", StringComparison.Ordinal);
 
         static string FormatLifecycle(PythonReLifecycleTiming timing) =>
             timing.ManagedAllocatedBytes is long allocated

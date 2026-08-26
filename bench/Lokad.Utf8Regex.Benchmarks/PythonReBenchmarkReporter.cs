@@ -250,6 +250,20 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--refresh-pythonre-scaling", StringComparison.Ordinal))
+        {
+            exitCode = RefreshPythonReScaling(
+                Math.Clamp(ParsePositive(args, 1, PythonRePublishedScalingSamples), 5, 9),
+                args.Length >= 3 ? args[2] : null);
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--verify-pythonre-scaling", StringComparison.Ordinal))
+        {
+            exitCode = VerifyPythonReScaling();
+            return true;
+        }
+
         exitCode = 0;
         return false;
     }

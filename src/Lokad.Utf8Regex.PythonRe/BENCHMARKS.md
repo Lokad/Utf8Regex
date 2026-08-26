@@ -215,6 +215,8 @@ These are contextual uncached-construction throughput measurements. They never a
 
 ### Scaling evidence
 
+These bounded, warmed families vary one named dimension while preserving equivalent managed and CPython result contracts. They are mechanism and complexity guards, not extra warm-Status rows: a point ratio never declares an implementation winner, and a passing fit gate only says that the local trend is stable enough to interpret. A rejected family remains visible but cannot support a scaling claim.
+
 No scaling families have been published yet.
 
 ### Comparator and semantic exclusions
@@ -334,6 +336,8 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ./bench.ps1 -CommandArgs "--measure-pythonre-case","literal/search","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmark-case","literal/search","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-lifecycle","32","5"
+./bench.ps1 -CommandArgs "--refresh-pythonre-scaling","5"
+./bench.ps1 -CommandArgs "--verify-pythonre-scaling"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmarks","200","7"
 ./bench.ps1 -CommandArgs "--verify-pythonre-benchmark-markdown"
 ```

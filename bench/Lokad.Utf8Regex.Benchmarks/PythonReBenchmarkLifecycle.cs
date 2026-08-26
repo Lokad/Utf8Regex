@@ -167,13 +167,42 @@ internal sealed class PythonReScalingFamilyMeasurement
 {
     public string Dimension { get; init; } = string.Empty;
     public string Operation { get; init; } = string.Empty;
+    public string ResultContract { get; init; } = string.Empty;
+    public int Samples { get; init; }
+    public DateTimeOffset MeasuredAtUtc { get; init; }
+    public PythonReBenchmarkEnvironment ManagedEnvironment { get; init; } = null!;
+    public CpythonStreamEnvironment CpythonEnvironment { get; init; } = null!;
+    public string ManagedRoute { get; init; } = string.Empty;
+    public bool RouteStable { get; init; }
+    public double ManagedSlopePerScaleUnit { get; init; }
+    public double CpythonSlopePerScaleUnit { get; init; }
+    public double ManagedMaximumRelativeResidual { get; init; }
+    public double CpythonMaximumRelativeResidual { get; init; }
+    public double ManagedMaximumSpread { get; init; }
+    public double CpythonMaximumSpread { get; init; }
+    public string FitGate { get; init; } = string.Empty;
+    public string FitGateReason { get; init; } = string.Empty;
     public List<PythonReScalingPointMeasurement> Points { get; init; } = [];
 }
 
 internal sealed class PythonReScalingPointMeasurement
 {
+    public string Label { get; init; } = string.Empty;
     public int Scale { get; init; }
+    public int WorkUnits { get; init; }
+    public int OutputUtf8Bytes { get; init; }
     public int InputUtf8Bytes { get; init; }
+    public string InputSha256 { get; init; } = string.Empty;
+    public string SemanticDigest { get; init; } = string.Empty;
+    public string ManagedRoute { get; init; } = string.Empty;
+    public int ManagedIterations { get; init; }
+    public int CpythonIterations { get; init; }
     public double ManagedMedianMicroseconds { get; init; }
     public double CpythonMedianMicroseconds { get; init; }
+    public double RatioMedian { get; init; }
+    public double RatioLower95 { get; init; }
+    public double RatioUpper95 { get; init; }
+    public double ManagedSpread { get; init; }
+    public double CpythonSpread { get; init; }
+    public long ManagedAllocatedBytes { get; init; }
 }
