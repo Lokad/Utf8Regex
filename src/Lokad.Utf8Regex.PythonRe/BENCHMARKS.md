@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:08:40.4605953+00:00`
-- Snapshot SHA-256: `5721E7D54290E5DA2E5DA3C15FD6B24A2D2912AFFFE15D4DB03F07E5B3EDE458`
+- Generated: `2026-08-26T12:08:54.7146852+00:00`
+- Snapshot SHA-256: `3AE75EDBA39BA3B2A9B77A27D56392825CBE35EDE5F86868A38856512BAA2977`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `4` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `22` unqualified
+- Public Status: `5` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `21` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -41,7 +41,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `capture/search-detailed` | `SearchDetailed` | Historical | Unqualified | 0.501 us | 2.489 us | 0.20x | 2.602 us | 0.350 us | 896 B |
 | `class-run/count` | `Count` | Historical | Unqualified | 504.865 us | 1,415.960 us | 0.36x | 1,424.645 us | 620.138 us | 172,056 B |
-| `family/count` | `Count` | Historical | Unqualified | 68.200 us | 1,240.842 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
+| `family/count` | `Count` | ScalarResult | Managed faster | 64.490 us | 1,186.516 us | 0.05x | 1,231.496 us | 462.747 us | 0 B |
 | `findall/full-strings` | `FindAllStrings` | Historical | Unqualified | 244.742 us | 303.417 us | 0.81x | 219.217 us | 248.829 us | 165,936 B |
 | `findall/full-utf8` | `FindAllUtf8` | Historical | Unqualified | 268.899 us | 309.247 us | 0.87x | 406.854 us | 318.232 us | 165,936 B |
 | `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 178.663 us | 190.353 us | 0.94x | 201.521 us | 449.797 us | 299,296 B |
