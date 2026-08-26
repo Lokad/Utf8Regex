@@ -27,7 +27,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationSplitWarmupCalls = 100_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
-    private const int PythonReQualificationShortOneShotCalibrationIterations = 50_000;
+    private const int PythonReQualificationShortOneShotCalibrationIterations = 250_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
     private const double PythonReQualificationTargetSampleMilliseconds = 50;
     private const double PythonReQualificationPilotMilliseconds = 5;
