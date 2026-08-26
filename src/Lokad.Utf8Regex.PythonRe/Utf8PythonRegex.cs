@@ -701,6 +701,21 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 0)
         {
+            if (startOffsetInBytes == 0 &&
+                _repeatedExactFindAllString is not null &&
+                _findAllBackend == PythonReDirectBackendKind.Utf8Regex &&
+                _utf8Regex is not null)
+            {
+                var values = new string[_utf8Regex.Count(input)];
+                Array.Fill(values, _repeatedExactFindAllString);
+                return new Utf8PythonFindAllResult
+                {
+                    Shape = Utf8PythonFindAllShape.FullMatch,
+                    ScalarValues = values,
+                    TupleValues = [],
+                };
+            }
+
             if (TryCollectUtf8MatchRanges(input, startOffsetInBytes, out var ranges))
             {
                 try
@@ -1851,6 +1866,10 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
 
     internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
+
+    internal bool DebugUsesCountedRepeatedExactStringFindAllFastPath =>
+        _repeatedExactFindAllString is not null &&
+        _findAllBackend == PythonReDirectBackendKind.Utf8Regex;
 
     internal bool DebugUsesAsciiLiteralPrefixDigitMatchFastPath =>
         _asciiLiteralPrefixDigitMatchPrefix is not null;

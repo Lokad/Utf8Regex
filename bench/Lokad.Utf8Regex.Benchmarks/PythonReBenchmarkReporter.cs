@@ -2088,7 +2088,9 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSeparatedCaptureTupleFindAllFastPath =>
             "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct separated-capture tuple shaping",
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesRepeatedExactStringFindAllFastPath =>
-            "Utf8Regex; exact-literal range enumeration; repeated immutable string shaping",
+            _pythonRegex.DebugUsesCountedRepeatedExactStringFindAllFastPath
+                ? "Utf8Regex; exact-literal count; repeated immutable string shaping"
+                : "Utf8Regex; exact-literal range enumeration; repeated immutable string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
             "strict UTF-8 decode; .NET Regex; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(

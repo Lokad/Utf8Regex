@@ -761,6 +761,7 @@ public sealed class Utf8PythonRegexTests
         var afterFirst = regex.FindAllToStrings(input, "skip Шерлок "u8.Length);
 
         Assert.True(regex.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.True(regex.DebugUsesCountedRepeatedExactStringFindAllFastPath);
         Assert.Equal(["Шерлок", "Шерлок", "Шерлок"], all.ScalarValues);
         Assert.Same(all.ScalarValues[0], all.ScalarValues[1]);
         Assert.Equal(["Шерлок", "Шерлок"], afterFirst.ScalarValues);
