@@ -796,6 +796,32 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void LiteralReplacementPreservesGreedyExactRepeatProgression()
+    {
+        var repeated = new Utf8PythonRegex("x*");
+        var grouped = new Utf8PythonRegex("(?:ab)*");
+
+        Assert.Equal("-a-b--d-", repeated.ReplaceToString("abxd"u8, "-"));
+        var repeatedSubn = repeated.SubnToString("abxd"u8, "-");
+        Assert.Equal("-a-b--d-", repeatedSubn.ResultText);
+        Assert.Equal(5, repeatedSubn.ReplacementCount);
+        Assert.Equal("_z__q_", grouped.ReplaceToString("zababq"u8, "_"));
+        Assert.Equal(
+            "π-a-bxd",
+            repeated.ReplaceToString("πabxd"u8, "-", count: 2, startOffsetInBytes: "π"u8.Length));
+    }
+
+    [Fact]
+    public void LiteralReplacementPreservesAmbiguousEmptyProgression()
+    {
+        var alternation = new Utf8PythonRegex("x*|y");
+        var reluctant = new Utf8PythonRegex("x*?");
+
+        Assert.Equal("---", alternation.ReplaceToString("y"u8, "-"));
+        Assert.Equal("-----", reluctant.ReplaceToString("xx"u8, "-"));
+    }
+
+    [Fact]
     public void FindAllStringsProjectsSingleTrailingCaptureFromValueMatches()
     {
         var regex = new Utf8PythonRegex("item-([0-9]+)");
