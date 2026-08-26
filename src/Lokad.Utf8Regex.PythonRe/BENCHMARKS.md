@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:59:35.6765578+00:00`
-- Snapshot SHA-256: `73A491C15828FE96ED1019B6299AD5364FB7171FCF317B818FAEAD56E134C68B`
+- Generated: `2026-08-26T13:00:48.0637965+00:00`
+- Snapshot SHA-256: `7EA927A2F187315A3986BCD2C030DE74E62E76567E21F35F5C065C574D5148D7`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `17` managed faster, `0` equivalent, `1` CPython faster, `6` inconclusive, `4` unqualified
+- Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `9` inconclusive, `0` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -56,14 +56,14 @@ Historical independent point columns were measured from source `9730cc32f96c` on
 | `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.866 us | 12.222 us | 0.15x | 14.380 us | 12.183 us | 0 B |
 | `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.869 us | 12.101 us | 0.15x | 14.464 us | 10.417 us | 0 B |
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 0.214 us | 0.176 us | 1.21x | 0.781 us | 1.444 us | 0 B |
-| `replacement/evaluator-string` | `SubnEvaluatorString` | Historical | Unqualified | 214.404 us | 9,837.727 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
-| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | Historical | Unqualified | 209.053 us | 10,068.573 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
+| `replacement/evaluator-string` | `SubnEvaluatorString` | EagerMaterializedResult | Inconclusive | 251.022 us | 9,848.200 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
+| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | EagerMaterializedResult | Inconclusive | 289.710 us | 9,923.240 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
 | `replacement/fixed-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 55.177 us | 102.086 us | 0.54x | 116.107 us | 157.065 us | 123,392 B |
 | `replacement/fixed-utf8` | `ReplaceUtf8` | EagerMaterializedResult | Inconclusive | 49.207 us | 104.676 us | 0.47x | 126.579 us | 162.701 us | 41,448 B |
 | `replacement/subn-string` | `SubnString` | EagerMaterializedResult | Managed faster | 37.388 us | 66.767 us | 0.54x | 64.130 us | 121.769 us | 61,952 B |
 | `replacement/subn-utf8` | `SubnUtf8` | EagerMaterializedResult | Managed faster | 25.925 us | 53.623 us | 0.48x | 62.087 us | 120.898 us | 20,968 B |
-| `split/captures` | `SplitStrings` | Historical | Unqualified | 135.959 us | 142.920 us | 0.95x | 142.175 us | 134.880 us | 499,032 B |
-| `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
+| `split/captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 136.868 us | 137.931 us | 0.99x | 142.175 us | 134.880 us | 499,032 B |
+| `split/no-captures` | `SplitStrings` | EagerMaterializedResult | Managed faster | 74.370 us | 115.228 us | 0.65x | 126.317 us | 74.816 us | 171,328 B |
 | `unicode/count` | `Count` | ScalarResult | Managed faster | 25.061 us | 205.214 us | 0.12x | 271.193 us | 185.111 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 13.289 us | 14.613 us | 0.91x | 19.217 us | 25.377 us | 14,360 B |
 | `zero-width/count` | `Count` | ScalarResult | Managed faster | 17.574 us | 553.707 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
