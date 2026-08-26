@@ -44,7 +44,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var path = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(path, Encoding.UTF8));
-        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 or 7 or 8 }
+        return snapshot is { SchemaVersion: 2 or 3 or 4 or 5 or 6 or 7 or 8 or 9 }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} is missing or has an unsupported schema version.");
     }
@@ -120,6 +120,7 @@ internal static partial class PythonReBenchmarkReporter
             writer.WriteLine();
             writer.WriteLine("Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the identical bytes. `Rbyte` is representation-neutral engine evidence and never sets public Status; rows without equivalent byte semantics carry an explicit exclusion reason.");
             writer.WriteLine();
+
         }
 
         writer.WriteLine("## Snapshot summary");
@@ -192,6 +193,25 @@ internal static partial class PythonReBenchmarkReporter
                 writer.WriteLine(
                     $"| {section} | " +
                     $"{coverageRows.Count(row => row.Value.Coverage!.Section.Equals(section, StringComparison.Ordinal))} |");
+            }
+
+            writer.WriteLine();
+            var sourcedRows = coverageRows
+                .Where(static row => !row.Value.Coverage!.CorpusProvenance.Equals(
+                    "Synthetic catalog generator",
+                    StringComparison.Ordinal))
+                .ToArray();
+            writer.WriteLine("### Reused subjects and corpus identities");
+            writer.WriteLine();
+            writer.WriteLine("Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and timed by all lanes.");
+            writer.WriteLine();
+            writer.WriteLine("| Case | Source definition or corpus | UTF-8 bytes | SHA-256 |");
+            writer.WriteLine("|---|---|---:|---|");
+            foreach (var (caseId, measurement) in sourcedRows)
+            {
+                writer.WriteLine(
+                    $"| `{caseId}` | `{measurement.Coverage!.CorpusProvenance}` | " +
+                    $"{measurement.InputUtf8Bytes:N0} | `{measurement.InputSha256}` |");
             }
 
             writer.WriteLine();

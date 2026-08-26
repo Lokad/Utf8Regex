@@ -45,36 +45,6 @@ internal sealed class LokadReplicaCodeBenchmarkContext
 
     private static string LoadCorpus()
     {
-        var dataRoot = Path.Combine(AppContext.BaseDirectory, "LokadReplica", "Code", "Data");
-        if (!Directory.Exists(dataRoot))
-        {
-            throw new DirectoryNotFoundException($"Lokad code data root not found: {dataRoot}");
-        }
-
-        var files = Directory.GetFiles(dataRoot, "*", SearchOption.AllDirectories)
-            .OrderBy(static path => path, StringComparer.Ordinal)
-            .ToArray();
-        if (files.Length == 0)
-        {
-            throw new InvalidOperationException($"Lokad code data root is empty: {dataRoot}");
-        }
-
-        var builder = new StringBuilder(capacity: 2_000_000);
-        foreach (var file in files)
-        {
-            var relativePath = Path.GetRelativePath(dataRoot, file).Replace('\\', '/');
-            builder.Append("// file: ");
-            builder.Append(relativePath);
-            builder.Append('\n');
-            builder.Append(File.ReadAllText(file, Encoding.UTF8));
-            if (builder.Length == 0 || builder[^1] != '\n')
-            {
-                builder.Append('\n');
-            }
-
-            builder.Append('\n');
-        }
-
-        return builder.ToString();
+        return BenchmarkSubjectDefinitions.CodeCorpus;
     }
 }

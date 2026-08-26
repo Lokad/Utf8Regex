@@ -18,8 +18,8 @@ internal static class DotNetPerformanceReplicaBenchmarkCatalog
             options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, expectedCount: 522, isDevelopmentSlice: false, origin: "curated/01-literal.toml :: sherlock-casei-en"),
         // Source: dotnet-performance/benchmarks/definitions/curated/01-literal.toml
         new("literal/sherlock-ru", "literal", DotNetPerformanceReplicaBenchmarkModel.Count,
-            pattern: "Шерлок Холмс", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"opensubtitles\ru-sampled.txt", haystackInline: null, haystackUtf8Lossy: false, haystackLineStart: null, haystackLineEnd: null,
+            pattern: BenchmarkSubjectDefinitions.SherlockRussianPattern, regexRelativePath: null, regexPerLineAlternate: false,
+            haystackRelativePath: BenchmarkSubjectDefinitions.SherlockRussianRelativePath, haystackInline: null, haystackUtf8Lossy: false, haystackLineStart: null, haystackLineEnd: null,
             options: RegexOptions.None, expectedCount: 724, isDevelopmentSlice: false, origin: "curated/01-literal.toml :: sherlock-ru"),
         // Source: dotnet-performance/benchmarks/definitions/curated/01-literal.toml
         new("literal/sherlock-casei-ru", "literal", DotNetPerformanceReplicaBenchmarkModel.Count,

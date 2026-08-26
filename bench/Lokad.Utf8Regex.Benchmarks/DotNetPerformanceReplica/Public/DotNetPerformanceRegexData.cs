@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 internal static class DotNetPerformanceRegexData
 {
     private static readonly Lazy<string> s_commonSearchText = new(BuildCommonSearchText);
-    private static readonly Lazy<string> s_mailNetworkCorpus = new(() => ReadGZipText("mariomka.txt.gz"));
+    private static readonly Lazy<string> s_mailNetworkCorpus = new(() => BenchmarkSubjectDefinitions.MailNetworkCorpus);
     private static readonly Lazy<string> s_detectiveCorpus = new(() => ReadGZipText("sherlock.txt.gz"));
     private static readonly Lazy<string> s_riverCorpus = new(() => ReadGZipText("3200.txt.gz"));
 
@@ -36,7 +36,9 @@ internal static class DotNetPerformanceRegexData
 
     private static string ReadGZipText(string fileName)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "DotNetPerformanceReplica", "Public", "Data", fileName);
+        var path = Path.Combine(
+            BenchmarkDataFiles.GetDirectory("DotNetPerformanceReplica/Public/Data"),
+            fileName);
         using var stream = File.OpenRead(path);
         using var gzip = new GZipStream(stream, CompressionMode.Decompress);
         using var reader = new StreamReader(gzip, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);

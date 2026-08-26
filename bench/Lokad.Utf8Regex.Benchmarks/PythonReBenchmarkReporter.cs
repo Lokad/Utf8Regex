@@ -14,7 +14,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
-    private const int PythonReBenchmarkSchemaVersion = 8;
+    private const int PythonReBenchmarkSchemaVersion = 9;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
     private static object? s_retainedSink;
@@ -319,7 +319,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshotPath = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and not 8 and
             not PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
@@ -359,7 +359,7 @@ internal static partial class PythonReBenchmarkReporter
                 continue;
             }
 
-            if (snapshot.SchemaVersion == 7)
+            if (snapshot.SchemaVersion is 7 or 8)
             {
                 migrated++;
                 continue;
@@ -538,6 +538,7 @@ internal static partial class PythonReBenchmarkReporter
         measurement.ManagedRoute = context.DescribeManagedRoute();
         measurement.ByteControlEligible = byteControl.IsEligible;
         measurement.ByteControlReason = byteControl.Reason;
+        measurement.InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes));
     }
 
     private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot)
@@ -1377,6 +1378,7 @@ internal static partial class PythonReBenchmarkReporter
             Options = benchmarkCase.Options.ToString(),
             Operation = benchmarkCase.Operation.ToString(),
             InputUtf8Bytes = context.InputBytes.Length,
+            InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes)),
             EffectiveIterations = effectiveIterations,
             Samples = samples,
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
@@ -1457,6 +1459,17 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int GetEffectiveIterations(PythonReBenchmarkCase benchmarkCase, int requestedIterations)
     {
+        var inputBytes = Encoding.UTF8.GetByteCount(benchmarkCase.Input);
+        if (inputBytes > 512 * 1_024)
+        {
+            return Math.Max(requestedIterations, 2);
+        }
+
+        if (inputBytes > 128 * 1_024)
+        {
+            return Math.Max(requestedIterations, 5);
+        }
+
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.IsMatch or
                 PythonReBenchmarkOperation.Search or
                 PythonReBenchmarkOperation.SearchFromOffset or
@@ -4796,6 +4809,7 @@ internal sealed class PythonReCaseMeasurement
     public required string Options { get; init; }
     public required string Operation { get; init; }
     public required int InputUtf8Bytes { get; init; }
+    public string InputSha256 { get; set; } = string.Empty;
     public required int EffectiveIterations { get; init; }
     public required int Samples { get; init; }
     public required bool IncludesResultMaterialization { get; init; }

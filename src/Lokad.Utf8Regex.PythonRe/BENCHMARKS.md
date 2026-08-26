@@ -22,13 +22,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T15:22:26.8559341+00:00`
-- Snapshot SHA-256: `93265ECBDE906C50DB75EE33498394E6641557FDD81044FA9F07BE108D2BCEDF`
-- Schema: `8`
-- Catalog SHA-256: `59DB20C3C982E7DB1FE73B4986EC28198F9A519D2456FFE642449DFF3F8F3B32`
-- Cases: `84`
-- Public Status: `25` managed faster, `0` equivalent, `6` CPython faster, `50` inconclusive, `3` unqualified
-- Historical point measurement environments represented: `10`
+- Generated: `2026-08-26T15:36:21.9655400+00:00`
+- Snapshot SHA-256: `C26133FABD8669CBFE24C1270FE6B682631B5A5C19BA7BC6BF200C1B2CC58F1F`
+- Schema: `9`
+- Catalog SHA-256: `2778C85CE59E3342D337F8042C6A2C34FFAD34ABA819977DD633D848D31A2B0A`
+- Cases: `90`
+- Public Status: `25` managed faster, `0` equivalent, `6` CPython faster, `50` inconclusive, `9` unqualified
+- Historical point measurement environments represented: `11`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -36,30 +36,43 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Coverage summary
 
-This catalog currently covers `84` operation rows over `39` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
+This catalog currently covers `90` operation rows over `45` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
 
 | Axis | Covered values |
 |---|---|
 | Operation families | `Count`, `CountFromOffset`, `FindAllStrings`, `FindAllStringsFromOffset`, `FindAllStructural`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceEvaluatorString`, `ReplaceString`, `ReplaceStringLimited`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SearchFromOffset`, `SplitDetailed`, `SplitStrings`, `SplitStringsLimited`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
 | Flags | `Ascii`, `DotAll`, `IgnoreCase`, `Multiline`, `None`, `Unicode`, `Verbose` |
-| Feature families | `ASCII class run`, `ASCII digit run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Bounded exact literal replacement`, `Bounded separator class`, `Callback replacement`, `Captured separator`, `Captured separator metadata`, `Dot-all wildcard`, `Empty-capable repeat`, `Empty-match replacement`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `Named capture`, `Named capture and backreference`, `Named template expansion`, `Numeric capture and backreference`, `Numeric template expansion`, `One capture`, `Optional capture`, `Optional captured separator`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode separator class`, `Unicode word category`, `Unmatched optional-group expansion`, `Verbose classes` |
+| Feature families | `ASCII class run`, `ASCII digit run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Bounded exact literal replacement`, `Bounded separator class`, `Callback replacement`, `Captured separator`, `Captured separator metadata`, `Date recognition`, `Declaration and identifier structure`, `Dot-all wildcard`, `Email-like extraction`, `Empty-capable repeat`, `Empty-match replacement`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `IPv4 recognition`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Logging token family`, `Mixed-width captures`, `Multiline anchors`, `Named capture`, `Named capture and backreference`, `Named template expansion`, `Numeric capture and backreference`, `Numeric template expansion`, `One capture`, `Optional capture`, `Optional captured separator`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode separator class`, `Unicode word category`, `Unmatched optional-group expansion`, `Verbose classes` |
 | Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `GeneralNative`, `ManagedFallback`, `SimpleNative` |
 | Result cardinalities | `Few`, `Four`, `Many`, `ManyEmpty`, `One`, `Three`, `Two`, `Zero` |
-| Input-width classes | `Ascii`, `Ascii+ThreeByte`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte`, `FourByte`, `ThreeByte` |
-| Corpus provenance | `Synthetic catalog generator` |
+| Input-width classes | `Ascii`, `Ascii+ThreeByte`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte`, `Ascii+TwoByte+ThreeByte`, `Ascii+TwoByte+ThreeByte+FourByte`, `FourByte`, `ThreeByte` |
+| Corpus provenance | `DotNetPerformanceReplica/Public/Data/mariomka.txt.gz`, `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt`, `LokadReplica/Code/Data`, `Shared definition common/date-miss`, `Shared definition common/ip-match`, `Synthetic catalog generator` |
 | Claim classes | `Composed`, `Public` |
 
 | Result section | Rows |
 |---|---:|
-| Direct matching | 36 |
+| Direct matching | 38 |
 | Detailed and scalar projections | 1 |
 | Count, FindAll, and FindIter | 25 |
 | Replace and Subn | 13 |
 | Split | 9 |
-| Real-corpus workloads | 0 |
+| Real-corpus workloads | 4 |
 | Construction and first call | 0 |
 | Scaling evidence | 0 |
 | Comparator and semantic exclusions | 0 |
+
+### Reused subjects and corpus identities
+
+Input hashes cover the exact decoded subject re-encoded as strict UTF-8 and timed by all lanes.
+
+| Case | Source definition or corpus | UTF-8 bytes | SHA-256 |
+|---|---|---:|---|
+| `common/date-miss` | `Shared definition common/date-miss` | 47 | `1C2ACBD374A589D0C859E3C8E71C5374170E8293CCC5BB092805C8AE9D7098FA` |
+| `common/ip-match` | `Shared definition common/ip-match` | 15 | `4F16BA476C8DC1B6333EFC00F6059D451373AABF9F4E5F75EB8ECE21A39563A2` |
+| `corpus/mail-email-count` | `DotNetPerformanceReplica/Public/Data/mariomka.txt.gz` | 6,839,410 | `7B7F70C9CA999B2BEDE85B7ED8E37C9193EDCED196F4AED29651E37EF4F8E979` |
+| `corpus/code-log-methods` | `LokadReplica/Code/Data` | 53,997 | `9ACD9AAF10E1CB2E813C33520BD3F769FA3E0D766FF9417AD5F4E3B8501B9B08` |
+| `corpus/code-declarations` | `LokadReplica/Code/Data` | 53,997 | `9ACD9AAF10E1CB2E813C33520BD3F769FA3E0D766FF9417AD5F4E3B8501B9B08` |
+| `corpus/sherlock-ru` | `DotNetPerformanceReplica/Stress/Data/opensubtitles/ru-sampled.txt` | 1,600,556 | `8512E14DA1DA35C8402252B174C5F2470F2C6322DC49EA78B466AFCCC14A1BAD` |
 
 Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
@@ -107,6 +120,8 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.033 us | 0.141 us | 0.24x | 0.209 us | 0.066 us | 32 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.049 us | 0.146 us | 0.35x | 0.207 us | 0.094 us | 32 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.105 us | 0.198 us | 0.47x | 0.211 us | 0.193 us | 48 B |
+| `common/date-miss` | `IsMatch` | Historical | Unqualified | 1.006 us | 0.794 us | 1.27x | 0.913 us | 0.837 us | 120 B |
+| `common/ip-match` | `IsMatch` | Historical | Unqualified | 0.509 us | 0.197 us | 2.58x | 0.302 us | 0.335 us | 360 B |
 
 ### Detailed and scalar projections
 
@@ -178,7 +193,12 @@ Historical point rows span more than one measurement environment. Consult the JS
 
 ### Real-corpus workloads
 
-No benchmark rows are cataloged in this section yet.
+| Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|
+| `corpus/mail-email-count` | `Count` | Historical | Unqualified | 7,096.450 us | 248,618.200 us | 0.03x | 256,415.700 us | 5,555.200 us | 12,389,328 B |
+| `corpus/code-log-methods` | `Count` | Historical | Unqualified | 22.033 us | 547.845 us | 0.04x | 548.467 us | 23.764 us | 0 B |
+| `corpus/code-declarations` | `Count` | Historical | Unqualified | 385.006 us | 573.633 us | 0.67x | 567.742 us | 159.385 us | 217,711 B |
+| `corpus/sherlock-ru` | `Count` | Historical | Unqualified | 4,098.100 us | 221.100 us | 18.54x | 2,432.400 us | 2,867.350 us | 1,841,096 B |
 
 ### Construction and first call
 
@@ -283,6 +303,12 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `split/zero-width` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/unicode` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/detailed` | `_sre C Pattern.split + Python split-item metadata projection` | `strict UTF-8 decode; .NET Regex split; item-metadata shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `common/ip-match` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `corpus/mail-email-count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `corpus/code-log-methods` | `_sre scanner + Python finditer/sum` | `Utf8Regex/AsciiStructuralIdentifierFamily; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `corpus/code-declarations` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `corpus/sherlock-ru` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 
 ## Reproduce and refresh
 

@@ -8,7 +8,7 @@ internal sealed class DotNetPerformanceReplicaBenchmarkContext
     public DotNetPerformanceReplicaBenchmarkContext(DotNetPerformanceReplicaBenchmarkCase benchmarkCase)
     {
         BenchmarkCase = benchmarkCase;
-        var dataRoot = Path.Combine(AppContext.BaseDirectory, "DotNetPerformanceReplica", "Stress", "Data");
+        var dataRoot = BenchmarkDataFiles.GetDirectory("DotNetPerformanceReplica/Stress/Data");
         Pattern = LoadPattern(dataRoot, benchmarkCase);
         InputString = LoadHaystack(dataRoot, benchmarkCase);
         InputBytes = Encoding.UTF8.GetBytes(InputString);

@@ -466,7 +466,72 @@ internal static class PythonReBenchmarkCatalog
             C("Split", "Captured separator metadata", "Medium ASCII many separators", "Many",
                 "DetailedSplitItems", DetailedSplitOwner, "OperationExcluded", "ManagedFallback", claimClass: "Composed",
                 firstMilestoneSentinel: false)),
+        FromSharedDefinition(
+            "common/date-miss", "common/date-miss", PythonReBenchmarkOperation.IsMatch,
+            "Direct matching", "Date recognition", "Short ASCII miss", "Zero"),
+        FromSharedDefinition(
+            "common/ip-match", "common/ip-match", PythonReBenchmarkOperation.IsMatch,
+            "Direct matching", "IPv4 recognition", "Short ASCII hit", "One"),
+        FromSharedDefinition(
+            "corpus/mail-email-count", "industry/mariomka-email-count", "Email-like extraction",
+            "Document-scale ASCII-heavy network text", "Many"),
+        FromSharedDefinition(
+            "corpus/code-log-methods", "code/log-methods", "Logging token family",
+            "Document-scale C# source corpus", "Many"),
+        FromSharedDefinition(
+            "corpus/code-declarations", "code/declarations", "Declaration and identifier structure",
+            "Document-scale C# source corpus", "Many"),
+        FromSharedDefinition(
+            "corpus/sherlock-ru", "sherlock/ru", "Unicode exact literal",
+            "Document-scale two-byte subtitle text", "Many"),
     ];
+
+    private static PythonReBenchmarkCase FromSharedDefinition(
+        string id,
+        string sourceId,
+        string featureFamily,
+        string inputShape,
+        string cardinality) => FromSharedDefinition(
+            id,
+            sourceId,
+            PythonReBenchmarkOperation.Count,
+            "Real-corpus workloads",
+            featureFamily,
+            inputShape,
+            cardinality);
+
+    private static PythonReBenchmarkCase FromSharedDefinition(
+        string id,
+        string sourceId,
+        PythonReBenchmarkOperation operation,
+        string section,
+        string featureFamily,
+        string inputShape,
+        string cardinality)
+    {
+        var definition = BenchmarkSubjectDefinitions.Get(sourceId);
+        var owner = operation == PythonReBenchmarkOperation.Count ? CountOwner : PatternSearchOwner;
+        var projection = operation == PythonReBenchmarkOperation.Count ? "ScalarCount" : "Boolean";
+        return new PythonReBenchmarkCase(
+            id,
+            definition.Pattern,
+            PythonReCompileOptions.None,
+            operation,
+            definition.Input,
+            string.Empty,
+            IncludesResultMaterialization: false,
+            C(
+                section,
+                featureFamily,
+                inputShape,
+                cardinality,
+                projection,
+                owner,
+                operation == PythonReBenchmarkOperation.Count ? "OperationExcluded" : "Eligible",
+                "ManagedFallback",
+                corpusProvenance: definition.Provenance,
+                firstMilestoneSentinel: false));
+    }
 
     private static PythonReBenchmarkCoverage C(
         string section,

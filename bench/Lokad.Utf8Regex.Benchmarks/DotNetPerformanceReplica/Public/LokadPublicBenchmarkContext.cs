@@ -436,8 +436,8 @@ internal sealed class LokadPublicBenchmarkContext
             "common/email-match" => ("ops.dispatch@northwind-control.net", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             "common/email-miss" => ("ops.dispatch@northwind-control.net#", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             "common/date-match" => ("Today is 11/18/2019 and tomorrow is 11/19/2019.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/date-miss" => ("Today is 11/18/201A and tomorrow is 11/19/201A.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "common/ip-match" => ("012.200.033.199", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
+            "common/date-miss" => ResolveSharedSubject("common/date-miss", LokadPublicBenchmarkOperation.IsMatch),
+            "common/ip-match" => ResolveSharedSubject("common/ip-match", LokadPublicBenchmarkOperation.IsMatch),
             "common/ip-miss" => ("012.200.033.19A", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             "common/uri-match" => ("https://atlas.example.org/reports/export?id=42", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             "common/uri-miss" => ("https://a https://b", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
@@ -450,7 +450,7 @@ internal sealed class LokadPublicBenchmarkContext
             "common/split-words" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"tempus|magna|semper", RegexOptions.None, LokadPublicBenchmarkOperation.Split),
             "common/backtracking" => ("Essential services are provided by regular exprs.", string.Empty, ".*(ss)", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             "common/one-node-backtracking" => ("This regex has the potential to be optimized further", string.Empty, @"[^a]+\.[^z]+", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
-            "industry/mariomka-email-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
+            "industry/mariomka-email-count" => ResolveSharedSubject("industry/mariomka-email-count", LokadPublicBenchmarkOperation.Count),
             "industry/mariomka-uri-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
             "industry/mariomka-ip-count" => (DotNetPerformanceRegexData.MailNetworkCorpus, string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
             "industry/rust-sherlock-letter-count" => (DotNetPerformanceRegexData.DetectiveCorpus, string.Empty, @"\p{L}", RegexOptions.None, LokadPublicBenchmarkOperation.Count),
@@ -469,5 +469,12 @@ internal sealed class LokadPublicBenchmarkContext
             "industry/boostdocs-float-match" => ("-3.14159", string.Empty, @"^[-+]?\d*\.?\d*$", RegexOptions.None, LokadPublicBenchmarkOperation.IsMatch),
             _ => throw new ArgumentOutOfRangeException(nameof(caseId)),
         };
+    }
+
+    private static (string Input, string Replacement, string Pattern, RegexOptions Options, LokadPublicBenchmarkOperation Operation)
+        ResolveSharedSubject(string id, LokadPublicBenchmarkOperation operation)
+    {
+        var subject = BenchmarkSubjectDefinitions.Get(id);
+        return (subject.Input, string.Empty, subject.Pattern, RegexOptions.None, operation);
     }
 }
