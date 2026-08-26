@@ -675,7 +675,7 @@ internal static partial class PythonReBenchmarkReporter
         var evidence = qualification?.PairedEvidence;
         var managedMetadataMatches = measurement is not null &&
             measurement.ComparatorOwner.Equals(
-                PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+                PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
                 StringComparison.Ordinal) &&
             measurement.ManagedRoute.Equals(
                 new PythonReBenchmarkContext(benchmarkCase).DescribeManagedRoute(),
@@ -1132,7 +1132,22 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.SearchDetailed,
             "préfixe éé-𝒜𝒜 suffixe",
             string.Empty,
-            IncludesResultMaterialization: true);
+            IncludesResultMaterialization: true,
+            new PythonReBenchmarkCoverage(
+                "Detailed and scalar projections",
+                "Mixed-width captures",
+                "Short mixed-width early hit",
+                "One",
+                0,
+                -1,
+                -1,
+                "DetailedMatch",
+                "_sre C Pattern.search + Python detailed projection",
+                "OperationExcluded",
+                "ManagedFallback",
+                "Semantic diagnostic fixture",
+                "Composed",
+                FirstMilestoneSentinel: false));
         var cases = PythonReBenchmarkCatalog.Cases.Append(supplementaryCase).ToArray();
         using var worker = new CpythonStreamWorker();
         foreach (var benchmarkCase in cases)
@@ -1207,7 +1222,7 @@ internal static partial class PythonReBenchmarkReporter
             if (measurement.ByteControlEligible != byteControlEligibility.IsEligible ||
                 !measurement.ByteControlReason.Equals(byteControlEligibility.Reason, StringComparison.Ordinal) ||
                 !measurement.ComparatorOwner.Equals(
-                    PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+                    PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
                     StringComparison.Ordinal) ||
                 !measurement.ManagedRoute.Equals(currentContext.DescribeManagedRoute(), StringComparison.Ordinal))
             {
@@ -1816,6 +1831,7 @@ internal static partial class PythonReBenchmarkReporter
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = measuredAtUtc,
             CatalogSha256 = ComputePythonReCatalogSha256(),
+            CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
         });
@@ -1823,8 +1839,9 @@ internal static partial class PythonReBenchmarkReporter
 
     private static string ComputePythonReCaseDefinitionSha256(
         PythonReBenchmarkCase benchmarkCase,
-        byte[] inputBytes) => ComputePythonReSha256(
-            string.Join(
+        byte[] inputBytes)
+    {
+        var identity = string.Join(
                 '\n',
                 benchmarkCase.Id,
                 benchmarkCase.Pattern,
@@ -1833,7 +1850,21 @@ internal static partial class PythonReBenchmarkReporter
                 benchmarkCase.Replacement,
                 benchmarkCase.IncludesResultMaterialization.ToString(),
                 GetPythonReResultContract(benchmarkCase),
-                Convert.ToHexString(SHA256.HashData(inputBytes))));
+                Convert.ToHexString(SHA256.HashData(inputBytes)));
+        if (benchmarkCase.Coverage.StartOffsetInBytes != 0 ||
+            benchmarkCase.Coverage.ReplacementCount != -1 ||
+            benchmarkCase.Coverage.MaxSplit != -1)
+        {
+            identity = string.Join(
+                '\n',
+                identity,
+                $"start={benchmarkCase.Coverage.StartOffsetInBytes}",
+                $"replacement-count={benchmarkCase.Coverage.ReplacementCount}",
+                $"max-split={benchmarkCase.Coverage.MaxSplit}");
+        }
+
+        return ComputePythonReSha256(identity);
+    }
 
     private static string ComputeLegacyPythonReCaseDefinitionSha256(
         PythonReBenchmarkCase benchmarkCase,
@@ -1851,11 +1882,36 @@ internal static partial class PythonReBenchmarkReporter
     private static string ComputePythonReCatalogSha256()
     {
         var definitions = PythonReBenchmarkCatalog.Cases.Select(benchmarkCase =>
-            ComputePythonReCaseDefinitionSha256(
-                benchmarkCase,
-                Encoding.UTF8.GetBytes(benchmarkCase.Input)));
+            string.Join(
+                ':',
+                ComputePythonReCaseDefinitionSha256(
+                    benchmarkCase,
+                    Encoding.UTF8.GetBytes(benchmarkCase.Input)),
+                ComputePythonReCoverageSha256(benchmarkCase.Coverage)));
         return ComputePythonReSha256(string.Join('\n', definitions));
     }
+
+    private static string[] GetPythonReCatalogCaseIds() =>
+        PythonReBenchmarkCatalog.Cases.Select(static benchmarkCase => benchmarkCase.Id).ToArray();
+
+    private static string ComputePythonReCoverageSha256(PythonReBenchmarkCoverage coverage) =>
+        ComputePythonReSha256(
+            string.Join(
+                '\n',
+                coverage.Section,
+                coverage.FeatureFamily,
+                coverage.InputShape,
+                coverage.ExpectedResultCardinality,
+                coverage.StartOffsetInBytes.ToString(CultureInfo.InvariantCulture),
+                coverage.ReplacementCount.ToString(CultureInfo.InvariantCulture),
+                coverage.MaxSplit.ToString(CultureInfo.InvariantCulture),
+                coverage.ProjectionKind,
+                coverage.ComparatorOwner,
+                coverage.ByteControlExpectation,
+                coverage.IntendedManagedRouteClass,
+                coverage.CorpusProvenance,
+                coverage.ClaimClass,
+                coverage.FirstMilestoneSentinel.ToString()));
 
     private static string ComputePythonReQualificationId(
         string caseDefinitionSha256,

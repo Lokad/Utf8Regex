@@ -14,7 +14,7 @@ internal static partial class PythonReBenchmarkReporter
 {
     private const string SnapshotFileName = "PythonRe.Benchmarks.json";
     private const string CpythonRunnerRelativePath = "bench/Lokad.Utf8Regex.Benchmarks/pythonre_cpython_benchmark.py";
-    private const int PythonReBenchmarkSchemaVersion = 7;
+    private const int PythonReBenchmarkSchemaVersion = 8;
     private const int CpythonProtocolVersion = 1;
     private static int s_sink;
     private static object? s_retainedSink;
@@ -88,6 +88,18 @@ internal static partial class PythonReBenchmarkReporter
         if (args.Length >= 1 && args[0].Equals("--emit-pythonre-freshness-report", StringComparison.Ordinal))
         {
             exitCode = EmitPythonReFreshnessReport();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--emit-pythonre-coverage-report", StringComparison.Ordinal))
+        {
+            exitCode = EmitPythonReCoverageReport();
+            return true;
+        }
+
+        if (args.Length >= 1 && args[0].Equals("--verify-pythonre-coverage-contract", StringComparison.Ordinal))
+        {
+            exitCode = VerifyPythonReCoverageContract();
             return true;
         }
 
@@ -250,6 +262,7 @@ internal static partial class PythonReBenchmarkReporter
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             CatalogSha256 = ComputePythonReCatalogSha256(),
+            CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = measurements,
         };
@@ -293,6 +306,7 @@ internal static partial class PythonReBenchmarkReporter
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             CatalogSha256 = ComputePythonReCatalogSha256(),
+            CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
         });
@@ -305,11 +319,11 @@ internal static partial class PythonReBenchmarkReporter
     {
         var snapshotPath = FindRepositoryFile(SnapshotFileName);
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and
+        if (snapshot is null || snapshot.SchemaVersion is not 3 and not 4 and not 5 and not 6 and not 7 and
             not PythonReBenchmarkSchemaVersion)
         {
             Console.Error.WriteLine(
-                $"PythonRe migration requires a schema-3, schema-4, schema-5, schema-6, or " +
+                $"PythonRe migration requires a schema-3 through schema-7 or " +
                 $"schema-{PythonReBenchmarkSchemaVersion} snapshot.");
             return 1;
         }
@@ -345,6 +359,12 @@ internal static partial class PythonReBenchmarkReporter
                 continue;
             }
 
+            if (snapshot.SchemaVersion == 7)
+            {
+                migrated++;
+                continue;
+            }
+
             var benchmarkCase = PythonReBenchmarkCatalog.Cases.Single(
                 candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal));
             var failure = legacyQualificationSetMatches && worker is not null
@@ -373,6 +393,7 @@ internal static partial class PythonReBenchmarkReporter
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = snapshot.GeneratedAtUtc,
             CatalogSha256 = ComputePythonReCatalogSha256(),
+            CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
         });
@@ -495,6 +516,7 @@ internal static partial class PythonReBenchmarkReporter
             SchemaVersion = PythonReBenchmarkSchemaVersion,
             GeneratedAtUtc = DateTimeOffset.UtcNow,
             CatalogSha256 = ComputePythonReCatalogSha256(),
+            CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = snapshot.Corpus,
             Cases = snapshot.Cases,
         });
@@ -511,7 +533,8 @@ internal static partial class PythonReBenchmarkReporter
         var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
             benchmarkCase,
             context.InputBytes);
-        measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation);
+        measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase);
+        measurement.Coverage = benchmarkCase.Coverage;
         measurement.ManagedRoute = context.DescribeManagedRoute();
         measurement.ByteControlEligible = byteControl.IsEligible;
         measurement.ByteControlReason = byteControl.Reason;
@@ -1357,7 +1380,8 @@ internal static partial class PythonReBenchmarkReporter
             EffectiveIterations = effectiveIterations,
             Samples = samples,
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
-            ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase.Operation),
+            Coverage = benchmarkCase.Coverage,
+            ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
             ManagedRoute = context.DescribeManagedRoute(),
             ByteControlEligible = byteControl.IsEligible,
             ByteControlReason = byteControl.Reason,
@@ -4327,6 +4351,7 @@ internal sealed class PythonReBenchmarkSnapshot
     public required int SchemaVersion { get; init; }
     public required DateTimeOffset GeneratedAtUtc { get; init; }
     public string CatalogSha256 { get; init; } = string.Empty;
+    public string[] CatalogCaseIds { get; init; } = [];
     public required PythonReCorpusProvenance Corpus { get; init; }
     public required SortedDictionary<string, PythonReCaseMeasurement> Cases { get; init; }
 }
@@ -4349,6 +4374,7 @@ internal sealed class PythonReCaseMeasurement
     public required int EffectiveIterations { get; init; }
     public required int Samples { get; init; }
     public required bool IncludesResultMaterialization { get; init; }
+    public PythonReBenchmarkCoverage? Coverage { get; set; }
     public string ComparatorOwner { get; set; } = string.Empty;
     public string ManagedRoute { get; set; } = string.Empty;
     public bool ByteControlEligible { get; set; }
