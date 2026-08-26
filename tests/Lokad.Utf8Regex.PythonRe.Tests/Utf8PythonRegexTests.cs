@@ -616,6 +616,37 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void FindAllToStringsPreservesExactOptionalCaptureValuesAndByteStart()
+    {
+        var numbered = new Utf8PythonRegex("pre(ab)?c");
+        var named = new Utf8PythonRegex("(?P<letter>é)?x");
+        var numberedInput = "π preabc prec preabc"u8;
+        var namedInput = "skip x éx x"u8;
+
+        var numberedResult = numbered.FindAllToStrings(
+            numberedInput,
+            startOffsetInBytes: "π "u8.Length);
+        var namedResult = named.FindAllToStrings(
+            namedInput,
+            startOffsetInBytes: "skip "u8.Length);
+
+        Assert.Equal(["ab", "", "ab"], numberedResult.ScalarValues);
+        Assert.Equal(["", "é", ""], namedResult.ScalarValues);
+    }
+
+    [Fact]
+    public void FindAllToStringsPreservesSubjectTextForNonExactOptionalCaptures()
+    {
+        var ignoreCase = new Utf8PythonRegex("(a)?b", PythonReCompileOptions.IgnoreCase);
+        var characterClass = new Utf8PythonRegex("([ab])?c");
+        var reluctant = new Utf8PythonRegex("(a)??a");
+
+        Assert.Equal(["A", ""], ignoreCase.FindAllToStrings("AB b"u8).ScalarValues);
+        Assert.Equal(["a", "b", ""], characterClass.FindAllToStrings("ac bc c"u8).ScalarValues);
+        Assert.Equal(["", "", ""], reluctant.FindAllToStrings("aa a"u8).ScalarValues);
+    }
+
+    [Fact]
     public void FindAllToStringsUsesTupleShapeForMultipleCaptures()
     {
         var regex = new Utf8PythonRegex("(a)|(x)");
