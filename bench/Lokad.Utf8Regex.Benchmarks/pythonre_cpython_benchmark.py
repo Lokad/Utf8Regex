@@ -154,6 +154,8 @@ class CaseRunner:
         self.utf16_offsets = build_utf16_offsets(self.input_text)
         self.replacement = request["Replacement"]
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
+        self.callback_checksum = 0
+        self.evaluator = self.replace_callback
 
     def execute_predecoded(self) -> Any:
         return self.execute(self.input_text)
@@ -201,24 +203,95 @@ class CaseRunner:
             return self.pattern.split(input_text)
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
+    def execute_predecoded_batch(self, iterations: int) -> tuple[int, Any]:
+        operation = self.operation
+        input_text = self.input_text
+        pattern = self.pattern
+        result: Any = None
+        started = time.perf_counter_ns()
+        if operation == "IsMatch":
+            for _ in range(iterations):
+                result = pattern.search(input_text) is not None
+        elif operation == "Search":
+            for _ in range(iterations):
+                result = pattern.search(input_text)
+        elif operation == "Match":
+            for _ in range(iterations):
+                result = pattern.match(input_text)
+        elif operation == "FullMatch":
+            for _ in range(iterations):
+                result = pattern.fullmatch(input_text)
+        elif operation == "SearchDetailed":
+            for _ in range(iterations):
+                result = materialize_detailed(pattern.search(input_text), self.utf16_offsets)
+        elif operation == "Count":
+            for _ in range(iterations):
+                result = sum(1 for _ in pattern.finditer(input_text))
+        elif operation == "FindAllStrings":
+            for _ in range(iterations):
+                result = pattern.findall(input_text)
+        elif operation == "FindAllUtf8":
+            if pattern.groups <= 1:
+                for _ in range(iterations):
+                    result = [value.encode("utf-8") for value in pattern.findall(input_text)]
+            else:
+                for _ in range(iterations):
+                    result = [
+                        tuple(value.encode("utf-8") for value in item)
+                        for item in pattern.findall(input_text)
+                    ]
+        elif operation == "FindIterDetailed":
+            for _ in range(iterations):
+                result = [
+                    materialize_detailed(match, self.utf16_offsets)
+                    for match in pattern.finditer(input_text)
+                ]
+        elif operation == "ReplaceString":
+            for _ in range(iterations):
+                result = pattern.sub(self.replacement, input_text)
+        elif operation == "ReplaceUtf8":
+            for _ in range(iterations):
+                result = pattern.sub(self.replacement, input_text).encode("utf-8")
+        elif operation == "SubnString":
+            for _ in range(iterations):
+                result = pattern.subn(self.replacement, input_text)
+        elif operation == "SubnUtf8":
+            for _ in range(iterations):
+                result_text, count = pattern.subn(self.replacement, input_text)
+                result = result_text.encode("utf-8"), count
+        elif operation == "SubnEvaluatorString":
+            for _ in range(iterations):
+                self.callback_checksum = 0
+                result_text, count = pattern.subn(self.evaluator, input_text)
+                result = result_text, count, self.callback_checksum
+        elif operation == "SubnEvaluatorUtf8":
+            for _ in range(iterations):
+                self.callback_checksum = 0
+                result_text, count = pattern.subn(self.evaluator, input_text)
+                result = result_text.encode("utf-8"), count, self.callback_checksum
+        elif operation == "SplitStrings":
+            for _ in range(iterations):
+                result = pattern.split(input_text)
+        else:
+            raise ValueError(f"Unsupported PythonRe operation: {operation}")
+        return time.perf_counter_ns() - started, result
+
     def encode_findall(self, values: list[Any]) -> list[Any]:
         if self.pattern.groups <= 1:
             return [value.encode("utf-8") for value in values]
         return [tuple(value.encode("utf-8") for value in item) for item in values]
 
+    def replace_callback(self, match: re.Match[str]) -> str:
+        self.callback_checksum = combine(
+            self.callback_checksum,
+            detailed_checksum(materialize_detailed(match, self.utf16_offsets)),
+        )
+        return self.replacement
+
     def subn_evaluator(self, input_text: str, encode_utf8: bool) -> tuple[Any, int, int]:
-        callback_checksum = 0
-
-        def replace(match: re.Match[str]) -> str:
-            nonlocal callback_checksum
-            callback_checksum = combine(
-                callback_checksum,
-                detailed_checksum(materialize_detailed(match, self.utf16_offsets)),
-            )
-            return self.replacement
-
-        result, count = self.pattern.subn(replace, input_text)
-        return (result.encode("utf-8") if encode_utf8 else result), count, callback_checksum
+        self.callback_checksum = 0
+        result, count = self.pattern.subn(self.evaluator, input_text)
+        return (result.encode("utf-8") if encode_utf8 else result), count, self.callback_checksum
 
     def checksum(self, result: Any) -> int:
         operation = self.operation
@@ -293,6 +366,50 @@ def measure(operation: Callable[[], Any], maximum_iterations: int, sample_count:
     )
 
 
+def measure_predecoded(
+    runner: CaseRunner,
+    maximum_iterations: int,
+    sample_count: int,
+    expected_checksum: int,
+) -> tuple[dict[str, Any], Any]:
+    warmup_started = time.perf_counter_ns()
+    warmup_calls = 0
+    result: Any = None
+    while warmup_calls < MAX_WARMUP_CALLS:
+        _, result = runner.execute_predecoded_batch(1)
+        warmup_calls += 1
+        if time.perf_counter_ns() - warmup_started >= WARMUP_SECONDS * 1_000_000_000:
+            break
+
+    warmup_elapsed = time.perf_counter_ns() - warmup_started
+    average_warmup_nanoseconds = warmup_elapsed / warmup_calls
+    calibrated_iterations = max(1, math.ceil(WARMUP_SECONDS * 1_000_000_000 / average_warmup_nanoseconds))
+    iterations = min(maximum_iterations, calibrated_iterations)
+    microseconds: list[float] = []
+    for _ in range(sample_count):
+        elapsed, result = runner.execute_predecoded_batch(iterations)
+        actual_checksum = runner.checksum(result)
+        if actual_checksum != expected_checksum:
+            raise RuntimeError(
+                "CPython predecoded timed result disagrees with preflight: "
+                f"expected {expected_checksum}, actual {actual_checksum}."
+            )
+        microseconds.append(elapsed / iterations / 1_000)
+
+    microseconds.sort()
+    return (
+        {
+            "MedianMicroseconds": statistics.median(microseconds),
+            "MinimumMicroseconds": microseconds[0],
+            "MaximumMicroseconds": microseconds[-1],
+            "EffectiveIterations": iterations,
+            "WarmupCalls": warmup_calls,
+            "WarmupMilliseconds": warmup_elapsed / 1_000_000,
+        },
+        result,
+    )
+
+
 def main() -> int:
     if platform.python_implementation() != "CPython":
         raise RuntimeError("The PythonRe baseline runner requires an official CPython-compatible executable.")
@@ -314,7 +431,7 @@ def main() -> int:
             f"{expected_checksum} versus {decoded_preflight_checksum}."
         )
 
-    predecoded, predecoded_result = measure(runner.execute_predecoded, iterations, samples)
+    predecoded, predecoded_result = measure_predecoded(runner, iterations, samples, expected_checksum)
     decoded, decoded_result = measure(runner.execute_decode_then_re, iterations, samples)
     predecoded_checksum = runner.checksum(predecoded_result)
     decoded_checksum = runner.checksum(decoded_result)

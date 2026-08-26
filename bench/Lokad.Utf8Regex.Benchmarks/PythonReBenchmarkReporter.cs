@@ -708,7 +708,7 @@ internal static partial class PythonReBenchmarkReporter
             Samples = samples,
             IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
             Environment = CaptureEnvironment(),
-            PythonRe = MeasureOperation(context.ExecutePythonRe, effectiveIterations, samples),
+            PythonRe = MeasurePythonReOperation(context, effectiveIterations, samples, pythonResult),
             DecodeThenRegex = MeasureOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples),
             PredecodedRegex = MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples),
             Cpython = cpython,
@@ -800,6 +800,58 @@ internal static partial class PythonReBenchmarkReporter
             _ => 2_000,
         };
         return Math.Max(requestedIterations, minimum);
+    }
+
+    private static PythonReOperationMeasurement MeasurePythonReOperation(
+        PythonReBenchmarkContext context,
+        int iterations,
+        int samples,
+        int expectedChecksum)
+    {
+        var warmup = Stopwatch.StartNew();
+        var warmupCalls = 0;
+        var warmupBatchSize = Math.Min(iterations, 16);
+        do
+        {
+            var batch = context.MeasurePythonReBatch(warmupBatchSize);
+            if (batch.Checksum != expectedChecksum)
+            {
+                throw new InvalidOperationException(
+                    $"PythonRe warmup result checksum {batch.Checksum} does not match preflight {expectedChecksum}.");
+            }
+
+            s_sink ^= batch.Checksum;
+            warmupCalls += warmupBatchSize;
+        }
+        while (warmup.ElapsedMilliseconds < 100 && warmupCalls < 65_536);
+
+        var microseconds = new double[samples];
+        var allocations = new long[samples];
+        for (var sample = 0; sample < samples; sample++)
+        {
+            var batch = context.MeasurePythonReBatch(iterations);
+            if (batch.Checksum != expectedChecksum)
+            {
+                throw new InvalidOperationException(
+                    $"PythonRe timed result checksum {batch.Checksum} does not match preflight {expectedChecksum}.");
+            }
+
+            allocations[sample] = batch.AllocatedBytes / iterations;
+            microseconds[sample] = batch.Elapsed.TotalMicroseconds / iterations;
+            s_sink ^= batch.Checksum;
+        }
+
+        Array.Sort(microseconds);
+        Array.Sort(allocations);
+        return new PythonReOperationMeasurement
+        {
+            MedianMicroseconds = microseconds[microseconds.Length / 2],
+            MinimumMicroseconds = microseconds[0],
+            MaximumMicroseconds = microseconds[^1],
+            MedianAllocatedBytes = allocations[allocations.Length / 2],
+            WarmupCalls = warmupCalls,
+            WarmupMilliseconds = warmup.Elapsed.TotalMilliseconds,
+        };
     }
 
     private static PythonReOperationMeasurement MeasureOperation(
@@ -1126,6 +1178,253 @@ internal sealed class PythonReBenchmarkContext
     internal bool SupportsCaptureFreeFindAllPhases => _coreFindAllRegex is not null;
 
     internal int PreparedCoreRangeCount => _preparedCoreRanges.Length;
+
+    internal PythonReBenchmarkBatch MeasurePythonReBatch(int iterations)
+    {
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        var started = Stopwatch.GetTimestamp();
+        switch (_case.Operation)
+        {
+            case PythonReBenchmarkOperation.IsMatch:
+            {
+                var result = false;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.IsMatch(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    result ? 1 : 0);
+            }
+            case PythonReBenchmarkOperation.Search:
+            {
+                Utf8PythonValueMatch result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Search(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.Match:
+            {
+                Utf8PythonValueMatch result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Match(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.FullMatch:
+            {
+                Utf8PythonValueMatch result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FullMatch(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.SearchDetailed:
+            {
+                Utf8PythonDetailedMatchData result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.SearchDetailedData(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.Count:
+            {
+                var result = 0;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Count(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    result);
+            }
+            case PythonReBenchmarkOperation.FindAllStrings:
+            {
+                Utf8PythonFindAllResult result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FindAllToStrings(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.FindAllUtf8:
+            {
+                Utf8PythonFindAllUtf8Result result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FindAllToUtf8(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.FindIterDetailed:
+            {
+                Utf8PythonDetailedMatchData[] result = [];
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FindIterDetailed(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.ReplaceString:
+            {
+                var result = string.Empty;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.ReplaceToString(InputBytes, _case.Replacement);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.ReplaceUtf8:
+            {
+                byte[] result = [];
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Replace(InputBytes, _case.Replacement);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.SubnString:
+            {
+                Utf8PythonSubnResult result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.SubnToString(InputBytes, _case.Replacement);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.SubnUtf8:
+            {
+                Utf8PythonSubnUtf8Result result = default;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Subn(InputBytes, _case.Replacement);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            case PythonReBenchmarkOperation.SubnEvaluatorString:
+            {
+                Utf8PythonSubnResult result = default;
+                var callbackChecksum = 0;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    _callbackChecksum = 0;
+                    result = _pythonRegex.SubnToString(
+                        InputBytes,
+                        this,
+                        static (context, match) =>
+                        {
+                            context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                            return context._case.Replacement;
+                        });
+                    callbackChecksum = _callbackChecksum;
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Combine(Checksum(result), callbackChecksum));
+            }
+            case PythonReBenchmarkOperation.SubnEvaluatorUtf8:
+            {
+                Utf8PythonSubnUtf8Result result = default;
+                var callbackChecksum = 0;
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    _callbackChecksum = 0;
+                    result = _pythonRegex.Subn(
+                        InputBytes,
+                        this,
+                        static (context, match) =>
+                        {
+                            context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                            return context._replacementBytes;
+                        });
+                    callbackChecksum = _callbackChecksum;
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Combine(Checksum(result), callbackChecksum));
+            }
+            case PythonReBenchmarkOperation.SplitStrings:
+            {
+                string?[] result = [];
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.SplitToStrings(InputBytes);
+                }
+
+                return Complete(
+                    Stopwatch.GetTimestamp(),
+                    GC.GetAllocatedBytesForCurrentThread(),
+                    Checksum(result));
+            }
+            default:
+                throw new InvalidOperationException();
+        }
+
+        PythonReBenchmarkBatch Complete(long ended, long allocatedAfter, int checksum)
+        {
+            return new PythonReBenchmarkBatch(
+                Stopwatch.GetElapsedTime(started, ended),
+                allocatedAfter - allocatedBefore,
+                checksum);
+        }
+    }
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
@@ -1801,6 +2100,11 @@ internal sealed record BclSubnResult(
     byte[]? ResultBytes,
     int ReplacementCount,
     int? CallbackChecksum);
+
+internal readonly record struct PythonReBenchmarkBatch(
+    TimeSpan Elapsed,
+    long AllocatedBytes,
+    int Checksum);
 
 internal sealed class PythonReBenchmarkSnapshot
 {
