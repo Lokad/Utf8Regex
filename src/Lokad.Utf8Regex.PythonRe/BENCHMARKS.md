@@ -16,17 +16,19 @@ Enumeration, split, and replacement rows include the result materialization need
 
 Qualified `Search`, `SearchFromOffset`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.
 
+Convenience overloads are intentionally coalesced when they do not change timed work. Matched-string helpers project the same group-zero value already represented by direct matching rows; `MatchDetailed` and `FullMatchDetailed` use the same detailed capture projection represented by `SearchDetailed`, while their anchored discovery modes are covered separately by `Match` and `FullMatch`. Offset and limit overloads receive distinct rows when they change enumeration or shaping work.
+
 Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the identical bytes. `Rbyte` is representation-neutral engine evidence and never sets public Status; rows without equivalent byte semantics carry an explicit exclusion reason.
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T15:12:32.1473510+00:00`
-- Snapshot SHA-256: `994613CC21FAD3D49E68278651135854FAEBC924BE39BC8852502F5861E862FC`
+- Generated: `2026-08-26T15:15:39.3020287+00:00`
+- Snapshot SHA-256: `5A9A76CF2145DAE7C94B84DC36980C4AF2BF91546A042609C760D2F709655425`
 - Schema: `8`
-- Catalog SHA-256: `ABC1034FAF24EAD6571BA6DE5324A6A7A454CC14D690834A60F75746DC01DC96`
-- Cases: `82`
-- Public Status: `22` managed faster, `0` equivalent, `4` CPython faster, `54` inconclusive, `2` unqualified
-- Historical point measurement environments represented: `12`
+- Catalog SHA-256: `59DB20C3C982E7DB1FE73B4986EC28198F9A519D2456FFE642449DFF3F8F3B32`
+- Cases: `84`
+- Public Status: `22` managed faster, `0` equivalent, `4` CPython faster, `56` inconclusive, `2` unqualified
+- Historical point measurement environments represented: `13`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -34,13 +36,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Coverage summary
 
-This catalog currently covers `82` operation rows over `39` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
+This catalog currently covers `84` operation rows over `39` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
 
 | Axis | Covered values |
 |---|---|
-| Operation families | `Count`, `CountFromOffset`, `FindAllStrings`, `FindAllStructural`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceEvaluatorString`, `ReplaceString`, `ReplaceStringLimited`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SearchFromOffset`, `SplitDetailed`, `SplitStrings`, `SplitStringsLimited`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
+| Operation families | `Count`, `CountFromOffset`, `FindAllStrings`, `FindAllStringsFromOffset`, `FindAllStructural`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceEvaluatorString`, `ReplaceString`, `ReplaceStringLimited`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SearchFromOffset`, `SplitDetailed`, `SplitStrings`, `SplitStringsLimited`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
 | Flags | `Ascii`, `DotAll`, `IgnoreCase`, `Multiline`, `None`, `Unicode`, `Verbose` |
-| Feature families | `ASCII class run`, `ASCII digit run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Bounded exact literal replacement`, `Bounded separator class`, `Callback replacement`, `Captured separator`, `Captured separator metadata`, `Dot-all wildcard`, `Empty-capable repeat`, `Empty-match replacement`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `Named capture`, `Named capture and backreference`, `Named template expansion`, `Numeric capture and backreference`, `Numeric template expansion`, `One capture`, `Optional capture`, `Optional captured separator`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode separator class`, `Unicode word category`, `Verbose classes` |
+| Feature families | `ASCII class run`, `ASCII digit run`, `ASCII word boundary`, `ASCII word category`, `Anchors and fixed classes`, `Atomic group`, `Bounded exact literal replacement`, `Bounded separator class`, `Callback replacement`, `Captured separator`, `Captured separator metadata`, `Dot-all wildcard`, `Empty-capable repeat`, `Empty-match replacement`, `Exact literal`, `Exact literal replacement`, `Exact literal with start offset`, `Fixed-width lookbehind`, `Greedy repeat`, `Ignore-case literal`, `Leading inline flags`, `Literal alternation`, `Mixed-width captures`, `Multiline anchors`, `Named capture`, `Named capture and backreference`, `Named template expansion`, `Numeric capture and backreference`, `Numeric template expansion`, `One capture`, `Optional capture`, `Optional captured separator`, `Positive lookahead`, `Possessive repeat`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Reluctant repeat`, `Scoped inline flags`, `Separated captures`, `Separator class`, `Supplementary exact literal`, `Unicode exact literal`, `Unicode literal`, `Unicode separator class`, `Unicode word category`, `Unmatched optional-group expansion`, `Verbose classes` |
 | Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `GeneralNative`, `ManagedFallback`, `SimpleNative` |
 | Result cardinalities | `Few`, `Four`, `Many`, `ManyEmpty`, `One`, `Three`, `Two`, `Zero` |
 | Input-width classes | `Ascii`, `Ascii+ThreeByte`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte`, `FourByte`, `ThreeByte` |
@@ -51,8 +53,8 @@ This catalog currently covers `82` operation rows over `39` distinct patterns. Z
 |---|---:|
 | Direct matching | 36 |
 | Detailed and scalar projections | 1 |
-| Count, FindAll, and FindIter | 24 |
-| Replace and Subn | 12 |
+| Count, FindAll, and FindIter | 25 |
+| Replace and Subn | 13 |
 | Split | 9 |
 | Real-corpus workloads | 0 |
 | Construction and first call | 0 |
@@ -135,6 +137,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 35.726 us | 23.464 us | 1.52x | 42.228 us | 32.600 us | 8,216 B |
 | `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 2.435 us | 49.361 us | 0.05x | 49.729 us | 1.149 us | 17,456 B |
 | `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 1.550 us | 21.060 us | 0.07x | 21.488 us | 1.047 us | 8,288 B |
+| `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | Inconclusive | 17.459 us | 9.935 us | 1.76x | 22.023 us | 95.400 us | 4,120 B |
 | `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 62.354 us | 26.694 us | 2.34x | 30.635 us | 54.610 us | 239,168 B |
 | `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 51.266 us | 38.229 us | 1.37x | 35.815 us | 133.261 us | 209,648 B |
 | `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 42.603 us | 67.070 us | 0.64x | 59.297 us | 179.642 us | 58,120 B |
@@ -154,6 +157,7 @@ Historical point rows span more than one measurement environment. Consult the JS
 | `replacement/no-match-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.492 us | 1.355 us | 1.11x | 1.723 us | 7.467 us | 20,480 B |
 | `replacement/one-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 1.434 us | 9,286.420 us | 0.00x | 8,925.992 us | 4.645 us | 9,024 B |
 | `replacement/named-template-string` | `ReplaceString` | EagerMaterializedResult | Unqualified | 1.219 us | 0.553 us | 2.13x | 1.463 us | 0.994 us | 720 B |
+| `replacement/unmatched-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 17.917 us | 32.185 us | 0.53x | 42.555 us | 55.847 us | 3,768 B |
 | `replacement/limited-string` | `ReplaceStringLimited` | EagerMaterializedResult | Inconclusive | 0.989 us | 0.305 us | 3.24x | 0.639 us | 5.996 us | 16,912 B |
 | `replacement/empty-progression-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 34.536 us | 14.503 us | 2.35x | 14.899 us | 17.288 us | 113,392 B |
 | `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | EagerMaterializedResult | Inconclusive | 78.005 us | 3,413.248 us | 0.03x | 2,883.008 us | 47.345 us | 219,840 B |
@@ -259,6 +263,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `count/from-offset` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactAsciiLiteral; Python-style count progression from a nonzero byte offset` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/zero-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/one-strings` | `_sre C Pattern.findall` | `Utf8Regex/FallbackRegex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `findall/from-offset-strings` | `_sre C Pattern.findall` | `Utf8Regex/ExactAsciiLiteral; findall string shaping from a nonzero byte offset` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/empty-progression-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/optional-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex; findall string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `findall/named-capture-strings` | `_sre C Pattern.findall` | `strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
@@ -267,6 +272,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `replacement/no-match-string` | `_sre C Pattern.sub` | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/one-template-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/named-template-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
+| `replacement/unmatched-template-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/limited-string` | `_sre C Pattern.sub` | `Utf8Regex/ExactAsciiLiteral; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/empty-progression-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex; replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/evaluator-replace-string` | `_sre C Pattern.sub + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping without count` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
