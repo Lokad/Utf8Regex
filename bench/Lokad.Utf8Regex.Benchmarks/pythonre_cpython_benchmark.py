@@ -627,12 +627,29 @@ def run_stream_worker() -> int:
                         round(target_nanoseconds * pilot_iterations / max(pilot["ElapsedNanoseconds"], 1)),
                     ),
                 )
-                calibrated = measure_stream_lane(
-                    runner,
-                    lane,
-                    calibrated_iterations,
-                    expected_checksum,
-                )
+                calibrated: dict[str, Any] | None = None
+                for _ in range(2):
+                    calibrated = measure_stream_lane(
+                        runner,
+                        lane,
+                        calibrated_iterations,
+                        expected_checksum,
+                    )
+                    if 30_000_000 <= calibrated["ElapsedNanoseconds"] <= 50_000_000:
+                        break
+                    calibrated_iterations = min(
+                        maximum_iterations,
+                        max(
+                            1,
+                            round(
+                                calibrated_iterations
+                                * target_nanoseconds
+                                / max(calibrated["ElapsedNanoseconds"], 1)
+                            ),
+                        ),
+                    )
+                if calibrated is None:
+                    raise RuntimeError("CPython streaming calibration produced no confirmation.")
                 calibrated.update(
                     {
                         "ProtocolVersion": STREAM_PROTOCOL_VERSION,

@@ -68,18 +68,23 @@ internal static partial class PythonReBenchmarkReporter
             VerifyManagedChecksum(batch, expectedChecksum, "tiering warmup");
         }
 
+        var preliminaryManagedIterations = CalibrateManagedBatch(context, expectedChecksum);
+        var preliminaryCpythonCalibration = worker.Calibrate(
+            CpythonStreamLane.Predecoded,
+            PythonReQualificationTargetSampleMilliseconds,
+            PythonReQualificationMaximumIterations);
+        var managedWarmup = WarmManagedLane(context, preliminaryManagedIterations, expectedChecksum);
+        var cpythonWarmup = worker.Warm(
+            CpythonStreamLane.Predecoded,
+            preliminaryCpythonCalibration.Iterations,
+            minimumMilliseconds: 100,
+            maximumBatches: 32);
         var managedIterations = CalibrateManagedBatch(context, expectedChecksum);
         var cpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
             PythonReQualificationMaximumIterations);
         var cpythonIterations = cpythonCalibration.Iterations;
-        var managedWarmup = WarmManagedLane(context, managedIterations, expectedChecksum);
-        var cpythonWarmup = worker.Warm(
-            CpythonStreamLane.Predecoded,
-            cpythonIterations,
-            minimumMilliseconds: 100,
-            maximumBatches: 32);
 
         var laneOrders = new List<PythonRePairLaneOrder>(samples);
         var managedMicroseconds = new List<double>(samples);
@@ -254,11 +259,30 @@ internal static partial class PythonReBenchmarkReporter
             VerifyManagedChecksum(pilot, expectedChecksum, "calibration");
         }
 
-        return (int)Math.Clamp(
+        iterations = (int)Math.Clamp(
             Math.Round(iterations * PythonReQualificationTargetSampleMilliseconds /
                        Math.Max(pilot.Elapsed.TotalMilliseconds, 0.000_001)),
             1,
             PythonReQualificationMaximumIterations);
+        const int confirmationAttempts = 2;
+        for (var attempt = 0; attempt < confirmationAttempts; attempt++)
+        {
+            var confirmation = context.MeasurePythonReBatch(iterations);
+            VerifyManagedChecksum(confirmation, expectedChecksum, "calibration confirmation");
+            if (confirmation.Elapsed.TotalMilliseconds is >= 30 and <= 50)
+            {
+                break;
+            }
+
+            iterations = (int)Math.Clamp(
+                Math.Round(
+                    iterations * PythonReQualificationTargetSampleMilliseconds /
+                    Math.Max(confirmation.Elapsed.TotalMilliseconds, 0.000_001)),
+                1,
+                PythonReQualificationMaximumIterations);
+        }
+
+        return iterations;
     }
 
     private static PythonReWarmup WarmManagedLane(
