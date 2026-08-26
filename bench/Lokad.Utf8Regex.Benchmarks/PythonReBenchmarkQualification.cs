@@ -16,6 +16,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
     private const int PythonReQualificationOneShotWarmupCalls = 100_000;
+    private const int PythonReQualificationFindAllWarmupCalls = 10_000;
     private const int PythonReQualificationReplacementWarmupCalls = 10_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
@@ -888,9 +889,11 @@ internal static partial class PythonReBenchmarkReporter
         benchmarkCase.Operation switch
         {
             PythonReBenchmarkOperation.IsMatch or
-                PythonReBenchmarkOperation.Search or
+            PythonReBenchmarkOperation.Search or
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
+            PythonReBenchmarkOperation.FindAllStrings or
+                PythonReBenchmarkOperation.FindAllUtf8 => PythonReQualificationFindAllWarmupCalls,
             PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
                 PythonReBenchmarkOperation.SubnString or
