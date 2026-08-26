@@ -155,6 +155,12 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--invalidate-pythonre-qualifications", StringComparison.Ordinal))
+        {
+            exitCode = InvalidatePythonReQualifications();
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pythonre-benchmark-markdown", StringComparison.Ordinal))
         {
             exitCode = EmitPythonReBenchmarkMarkdown();
@@ -268,6 +274,40 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine(
             $"Migrated {SnapshotFileName} to schema {PythonReBenchmarkSchemaVersion}; " +
             "historical rows remain Unqualified.");
+        return 0;
+    }
+
+    private static int InvalidatePythonReQualifications()
+    {
+        var snapshot = LoadPythonReBenchmarkSnapshot();
+        if (snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
+        {
+            Console.Error.WriteLine(
+                $"PythonRe invalidation requires a schema-{PythonReBenchmarkSchemaVersion} snapshot.");
+            return 1;
+        }
+
+        var invalidated = 0;
+        foreach (var measurement in snapshot.Cases.Values)
+        {
+            if (measurement.Qualification?.PairedEvidence is null)
+            {
+                continue;
+            }
+
+            measurement.Qualification = PythonReQualificationMeasurement.CreateUnqualified(
+                "Paired evidence predates the consumed-result qualification contract.");
+            invalidated++;
+        }
+
+        WriteSnapshot(new PythonReBenchmarkSnapshot
+        {
+            SchemaVersion = PythonReBenchmarkSchemaVersion,
+            GeneratedAtUtc = DateTimeOffset.UtcNow,
+            Corpus = snapshot.Corpus,
+            Cases = snapshot.Cases,
+        });
+        Console.WriteLine($"Invalidated {invalidated} PythonRe paired qualifications.");
         return 0;
     }
 
@@ -1548,9 +1588,68 @@ internal sealed class PythonReBenchmarkContext
                 Stopwatch.GetElapsedTime(started, ended),
                 allocatedAfter - allocatedBefore,
                 checksum,
-                semanticDigest);
+                semanticDigest,
+                ConsumptionChecksum: 0);
         }
     }
+
+    internal PythonReBenchmarkBatch MeasurePythonReQualificationBatch(int iterations)
+    {
+        if (_case.Operation is not PythonReBenchmarkOperation.Search and
+            not PythonReBenchmarkOperation.Match and
+            not PythonReBenchmarkOperation.FullMatch)
+        {
+            return MeasurePythonReBatch(iterations);
+        }
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        var consumptionChecksum = 0UL;
+        var started = Stopwatch.GetTimestamp();
+        Utf8PythonValueMatch result = default;
+        switch (_case.Operation)
+        {
+            case PythonReBenchmarkOperation.Search:
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Search(InputBytes);
+                    consumptionChecksum += GetConsumptionToken(result);
+                }
+                break;
+            case PythonReBenchmarkOperation.Match:
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.Match(InputBytes);
+                    consumptionChecksum += GetConsumptionToken(result);
+                }
+                break;
+            case PythonReBenchmarkOperation.FullMatch:
+                for (var iteration = 0; iteration < iterations; iteration++)
+                {
+                    result = _pythonRegex.FullMatch(InputBytes);
+                    consumptionChecksum += GetConsumptionToken(result);
+                }
+                break;
+            default:
+                throw new InvalidOperationException();
+        }
+
+        var ended = Stopwatch.GetTimestamp();
+        var allocatedAfter = GC.GetAllocatedBytesForCurrentThread();
+        return new PythonReBenchmarkBatch(
+            Stopwatch.GetElapsedTime(started, ended),
+            allocatedAfter - allocatedBefore,
+            Checksum(result),
+            SemanticDigest(_case.Operation, result),
+            consumptionChecksum);
+    }
+
+    internal ulong ExecutePythonReConsumptionToken() => _case.Operation switch
+    {
+        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Search(InputBytes)),
+        PythonReBenchmarkOperation.Match => GetConsumptionToken(_pythonRegex.Match(InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.FullMatch(InputBytes)),
+        _ => 0,
+    };
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
@@ -2089,6 +2188,21 @@ internal sealed class PythonReBenchmarkContext
         return digest.Value;
     }
 
+    private static ulong GetConsumptionToken(Utf8PythonValueMatch match)
+    {
+        if (!match.Success)
+        {
+            return 1;
+        }
+
+        return checked(
+            2UL +
+            (uint)match.StartOffsetInBytes +
+            (uint)match.EndOffsetInBytes +
+            (uint)match.StartOffsetInUtf16 +
+            (uint)match.EndOffsetInUtf16);
+    }
+
     private static ulong SemanticDigest(PythonReBenchmarkOperation operation, int value)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
@@ -2590,7 +2704,8 @@ internal readonly record struct PythonReBenchmarkBatch(
     TimeSpan Elapsed,
     long AllocatedBytes,
     int Checksum,
-    ulong SemanticDigest);
+    ulong SemanticDigest,
+    ulong ConsumptionChecksum);
 
 internal sealed class PythonReBenchmarkSnapshot
 {
@@ -2645,6 +2760,15 @@ internal sealed class PythonReQualificationMeasurement
         EngineConclusion = "Unqualified",
         PairedEvidence = null,
     };
+
+    internal static PythonReQualificationMeasurement CreateUnqualified(string reason) => new()
+    {
+        Status = "Unqualified",
+        StatusReason = reason,
+        EngineEvidenceBasis = "Not engine-comparable",
+        EngineConclusion = "Unqualified",
+        PairedEvidence = null,
+    };
 }
 
 internal sealed class PythonRePairedEvidence
@@ -2654,6 +2778,7 @@ internal sealed class PythonRePairedEvidence
     public required DateTimeOffset MeasuredAtUtc { get; init; }
     public required string SourceCommit { get; init; }
     public required string Baseline { get; init; }
+    public string ResultContract { get; init; } = string.Empty;
     public required string InitialLane { get; init; }
     public required bool WorktreeQualified { get; init; }
     public required string CaseDefinitionSha256 { get; init; }

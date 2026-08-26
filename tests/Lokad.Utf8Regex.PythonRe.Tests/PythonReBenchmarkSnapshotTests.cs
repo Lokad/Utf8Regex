@@ -163,6 +163,9 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         Assert.Equal(2, evidence.GetProperty("ProtocolVersion").GetInt32());
         Assert.Equal("CPythonPredecodedElapsed", evidence.GetProperty("Baseline").GetString());
+        Assert.Contains(
+            evidence.GetProperty("ResultContract").GetString(),
+            new[] { "ConsumedGroupZeroRanges", "EagerMaterializedResult", "ScalarResult" });
         Assert.True(evidence.GetProperty("WorktreeQualified").GetBoolean());
         Assert.Equal("structured-u64-mix-v1", evidence.GetProperty("SemanticDigestAlgorithm").GetString());
         Assert.Matches("^[0-9A-F]{16}$", evidence.GetProperty("SemanticDigest").GetString() ?? string.Empty);

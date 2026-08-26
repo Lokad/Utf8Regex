@@ -100,6 +100,12 @@ internal static partial class PythonReBenchmarkReporter
             ? "Enumeration, split, and replacement rows include the result materialization needed by the public operation. CPython is measured inside its own long-lived process because `_sre` is a CPython core module, not a standalone engine API; interpreter startup and pattern compilation are excluded. Status requires alternating paired elapsed-time samples against predecoded CPython, equal requested work, stable lanes, bounded harness-floor sensitivity, and exact source/runtime provenance. Historical independent medians remain visible for discovery but are Unqualified. Use the PCRE2 page for the separate native PCRE2 engine comparison."
             : "Enumeration, split, and replacement rows include the result materialization needed by the public operation. This legacy schema-2 snapshot predates the direct CPython baseline; the next complete refresh migrates it to schema 3 with official CPython `re` measurements. Predecoded columns are matcher/runtime lower bounds, not end-to-end parity requirements.");
         writer.WriteLine();
+        if (hasCompleteCpythonBaseline)
+        {
+            writer.WriteLine("Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.");
+            writer.WriteLine();
+        }
+
         writer.WriteLine("## Snapshot summary");
         writer.WriteLine();
         writer.WriteLine($"- Generated: `{snapshot.GeneratedAtUtc.ToUniversalTime():O}`");
@@ -153,8 +159,8 @@ internal static partial class PythonReBenchmarkReporter
         {
             writer.WriteLine("`Rstrong` is `PythonRe / CPython predecoded`; lower is better. Only a qualified paired 95% interval wholly below `0.98`, wholly within `0.98-1.02`, or wholly above `1.02` can establish Managed faster, Equivalent, or CPython faster. The old scalar medians shown for Unqualified rows are discovery evidence only. All times are elapsed microseconds per public operation, not CPU time.");
             writer.WriteLine();
-            writer.WriteLine("| Case | Operation | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |");
-            writer.WriteLine("|---|---|---|---:|---:|---:|---:|---:|---:|");
+            writer.WriteLine("| Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |");
+            writer.WriteLine("|---|---|---|---|---:|---:|---:|---:|---:|---:|");
             foreach (var (caseId, measurement) in rows)
             {
                 var cpython = measurement.Cpython ??
@@ -167,7 +173,8 @@ internal static partial class PythonReBenchmarkReporter
                     cpython.PredecodedRe.MedianMicroseconds;
                 var strongRatio = paired?.StrongRatioMedian ?? managedMicroseconds / cpythonMicroseconds;
                 writer.WriteLine(
-                    $"| `{caseId}` | `{measurement.Operation}` | {FormatPythonReStatus(qualification)} | " +
+                    $"| `{caseId}` | `{measurement.Operation}` | {paired?.ResultContract ?? "Historical"} | " +
+                    $"{FormatPythonReStatus(qualification)} | " +
                     $"{FormatPythonReMicroseconds(managedMicroseconds)} | " +
                     $"{FormatPythonReMicroseconds(cpythonMicroseconds)} | " +
                     $"{strongRatio:F2}x | " +

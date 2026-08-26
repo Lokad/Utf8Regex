@@ -394,6 +394,77 @@ class CaseRunner:
             raise ValueError(f"Unsupported PythonRe operation: {operation}")
         return time.perf_counter_ns() - started, result
 
+    def execute_predecoded_qualification_batch(self, iterations: int) -> tuple[int, Any, int]:
+        operation = self.operation
+        if operation not in {"Search", "Match", "FullMatch"}:
+            elapsed, result = self.execute_predecoded_batch(iterations)
+            return elapsed, result, 0
+
+        input_text = self.input_text
+        pattern = self.pattern
+        utf8_offsets = self.utf8_offsets
+        utf16_offsets = self.utf16_offsets
+        consumption_checksum = 0
+        result: re.Match[str] | None = None
+        started = time.perf_counter_ns()
+        if operation == "Search":
+            for _ in range(iterations):
+                result = pattern.search(input_text)
+                if result is None:
+                    consumption_checksum += 1
+                else:
+                    start, end = result.span()
+                    consumption_checksum += (
+                        2
+                        + utf8_offsets[start]
+                        + utf8_offsets[end]
+                        + utf16_offsets[start]
+                        + utf16_offsets[end]
+                    )
+        elif operation == "Match":
+            for _ in range(iterations):
+                result = pattern.match(input_text)
+                if result is None:
+                    consumption_checksum += 1
+                else:
+                    start, end = result.span()
+                    consumption_checksum += (
+                        2
+                        + utf8_offsets[start]
+                        + utf8_offsets[end]
+                        + utf16_offsets[start]
+                        + utf16_offsets[end]
+                    )
+        else:
+            for _ in range(iterations):
+                result = pattern.fullmatch(input_text)
+                if result is None:
+                    consumption_checksum += 1
+                else:
+                    start, end = result.span()
+                    consumption_checksum += (
+                        2
+                        + utf8_offsets[start]
+                        + utf8_offsets[end]
+                        + utf16_offsets[start]
+                        + utf16_offsets[end]
+                    )
+        return time.perf_counter_ns() - started, result, consumption_checksum
+
+    def consumption_token(self, result: Any) -> int:
+        if self.operation not in {"Search", "Match", "FullMatch"}:
+            return 0
+        if result is None:
+            return 1
+        start, end = result.span()
+        return (
+            2
+            + self.utf8_offsets[start]
+            + self.utf8_offsets[end]
+            + self.utf16_offsets[start]
+            + self.utf16_offsets[end]
+        )
+
     @staticmethod
     def execute_empty_batch(iterations: int) -> tuple[int, int]:
         result = 0
@@ -673,11 +744,12 @@ def measure_stream_lane(
     iterations: int,
     expected_checksum: int,
     expected_semantic_digest: int,
+    expected_consumption_token: int,
 ) -> dict[str, Any]:
     collections_before = [entry["collections"] for entry in gc.get_stats()]
     process_started = time.process_time_ns()
     if lane == "Predecoded":
-        elapsed, result = runner.execute_predecoded_batch(iterations)
+        elapsed, result, consumption_checksum = runner.execute_predecoded_qualification_batch(iterations)
         checksum = runner.checksum(result)
         semantic_digest = runner.semantic_digest(result)
         if checksum != expected_checksum:
@@ -690,9 +762,16 @@ def measure_stream_lane(
                 "CPython streaming semantic digest disagrees with preflight: "
                 f"expected {expected_semantic_digest}, actual {semantic_digest}."
             )
+        expected_consumption_checksum = expected_consumption_token * iterations
+        if consumption_checksum != expected_consumption_checksum:
+            raise RuntimeError(
+                "CPython streaming result consumption disagrees with preflight: "
+                f"expected {expected_consumption_checksum}, actual {consumption_checksum}."
+            )
     elif lane == "EmptyLoop":
         elapsed, checksum = runner.execute_empty_batch(iterations)
         semantic_digest = 0
+        consumption_checksum = 0
     else:
         raise ValueError(f"Unsupported CPython streaming lane: {lane}")
     process_elapsed = time.process_time_ns() - process_started
@@ -704,6 +783,7 @@ def measure_stream_lane(
         "ProcessCpuNanoseconds": process_elapsed,
         "Checksum": checksum,
         "SemanticDigest": semantic_digest,
+        "ConsumptionChecksum": consumption_checksum,
         "GcCollections": [
             after - before
             for before, after in zip(collections_before, collections_after, strict=True)
@@ -725,6 +805,7 @@ def run_stream_worker() -> int:
     runner: CaseRunner | None = None
     expected_checksum = 0
     expected_semantic_digest = 0
+    expected_consumption_token = 0
     for line in sys.stdin:
         if not line.strip():
             continue
@@ -741,6 +822,7 @@ def run_stream_worker() -> int:
                 expected_checksum = runner.checksum(predecoded_result)
                 decoded_checksum = runner.checksum(decoded_result)
                 expected_semantic_digest = runner.semantic_digest(predecoded_result)
+                expected_consumption_token = runner.consumption_token(predecoded_result)
                 decoded_semantic_digest = runner.semantic_digest(decoded_result)
                 if expected_checksum != decoded_checksum:
                     raise RuntimeError(
@@ -758,6 +840,7 @@ def run_stream_worker() -> int:
                         "Kind": "Prepared",
                         "Checksum": expected_checksum,
                         "SemanticDigest": expected_semantic_digest,
+                        "ConsumptionChecksum": expected_consumption_token,
                         "InputUtf8Bytes": len(runner.input_bytes),
                         "InputCodePoints": len(runner.input_text),
                         "InputUtf16CodeUnits": runner.utf16_offsets[-1],
@@ -788,6 +871,7 @@ def run_stream_worker() -> int:
                     iterations,
                     expected_checksum,
                     expected_semantic_digest,
+                    expected_consumption_token,
                 )
                 result.update({"ProtocolVersion": STREAM_PROTOCOL_VERSION, "Kind": "Measured"})
                 write_stream_message(result)
@@ -811,6 +895,7 @@ def run_stream_worker() -> int:
                     pilot_iterations,
                     expected_checksum,
                     expected_semantic_digest,
+                    expected_consumption_token,
                 )
                 while (
                     pilot["ElapsedNanoseconds"] < STREAM_CALIBRATION_PILOT_NANOSECONDS
@@ -825,6 +910,7 @@ def run_stream_worker() -> int:
                         pilot_iterations,
                         expected_checksum,
                         expected_semantic_digest,
+                        expected_consumption_token,
                     )
 
                 calibrated_iterations = min(
@@ -842,6 +928,7 @@ def run_stream_worker() -> int:
                         calibrated_iterations,
                         expected_checksum,
                         expected_semantic_digest,
+                        expected_consumption_token,
                     )
                     if 30_000_000 <= calibrated["ElapsedNanoseconds"] <= 50_000_000:
                         break
@@ -884,6 +971,7 @@ def run_stream_worker() -> int:
                         iterations,
                         expected_checksum,
                         expected_semantic_digest,
+                        expected_consumption_token,
                     )
                     checksum = result["Checksum"]
                     calls += iterations
