@@ -96,6 +96,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseManagedSplitFastPath;
     private readonly int _singleTrailingCapturePrefixLength;
+    private readonly char? _separatedCaptureTupleSeparator;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -161,6 +162,11 @@ public sealed class Utf8PythonRegex
             PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
                 ? capturePrefixLength
                 : -1;
+        _separatedCaptureTupleSeparator = !_canMatchEmpty &&
+            parseResult.CaptureGroupCount == 2 &&
+            PythonReTranslator.TryGetSeparatedCaptureTupleSeparator(parseResult.Root, out var captureSeparator)
+                ? captureSeparator
+                : null;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
@@ -757,6 +763,27 @@ public sealed class Utf8PythonRegex
                 Shape = Utf8PythonFindAllShape.SingleGroup,
                 ScalarValues = collected.ToArray(),
                 TupleValues = [],
+            };
+        }
+
+        if (_separatedCaptureTupleSeparator is { } separator)
+        {
+            List<string[]> directTuples = [];
+            foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+            {
+                var matched = subject.AsSpan(match.Index, match.Length);
+                var separatorIndex = matched.IndexOf(separator);
+                directTuples.Add([
+                    new string(matched[..separatorIndex]),
+                    new string(matched[(separatorIndex + 1)..]),
+                ]);
+            }
+
+            return new Utf8PythonFindAllResult
+            {
+                Shape = Utf8PythonFindAllShape.GroupTuple,
+                ScalarValues = [],
+                TupleValues = directTuples.ToArray(),
             };
         }
 
@@ -1777,6 +1804,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
 
     internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
+
+    internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
 
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
 

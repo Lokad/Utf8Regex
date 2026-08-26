@@ -1986,6 +1986,10 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugCountBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "Python-style count progression"),
+        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSingleTrailingCaptureFindAllFastPath =>
+            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping",
+        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSeparatedCaptureTupleFindAllFastPath =>
+            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct separated-capture tuple shaping",
         PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
             "strict UTF-8 decode; .NET Regex; findall string shaping",
         PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(

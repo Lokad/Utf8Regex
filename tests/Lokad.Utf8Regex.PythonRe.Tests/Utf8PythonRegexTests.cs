@@ -769,6 +769,38 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void FindAllStringsProjectsSeparatedCaptureTuplesFromValueMatches()
+    {
+        var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)", PythonReCompileOptions.IgnoreCase);
+        var input = "skip abc-12 DEF-345 ghi-6"u8;
+
+        var all = regex.FindAllToStrings(input);
+        var afterFirst = regex.FindAllToStrings(input, startOffsetInBytes: "skip abc-12 "u8.Length);
+
+        Assert.True(regex.DebugUsesSeparatedCaptureTupleFindAllFastPath);
+        Assert.Equal([["abc", "12"], ["DEF", "345"], ["ghi", "6"]], all.TupleValues);
+        Assert.Equal([["DEF", "345"], ["ghi", "6"]], afterFirst.TupleValues);
+    }
+
+    [Theory]
+    [InlineData("([a-z-]+)-([0-9]+)", "abc--12", "abc-", "12")]
+    [InlineData("([a-z]+)--([0-9]+)", "abc--12", "abc", "12")]
+    [InlineData("(.*)-([0-9]+)", "abc-12", "abc", "12")]
+    public void FindAllStringsRetainsGeneralAmbiguousTupleProjection(
+        string pattern,
+        string input,
+        string first,
+        string second)
+    {
+        var regex = new Utf8PythonRegex(pattern);
+
+        var result = regex.FindAllToStrings(System.Text.Encoding.UTF8.GetBytes(input));
+
+        Assert.False(regex.DebugUsesSeparatedCaptureTupleFindAllFastPath);
+        Assert.Equal([[first, second]], result.TupleValues);
+    }
+
+    [Fact]
     public void EmptyThenNonEmptyCompanionPreservesCapturesContextAndConcurrentReuse()
     {
         var captured = new Utf8PythonRegex("(?P<word>x*|y)");

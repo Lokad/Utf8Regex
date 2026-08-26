@@ -60,6 +60,40 @@ internal static class PythonReTranslator
         return true;
     }
 
+    public static bool TryGetSeparatedCaptureTupleSeparator(PythonReNode node, out char separator)
+    {
+        if (node is PythonReSequenceNode
+            {
+                Elements.Count: 3,
+                Elements:
+                [
+                    PythonReGroupNode
+                    {
+                        Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
+                        Inner: var first,
+                    },
+                    var separatorNode,
+                    PythonReGroupNode
+                    {
+                        Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
+                        Inner: var second,
+                    },
+                ],
+            } &&
+            TryGetExactLiteral(separatorNode, out var literal) &&
+            literal is [var candidate] &&
+            IsAsciiPunctuation(candidate) &&
+            IsNonEmptyAsciiWordClassRepeat(first) &&
+            IsNonEmptyAsciiWordClassRepeat(second))
+        {
+            separator = candidate;
+            return true;
+        }
+
+        separator = default;
+        return false;
+    }
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
@@ -743,6 +777,52 @@ internal static class PythonReTranslator
                 return false;
         }
     }
+
+    private static bool IsNonEmptyAsciiWordClassRepeat(PythonReNode node)
+    {
+        if (node is not PythonReQuantifierNode
+            {
+                Inner: PythonReCharacterClassNode { IsNegated: false } characterClass,
+                Min: > 0,
+            })
+        {
+            return false;
+        }
+
+        foreach (var item in characterClass.Items)
+        {
+            switch (item)
+            {
+                case PythonReCharacterClassLiteralItem literal when IsAsciiWordCharacter(literal.Scalar):
+                    break;
+
+                case PythonReCharacterClassRangeItem range
+                    when range.StartScalar <= range.EndScalar &&
+                         range.StartScalar >= 0 &&
+                         range.EndScalar <= 0x7F:
+                    for (var scalar = range.StartScalar; scalar <= range.EndScalar; scalar++)
+                    {
+                        if (!IsAsciiWordCharacter(scalar))
+                        {
+                            return false;
+                        }
+                    }
+
+                    break;
+
+                default:
+                    return false;
+            }
+        }
+
+        return characterClass.Items.Count > 0;
+    }
+
+    private static bool IsAsciiPunctuation(char value) =>
+        value is >= '\u0021' and <= '\u007E' && !IsAsciiWordCharacter(value);
+
+    private static bool IsAsciiWordCharacter(int value) =>
+        value is >= '0' and <= '9' or >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z';
 
     private static void AppendCharacterClass(PythonReCharacterClassNode node, StringBuilder builder)
     {
