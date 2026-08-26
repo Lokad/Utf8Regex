@@ -20,11 +20,11 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T12:17:59.4875614+00:00`
-- Snapshot SHA-256: `D038C9010E11996623F2CB8B99F47EEB17C62A972C32A69B061E3CC241E29F50`
+- Generated: `2026-08-26T12:18:57.3771632+00:00`
+- Snapshot SHA-256: `CCA9EC0C6F7278C54066FC6EC321CC6F8C86464DB13DC8E146E7794C9D5A4285`
 - Schema: `6`
 - Cases: `28`
-- Public Status: `11` managed faster, `0` equivalent, `2` CPython faster, `3` inconclusive, `12` unqualified
+- Public Status: `11` managed faster, `0` equivalent, `2` CPython faster, `7` inconclusive, `8` unqualified
 - Measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -45,12 +45,12 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 171.420 us | 214.525 us | 0.80x | 219.217 us | 248.829 us | 165,936 B |
 | `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 152.324 us | 294.831 us | 0.52x | 406.854 us | 318.232 us | 165,936 B |
 | `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 177.818 us | 190.207 us | 0.93x | 201.521 us | 449.797 us | 299,296 B |
-| `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 412.906 us | 789.879 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
+| `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 373.193 us | 716.732 us | 0.52x | 873.741 us | 534.325 us | 1,528,096 B |
 | `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 110.075 us | 121.488 us | 0.91x | 126.792 us | 359.547 us | 149,792 B |
-| `findall/unicode-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 299.098 us | 359.654 us | 0.83x | 359.520 us | 335.570 us | 785,704 B |
+| `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 246.261 us | 396.476 us | 0.60x | 359.520 us | 335.570 us | 785,704 B |
 | `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | CPython faster | 34.760 us | 15.405 us | 2.25x | 24.031 us | 42.099 us | 24,600 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 35.882 us | 41.058 us | 0.88x | 47.145 us | 60.234 us | 24,600 B |
-| `iteration/finditer-detailed` | `FindIterDetailed` | Historical | Unqualified | 173.765 us | 3,466.165 us | 0.05x | 3,139.237 us | 153.941 us | 406,736 B |
+| `iteration/finditer-detailed` | `FindIterDetailed` | EagerMaterializedResult | Inconclusive | 116.597 us | 365.882 us | 0.30x | 3,139.237 us | 153.941 us | 406,736 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.036 us | 0.208 us | 0.17x | 0.245 us | 0.094 us | 0 B |
 | `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 1.814 us | 12.113 us | 0.15x | 14.877 us | 12.075 us | 0 B |
 | `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.816 us | 12.246 us | 0.15x | 14.380 us | 12.183 us | 0 B |
@@ -66,7 +66,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `split/no-captures` | `SplitStrings` | Historical | Unqualified | 73.508 us | 128.601 us | 0.57x | 126.317 us | 74.816 us | 171,328 B |
 | `unicode/count` | `Count` | ScalarResult | Managed faster | 24.629 us | 204.347 us | 0.12x | 271.193 us | 185.111 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Inconclusive | 13.699 us | 14.072 us | 0.96x | 19.217 us | 25.377 us | 14,360 B |
-| `zero-width/count` | `Count` | Historical | Unqualified | 18.474 us | 584.444 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
+| `zero-width/count` | `Count` | ScalarResult | Inconclusive | 20.597 us | 629.977 us | 0.03x | 578.748 us | 295.137 us | 34,840 B |
 
 ## Operation ownership and managed route
 
