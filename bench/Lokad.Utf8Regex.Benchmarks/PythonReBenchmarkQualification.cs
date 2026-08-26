@@ -16,6 +16,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
+    private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
     private const double PythonReQualificationTargetSampleMilliseconds = 50;
     private const double PythonReQualificationPilotMilliseconds = 5;
@@ -156,13 +157,24 @@ internal static partial class PythonReBenchmarkReporter
                 minimumCalls: PythonReQualificationMinimumWarmupCalls,
                 maximumBatches: 32)
             : null;
+        var shortOneShotMinimumIterations = GetShortOneShotMinimumIterations(benchmarkCase);
         var managedIterations = Math.Max(
             CalibrateManagedBatch(
                 context,
                 expectedChecksum,
                 expectedSemanticDigest,
                 expectedConsumptionToken),
-            GetShortOneShotMinimumIterations(benchmarkCase));
+            shortOneShotMinimumIterations);
+        if (shortOneShotMinimumIterations > 1)
+        {
+            managedWarmup = WarmManagedLane(
+                context,
+                managedIterations,
+                expectedChecksum,
+                expectedSemanticDigest,
+                expectedConsumptionToken,
+                PythonReQualificationShortOneShotWarmupCalls);
+        }
         var cpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
@@ -1193,7 +1205,8 @@ internal static partial class PythonReBenchmarkReporter
         int iterations,
         int expectedChecksum,
         ulong expectedSemanticDigest,
-        ulong expectedConsumptionToken)
+        ulong expectedConsumptionToken,
+        int minimumCalls = PythonReQualificationMinimumWarmupCalls)
     {
         const int maximumBatches = 32;
         var started = Stopwatch.GetTimestamp();
@@ -1213,7 +1226,7 @@ internal static partial class PythonReBenchmarkReporter
         }
         while (batches < maximumBatches &&
                (Stopwatch.GetElapsedTime(started).TotalMilliseconds < 100 ||
-                (long)batches * iterations < PythonReQualificationMinimumWarmupCalls));
+                (long)batches * iterations < minimumCalls));
 
         return new PythonReWarmup(
             batches * iterations,
