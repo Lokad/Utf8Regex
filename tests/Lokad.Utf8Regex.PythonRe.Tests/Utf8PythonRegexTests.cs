@@ -630,7 +630,10 @@ public sealed class Utf8PythonRegexTests
             namedInput,
             startOffsetInBytes: "skip "u8.Length);
 
+        Assert.True(numbered.DebugUsesOptionalExactCaptureFindAllFastPath);
+        Assert.True(named.DebugUsesOptionalExactCaptureFindAllFastPath);
         Assert.Equal(["ab", "", "ab"], numberedResult.ScalarValues);
+        Assert.Same(numberedResult.ScalarValues[0], numberedResult.ScalarValues[2]);
         Assert.Equal(["", "é", ""], namedResult.ScalarValues);
     }
 
@@ -641,6 +644,9 @@ public sealed class Utf8PythonRegexTests
         var characterClass = new Utf8PythonRegex("([ab])?c");
         var reluctant = new Utf8PythonRegex("(a)??a");
 
+        Assert.False(ignoreCase.DebugUsesOptionalExactCaptureFindAllFastPath);
+        Assert.False(characterClass.DebugUsesOptionalExactCaptureFindAllFastPath);
+        Assert.False(reluctant.DebugUsesOptionalExactCaptureFindAllFastPath);
         Assert.Equal(["A", ""], ignoreCase.FindAllToStrings("AB b"u8).ScalarValues);
         Assert.Equal(["a", "b", ""], characterClass.FindAllToStrings("ac bc c"u8).ScalarValues);
         Assert.Equal(["", "", ""], reluctant.FindAllToStrings("aa a"u8).ScalarValues);

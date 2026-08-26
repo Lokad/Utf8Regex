@@ -96,6 +96,9 @@ public sealed class Utf8PythonRegex
     private readonly bool _canUseUtf8IterationFastPath;
     private readonly bool _canUseManagedSplitFastPath;
     private readonly int _singleTrailingCapturePrefixLength;
+    private readonly string? _optionalExactCaptureFindAllValue;
+    private readonly int _optionalExactCapturePresentMatchLength;
+    private readonly int _optionalExactCaptureAbsentMatchLength;
     private readonly char? _separatedCaptureTupleSeparator;
     private readonly string? _repeatedExactFindAllString;
     private readonly byte[]? _asciiLiteralPrefixDigitMatchPrefix;
@@ -166,6 +169,20 @@ public sealed class Utf8PythonRegex
             PythonReTranslator.TryGetSingleTrailingCapturePrefixLength(parseResult.Root, out var capturePrefixLength)
                 ? capturePrefixLength
                 : -1;
+        var optionalCapturePresentMatchLength = 0;
+        var optionalCaptureAbsentMatchLength = 0;
+        _optionalExactCaptureFindAllValue = !_canMatchEmpty &&
+            parseResult.CaptureGroupCount == 1 &&
+            PythonReTranslator.TryGetOptionalExactCaptureFindAllPlan(
+                parseResult.Root,
+                parseResult.Options,
+                out var optionalCaptureValue,
+                out optionalCapturePresentMatchLength,
+                out optionalCaptureAbsentMatchLength)
+                ? optionalCaptureValue
+                : null;
+        _optionalExactCapturePresentMatchLength = optionalCapturePresentMatchLength;
+        _optionalExactCaptureAbsentMatchLength = optionalCaptureAbsentMatchLength;
         _separatedCaptureTupleSeparator = !_canMatchEmpty &&
             parseResult.CaptureGroupCount == 2 &&
             PythonReTranslator.TryGetSeparatedCaptureTupleSeparator(parseResult.Root, out var captureSeparator)
@@ -762,6 +779,29 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
+            if (_optionalExactCaptureFindAllValue is not null)
+            {
+                List<string> directValues = [];
+                foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+                {
+                    directValues.Add(match.Length switch
+                    {
+                        var length when length == _optionalExactCapturePresentMatchLength =>
+                            _optionalExactCaptureFindAllValue,
+                        var length when length == _optionalExactCaptureAbsentMatchLength => string.Empty,
+                        _ => throw new InvalidOperationException(
+                            "The optional exact-capture route encountered an unexpected full-match length."),
+                    });
+                }
+
+                return new Utf8PythonFindAllResult
+                {
+                    Shape = Utf8PythonFindAllShape.SingleGroup,
+                    ScalarValues = directValues.ToArray(),
+                    TupleValues = [],
+                };
+            }
+
             if (_singleTrailingCapturePrefixLength >= 0)
             {
                 List<string> directValues = [];
@@ -1925,6 +1965,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesManagedSplitFastPath => _canUseManagedSplitFastPath;
 
     internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
+
+    internal bool DebugUsesOptionalExactCaptureFindAllFastPath => _optionalExactCaptureFindAllValue is not null;
 
     internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
 

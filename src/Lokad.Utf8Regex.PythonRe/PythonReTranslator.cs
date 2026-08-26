@@ -75,6 +75,80 @@ internal static class PythonReTranslator
         return true;
     }
 
+    public static bool TryGetOptionalExactCaptureFindAllPlan(
+        PythonReNode node,
+        PythonReCompileOptions options,
+        out string captureValue,
+        out int presentMatchLength,
+        out int absentMatchLength)
+    {
+        captureValue = string.Empty;
+        presentMatchLength = 0;
+        absentMatchLength = 0;
+        if ((options & PythonReCompileOptions.IgnoreCase) != 0 ||
+            node is not PythonReSequenceNode sequence)
+        {
+            return false;
+        }
+
+        var optionalCaptureIndex = -1;
+        for (var index = 0; index < sequence.Elements.Count; index++)
+        {
+            if (sequence.Elements[index] is PythonReQuantifierNode
+                {
+                    Inner: PythonReGroupNode
+                    {
+                        Kind: PythonReGroupKind.Capturing or PythonReGroupKind.NamedCapturing,
+                        Inner: var capture,
+                    },
+                    Min: 0,
+                    Max: 1,
+                    Flavor: PythonReQuantifierFlavor.Greedy,
+                } &&
+                TryGetExactLiteral(capture, out var literal) &&
+                literal.Length > 0)
+            {
+                if (optionalCaptureIndex >= 0)
+                {
+                    return false;
+                }
+
+                optionalCaptureIndex = index;
+                captureValue = literal;
+            }
+        }
+
+        if (optionalCaptureIndex < 0)
+        {
+            return false;
+        }
+
+        var fixedLength = 0;
+        for (var index = 0; index < sequence.Elements.Count; index++)
+        {
+            if (index == optionalCaptureIndex)
+            {
+                continue;
+            }
+
+            if (!TryGetExactLiteral(sequence.Elements[index], out var segment))
+            {
+                return false;
+            }
+
+            fixedLength = checked(fixedLength + segment.Length);
+        }
+
+        if (fixedLength == 0)
+        {
+            return false;
+        }
+
+        absentMatchLength = fixedLength;
+        presentMatchLength = checked(fixedLength + captureValue.Length);
+        return true;
+    }
+
     public static bool TryGetSeparatedCaptureTupleSeparator(PythonReNode node, out char separator)
     {
         if (node is PythonReSequenceNode

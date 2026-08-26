@@ -2343,6 +2343,8 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.DebugCountBackend,
             _pythonRegex.DebugUtf8ExecutionKind,
             "Python-style count progression from a nonzero byte offset"),
+        PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesOptionalExactCaptureFindAllFastPath =>
+            "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct optional exact-capture string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSingleTrailingCaptureFindAllFastPath =>
             "strict UTF-8 decode; .NET Regex ValueMatch enumeration; direct trailing-capture string shaping",
         PythonReBenchmarkOperation.FindAllStrings when _pythonRegex.DebugUsesSeparatedCaptureTupleFindAllFastPath =>
