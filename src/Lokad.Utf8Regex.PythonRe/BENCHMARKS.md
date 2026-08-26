@@ -20,8 +20,8 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T11:23:10.8850271+00:00`
-- Snapshot SHA-256: `B58F48F5FE54BBDA151D07D50B3B8C0B58978574E38EDC1A86E07FC3847F2F9F`
+- Generated: `2026-08-26T11:23:27.8705438+00:00`
+- Snapshot SHA-256: `B60721F75A64551AACFDA2CBEE5DCE3999396701A133385B490B11F8EA0AD402`
 - Schema: `6`
 - Cases: `28`
 - Public Status: `4` managed faster, `0` equivalent, `0` CPython faster, `2` inconclusive, `22` unqualified
@@ -55,7 +55,7 @@ Measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.2620
 | `literal/ismatch` | `IsMatch` | ScalarResult | Managed faster | 1.875 us | 12.107 us | 0.15x | 14.877 us | 12.075 us | 0 B |
 | `literal/search` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.852 us | 12.279 us | 0.15x | 14.380 us | 12.183 us | 0 B |
 | `literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 1.802 us | 12.212 us | 0.15x | 14.464 us | 10.417 us | 0 B |
-| `prefix/match` | `Match` | ConsumedGroupZeroRanges | Inconclusive | 1.796 us | 0.173 us | 10.36x | 0.781 us | 1.444 us | 33,024 B |
+| `prefix/match` | `Match` | ConsumedGroupZeroRanges | Inconclusive | 2.263 us | 0.172 us | 11.25x | 0.781 us | 1.444 us | 33,024 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | Historical | Unqualified | 214.404 us | 9,837.727 us | 0.02x | 9,648.155 us | 181.239 us | 878,784 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | Historical | Unqualified | 209.053 us | 10,068.573 us | 0.02x | 9,560.736 us | 179.957 us | 863,360 B |
 | `replacement/fixed-string` | `ReplaceString` | Historical | Unqualified | 158.222 us | 112.937 us | 1.40x | 116.107 us | 157.065 us | 147,938 B |
@@ -90,7 +90,7 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `literal/ismatch` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; boolean result` | Rbyte 0.15x [0.15, 0.16]; ManagedFaster |
 | `literal/search` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.13, 0.16]; ManagedFaster |
 | `literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 0.15x [0.15, 0.16]; ManagedFaster |
-| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` | Rbyte 8.72x [8.26, 9.18]; NotApplicable |
+| `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; anchored value ranges` | Rbyte 9.10x [8.32, 13.19]; NotApplicable |
 | `replacement/evaluator-string` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/evaluator-utf8` | `_sre C Pattern.subn + Python callback` | `strict UTF-8 decode; .NET Regex callback replacement; UTF-8 shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `replacement/fixed-string` | `_sre C Pattern.sub` | `strict UTF-8 decode; .NET Regex replacement; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
