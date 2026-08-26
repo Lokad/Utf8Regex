@@ -946,6 +946,25 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ExactLiteralFindAllFromOffsetPreservesValueIdentityAndWholeInputValidation()
+    {
+        var regex = new Utf8PythonRegex("item");
+        var input = "item skip item item"u8;
+        var result = regex.FindAllToStrings(input, "item skip "u8.Length);
+
+        Assert.Equal(["item", "item"], result.ScalarValues);
+        Assert.Same(result.ScalarValues[0], result.ScalarValues[1]);
+
+        var malformedTail = new byte[]
+        {
+            (byte)'s', (byte)'k', (byte)'i', (byte)'p', (byte)' ',
+            (byte)'i', (byte)'t', (byte)'e', (byte)'m', 0xC3, 0x28,
+        };
+        Assert.Throws<ArgumentException>(() =>
+            regex.FindAllToStrings(malformedTail, "skip "u8.Length));
+    }
+
+    [Fact]
     public void MatchUsesValidatedAsciiLiteralPrefixDigitRoute()
     {
         var regex = new Utf8PythonRegex("header:[0-9]+");
