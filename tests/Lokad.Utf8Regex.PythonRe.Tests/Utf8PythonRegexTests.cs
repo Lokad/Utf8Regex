@@ -55,13 +55,31 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex("foo");
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
+        Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
         Assert.False(regex.DebugIsUtf8FullRegexValueCreated);
         Assert.True(regex.DebugHasUtf8FullRegex);
         Assert.True(regex.DebugIsUtf8FullRegexValueCreated);
         Assert.Equal("foo", regex.DebugTranslatedPattern);
         Assert.Equal("Search=Utf8Regex, Match=Utf8Regex, FullMatch=Utf8Regex, Count=Utf8Regex", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxfooyy"u8));
+        var nonAsciiPrefixMatch = regex.Search("éfoo"u8);
+        Assert.True(nonAsciiPrefixMatch.Success);
+        Assert.Equal(2, nonAsciiPrefixMatch.StartOffsetInBytes);
+        Assert.Equal(1, nonAsciiPrefixMatch.StartOffsetInUtf16);
+        Assert.True(regex.Match("foo xx"u8).Success);
+        Assert.False(regex.Match("xx foo"u8).Success);
         Assert.Equal(2, regex.Count("foo xx foo"u8));
+    }
+
+    [Theory]
+    [InlineData(@"(?<=ab)c")]
+    [InlineData(@"(?m)^foo$")]
+    [InlineData(@"[\U0001D49C]")]
+    public void ZeroOffsetValueFastPathExcludesPatternsThatRequireFallbackSemantics(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
+
+        Assert.False(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
     }
 
     [Theory]
@@ -1235,6 +1253,7 @@ public sealed class Utf8PythonRegexTests
         foreach (var input in malformedSubjects)
         {
             Assert.Throws<ArgumentException>(() => direct.Search(input));
+            Assert.Throws<ArgumentException>(() => direct.Match(input));
             Assert.Throws<ArgumentException>(() => direct.FullMatch(input));
             Assert.Throws<ArgumentException>(() => direct.SearchDetailedData(input));
             Assert.Throws<ArgumentException>(() => direct.FindAll(input));

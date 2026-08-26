@@ -21,6 +21,8 @@ internal static class PythonReTranslator
 
     public static bool CanUseManagedSplitFastPath(PythonReNode node) => CapturesAreMandatory(node);
 
+    public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
+
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
