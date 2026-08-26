@@ -751,6 +751,44 @@ public sealed class Utf8PythonRegexTests
         Assert.Equal(["345", "6"], afterFirst.ScalarValues);
     }
 
+    [Fact]
+    public void FindAllStringsReusesCaseSensitiveExactLiteralValue()
+    {
+        var regex = new Utf8PythonRegex("(?:Шерлок)");
+        var input = "skip Шерлок Шерлок Шерлок"u8;
+
+        var all = regex.FindAllToStrings(input);
+        var afterFirst = regex.FindAllToStrings(input, "skip Шерлок "u8.Length);
+
+        Assert.True(regex.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.Equal(["Шерлок", "Шерлок", "Шерлок"], all.ScalarValues);
+        Assert.Same(all.ScalarValues[0], all.ScalarValues[1]);
+        Assert.Equal(["Шерлок", "Шерлок"], afterFirst.ScalarValues);
+        Assert.Same(afterFirst.ScalarValues[0], afterFirst.ScalarValues[1]);
+        Assert.Equal(
+            ["Шерлок", "Шерлок", "Шерлок"],
+            regex.FindAllToUtf8(input).ScalarValues.Select(System.Text.Encoding.UTF8.GetString).ToArray());
+    }
+
+    [Fact]
+    public void FindAllStringsRetainsMatchedValuesOutsideExactCaseSensitiveRoute()
+    {
+        var globalIgnoreCase = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase);
+        var scopedIgnoreCase = new Utf8PythonRegex("(?i:sherlock)");
+        var captured = new Utf8PythonRegex("(sherlock)");
+        var characterClass = new Utf8PythonRegex("[a-z]+");
+        var input = "SHERLOCK Sherlock"u8;
+
+        Assert.False(globalIgnoreCase.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.False(scopedIgnoreCase.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.False(captured.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.False(characterClass.DebugUsesRepeatedExactStringFindAllFastPath);
+        Assert.Equal(["SHERLOCK", "Sherlock"], globalIgnoreCase.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(["SHERLOCK", "Sherlock"], scopedIgnoreCase.FindAllToStrings(input).ScalarValues);
+        Assert.Equal(["sherlock"], captured.FindAllToStrings("sherlock"u8).ScalarValues);
+        Assert.Equal(["alpha", "beta"], characterClass.FindAllToStrings("alpha beta"u8).ScalarValues);
+    }
+
     [Theory]
     [InlineData("([0-9]+)-item", "12-item 345-item", "12", "345")]
     [InlineData("([0-9])+", "12 345", "2", "5")]

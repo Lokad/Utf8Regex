@@ -97,6 +97,7 @@ public sealed class Utf8PythonRegex
     private readonly bool _canUseManagedSplitFastPath;
     private readonly int _singleTrailingCapturePrefixLength;
     private readonly char? _separatedCaptureTupleSeparator;
+    private readonly string? _repeatedExactFindAllString;
     private readonly bool _canCountAsciiWordBoundariesDirectly;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private readonly PythonReDirectBackendKind _searchBackend;
@@ -166,6 +167,14 @@ public sealed class Utf8PythonRegex
             parseResult.CaptureGroupCount == 2 &&
             PythonReTranslator.TryGetSeparatedCaptureTupleSeparator(parseResult.Root, out var captureSeparator)
                 ? captureSeparator
+                : null;
+        _repeatedExactFindAllString = !_canMatchEmpty &&
+            parseResult.CaptureGroupCount == 0 &&
+            PythonReTranslator.TryGetCaseSensitiveExactLiteral(
+                parseResult.Root,
+                parseResult.Options,
+                out var exactFindAllString)
+                ? exactFindAllString
                 : null;
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
@@ -670,10 +679,17 @@ public sealed class Utf8PythonRegex
                 try
                 {
                     var values = new string[ranges.Count];
-                    for (var i = 0; i < values.Length; i++)
+                    if (_repeatedExactFindAllString is not null)
                     {
-                        var range = ranges[i];
-                        values[i] = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes));
+                        Array.Fill(values, _repeatedExactFindAllString);
+                    }
+                    else
+                    {
+                        for (var i = 0; i < values.Length; i++)
+                        {
+                            var range = ranges[i];
+                            values[i] = Encoding.UTF8.GetString(input.Slice(range.IndexInBytes, range.LengthInBytes));
+                        }
                     }
 
                     return new Utf8PythonFindAllResult
@@ -1806,6 +1822,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesSingleTrailingCaptureFindAllFastPath => _singleTrailingCapturePrefixLength >= 0;
 
     internal bool DebugUsesSeparatedCaptureTupleFindAllFastPath => _separatedCaptureTupleSeparator.HasValue;
+
+    internal bool DebugUsesRepeatedExactStringFindAllFastPath => _repeatedExactFindAllString is not null;
 
     private Utf8Regex? GetUtf8FullRegex() => _lazyUtf8FullRegex?.Value;
 

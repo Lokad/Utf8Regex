@@ -23,6 +23,21 @@ internal static class PythonReTranslator
 
     public static bool IsExactLiteral(PythonReNode node) => TryGetExactLiteral(node, out _);
 
+    public static bool TryGetCaseSensitiveExactLiteral(
+        PythonReNode node,
+        PythonReCompileOptions options,
+        out string literal)
+    {
+        if ((options & PythonReCompileOptions.IgnoreCase) == 0 &&
+            TryGetExactLiteral(node, out literal))
+        {
+            return true;
+        }
+
+        literal = string.Empty;
+        return false;
+    }
+
     public static bool TryGetSingleTrailingCapturePrefixLength(PythonReNode node, out int prefixLength)
     {
         if (node is PythonReGroupNode
