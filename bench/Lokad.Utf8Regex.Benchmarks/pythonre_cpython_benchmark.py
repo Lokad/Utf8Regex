@@ -1,28 +1,36 @@
 """Measure PythonRe benchmark cases against the CPython stdlib re engine.
 
-The .NET benchmark host starts this script once per case and sends one JSON
-request on stdin. Interpreter startup, JSON transport, and pattern compilation
-are outside the timed region. Keep this runner dependency-free: it is intended
-to execute with an official, unmodified CPython installation.
+The legacy protocol accepts one JSON request. The streaming protocol keeps one
+worker alive per case and exchanges newline-delimited commands. Interpreter
+startup, JSON transport, pattern compilation, and result verification remain
+outside timed batches. Keep this runner dependency-free: it is intended to
+execute with an official, unmodified CPython installation.
 """
 
 from __future__ import annotations
 
 import base64
+import gc
+import hashlib
 import json
 import math
+import os
 import platform
 import re
 import statistics
 import sys
+import sysconfig
 import time
 from collections.abc import Callable
 from typing import Any
 
 
 PROTOCOL_VERSION = 1
+STREAM_PROTOCOL_VERSION = 2
 WARMUP_SECONDS = 0.1
 MAX_WARMUP_CALLS = 65_536
+STREAM_CALIBRATION_PILOT_NANOSECONDS = 5_000_000
+STREAM_MAX_ITERATIONS = 10_000_000
 
 
 def to_int32(value: int) -> int:
@@ -276,6 +284,14 @@ class CaseRunner:
             raise ValueError(f"Unsupported PythonRe operation: {operation}")
         return time.perf_counter_ns() - started, result
 
+    @staticmethod
+    def execute_empty_batch(iterations: int) -> tuple[int, int]:
+        result = 0
+        started = time.perf_counter_ns()
+        for iteration in range(iterations):
+            result = iteration
+        return time.perf_counter_ns() - started, result
+
     def encode_findall(self, values: list[Any]) -> list[Any]:
         if self.pattern.groups <= 1:
             return [value.encode("utf-8") for value in values]
@@ -410,7 +426,271 @@ def measure_predecoded(
     )
 
 
+def file_sha256(path: str) -> str | None:
+    if not os.path.isfile(path):
+        return None
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest().upper()
+
+
+def find_runtime_library() -> str | None:
+    executable_directory = os.path.dirname(sys.executable)
+    if os.name == "nt":
+        candidate = os.path.join(
+            executable_directory,
+            f"python{sys.version_info.major}{sys.version_info.minor}.dll",
+        )
+        return candidate if os.path.isfile(candidate) else None
+
+    library_name = sysconfig.get_config_var("LDLIBRARY")
+    library_directory = sysconfig.get_config_var("LIBDIR")
+    if library_name and library_directory:
+        candidate = os.path.join(library_directory, library_name)
+        return candidate if os.path.isfile(candidate) else None
+    return None
+
+
+def stream_environment() -> dict[str, Any]:
+    timer = time.get_clock_info("perf_counter")
+    runtime_library = find_runtime_library()
+    gil_probe = getattr(sys, "_is_gil_enabled", None)
+    return {
+        "Implementation": platform.python_implementation(),
+        "Version": platform.python_version(),
+        "VersionDetail": sys.version,
+        "HexVersion": sys.hexversion,
+        "Git": getattr(sys, "_git", None),
+        "CacheTag": sys.implementation.cache_tag,
+        "Compiler": platform.python_compiler(),
+        "SoAbi": sysconfig.get_config_var("SOABI"),
+        "DebugBuild": hasattr(sys, "gettotalrefcount"),
+        "GilEnabled": gil_probe() if gil_probe is not None else None,
+        "Executable": sys.executable,
+        "ExecutableSha256": file_sha256(sys.executable),
+        "RuntimeLibrary": runtime_library,
+        "RuntimeLibrarySha256": file_sha256(runtime_library) if runtime_library else None,
+        "Platform": platform.platform(),
+        "Architecture": platform.machine(),
+        "RunnerSha256": file_sha256(os.path.abspath(__file__)),
+        "Timer": {
+            "Implementation": timer.implementation,
+            "ResolutionSeconds": timer.resolution,
+            "Monotonic": timer.monotonic,
+            "Adjustable": timer.adjustable,
+        },
+    }
+
+
+def write_stream_message(message: dict[str, Any]) -> None:
+    sys.stdout.write(json.dumps(message, separators=(",", ":")) + "\n")
+    sys.stdout.flush()
+
+
+def require_positive_integer(command: dict[str, Any], name: str, maximum: int) -> int:
+    value = command.get(name)
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0 or value > maximum:
+        raise ValueError(f"{name} must be between 1 and {maximum}.")
+    return value
+
+
+def measure_stream_lane(
+    runner: CaseRunner,
+    lane: str,
+    iterations: int,
+    expected_checksum: int,
+) -> dict[str, Any]:
+    collections_before = [entry["collections"] for entry in gc.get_stats()]
+    process_started = time.process_time_ns()
+    if lane == "Predecoded":
+        elapsed, result = runner.execute_predecoded_batch(iterations)
+        checksum = runner.checksum(result)
+        if checksum != expected_checksum:
+            raise RuntimeError(
+                "CPython streaming result disagrees with preflight: "
+                f"expected {expected_checksum}, actual {checksum}."
+            )
+    elif lane == "EmptyLoop":
+        elapsed, checksum = runner.execute_empty_batch(iterations)
+    else:
+        raise ValueError(f"Unsupported CPython streaming lane: {lane}")
+    process_elapsed = time.process_time_ns() - process_started
+    collections_after = [entry["collections"] for entry in gc.get_stats()]
+    return {
+        "Lane": lane,
+        "Iterations": iterations,
+        "ElapsedNanoseconds": elapsed,
+        "ProcessCpuNanoseconds": process_elapsed,
+        "Checksum": checksum,
+        "GcCollections": [
+            after - before
+            for before, after in zip(collections_before, collections_after, strict=True)
+        ],
+    }
+
+
+def run_stream_worker() -> int:
+    if platform.python_implementation() != "CPython":
+        raise RuntimeError("The PythonRe baseline runner requires CPython.")
+
+    write_stream_message(
+        {
+            "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+            "Kind": "Ready",
+            "Environment": stream_environment(),
+        }
+    )
+    runner: CaseRunner | None = None
+    expected_checksum = 0
+    for line in sys.stdin:
+        if not line.strip():
+            continue
+        try:
+            command = json.loads(line)
+            if command.get("ProtocolVersion") != STREAM_PROTOCOL_VERSION:
+                raise ValueError("Unsupported PythonRe CPython streaming protocol.")
+
+            kind = command.get("Kind")
+            if kind == "Prepare":
+                runner = CaseRunner(command)
+                predecoded_result = runner.execute_predecoded()
+                decoded_result = runner.execute_decode_then_re()
+                expected_checksum = runner.checksum(predecoded_result)
+                decoded_checksum = runner.checksum(decoded_result)
+                if expected_checksum != decoded_checksum:
+                    raise RuntimeError(
+                        "CPython predecoded/decode preflight checksums differ: "
+                        f"{expected_checksum} versus {decoded_checksum}."
+                    )
+                write_stream_message(
+                    {
+                        "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                        "Kind": "Prepared",
+                        "Checksum": expected_checksum,
+                        "InputUtf8Bytes": len(runner.input_bytes),
+                        "InputCodePoints": len(runner.input_text),
+                        "InputUtf16CodeUnits": runner.utf16_offsets[-1],
+                    }
+                )
+                continue
+
+            if kind == "Shutdown":
+                write_stream_message(
+                    {
+                        "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                        "Kind": "Shutdown",
+                    }
+                )
+                return 0
+
+            if runner is None:
+                raise RuntimeError("Prepare must complete before timing commands.")
+
+            lane = command.get("Lane")
+            if not isinstance(lane, str):
+                raise ValueError("Lane must be a string.")
+            if kind == "Measure":
+                iterations = require_positive_integer(command, "Iterations", STREAM_MAX_ITERATIONS)
+                result = measure_stream_lane(runner, lane, iterations, expected_checksum)
+                result.update({"ProtocolVersion": STREAM_PROTOCOL_VERSION, "Kind": "Measured"})
+                write_stream_message(result)
+                continue
+
+            if kind == "Calibrate":
+                target_nanoseconds = require_positive_integer(
+                    command,
+                    "TargetNanoseconds",
+                    1_000_000_000,
+                )
+                maximum_iterations = require_positive_integer(
+                    command,
+                    "MaximumIterations",
+                    STREAM_MAX_ITERATIONS,
+                )
+                pilot_iterations = 1
+                pilot = measure_stream_lane(runner, lane, pilot_iterations, expected_checksum)
+                while (
+                    pilot["ElapsedNanoseconds"] < STREAM_CALIBRATION_PILOT_NANOSECONDS
+                    and pilot_iterations < maximum_iterations
+                ):
+                    elapsed = max(pilot["ElapsedNanoseconds"], 1)
+                    growth = max(2, math.ceil(STREAM_CALIBRATION_PILOT_NANOSECONDS / elapsed))
+                    pilot_iterations = min(maximum_iterations, pilot_iterations * growth)
+                    pilot = measure_stream_lane(runner, lane, pilot_iterations, expected_checksum)
+
+                calibrated_iterations = min(
+                    maximum_iterations,
+                    max(
+                        1,
+                        round(target_nanoseconds * pilot_iterations / max(pilot["ElapsedNanoseconds"], 1)),
+                    ),
+                )
+                calibrated = measure_stream_lane(
+                    runner,
+                    lane,
+                    calibrated_iterations,
+                    expected_checksum,
+                )
+                calibrated.update(
+                    {
+                        "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                        "Kind": "Calibrated",
+                        "PilotIterations": pilot_iterations,
+                        "PilotElapsedNanoseconds": pilot["ElapsedNanoseconds"],
+                    }
+                )
+                write_stream_message(calibrated)
+                continue
+
+            if kind == "Warm":
+                iterations = require_positive_integer(command, "Iterations", STREAM_MAX_ITERATIONS)
+                minimum_milliseconds = require_positive_integer(command, "MinimumMilliseconds", 1_000)
+                maximum_batches = require_positive_integer(command, "MaximumBatches", 1_000)
+                warmup_started = time.perf_counter_ns()
+                calls = 0
+                batches = 0
+                checksum = expected_checksum
+                while batches < maximum_batches:
+                    result = measure_stream_lane(runner, lane, iterations, expected_checksum)
+                    checksum = result["Checksum"]
+                    calls += iterations
+                    batches += 1
+                    if time.perf_counter_ns() - warmup_started >= minimum_milliseconds * 1_000_000:
+                        break
+                write_stream_message(
+                    {
+                        "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                        "Kind": "Warmed",
+                        "Lane": lane,
+                        "Iterations": calls,
+                        "Batches": batches,
+                        "ElapsedNanoseconds": time.perf_counter_ns() - warmup_started,
+                        "Checksum": checksum,
+                    }
+                )
+                continue
+
+            raise ValueError(f"Unsupported PythonRe CPython streaming command: {kind}")
+        except Exception as exception:
+            write_stream_message(
+                {
+                    "ProtocolVersion": STREAM_PROTOCOL_VERSION,
+                    "Kind": "Error",
+                    "ErrorType": type(exception).__name__,
+                    "Message": str(exception),
+                }
+            )
+            return 1
+
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) == 2 and sys.argv[1] == "--stream":
+        return run_stream_worker()
+
     if platform.python_implementation() != "CPython":
         raise RuntimeError("The PythonRe baseline runner requires an official CPython-compatible executable.")
 
