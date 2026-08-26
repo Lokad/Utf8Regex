@@ -42,7 +42,9 @@ public sealed class PythonReBenchmarkSnapshotTests
     {
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("PythonRe.Benchmarks.json")));
         var root = document.RootElement;
-        Assert.Equal(6, root.GetProperty("SchemaVersion").GetInt32());
+        Assert.Equal(7, root.GetProperty("SchemaVersion").GetInt32());
+        var catalogSha256 = root.GetProperty("CatalogSha256").GetString() ?? string.Empty;
+        Assert.Matches("^[0-9A-F]{64}$", catalogSha256);
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
@@ -145,6 +147,7 @@ public sealed class PythonReBenchmarkSnapshotTests
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
+        Assert.Contains($"Catalog SHA-256: `{catalogSha256}`", page, StringComparison.Ordinal);
         Assert.All(s_caseIds, caseId => Assert.Contains($"`{caseId}`", page, StringComparison.Ordinal));
         Assert.Contains("CPython predecoded elapsed", page, StringComparison.Ordinal);
         Assert.Contains("`Rbyte` is representation-neutral engine evidence", page, StringComparison.Ordinal);
@@ -202,6 +205,10 @@ public sealed class PythonReBenchmarkSnapshotTests
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("QualificationId").GetString() ?? string.Empty);
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CaseDefinitionSha256").GetString() ?? string.Empty);
         Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CatalogSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("ManagedProductSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("ManagedOperationProtocolSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("CpythonOperationProtocolSha256").GetString() ?? string.Empty);
+        Assert.Matches("^[0-9A-F]{64}$", evidence.GetProperty("SharedProtocolSha256").GetString() ?? string.Empty);
         Assert.Contains(
             evidence.GetProperty("CpuPolicy").GetString(),
             new[]

@@ -21,8 +21,9 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 ## Snapshot summary
 
 - Generated: `2026-08-26T13:00:48.0637965+00:00`
-- Snapshot SHA-256: `7EA927A2F187315A3986BCD2C030DE74E62E76567E21F35F5C065C574D5148D7`
-- Schema: `6`
+- Snapshot SHA-256: `F5A0E5F20FF1AA12528656DC92E234A9228511CE3B6A0295148103D04BD0D754`
+- Schema: `7`
+- Catalog SHA-256: `554CADC9040A9DC7469DB0A1220062FC7FBBE05175637E649B35BFAE7F5F9D41`
 - Cases: `28`
 - Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `9` inconclusive, `0` unqualified
 - Historical point measurement environments represented: `1`
@@ -119,4 +120,4 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ./bench.ps1 -CommandArgs "--verify-pythonre-benchmark-markdown"
 ```
 
-The benchmark catalog and projection logic live in [`PythonReBenchmarkReporter.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs).
+The case definitions live in [`PythonReBenchmarkCatalog.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkCatalog.cs); timed projection logic lives in [`PythonReBenchmarkReporter.cs`](../../bench/Lokad.Utf8Regex.Benchmarks/PythonReBenchmarkReporter.cs).
