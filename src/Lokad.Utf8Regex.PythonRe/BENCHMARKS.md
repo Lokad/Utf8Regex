@@ -71,6 +71,7 @@ Run from the repository root in `Release` through `./bench.ps1`:
 ```powershell
 ./bench.ps1 -CommandArgs "--measure-pythonre-paired-case","literal/search","9"
 ./bench.ps1 -CommandArgs "--measure-pythonre-paired-case-reversed","literal/search","9"
+./bench.ps1 -CommandArgs "--qualify-pythonre-case","literal/search","9"
 ./bench.ps1 -CommandArgs "--measure-pythonre-case","literal/search","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmark-case","literal/search","200","7"
 ./bench.ps1 -CommandArgs "--refresh-pythonre-benchmarks","200","7"

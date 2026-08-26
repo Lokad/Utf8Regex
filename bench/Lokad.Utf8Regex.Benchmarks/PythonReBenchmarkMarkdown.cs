@@ -173,7 +173,7 @@ internal static partial class PythonReBenchmarkReporter
                     $"{strongRatio:F2}x | " +
                     $"{FormatPythonReMicroseconds(cpython.DecodeThenRe.MedianMicroseconds)} | " +
                     $"{FormatPythonReMicroseconds(measurement.DecodeThenRegex.MedianMicroseconds)} | " +
-                    $"{measurement.PythonRe.MedianAllocatedBytes:N0} B |");
+                    $"{(paired?.ManagedMedianAllocatedBytes ?? measurement.PythonRe.MedianAllocatedBytes):N0} B |");
             }
         }
         else
@@ -202,6 +202,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("```powershell");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-paired-case-reversed\",\"literal/search\",\"9\"");
+        writer.WriteLine("./bench.ps1 -CommandArgs \"--qualify-pythonre-case\",\"literal/search\",\"9\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--measure-pythonre-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmark-case\",\"literal/search\",\"200\",\"7\"");
         writer.WriteLine("./bench.ps1 -CommandArgs \"--refresh-pythonre-benchmarks\",\"200\",\"7\"");

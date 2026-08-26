@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -15,7 +17,11 @@ internal static partial class PythonReBenchmarkReporter
     private const double PythonReQualificationMaximumSpread = 1.10;
     private static readonly TimeSpan s_cpythonResponseTimeout = TimeSpan.FromSeconds(10);
 
-    private static int MeasurePairedCase(string caseId, int samples, bool cpythonFirst)
+    private static int MeasurePairedCase(
+        string caseId,
+        int samples,
+        bool cpythonFirst,
+        PythonReQualificationWriteMode writeMode)
     {
 #if DEBUG
         Console.Error.WriteLine("PythonRe paired measurement requires a Release build.");
@@ -41,6 +47,8 @@ internal static partial class PythonReBenchmarkReporter
             "--untracked-files=all",
             "--",
             ".",
+            ":(exclude)PythonRe.Benchmarks.json",
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
             ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
         if (worktreeState is null)
         {
@@ -49,6 +57,13 @@ internal static partial class PythonReBenchmarkReporter
         }
 
         var worktreeQualified = string.IsNullOrWhiteSpace(worktreeState);
+        if (writeMode == PythonReQualificationWriteMode.Snapshot && !worktreeQualified)
+        {
+            Console.Error.WriteLine("PythonRe qualification requires a clean source worktree.");
+            Console.Error.WriteLine(worktreeState);
+            return 1;
+        }
+
         using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
         using var currentProcess = Process.GetCurrentProcess();
         var context = new PythonReBenchmarkContext(benchmarkCase);
@@ -181,6 +196,7 @@ internal static partial class PythonReBenchmarkReporter
             worktreeQualified,
             placementQualified,
             durationsQualified,
+            structuredDigestQualified: false,
             ratioLower,
             ratioUpper,
             orderEffect,
@@ -188,6 +204,81 @@ internal static partial class PythonReBenchmarkReporter
             cpythonSpread,
             managedFloorFraction,
             cpythonFloorFraction);
+        var measuredAtUtc = DateTimeOffset.UtcNow;
+        var managedEnvironment = CaptureEnvironment();
+        var caseDefinitionSha256 = ComputePythonReCaseDefinitionSha256(benchmarkCase, context.InputBytes);
+        var catalogSha256 = ComputePythonReCatalogSha256();
+        var pairedEvidence = new PythonRePairedEvidence
+        {
+            ProtocolVersion = PythonReQualificationProtocolVersion,
+            QualificationId = ComputePythonReQualificationId(
+                caseDefinitionSha256,
+                catalogSha256,
+                managedEnvironment.SourceCommit,
+                worker.Environment,
+                processorScope,
+                cpythonFirst,
+                samples),
+            MeasuredAtUtc = measuredAtUtc,
+            SourceCommit = managedEnvironment.SourceCommit,
+            Baseline = "CPythonPredecodedElapsed",
+            InitialLane = cpythonFirst ? "CPython" : "PythonRe",
+            WorktreeQualified = worktreeQualified,
+            CaseDefinitionSha256 = caseDefinitionSha256,
+            CatalogSha256 = catalogSha256,
+            SemanticDigestAlgorithm = "legacy-int32",
+            SemanticDigest = expectedChecksum.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            CpuPolicy = processorScope.Policy,
+            CpuAffinityMask = processorScope.AffinityMask,
+            CpuEfficiencyClass = processorScope.EfficiencyClass,
+            ManagedIterations = managedIterations,
+            CpythonIterations = cpythonIterations,
+            ManagedWarmupCalls = managedWarmup.Iterations,
+            ManagedWarmupMilliseconds = managedWarmup.Elapsed.TotalMilliseconds,
+            CpythonWarmupCalls = cpythonWarmup.Iterations,
+            CpythonWarmupMilliseconds = cpythonWarmup.ElapsedNanoseconds / 1_000_000d,
+            ManagedMedianMicroseconds = managedMedian,
+            CpythonMedianMicroseconds = cpythonMedian,
+            StrongRatioMedian = ratioMedian,
+            StrongRatioLower95 = ratioLower,
+            StrongRatioUpper95 = ratioUpper,
+            StrongDifferenceMicroseconds = managedMedian - cpythonMedian,
+            OrderEffect = orderEffect,
+            ManagedInterquartileSpread = managedSpread,
+            CpythonInterquartileSpread = cpythonSpread,
+            ManagedHarnessFloorFraction = managedFloorFraction,
+            CpythonHarnessFloorFraction = cpythonFloorFraction,
+            ManagedMedianAllocatedBytes = checked((long)Math.Round(
+                BenchmarkPairedStatistics.Median(managedAllocatedBytes.Select(static value => (double)value)))),
+            Samples = Enumerable.Range(0, samples)
+                .Select(index => new PythonRePairedSampleEvidence
+                {
+                    Order = laneOrders[index].ToString(),
+                    ManagedMicroseconds = managedMicroseconds[index],
+                    CpythonMicroseconds = cpythonMicroseconds[index],
+                    StrongRatio = ratios[index],
+                    ManagedElapsedMilliseconds = managedMilliseconds[index],
+                    CpythonElapsedMilliseconds = cpythonMilliseconds[index],
+                    ManagedProcessCpuMilliseconds = managedProcessCpuMilliseconds[index],
+                    CpythonProcessCpuMilliseconds = cpythonProcessCpuMilliseconds[index],
+                    ManagedGcCollections = managedGcCollections[index],
+                    CpythonGcCollections = cpythonGcCollections[index],
+                    ManagedAllocatedBytes = managedAllocatedBytes[index],
+                })
+                .ToArray(),
+            ManagedEmptyLoopMicroseconds = managedFloorMicroseconds.ToArray(),
+            CpythonEmptyLoopMicroseconds = cpythonFloorMicroseconds.ToArray(),
+            CpythonEnvironment = worker.Environment,
+            ManagedEnvironment = managedEnvironment,
+        };
+        var qualification = new PythonReQualificationMeasurement
+        {
+            Status = status.Status.ToString(),
+            StatusReason = status.Reason ?? "Qualified paired evidence.",
+            EngineEvidenceBasis = "Not engine-comparable",
+            EngineConclusion = "Unqualified",
+            PairedEvidence = pairedEvidence,
+        };
 
         Console.WriteLine($"CaseId             : {caseId}");
         Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
@@ -231,6 +322,12 @@ internal static partial class PythonReBenchmarkReporter
                 $"CPython={cpythonMicroseconds[sample],10:F3} us; R={ratios[sample]:F3}; " +
                 $"GC={FormatGcCollections(managedGcCollections[sample])}/" +
                 $"{FormatGcCollections(cpythonGcCollections[sample])}");
+        }
+
+        if (writeMode == PythonReQualificationWriteMode.Snapshot)
+        {
+            PersistPythonReQualification(caseId, benchmarkCase, context.InputBytes.Length, qualification, measuredAtUtc);
+            Console.WriteLine($"Snapshot           : {Path.GetFullPath(SnapshotFileName)}");
         }
 
         return 0;
@@ -370,6 +467,7 @@ internal static partial class PythonReBenchmarkReporter
         bool worktreeQualified,
         bool placementQualified,
         bool durationsQualified,
+        bool structuredDigestQualified,
         double lowerRatio,
         double upperRatio,
         double orderEffect,
@@ -395,6 +493,13 @@ internal static partial class PythonReBenchmarkReporter
             return new(
                 PythonRePublicStatus.Unqualified,
                 $"At least one lane sample was shorter than {PythonReQualificationMinimumSampleMilliseconds:F0} ms.");
+        }
+
+        if (!structuredDigestQualified)
+        {
+            return new(
+                PythonRePublicStatus.Unqualified,
+                "The paired protocol does not yet use the required structured 64-bit semantic digest.");
         }
 
         if (managedSpread > PythonReQualificationMaximumSpread ||
@@ -461,6 +566,96 @@ internal static partial class PythonReBenchmarkReporter
         PythonRePublicStatus.CpythonFaster => "CPython faster",
         _ => throw new ArgumentOutOfRangeException(nameof(status)),
     };
+
+    private static void PersistPythonReQualification(
+        string caseId,
+        PythonReBenchmarkCase benchmarkCase,
+        int inputUtf8Bytes,
+        PythonReQualificationMeasurement qualification,
+        DateTimeOffset measuredAtUtc)
+    {
+        var snapshotPath = FindRepositoryFile(SnapshotFileName);
+        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
+        if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe qualification requires a schema-{PythonReBenchmarkSchemaVersion} snapshot.");
+        }
+
+        if (!snapshot.Cases.TryGetValue(caseId, out var measurement))
+        {
+            throw new InvalidOperationException($"PythonRe snapshot does not contain case '{caseId}'.");
+        }
+
+        if (!measurement.Pattern.Equals(benchmarkCase.Pattern, StringComparison.Ordinal) ||
+            !measurement.Options.Equals(benchmarkCase.Options.ToString(), StringComparison.Ordinal) ||
+            !measurement.Operation.Equals(benchmarkCase.Operation.ToString(), StringComparison.Ordinal) ||
+            measurement.InputUtf8Bytes != inputUtf8Bytes)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe snapshot case '{caseId}' does not match the current catalog definition.");
+        }
+
+        measurement.Qualification = qualification;
+        WriteSnapshot(new PythonReBenchmarkSnapshot
+        {
+            SchemaVersion = PythonReBenchmarkSchemaVersion,
+            GeneratedAtUtc = measuredAtUtc,
+            Corpus = CaptureCorpusProvenance(),
+            Cases = snapshot.Cases,
+        });
+    }
+
+    private static string ComputePythonReCaseDefinitionSha256(
+        PythonReBenchmarkCase benchmarkCase,
+        byte[] inputBytes) => ComputePythonReSha256(
+            string.Join(
+                '\n',
+                benchmarkCase.Id,
+                benchmarkCase.Pattern,
+                ((int)benchmarkCase.Options).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                benchmarkCase.Operation.ToString(),
+                benchmarkCase.Replacement,
+                benchmarkCase.IncludesResultMaterialization.ToString(),
+                Convert.ToHexString(SHA256.HashData(inputBytes))));
+
+    private static string ComputePythonReCatalogSha256()
+    {
+        var definitions = PythonReBenchmarkCatalog.Cases.Select(benchmarkCase =>
+            ComputePythonReCaseDefinitionSha256(
+                benchmarkCase,
+                Encoding.UTF8.GetBytes(benchmarkCase.Input)));
+        return ComputePythonReSha256(string.Join('\n', definitions));
+    }
+
+    private static string ComputePythonReQualificationId(
+        string caseDefinitionSha256,
+        string catalogSha256,
+        string sourceCommit,
+        CpythonStreamEnvironment cpython,
+        BenchmarkProcessorScope processorScope,
+        bool cpythonFirst,
+        int samples) => ComputePythonReSha256(
+            string.Join(
+                '\n',
+                PythonReQualificationProtocolVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                caseDefinitionSha256,
+                catalogSha256,
+                sourceCommit,
+                cpython.VersionDetail,
+                string.Join('|', cpython.Git),
+                cpython.ExecutableSha256,
+                cpython.RuntimeLibrarySha256,
+                cpython.RunnerSha256,
+                processorScope.Policy,
+                processorScope.AffinityMask,
+                processorScope.EfficiencyClass?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
+                    "unavailable",
+                cpythonFirst ? "CPython" : "PythonRe",
+                samples.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
+    private static string ComputePythonReSha256(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     private sealed class CpythonStreamWorker : IDisposable
     {
@@ -687,6 +882,12 @@ internal enum PythonRePairLaneOrder : byte
 {
     ManagedFirst = 0,
     CpythonFirst = 1,
+}
+
+internal enum PythonReQualificationWriteMode : byte
+{
+    None = 0,
+    Snapshot = 1,
 }
 
 internal enum PythonRePublicStatus : byte

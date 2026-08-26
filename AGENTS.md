@@ -138,6 +138,13 @@ PythonRe benchmark snapshot and diagnostics:
 - `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
 - `src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md` is generated from that snapshot and is the self-contained published view for the Python-compatible adapter. Do not edit its tables by hand.
 - Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
+- Use `--measure-pythonre-paired-case <id> [samples]` for a non-persisted
+  alternating paired qualification diagnostic against predecoded CPython.
+- Use `--measure-pythonre-paired-case-reversed <id> [samples]` only to check a
+  persistent lane-order effect with the opposite initial lane.
+- Use `--qualify-pythonre-case <id> [samples]` to checkpoint paired evidence
+  and Status into the snapshot; use `--qualify-pythonre-case-reversed` for the
+  predeclared reversed-first repeat.
 - Use `--measure-pythonre-paired-case <id> [samples]` for the bounded
   long-lived-worker comparison against predecoded CPython. It calibrates the
   two runtimes independently, alternates whole paired lanes on one logical
@@ -153,6 +160,8 @@ PythonRe benchmark snapshot and diagnostics:
   capture-free core enumeration, range collection, and returned-value shaping.
 - Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
+- Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema
+  migration; it does not reclassify historical measurements as qualified.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
 - Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
 - The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.

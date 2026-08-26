@@ -32,7 +32,8 @@ internal static partial class PythonReBenchmarkReporter
             exitCode = MeasurePairedCase(
                 args[1],
                 Math.Min(ParsePositive(args, 2, 9), 17),
-                cpythonFirst: false);
+                cpythonFirst: false,
+                PythonReQualificationWriteMode.None);
             return true;
         }
 
@@ -41,7 +42,28 @@ internal static partial class PythonReBenchmarkReporter
             exitCode = MeasurePairedCase(
                 args[1],
                 Math.Min(ParsePositive(args, 2, 9), 17),
-                cpythonFirst: true);
+                cpythonFirst: true,
+                PythonReQualificationWriteMode.None);
+            return true;
+        }
+
+        if (args.Length >= 2 && args[0].Equals("--qualify-pythonre-case", StringComparison.Ordinal))
+        {
+            exitCode = MeasurePairedCase(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 9), 17),
+                cpythonFirst: false,
+                PythonReQualificationWriteMode.Snapshot);
+            return true;
+        }
+
+        if (args.Length >= 2 && args[0].Equals("--qualify-pythonre-case-reversed", StringComparison.Ordinal))
+        {
+            exitCode = MeasurePairedCase(
+                args[1],
+                Math.Min(ParsePositive(args, 2, 9), 17),
+                cpythonFirst: true,
+                PythonReQualificationWriteMode.Snapshot);
             return true;
         }
 
@@ -999,12 +1021,15 @@ internal static partial class PythonReBenchmarkReporter
             "--untracked-files=no",
             "--",
             ".",
-            ":(exclude)README.md",
-            ":(exclude)README.Benchmarks.json",
-            ":(exclude)PCRE2.Benchmarks.json",
             ":(exclude)PythonRe.Benchmarks.json",
-            ":(exclude)bench/Lokad.Utf8Regex.Benchmarks/Pcre2PerfLedger.md");
-        var untrackedStatus = RunGit("ls-files", "--others", "--exclude-standard");
+            ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
+        var untrackedStatus = RunGit(
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "--",
+            ".",
+            ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
         return new PythonReBenchmarkEnvironment
         {
             SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",
@@ -2224,8 +2249,11 @@ internal sealed class PythonRePairedEvidence
     public required string SourceCommit { get; init; }
     public required string Baseline { get; init; }
     public required string InitialLane { get; init; }
+    public required bool WorktreeQualified { get; init; }
     public required string CaseDefinitionSha256 { get; init; }
     public required string CatalogSha256 { get; init; }
+    public required string SemanticDigestAlgorithm { get; init; }
+    public required string SemanticDigest { get; init; }
     public required string CpuPolicy { get; init; }
     public required string CpuAffinityMask { get; init; }
     public required int? CpuEfficiencyClass { get; init; }
