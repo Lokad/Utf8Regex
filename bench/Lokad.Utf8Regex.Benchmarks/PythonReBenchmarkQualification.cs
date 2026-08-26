@@ -21,6 +21,8 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationShortFindAllWarmupCalls = 100_000;
     private const int PythonReQualificationShortFindAllCalibrationIterations = 2_000;
     private const int PythonReQualificationReplacementWarmupCalls = 10_000;
+    private const int PythonReQualificationShortReplacementWarmupCalls = 100_000;
+    private const int PythonReQualificationShortReplacementCalibrationIterations = 2_000;
     private const int PythonReQualificationSplitWarmupCalls = 100_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
@@ -957,9 +959,12 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
                 PythonReBenchmarkOperation.ReplaceStringLimited or
-                PythonReBenchmarkOperation.ReplaceEvaluatorString or
                 PythonReBenchmarkOperation.SubnString or
-                PythonReBenchmarkOperation.SubnUtf8 or
+                PythonReBenchmarkOperation.SubnUtf8 =>
+                calibratedIterations >= PythonReQualificationShortReplacementCalibrationIterations
+                    ? PythonReQualificationShortReplacementWarmupCalls
+                    : PythonReQualificationReplacementWarmupCalls,
+            PythonReBenchmarkOperation.ReplaceEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,
             // The direct split routes can tier after the default 1,024 calls.
