@@ -164,6 +164,8 @@ PythonRe benchmark snapshot and diagnostics:
   migration; it does not reclassify historical measurements as qualified.
 - Use `--verify-pythonre-semantic-digests` to preflight the complete catalog
   plus the supplementary-plane detailed-coordinate sentinel against CPython.
+- Use `--verify-pythonre-qualifications` to recompute paired statistics and
+  Status and reject stale source, catalog, runner, interpreter, or pair identity.
 - PythonRe refresh and direct-case commands invoke an official CPython executable to measure the stdlib `re`/`_sre` oracle in a long-lived per-case process. They exclude interpreter startup and pattern compilation, and report predecoded plus strict UTF-8-decode-per-operation timings.
 - Set `UTF8REGEX_CPYTHON` to an explicit executable when `python` does not resolve to the intended CPython. The runner uses only the standard library and is not a shipped dependency.
 - The managed UTF-8 adapter, CPython, decode-then-Regex, and predecoded-Regex columns are compared only on deliberately overlapping semantics. Enumeration and replacement rows include required result materialization.

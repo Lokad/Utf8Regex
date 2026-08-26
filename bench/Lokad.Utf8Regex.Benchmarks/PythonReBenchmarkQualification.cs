@@ -236,7 +236,9 @@ internal static partial class PythonReBenchmarkReporter
                 catalogSha256,
                 managedEnvironment.SourceCommit,
                 worker.Environment,
-                processorScope,
+                processorScope.Policy,
+                processorScope.AffinityMask,
+                processorScope.EfficiencyClass,
                 cpythonFirst,
                 samples),
             MeasuredAtUtc = measuredAtUtc,
@@ -440,6 +442,221 @@ internal static partial class PythonReBenchmarkReporter
             $"Verified structured semantic digests for {cases.Length} PythonRe cases, " +
             "including supplementary-plane detailed coordinates.");
         return 0;
+    }
+
+    private static int VerifyPythonReQualifications()
+    {
+        var snapshot = LoadPythonReBenchmarkSnapshot();
+        var currentCatalogSha256 = ComputePythonReCatalogSha256();
+        var currentRunnerSha256 = Convert.ToHexString(SHA256.HashData(
+            File.ReadAllBytes(FindRepositoryFile(CpythonRunnerRelativePath))));
+        var verified = 0;
+        foreach (var (caseId, measurement) in snapshot.Cases)
+        {
+            var qualification = measurement.Qualification;
+            if (qualification is null)
+            {
+                Console.Error.WriteLine($"{caseId}: schema-4 row has no qualification state.");
+                return 1;
+            }
+
+            var evidence = qualification.PairedEvidence;
+            if (evidence is null)
+            {
+                if (!qualification.Status.Equals("Unqualified", StringComparison.Ordinal))
+                {
+                    Console.Error.WriteLine($"{caseId}: a row without paired evidence must be Unqualified.");
+                    return 1;
+                }
+
+                continue;
+            }
+
+            var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
+                candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal));
+            if (benchmarkCase is null)
+            {
+                Console.Error.WriteLine($"{caseId}: paired evidence has no current catalog case.");
+                return 1;
+            }
+
+            var inputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
+            if (!evidence.CaseDefinitionSha256.Equals(
+                    ComputePythonReCaseDefinitionSha256(benchmarkCase, inputBytes),
+                    StringComparison.Ordinal) ||
+                !evidence.CatalogSha256.Equals(currentCatalogSha256, StringComparison.Ordinal) ||
+                !evidence.CpythonEnvironment.RunnerSha256.Equals(currentRunnerSha256, StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine($"{caseId}: catalog, case, or runner fingerprint is stale.");
+                return 1;
+            }
+
+            var managedSourceChanges = RunGit(
+                "diff",
+                "--name-only",
+                evidence.SourceCommit,
+                "HEAD",
+                "--",
+                "Directory.Build.props",
+                "global.json",
+                "src/Lokad.Utf8Regex",
+                "src/Lokad.Utf8Regex.PythonRe",
+                "bench/Lokad.Utf8Regex.Benchmarks",
+                ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md");
+            if (managedSourceChanges is null || !string.IsNullOrWhiteSpace(managedSourceChanges))
+            {
+                Console.Error.WriteLine($"{caseId}: managed source differs from measured commit {evidence.SourceCommit}.");
+                if (!string.IsNullOrWhiteSpace(managedSourceChanges))
+                {
+                    Console.Error.WriteLine(managedSourceChanges);
+                }
+                return 1;
+            }
+
+            if (!VerifyPythonReInterpreterFile(
+                    evidence.CpythonEnvironment.Executable,
+                    evidence.CpythonEnvironment.ExecutableSha256) ||
+                !VerifyPythonReInterpreterFile(
+                    evidence.CpythonEnvironment.RuntimeLibrary,
+                    evidence.CpythonEnvironment.RuntimeLibrarySha256))
+            {
+                Console.Error.WriteLine($"{caseId}: CPython executable or runtime-library fingerprint is stale.");
+                return 1;
+            }
+
+            if (evidence.ProtocolVersion != PythonReQualificationProtocolVersion ||
+                !evidence.SemanticDigestAlgorithm.Equals("structured-u64-mix-v1", StringComparison.Ordinal) ||
+                evidence.Samples.Length is not 9 and not 17 ||
+                !evidence.WorktreeQualified)
+            {
+                Console.Error.WriteLine($"{caseId}: paired protocol metadata is not qualification-compatible.");
+                return 1;
+            }
+
+            var managedMicroseconds = evidence.Samples.Select(static sample => sample.ManagedMicroseconds).ToArray();
+            var cpythonMicroseconds = evidence.Samples.Select(static sample => sample.CpythonMicroseconds).ToArray();
+            var ratios = evidence.Samples.Select(static sample => sample.StrongRatio).ToArray();
+            for (var index = 0; index < evidence.Samples.Length; index++)
+            {
+                VerifyPythonReStatistic(
+                    $"{caseId} sample {index + 1} ratio",
+                    managedMicroseconds[index] / cpythonMicroseconds[index],
+                    ratios[index]);
+            }
+
+            var logRatios = ratios.Select(static ratio => Math.Log(ratio)).ToArray();
+            var interval = BenchmarkPairedStatistics.BootstrapMedianLogRatio(
+                logRatios,
+                PythonReQualificationBootstrapSeed,
+                PythonReQualificationBootstrapResamples);
+            var managedFirstRatios = evidence.Samples
+                .Where(static sample => sample.Order.Equals("ManagedFirst", StringComparison.Ordinal))
+                .Select(static sample => sample.StrongRatio)
+                .ToArray();
+            var cpythonFirstRatios = evidence.Samples
+                .Where(static sample => sample.Order.Equals("CpythonFirst", StringComparison.Ordinal))
+                .Select(static sample => sample.StrongRatio)
+                .ToArray();
+            var managedFloor = BenchmarkPairedStatistics.Median(evidence.ManagedEmptyLoopMicroseconds);
+            var cpythonFloor = BenchmarkPairedStatistics.Median(evidence.CpythonEmptyLoopMicroseconds);
+            var managedMedian = BenchmarkPairedStatistics.Median(managedMicroseconds);
+            var cpythonMedian = BenchmarkPairedStatistics.Median(cpythonMicroseconds);
+            var ratioLower = Math.Exp(interval.Lower);
+            var ratioUpper = Math.Exp(interval.Upper);
+            var orderEffect = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+                BenchmarkPairedStatistics.Median(cpythonFirstRatios);
+            var managedSpread = BenchmarkPairedStatistics.InterquartileSpread(managedMicroseconds);
+            var cpythonSpread = BenchmarkPairedStatistics.InterquartileSpread(cpythonMicroseconds);
+            var managedFloorFraction = managedFloor / managedMedian;
+            var cpythonFloorFraction = cpythonFloor / cpythonMedian;
+            VerifyPythonReStatistic(caseId + " managed median", managedMedian, evidence.ManagedMedianMicroseconds);
+            VerifyPythonReStatistic(caseId + " CPython median", cpythonMedian, evidence.CpythonMedianMicroseconds);
+            VerifyPythonReStatistic(
+                caseId + " ratio median",
+                Math.Exp(BenchmarkPairedStatistics.Median(logRatios)),
+                evidence.StrongRatioMedian);
+            VerifyPythonReStatistic(caseId + " interval lower", ratioLower, evidence.StrongRatioLower95);
+            VerifyPythonReStatistic(caseId + " interval upper", ratioUpper, evidence.StrongRatioUpper95);
+            VerifyPythonReStatistic(caseId + " order effect", orderEffect, evidence.OrderEffect);
+            VerifyPythonReStatistic(caseId + " managed spread", managedSpread, evidence.ManagedInterquartileSpread);
+            VerifyPythonReStatistic(caseId + " CPython spread", cpythonSpread, evidence.CpythonInterquartileSpread);
+            VerifyPythonReStatistic(
+                caseId + " managed floor",
+                managedFloorFraction,
+                evidence.ManagedHarnessFloorFraction);
+            VerifyPythonReStatistic(
+                caseId + " CPython floor",
+                cpythonFloorFraction,
+                evidence.CpythonHarnessFloorFraction);
+
+            var durationsQualified = evidence.Samples.All(sample =>
+                sample.ManagedElapsedMilliseconds >= PythonReQualificationMinimumSampleMilliseconds &&
+                sample.CpythonElapsedMilliseconds >= PythonReQualificationMinimumSampleMilliseconds);
+            var expectedStatus = DeriveStatus(
+                evidence.WorktreeQualified,
+                evidence.CpuPolicy.Equals("single-highest-efficiency-processor", StringComparison.Ordinal),
+                durationsQualified,
+                structuredDigestQualified: true,
+                ratioLower,
+                ratioUpper,
+                orderEffect,
+                managedSpread,
+                cpythonSpread,
+                managedFloorFraction,
+                cpythonFloorFraction);
+            if (!qualification.Status.Equals(expectedStatus.Status.ToString(), StringComparison.Ordinal) ||
+                !qualification.StatusReason.Equals(
+                    expectedStatus.Reason ?? "Qualified paired evidence.",
+                    StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine($"{caseId}: stored Status does not match paired evidence.");
+                return 1;
+            }
+
+            var expectedQualificationId = ComputePythonReQualificationId(
+                evidence.CaseDefinitionSha256,
+                evidence.CatalogSha256,
+                evidence.SourceCommit,
+                evidence.CpythonEnvironment,
+                evidence.CpuPolicy,
+                evidence.CpuAffinityMask,
+                evidence.CpuEfficiencyClass,
+                evidence.InitialLane.Equals("CPython", StringComparison.Ordinal),
+                evidence.Samples.Length);
+            if (!evidence.QualificationId.Equals(expectedQualificationId, StringComparison.Ordinal))
+            {
+                Console.Error.WriteLine($"{caseId}: QualificationId does not match its evidence identity.");
+                return 1;
+            }
+
+            verified++;
+        }
+
+        Console.WriteLine(
+            $"Verified {verified} paired PythonRe qualifications; " +
+            $"{snapshot.Cases.Count - verified} rows remain explicitly Unqualified.");
+        return 0;
+    }
+
+    private static bool VerifyPythonReInterpreterFile(string path, string expectedSha256)
+    {
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(expectedSha256) || !File.Exists(path))
+        {
+            return false;
+        }
+
+        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+        return actual.Equals(expectedSha256, StringComparison.Ordinal);
+    }
+
+    private static void VerifyPythonReStatistic(string name, double expected, double actual)
+    {
+        var scale = Math.Max(1, Math.Max(Math.Abs(expected), Math.Abs(actual)));
+        if (Math.Abs(expected - actual) > scale * 1e-12)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe paired statistic '{name}' differs: expected {expected:R}, actual {actual:R}.");
+        }
     }
 
     private static PythonReWarmup WarmManagedLane(
@@ -703,7 +920,9 @@ internal static partial class PythonReBenchmarkReporter
         string catalogSha256,
         string sourceCommit,
         CpythonStreamEnvironment cpython,
-        BenchmarkProcessorScope processorScope,
+        string cpuPolicy,
+        string cpuAffinityMask,
+        int? cpuEfficiencyClass,
         bool cpythonFirst,
         int samples) => ComputePythonReSha256(
             string.Join(
@@ -717,9 +936,9 @@ internal static partial class PythonReBenchmarkReporter
                 cpython.ExecutableSha256,
                 cpython.RuntimeLibrarySha256,
                 cpython.RunnerSha256,
-                processorScope.Policy,
-                processorScope.AffinityMask,
-                processorScope.EfficiencyClass?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
+                cpuPolicy,
+                cpuAffinityMask,
+                cpuEfficiencyClass?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
                     "unavailable",
                 cpythonFirst ? "CPython" : "PythonRe",
                 samples.ToString(System.Globalization.CultureInfo.InvariantCulture)));

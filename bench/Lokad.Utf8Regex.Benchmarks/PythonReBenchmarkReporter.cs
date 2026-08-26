@@ -73,6 +73,12 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--verify-pythonre-qualifications", StringComparison.Ordinal))
+        {
+            exitCode = VerifyPythonReQualifications();
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-shaping-case", StringComparison.Ordinal))
         {
             exitCode = MeasureShapingCase(
