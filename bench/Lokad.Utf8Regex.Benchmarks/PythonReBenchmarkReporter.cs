@@ -531,15 +531,20 @@ internal static partial class PythonReBenchmarkReporter
         var trailingCapture = context.SupportsTrailingCaptureReplay
             ? context.ExecuteTrailingCaptureReplayChecksum()
             : expected;
+        var separatedCaptures = context.SupportsSeparatedCapturesReplay
+            ? context.ExecuteSeparatedCapturesReplayChecksum()
+            : expected;
         if (expected != predecoded ||
             expected != prepared ||
             expected != finalShape ||
-            expected != trailingCapture)
+            expected != trailingCapture ||
+            expected != separatedCaptures)
         {
             throw new InvalidOperationException(
                 $"PythonRe captured FindAll phase diagnostic '{benchmarkCase.Id}' produced incomparable sinks: " +
                 $"public={expected}, predecoded={predecoded}, prepared={prepared}, " +
-                $"final={finalShape}, trailing-capture={trailingCapture}.");
+                $"final={finalShape}, trailing-capture={trailingCapture}, " +
+                $"separated-captures={separatedCaptures}.");
         }
 
         Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
@@ -574,6 +579,11 @@ internal static partial class PythonReBenchmarkReporter
             if (context.SupportsTrailingCaptureReplay)
             {
                 PrintOperation("TrailingCaptureReplay", MeasureRetainedPhaseOperation(context.ProjectTrailingCaptureStrings, iterations, samples));
+            }
+
+            if (context.SupportsSeparatedCapturesReplay)
+            {
+                PrintOperation("SeparatedCapturesReplay", MeasureRetainedPhaseOperation(context.ProjectSeparatedCaptureStrings, iterations, samples));
             }
 
             PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, iterations, samples));
@@ -1725,6 +1735,8 @@ internal sealed class PythonReBenchmarkContext
     private readonly Utf8PythonFindAllUtf8Result _preparedCapturedUtf8;
     private readonly bool _supportsTrailingCaptureReplay;
     private readonly int _trailingCapturePrefixLength;
+    private readonly bool _supportsSeparatedCapturesReplay;
+    private readonly char _captureSeparator;
     private readonly bool _supportsReplacementPhases;
     private readonly Utf8Regex? _coreReplacementRegex;
     private readonly PythonReReplacementPlan _preparedReplacementPlan;
@@ -1765,6 +1777,8 @@ internal sealed class PythonReBenchmarkContext
             _preparedCapturedUtf8 = default;
             _supportsTrailingCaptureReplay = false;
             _trailingCapturePrefixLength = 0;
+            _supportsSeparatedCapturesReplay = false;
+            _captureSeparator = default;
         }
         else if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
                  _captureCount > 0 && !_regex.IsMatch(string.Empty))
@@ -1800,6 +1814,36 @@ internal sealed class PythonReBenchmarkContext
             }
 
             _trailingCapturePrefixLength = Math.Max(0, trailingCapturePrefixLength);
+            _supportsSeparatedCapturesReplay = benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
+                _captureCount == 2;
+            var captureSeparator = default(char);
+            var hasCaptureSeparator = false;
+            if (_supportsSeparatedCapturesReplay)
+            {
+                foreach (Match match in _regex.Matches(_decoded))
+                {
+                    var first = match.Groups[1];
+                    var second = match.Groups[2];
+                    var separatorIndex = first.Index + first.Length;
+                    if (!first.Success ||
+                        !second.Success ||
+                        first.Index != match.Index ||
+                        second.Index + second.Length != match.Index + match.Length ||
+                        second.Index - separatorIndex != 1 ||
+                        hasCaptureSeparator && _decoded[separatorIndex] != captureSeparator)
+                    {
+                        _supportsSeparatedCapturesReplay = false;
+                        break;
+                    }
+
+                    captureSeparator = _decoded[separatorIndex];
+                    hasCaptureSeparator = true;
+                }
+
+                _supportsSeparatedCapturesReplay &= hasCaptureSeparator;
+            }
+
+            _captureSeparator = captureSeparator;
         }
         else
         {
@@ -1814,6 +1858,8 @@ internal sealed class PythonReBenchmarkContext
             _preparedCapturedUtf8 = default;
             _supportsTrailingCaptureReplay = false;
             _trailingCapturePrefixLength = 0;
+            _supportsSeparatedCapturesReplay = false;
+            _captureSeparator = default;
         }
 
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.ReplaceString or
@@ -1892,6 +1938,8 @@ internal sealed class PythonReBenchmarkContext
     internal bool SupportsReplacementPhases => _supportsReplacementPhases;
 
     internal bool SupportsTrailingCaptureReplay => _supportsTrailingCaptureReplay;
+
+    internal bool SupportsSeparatedCapturesReplay => _supportsSeparatedCapturesReplay;
 
     internal string ReplacementCoreExecutionKind => GetCoreReplacementRegex()
         .Inspection.ExecutionKind.ToString();
@@ -2522,6 +2570,37 @@ internal sealed class PythonReBenchmarkContext
         };
     }
 
+    internal Utf8PythonFindAllResult ProjectSeparatedCaptureStrings()
+    {
+        if (!SupportsSeparatedCapturesReplay)
+        {
+            throw new InvalidOperationException("The separated-captures replay is not available for this case.");
+        }
+
+        List<string[]> values = new(_preparedCaptureRanges.Length / _captureCount);
+        foreach (var match in _regex.EnumerateMatches(_decoded, 0))
+        {
+            var matched = _decoded.AsSpan(match.Index, match.Length);
+            var separatorIndex = matched.IndexOf(_captureSeparator);
+            if (separatorIndex < 0)
+            {
+                throw new InvalidOperationException("The prepared capture separator was not found in a replay match.");
+            }
+
+            values.Add([
+                new string(matched[..separatorIndex]),
+                new string(matched[(separatorIndex + 1)..]),
+            ]);
+        }
+
+        return new Utf8PythonFindAllResult
+        {
+            Shape = Utf8PythonFindAllShape.GroupTuple,
+            ScalarValues = [],
+            TupleValues = values.ToArray(),
+        };
+    }
+
     internal Utf8PythonFindAllUtf8Result ProjectPreparedCapturedUtf8() =>
         ProjectCapturedUtf8(_preparedCaptureRanges, _preparedUtf8Offsets);
 
@@ -2625,6 +2704,8 @@ internal sealed class PythonReBenchmarkContext
     };
 
     internal int ExecuteTrailingCaptureReplayChecksum() => Checksum(ProjectTrailingCaptureStrings());
+
+    internal int ExecuteSeparatedCapturesReplayChecksum() => Checksum(ProjectSeparatedCaptureStrings());
 
     internal int ExecutePreparedCapturedFinalShapeChecksum() => _case.Operation switch
     {
