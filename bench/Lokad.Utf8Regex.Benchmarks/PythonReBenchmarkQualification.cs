@@ -17,6 +17,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
     private const int PythonReQualificationOneShotWarmupCalls = 100_000;
+    private const int PythonReQualificationExactUtf8OneShotWarmupCalls = 250_000;
     private const int PythonReQualificationFindAllWarmupCalls = 10_000;
     private const int PythonReQualificationShortFindAllWarmupCalls = 100_000;
     private const int PythonReQualificationShortFindAllCalibrationIterations = 2_000;
@@ -941,8 +942,23 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int GetManagedWarmupCalls(
         PythonReBenchmarkCase benchmarkCase,
-        int calibratedIterations = 0) =>
-        benchmarkCase.Operation switch
+        int calibratedIterations = 0)
+    {
+        if ((benchmarkCase.Operation is PythonReBenchmarkOperation.IsMatch or
+                PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.SearchFromOffset or
+                PythonReBenchmarkOperation.Match or
+                PythonReBenchmarkOperation.FullMatch) &&
+            benchmarkCase.Coverage.IntendedManagedRouteClass.Equals(
+                "ExactUtf8Literal",
+                StringComparison.Ordinal))
+        {
+            // The zero-offset exact UTF-8 value route has a second tiering
+            // transition after the ordinary one-shot call floor.
+            return PythonReQualificationExactUtf8OneShotWarmupCalls;
+        }
+
+        return benchmarkCase.Operation switch
         {
             PythonReBenchmarkOperation.IsMatch or
             PythonReBenchmarkOperation.Search or
@@ -974,6 +990,7 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReBenchmarkOperation.SplitDetailed => PythonReQualificationSplitWarmupCalls,
             _ => PythonReQualificationMinimumWarmupCalls,
         };
+    }
 
     private static int ConfirmManagedSampleDuration(
         PythonReBenchmarkContext context,

@@ -124,6 +124,7 @@ internal static partial class PythonReBenchmarkReporter
             $"bootstrap-resamples={PythonReQualificationBootstrapResamples}",
             $"maximum-iterations={PythonReQualificationMaximumIterations}",
             $"one-shot-warmup={PythonReQualificationOneShotWarmupCalls}",
+            $"exact-utf8-one-shot-warmup={PythonReQualificationExactUtf8OneShotWarmupCalls}",
             $"findall-warmup={PythonReQualificationFindAllWarmupCalls}",
             $"short-findall-warmup={PythonReQualificationShortFindAllWarmupCalls}",
             $"short-findall-calibration={PythonReQualificationShortFindAllCalibrationIterations}",
