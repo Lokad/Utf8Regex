@@ -51,17 +51,22 @@ def checksum_bytes(value: bytes) -> int:
     return checksum
 
 
-def utf16_index(value: str, code_point_index: int) -> int:
-    return len(value[:code_point_index].encode("utf-16-le", "surrogatepass")) // 2
+def build_utf16_offsets(value: str) -> tuple[int, ...]:
+    offsets = [0]
+    utf16_offset = 0
+    for character in value:
+        utf16_offset += 2 if ord(character) > 0xFFFF else 1
+        offsets.append(utf16_offset)
+    return tuple(offsets)
 
 
-def simple_match_checksum(match: re.Match[str] | None, input_text: str) -> int:
+def simple_match_checksum(match: re.Match[str] | None, utf16_offsets: tuple[int, ...]) -> int:
     if match is None:
         return 0
     return combine(
         1,
-        utf16_index(input_text, match.start()),
-        utf16_index(input_text, match.end()),
+        utf16_offsets[match.start()],
+        utf16_offsets[match.end()],
     )
 
 
@@ -69,7 +74,10 @@ DetailedGroup = tuple[bool, int, int, str]
 DetailedMatch = tuple[DetailedGroup, ...] | None
 
 
-def materialize_detailed(match: re.Match[str] | None, input_text: str) -> DetailedMatch:
+def materialize_detailed(
+    match: re.Match[str] | None,
+    utf16_offsets: tuple[int, ...],
+) -> DetailedMatch:
     if match is None:
         return None
 
@@ -82,8 +90,8 @@ def materialize_detailed(match: re.Match[str] | None, input_text: str) -> Detail
             groups.append(
                 (
                     True,
-                    utf16_index(input_text, start),
-                    utf16_index(input_text, end),
+                    utf16_offsets[start],
+                    utf16_offsets[end],
                     match.group(group_index),
                 )
             )
@@ -143,6 +151,7 @@ class CaseRunner:
         self.operation = request["Operation"]
         self.input_bytes = base64.b64decode(request["InputBase64"], validate=True)
         self.input_text = self.input_bytes.decode("utf-8", "strict")
+        self.utf16_offsets = build_utf16_offsets(self.input_text)
         self.replacement = request["Replacement"]
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
 
@@ -163,7 +172,7 @@ class CaseRunner:
         if operation == "FullMatch":
             return self.pattern.fullmatch(input_text)
         if operation == "SearchDetailed":
-            return materialize_detailed(self.pattern.search(input_text), input_text)
+            return materialize_detailed(self.pattern.search(input_text), self.utf16_offsets)
         if operation == "Count":
             return sum(1 for _ in self.pattern.finditer(input_text))
         if operation == "FindAllStrings":
@@ -171,7 +180,10 @@ class CaseRunner:
         if operation == "FindAllUtf8":
             return self.encode_findall(self.pattern.findall(input_text))
         if operation == "FindIterDetailed":
-            return [materialize_detailed(match, input_text) for match in self.pattern.finditer(input_text)]
+            return [
+                materialize_detailed(match, self.utf16_offsets)
+                for match in self.pattern.finditer(input_text)
+            ]
         if operation == "ReplaceString":
             return self.pattern.sub(self.replacement, input_text)
         if operation == "ReplaceUtf8":
@@ -201,7 +213,7 @@ class CaseRunner:
             nonlocal callback_checksum
             callback_checksum = combine(
                 callback_checksum,
-                detailed_checksum(materialize_detailed(match, input_text)),
+                detailed_checksum(materialize_detailed(match, self.utf16_offsets)),
             )
             return self.replacement
 
@@ -213,7 +225,7 @@ class CaseRunner:
         if operation == "IsMatch":
             return 1 if result else 0
         if operation in {"Search", "Match", "FullMatch"}:
-            return simple_match_checksum(result, self.input_text)
+            return simple_match_checksum(result, self.utf16_offsets)
         if operation == "SearchDetailed":
             return detailed_checksum(result)
         if operation == "Count":
@@ -292,13 +304,24 @@ def main() -> int:
     runner = CaseRunner(request)
     iterations = request["Iterations"]
     samples = request["Samples"]
+    predecoded_preflight = runner.execute_predecoded()
+    decoded_preflight = runner.execute_decode_then_re()
+    expected_checksum = runner.checksum(predecoded_preflight)
+    decoded_preflight_checksum = runner.checksum(decoded_preflight)
+    if expected_checksum != decoded_preflight_checksum:
+        raise RuntimeError(
+            "CPython predecoded/decode preflight checksums differ: "
+            f"{expected_checksum} versus {decoded_preflight_checksum}."
+        )
+
     predecoded, predecoded_result = measure(runner.execute_predecoded, iterations, samples)
     decoded, decoded_result = measure(runner.execute_decode_then_re, iterations, samples)
     predecoded_checksum = runner.checksum(predecoded_result)
     decoded_checksum = runner.checksum(decoded_result)
-    if predecoded_checksum != decoded_checksum:
+    if predecoded_checksum != expected_checksum or decoded_checksum != expected_checksum:
         raise RuntimeError(
-            f"CPython predecoded/decode checksums differ: {predecoded_checksum} versus {decoded_checksum}."
+            "CPython timed results disagree with preflight: "
+            f"expected {expected_checksum}, predecoded {predecoded_checksum}, decoded {decoded_checksum}."
         )
 
     response = {
