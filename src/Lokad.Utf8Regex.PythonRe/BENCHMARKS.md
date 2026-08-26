@@ -20,13 +20,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-08-26T13:00:48.0637965+00:00`
-- Snapshot SHA-256: `38C93476497652C3DE92AD1EB1C809134F3E45D2A99BB9FE9803C6AB78C0C1C3`
+- Generated: `2026-08-26T14:30:42.6421102+00:00`
+- Snapshot SHA-256: `CD4E12F7BD7E2E0C74F1BBA7CC9AC1F1165277E1C3CE9BE5D6D40F2D56D4813A`
 - Schema: `8`
-- Catalog SHA-256: `3B200747F3E82A0FCAD0FB40BF3F817D55D6085BA2370855F91CBF126C15ADB3`
-- Cases: `28`
-- Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `9` inconclusive, `0` unqualified
-- Historical point measurement environments represented: `1`
+- Catalog SHA-256: `C731F1AE719DADD259748DD98AD02A698CFACD7EA3503D3E6CB594129543E3F1`
+- Cases: `32`
+- Public Status: `18` managed faster, `0` equivalent, `1` CPython faster, `12` inconclusive, `1` unqualified
+- Historical point measurement environments represented: `2`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
 - Historical CPython point environments represented: `1`
@@ -34,13 +34,13 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Coverage summary
 
-This catalog currently covers `28` operation rows over `15` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
+This catalog currently covers `32` operation rows over `17` distinct patterns. Zero-count sections below are deliberate, visible backlog rather than implicit coverage.
 
 | Axis | Covered values |
 |---|---|
 | Operation families | `Count`, `FindAllStrings`, `FindAllUtf8`, `FindIterDetailed`, `FullMatch`, `IsMatch`, `Match`, `ReplaceString`, `ReplaceUtf8`, `Search`, `SearchDetailed`, `SplitStrings`, `SubnEvaluatorString`, `SubnEvaluatorUtf8`, `SubnString`, `SubnUtf8` |
-| Flags | `Ascii`, `None` |
-| Feature families | `ASCII class run`, `ASCII word boundary`, `Callback replacement`, `Captured separator`, `Exact literal`, `Exact literal replacement`, `Literal alternation`, `Mixed-width captures`, `One capture`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Separated captures`, `Separator class`, `Unicode literal` |
+| Flags | `Ascii`, `IgnoreCase`, `None` |
+| Feature families | `ASCII class run`, `ASCII word boundary`, `Anchors and fixed classes`, `Callback replacement`, `Captured separator`, `Exact literal`, `Exact literal replacement`, `Ignore-case literal`, `Literal alternation`, `Mixed-width captures`, `One capture`, `Prefix and digit repeat`, `Quantified Unicode literal`, `Separated captures`, `Separator class`, `Unicode literal` |
 | Managed route classes | `ExactAsciiLiteral`, `ExactUtf8Literal`, `ManagedFallback`, `SimpleNative` |
 | Result cardinalities | `Many`, `ManyEmpty`, `One`, `Zero` |
 | Input-width classes | `Ascii`, `Ascii+TwoByte`, `Ascii+TwoByte+FourByte` |
@@ -49,7 +49,7 @@ This catalog currently covers `28` operation rows over `15` distinct patterns. Z
 
 | Result section | Rows |
 |---|---:|
-| Direct matching | 6 |
+| Direct matching | 10 |
 | Detailed and scalar projections | 1 |
 | Count, FindAll, and FindIter | 13 |
 | Replace and Subn | 6 |
@@ -59,7 +59,7 @@ This catalog currently covers `28` operation rows over `15` distinct patterns. Z
 | Scaling evidence | 0 |
 | Comparator and semantic exclusions | 0 |
 
-Historical independent point columns were measured from source `9730cc32f96c` on .NET 10.0.11, Microsoft Windows 10.0.26200, Intel64 Family 6 Model 183 Stepping 1, GenuineIntel. Qualified paired rows record their own exact source, runtime, and interpreter provenance in the JSON evidence.
+Historical point rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins; qualified paired rows carry separate exact provenance.
 
 ## Results
 
@@ -75,6 +75,10 @@ Historical independent point columns were measured from source `9730cc32f96c` on
 | `prefix/match` | `Match` | ConsumedGroupZeroRanges | CPython faster | 0.214 us | 0.176 us | 1.21x | 0.781 us | 1.444 us | 0 B |
 | `literal/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.035 us | 0.213 us | 0.16x | 0.245 us | 0.094 us | 0 B |
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 13.289 us | 14.613 us | 0.91x | 19.217 us | 25.377 us | 14,360 B |
+| `literal/search-early` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 1.537 us | 0.164 us | 9.37x | 2.195 us | 40.187 us | 0 B |
+| `anchor/fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | Unqualified | 0.142 us | 0.118 us | 1.15x | 0.215 us | 0.102 us | 56 B |
+| `ignorecase/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.102 us | 0.217 us | 0.46x | 0.252 us | 0.165 us | 280 B |
+| `ignorecase/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.041 us | 0.169 us | 0.25x | 0.263 us | 0.070 us | 64 B |
 
 ### Detailed and scalar projections
 
@@ -147,6 +151,10 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `prefix/match` | `_sre C Pattern.match` | `Utf8Regex/FallbackRegex; strict validation; direct anchored ASCII literal-prefix/digit-repeat value ranges` | Rbyte 1.01x [0.90, 1.05]; NotApplicable |
 | `literal/fullmatch` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.15x [0.14, 0.15]; ManagedFaster |
 | `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |
+| `literal/search-early` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 7.72x [7.13, 13.87]; Inconclusive |
+| `anchor/fullmatch-miss` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.86x [0.84, 8.70]; Unqualified |
+| `ignorecase/search-hit` | `_sre C Pattern.search` | `Utf8Regex/AsciiLiteralIgnoreCase; value ranges` | Rbyte 0.41x [0.39, 0.46]; Inconclusive |
+| `ignorecase/search-miss` | `_sre C Pattern.search` | `Utf8Regex/AsciiLiteralIgnoreCase; value ranges` | Rbyte 0.17x [0.16, 0.19]; Inconclusive |
 | `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
