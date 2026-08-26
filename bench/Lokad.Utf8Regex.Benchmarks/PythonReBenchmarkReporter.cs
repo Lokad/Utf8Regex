@@ -3852,11 +3852,7 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: false)),
         PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, materializeCallback: true)),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, materializeCallback: true)),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => Checksum(ReplaceAndCount(
-            input,
-            encodeUtf8: false,
-            materializeCallback: true,
-            includeCount: false)),
+        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecuteRegexReplaceEvaluator(input),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_regex.Split(input)),
         PythonReBenchmarkOperation.SplitStringsLimited => Checksum(_regex.Split(
             input,
@@ -3990,8 +3986,7 @@ internal sealed class PythonReBenchmarkContext
     private BclSubnResult ReplaceAndCount(
         string input,
         bool encodeUtf8,
-        bool materializeCallback,
-        bool includeCount = true)
+        bool materializeCallback)
     {
         var count = 0;
         var callbackChecksum = 0;
@@ -4009,8 +4004,22 @@ internal sealed class PythonReBenchmarkContext
         return new BclSubnResult(
             result,
             encodeUtf8 ? Encoding.UTF8.GetBytes(result) : null,
-            includeCount ? count : 0,
+            count,
             materializeCallback ? callbackChecksum : null);
+    }
+
+    private int ExecuteRegexReplaceEvaluator(string input)
+    {
+        var callbackChecksum = 0;
+        var utf8Offsets = GetUtf8Offsets(input);
+        var result = _regex.Replace(input, match =>
+        {
+            callbackChecksum = Combine(
+                callbackChecksum,
+                Checksum(MaterializeDetailed(match, input, utf8Offsets)));
+            return _case.Replacement;
+        });
+        return Combine(Checksum(result), callbackChecksum);
     }
 
     private static BclDetailedMatch MaterializeDetailed(Match match, string input, int[]? utf8Offsets)
