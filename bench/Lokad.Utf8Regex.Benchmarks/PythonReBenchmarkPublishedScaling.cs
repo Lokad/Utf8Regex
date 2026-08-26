@@ -53,14 +53,16 @@ internal static partial class PythonReBenchmarkReporter
 
         if (family.ManagedEnvironment.TrackedDirty ||
             family.ManagedEnvironment.HasUntrackedFiles ||
-            !IsPythonReSha256(family.ManagedEnvironment.SourceCommit) ||
+            !IsPythonReCommitId(family.ManagedEnvironment.SourceCommit) ||
             string.IsNullOrWhiteSpace(family.ManagedEnvironment.Runtime) ||
             string.IsNullOrWhiteSpace(family.ManagedEnvironment.OperatingSystem) ||
             string.IsNullOrWhiteSpace(family.ManagedEnvironment.Processor) ||
             !family.CpythonEnvironment.Implementation.Equals("CPython", StringComparison.Ordinal) ||
             string.IsNullOrWhiteSpace(family.CpythonEnvironment.Version) ||
             !IsPythonReSha256(family.CpythonEnvironment.ExecutableSha256) ||
-            !IsPythonReSha256(family.CpythonEnvironment.RunnerSha256))
+            !IsPythonReSha256(family.CpythonEnvironment.RunnerSha256) ||
+            !IsPythonReQualifiedProcessorPolicy(family.CpuPolicy) ||
+            string.IsNullOrWhiteSpace(family.CpuAffinityMask))
         {
             throw new InvalidOperationException(
                 $"PythonRe scaling family '{definition.Id}' lacks clean, exact runtime provenance.");
@@ -99,11 +101,117 @@ internal static partial class PythonReBenchmarkReporter
                 point.RatioMedian > point.RatioUpper95 ||
                 !IsPositiveFinite(point.ManagedSpread) ||
                 !IsPositiveFinite(point.CpythonSpread) ||
-                point.ManagedAllocatedBytes < 0)
+                point.ManagedAllocatedBytes < 0 ||
+                point.ManagedWarmupCalls <= 0 ||
+                !IsPositiveFinite(point.ManagedWarmupMilliseconds) ||
+                point.CpythonWarmupCalls <= 0 ||
+                !IsPositiveFinite(point.CpythonWarmupMilliseconds) ||
+                !IsPositiveFinite(point.OrderEffect) ||
+                point.Samples.Count != family.Samples)
             {
                 throw new InvalidOperationException(
                     $"PythonRe scaling point '{definition.Id}/{definitionPoint.Label}' has invalid statistics.");
             }
+
+            var managedSamples = new double[family.Samples];
+            var cpythonSamples = new double[family.Samples];
+            var ratios = new double[family.Samples];
+            var allocations = new double[family.Samples];
+            for (var sampleIndex = 0; sampleIndex < family.Samples; sampleIndex++)
+            {
+                var sample = point.Samples[sampleIndex];
+                if (sample.Order is not nameof(PythonRePairLaneOrder.ManagedFirst) and
+                    not nameof(PythonRePairLaneOrder.CpythonFirst) ||
+                    (sampleIndex > 0 && sample.Order.Equals(
+                        point.Samples[sampleIndex - 1].Order,
+                        StringComparison.Ordinal)) ||
+                    !IsPositiveFinite(sample.ManagedMicroseconds) ||
+                    !IsPositiveFinite(sample.CpythonMicroseconds) ||
+                    !IsPositiveFinite(sample.Ratio) ||
+                    !IsPositiveFinite(sample.ManagedElapsedMilliseconds) ||
+                    !IsPositiveFinite(sample.CpythonElapsedMilliseconds) ||
+                    sample.ManagedAllocatedBytes < 0 ||
+                    sample.ManagedGcCollections.Length != 3 ||
+                    sample.CpythonGcCollections.Length != 3 ||
+                    sample.ManagedGcCollections.Any(static count => count < 0) ||
+                    sample.CpythonGcCollections.Any(static count => count < 0))
+                {
+                    throw new InvalidOperationException(
+                        $"PythonRe scaling sample '{definition.Id}/{definitionPoint.Label}/{sampleIndex}' is invalid.");
+                }
+
+                VerifyPythonReStatistic(
+                    definition.Id + " sample managed elapsed",
+                    sample.ManagedMicroseconds * point.ManagedIterations / 1_000,
+                    sample.ManagedElapsedMilliseconds);
+                VerifyPythonReStatistic(
+                    definition.Id + " sample CPython elapsed",
+                    sample.CpythonMicroseconds * point.CpythonIterations / 1_000,
+                    sample.CpythonElapsedMilliseconds);
+                VerifyPythonReStatistic(
+                    definition.Id + " sample ratio",
+                    sample.ManagedMicroseconds / sample.CpythonMicroseconds,
+                    sample.Ratio);
+                managedSamples[sampleIndex] = sample.ManagedMicroseconds;
+                cpythonSamples[sampleIndex] = sample.CpythonMicroseconds;
+                ratios[sampleIndex] = sample.Ratio;
+                allocations[sampleIndex] = sample.ManagedAllocatedBytes;
+            }
+
+            var interval = BenchmarkPairedStatistics.BootstrapMedianLogRatio(
+                ratios.Select(static ratio => Math.Log(ratio)).ToArray(),
+                PythonReQualificationBootstrapSeed,
+                PythonReQualificationBootstrapResamples);
+            var managedFirstRatios = point.Samples
+                .Where(static sample => sample.Order.Equals(
+                    nameof(PythonRePairLaneOrder.ManagedFirst),
+                    StringComparison.Ordinal))
+                .Select(static sample => sample.Ratio)
+                .ToArray();
+            var cpythonFirstRatios = point.Samples
+                .Where(static sample => sample.Order.Equals(
+                    nameof(PythonRePairLaneOrder.CpythonFirst),
+                    StringComparison.Ordinal))
+                .Select(static sample => sample.Ratio)
+                .ToArray();
+            VerifyPythonReStatistic(
+                definition.Id + " managed median",
+                BenchmarkPairedStatistics.Median(managedSamples),
+                point.ManagedMedianMicroseconds);
+            VerifyPythonReStatistic(
+                definition.Id + " CPython median",
+                BenchmarkPairedStatistics.Median(cpythonSamples),
+                point.CpythonMedianMicroseconds);
+            VerifyPythonReStatistic(
+                definition.Id + " ratio median",
+                Math.Exp(BenchmarkPairedStatistics.Median(
+                    ratios.Select(static ratio => Math.Log(ratio)))),
+                point.RatioMedian);
+            VerifyPythonReStatistic(
+                definition.Id + " ratio lower",
+                Math.Exp(interval.Lower),
+                point.RatioLower95);
+            VerifyPythonReStatistic(
+                definition.Id + " ratio upper",
+                Math.Exp(interval.Upper),
+                point.RatioUpper95);
+            VerifyPythonReStatistic(
+                definition.Id + " managed spread",
+                BenchmarkPairedStatistics.InterquartileSpread(managedSamples),
+                point.ManagedSpread);
+            VerifyPythonReStatistic(
+                definition.Id + " CPython spread",
+                BenchmarkPairedStatistics.InterquartileSpread(cpythonSamples),
+                point.CpythonSpread);
+            VerifyPythonReStatistic(
+                definition.Id + " managed allocation",
+                BenchmarkPairedStatistics.Median(allocations),
+                point.ManagedAllocatedBytes);
+            VerifyPythonReStatistic(
+                definition.Id + " order effect",
+                BenchmarkPairedStatistics.Median(managedFirstRatios) /
+                    BenchmarkPairedStatistics.Median(cpythonFirstRatios),
+                point.OrderEffect);
         }
 
         var routes = family.Points.Select(static point => point.ManagedRoute)
@@ -118,11 +226,20 @@ internal static partial class PythonReBenchmarkReporter
             family.Points,
             static point => point.CpythonMedianMicroseconds,
             static point => point.CpythonSpread);
+        var maximumOrderEffect = family.Points.Max(static point =>
+            Math.Max(point.OrderEffect, 1 / point.OrderEffect));
+        var minimumLaneElapsedMilliseconds = family.Points
+            .SelectMany(static point => point.Samples)
+            .Min(static sample => Math.Min(
+                sample.ManagedElapsedMilliseconds,
+                sample.CpythonElapsedMilliseconds));
         var gatePassed = routeStable &&
             managedFit.MaximumRelativeResidual <= 0.25 &&
             cpythonFit.MaximumRelativeResidual <= 0.25 &&
             managedFit.MaximumSpread <= 1.10 &&
-            cpythonFit.MaximumSpread <= 1.10;
+            cpythonFit.MaximumSpread <= 1.10 &&
+            maximumOrderEffect <= 1.10 &&
+            minimumLaneElapsedMilliseconds >= 5;
         VerifyPythonReStatistic(
             definition.Id + " managed scaling slope",
             managedFit.Slope,
@@ -147,11 +264,24 @@ internal static partial class PythonReBenchmarkReporter
             definition.Id + " CPython scaling spread",
             cpythonFit.MaximumSpread,
             family.CpythonMaximumSpread);
+        VerifyPythonReStatistic(
+            definition.Id + " maximum order effect",
+            maximumOrderEffect,
+            family.MaximumOrderEffect);
+        VerifyPythonReStatistic(
+            definition.Id + " minimum lane duration",
+            minimumLaneElapsedMilliseconds,
+            family.MinimumLaneElapsedMilliseconds);
         if (family.RouteStable != routeStable ||
             !family.ManagedRoute.Equals(string.Join(" | ", routes), StringComparison.Ordinal) ||
             !family.FitGate.Equals(gatePassed ? "Pass" : "Reject", StringComparison.Ordinal) ||
             !family.FitGateReason.Equals(
-                DescribePythonReScalingGate(routeStable, managedFit, cpythonFit),
+                DescribePythonReScalingGate(
+                    routeStable,
+                    managedFit,
+                    cpythonFit,
+                    maximumOrderEffect,
+                    minimumLaneElapsedMilliseconds),
                 StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -164,6 +294,10 @@ internal static partial class PythonReBenchmarkReporter
     private static bool IsPythonReSha256(string value) =>
         value.Length == 64 && value.All(static character =>
             character is >= '0' and <= '9' or >= 'A' and <= 'F');
+
+    private static bool IsPythonReCommitId(string value) =>
+        value.Length is >= 12 and <= 64 && value.All(static character =>
+            character is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
 
     private static int RefreshPythonReScaling(int samples, string? requestedFamily)
     {
@@ -187,11 +321,19 @@ internal static partial class PythonReBenchmarkReporter
             : new SortedDictionary<string, PythonReScalingFamilyMeasurement>(
                 snapshot.ScalingFamilies,
                 StringComparer.Ordinal);
-        foreach (var definition in definitions.Where(definition =>
-                     requestedFamily is null || definition.Id.Equals(requestedFamily, StringComparison.Ordinal)))
+        foreach (var indexedDefinition in definitions
+                     .Select(static (definition, index) => (Definition: definition, Index: index))
+                     .Where(item => requestedFamily is null ||
+                         item.Definition.Id.Equals(requestedFamily, StringComparison.Ordinal)))
         {
+            var definition = indexedDefinition.Definition;
             Console.WriteLine($"Scaling family     : {definition.Id}");
-            measurements[definition.Id] = MeasurePythonReScalingFamily(definition, samples, worker);
+            measurements[definition.Id] = MeasurePythonReScalingFamily(
+                definition,
+                samples,
+                worker,
+                processorScope,
+                indexedDefinition.Index);
         }
 
         WriteSnapshot(new PythonReBenchmarkSnapshot
@@ -214,12 +356,18 @@ internal static partial class PythonReBenchmarkReporter
     private static PythonReScalingFamilyMeasurement MeasurePythonReScalingFamily(
         PythonReScalingFamilyDefinition definition,
         int samples,
-        CpythonStreamWorker worker)
+        CpythonStreamWorker worker,
+        BenchmarkProcessorScope processorScope,
+        int familyIndex)
     {
         List<PythonReScalingPointMeasurement> points = [];
-        foreach (var definitionPoint in definition.Points)
+        for (var pointIndex = 0; pointIndex < definition.Points.Length; pointIndex++)
         {
-            points.Add(MeasurePythonReScalingPoint(definitionPoint, samples, worker));
+            points.Add(MeasurePythonReScalingPoint(
+                definition.Points[pointIndex],
+                samples,
+                worker,
+                cpythonFirst: ((familyIndex + pointIndex) & 1) != 0));
         }
 
         var routes = points.Select(static point => point.ManagedRoute)
@@ -234,11 +382,20 @@ internal static partial class PythonReBenchmarkReporter
             static point => point.CpythonMedianMicroseconds,
             static point => point.CpythonSpread);
         var routeStable = routes.Length == 1;
+        var maximumOrderEffect = points.Max(static point =>
+            Math.Max(point.OrderEffect, 1 / point.OrderEffect));
+        var minimumLaneElapsedMilliseconds = points
+            .SelectMany(static point => point.Samples)
+            .Min(static sample => Math.Min(
+                sample.ManagedElapsedMilliseconds,
+                sample.CpythonElapsedMilliseconds));
         var fitGatePassed = routeStable &&
             managedFit.MaximumRelativeResidual <= 0.25 &&
             cpythonFit.MaximumRelativeResidual <= 0.25 &&
             managedFit.MaximumSpread <= 1.10 &&
-            cpythonFit.MaximumSpread <= 1.10;
+            cpythonFit.MaximumSpread <= 1.10 &&
+            maximumOrderEffect <= 1.10 &&
+            minimumLaneElapsedMilliseconds >= 5;
         return new PythonReScalingFamilyMeasurement
         {
             Dimension = definition.Dimension,
@@ -248,6 +405,9 @@ internal static partial class PythonReBenchmarkReporter
             MeasuredAtUtc = DateTimeOffset.UtcNow,
             ManagedEnvironment = CaptureEnvironment(),
             CpythonEnvironment = worker.Environment,
+            CpuPolicy = processorScope.Policy,
+            CpuAffinityMask = processorScope.AffinityMask,
+            CpuEfficiencyClass = processorScope.EfficiencyClass,
             ManagedRoute = string.Join(" | ", routes),
             RouteStable = routeStable,
             ManagedSlopePerScaleUnit = managedFit.Slope,
@@ -256,11 +416,15 @@ internal static partial class PythonReBenchmarkReporter
             CpythonMaximumRelativeResidual = cpythonFit.MaximumRelativeResidual,
             ManagedMaximumSpread = managedFit.MaximumSpread,
             CpythonMaximumSpread = cpythonFit.MaximumSpread,
+            MaximumOrderEffect = maximumOrderEffect,
+            MinimumLaneElapsedMilliseconds = minimumLaneElapsedMilliseconds,
             FitGate = fitGatePassed ? "Pass" : "Reject",
             FitGateReason = DescribePythonReScalingGate(
                 routeStable,
                 managedFit,
-                cpythonFit),
+                cpythonFit,
+                maximumOrderEffect,
+                minimumLaneElapsedMilliseconds),
             Points = points,
         };
     }
@@ -268,7 +432,8 @@ internal static partial class PythonReBenchmarkReporter
     private static PythonReScalingPointMeasurement MeasurePythonReScalingPoint(
         PythonReScalingPointDefinition definition,
         int samples,
-        CpythonStreamWorker worker)
+        CpythonStreamWorker worker,
+        bool cpythonFirst)
     {
         var benchmarkCase = definition.BenchmarkCase;
         var context = new PythonReBenchmarkContext(benchmarkCase);
@@ -294,13 +459,13 @@ internal static partial class PythonReBenchmarkReporter
             CpythonStreamLane.Predecoded,
             PythonReScalingTargetSampleMilliseconds,
             PythonReScalingMaximumIterations).Iterations;
-        WarmOneShotManaged(
+        var managedWarmup = WarmOneShotManaged(
             context,
             managedIterations,
             expectedChecksum,
             expectedSemanticDigest,
             expectedConsumptionToken);
-        _ = worker.Warm(
+        var cpythonWarmup = worker.Warm(
             CpythonStreamLane.Predecoded,
             cpythonIterations,
             minimumMilliseconds: 20,
@@ -311,9 +476,18 @@ internal static partial class PythonReBenchmarkReporter
         var cpython = new double[samples];
         var ratios = new double[samples];
         var allocations = new long[samples];
+        var managedMilliseconds = new double[samples];
+        var cpythonMilliseconds = new double[samples];
+        var managedGcCollections = new int[samples][];
+        var cpythonGcCollections = new int[samples][];
+        var laneOrders = new PythonRePairLaneOrder[samples];
         for (var sample = 0; sample < samples; sample++)
         {
-            if (sample % 2 == 0)
+            var cpythonRunsFirst = cpythonFirst ^ (sample % 2 != 0);
+            laneOrders[sample] = cpythonRunsFirst
+                ? PythonRePairLaneOrder.CpythonFirst
+                : PythonRePairLaneOrder.ManagedFirst;
+            if (!cpythonRunsFirst)
             {
                 MeasureManaged();
                 MeasureCpython();
@@ -328,7 +502,11 @@ internal static partial class PythonReBenchmarkReporter
 
             void MeasureManaged()
             {
+                var gcBefore = Enumerable.Range(0, 3).Select(GC.CollectionCount).ToArray();
                 var batch = context.MeasurePythonReQualificationBatch(managedIterations);
+                managedGcCollections[sample] = Enumerable.Range(0, 3)
+                    .Select(generation => GC.CollectionCount(generation) - gcBefore[generation])
+                    .ToArray();
                 VerifyManagedResult(
                     batch,
                     expectedChecksum,
@@ -337,6 +515,7 @@ internal static partial class PythonReBenchmarkReporter
                     managedIterations,
                     "published scaling");
                 managed[sample] = batch.Elapsed.TotalMicroseconds / managedIterations;
+                managedMilliseconds[sample] = batch.Elapsed.TotalMilliseconds;
                 allocations[sample] = batch.AllocatedBytes / managedIterations;
             }
 
@@ -344,6 +523,8 @@ internal static partial class PythonReBenchmarkReporter
             {
                 var response = worker.Measure(CpythonStreamLane.Predecoded, cpythonIterations);
                 cpython[sample] = response.ElapsedNanoseconds / (double)cpythonIterations / 1_000;
+                cpythonMilliseconds[sample] = response.ElapsedNanoseconds / 1_000_000d;
+                cpythonGcCollections[sample] = response.GcCollections;
             }
         }
 
@@ -351,6 +532,18 @@ internal static partial class PythonReBenchmarkReporter
             ratios.Select(static ratio => Math.Log(ratio)).ToArray(),
             PythonReQualificationBootstrapSeed,
             PythonReQualificationBootstrapResamples);
+        var managedFirstRatios = laneOrders
+            .Select((order, index) => new PythonReOrderedRatio(order, ratios[index]))
+            .Where(static sample => sample.Order == PythonRePairLaneOrder.ManagedFirst)
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var cpythonFirstRatios = laneOrders
+            .Select((order, index) => new PythonReOrderedRatio(order, ratios[index]))
+            .Where(static sample => sample.Order == PythonRePairLaneOrder.CpythonFirst)
+            .Select(static sample => sample.Ratio)
+            .ToArray();
+        var orderEffect = BenchmarkPairedStatistics.Median(managedFirstRatios) /
+            BenchmarkPairedStatistics.Median(cpythonFirstRatios);
         return new PythonReScalingPointMeasurement
         {
             Label = definition.Label,
@@ -373,6 +566,25 @@ internal static partial class PythonReBenchmarkReporter
             CpythonSpread = BenchmarkPairedStatistics.InterquartileSpread(cpython),
             ManagedAllocatedBytes = (long)Math.Round(BenchmarkPairedStatistics.Median(
                 allocations.Select(static allocation => (double)allocation))),
+            ManagedWarmupCalls = managedWarmup.Iterations,
+            ManagedWarmupMilliseconds = managedWarmup.Elapsed.TotalMilliseconds,
+            CpythonWarmupCalls = cpythonWarmup.Iterations,
+            CpythonWarmupMilliseconds = cpythonWarmup.ElapsedNanoseconds / 1_000_000d,
+            OrderEffect = orderEffect,
+            Samples = Enumerable.Range(0, samples)
+                .Select(index => new PythonReScalingSampleMeasurement
+                {
+                    Order = laneOrders[index].ToString(),
+                    ManagedMicroseconds = managed[index],
+                    CpythonMicroseconds = cpython[index],
+                    Ratio = ratios[index],
+                    ManagedElapsedMilliseconds = managedMilliseconds[index],
+                    CpythonElapsedMilliseconds = cpythonMilliseconds[index],
+                    ManagedAllocatedBytes = allocations[index],
+                    ManagedGcCollections = managedGcCollections[index],
+                    CpythonGcCollections = cpythonGcCollections[index],
+                })
+                .ToList(),
         };
     }
 
@@ -410,7 +622,9 @@ internal static partial class PythonReBenchmarkReporter
     private static string DescribePythonReScalingGate(
         bool routeStable,
         PythonRePublishedScalingFit managed,
-        PythonRePublishedScalingFit cpython)
+        PythonRePublishedScalingFit cpython,
+        double maximumOrderEffect,
+        double minimumLaneElapsedMilliseconds)
     {
         List<string> failures = [];
         if (!routeStable)
@@ -429,8 +643,18 @@ internal static partial class PythonReBenchmarkReporter
             failures.Add($"maximum spread is {managed.MaximumSpread:F3}/{cpython.MaximumSpread:F3}");
         }
 
+        if (maximumOrderEffect > 1.10)
+        {
+            failures.Add($"maximum symmetric order effect is {maximumOrderEffect:F3}");
+        }
+
+        if (minimumLaneElapsedMilliseconds < 5)
+        {
+            failures.Add($"minimum lane duration is {minimumLaneElapsedMilliseconds:F3} ms");
+        }
+
         return failures.Count == 0
-            ? "Stable route, residuals at most 25%, and lane spreads at most 1.10."
+            ? "Stable route, residuals at most 25%, lane spreads and order effect at most 1.10, and every lane at least 5 ms."
             : string.Join("; ", failures) + ".";
     }
 

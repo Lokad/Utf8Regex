@@ -416,7 +416,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             writer.WriteLine("### Scaling evidence");
             writer.WriteLine();
-            writer.WriteLine("These bounded, warmed families vary one named dimension while preserving equivalent managed and CPython result contracts. They are mechanism and complexity guards, not extra warm-Status rows: a point ratio never declares an implementation winner, and a passing fit gate only says that the local trend is stable enough to interpret. A rejected family remains visible but cannot support a scaling claim.");
+            writer.WriteLine("These bounded, warmed families vary one named dimension while preserving equivalent managed and CPython result contracts. They are mechanism and complexity guards, not extra warm-Status rows: a point ratio never declares an implementation winner, and a passing fit gate only says that the local trend is stable enough to interpret. A rejected family remains visible but cannot support a scaling claim. The JSON retains every alternating paired sample, lane order, batch duration, managed allocation, GC deltas, warmup, and CPU placement so noisy curves remain auditable.");
             writer.WriteLine();
             if (snapshot.ScalingFamilies.Count == 0)
             {
@@ -425,15 +425,16 @@ internal static partial class PythonReBenchmarkReporter
                 return;
             }
 
-            writer.WriteLine("| Family | Dimension | Operation | Points | Managed route | Fit gate | Maximum residual M / C | Maximum spread M / C |");
-            writer.WriteLine("|---|---|---|---:|---|---|---:|---:|");
+            writer.WriteLine("| Family | Dimension | Operation | Points | Managed route | Fit gate | Maximum residual M / C | Maximum spread M / C | Max order effect | Min lane |");
+            writer.WriteLine("|---|---|---|---:|---|---|---:|---:|---:|---:|");
             foreach (var (id, family) in snapshot.ScalingFamilies)
             {
                 writer.WriteLine(
                     $"| `{id}` | {family.Dimension} | `{family.Operation}` | {family.Points.Count} | " +
                     $"`{EscapeMarkdownTable(family.ManagedRoute)}` | **{family.FitGate}** | " +
                     $"{family.ManagedMaximumRelativeResidual:P1} / {family.CpythonMaximumRelativeResidual:P1} | " +
-                    $"{family.ManagedMaximumSpread:F3} / {family.CpythonMaximumSpread:F3} |");
+                    $"{family.ManagedMaximumSpread:F3} / {family.CpythonMaximumSpread:F3} | " +
+                    $"{family.MaximumOrderEffect:F3} | {family.MinimumLaneElapsedMilliseconds:F1} ms |");
             }
 
             writer.WriteLine();
@@ -447,8 +448,8 @@ internal static partial class PythonReBenchmarkReporter
                     $"Robust slopes are {family.ManagedSlopePerScaleUnit:N6} us/unit managed and " +
                     $"{family.CpythonSlopePerScaleUnit:N6} us/unit CPython.");
                 writer.WriteLine();
-                writer.WriteLine("| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Managed allocation |");
-                writer.WriteLine("|---|---:|---:|---:|---:|---:|---:|---:|---:|");
+                writer.WriteLine("| Point | Scale | Input | Work | Output | PythonRe elapsed | CPython elapsed | Rstrong [paired 95%] | Order effect | Managed allocation |");
+                writer.WriteLine("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
                 foreach (var point in family.Points)
                 {
                     writer.WriteLine(
@@ -456,7 +457,7 @@ internal static partial class PythonReBenchmarkReporter
                         $"{point.WorkUnits:N0} | {point.OutputUtf8Bytes:N0} B | " +
                         $"{point.ManagedMedianMicroseconds:N3} us | {point.CpythonMedianMicroseconds:N3} us | " +
                         $"{point.RatioMedian:F3}x [{point.RatioLower95:F3}, {point.RatioUpper95:F3}] | " +
-                        $"{point.ManagedAllocatedBytes:N0} B |");
+                        $"{point.OrderEffect:F3} | {point.ManagedAllocatedBytes:N0} B |");
                 }
 
                 writer.WriteLine();

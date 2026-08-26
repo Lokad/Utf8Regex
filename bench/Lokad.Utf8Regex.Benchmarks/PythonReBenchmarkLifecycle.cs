@@ -172,6 +172,9 @@ internal sealed class PythonReScalingFamilyMeasurement
     public DateTimeOffset MeasuredAtUtc { get; init; }
     public PythonReBenchmarkEnvironment ManagedEnvironment { get; init; } = null!;
     public CpythonStreamEnvironment CpythonEnvironment { get; init; } = null!;
+    public string CpuPolicy { get; init; } = string.Empty;
+    public string CpuAffinityMask { get; init; } = string.Empty;
+    public int? CpuEfficiencyClass { get; init; }
     public string ManagedRoute { get; init; } = string.Empty;
     public bool RouteStable { get; init; }
     public double ManagedSlopePerScaleUnit { get; init; }
@@ -180,6 +183,8 @@ internal sealed class PythonReScalingFamilyMeasurement
     public double CpythonMaximumRelativeResidual { get; init; }
     public double ManagedMaximumSpread { get; init; }
     public double CpythonMaximumSpread { get; init; }
+    public double MaximumOrderEffect { get; init; }
+    public double MinimumLaneElapsedMilliseconds { get; init; }
     public string FitGate { get; init; } = string.Empty;
     public string FitGateReason { get; init; } = string.Empty;
     public List<PythonReScalingPointMeasurement> Points { get; init; } = [];
@@ -205,4 +210,23 @@ internal sealed class PythonReScalingPointMeasurement
     public double ManagedSpread { get; init; }
     public double CpythonSpread { get; init; }
     public long ManagedAllocatedBytes { get; init; }
+    public int ManagedWarmupCalls { get; init; }
+    public double ManagedWarmupMilliseconds { get; init; }
+    public int CpythonWarmupCalls { get; init; }
+    public double CpythonWarmupMilliseconds { get; init; }
+    public double OrderEffect { get; init; }
+    public List<PythonReScalingSampleMeasurement> Samples { get; init; } = [];
+}
+
+internal sealed class PythonReScalingSampleMeasurement
+{
+    public string Order { get; init; } = string.Empty;
+    public double ManagedMicroseconds { get; init; }
+    public double CpythonMicroseconds { get; init; }
+    public double Ratio { get; init; }
+    public double ManagedElapsedMilliseconds { get; init; }
+    public double CpythonElapsedMilliseconds { get; init; }
+    public long ManagedAllocatedBytes { get; init; }
+    public int[] ManagedGcCollections { get; init; } = [];
+    public int[] CpythonGcCollections { get; init; } = [];
 }

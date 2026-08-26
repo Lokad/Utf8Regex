@@ -291,7 +291,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonReScalingMaximumIterations);
     }
 
-    private static void WarmOneShotManaged(
+    private static PythonReWarmup WarmOneShotManaged(
         PythonReBenchmarkContext context,
         int iterations,
         int expectedChecksum,
@@ -316,6 +316,8 @@ internal static partial class PythonReBenchmarkReporter
                 "one-shot scaling warmup");
             calls += iterations;
         }
+
+        return new PythonReWarmup(calls, elapsed.Elapsed);
     }
 
     private static string BuildOneShotScalingSubject(
