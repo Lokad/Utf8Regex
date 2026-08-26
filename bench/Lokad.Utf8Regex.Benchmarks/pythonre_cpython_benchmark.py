@@ -31,6 +31,27 @@ WARMUP_SECONDS = 0.1
 MAX_WARMUP_CALLS = 65_536
 STREAM_CALIBRATION_PILOT_NANOSECONDS = 5_000_000
 STREAM_MAX_ITERATIONS = 10_000_000
+SEMANTIC_DIGEST_OFFSET = 0xCBF2_9CE4_8422_2325
+SEMANTIC_DIGEST_PRIME = 0x0000_0100_0000_01B3
+SEMANTIC_DIGEST_MASK = 0xFFFF_FFFF_FFFF_FFFF
+SEMANTIC_OPERATION_TAGS = {
+    "IsMatch": 1,
+    "Search": 2,
+    "Match": 3,
+    "FullMatch": 4,
+    "SearchDetailed": 5,
+    "Count": 6,
+    "FindAllStrings": 7,
+    "FindAllUtf8": 8,
+    "FindIterDetailed": 9,
+    "ReplaceString": 10,
+    "ReplaceUtf8": 11,
+    "SubnString": 12,
+    "SubnUtf8": 13,
+    "SubnEvaluatorString": 14,
+    "SplitStrings": 15,
+    "SubnEvaluatorUtf8": 16,
+}
 
 
 def to_int32(value: int) -> int:
@@ -59,12 +80,42 @@ def checksum_bytes(value: bytes) -> int:
     return checksum
 
 
+def digest_add(seed: int, *values: int) -> int:
+    for value in values:
+        seed = ((seed ^ (value & SEMANTIC_DIGEST_MASK)) * SEMANTIC_DIGEST_PRIME) & SEMANTIC_DIGEST_MASK
+    return seed
+
+
+def digest_string(seed: int, value: str) -> int:
+    encoded = value.encode("utf-16-le", "surrogatepass")
+    seed = digest_add(seed, 1, len(encoded) // 2)
+    for index in range(0, len(encoded), 2):
+        seed = digest_add(seed, encoded[index] | (encoded[index + 1] << 8))
+    return seed
+
+
+def digest_bytes(seed: int, value: bytes) -> int:
+    seed = digest_add(seed, 2, len(value))
+    for item in value:
+        seed = digest_add(seed, item)
+    return seed
+
+
 def build_utf16_offsets(value: str) -> tuple[int, ...]:
     offsets = [0]
     utf16_offset = 0
     for character in value:
         utf16_offset += 2 if ord(character) > 0xFFFF else 1
         offsets.append(utf16_offset)
+    return tuple(offsets)
+
+
+def build_utf8_offsets(value: str) -> tuple[int, ...]:
+    offsets = [0]
+    utf8_offset = 0
+    for character in value:
+        utf8_offset += len(character.encode("utf-8"))
+        offsets.append(utf8_offset)
     return tuple(offsets)
 
 
@@ -78,12 +129,13 @@ def simple_match_checksum(match: re.Match[str] | None, utf16_offsets: tuple[int,
     )
 
 
-DetailedGroup = tuple[bool, int, int, str]
+DetailedGroup = tuple[bool, int, int, int, int, str]
 DetailedMatch = tuple[DetailedGroup, ...] | None
 
 
 def materialize_detailed(
     match: re.Match[str] | None,
+    utf8_offsets: tuple[int, ...],
     utf16_offsets: tuple[int, ...],
 ) -> DetailedMatch:
     if match is None:
@@ -93,11 +145,13 @@ def materialize_detailed(
     for group_index in range(match.re.groups + 1):
         start, end = match.span(group_index)
         if start < 0:
-            groups.append((False, 0, 0, ""))
+            groups.append((False, 0, 0, 0, 0, ""))
         else:
             groups.append(
                 (
                     True,
+                    utf8_offsets[start],
+                    utf8_offsets[end],
                     utf16_offsets[start],
                     utf16_offsets[end],
                     match.group(group_index),
@@ -111,8 +165,14 @@ def detailed_checksum(match: DetailedMatch) -> int:
         return 0
 
     checksum = 1
-    for success, start, end, value in match:
-        checksum = combine(checksum, 1 if success else 0, start, end, checksum_string(value))
+    for success, _, _, start_utf16, end_utf16, value in match:
+        checksum = combine(
+            checksum,
+            1 if success else 0,
+            start_utf16,
+            end_utf16,
+            checksum_string(value),
+        )
     return checksum
 
 
@@ -137,6 +197,39 @@ def findall_checksum(values: list[Any], capture_count: int, encode_utf8: bool) -
     return checksum
 
 
+def digest_detailed(seed: int, match: DetailedMatch) -> int:
+    if match is None:
+        return digest_add(seed, 0)
+
+    seed = digest_add(seed, 1, len(match))
+    for success, start_bytes, end_bytes, start_utf16, end_utf16, value in match:
+        seed = digest_add(
+            seed,
+            1 if success else 0,
+            start_bytes,
+            end_bytes,
+            start_utf16,
+            end_utf16,
+        )
+        seed = digest_string(seed, value)
+    return seed
+
+
+def digest_findall(seed: int, values: list[Any], capture_count: int, encode_utf8: bool) -> int:
+    shape = 0 if capture_count == 0 else 1 if capture_count == 1 else 2
+    seed = digest_add(seed, shape, len(values))
+    if shape != 2:
+        for value in values:
+            seed = digest_bytes(seed, value) if encode_utf8 else digest_string(seed, value)
+        return seed
+
+    for value_tuple in values:
+        seed = digest_add(seed, len(value_tuple))
+        for value in value_tuple:
+            seed = digest_bytes(seed, value) if encode_utf8 else digest_string(seed, value)
+    return seed
+
+
 def flags_from_options(options: int) -> re.RegexFlag:
     flags = re.NOFLAG
     if options & (1 << 0):
@@ -159,10 +252,12 @@ class CaseRunner:
         self.operation = request["Operation"]
         self.input_bytes = base64.b64decode(request["InputBase64"], validate=True)
         self.input_text = self.input_bytes.decode("utf-8", "strict")
+        self.utf8_offsets = build_utf8_offsets(self.input_text)
         self.utf16_offsets = build_utf16_offsets(self.input_text)
         self.replacement = request["Replacement"]
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
         self.callback_checksum = 0
+        self.callback_digest = SEMANTIC_DIGEST_OFFSET
         self.evaluator = self.replace_callback
 
     def execute_predecoded(self) -> Any:
@@ -182,7 +277,11 @@ class CaseRunner:
         if operation == "FullMatch":
             return self.pattern.fullmatch(input_text)
         if operation == "SearchDetailed":
-            return materialize_detailed(self.pattern.search(input_text), self.utf16_offsets)
+            return materialize_detailed(
+                self.pattern.search(input_text),
+                self.utf8_offsets,
+                self.utf16_offsets,
+            )
         if operation == "Count":
             return sum(1 for _ in self.pattern.finditer(input_text))
         if operation == "FindAllStrings":
@@ -191,7 +290,7 @@ class CaseRunner:
             return self.encode_findall(self.pattern.findall(input_text))
         if operation == "FindIterDetailed":
             return [
-                materialize_detailed(match, self.utf16_offsets)
+                materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
                 for match in self.pattern.finditer(input_text)
             ]
         if operation == "ReplaceString":
@@ -231,7 +330,11 @@ class CaseRunner:
                 result = pattern.fullmatch(input_text)
         elif operation == "SearchDetailed":
             for _ in range(iterations):
-                result = materialize_detailed(pattern.search(input_text), self.utf16_offsets)
+                result = materialize_detailed(
+                    pattern.search(input_text),
+                    self.utf8_offsets,
+                    self.utf16_offsets,
+                )
         elif operation == "Count":
             for _ in range(iterations):
                 result = sum(1 for _ in pattern.finditer(input_text))
@@ -251,7 +354,7 @@ class CaseRunner:
         elif operation == "FindIterDetailed":
             for _ in range(iterations):
                 result = [
-                    materialize_detailed(match, self.utf16_offsets)
+                    materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
                     for match in pattern.finditer(input_text)
                 ]
         elif operation == "ReplaceString":
@@ -270,13 +373,20 @@ class CaseRunner:
         elif operation == "SubnEvaluatorString":
             for _ in range(iterations):
                 self.callback_checksum = 0
+                self.callback_digest = SEMANTIC_DIGEST_OFFSET
                 result_text, count = pattern.subn(self.evaluator, input_text)
-                result = result_text, count, self.callback_checksum
+                result = result_text, count, self.callback_checksum, self.callback_digest
         elif operation == "SubnEvaluatorUtf8":
             for _ in range(iterations):
                 self.callback_checksum = 0
+                self.callback_digest = SEMANTIC_DIGEST_OFFSET
                 result_text, count = pattern.subn(self.evaluator, input_text)
-                result = result_text.encode("utf-8"), count, self.callback_checksum
+                result = (
+                    result_text.encode("utf-8"),
+                    count,
+                    self.callback_checksum,
+                    self.callback_digest,
+                )
         elif operation == "SplitStrings":
             for _ in range(iterations):
                 result = pattern.split(input_text)
@@ -298,16 +408,25 @@ class CaseRunner:
         return [tuple(value.encode("utf-8") for value in item) for item in values]
 
     def replace_callback(self, match: re.Match[str]) -> str:
+        detailed = materialize_detailed(match, self.utf8_offsets, self.utf16_offsets)
         self.callback_checksum = combine(
             self.callback_checksum,
-            detailed_checksum(materialize_detailed(match, self.utf16_offsets)),
+            detailed_checksum(detailed),
         )
+        self.callback_digest = digest_add(self.callback_digest, 0xCA11_BACC)
+        self.callback_digest = digest_detailed(self.callback_digest, detailed)
         return self.replacement
 
-    def subn_evaluator(self, input_text: str, encode_utf8: bool) -> tuple[Any, int, int]:
+    def subn_evaluator(self, input_text: str, encode_utf8: bool) -> tuple[Any, int, int, int]:
         self.callback_checksum = 0
+        self.callback_digest = SEMANTIC_DIGEST_OFFSET
         result, count = self.pattern.subn(self.evaluator, input_text)
-        return (result.encode("utf-8") if encode_utf8 else result), count, self.callback_checksum
+        return (
+            result.encode("utf-8") if encode_utf8 else result,
+            count,
+            self.callback_checksum,
+            self.callback_digest,
+        )
 
     def checksum(self, result: Any) -> int:
         operation = self.operation
@@ -335,7 +454,7 @@ class CaseRunner:
             value_checksum = checksum_bytes(value) if isinstance(value, bytes) else checksum_string(value)
             return combine(value_checksum, count)
         if operation in {"SubnEvaluatorString", "SubnEvaluatorUtf8"}:
-            value, count, callback_checksum = result
+            value, count, callback_checksum, _ = result
             value_checksum = checksum_bytes(value) if isinstance(value, bytes) else checksum_string(value)
             return combine(combine(value_checksum, count), callback_checksum)
         if operation == "SplitStrings":
@@ -343,6 +462,58 @@ class CaseRunner:
             for value in result:
                 checksum = combine(checksum, -1 if value is None else checksum_string(value))
             return checksum
+        raise ValueError(f"Unsupported PythonRe operation: {operation}")
+
+    def semantic_digest(self, result: Any) -> int:
+        operation = self.operation
+        digest = digest_add(SEMANTIC_DIGEST_OFFSET, SEMANTIC_OPERATION_TAGS[operation])
+        if operation == "IsMatch":
+            return digest_add(digest, 1 if result else 0)
+        if operation in {"Search", "Match", "FullMatch"}:
+            if result is None:
+                return digest_add(digest, 0)
+            start, end = result.span()
+            digest = digest_add(
+                digest,
+                1,
+                self.utf8_offsets[start],
+                self.utf8_offsets[end],
+                self.utf16_offsets[start],
+                self.utf16_offsets[end],
+            )
+            return digest_string(digest, result.group())
+        if operation == "SearchDetailed":
+            return digest_detailed(digest, result)
+        if operation == "Count":
+            return digest_add(digest, result)
+        if operation == "FindAllStrings":
+            return digest_findall(digest, result, self.pattern.groups, False)
+        if operation == "FindAllUtf8":
+            return digest_findall(digest, result, self.pattern.groups, True)
+        if operation == "FindIterDetailed":
+            digest = digest_add(digest, len(result))
+            for match in result:
+                digest = digest_detailed(digest, match)
+            return digest
+        if operation in {"ReplaceString", "ReplaceUtf8"}:
+            return digest_bytes(digest, result) if isinstance(result, bytes) else digest_string(digest, result)
+        if operation in {"SubnString", "SubnUtf8"}:
+            value, count = result
+            digest = digest_bytes(digest, value) if isinstance(value, bytes) else digest_string(digest, value)
+            return digest_add(digest, count)
+        if operation in {"SubnEvaluatorString", "SubnEvaluatorUtf8"}:
+            value, count, _, callback_digest = result
+            digest = digest_bytes(digest, value) if isinstance(value, bytes) else digest_string(digest, value)
+            return digest_add(digest, count, callback_digest)
+        if operation == "SplitStrings":
+            digest = digest_add(digest, len(result))
+            for value in result:
+                if value is None:
+                    digest = digest_add(digest, 0)
+                else:
+                    digest = digest_add(digest, 1)
+                    digest = digest_string(digest, value)
+            return digest
         raise ValueError(f"Unsupported PythonRe operation: {operation}")
 
 
@@ -501,19 +672,27 @@ def measure_stream_lane(
     lane: str,
     iterations: int,
     expected_checksum: int,
+    expected_semantic_digest: int,
 ) -> dict[str, Any]:
     collections_before = [entry["collections"] for entry in gc.get_stats()]
     process_started = time.process_time_ns()
     if lane == "Predecoded":
         elapsed, result = runner.execute_predecoded_batch(iterations)
         checksum = runner.checksum(result)
+        semantic_digest = runner.semantic_digest(result)
         if checksum != expected_checksum:
             raise RuntimeError(
                 "CPython streaming result disagrees with preflight: "
                 f"expected {expected_checksum}, actual {checksum}."
             )
+        if semantic_digest != expected_semantic_digest:
+            raise RuntimeError(
+                "CPython streaming semantic digest disagrees with preflight: "
+                f"expected {expected_semantic_digest}, actual {semantic_digest}."
+            )
     elif lane == "EmptyLoop":
         elapsed, checksum = runner.execute_empty_batch(iterations)
+        semantic_digest = 0
     else:
         raise ValueError(f"Unsupported CPython streaming lane: {lane}")
     process_elapsed = time.process_time_ns() - process_started
@@ -524,6 +703,7 @@ def measure_stream_lane(
         "ElapsedNanoseconds": elapsed,
         "ProcessCpuNanoseconds": process_elapsed,
         "Checksum": checksum,
+        "SemanticDigest": semantic_digest,
         "GcCollections": [
             after - before
             for before, after in zip(collections_before, collections_after, strict=True)
@@ -544,6 +724,7 @@ def run_stream_worker() -> int:
     )
     runner: CaseRunner | None = None
     expected_checksum = 0
+    expected_semantic_digest = 0
     for line in sys.stdin:
         if not line.strip():
             continue
@@ -559,16 +740,24 @@ def run_stream_worker() -> int:
                 decoded_result = runner.execute_decode_then_re()
                 expected_checksum = runner.checksum(predecoded_result)
                 decoded_checksum = runner.checksum(decoded_result)
+                expected_semantic_digest = runner.semantic_digest(predecoded_result)
+                decoded_semantic_digest = runner.semantic_digest(decoded_result)
                 if expected_checksum != decoded_checksum:
                     raise RuntimeError(
                         "CPython predecoded/decode preflight checksums differ: "
                         f"{expected_checksum} versus {decoded_checksum}."
+                    )
+                if expected_semantic_digest != decoded_semantic_digest:
+                    raise RuntimeError(
+                        "CPython predecoded/decode semantic digests differ: "
+                        f"{expected_semantic_digest} versus {decoded_semantic_digest}."
                     )
                 write_stream_message(
                     {
                         "ProtocolVersion": STREAM_PROTOCOL_VERSION,
                         "Kind": "Prepared",
                         "Checksum": expected_checksum,
+                        "SemanticDigest": expected_semantic_digest,
                         "InputUtf8Bytes": len(runner.input_bytes),
                         "InputCodePoints": len(runner.input_text),
                         "InputUtf16CodeUnits": runner.utf16_offsets[-1],
@@ -593,7 +782,13 @@ def run_stream_worker() -> int:
                 raise ValueError("Lane must be a string.")
             if kind == "Measure":
                 iterations = require_positive_integer(command, "Iterations", STREAM_MAX_ITERATIONS)
-                result = measure_stream_lane(runner, lane, iterations, expected_checksum)
+                result = measure_stream_lane(
+                    runner,
+                    lane,
+                    iterations,
+                    expected_checksum,
+                    expected_semantic_digest,
+                )
                 result.update({"ProtocolVersion": STREAM_PROTOCOL_VERSION, "Kind": "Measured"})
                 write_stream_message(result)
                 continue
@@ -610,7 +805,13 @@ def run_stream_worker() -> int:
                     STREAM_MAX_ITERATIONS,
                 )
                 pilot_iterations = 1
-                pilot = measure_stream_lane(runner, lane, pilot_iterations, expected_checksum)
+                pilot = measure_stream_lane(
+                    runner,
+                    lane,
+                    pilot_iterations,
+                    expected_checksum,
+                    expected_semantic_digest,
+                )
                 while (
                     pilot["ElapsedNanoseconds"] < STREAM_CALIBRATION_PILOT_NANOSECONDS
                     and pilot_iterations < maximum_iterations
@@ -618,7 +819,13 @@ def run_stream_worker() -> int:
                     elapsed = max(pilot["ElapsedNanoseconds"], 1)
                     growth = max(2, math.ceil(STREAM_CALIBRATION_PILOT_NANOSECONDS / elapsed))
                     pilot_iterations = min(maximum_iterations, pilot_iterations * growth)
-                    pilot = measure_stream_lane(runner, lane, pilot_iterations, expected_checksum)
+                    pilot = measure_stream_lane(
+                        runner,
+                        lane,
+                        pilot_iterations,
+                        expected_checksum,
+                        expected_semantic_digest,
+                    )
 
                 calibrated_iterations = min(
                     maximum_iterations,
@@ -634,6 +841,7 @@ def run_stream_worker() -> int:
                         lane,
                         calibrated_iterations,
                         expected_checksum,
+                        expected_semantic_digest,
                     )
                     if 30_000_000 <= calibrated["ElapsedNanoseconds"] <= 50_000_000:
                         break
@@ -670,7 +878,13 @@ def run_stream_worker() -> int:
                 batches = 0
                 checksum = expected_checksum
                 while batches < maximum_batches:
-                    result = measure_stream_lane(runner, lane, iterations, expected_checksum)
+                    result = measure_stream_lane(
+                        runner,
+                        lane,
+                        iterations,
+                        expected_checksum,
+                        expected_semantic_digest,
+                    )
                     checksum = result["Checksum"]
                     calls += iterations
                     batches += 1

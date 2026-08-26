@@ -67,6 +67,12 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 1 && args[0].Equals("--verify-pythonre-semantic-digests", StringComparison.Ordinal))
+        {
+            exitCode = VerifyPythonReSemanticDigests();
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-shaping-case", StringComparison.Ordinal))
         {
             exitCode = MeasureShapingCase(
@@ -1228,6 +1234,7 @@ internal sealed class PythonReBenchmarkContext
     private readonly byte[] _replacementBytes;
     private readonly int _captureCount;
     private int _callbackChecksum;
+    private ulong _callbackSemanticDigest;
 
     internal PythonReBenchmarkContext(PythonReBenchmarkCase benchmarkCase)
     {
@@ -1276,7 +1283,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    result ? 1 : 0);
+                    result ? 1 : 0,
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.Search:
             {
@@ -1289,7 +1297,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.Match:
             {
@@ -1302,7 +1311,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.FullMatch:
             {
@@ -1315,7 +1325,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.SearchDetailed:
             {
@@ -1328,7 +1339,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.Count:
             {
@@ -1341,7 +1353,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    result);
+                    result,
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.FindAllStrings:
             {
@@ -1354,7 +1367,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.FindAllUtf8:
             {
@@ -1367,7 +1381,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.FindIterDetailed:
             {
@@ -1380,7 +1395,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.ReplaceString:
             {
@@ -1393,7 +1409,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.ReplaceUtf8:
             {
@@ -1406,7 +1423,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.SubnString:
             {
@@ -1419,7 +1437,8 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.SubnUtf8:
             {
@@ -1432,53 +1451,68 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             case PythonReBenchmarkOperation.SubnEvaluatorString:
             {
                 Utf8PythonSubnResult result = default;
                 var callbackChecksum = 0;
+                var callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
                     _callbackChecksum = 0;
+                    _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                     result = _pythonRegex.SubnToString(
                         InputBytes,
                         this,
                         static (context, match) =>
                         {
                             context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                            context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
+                                context._callbackSemanticDigest,
+                                match);
                             return context._case.Replacement;
                         });
                     callbackChecksum = _callbackChecksum;
+                    callbackSemanticDigest = _callbackSemanticDigest;
                 }
 
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Combine(Checksum(result), callbackChecksum));
+                    Combine(Checksum(result), callbackChecksum),
+                    SemanticDigest(_case.Operation, result, callbackSemanticDigest));
             }
             case PythonReBenchmarkOperation.SubnEvaluatorUtf8:
             {
                 Utf8PythonSubnUtf8Result result = default;
                 var callbackChecksum = 0;
+                var callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
                     _callbackChecksum = 0;
+                    _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
                     result = _pythonRegex.Subn(
                         InputBytes,
                         this,
                         static (context, match) =>
                         {
                             context._callbackChecksum = Combine(context._callbackChecksum, Checksum(match));
+                            context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
+                                context._callbackSemanticDigest,
+                                match);
                             return context._replacementBytes;
                         });
                     callbackChecksum = _callbackChecksum;
+                    callbackSemanticDigest = _callbackSemanticDigest;
                 }
 
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Combine(Checksum(result), callbackChecksum));
+                    Combine(Checksum(result), callbackChecksum),
+                    SemanticDigest(_case.Operation, result, callbackSemanticDigest));
             }
             case PythonReBenchmarkOperation.SplitStrings:
             {
@@ -1491,18 +1525,24 @@ internal sealed class PythonReBenchmarkContext
                 return Complete(
                     Stopwatch.GetTimestamp(),
                     GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result));
+                    Checksum(result),
+                    SemanticDigest(_case.Operation, result));
             }
             default:
                 throw new InvalidOperationException();
         }
 
-        PythonReBenchmarkBatch Complete(long ended, long allocatedAfter, int checksum)
+        PythonReBenchmarkBatch Complete(
+            long ended,
+            long allocatedAfter,
+            int checksum,
+            ulong semanticDigest)
         {
             return new PythonReBenchmarkBatch(
                 Stopwatch.GetElapsedTime(started, ended),
                 allocatedAfter - allocatedBefore,
-                checksum);
+                checksum,
+                semanticDigest);
         }
     }
 
@@ -1524,6 +1564,55 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),
         PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),
         PythonReBenchmarkOperation.SplitStrings => Checksum(_pythonRegex.SplitToStrings(InputBytes)),
+        _ => throw new InvalidOperationException(),
+    };
+
+    internal ulong ExecutePythonReSemanticDigest() => _case.Operation switch
+    {
+        PythonReBenchmarkOperation.IsMatch => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.IsMatch(InputBytes)),
+        PythonReBenchmarkOperation.Search => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.Search(InputBytes)),
+        PythonReBenchmarkOperation.Match => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.Match(InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.FullMatch(InputBytes)),
+        PythonReBenchmarkOperation.SearchDetailed => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.SearchDetailedData(InputBytes)),
+        PythonReBenchmarkOperation.Count => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.Count(InputBytes)),
+        PythonReBenchmarkOperation.FindAllStrings => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.FindAllToStrings(InputBytes)),
+        PythonReBenchmarkOperation.FindAllUtf8 => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.FindAllToUtf8(InputBytes)),
+        PythonReBenchmarkOperation.FindIterDetailed => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.FindIterDetailed(InputBytes)),
+        PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.ReplaceToString(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.Replace(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnString => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.SubnToString(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.Subn(InputBytes, _case.Replacement)),
+        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorStringSemanticDigest(),
+        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8SemanticDigest(),
+        PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
+            _case.Operation,
+            _pythonRegex.SplitToStrings(InputBytes)),
         _ => throw new InvalidOperationException(),
     };
 
@@ -1751,6 +1840,38 @@ internal sealed class PythonReBenchmarkContext
         return Combine(Checksum(result), _callbackChecksum);
     }
 
+    private ulong ExecutePythonReEvaluatorStringSemanticDigest()
+    {
+        _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
+        var result = _pythonRegex.SubnToString(
+            InputBytes,
+            this,
+            static (context, match) =>
+            {
+                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
+                    context._callbackSemanticDigest,
+                    match);
+                return context._case.Replacement;
+            });
+        return SemanticDigest(_case.Operation, result, _callbackSemanticDigest);
+    }
+
+    private ulong ExecutePythonReEvaluatorUtf8SemanticDigest()
+    {
+        _callbackSemanticDigest = PythonReSemanticDigestBuilder.Offset;
+        var result = _pythonRegex.Subn(
+            InputBytes,
+            this,
+            static (context, match) =>
+            {
+                context._callbackSemanticDigest = ExtendCallbackSemanticDigest(
+                    context._callbackSemanticDigest,
+                    match);
+                return context._replacementBytes;
+            });
+        return SemanticDigest(_case.Operation, result, _callbackSemanticDigest);
+    }
+
     private int ExecuteRegex(string input) => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,
@@ -1954,6 +2075,238 @@ internal sealed class PythonReBenchmarkContext
     private int[]? GetUtf8Offsets(string input) => InputBytes.Length == input.Length
         ? null
         : BuildUtf8Offsets(input);
+
+    private static ulong SemanticDigest(PythonReBenchmarkOperation operation, bool value)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.Add(value);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(PythonReBenchmarkOperation operation, int value)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.Add(value);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonValueMatch match)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.Add(match.Success);
+        if (match.Success)
+        {
+            digest.Add(match.StartOffsetInBytes);
+            digest.Add(match.EndOffsetInBytes);
+            digest.Add(match.StartOffsetInUtf16);
+            digest.Add(match.EndOffsetInUtf16);
+            digest.AddString(match.GetValueString());
+        }
+
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonDetailedMatchData match)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        AppendDetailedSemanticDigest(ref digest, match);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonDetailedMatchData[] matches)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.Add(matches.Length);
+        foreach (var match in matches)
+        {
+            AppendDetailedSemanticDigest(ref digest, match);
+        }
+
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonFindAllResult result)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        AppendFindAllSemanticDigest(ref digest, result.Shape, result.ScalarValues, result.TupleValues);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonFindAllUtf8Result result)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        AppendFindAllSemanticDigest(ref digest, result.Shape, result.ScalarValues, result.TupleValues);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(PythonReBenchmarkOperation operation, string value)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddString(value);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(PythonReBenchmarkOperation operation, byte[] value)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddBytes(value);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonSubnResult result)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddString(result.ResultText);
+        digest.Add(result.ReplacementCount);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonSubnResult result,
+        ulong callbackSemanticDigest)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddString(result.ResultText);
+        digest.Add(result.ReplacementCount);
+        digest.Add(callbackSemanticDigest);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonSubnUtf8Result result)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddBytes(result.ResultBytes);
+        digest.Add(result.ReplacementCount);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(
+        PythonReBenchmarkOperation operation,
+        Utf8PythonSubnUtf8Result result,
+        ulong callbackSemanticDigest)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.AddBytes(result.ResultBytes);
+        digest.Add(result.ReplacementCount);
+        digest.Add(callbackSemanticDigest);
+        return digest.Value;
+    }
+
+    private static ulong SemanticDigest(PythonReBenchmarkOperation operation, string?[] values)
+    {
+        var digest = new PythonReSemanticDigestBuilder(operation);
+        digest.Add(values.Length);
+        foreach (var value in values)
+        {
+            digest.Add(value is not null);
+            if (value is not null)
+            {
+                digest.AddString(value);
+            }
+        }
+
+        return digest.Value;
+    }
+
+    private static ulong ExtendCallbackSemanticDigest(
+        ulong semanticDigest,
+        Utf8PythonDetailedMatchData match)
+    {
+        var digest = new PythonReSemanticDigestBuilder(semanticDigest);
+        digest.Add(0xCA11_BACC);
+        AppendDetailedSemanticDigest(ref digest, match);
+        return digest.Value;
+    }
+
+    private static void AppendDetailedSemanticDigest(
+        ref PythonReSemanticDigestBuilder digest,
+        Utf8PythonDetailedMatchData match)
+    {
+        digest.Add(match.Success);
+        if (!match.Success)
+        {
+            return;
+        }
+
+        var groups = match.Groups ?? [];
+        digest.Add(groups.Length);
+        foreach (var group in groups)
+        {
+            digest.Add(group.Success);
+            digest.Add(group.StartOffsetInBytes);
+            digest.Add(group.EndOffsetInBytes);
+            digest.Add(group.StartOffsetInUtf16);
+            digest.Add(group.EndOffsetInUtf16);
+            digest.AddString(group.ValueText);
+        }
+    }
+
+    private static void AppendFindAllSemanticDigest(
+        ref PythonReSemanticDigestBuilder digest,
+        Utf8PythonFindAllShape shape,
+        string[] scalarValues,
+        string[][] tupleValues)
+    {
+        digest.Add((int)shape);
+        var count = shape == Utf8PythonFindAllShape.GroupTuple
+            ? tupleValues.Length
+            : scalarValues.Length;
+        digest.Add(count);
+        foreach (var value in scalarValues)
+        {
+            digest.AddString(value);
+        }
+
+        foreach (var tuple in tupleValues)
+        {
+            digest.Add(tuple.Length);
+            foreach (var value in tuple)
+            {
+                digest.AddString(value);
+            }
+        }
+    }
+
+    private static void AppendFindAllSemanticDigest(
+        ref PythonReSemanticDigestBuilder digest,
+        Utf8PythonFindAllShape shape,
+        byte[][] scalarValues,
+        byte[][][] tupleValues)
+    {
+        digest.Add((int)shape);
+        var count = shape == Utf8PythonFindAllShape.GroupTuple
+            ? tupleValues.Length
+            : scalarValues.Length;
+        digest.Add(count);
+        foreach (var value in scalarValues)
+        {
+            digest.AddBytes(value);
+        }
+
+        foreach (var tuple in tupleValues)
+        {
+            digest.Add(tuple.Length);
+            foreach (var value in tuple)
+            {
+                digest.AddBytes(value);
+            }
+        }
+    }
 
     private static int Checksum(Utf8PythonValueMatch match) => match.Success
         ? Combine(1, match.StartOffsetInUtf16, match.EndOffsetInUtf16)
@@ -2161,6 +2514,52 @@ internal readonly record struct BclStagedDetailedGroup(
     int StartOffsetInUtf16,
     int EndOffsetInUtf16);
 
+internal struct PythonReSemanticDigestBuilder
+{
+    private const ulong Prime = 0x0000_0100_0000_01B3;
+    internal const ulong Offset = 0xCBF2_9CE4_8422_2325;
+    private ulong _value;
+
+    internal PythonReSemanticDigestBuilder(PythonReBenchmarkOperation operation)
+    {
+        _value = Offset;
+        Add((int)operation + 1);
+    }
+
+    internal PythonReSemanticDigestBuilder(ulong value)
+    {
+        _value = value;
+    }
+
+    internal readonly ulong Value => _value;
+
+    internal void Add(bool value) => Add(value ? 1 : 0);
+
+    internal void Add(int value) => Add(unchecked((ulong)(long)value));
+
+    internal void Add(ulong value) => _value = unchecked((_value ^ value) * Prime);
+
+    internal void AddString(string value)
+    {
+        Add(1);
+        Add(value.Length);
+        foreach (var character in value)
+        {
+            Add(character);
+        }
+    }
+
+    internal void AddBytes(ReadOnlySpan<byte> value)
+    {
+        Add(2);
+        Add(value.Length);
+        foreach (var item in value)
+        {
+            Add(item);
+        }
+    }
+}
+
 internal readonly record struct PythonReBenchmarkRange(
     int IndexInBytes,
     int LengthInBytes,
@@ -2184,7 +2583,8 @@ internal sealed record BclSubnResult(
 internal readonly record struct PythonReBenchmarkBatch(
     TimeSpan Elapsed,
     long AllocatedBytes,
-    int Checksum);
+    int Checksum,
+    ulong SemanticDigest);
 
 internal sealed class PythonReBenchmarkSnapshot
 {

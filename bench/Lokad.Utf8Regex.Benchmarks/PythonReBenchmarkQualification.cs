@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -68,33 +69,42 @@ internal static partial class PythonReBenchmarkReporter
         using var currentProcess = Process.GetCurrentProcess();
         var context = new PythonReBenchmarkContext(benchmarkCase);
         var expectedChecksum = context.ExecutePythonRe();
+        var expectedSemanticDigest = context.ExecutePythonReSemanticDigest();
         using var worker = new CpythonStreamWorker();
         var prepared = worker.Prepare(benchmarkCase, context.InputBytes);
-        if (prepared.Checksum != expectedChecksum)
+        if (prepared.Checksum != expectedChecksum || prepared.SemanticDigest != expectedSemanticDigest)
         {
             throw new InvalidOperationException(
                 $"PythonRe benchmark '{caseId}' disagrees with CPython streaming preflight: " +
-                $"managed={expectedChecksum}, CPython={prepared.Checksum}.");
+                $"checksum={expectedChecksum}/{prepared.Checksum}, " +
+                $"semantic digest={expectedSemanticDigest:X16}/{prepared.SemanticDigest:X16}.");
         }
 
         for (var warmupCall = 0; warmupCall < 64; warmupCall++)
         {
             var batch = context.MeasurePythonReBatch(1);
-            VerifyManagedChecksum(batch, expectedChecksum, "tiering warmup");
+            VerifyManagedResult(batch, expectedChecksum, expectedSemanticDigest, "tiering warmup");
         }
 
-        var preliminaryManagedIterations = CalibrateManagedBatch(context, expectedChecksum);
+        var preliminaryManagedIterations = CalibrateManagedBatch(
+            context,
+            expectedChecksum,
+            expectedSemanticDigest);
         var preliminaryCpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
             PythonReQualificationMaximumIterations);
-        var managedWarmup = WarmManagedLane(context, preliminaryManagedIterations, expectedChecksum);
+        var managedWarmup = WarmManagedLane(
+            context,
+            preliminaryManagedIterations,
+            expectedChecksum,
+            expectedSemanticDigest);
         var cpythonWarmup = worker.Warm(
             CpythonStreamLane.Predecoded,
             preliminaryCpythonCalibration.Iterations,
             minimumMilliseconds: 100,
             maximumBatches: 32);
-        var managedIterations = CalibrateManagedBatch(context, expectedChecksum);
+        var managedIterations = CalibrateManagedBatch(context, expectedChecksum, expectedSemanticDigest);
         var cpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
@@ -122,13 +132,23 @@ internal static partial class PythonReBenchmarkReporter
             CpythonStreamResponse cpython;
             if (order == PythonRePairLaneOrder.ManagedFirst)
             {
-                managed = MeasureManagedSample(context, managedIterations, expectedChecksum, currentProcess);
+                managed = MeasureManagedSample(
+                    context,
+                    managedIterations,
+                    expectedChecksum,
+                    expectedSemanticDigest,
+                    currentProcess);
                 cpython = worker.Measure(CpythonStreamLane.Predecoded, cpythonIterations);
             }
             else
             {
                 cpython = worker.Measure(CpythonStreamLane.Predecoded, cpythonIterations);
-                managed = MeasureManagedSample(context, managedIterations, expectedChecksum, currentProcess);
+                managed = MeasureManagedSample(
+                    context,
+                    managedIterations,
+                    expectedChecksum,
+                    expectedSemanticDigest,
+                    currentProcess);
             }
 
             var managedPerOperation = managed.Batch.Elapsed.TotalMicroseconds / managedIterations;
@@ -196,7 +216,7 @@ internal static partial class PythonReBenchmarkReporter
             worktreeQualified,
             placementQualified,
             durationsQualified,
-            structuredDigestQualified: false,
+            structuredDigestQualified: true,
             ratioLower,
             ratioUpper,
             orderEffect,
@@ -226,8 +246,8 @@ internal static partial class PythonReBenchmarkReporter
             WorktreeQualified = worktreeQualified,
             CaseDefinitionSha256 = caseDefinitionSha256,
             CatalogSha256 = catalogSha256,
-            SemanticDigestAlgorithm = "legacy-int32",
-            SemanticDigest = expectedChecksum.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            SemanticDigestAlgorithm = "structured-u64-mix-v1",
+            SemanticDigest = expectedSemanticDigest.ToString("X16", System.Globalization.CultureInfo.InvariantCulture),
             CpuPolicy = processorScope.Policy,
             CpuAffinityMask = processorScope.AffinityMask,
             CpuEfficiencyClass = processorScope.EfficiencyClass,
@@ -339,11 +359,14 @@ internal static partial class PythonReBenchmarkReporter
 #endif
     }
 
-    private static int CalibrateManagedBatch(PythonReBenchmarkContext context, int expectedChecksum)
+    private static int CalibrateManagedBatch(
+        PythonReBenchmarkContext context,
+        int expectedChecksum,
+        ulong expectedSemanticDigest)
     {
         var iterations = 1;
         var pilot = context.MeasurePythonReBatch(iterations);
-        VerifyManagedChecksum(pilot, expectedChecksum, "calibration");
+        VerifyManagedResult(pilot, expectedChecksum, expectedSemanticDigest, "calibration");
         while (pilot.Elapsed.TotalMilliseconds < PythonReQualificationPilotMilliseconds &&
                iterations < PythonReQualificationMaximumIterations)
         {
@@ -353,7 +376,7 @@ internal static partial class PythonReBenchmarkReporter
                 PythonReQualificationMaximumIterations,
                 (long)iterations * growth);
             pilot = context.MeasurePythonReBatch(iterations);
-            VerifyManagedChecksum(pilot, expectedChecksum, "calibration");
+            VerifyManagedResult(pilot, expectedChecksum, expectedSemanticDigest, "calibration");
         }
 
         iterations = (int)Math.Clamp(
@@ -365,7 +388,11 @@ internal static partial class PythonReBenchmarkReporter
         for (var attempt = 0; attempt < confirmationAttempts; attempt++)
         {
             var confirmation = context.MeasurePythonReBatch(iterations);
-            VerifyManagedChecksum(confirmation, expectedChecksum, "calibration confirmation");
+            VerifyManagedResult(
+                confirmation,
+                expectedChecksum,
+                expectedSemanticDigest,
+                "calibration confirmation");
             if (confirmation.Elapsed.TotalMilliseconds is >= 30 and <= 50)
             {
                 break;
@@ -382,10 +409,44 @@ internal static partial class PythonReBenchmarkReporter
         return iterations;
     }
 
+    private static int VerifyPythonReSemanticDigests()
+    {
+        var supplementaryCase = new PythonReBenchmarkCase(
+            "supplementary/search-detailed",
+            "(é+)-(𝒜𝒜|𝒜)",
+            PythonReCompileOptions.None,
+            PythonReBenchmarkOperation.SearchDetailed,
+            "préfixe éé-𝒜𝒜 suffixe",
+            string.Empty,
+            IncludesResultMaterialization: true);
+        var cases = PythonReBenchmarkCatalog.Cases.Append(supplementaryCase).ToArray();
+        using var worker = new CpythonStreamWorker();
+        foreach (var benchmarkCase in cases)
+        {
+            var context = new PythonReBenchmarkContext(benchmarkCase);
+            var expectedChecksum = context.ExecutePythonRe();
+            var expectedSemanticDigest = context.ExecutePythonReSemanticDigest();
+            var prepared = worker.Prepare(benchmarkCase, context.InputBytes);
+            if (prepared.Checksum != expectedChecksum || prepared.SemanticDigest != expectedSemanticDigest)
+            {
+                Console.Error.WriteLine(
+                    $"{benchmarkCase.Id}: checksum={expectedChecksum}/{prepared.Checksum}; " +
+                    $"semantic digest={expectedSemanticDigest:X16}/{prepared.SemanticDigest:X16}");
+                return 1;
+            }
+        }
+
+        Console.WriteLine(
+            $"Verified structured semantic digests for {cases.Length} PythonRe cases, " +
+            "including supplementary-plane detailed coordinates.");
+        return 0;
+    }
+
     private static PythonReWarmup WarmManagedLane(
         PythonReBenchmarkContext context,
         int iterations,
-        int expectedChecksum)
+        int expectedChecksum,
+        ulong expectedSemanticDigest)
     {
         const int maximumBatches = 32;
         var started = Stopwatch.GetTimestamp();
@@ -393,7 +454,7 @@ internal static partial class PythonReBenchmarkReporter
         do
         {
             var batch = context.MeasurePythonReBatch(iterations);
-            VerifyManagedChecksum(batch, expectedChecksum, "warmup");
+            VerifyManagedResult(batch, expectedChecksum, expectedSemanticDigest, "warmup");
             s_sink ^= batch.Checksum;
             batches++;
         }
@@ -408,6 +469,7 @@ internal static partial class PythonReBenchmarkReporter
         PythonReBenchmarkContext context,
         int iterations,
         int expectedChecksum,
+        ulong expectedSemanticDigest,
         Process process)
     {
         var processCpuBefore = process.TotalProcessorTime;
@@ -425,7 +487,7 @@ internal static partial class PythonReBenchmarkReporter
             GC.CollectionCount(1),
             GC.CollectionCount(2),
         };
-        VerifyManagedChecksum(batch, expectedChecksum, "paired sample");
+        VerifyManagedResult(batch, expectedChecksum, expectedSemanticDigest, "paired sample");
         s_sink ^= batch.Checksum;
         return new PythonReManagedSample(
             batch,
@@ -451,15 +513,23 @@ internal static partial class PythonReBenchmarkReporter
         return new PythonReEmptyBatch(elapsed, checksum);
     }
 
-    private static void VerifyManagedChecksum(
+    private static void VerifyManagedResult(
         PythonReBenchmarkBatch batch,
         int expectedChecksum,
+        ulong expectedSemanticDigest,
         string phase)
     {
         if (batch.Checksum != expectedChecksum)
         {
             throw new InvalidOperationException(
                 $"PythonRe {phase} checksum {batch.Checksum} does not match preflight {expectedChecksum}.");
+        }
+
+        if (batch.SemanticDigest != expectedSemanticDigest)
+        {
+            throw new InvalidOperationException(
+                $"PythonRe {phase} semantic digest {batch.SemanticDigest:X16} " +
+                $"does not match preflight {expectedSemanticDigest:X16}.");
         }
     }
 
@@ -940,6 +1010,7 @@ internal sealed class CpythonStreamResponse
     public long ElapsedNanoseconds { get; init; }
     public long ProcessCpuNanoseconds { get; init; }
     public int Checksum { get; init; }
+    public ulong SemanticDigest { get; init; }
     public int[] GcCollections { get; init; } = [];
     public string? ErrorType { get; init; }
     public string? Message { get; init; }
