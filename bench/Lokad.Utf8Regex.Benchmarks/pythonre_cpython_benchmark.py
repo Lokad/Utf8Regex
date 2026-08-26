@@ -992,6 +992,11 @@ def run_stream_worker() -> int:
             if kind == "Warm":
                 iterations = require_positive_integer(command, "Iterations", STREAM_MAX_ITERATIONS)
                 minimum_milliseconds = require_positive_integer(command, "MinimumMilliseconds", 1_000)
+                minimum_calls = require_positive_integer(
+                    command,
+                    "MinimumCalls",
+                    STREAM_MAX_ITERATIONS,
+                )
                 maximum_batches = require_positive_integer(command, "MaximumBatches", 1_000)
                 warmup_started = time.perf_counter_ns()
                 calls = 0
@@ -1009,7 +1014,10 @@ def run_stream_worker() -> int:
                     checksum = result["Checksum"]
                     calls += iterations
                     batches += 1
-                    if time.perf_counter_ns() - warmup_started >= minimum_milliseconds * 1_000_000:
+                    if (
+                        time.perf_counter_ns() - warmup_started >= minimum_milliseconds * 1_000_000
+                        and calls >= minimum_calls
+                    ):
                         break
                 write_stream_message(
                     {

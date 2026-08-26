@@ -13,7 +13,8 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapSeed = 31302;
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
-    private const double PythonReQualificationTargetSampleMilliseconds = 40;
+    private const int PythonReQualificationMinimumWarmupCalls = 1_024;
+    private const double PythonReQualificationTargetSampleMilliseconds = 50;
     private const double PythonReQualificationPilotMilliseconds = 5;
     private const double PythonReQualificationMinimumSampleMilliseconds = 20;
     private const double PythonReQualificationMaximumSpread = 1.10;
@@ -116,6 +117,7 @@ internal static partial class PythonReBenchmarkReporter
             CpythonStreamLane.Predecoded,
             preliminaryCpythonCalibration.Iterations,
             minimumMilliseconds: 100,
+            minimumCalls: PythonReQualificationMinimumWarmupCalls,
             maximumBatches: 32);
         var managedIterations = CalibrateManagedBatch(
             context,
@@ -765,7 +767,9 @@ internal static partial class PythonReBenchmarkReporter
             s_sink ^= batch.Checksum;
             batches++;
         }
-        while (batches < maximumBatches && Stopwatch.GetElapsedTime(started).TotalMilliseconds < 100);
+        while (batches < maximumBatches &&
+               (Stopwatch.GetElapsedTime(started).TotalMilliseconds < 100 ||
+                (long)batches * iterations < PythonReQualificationMinimumWarmupCalls));
 
         return new PythonReWarmup(
             batches * iterations,
@@ -1157,6 +1161,7 @@ internal static partial class PythonReBenchmarkReporter
             CpythonStreamLane lane,
             int iterations,
             int minimumMilliseconds,
+            int minimumCalls,
             int maximumBatches) => Send(
                 new CpythonStreamCommand
                 {
@@ -1165,6 +1170,7 @@ internal static partial class PythonReBenchmarkReporter
                     Lane = lane.ToString(),
                     Iterations = iterations,
                     MinimumMilliseconds = minimumMilliseconds,
+                    MinimumCalls = minimumCalls,
                     MaximumBatches = maximumBatches,
                 },
                 "Warmed");
@@ -1340,6 +1346,7 @@ internal sealed class CpythonStreamCommand
     public long? TargetNanoseconds { get; init; }
     public int? MaximumIterations { get; init; }
     public int? MinimumMilliseconds { get; init; }
+    public int? MinimumCalls { get; init; }
     public int? MaximumBatches { get; init; }
 }
 

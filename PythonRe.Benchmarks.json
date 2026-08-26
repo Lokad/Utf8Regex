@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 4,
-  "GeneratedAtUtc": "2026-08-26T09:42:39.1345178+00:00",
+  "GeneratedAtUtc": "2026-08-26T09:45:02.6834792+00:00",
   "Corpus": {
     "SourceFile": "tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json",
     "Sha256": "0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B",
@@ -595,7 +595,7 @@
       },
       "Qualification": {
         "Status": "Unqualified",
-        "StatusReason": "Historical independent-median evidence predates paired qualification protocol v2.",
+        "StatusReason": "Paired evidence predates the consumed-result qualification contract.",
         "EngineEvidenceBasis": "Not engine-comparable",
         "EngineConclusion": "Unqualified",
         "PairedEvidence": null
