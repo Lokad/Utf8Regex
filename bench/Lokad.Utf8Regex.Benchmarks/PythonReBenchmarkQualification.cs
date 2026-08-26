@@ -15,7 +15,7 @@ internal static partial class PythonReBenchmarkReporter
     private const int PythonReQualificationBootstrapSeed = 31302;
     private const int PythonReQualificationBootstrapResamples = 10_000;
     private const int PythonReQualificationMaximumIterations = 10_000_000;
-    private const int PythonReQualificationOneShotWarmupCalls = 20_000;
+    private const int PythonReQualificationOneShotWarmupCalls = 100_000;
     private const int PythonReQualificationShortOneShotMinimumIterations = 1_000_000;
     private const int PythonReQualificationShortOneShotWarmupCalls = 5_000_000;
     private const int PythonReQualificationMinimumWarmupCalls = 1_024;
@@ -177,6 +177,13 @@ internal static partial class PythonReBenchmarkReporter
                 expectedConsumptionToken,
                 PythonReQualificationShortOneShotWarmupCalls);
         }
+
+        managedIterations = ConfirmManagedSampleDuration(
+            context,
+            managedIterations,
+            expectedChecksum,
+            expectedSemanticDigest,
+            expectedConsumptionToken);
         var cpythonCalibration = worker.Calibrate(
             CpythonStreamLane.Predecoded,
             PythonReQualificationTargetSampleMilliseconds,
@@ -638,6 +645,49 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.FullMatch
             ? PythonReQualificationOneShotWarmupCalls
             : PythonReQualificationMinimumWarmupCalls;
+
+    private static int ConfirmManagedSampleDuration(
+        PythonReBenchmarkContext context,
+        int iterations,
+        int expectedChecksum,
+        ulong expectedSemanticDigest,
+        ulong expectedConsumptionToken)
+    {
+        const int maximumRounds = 3;
+        const int confirmationsPerRound = 3;
+        for (var round = 0; round < maximumRounds; round++)
+        {
+            var fastestMilliseconds = double.PositiveInfinity;
+            for (var attempt = 0; attempt < confirmationsPerRound; attempt++)
+            {
+                var confirmation = context.MeasurePythonReQualificationBatch(iterations);
+                VerifyManagedResult(
+                    confirmation,
+                    expectedChecksum,
+                    expectedSemanticDigest,
+                    expectedConsumptionToken,
+                    iterations,
+                    "post-warm calibration confirmation");
+                fastestMilliseconds = Math.Min(
+                    fastestMilliseconds,
+                    confirmation.Elapsed.TotalMilliseconds);
+            }
+
+            if (fastestMilliseconds >= 30)
+            {
+                return iterations;
+            }
+
+            iterations = (int)Math.Clamp(
+                Math.Ceiling(
+                    iterations * PythonReQualificationTargetSampleMilliseconds /
+                    Math.Max(fastestMilliseconds, 0.000_001)),
+                1,
+                PythonReQualificationMaximumIterations);
+        }
+
+        return iterations;
+    }
 
     private static PythonReByteControlEvidence? CreatePythonReByteControlEvidence(
         PythonReByteControlEligibility eligibility,
