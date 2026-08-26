@@ -114,7 +114,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         if (hasCompleteCpythonBaseline)
         {
-            writer.WriteLine("Qualified `Search`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.");
+            writer.WriteLine("Qualified `Search`, `SearchFromOffset`, `Match`, and `FullMatch` rows use the `ConsumedGroupZeroRanges` contract: every timed operation consumes success plus group-zero byte and UTF-16 boundaries. Result hashing and value verification remain outside timing. Other result-producing rows retain their required eager public materialization.");
             writer.WriteLine();
             writer.WriteLine("Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the identical bytes. `Rbyte` is representation-neutral engine evidence and never sets public Status; rows without equivalent byte semantics carry an explicit exclusion reason.");
             writer.WriteLine();

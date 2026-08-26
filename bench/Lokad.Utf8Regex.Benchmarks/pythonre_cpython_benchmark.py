@@ -51,6 +51,7 @@ SEMANTIC_OPERATION_TAGS = {
     "SubnEvaluatorString": 14,
     "SplitStrings": 15,
     "SubnEvaluatorUtf8": 16,
+    "SearchFromOffset": 17,
 }
 
 
@@ -258,6 +259,14 @@ class CaseRunner:
         self.input_text = self.input_bytes.decode("utf-8", "strict")
         self.utf8_offsets = build_utf8_offsets(self.input_text)
         self.utf16_offsets = build_utf16_offsets(self.input_text)
+        start_offset_in_bytes = request.get("StartOffsetInBytes", 0)
+        if not isinstance(start_offset_in_bytes, int) or isinstance(start_offset_in_bytes, bool):
+            raise ValueError("StartOffsetInBytes must be an integer.")
+        try:
+            self.start_offset = self.utf8_offsets.index(start_offset_in_bytes)
+        except ValueError as error:
+            raise ValueError("StartOffsetInBytes must be a UTF-8 scalar boundary.") from error
+        self.start_offset_in_bytes = start_offset_in_bytes
         self.replacement = request["Replacement"]
         self.pattern = re.compile(request["Pattern"], flags_from_options(request["Options"]))
         self.byte_pattern: re.Pattern[bytes] | None = None
@@ -282,6 +291,8 @@ class CaseRunner:
             return self.pattern.search(input_text) is not None
         if operation == "Search":
             return self.pattern.search(input_text)
+        if operation == "SearchFromOffset":
+            return self.pattern.search(input_text, self.start_offset)
         if operation == "Match":
             return self.pattern.match(input_text)
         if operation == "FullMatch":
@@ -332,6 +343,10 @@ class CaseRunner:
         elif operation == "Search":
             for _ in range(iterations):
                 result = pattern.search(input_text)
+        elif operation == "SearchFromOffset":
+            start_offset = self.start_offset
+            for _ in range(iterations):
+                result = pattern.search(input_text, start_offset)
         elif operation == "Match":
             for _ in range(iterations):
                 result = pattern.match(input_text)
@@ -406,7 +421,7 @@ class CaseRunner:
 
     def execute_predecoded_qualification_batch(self, iterations: int) -> tuple[int, Any, int]:
         operation = self.operation
-        if operation not in {"Search", "Match", "FullMatch"}:
+        if operation not in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             elapsed, result = self.execute_predecoded_batch(iterations)
             return elapsed, result, 0
 
@@ -417,9 +432,14 @@ class CaseRunner:
         consumption_checksum = 0
         result: re.Match[str] | None = None
         started = time.perf_counter_ns()
-        if operation == "Search":
+        if operation in {"Search", "SearchFromOffset"}:
+            start_offset = self.start_offset
             for _ in range(iterations):
-                result = pattern.search(input_text)
+                result = (
+                    pattern.search(input_text)
+                    if operation == "Search"
+                    else pattern.search(input_text, start_offset)
+                )
                 if result is None:
                     consumption_checksum += 1
                 else:
@@ -478,6 +498,11 @@ class CaseRunner:
             for _ in range(iterations):
                 result = pattern.search(input_bytes)
                 consumption_checksum += self.byte_consumption_token(result)
+        elif operation == "SearchFromOffset":
+            start_offset_in_bytes = self.start_offset_in_bytes
+            for _ in range(iterations):
+                result = pattern.search(input_bytes, start_offset_in_bytes)
+                consumption_checksum += self.byte_consumption_token(result)
         elif operation == "Match":
             for _ in range(iterations):
                 result = pattern.match(input_bytes)
@@ -514,7 +539,7 @@ class CaseRunner:
         return 2 + start + end + start + end
 
     def consumption_token(self, result: Any) -> int:
-        if self.operation not in {"Search", "Match", "FullMatch"}:
+        if self.operation not in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             return 0
         if result is None:
             return 1
@@ -574,7 +599,7 @@ class CaseRunner:
         operation = self.operation
         if operation == "IsMatch":
             return 1 if result else 0
-        if operation in {"Search", "Match", "FullMatch"}:
+        if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             return simple_match_checksum(result, self.utf16_offsets)
         if operation == "SearchDetailed":
             return detailed_checksum(result)
@@ -611,7 +636,7 @@ class CaseRunner:
         digest = digest_add(SEMANTIC_DIGEST_OFFSET, SEMANTIC_OPERATION_TAGS[operation])
         if operation == "IsMatch":
             return digest_add(digest, 1 if result else 0)
-        if operation in {"Search", "Match", "FullMatch"}:
+        if operation in {"Search", "SearchFromOffset", "Match", "FullMatch"}:
             if result is None:
                 return digest_add(digest, 0)
             start, end = result.span()

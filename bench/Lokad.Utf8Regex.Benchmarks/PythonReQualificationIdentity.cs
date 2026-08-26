@@ -56,6 +56,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             PythonReBenchmarkOperation.IsMatch => "managed-ismatch-scalar-v1",
             PythonReBenchmarkOperation.Search => "managed-search-consumed-group-zero-v1",
+            PythonReBenchmarkOperation.SearchFromOffset => "managed-search-from-offset-consumed-group-zero-v1",
             PythonReBenchmarkOperation.Match => "managed-match-consumed-group-zero-v1",
             PythonReBenchmarkOperation.FullMatch => "managed-fullmatch-consumed-group-zero-v1",
             PythonReBenchmarkOperation.SearchDetailed => "managed-search-detailed-eager-v1",
@@ -81,6 +82,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             PythonReBenchmarkOperation.IsMatch => "cpython-pattern-search-bool-v1",
             PythonReBenchmarkOperation.Search => "cpython-pattern-search-group-zero-v1",
+            PythonReBenchmarkOperation.SearchFromOffset => "cpython-pattern-search-from-offset-group-zero-v1",
             PythonReBenchmarkOperation.Match => "cpython-pattern-match-group-zero-v1",
             PythonReBenchmarkOperation.FullMatch => "cpython-pattern-fullmatch-group-zero-v1",
             PythonReBenchmarkOperation.SearchDetailed => "cpython-pattern-search-detailed-v1",
@@ -127,6 +129,7 @@ internal static partial class PythonReBenchmarkReporter
 
     private static string GetPythonReResultContract(PythonReBenchmarkCase benchmarkCase) =>
         benchmarkCase.Operation is PythonReBenchmarkOperation.Search or
+            PythonReBenchmarkOperation.SearchFromOffset or
             PythonReBenchmarkOperation.Match or PythonReBenchmarkOperation.FullMatch
             ? "ConsumedGroupZeroRanges"
             : benchmarkCase.IncludesResultMaterialization

@@ -923,6 +923,7 @@ internal static partial class PythonReBenchmarkReporter
         if (calibratedIterations < PythonReQualificationShortOneShotCalibrationIterations ||
             benchmarkCase.Operation is not (PythonReBenchmarkOperation.IsMatch or
                 PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.SearchFromOffset or
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch))
         {
@@ -942,6 +943,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             PythonReBenchmarkOperation.IsMatch or
             PythonReBenchmarkOperation.Search or
+                PythonReBenchmarkOperation.SearchFromOffset or
                 PythonReBenchmarkOperation.Match or
                 PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
             PythonReBenchmarkOperation.FindAllStrings or
@@ -2047,6 +2049,7 @@ internal static partial class PythonReBenchmarkReporter
                 Operation = benchmarkCase.Operation.ToString(),
                 InputBase64 = Convert.ToBase64String(inputBytes),
                 Replacement = benchmarkCase.Replacement,
+                StartOffsetInBytes = benchmarkCase.Coverage.StartOffsetInBytes,
                 EnableByteControl = enableByteControl,
             },
             "Prepared");
@@ -2250,6 +2253,7 @@ internal sealed class CpythonStreamCommand
     public string? Operation { get; init; }
     public string? InputBase64 { get; init; }
     public string? Replacement { get; init; }
+    public int? StartOffsetInBytes { get; init; }
     public bool EnableByteControl { get; init; }
     public string? Lane { get; init; }
     public int? Iterations { get; init; }

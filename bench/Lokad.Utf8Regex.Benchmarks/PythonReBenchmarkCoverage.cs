@@ -166,6 +166,7 @@ internal static partial class PythonReBenchmarkReporter
     {
         if (benchmarkCase.Operation is not PythonReBenchmarkOperation.IsMatch and
             not PythonReBenchmarkOperation.Search and
+            not PythonReBenchmarkOperation.SearchFromOffset and
             not PythonReBenchmarkOperation.Match and
             not PythonReBenchmarkOperation.FullMatch)
         {
