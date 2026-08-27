@@ -39,6 +39,16 @@ preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 
 ### Performance And Reliability
 
+- Performance is materially ahead of 0.2.0: affected hot paths are commonly
+  **2–10× faster**, with gains approaching **100×** where former fallback,
+  repeated-validation, or result-projection layers were eliminated. Untouched
+  or fallback-heavy paths may remain flat.
+- Across the current semantically matched benchmark catalogs, the case-median
+  speedups are approximately **3× versus predecoded .NET Regex** [1.4× versus
+  compiled; 5×/3.4× when per-operation UTF-8 decoding is included], **4× versus
+  PCRE.NET/native PCRE2 NFA** [JIT disabled], and **2.4× versus predecoded
+  CPython `re`/`_sre` public operations**. These are directional workload
+  summaries, not per-pattern guarantees.
 - Added reproducible core, PCRE2, and PythonRe comparative snapshots with
   source/runtime provenance, bounded warmup, per-case checkpointing, and
   adversarial 1×/2×/4×/8× scaling coverage.
