@@ -12,12 +12,13 @@
     <Description>Optional Python re companion package for Lokad.Utf8Regex, providing a UTF-8 oriented Python-style regular expression API without forcing Python-specific semantics into the base library.</Description>
     <Authors>Lokad</Authors>
     <Company>Lokad</Company>
-    <Version>0.2.0</Version>
-    <AssemblyVersion>0.2.0</AssemblyVersion>
-    <FileVersion>0.2.0</FileVersion>
+    <Version>0.3.0</Version>
+    <AssemblyVersion>0.3.0</AssemblyVersion>
+    <FileVersion>0.3.0</FileVersion>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See https://github.com/Lokad/Utf8Regex/blob/master/CHANGELOG.md for release notes.</PackageReleaseNotes>
     <PackageTags>regex;utf8;utf-8;python;re;span;bytes;performance</PackageTags>
     <PackageProjectUrl>https://github.com/Lokad/Utf8Regex</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Lokad/Utf8Regex.git</RepositoryUrl>
@@ -34,6 +35,7 @@
   <ItemGroup>
     <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\" Visible="false" />
     <None Include="README.md" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Visible="false" />
     <None Include="..\..\icon.png" Pack="true" PackagePath="\" Visible="false" />
   </ItemGroup>
 

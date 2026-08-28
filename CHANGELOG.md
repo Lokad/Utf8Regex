@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-08-28
+
 This release completes and qualifies the selected managed PCRE2 profile while
 preserving the public API and .NET 10 semantic contract of `Lokad.Utf8Regex`.
 
