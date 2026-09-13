@@ -82,7 +82,31 @@ This profile is still incomplete. In particular:
 
 * bytes-pattern semantics are intentionally unsupported in this profile; PythonRe only targets `str` regex semantics over UTF-8 inputs
 * `LOCALE` semantics are intentionally unsupported; this profile is culture-invariant by construction
-* `\N{...}` named Unicode escapes are intentionally unsupported; a faithful resolver would require embedding a large Unicode-name table, adding roughly 8 MB to the package
+* `\N{...}` named Unicode escapes are intentionally unsupported; a faithful resolver would require embedding a large Unicode-name table, which is out of scope under the package-size constraint
 * the execution classifier for `Utf8Regex` is conservative by design
+* case-insensitive backreference comparison follows BCL invariant folding, which
+  agrees with CPython `TOLOWER` comparison everywhere except U+0130
+  participation: `(i)\1` against `i\u0130` and `(\u0130)\1` against
+  `\u0130i` do not match here while CPython matches. All other BMP backreference
+  shapes compare identically; astral scalars agree completely
+* scoped `(?a:...)` regions under a case-insensitive Unicode pattern use backend
+  folding and cannot exclude non-ASCII fold partners: `(?a:k)` matches U+212A
+  here while CPython rejects it. Top-level ASCII runs the backend
+  case-sensitively with fully explicit expansions and is exact, except
+  backreferences over multi-character groups, which compare exactly instead of
+  ASCII-folding (single-ASCII-character groups name both variants explicitly)
+* Unicode-scoped backreferences under top-level ASCII compare exactly instead of
+  folding: `(?u:(i)\1)` against `iI` misses here while CPython matches
+* supplementary-plane category matching and astral-adjacent word boundaries are
+  bounded by the UTF-16 execution engines (managed `.NET Regex` and the native
+  `Utf8Regex` kernels operate per UTF-16 unit): `\w`/`\d` and their complements
+  and bracket forms do not match supplementary letters/numbers, and `\b`/`\B`
+  around supplementary scalars follow UTF-16 units rather than scalar
+  boundaries. BMP behavior is CPython-faithful, established by a full-scalar
+  census against CPython 3.13.2 (`[\p{L}\p{N}_]` for `\w`,
+  `[\s\x1c-\x1f]` for `\s`, pass-through `\d`). Matching supplementary
+  categories would need a scalar execution layer calling the BCL category
+  facilities at match time; embedding the required Unicode property data as
+  shipped tables is out of scope under the package-size constraint
 
 Unsupported or incomplete cases should fail explicitly rather than silently approximating Python semantics.

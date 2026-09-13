@@ -918,7 +918,12 @@ internal static class PythonReTranslator
     private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
     {
         var translated = RegexOptions.CultureInvariant;
-        if ((options & PythonReCompileOptions.IgnoreCase) != 0)
+        // Top-level ASCII runs the backend case-sensitively (PLAN.md C05): every
+        // ASCII case pair is expanded explicitly at parse time, and a folding
+        // backend could not exclude non-ASCII fold partners (U+212A and friends).
+        // Scoped (?i:) regions still fold through inline flags.
+        if ((options & PythonReCompileOptions.IgnoreCase) != 0 &&
+            (options & PythonReCompileOptions.Ascii) == 0)
         {
             translated |= RegexOptions.IgnoreCase;
         }
@@ -1030,6 +1035,7 @@ internal static class PythonReTranslator
         }
     }
 
+    // The tuple splitter divides each managed match at the first ASCII separator, so a capture qualifies when none of its members can equal that separator. PLAN.md C05 IgnoreCase expansion adds non-ASCII fold partners (U+0130, `_EXTRA_CASES` members) to ASCII classes; those can never equal ASCII punctuation, and capture text still matches through the fully expanded managed regex. Only ASCII members need the word check, and ranges are scanned over their ASCII prefix alone so admission stays bounded for astral runs.
     private static bool IsNonEmptyAsciiWordClassRepeat(PythonReNode node)
     {
         if (node is not PythonReQuantifierNode
@@ -1045,14 +1051,13 @@ internal static class PythonReTranslator
         {
             switch (item)
             {
-                case PythonReCharacterClassLiteralItem literal when IsAsciiWordCharacter(literal.Scalar):
+                case PythonReCharacterClassLiteralItem literal when IsAsciiWordCharacter(literal.Scalar) || literal.Scalar > 0x7F:
                     break;
 
                 case PythonReCharacterClassRangeItem range
                     when range.StartScalar <= range.EndScalar &&
-                         range.StartScalar >= 0 &&
-                         range.EndScalar <= 0x7F:
-                    for (var scalar = range.StartScalar; scalar <= range.EndScalar; scalar++)
+                         range.StartScalar >= 0:
+                    for (var scalar = range.StartScalar; scalar <= Math.Min(range.EndScalar, 0x7F); scalar++)
                     {
                         if (!IsAsciiWordCharacter(scalar))
                         {
