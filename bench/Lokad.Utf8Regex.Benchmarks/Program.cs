@@ -477,6 +477,18 @@ if (args.Length >= 1 && args[0].Equals("--engine-portfolio-report", StringCompar
     return EnginePortfolioReporter.Run();
 }
 
+// PLAN.md E03: a leading '--xxx' that is neither a custom benchmark command nor a
+// BenchmarkDotNet global option is almost certainly a mistyped custom command
+// (previously BenchmarkDotNet printed 'unknown option' yet the process exited 0,
+// so a misspelled release verification step could appear successful).
+if (args.Length > 0 && IsUnrecognizedBenchmarkCommand(args[0]))
+{
+    Console.Error.WriteLine("Unknown benchmark command '" + args[0] + "'.");
+    Console.Error.WriteLine("Custom benchmark commands are documented in AGENTS.md (use ./bench.ps1 -CommandArgs \"--command\",...).");
+    Console.Error.WriteLine("BenchmarkDotNet runs use BenchmarkDotNet options such as --filter, --job, --profiler, --memory, or --join.");
+    return 2;
+}
+
 var artifactsPath = Path.Combine(
     AppContext.BaseDirectory,
     "BenchmarkDotNet.Artifacts",
@@ -494,6 +506,30 @@ if (BenchmarkProgramRouter.ShouldUseInProcessForPcre2SpecialBenchmarks(args))
 
 BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(effectiveArgs, config);
 return 0;
+
+static bool IsUnrecognizedBenchmarkCommand(string argument)
+{
+    if (!argument.StartsWith("--", StringComparison.Ordinal))
+    {
+        return false;
+    }
+
+    // BenchmarkDotNet global console options (bench.ps1 emits --filter/--job/--join/--memory/--profiler;
+    // the rest cover direct-invocation passthrough). Compared case-insensitively like the
+    // BenchmarkDotNet parser. Anything else starting with '--' fails loudly below.
+    return argument.ToLowerInvariant() switch
+    {
+        "--filter" or "--job" or "--join" or "--memory" or "--profiler"
+            or "--help" or "--info" or "--list" or "--exporters" or "--runtimes"
+            or "--artifacts" or "--keepfiles" or "--stoponfirsterror" or "--allstats"
+            or "--out" or "--statisticaltest" or "--maxiterationcount" or "--miniterationcount"
+            or "--invocationcount" or "--unrollfactor" or "--warmupcount"
+            or "--maxwarmupiterationcount" or "--minwarmupiterationcount"
+            or "--runonceperiteration" or "--memoryrandomization" or "--environmentvariables"
+            or "--affinity" or "--powerplanmode" => false,
+        _ => true,
+    };
+}
 
 static string[] StripJobArguments(string[] arguments)
 {
