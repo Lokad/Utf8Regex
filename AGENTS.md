@@ -320,3 +320,7 @@ If PCRE2 support is implemented, keep it removable by construction:
 - mark any unavoidable core hooks with `PCRE2-INTEGRATION-POINT`
 - keep the PCRE2 profile strictly managed: no P/Invoke, no `NativeLibrary`, no external PCRE2 binary, and no RID-specific native packaging
 - the sole acceptable non-BCL implementation dependency for the PCRE2 profile is the existing `Lokad.Utf8Regex` library
+
+## CI
+
+Anonymous GitHub API calls are capped at 60/hour: space CI status checks minutes apart, never poll in a tight loop.
