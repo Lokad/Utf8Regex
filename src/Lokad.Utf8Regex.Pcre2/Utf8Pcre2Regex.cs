@@ -971,11 +971,11 @@ public sealed class Utf8Pcre2Regex
 
     private static bool TryCreateManagedRegex(string pattern, Pcre2CompileOptions options, TimeSpan matchTimeout, out Regex? regex)
     {
-        if (pattern.Contains("(?|", StringComparison.Ordinal) ||
-            pattern.Contains(@"(?<n>", StringComparison.Ordinal) ||
-            pattern.Contains("(*", StringComparison.Ordinal) ||
-            pattern.Contains(@"\K", StringComparison.Ordinal) ||
-            pattern.Contains(@"\C", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?|") ||
+            Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?<n>") ||
+            Pcre2PatternCodeScan.ContainsCodeText(pattern, "(*") ||
+            Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\K") ||
+            Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\C"))
         {
             regex = null;
             return false;

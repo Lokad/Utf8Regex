@@ -68,10 +68,10 @@ public sealed class Pcre2CorpusBacklogLedgerTests
 
         Assert.Equal(
             """
-            Total=38
+            Total=39
             UnsupportedYet=14
-            OutOfScopeBySpec=24
-            Compile=4
+            OutOfScopeBySpec=25
+            Compile=5
             MatchDetailed=5
             EnumerateMatches=1
             Replace=16

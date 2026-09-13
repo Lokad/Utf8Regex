@@ -53,7 +53,7 @@ internal static class Pcre2CompileValidator
             throw new ArgumentOutOfRangeException(nameof(compileSettings), "The backslash-C policy is not defined.");
         }
 
-        if (pattern.Contains("(?C", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?C"))
         {
             throw new Pcre2CompileException("PCRE2 callouts are out of scope for this profile.", Pcre2ErrorKind.CalloutUnsupported);
         }
@@ -79,22 +79,22 @@ internal static class Pcre2CompileValidator
             throw new Pcre2CompileException("Escape sequence is invalid in character class.", Pcre2ErrorKind.EscapeInvalidInClass);
         }
 
-        if (pattern.Contains("(?X)", StringComparison.Ordinal) || pattern.Contains("(?z)", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?X)") || Pcre2PatternCodeScan.ContainsCodeText(pattern, "(?z)"))
         {
             throw new Pcre2CompileException("Invalid character after '(?'.", Pcre2ErrorKind.InvalidAfterParensQuery);
         }
 
-        if (pattern.Contains(@"\idef", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsNonClassCodeText(pattern, @"\idef"))
         {
             throw new Pcre2CompileException(@"Unrecognized escape sequence '\i'.", Pcre2ErrorKind.UnrecognizedEscape);
         }
 
-        if (pattern.Contains("{5,4}", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{5,4}"))
         {
             throw new Pcre2CompileException("Numbers out of order in quantifier.", Pcre2ErrorKind.QuantifierNumbersOutOfOrder);
         }
 
-        if (pattern.Contains("{65536}", StringComparison.Ordinal))
+        if (Pcre2PatternCodeScan.ContainsCodeText(pattern, "{65536}"))
         {
             throw new Pcre2CompileException("Quantifier is too large.", Pcre2ErrorKind.QuantifierTooBig);
         }
@@ -257,15 +257,32 @@ internal static class Pcre2CompileValidator
         var parentheses = new Stack<bool>();
         var lookaroundDepth = 0;
         var inCharacterClass = false;
+        var quoted = false;
         for (var offset = 0; offset < pattern.Length; offset++)
         {
             var character = pattern[offset];
+            if (quoted)
+            {
+                if (character == '\\' && offset + 1 < pattern.Length && pattern[offset + 1] == 'E')
+                {
+                    quoted = false;
+                    offset++;
+                }
+
+                continue;
+            }
+
             if (character == '\\')
             {
                 if (!inCharacterClass && lookaroundDepth != 0 &&
                     offset + 1 < pattern.Length && pattern[offset + 1] == 'K')
                 {
                     return true;
+                }
+
+                if (!inCharacterClass && offset + 1 < pattern.Length && pattern[offset + 1] == 'Q')
+                {
+                    quoted = true;
                 }
 
                 offset++;

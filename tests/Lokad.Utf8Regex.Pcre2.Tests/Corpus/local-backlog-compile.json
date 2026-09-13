@@ -7,6 +7,13 @@
     "Reason": "CalloutNonGoal"
   },
   {
+    "Id": "pcre2.c11.callout.bare-rejected",
+    "Operation": "Compile",
+    "Status": "OutOfScopeBySpec",
+    "Source": "ported/spec-pcre2/callout-non-goal",
+    "Reason": "CalloutNonGoal"
+  },
+  {
     "Id": "pcre2.utf8-pattern.invalid-lone-continuation",
     "Operation": "Compile",
     "Status": "UnsupportedYet",
