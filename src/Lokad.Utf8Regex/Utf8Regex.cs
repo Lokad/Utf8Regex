@@ -3720,6 +3720,16 @@ public sealed class Utf8Regex
 
     private static bool RequiresKelvinSignFallback(Utf8PreparedRegex preparedRegex)
     {
+        // Anchored simple-pattern routes compare ASCII literals and classes without
+        // Kelvin folding, while .NET matches U+212A against `k`/`K` under invariant
+        // IgnoreCase (PLAN.md C05). Fencing the whole kind when IgnoreCase is set is
+        // conservative but exact: only Kelvin-containing inputs take the fallback.
+        if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            preparedRegex.SimplePatternPlan.IgnoreCase)
+        {
+            return true;
+        }
+
         if (preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase)
         {
             return ContainsAsciiK(preparedRegex.LiteralUtf8);
