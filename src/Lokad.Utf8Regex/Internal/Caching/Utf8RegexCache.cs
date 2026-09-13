@@ -20,7 +20,9 @@ internal static class Utf8RegexCache
         // culture-sensitive instance is never reused under another culture.
         // Invariant requests keep sharing one entry: their culture is constant.
         var culture = RuntimeFrontEnd.RegexParser.GetTargetCulture(normalizedOptions).ToString();
-        var key = new Utf8RegexCacheKey(pattern, culture, normalizedOptions, matchTimeout);
+        // PLAN.md D07: Compiled is execution-mode identity, not a shareable semantic option. The prepared program is identical for both modes, but engine selection differs, so each mode keeps its own cache entry.
+        var keyOptions = normalizedOptions | (options & RegexOptions.Compiled);
+        var key = new Utf8RegexCacheKey(pattern, culture, keyOptions, matchTimeout);
         return s_cache.GetOrAdd(
             key,
             static cacheKey => new Utf8Regex(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout));

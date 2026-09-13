@@ -30,15 +30,17 @@ public sealed class Utf8RegexCacheTests
         Assert.Equal(before + 2, Utf8RegexCache.EntryCount);
     }
 
+    // PLAN.md D07: Compiled is execution-mode identity, not a shareable semantic
+    // option. Ordinary and compiled static requests keep separate entries.
     [Fact]
-    public void CacheTreatsCompiledOptionAsSameSemanticKey()
+    public void CacheSeparatesCompiledExecutionMode()
     {
         Utf8RegexCache.ResetForTests();
 
         _ = Utf8Regex.IsMatch("xxabcxx"u8, "abc", RegexOptions.CultureInvariant);
         _ = Utf8Regex.IsMatch("xxabcxx"u8, "abc", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        Assert.Equal(1, Utf8RegexCache.EntryCount);
+        Assert.Equal(2, Utf8RegexCache.EntryCount);
     }
 
     [Fact]

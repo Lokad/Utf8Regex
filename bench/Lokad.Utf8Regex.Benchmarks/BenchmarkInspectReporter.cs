@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -1212,6 +1213,18 @@ internal static partial class BenchmarkInspectReporter
             () => new Utf8Regex(benchmarkCase.Pattern, ordinaryOptions));
         MeasureFixedConstruction("Utf8CompiledConstruct", samples, instanceCount,
             () => new Utf8Regex(benchmarkCase.Pattern, compiledOptions));
+        MeasureFixedConstruction("Utf8OrdinaryStaticConstruct", samples, instanceCount,
+            () =>
+            {
+                Utf8RegexCache.ResetForTests();
+                return Utf8RegexCache.GetOrAdd(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout);
+            });
+        MeasureFixedConstruction("Utf8CompiledStaticConstruct", samples, instanceCount,
+            () =>
+            {
+                Utf8RegexCache.ResetForTests();
+                return Utf8RegexCache.GetOrAdd(benchmarkCase.Pattern, compiledOptions, Regex.InfiniteMatchTimeout);
+            });
         MeasureFixedConstruction("RegexOrdinaryConstruct", samples, instanceCount,
             () => new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout));
         MeasureFixedConstruction("RegexCompiledConstruct", samples, instanceCount,
@@ -1222,6 +1235,20 @@ internal static partial class BenchmarkInspectReporter
             regex => regex.Count(benchmarkCase.InputBytes));
         MeasureFixedFirstCall("Utf8CompiledFirstCountPrimed", samples, instanceCount,
             () => new Utf8Regex(benchmarkCase.Pattern, compiledOptions),
+            regex => regex.Count(benchmarkCase.InputBytes));
+        MeasureFixedFirstCall("Utf8OrdinaryStaticFirstCount", samples, instanceCount,
+            () =>
+            {
+                Utf8RegexCache.ResetForTests();
+                return Utf8RegexCache.GetOrAdd(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout);
+            },
+            regex => regex.Count(benchmarkCase.InputBytes));
+        MeasureFixedFirstCall("Utf8CompiledStaticFirstCount", samples, instanceCount,
+            () =>
+            {
+                Utf8RegexCache.ResetForTests();
+                return Utf8RegexCache.GetOrAdd(benchmarkCase.Pattern, compiledOptions, Regex.InfiniteMatchTimeout);
+            },
             regex => regex.Count(benchmarkCase.InputBytes));
         MeasureFixedFirstCall("RegexOrdinaryFirstCountPrimed", samples, instanceCount,
             () => new Regex(benchmarkCase.Pattern, ordinaryOptions, Regex.InfiniteMatchTimeout),
