@@ -348,7 +348,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
     {
         branches = [];
-        if (node.ChildCount != 1 ||
+        if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+            node.ChildCount != 1 ||
             !TryLowerBranches(node.Child(0), budget, out var childBranches) ||
             childBranches.Length != 1)
         {

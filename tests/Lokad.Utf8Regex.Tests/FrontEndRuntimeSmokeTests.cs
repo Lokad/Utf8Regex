@@ -1306,10 +1306,10 @@ public sealed class FrontEndRuntimeSmokeTests
     {
         var analysis = Utf8FrontEnd.Compile("(?=ab)ab", RegexOptions.CultureInvariant);
 
-        Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, analysis.ExecutionKind);
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
-        Assert.Equal("ab", Encoding.UTF8.GetString(analysis.SearchPlan.LiteralUtf8!));
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, analysis.SearchPlan.Kind);
+        // PLAN.md C13: a leading lookahead cannot ride an unverified literal
+        // plan, so execution falls back while still deriving the search literal.
+        Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
+        Assert.Equal(Utf8SearchKind.FixedDistanceAsciiLiteral, analysis.SearchPlan.Kind);
         Assert.Equal("ab", Encoding.UTF8.GetString(analysis.SearchPlan.LiteralUtf8!));
     }
 

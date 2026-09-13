@@ -439,8 +439,7 @@ internal static class Utf8NativeExecutionAnalyzer
                     IsSupportedSimplePatternNode(node.Child(0));
 
             case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
-                return node.ChildCount == 1 &&
-                    IsSupportedSimplePatternLookaroundNode(node.Child(0));
+                return false;
 
             default:
                 return false;
@@ -532,6 +531,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         var lookaheadNode = body.Child(body.ChildCount - 1);
         if (lookaheadNode.Kind != RuntimeFrontEnd.RegexNodeKind.PositiveLookaround ||
+            (lookaheadNode.Options & RegexOptions.RightToLeft) != 0 ||
             lookaheadNode.ChildCount != 1 ||
             !TryGetNativeLookaheadLiteralText(lookaheadNode.Child(0), executionOptions, out trailingLiteral))
         {
@@ -633,6 +633,7 @@ internal static class Utf8NativeExecutionAnalyzer
         if (body.Kind != RuntimeFrontEnd.RegexNodeKind.Concatenate ||
             body.ChildCount != 2 ||
             body.Child(1).Kind != RuntimeFrontEnd.RegexNodeKind.PositiveLookaround ||
+            (body.Child(1).Options & RegexOptions.RightToLeft) != 0 ||
             body.Child(1).ChildCount != 1 ||
             !TryGetNativeLookaheadLiteralText(body.Child(1).Child(0), executionOptions, out trailingLiteral))
         {
@@ -1460,6 +1461,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         var lookahead = UnwrapRuntimeNode(node.Child(1));
         if (lookahead.Kind != RuntimeFrontEnd.RegexNodeKind.PositiveLookaround ||
+            (lookahead.Options & RegexOptions.RightToLeft) != 0 ||
             lookahead.ChildCount != 1 ||
             !TryExtractSeparatorLiteralLookahead(lookahead.Child(0), out var separatorMinCount, out var trailingLiteral))
         {

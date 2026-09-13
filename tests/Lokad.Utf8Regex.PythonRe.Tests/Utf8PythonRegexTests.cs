@@ -306,7 +306,10 @@ public sealed class Utf8PythonRegexTests
         Assert.False(conditional.DebugHasUtf8FullRegex);
         Assert.False(conditional.DebugIsUtf8FullRegexValueCreated);
         Assert.False(lookahead.DebugIsUtf8FullRegexValueCreated);
-        Assert.True(lookahead.DebugHasUtf8FullRegex);
+        // PLAN.md C13: the fullmatch wrapper adds anchors around the lookahead,
+        // so the translated full pattern leaves the core literal route for the
+        // managed fallback (search still uses the core backend above).
+        Assert.False(lookahead.DebugHasUtf8FullRegex);
         Assert.True(lookahead.DebugIsUtf8FullRegexValueCreated);
         Assert.True(conditional.Search("foobar"u8).Success);
         Assert.True(lookahead.Search("foobar"u8).Success);

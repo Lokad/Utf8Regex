@@ -555,7 +555,7 @@ internal sealed partial class RegexParser
         string? captureName = null;
         string? balanceCaptureName = null;
 
-        if (TryScanSimpleGroupHeader(ref isNonCapturing, ref groupKind))
+        if (TryScanSimpleGroupHeader(ref isNonCapturing, ref groupKind, ref groupOptions))
         {
             return new GroupConstructScanResult(true, isNonCapturing, groupOptions, groupKind);
         }
@@ -605,7 +605,7 @@ internal sealed partial class RegexParser
         return new GroupConstructScanResult(true, isNonCapturing, groupOptions, groupKind);
     }
 
-    private bool TryScanSimpleGroupHeader(ref bool isNonCapturing, ref RegexNodeKind groupKind)
+    private bool TryScanSimpleGroupHeader(ref bool isNonCapturing, ref RegexNodeKind groupKind, ref RegexOptions groupOptions)
     {
         if (_scanPattern[_pos + 1] == ':')
         {
@@ -626,6 +626,7 @@ internal sealed partial class RegexParser
         {
             isNonCapturing = true;
             groupKind = RegexNodeKind.PositiveLookaround;
+            groupOptions &= ~RegexOptions.RightToLeft;
             _pos += 2;
             return true;
         }
@@ -634,6 +635,7 @@ internal sealed partial class RegexParser
         {
             isNonCapturing = true;
             groupKind = RegexNodeKind.NegativeLookaround;
+            groupOptions &= ~RegexOptions.RightToLeft;
             _pos += 2;
             return true;
         }
@@ -644,6 +646,7 @@ internal sealed partial class RegexParser
             groupKind = _scanPattern[_pos + 2] == '='
                 ? RegexNodeKind.PositiveLookaround
                 : RegexNodeKind.NegativeLookaround;
+            groupOptions |= RegexOptions.RightToLeft;
             _pos += 3;
             return true;
         }
@@ -1666,14 +1669,17 @@ internal sealed partial class RegexParser
         }
 
         RegexNodeKind groupKind;
+        var conditionOptions = currentOptions;
         if (_scanPattern[_pos + 1] == '=')
         {
             groupKind = RegexNodeKind.PositiveLookaround;
+            conditionOptions &= ~RegexOptions.RightToLeft;
             _pos += 2;
         }
         else if (_scanPattern[_pos + 1] == '!')
         {
             groupKind = RegexNodeKind.NegativeLookaround;
+            conditionOptions &= ~RegexOptions.RightToLeft;
             _pos += 2;
         }
         else if (_pos + 2 < _scanPattern.Length && _scanPattern[_pos + 1] == '<' && _scanPattern[_pos + 2] is '=' or '!')
@@ -1681,6 +1687,7 @@ internal sealed partial class RegexParser
             groupKind = _scanPattern[_pos + 2] == '='
                 ? RegexNodeKind.PositiveLookaround
                 : RegexNodeKind.NegativeLookaround;
+            conditionOptions |= RegexOptions.RightToLeft;
             _pos += 3;
         }
         else
@@ -1688,7 +1695,7 @@ internal sealed partial class RegexParser
             return false;
         }
 
-        PushOptions(currentOptions);
+        PushOptions(conditionOptions);
         var body = ScanRegex(stopAtAlternation: false);
         PopOptions();
         if (body is null)
@@ -1702,7 +1709,7 @@ internal sealed partial class RegexParser
             return false;
         }
 
-        conditionNode = new RegexNode(groupKind, currentOptions).AddChild(body);
+        conditionNode = new RegexNode(groupKind, conditionOptions).AddChild(body);
         return true;
     }
 
