@@ -232,7 +232,10 @@ internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReRe
         return true;
     }
 
-    public string ToDotNetReplacementString()
+    public string ToDotNetReplacementString() => ToDotNetReplacementString(null);
+
+    // PLAN.md C07: numeric references name Python slots; callers matching against a managed engine pass the permutation, while direct text consumers keep Python numbers.
+    public string ToDotNetReplacementString(int[]? managedNumbersByPython)
     {
         if (Tokens.Count == 0)
         {
@@ -248,7 +251,12 @@ internal readonly record struct PythonReReplacementPlan(IReadOnlyList<PythonReRe
                     builder.Append(token.RequiredText.Replace("$", "$$", StringComparison.Ordinal));
                     break;
                 case PythonReReplacementTokenKind.GroupNumber:
-                    builder.Append("${").Append(token.Number).Append('}');
+                    var number = token.Number;
+                    if (managedNumbersByPython is not null && (uint)number < (uint)managedNumbersByPython.Length)
+                    {
+                        number = managedNumbersByPython[number];
+                    }
+                    builder.Append("${").Append(number).Append('}');
                     break;
                 case PythonReReplacementTokenKind.GroupName:
                     builder.Append("${").Append(token.Text).Append('}');

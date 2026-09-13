@@ -340,7 +340,27 @@ internal static class PythonReTranslator
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups);
         var builder = new StringBuilder();
-        AppendNode(parseResult.Root, builder, emittedGroupNames);
+        // PLAN.md C07: .NET numbers unnamed groups first (opening-paren order), then named groups (opening-paren order), while Python numbers strictly by opening paren. Precompute the Python-slot to managed-number permutation once; the facade proves the same rule via GroupNumberFromName at runtime.
+        var managedNumbersByPython = new int[parseResult.CaptureGroupCount + 1];
+        var namedPythonGroups = new HashSet<int>(parseResult.NamedGroups.Values);
+        var nextManagedGroup = 1;
+        for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
+        {
+            if (!namedPythonGroups.Contains(pythonGroup))
+            {
+                managedNumbersByPython[pythonGroup] = nextManagedGroup++;
+            }
+        }
+
+        for (var pythonGroup = 1; pythonGroup <= parseResult.CaptureGroupCount; pythonGroup++)
+        {
+            if (namedPythonGroups.Contains(pythonGroup))
+            {
+                managedNumbersByPython[pythonGroup] = nextManagedGroup++;
+            }
+        }
+
+        AppendNode(parseResult.Root, builder, emittedGroupNames, managedNumbersByPython);
         var translatedPattern = builder.ToString();
         if ((parseResult.Options & PythonReCompileOptions.Verbose) == 0)
         {
@@ -495,7 +515,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendNode(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
         switch (node)
         {
@@ -507,14 +527,14 @@ internal static class PythonReTranslator
                         builder.Append('|');
                     }
 
-                    AppendNode(alternation.Branches[i], builder, emittedGroupNames);
+                    AppendNode(alternation.Branches[i], builder, emittedGroupNames, managedNumbersByPython);
                 }
                 break;
 
             case PythonReSequenceNode sequence:
                 foreach (var element in sequence.Elements)
                 {
-                    AppendNode(element, builder, emittedGroupNames);
+                    AppendNode(element, builder, emittedGroupNames, managedNumbersByPython);
                 }
                 break;
 
@@ -537,20 +557,21 @@ internal static class PythonReTranslator
                 break;
 
             case PythonReNumericBackreferenceNode numericBackreference:
+                // PLAN.md C07: numeric references name Python slots; emit the managed number.
                 builder.Append('\\');
-                builder.Append(numericBackreference.GroupNumber);
+                builder.Append(managedNumbersByPython[numericBackreference.GroupNumber]);
                 break;
 
             case PythonReConditionalNode conditional:
-                AppendConditional(conditional, builder, emittedGroupNames);
+                AppendConditional(conditional, builder, emittedGroupNames, managedNumbersByPython);
                 break;
 
             case PythonReQuantifierNode quantifier:
-                AppendQuantifier(quantifier, builder, emittedGroupNames);
+                AppendQuantifier(quantifier, builder, emittedGroupNames, managedNumbersByPython);
                 break;
 
             case PythonReGroupNode group:
-                AppendGroup(group, builder, emittedGroupNames);
+                AppendGroup(group, builder, emittedGroupNames, managedNumbersByPython);
                 break;
 
             default:
@@ -558,22 +579,22 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendQuantifier(PythonReQuantifierNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
         if (node.Flavor == PythonReQuantifierFlavor.Possessive)
         {
             builder.Append("(?>");
-            AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames);
+            AppendQuantifierCore(node, builder, PythonReQuantifierFlavor.Greedy, emittedGroupNames, managedNumbersByPython);
             builder.Append(')');
             return;
         }
 
-        AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames);
+        AppendQuantifierCore(node, builder, node.Flavor, emittedGroupNames, managedNumbersByPython);
     }
 
-    private static void AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendQuantifierCore(PythonReQuantifierNode node, StringBuilder builder, PythonReQuantifierFlavor flavor, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
-        AppendInnerAsAtom(node.Inner, builder, emittedGroupNames);
+        AppendInnerAsAtom(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
         if (node.Min == 0 && node.Max is null)
         {
             builder.Append('*');
@@ -610,13 +631,13 @@ internal static class PythonReTranslator
         });
     }
 
-    private static void AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendGroup(PythonReGroupNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
         switch (node.Kind)
         {
             case PythonReGroupKind.Capturing:
                 builder.Append('(');
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
@@ -627,45 +648,45 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append("(?<").Append(emittedGroupNames[groupName]).Append('>');
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NonCapturing:
                 builder.Append("(?:");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.PositiveLookahead:
                 builder.Append("(?=");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NegativeLookahead:
                 builder.Append("(?!");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.PositiveLookbehind:
                 EnsureFixedWidth(node.Inner);
                 builder.Append("(?<=");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NegativeLookbehind:
                 EnsureFixedWidth(node.Inner);
                 builder.Append("(?<!");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.Atomic:
                 builder.Append("(?>");
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
@@ -679,7 +700,7 @@ internal static class PythonReTranslator
                 }
 
                 builder.Append(':');
-                AppendNode(node.Inner, builder, emittedGroupNames);
+                AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
@@ -688,13 +709,13 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendConditional(PythonReConditionalNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
         builder.Append("(?(");
         switch (node.Reference.Kind)
         {
             case PythonReConditionalReferenceKind.GroupNumber:
-                builder.Append(node.Reference.GroupNumber);
+                builder.Append(managedNumbersByPython[node.Reference.GroupNumber]);
                 break;
             case PythonReConditionalReferenceKind.GroupName:
                 if (node.Reference.GroupName is not string groupName)
@@ -709,11 +730,11 @@ internal static class PythonReTranslator
         }
 
         builder.Append(')');
-        AppendNode(node.YesBranch, builder, emittedGroupNames);
+        AppendNode(node.YesBranch, builder, emittedGroupNames, managedNumbersByPython);
         if (node.NoBranch is not null)
         {
             builder.Append('|');
-            AppendNode(node.NoBranch, builder, emittedGroupNames);
+            AppendNode(node.NoBranch, builder, emittedGroupNames, managedNumbersByPython);
         }
 
         builder.Append(')');
@@ -742,7 +763,7 @@ internal static class PythonReTranslator
         }
     }
 
-    private static void AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames)
+    private static void AppendInnerAsAtom(PythonReNode node, StringBuilder builder, IReadOnlyDictionary<string, string> emittedGroupNames, int[] managedNumbersByPython)
     {
         switch (node)
         {
@@ -752,12 +773,12 @@ internal static class PythonReTranslator
             case PythonReNamedBackreferenceNode:
             case PythonReNumericBackreferenceNode:
             case PythonReGroupNode:
-                AppendNode(node, builder, emittedGroupNames);
+                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython);
                 break;
 
             default:
                 builder.Append("(?:");
-                AppendNode(node, builder, emittedGroupNames);
+                AppendNode(node, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 break;
         }

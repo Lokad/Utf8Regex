@@ -90,6 +90,7 @@ public sealed class Utf8PythonRegex
     private readonly Regex _managedFullRegex;
     private readonly PythonReTranslation _translation;
     private readonly int[] _managedGroupNumbersByPythonGroup;
+    private readonly bool _groupNumberingIsIdentity;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
@@ -253,8 +254,19 @@ public sealed class Utf8PythonRegex
             parseResult.CaptureGroupCount,
             parseResult.NamedGroups,
             _translation.EmittedGroupNames);
-        _groupNames = GetPublicGroupNames(_managedRegex, _translation.EmittedGroupNames);
-        _nameEntries = GetManagedNameEntries(_managedRegex, _translation.EmittedGroupNames);
+        // PLAN.md C07: every consumer below indexes Python slots; managed numbers only appear at the engine boundary through this permutation.
+        _groupNumberingIsIdentity = true;
+        for (var pythonGroup = 0; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
+        {
+            if (_managedGroupNumbersByPythonGroup[pythonGroup] != pythonGroup)
+            {
+                _groupNumberingIsIdentity = false;
+                break;
+            }
+        }
+
+        _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
+        _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
         _namedGroups = _nameEntries.ToDictionary(x => x.Name, x => x.Number, StringComparer.Ordinal);
 
         try
@@ -1452,7 +1464,7 @@ public sealed class Utf8PythonRegex
             input,
             startOffsetInBytes,
             count,
-            static (source, match, indexMap, utf16BaseOffset, state) =>
+            (source, match, indexMap, utf16BaseOffset, state) =>
                 state.ExpandToUtf8(source, CreateMatchSnapshot(match, indexMap, utf16BaseOffset).Groups),
             plan);
     }
@@ -1630,7 +1642,7 @@ public sealed class Utf8PythonRegex
             input,
             startOffsetInBytes,
             count,
-            static (source, match, indexMap, utf16BaseOffset, state) => Encoding.UTF8.GetBytes(
+            (source, match, indexMap, utf16BaseOffset, state) => Encoding.UTF8.GetBytes(
                 state.Evaluator(
                     state.Value,
                     CreateDetailedMatchData(source, match, indexMap, state.NameEntries, utf16BaseOffset))),
@@ -1686,7 +1698,7 @@ public sealed class Utf8PythonRegex
             input,
             startOffsetInBytes,
             count,
-            static (source, match, indexMap, utf16BaseOffset, state) => state.Evaluator(
+            (source, match, indexMap, utf16BaseOffset, state) => state.Evaluator(
                 state.Value,
                 CreateDetailedMatchData(source, match, indexMap, state.NameEntries, utf16BaseOffset)),
             (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
@@ -1713,7 +1725,8 @@ public sealed class Utf8PythonRegex
         }
 
         // Regex.Split advances empty matches by UTF-16 code unit, whereas Python advances by scalar.
-        if (_canUseManagedSplitFastPath &&
+        if (_groupNumberingIsIdentity &&
+            _canUseManagedSplitFastPath &&
             (!_canMatchEmpty || input.IndexOfAnyInRange((byte)0xF0, (byte)0xF4) < 0) &&
             startOffsetInBytes == 0 &&
             maxSplit >= 0)
@@ -2309,7 +2322,7 @@ public sealed class Utf8PythonRegex
         var maximumReplacements = count == 0 ? int.MaxValue : count;
         return _managedRegex.Replace(
             subject,
-            plan.ToDotNetReplacementString(),
+            plan.ToDotNetReplacementString(_managedGroupNumbersByPythonGroup),
             maximumReplacements,
             startOffsetInUtf16);
     }
@@ -2352,13 +2365,13 @@ public sealed class Utf8PythonRegex
         return CreateDetailedMatchData(input, match, indexMap, _nameEntries, utf16BaseOffset);
     }
 
-    private static Utf8PythonDetailedMatchData CreateDetailedMatchData(
+    private Utf8PythonDetailedMatchData CreateDetailedMatchData(
         ReadOnlySpan<byte> input,
         Match match,
         PythonReUtf8IndexMap indexMap,
         PythonReNameEntry[] nameEntries) => CreateDetailedMatchData(input, match, indexMap, nameEntries, 0);
 
-    private static Utf8PythonDetailedMatchData CreateDetailedMatchData(
+    private Utf8PythonDetailedMatchData CreateDetailedMatchData(
         ReadOnlySpan<byte> input,
         Match match,
         PythonReUtf8IndexMap indexMap,
@@ -2370,12 +2383,13 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        var projectedGroups = new Utf8PythonGroupMatchData[match.Groups.Count];
-        for (var i = 0; i < projectedGroups.Length; i++)
+        // PLAN.md C07: project Python slots; managed order coincides only when the permutation is the identity.
+        var projectedGroups = new Utf8PythonGroupMatchData[_managedGroupNumbersByPythonGroup.Length];
+        for (var pythonGroup = 0; pythonGroup < projectedGroups.Length; pythonGroup++)
         {
-            projectedGroups[i] = CreateGroupMatchData(
+            projectedGroups[pythonGroup] = CreateGroupMatchData(
                 input,
-                PythonReGroupData.FromUtf16(i, match.Groups[i], indexMap, utf16BaseOffset));
+                PythonReGroupData.FromUtf16(pythonGroup, match.Groups[_managedGroupNumbersByPythonGroup[pythonGroup]], indexMap, utf16BaseOffset));
         }
 
         return new Utf8PythonDetailedMatchData
@@ -2400,10 +2414,11 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        var groups = new PythonReGroupData[match.GroupCount];
-        for (var i = 0; i < groups.Length; i++)
+        // PLAN.md C07: the native engine numbers like managed (.NET order); project Python slots.
+        var groups = new PythonReGroupData[_managedGroupNumbersByPythonGroup.Length];
+        for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            groups[i] = PythonReGroupData.FromUtf8Group(i, match.GetGroup(i), byteBaseOffset, utf16BaseOffset);
+            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]), byteBaseOffset, utf16BaseOffset);
         }
 
         return new Utf8PythonMatchContext(input, groups, _nameEntries);
@@ -2424,28 +2439,30 @@ public sealed class Utf8PythonRegex
             return default;
         }
 
-        var groups = new PythonReGroupData[match.GroupCount];
-        for (var i = 0; i < groups.Length; i++)
+        // PLAN.md C07: the native engine numbers like managed (.NET order); project Python slots.
+        var groups = new PythonReGroupData[_managedGroupNumbersByPythonGroup.Length];
+        for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            groups[i] = PythonReGroupData.FromUtf8Group(i, match.GetGroup(i), byteBaseOffset, utf16BaseOffset);
+            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]), byteBaseOffset, utf16BaseOffset);
         }
 
         return CreateDetailedMatchData(input, groups, _nameEntries);
     }
 
-    private static PythonReManagedMatchSnapshot CreateMatchSnapshot(
+    private PythonReManagedMatchSnapshot CreateMatchSnapshot(
         Match match,
         PythonReUtf8IndexMap indexMap) => CreateMatchSnapshot(match, indexMap, 0);
 
-    private static PythonReManagedMatchSnapshot CreateMatchSnapshot(
+    private PythonReManagedMatchSnapshot CreateMatchSnapshot(
         Match match,
         PythonReUtf8IndexMap indexMap,
         int utf16BaseOffset)
     {
-        var groups = new PythonReGroupData[match.Groups.Count];
-        for (var i = 0; i < match.Groups.Count; i++)
+        // PLAN.md C07: snapshot Python slots for every consumer below.
+        var groups = new PythonReGroupData[_managedGroupNumbersByPythonGroup.Length];
+        for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            groups[i] = PythonReGroupData.FromUtf16(i, match.Groups[i], indexMap, utf16BaseOffset);
+            groups[pythonGroup] = PythonReGroupData.FromUtf16(pythonGroup, match.Groups[_managedGroupNumbersByPythonGroup[pythonGroup]], indexMap, utf16BaseOffset);
         }
 
         return new PythonReManagedMatchSnapshot(groups);
@@ -2499,30 +2516,35 @@ public sealed class Utf8PythonRegex
         return managedGroupNumbers;
     }
 
-    private static string[] GetPublicGroupNames(Regex regex, IReadOnlyDictionary<string, string> emittedGroupNames)
+    // PLAN.md C07: public names follow Python slot order, not managed order. Unnamed slots keep their number as their name, matching both engines.
+    private static string[] GetPublicGroupNames(int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
     {
-        var reverseMap = emittedGroupNames.ToDictionary(x => x.Value, x => x.Key, StringComparer.Ordinal);
-        var names = regex.GetGroupNames();
-        for (var i = 0; i < names.Length; i++)
+        var namesByPythonGroup = new string?[captureGroupCount + 1];
+        foreach (var pair in namedGroups)
         {
-            if (reverseMap.TryGetValue(names[i], out var original))
-            {
-                names[i] = original;
-            }
+            namesByPythonGroup[pair.Value] = pair.Key;
+        }
+
+        var names = new string[captureGroupCount + 1];
+        names[0] = "0";
+        for (var pythonGroup = 1; pythonGroup <= captureGroupCount; pythonGroup++)
+        {
+            names[pythonGroup] = namesByPythonGroup[pythonGroup] ?? pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         return names;
     }
 
-    private static PythonReNameEntry[] GetManagedNameEntries(Regex regex, IReadOnlyDictionary<string, string> emittedGroupNames)
+    // PLAN.md C07: name entries carry Python slot numbers; the managed numbers they replaced were only valid when no named group preceded an unnamed one.
+    private static PythonReNameEntry[] GetPythonNameEntries(IReadOnlyDictionary<string, int> namedGroups)
     {
-        var entries = new List<PythonReNameEntry>(emittedGroupNames.Count);
-        foreach (var pair in emittedGroupNames)
+        var entries = new List<PythonReNameEntry>(namedGroups.Count);
+        foreach (var pair in namedGroups)
         {
             entries.Add(new PythonReNameEntry
             {
                 Name = pair.Key,
-                Number = regex.GroupNumberFromName(pair.Value),
+                Number = pair.Value,
             });
         }
 
@@ -2547,12 +2569,12 @@ public sealed class Utf8PythonRegex
         return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf8Match(match, byteBaseOffset, utf16BaseOffset));
     }
 
-    private static void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex)
+    private void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex)
     {
         AppendSplitMatch(parts, subject, match, ref lastIndex, 0);
     }
 
-    private static void AppendSplitMatch(
+    private void AppendSplitMatch(
         List<string?> parts,
         string subject,
         Match match,
@@ -2562,15 +2584,17 @@ public sealed class Utf8PythonRegex
         var absoluteStart = utf16BaseOffset + match.Index;
         var absoluteEnd = absoluteStart + match.Length;
         parts.Add(subject[lastIndex..absoluteStart]);
-        for (var i = 1; i < match.Groups.Count; i++)
+        // PLAN.md C07: split captures follow Python slot order.
+        for (var pythonGroup = 1; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
         {
-            parts.Add(match.Groups[i].Success ? match.Groups[i].Value : null);
+            var managedSplitGroup = match.Groups[_managedGroupNumbersByPythonGroup[pythonGroup]];
+            parts.Add(managedSplitGroup.Success ? managedSplitGroup.Value : null);
         }
 
         lastIndex = absoluteEnd;
     }
 
-    private static void AppendSplitDetailedMatch(
+    private void AppendSplitDetailedMatch(
         List<Utf8PythonSplitItem> parts,
         string subject,
         Match match,
@@ -2579,7 +2603,7 @@ public sealed class Utf8PythonRegex
         AppendSplitDetailedMatch(parts, subject, match, ref lastIndex, 0);
     }
 
-    private static void AppendSplitDetailedMatch(
+    private void AppendSplitDetailedMatch(
         List<Utf8PythonSplitItem> parts,
         string subject,
         Match match,
@@ -2594,13 +2618,14 @@ public sealed class Utf8PythonRegex
             IsCapture = false,
             CaptureGroupNumber = 0,
         });
-        for (var i = 1; i < match.Groups.Count; i++)
+        // PLAN.md C07: split captures follow Python slot order.
+        for (var pythonGroup = 1; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
         {
             parts.Add(new Utf8PythonSplitItem
             {
-                ValueText = match.Groups[i].Success ? match.Groups[i].Value : null,
+                ValueText = match.Groups[_managedGroupNumbersByPythonGroup[pythonGroup]].Success ? match.Groups[_managedGroupNumbersByPythonGroup[pythonGroup]].Value : null,
                 IsCapture = true,
-                CaptureGroupNumber = i,
+                CaptureGroupNumber = pythonGroup,
             });
         }
 
