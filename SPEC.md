@@ -4,7 +4,7 @@
 
 ## 1. Charter
 
-`Lokad.Utf8Regex` must be a **managed, dependency-minimal, high-performance UTF-8-native regex engine** that stays aligned with the .NET regex language and behavior: same pattern language, same option model, same replacement language, same timeout model, same right-to-left behavior, and the same default backtracking semantics unless the caller explicitly requests `RegexOptions.NonBacktracking`. For the first released version, the semantic target is restricted to `RegexOptions.CultureInvariant` behavior; broader culture-sensitive parity is explicitly deferred. The .NET regex language is documented as Perl-5-compatible with additional .NET features such as right-to-left matching, and inline options are part of that language. ([Microsoft Learn][2])
+`Lokad.Utf8Regex` must be a **managed, dependency-minimal, high-performance UTF-8-native regex engine** that stays aligned with the .NET regex language and behavior: same pattern language, same option model, same replacement language, same timeout model, same right-to-left behavior, and the same default backtracking semantics unless the caller explicitly requests `RegexOptions.NonBacktracking`. The primary qualified mode is `RegexOptions.CultureInvariant` behavior; culture-sensitive modes execute with the captured construction-culture .NET semantics described in §3.3 rather than being rejected. The .NET regex language is documented as Perl-5-compatible with additional .NET features such as right-to-left matching, and inline options are part of that language. ([Microsoft Learn][2])
 
 The project goal is **not** “a different regex flavor that happens to be fast.” It is “the fastest possible managed UTF-8 implementation that behaves like .NET regex.” That means the default engine must preserve constructs and behaviors that `RegexOptions.NonBacktracking` intentionally does not: backreferences, balancing groups, conditionals, lookarounds, `\G`, and full capture history inside loops. The public `NonBacktracking` option should still be supported, but it is a separate mode, not the foundation of the default engine. ([Microsoft Learn][3])
 
@@ -27,7 +27,7 @@ This performance-first stance must not turn into parser accretion. `Lokad.Utf8Re
 
 ### 3.1 Pattern language and options
 
-The accepted pattern language must match .NET regex behavior on .NET 10. That includes the normal grammar, inline options, `RightToLeft`, `ECMAScript`, `CultureInvariant` behavior, backtracking behavior, captures, backreferences, balancing groups, conditionals, lookarounds, and the documented replacement syntax. Broader culture-sensitive parity is out of scope for the first version. ([Microsoft Learn][2])
+The accepted pattern language must match .NET regex behavior on .NET 10. That includes the normal grammar, inline options, `RightToLeft`, `ECMAScript`, `CultureInvariant` behavior, backtracking behavior, captures, backreferences, balancing groups, conditionals, lookarounds, and the documented replacement syntax. Culture-sensitive execution follows the ambient construction culture through the compatibility path (see §3.3); performance qualification centers on `CultureInvariant`. ([Microsoft Learn][2])
 
 ### 3.2 Replacement semantics
 
@@ -35,7 +35,7 @@ The fixed replacement-string path must behave like `.NET Regex.Replace`, includi
 
 ### 3.3 Culture and casing
 
-For the first version, `Lokad.Utf8Regex` supports only `RegexOptions.CultureInvariant` semantics. In practice, that means `IgnoreCase` must match the runtime when `CultureInvariant` is in effect, and construction or execution for culture-sensitive modes should fail explicitly or route through an explicit compatibility fallback during development rather than silently approximating behavior. Do not hand-roll “close enough” case folding. Broader culture-sensitive parity, including `CurrentCulture`-dependent cases such as Turkish-I behavior, is a later expansion item. ([GitHub][6])
+`RegexOptions.CultureInvariant` is the primary supported and performance-tested mode. In practice, that means `IgnoreCase` must match the runtime when `CultureInvariant` is in effect, and culture-sensitive modes are admitted through the captured-culture compatibility fallback rather than silently approximating behavior. Do not hand-roll “close enough” case folding. The effective culture without `CultureInvariant` is the ambient `CultureInfo.CurrentCulture` captured at construction, and the static instance cache keys entries by that construction culture so an instance is never reused under another culture. `CurrentCulture`-dependent cases such as Turkish-I behavior follow captured .NET culture semantics but are not performance-qualified to the same degree as `CultureInvariant`. ([GitHub][6])
 
 ### 3.4 Timeout behavior
 

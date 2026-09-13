@@ -16,7 +16,7 @@ The implementation is parser-first:
 2. validate Python-specific semantic constraints
 3. translate to a `.NET Regex`-compatible pattern when semantics are preserved
 4. use `Utf8Regex` as an optimization backend only for a safe translated subset
-5. use managed `.NET Regex` as the semantic execution authority for capture-aware APIs
+5. use managed `.NET Regex` as an execution backend for capture-aware APIs; the semantic authority remains the pinned CPython 3.13.2 `str`-pattern oracle
 
 ## Current scope
 
