@@ -2518,7 +2518,7 @@ public sealed class Utf8Pcre2Regex
     private bool TryGetLiteralDriverReplacementPlan(
         string replacement,
         Pcre2SubstitutionOptions substitutionOptions,
-        out SimpleReplacementPlan plan,
+        out Pcre2SimpleReplacementPlan plan,
         out bool replacementOnly)
     {
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
@@ -2554,7 +2554,7 @@ public sealed class Utf8Pcre2Regex
                 return false;
             }
 
-            plan = new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)]);
+            plan = new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)]);
             return true;
         }
 
@@ -2575,7 +2575,7 @@ public sealed class Utf8Pcre2Regex
 
     private static Utf8ReplacementOutputLength BuildLiteralDriverReplacementRanges(
         int inputLength,
-        SimpleReplacementPlan plan,
+        Pcre2SimpleReplacementPlan plan,
         bool replacementOnly,
         ref Pcre2GlobalMatchCursor cursor,
         ref Utf8ReplacementRangeLedger ledger)
@@ -2593,7 +2593,7 @@ public sealed class Utf8Pcre2Regex
         return outputLength;
     }
 
-    private static int GetLiteralDriverReplacementLength(SimpleReplacementPlan plan, int matchLength)
+    private static int GetLiteralDriverReplacementLength(Pcre2SimpleReplacementPlan plan, int matchLength)
     {
         var length = 0;
         foreach (var segment in plan.Segments)
@@ -2606,7 +2606,7 @@ public sealed class Utf8Pcre2Regex
 
     private static void EmitLiteralDriverReplacement(
         ReadOnlySpan<byte> input,
-        SimpleReplacementPlan plan,
+        Pcre2SimpleReplacementPlan plan,
         bool replacementOnly,
         Span<byte> destination,
         ReadOnlySpan<Utf8ReplacementRange> matches)
@@ -2951,7 +2951,7 @@ public sealed class Utf8Pcre2Regex
         var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)])
+            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
             : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
@@ -3031,7 +3031,7 @@ public sealed class Utf8Pcre2Regex
         var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
         var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
         var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)])
+            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
             : GetSimpleReplacementPlan(replacement, templateOptions);
         var builder = new StringBuilder(subject.Length + replacement.Length);
         var position = 0;
@@ -3124,15 +3124,15 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark,
         bool syntaxOnly)
     {
         var builder = new StringBuilder(replacement.Length + matchLength);
-        var caseTransform = ReplacementCaseTransformMode.None;
-        var nextCaseTransform = ReplacementCaseTransformMode.None;
+        var caseTransform = Pcre2ReplacementCaseTransformMode.None;
+        var nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
         var quoted = false;
         AppendEvaluatedReplacementTemplate(
             builder,
@@ -3180,9 +3180,9 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark)
         => EvaluateReplacementTemplate(
             replacement,
@@ -3196,14 +3196,14 @@ public sealed class Utf8Pcre2Regex
             mark,
             false);
 
-    private SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
+    private Pcre2SimpleReplacementPlan? GetSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions)
     {
         return _replacementComponent.GetOrAdd(
-            new SimpleReplacementCacheKey(replacement, substitutionOptions),
+            new Pcre2SimpleReplacementCacheKey(replacement, substitutionOptions),
             static key => TryParseSimpleReplacementPlan(key.Replacement, key.Options, out var plan) ? plan : null);
     }
 
-    private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out SimpleReplacementPlan plan)
+    private static bool TryParseSimpleReplacementPlan(string replacement, Pcre2SubstitutionOptions substitutionOptions, out Pcre2SimpleReplacementPlan plan)
     {
         if (substitutionOptions != Pcre2SubstitutionOptions.None)
         {
@@ -3211,7 +3211,7 @@ public sealed class Utf8Pcre2Regex
             return false;
         }
 
-        List<SimpleReplacementSegment>? segments = null;
+        List<Pcre2SimpleReplacementSegment>? segments = null;
         var literalStart = 0;
         for (var i = 0; i < replacement.Length; i++)
         {
@@ -3231,10 +3231,10 @@ public sealed class Utf8Pcre2Regex
                 segments ??= [];
                 if (i > literalStart)
                 {
-                    segments.Add(SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
+                    segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
                 }
 
-                segments.Add(SimpleReplacementSegment.FromLiteral("$"));
+                segments.Add(Pcre2SimpleReplacementSegment.FromLiteral("$"));
                 i++;
                 literalStart = i + 1;
                 continue;
@@ -3245,10 +3245,10 @@ public sealed class Utf8Pcre2Regex
                 segments ??= [];
                 if (i > literalStart)
                 {
-                    segments.Add(SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
+                    segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
                 }
 
-                segments.Add(SimpleReplacementSegment.WholeMatch());
+                segments.Add(Pcre2SimpleReplacementSegment.WholeMatch());
                 i++;
                 literalStart = i + 1;
                 continue;
@@ -3262,10 +3262,10 @@ public sealed class Utf8Pcre2Regex
                     segments ??= [];
                     if (i > literalStart)
                     {
-                        segments.Add(SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
+                        segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..i]));
                     }
 
-                    segments.Add(SimpleReplacementSegment.WholeMatch());
+                    segments.Add(Pcre2SimpleReplacementSegment.WholeMatch());
                     i = closing;
                     literalStart = i + 1;
                     continue;
@@ -3281,20 +3281,20 @@ public sealed class Utf8Pcre2Regex
 
         if (segments is null)
         {
-            plan = new SimpleReplacementPlan([SimpleReplacementSegment.FromLiteral(replacement)]);
+            plan = new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)]);
             return true;
         }
 
         if (literalStart < replacement.Length)
         {
-            segments.Add(SimpleReplacementSegment.FromLiteral(replacement[literalStart..]));
+            segments.Add(Pcre2SimpleReplacementSegment.FromLiteral(replacement[literalStart..]));
         }
 
-        plan = new SimpleReplacementPlan([.. segments]);
+        plan = new Pcre2SimpleReplacementPlan([.. segments]);
         return true;
     }
 
-    private static void AppendSimpleReplacement(StringBuilder builder, SimpleReplacementPlan plan, string subject, int matchIndex, int matchLength)
+    private static void AppendSimpleReplacement(StringBuilder builder, Pcre2SimpleReplacementPlan plan, string subject, int matchIndex, int matchLength)
     {
         foreach (var segment in plan.Segments)
         {
@@ -3317,12 +3317,12 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         ref bool quoted,
         bool syntaxOnly)
     {
@@ -3334,7 +3334,7 @@ public sealed class Utf8Pcre2Regex
                 if (current == '\\' && i + 1 < replacement.Length && replacement[i + 1] == 'E')
                 {
                     quoted = false;
-                    caseTransform = ReplacementCaseTransformMode.None;
+                    caseTransform = Pcre2ReplacementCaseTransformMode.None;
                     i++;
                     continue;
                 }
@@ -3397,12 +3397,12 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         ref bool quoted,
         bool syntaxOnly)
     {
@@ -3518,22 +3518,22 @@ public sealed class Utf8Pcre2Regex
                 return index + 1;
             case 'E':
                 quoted = false;
-                nextCaseTransform = ReplacementCaseTransformMode.None;
-                caseTransform = ReplacementCaseTransformMode.None;
+                nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
+                caseTransform = Pcre2ReplacementCaseTransformMode.None;
                 return index + 1;
             case 'U':
-                caseTransform = ReplacementCaseTransformMode.UpperUntilEnd;
+                caseTransform = Pcre2ReplacementCaseTransformMode.UpperUntilEnd;
                 return index + 1;
             case 'L':
-                caseTransform = ReplacementCaseTransformMode.LowerUntilEnd;
+                caseTransform = Pcre2ReplacementCaseTransformMode.LowerUntilEnd;
                 return index + 1;
             case 'u':
-                nextCaseTransform = ReplacementCaseTransformMode.UpperNext;
-                caseTransform = ReplacementCaseTransformMode.None;
+                nextCaseTransform = Pcre2ReplacementCaseTransformMode.UpperNext;
+                caseTransform = Pcre2ReplacementCaseTransformMode.None;
                 return index + 1;
             case 'l':
-                nextCaseTransform = ReplacementCaseTransformMode.LowerNext;
-                caseTransform = ReplacementCaseTransformMode.None;
+                nextCaseTransform = Pcre2ReplacementCaseTransformMode.LowerNext;
+                caseTransform = Pcre2ReplacementCaseTransformMode.None;
                 return index + 1;
         }
 
@@ -3554,12 +3554,12 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         ref bool quoted,
         bool syntaxOnly)
     {
@@ -3652,12 +3652,12 @@ public sealed class Utf8Pcre2Regex
         string subject,
         int matchIndex,
         int matchLength,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        Func<ReplacementReferenceResolution> resolveLastCapture,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        Func<Pcre2ReplacementReferenceResolution> resolveLastCapture,
         string? mark,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         ref bool quoted,
         bool syntaxOnly)
     {
@@ -3813,9 +3813,9 @@ public sealed class Utf8Pcre2Regex
         string replacement,
         int index,
         Pcre2SubstitutionOptions substitutionOptions,
-        Func<string, ReplacementReferenceResolution> resolveName,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         bool syntaxOnly)
     {
         var closing = replacement.IndexOf('>', index + 2);
@@ -3843,11 +3843,11 @@ public sealed class Utf8Pcre2Regex
         StringBuilder builder,
         string token,
         Pcre2SubstitutionOptions substitutionOptions,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
         string? mark,
-        ref ReplacementCaseTransformMode nextCaseTransform,
-        ref ReplacementCaseTransformMode caseTransform,
+        ref Pcre2ReplacementCaseTransformMode nextCaseTransform,
+        ref Pcre2ReplacementCaseTransformMode caseTransform,
         bool syntaxOnly)
     {
         if (string.Equals(token, "*MARK", StringComparison.Ordinal))
@@ -3859,10 +3859,10 @@ public sealed class Utf8Pcre2Regex
         AppendResolvedReference(builder, ResolveSelector(token, resolveNumber, resolveName, mark), substitutionOptions, ref nextCaseTransform, ref caseTransform, syntaxOnly);
     }
 
-    private static ReplacementReferenceResolution ResolveSelector(
+    private static Pcre2ReplacementReferenceResolution ResolveSelector(
         string token,
-        Func<int, ReplacementReferenceResolution> resolveNumber,
-        Func<string, ReplacementReferenceResolution> resolveName,
+        Func<int, Pcre2ReplacementReferenceResolution> resolveNumber,
+        Func<string, Pcre2ReplacementReferenceResolution> resolveName,
         string? mark)
     {
         if (string.Equals(token, "*MARK", StringComparison.Ordinal))
@@ -3873,7 +3873,7 @@ public sealed class Utf8Pcre2Regex
         return int.TryParse(token, out var number) ? resolveNumber(number) : resolveName(token);
     }
 
-    private static void AppendResolvedReference(StringBuilder builder, ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref ReplacementCaseTransformMode nextCaseTransform, ref ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+    private static void AppendResolvedReference(StringBuilder builder, Pcre2ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
         if (!resolution.Known)
         {
@@ -3913,7 +3913,7 @@ public sealed class Utf8Pcre2Regex
         AppendReplacementText(builder, resolution.Value.AsSpan(), ref nextCaseTransform, ref caseTransform, syntaxOnly);
     }
 
-    private static void AppendResolvedPlusReference(StringBuilder builder, ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref ReplacementCaseTransformMode nextCaseTransform, ref ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+    private static void AppendResolvedPlusReference(StringBuilder builder, Pcre2ReplacementReferenceResolution resolution, Pcre2SubstitutionOptions substitutionOptions, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
         if (!resolution.Known && (substitutionOptions & Pcre2SubstitutionOptions.UnknownUnset) != 0)
         {
@@ -3962,7 +3962,7 @@ public sealed class Utf8Pcre2Regex
         return (branchPayload, string.Empty, false);
     }
 
-    private static void AppendReplacementText(StringBuilder builder, ReadOnlySpan<char> text, ref ReplacementCaseTransformMode nextCaseTransform, ref ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+    private static void AppendReplacementText(StringBuilder builder, ReadOnlySpan<char> text, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
         foreach (var value in text)
         {
@@ -3970,15 +3970,15 @@ public sealed class Utf8Pcre2Regex
         }
     }
 
-    private static void AppendReplacementChar(StringBuilder builder, char value, ref ReplacementCaseTransformMode nextCaseTransform, ref ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
+    private static void AppendReplacementChar(StringBuilder builder, char value, ref Pcre2ReplacementCaseTransformMode nextCaseTransform, ref Pcre2ReplacementCaseTransformMode caseTransform, bool syntaxOnly)
     {
-        var effectiveTransform = nextCaseTransform is not ReplacementCaseTransformMode.None
+        var effectiveTransform = nextCaseTransform is not Pcre2ReplacementCaseTransformMode.None
             ? nextCaseTransform
             : caseTransform;
         var transformed = effectiveTransform switch
         {
-            ReplacementCaseTransformMode.UpperNext or ReplacementCaseTransformMode.UpperUntilEnd => char.ToUpperInvariant(value),
-            ReplacementCaseTransformMode.LowerNext or ReplacementCaseTransformMode.LowerUntilEnd => char.ToLowerInvariant(value),
+            Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.UpperUntilEnd => char.ToUpperInvariant(value),
+            Pcre2ReplacementCaseTransformMode.LowerNext or Pcre2ReplacementCaseTransformMode.LowerUntilEnd => char.ToLowerInvariant(value),
             _ => value,
         };
 
@@ -3987,15 +3987,15 @@ public sealed class Utf8Pcre2Regex
             builder.Append(transformed);
         }
 
-        if (nextCaseTransform is ReplacementCaseTransformMode.UpperNext or ReplacementCaseTransformMode.LowerNext)
+        if (nextCaseTransform is Pcre2ReplacementCaseTransformMode.UpperNext or Pcre2ReplacementCaseTransformMode.LowerNext)
         {
-            nextCaseTransform = ReplacementCaseTransformMode.None;
+            nextCaseTransform = Pcre2ReplacementCaseTransformMode.None;
         }
     }
 
 
 
-    private static ReplacementReferenceResolution ResolveNativeNumberReference(Pcre2GroupData[] groups, int number, string subject)
+    private static Pcre2ReplacementReferenceResolution ResolveNativeNumberReference(Pcre2GroupData[] groups, int number, string subject)
     {
         if ((uint)number >= (uint)groups.Length)
         {
@@ -4003,14 +4003,14 @@ public sealed class Utf8Pcre2Regex
         }
 
         var group = groups[number];
-        return new ReplacementReferenceResolution(
+        return new Pcre2ReplacementReferenceResolution(
             Known: true,
             Success: group.Success,
             Value: group.Success ? subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16] : string.Empty);
     }
 
 
-    private static ReplacementReferenceResolution ResolveNativeNamedReference(Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string name, string subject)
+    private static Pcre2ReplacementReferenceResolution ResolveNativeNamedReference(Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string name, string subject)
     {
         if (nameEntries is null)
         {
@@ -4029,17 +4029,17 @@ public sealed class Utf8Pcre2Regex
             var number = entry.Number;
             if ((uint)number < (uint)groups.Length && groups[number].Success)
             {
-                return new ReplacementReferenceResolution(true, true, subject[groups[number].StartOffsetInUtf16..groups[number].EndOffsetInUtf16]);
+                return new Pcre2ReplacementReferenceResolution(true, true, subject[groups[number].StartOffsetInUtf16..groups[number].EndOffsetInUtf16]);
             }
         }
 
         return known
-            ? new ReplacementReferenceResolution(true, false, string.Empty)
+            ? new Pcre2ReplacementReferenceResolution(true, false, string.Empty)
             : default;
     }
 
 
-    private static ReplacementReferenceResolution ResolveNativeLastCapturedReference(Pcre2GroupData[] groups, string subject)
+    private static Pcre2ReplacementReferenceResolution ResolveNativeLastCapturedReference(Pcre2GroupData[] groups, string subject)
     {
         if (groups.Length <= 1)
         {
@@ -4051,14 +4051,14 @@ public sealed class Utf8Pcre2Regex
             var group = groups[i];
             if (group.Success)
             {
-                return new ReplacementReferenceResolution(true, true, subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16]);
+                return new Pcre2ReplacementReferenceResolution(true, true, subject[group.StartOffsetInUtf16..group.EndOffsetInUtf16]);
             }
         }
 
-        return new ReplacementReferenceResolution(true, false, string.Empty);
+        return new Pcre2ReplacementReferenceResolution(true, false, string.Empty);
     }
 
-    private static ReplacementReferenceResolution ResolveMarkReference(string? mark)
+    private static Pcre2ReplacementReferenceResolution ResolveMarkReference(string? mark)
         => new(true, mark is not null, mark ?? string.Empty);
 
 
@@ -4437,34 +4437,34 @@ public sealed class Utf8Pcre2Regex
         return -1;
     }
 
-    private readonly record struct ReplacementReferenceResolution(bool Known, bool Success, string Value);
+    private readonly record struct Pcre2ReplacementReferenceResolution(bool Known, bool Success, string Value);
 
-    private readonly record struct SimpleReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
+    private readonly record struct Pcre2SimpleReplacementCacheKey(string Replacement, Pcre2SubstitutionOptions Options);
 
-    private readonly record struct SimpleReplacementSegment(string Literal, byte[] LiteralUtf8, bool IsWholeMatch)
+    private readonly record struct Pcre2SimpleReplacementSegment(string Literal, byte[] LiteralUtf8, bool IsWholeMatch)
     {
-        public static SimpleReplacementSegment FromLiteral(string literal) =>
+        public static Pcre2SimpleReplacementSegment FromLiteral(string literal) =>
             new(literal, Encoding.UTF8.GetBytes(literal), false);
 
-        public static SimpleReplacementSegment WholeMatch() => new(string.Empty, [], true);
+        public static Pcre2SimpleReplacementSegment WholeMatch() => new(string.Empty, [], true);
     }
 
-    private readonly record struct SimpleReplacementPlan(SimpleReplacementSegment[] Segments);
+    private readonly record struct Pcre2SimpleReplacementPlan(Pcre2SimpleReplacementSegment[] Segments);
 
     private sealed class Pcre2ReplacementComponent
     {
         private const int Capacity = 16;
-        private readonly Utf8BoundedPreparationCache<SimpleReplacementCacheKey, SimpleReplacementPlan?> _plans = new(Capacity);
+        private readonly Utf8BoundedPreparationCache<Pcre2SimpleReplacementCacheKey, Pcre2SimpleReplacementPlan?> _plans = new(Capacity);
 
         internal int Count => _plans.Count;
 
-        internal SimpleReplacementPlan? GetOrAdd(
-            SimpleReplacementCacheKey key,
-            Func<SimpleReplacementCacheKey, SimpleReplacementPlan?> factory)
+        internal Pcre2SimpleReplacementPlan? GetOrAdd(
+            Pcre2SimpleReplacementCacheKey key,
+            Func<Pcre2SimpleReplacementCacheKey, Pcre2SimpleReplacementPlan?> factory)
             => _plans.GetOrAdd(key, factory);
     }
 
-    private enum ReplacementCaseTransformMode
+    private enum Pcre2ReplacementCaseTransformMode
     {
         None = 0,
         UpperNext = 1,

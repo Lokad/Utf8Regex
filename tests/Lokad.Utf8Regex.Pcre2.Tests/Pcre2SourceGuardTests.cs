@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Pcre2;
 
@@ -22,6 +23,21 @@ public sealed class Pcre2SourceGuardTests
             .SelectMany(static member => member.GetParameters().Select(parameter => (Member: member, Parameter: parameter)))
             .Where(static item => item.Parameter.HasDefaultValue || item.Parameter.IsOptional)
             .Select(static item => $"{item.Member.DeclaringType?.FullName}.{item.Member.Name}({item.Parameter.Name})")
+            .OrderBy(static value => value, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void Pcre2TypeNamesCarryPcre2Ownership()
+    {
+        // Synthetic metadata types (e.g. __StaticArrayInitTypeSize=N) carry no declared simple name: only identifier-shaped names participate.
+        var offenders = typeof(Utf8Pcre2Regex).Assembly.GetTypes()
+            .Where(static type => type.GetCustomAttribute<CompilerGeneratedAttribute>() is null)
+            .Select(static type => type.Name)
+            .Where(static name => name.Length > 0 && (char.IsLetter(name[0]) || name[0] == '_') && name.All(static c => char.IsLetterOrDigit(c) || c == '_' || c == '`'))
+            .Where(static name => !name.Contains("Pcre2", StringComparison.Ordinal))
             .OrderBy(static value => value, StringComparer.Ordinal)
             .ToArray();
 
