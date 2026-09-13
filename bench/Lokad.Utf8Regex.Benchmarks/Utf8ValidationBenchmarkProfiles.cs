@@ -16,6 +16,8 @@ internal static class Utf8ValidationBenchmarkProfiles
             "three-byte-large" => Encoding.UTF8.GetBytes(BuildRepeatedToByteLength("夏洛克福尔摩斯与华生医生。\n", 512 * 1024)),
             "mixed-small" => Encoding.UTF8.GetBytes(BuildRepeatedToByteLength("Sherlock Холмс 夏洛克 Holmes.\n", 4 * 1024)),
             "mixed-large" => Encoding.UTF8.GetBytes(BuildRepeatedToByteLength("Sherlock Холмс 夏洛克 Holmes.\n", 512 * 1024)),
+            "constrained-three-byte-small" => Encoding.UTF8.GetBytes(BuildRepeatedToByteLength("\u0800\u0D00\uD000\n", 4 * 1024)),
+            "constrained-three-byte-large" => Encoding.UTF8.GetBytes(BuildRepeatedToByteLength("\u0800\u0D00\uD000\n", 512 * 1024)),
             "dotnet-performance-ru-live" => LoadRebarProfile(@"opensubtitles\ru-sampled.txt"),
             "dotnet-performance-zh-live" => LoadRebarProfile(@"opensubtitles\zh-sampled.txt"),
             _ => throw new ArgumentOutOfRangeException(nameof(profileName), profileName, "Unknown UTF-8 validation benchmark profile."),
@@ -34,6 +36,8 @@ internal static class Utf8ValidationBenchmarkProfiles
             "three-byte-large",
             "mixed-small",
             "mixed-large",
+            "constrained-three-byte-small",
+            "constrained-three-byte-large",
             "dotnet-performance-ru-live",
             "dotnet-performance-zh-live",
         ];
