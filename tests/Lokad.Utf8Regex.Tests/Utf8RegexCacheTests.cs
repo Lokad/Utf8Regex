@@ -84,6 +84,34 @@ public sealed class Utf8RegexCacheTests
     }
 
     [Fact]
+    public void RepeatedDistinctStaticFailuresLeaveNoEntries()
+    {
+        Utf8RegexCache.ResetForTests();
+
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
+        }
+
+        Assert.Equal(0, Utf8RegexCache.EntryCount);
+    }
+
+    [Fact]
+    public void StaticSuccessesRemainUsableAfterFailures()
+    {
+        Utf8RegexCache.ResetForTests();
+
+        Assert.True(Utf8Regex.IsMatch("a"u8, "a", RegexOptions.CultureInvariant));
+        for (var i = 0; i < 50; i++)
+        {
+            Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd($"(unterminated-{i}", RegexOptions.CultureInvariant));
+        }
+
+        Assert.True(Utf8Regex.IsMatch("a"u8, "a", RegexOptions.CultureInvariant));
+        Assert.Equal(1, Utf8RegexCache.EntryCount);
+    }
+
+    [Fact]
     public void CompileFailureIsNotRetained()
     {
         Utf8RegexCache.ResetForTests();

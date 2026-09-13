@@ -6,6 +6,8 @@ namespace Lokad.Utf8Regex.Internal.Caching;
 /// Bounded, concurrency-safe cache for values whose preparation must run at
 /// most once per retained entry. Queue records carry the exact dictionary
 /// entry so a failed generation can never evict a later value for the same key.
+/// Only successfully prepared entries are queued, so failures leave no queue
+/// records behind and cannot grow retained memory.
 /// PCRE2-INTEGRATION-POINT
 /// </summary>
 internal sealed class Utf8BoundedPreparationCache<TKey, TValue>
@@ -28,6 +30,8 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue>
     }
 
     internal int Count => _entries.Count;
+
+    internal int QueueLengthForTests => _insertionOrder.Count;
 
     internal int Capacity
     {
@@ -64,9 +68,14 @@ internal sealed class Utf8BoundedPreparationCache<TKey, TValue>
                     LazyThreadSafetyMode.ExecutionAndPublication));
             if (_entries.TryAdd(key, created))
             {
+                // Queue only after successful preparation (PLAN.md C03): a failed
+                // generation removes its dictionary entry, so enqueueing first
+                // would strand a faulted record in the queue on every failure.
+                // Only the winning adder enqueues, exactly once per retained entry.
+                var value = GetPreparedValue(created);
                 _insertionOrder.Enqueue(created);
                 TrimToCapacity();
-                return GetPreparedValue(created);
+                return value;
             }
         }
     }
