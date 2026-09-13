@@ -327,7 +327,8 @@ public sealed class Utf8PythonRegex
     public TimeSpan MatchTimeout { get; }
 
     /// <summary>Returns the group names in group-number order, including group zero.</summary>
-    public string[] GetGroupNames() => _groupNames;
+    // PLAN.md C09: returned arrays are caller-owned; never expose the compiled backing storage. Empty entry arrays stay shared: they have no slots to mutate.
+    public string[] GetGroupNames() => (string[])_groupNames.Clone();
 
     /// <summary>Tests whether the UTF-8 input contains a match.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input) => IsMatch(input, 0);
@@ -2395,7 +2396,7 @@ public sealed class Utf8PythonRegex
         return new Utf8PythonDetailedMatchData
         {
             Groups = projectedGroups,
-            NameEntries = nameEntries,
+            NameEntries = nameEntries is { Length: > 0 } ? (PythonReNameEntry[])nameEntries.Clone() : nameEntries,
         };
     }
 
@@ -2475,7 +2476,7 @@ public sealed class Utf8PythonRegex
         return new Utf8PythonDetailedMatchData
         {
             Groups = projectedGroups,
-            NameEntries = nameEntries ?? [],
+            NameEntries = nameEntries is { Length: > 0 } ? (PythonReNameEntry[])nameEntries.Clone() : (nameEntries ?? []),
         };
     }
 

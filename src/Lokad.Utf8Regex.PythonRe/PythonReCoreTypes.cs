@@ -513,7 +513,8 @@ public readonly ref struct Utf8PythonMatchContext
     {
         _input = input;
         _groups = groups;
-        _nameEntries = nameEntries;
+        // PLAN.md C09: contexts own their name entries; empty arrays stay shared (no slots to mutate).
+        _nameEntries = nameEntries is { Length: > 0 } ? (PythonReNameEntry[])nameEntries.Clone() : nameEntries;
     }
 
     /// <summary>Gets whether group zero represents a successful match.</summary>
