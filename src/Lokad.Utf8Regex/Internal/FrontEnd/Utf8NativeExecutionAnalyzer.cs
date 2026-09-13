@@ -1251,9 +1251,9 @@ internal static class Utf8NativeExecutionAnalyzer
             node.ChildCount != 7 ||
             !TryGetExactAsciiSetLoop(node.Child(0), out var leadingSet, out var leadingLength) ||
             !TryGetIdentifierSeparatorLoop(node.Child(1), out var separatorSet, out var separatorMinCount) ||
-            !TryGetBoundedAnyTextLoop(node.Child(2), out var leadingGapMax) ||
+            !TryGetBoundedAnyTextLoop(node.Child(2), out var leadingGapMax, out _) ||
             !TryGetAsciiLiteral(node.Child(3), out var anchorLiteralUtf8) ||
-            !TryGetBoundedAnyTextLoop(node.Child(4), out var trailingGapMax) ||
+            !TryGetBoundedAnyTextLoop(node.Child(4), out var trailingGapMax, out _) ||
             !TryGetIdentifierSeparatorLoop(node.Child(5), out var trailingSeparatorSet, out var trailingSeparatorMinCount) ||
             !TryGetExactAsciiSetLoop(node.Child(6), out var trailingSet, out var trailingLength) ||
             separatorSet != trailingSeparatorSet ||
@@ -1381,9 +1381,10 @@ internal static class Utf8NativeExecutionAnalyzer
         // Bounded gap (e.g., .{0,80}). Optional when a separator was found —
         // the pattern can be Literal + \s* + Literal with no bounded repeat.
         var maxGap = 0;
+        var minGap = 0;
         var gapSameLine = false;
         if (index < childCount &&
-            TryGetBoundedGapLoop(node.Child(index), out maxGap, out gapSameLine))
+            TryGetBoundedGapLoop(node.Child(index), out maxGap, out minGap, out gapSameLine))
         {
             index++;
         }
@@ -1433,6 +1434,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingLiteral,
             trailingLiteralsUtf8: null,
             maxGap,
+            minGap,
             gapSameLine,
             gapLeadingSeparatorMinCount,
             yieldLeadingLiteralOnly: false,
@@ -1470,6 +1472,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingLiteral,
             trailingLiteralsUtf8: null,
             maxGap: 0,
+            minGap: 0,
             gapSameLine: false,
             gapLeadingSeparatorMinCount: separatorMinCount,
             yieldLeadingLiteralOnly: true,
@@ -1520,6 +1523,7 @@ internal static class Utf8NativeExecutionAnalyzer
         Utf8BoundaryRequirement? trailingBoundary2 = null;
         int? separatorMin = null;
         int? maxGap = null;
+        int? minGap = null;
         bool? gapSameLine = null;
 
         for (var i = 0; i < node.ChildCount; i++)
@@ -1529,6 +1533,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 out leadingLiterals[i],
                 out trailingLiterals[i],
                 out var branchMaxGap,
+                out var branchMinGap,
                 out var branchGapSameLine,
                 out var branchSeparatorMin,
                 out var branchLeadingBoundary1,
@@ -1545,6 +1550,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingBoundary2 ??= branchTrailingBoundary2;
             separatorMin ??= branchSeparatorMin;
             maxGap ??= branchMaxGap;
+            minGap ??= branchMinGap;
             gapSameLine ??= branchGapSameLine;
 
             if (leadingBoundary1 != branchLeadingBoundary1 ||
@@ -1553,6 +1559,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 trailingBoundary2 != branchTrailingBoundary2 ||
                 separatorMin != branchSeparatorMin ||
                 maxGap != branchMaxGap ||
+                minGap != branchMinGap ||
                 gapSameLine != branchGapSameLine)
             {
                 return false;
@@ -1571,6 +1578,7 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         if (maxGap is not { } selectedMaxGap ||
+            minGap is not { } selectedMinGap ||
             gapSameLine is not { } selectedGapSameLine ||
             separatorMin is not { } selectedSeparatorMin ||
             leadingBoundary1 is not { } selectedLeadingBoundary1 ||
@@ -1589,6 +1597,7 @@ internal static class Utf8NativeExecutionAnalyzer
             shortestTrailing,
             trailingLiterals,
             selectedMaxGap,
+            selectedMinGap,
             selectedGapSameLine,
             selectedSeparatorMin,
             yieldLeadingLiteralOnly: false,
@@ -1604,6 +1613,7 @@ internal static class Utf8NativeExecutionAnalyzer
         out byte[] leadingLiteral,
         out byte[] trailingLiteral,
         out int maxGap,
+        out int minGap,
         out bool gapSameLine,
         out int gapLeadingSeparatorMinCount,
         out Utf8BoundaryRequirement leadingBoundary1,
@@ -1614,6 +1624,7 @@ internal static class Utf8NativeExecutionAnalyzer
         leadingLiteral = [];
         trailingLiteral = [];
         maxGap = 0;
+        minGap = 0;
         gapSameLine = false;
         gapLeadingSeparatorMinCount = 0;
         leadingBoundary1 = Utf8BoundaryRequirement.None;
@@ -1655,7 +1666,7 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         if (index >= childCount ||
-            !TryGetBoundedGapLoop(node.Child(index), out maxGap, out gapSameLine))
+            !TryGetBoundedGapLoop(node.Child(index), out maxGap, out minGap, out gapSameLine))
         {
             return false;
         }
@@ -2487,10 +2498,11 @@ internal static class Utf8NativeExecutionAnalyzer
         return false;
     }
 
-    private static bool TryGetBoundedAnyTextLoop(RuntimeFrontEnd.RegexNode node, out int maxCount)
+    private static bool TryGetBoundedAnyTextLoop(RuntimeFrontEnd.RegexNode node, out int maxCount, out int minCount)
     {
         node = UnwrapRuntimeNode(node);
         maxCount = 0;
+        minCount = 0;
         if (!TryGetSetLoop(node, out var setNode, out var min, out var max) ||
             setNode.Str is null ||
             min < 0 ||
@@ -2502,6 +2514,7 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         maxCount = max;
+        minCount = min;
         return true;
     }
 
@@ -2509,16 +2522,17 @@ internal static class Utf8NativeExecutionAnalyzer
     /// Accepts both [\s\S]{0,N} (any ASCII) and .{0,N} (any ASCII except \n).
     /// Returns gapSameLine=true when the gap excludes \n (dot without Singleline).
     /// </summary>
-    private static bool TryGetBoundedGapLoop(RuntimeFrontEnd.RegexNode node, out int maxCount, out bool gapSameLine)
+    private static bool TryGetBoundedGapLoop(RuntimeFrontEnd.RegexNode node, out int maxCount, out int minCount, out bool gapSameLine)
     {
         gapSameLine = false;
-        if (TryGetBoundedAnyTextLoop(node, out maxCount))
+        if (TryGetBoundedAnyTextLoop(node, out maxCount, out minCount))
         {
             return true;
         }
 
         node = UnwrapRuntimeNode(node);
         maxCount = 0;
+        minCount = 0;
         if (!TryGetSetLoop(node, out var setNode, out var min, out var max) ||
             setNode.Str is null ||
             min < 0 ||
@@ -2530,6 +2544,7 @@ internal static class Utf8NativeExecutionAnalyzer
         }
 
         maxCount = max;
+        minCount = min;
         gapSameLine = true;
         return true;
     }

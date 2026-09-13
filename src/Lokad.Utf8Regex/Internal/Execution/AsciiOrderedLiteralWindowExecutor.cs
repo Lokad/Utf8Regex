@@ -1011,20 +1011,21 @@ internal static class AsciiOrderedLiteralWindowExecutor
         }
 
         var latestTrailingStart = gapSearchEnd - trailingLiteral.Length;
-        if (latestTrailingStart < gapSearchStart)
+        var earliestTrailingStart = gapSearchStart + plan.MinGap;
+        if (latestTrailingStart < earliestTrailingStart)
         {
             return false;
         }
 
-        if (trailingCandidateIndex < gapSearchStart)
+        if (trailingCandidateIndex < earliestTrailingStart)
         {
             trailingCandidateIndex = -1;
-            trailingSearchFrom = Math.Max(trailingSearchFrom, gapSearchStart);
+            trailingSearchFrom = Math.Max(trailingSearchFrom, earliestTrailingStart);
         }
 
         while (true)
         {
-            if (trailingCandidateIndex < gapSearchStart)
+            if (trailingCandidateIndex < earliestTrailingStart)
             {
                 if (!TryFindNextTrailingLiteral(input, trailingLiteral, trailingFindPlan, ref trailingSearchFrom, out trailingCandidateIndex))
                 {
@@ -1202,7 +1203,7 @@ internal static class AsciiOrderedLiteralWindowExecutor
         }
 
         gapSearchStart += separatorCount;
-        if (trailingIndex < gapSearchStart || trailingIndex - gapSearchStart > plan.MaxGap)
+        if (trailingIndex < gapSearchStart || trailingIndex - gapSearchStart > plan.MaxGap || trailingIndex - gapSearchStart < plan.MinGap)
         {
             return false;
         }
@@ -1633,6 +1634,11 @@ internal static class AsciiOrderedLiteralWindowExecutor
             }
 
             var trailingStart = gapSearchStart + trailingRelative;
+            if (trailingStart - gapSearchStart < plan.MinGap)
+            {
+                return false;
+            }
+
             if (AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.TrailingLiteralLeadingBoundary, input, trailingStart) &&
                 AsciiStructuralIdentifierFamilyMatcher.MatchesBoundaryRequirement(plan.TrailingLiteralTrailingBoundary, input, trailingStart + trailingLiteral.Length))
             {

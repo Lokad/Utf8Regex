@@ -13,6 +13,7 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         byte[] trailingLiteralUtf8,
         byte[][]? trailingLiteralsUtf8,
         int maxGap,
+        int minGap,
         bool gapSameLine,
         int gapLeadingSeparatorMinCount,
         bool yieldLeadingLiteralOnly,
@@ -26,6 +27,7 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         _trailingLiteralsUtf8 = trailingLiteralsUtf8;
         MaxGap = maxGap;
+        MinGap = minGap;
         GapSameLine = gapSameLine;
         GapLeadingSeparatorMinCount = gapLeadingSeparatorMinCount;
         YieldLeadingLiteralOnly = yieldLeadingLiteralOnly;
@@ -47,6 +49,8 @@ internal readonly struct AsciiOrderedLiteralWindowPlan
     public byte[][] TrailingLiteralsUtf8 => _trailingLiteralsUtf8 ?? [];
 
     public int MaxGap { get; }
+
+    public int MinGap { get; }
 
     /// <summary>
     /// When true, the gap must not contain a newline (the gap set is '.' without Singleline).

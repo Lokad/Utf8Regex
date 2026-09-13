@@ -562,5 +562,114 @@
     },
     "Status": "OutOfScopeBySpec",
     "Source": "ported/spec-pcre2/callout-non-goal"
+  },
+  {
+    "Id": "pcre2.spec.kreset-repeat-global-suppression.count",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab xx ab yy ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "Count",
+    "Status": "Active",
+    "Source": "ported/spec-pcre2/kreset-unreset-empty-suppression",
+    "Notes": "Oracle vector for the PCRE2.Benchmarks.json pcre2-special-count kreset-repeat exclusion: ordinary global enumeration suppresses the nine unreset empty matches native PCRE2 reports, per the SPEC-PCRE2 consumed/reported-range profile.",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 3,
+      "Groups": [],
+      "NameEntries": []
+    }
+  },
+  {
+    "Id": "pcre2.spec.kreset-repeat-global-suppression.enumerate",
+    "Pattern": "(?:a\\Kb)*",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "ab xx ab yy ab",
+    "StartOffsetInBytes": 0,
+    "Operation": "EnumerateMatches",
+    "Status": "Active",
+    "Source": "ported/spec-pcre2/kreset-unreset-empty-suppression",
+    "Notes": "Oracle vector for the PCRE2.Benchmarks.json pcre2-special-enumerate and pcre2-special-matchmany kreset-repeat exclusions: only the three reset matches are reported.",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "MatchCount": 3,
+      "Groups": [],
+      "NameEntries": [],
+      "Matches": [
+        {
+          "Success": true,
+          "StartOffsetInBytes": 1,
+          "EndOffsetInBytes": 2,
+          "ValueText": "b"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 7,
+          "EndOffsetInBytes": 8,
+          "ValueText": "b"
+        },
+        {
+          "Success": true,
+          "StartOffsetInBytes": 13,
+          "EndOffsetInBytes": 14,
+          "ValueText": "b"
+        }
+      ]
+    }
+  },
+  {
+    "Id": "pcre2.spec.crlf-scalar-advancement.ing-match",
+    "Pattern": "\\s[a-zA-Z]{0,12}ing\\s",
+    "PatternEncoding": "Utf16Text",
+    "CompileOptions": [],
+    "CompileSettings": {
+      "AllowDuplicateNames": false,
+      "BackslashC": "Forbid",
+      "AllowLookaroundBackslashK": false,
+      "Newline": "Default",
+      "Bsr": "Default"
+    },
+    "MatchOptions": [],
+    "InputText": "a\r\nPosting ",
+    "StartOffsetInBytes": 0,
+    "Operation": "Match",
+    "Status": "Active",
+    "Source": "ported/spec-pcre2/scalar-global-advancement",
+    "Notes": "Oracle vector for the PCRE2.Benchmarks.json pcre2-managed-compatible-count rust-sherlock-ing-count exclusion: managed global iteration advances per UTF-8 scalar and reports the match starting at the LF of a CRLF pair, which the PCRE.NET comparator skips.",
+    "Expected": {
+      "Outcome": "FullMatch",
+      "StartOffsetInBytes": 2,
+      "EndOffsetInBytes": 11,
+      "HasContiguousByteRange": true,
+      "ValueText": "\nPosting ",
+      "Groups": [
+        {
+          "Number": 0,
+          "Success": true,
+          "StartOffsetInBytes": 2,
+          "EndOffsetInBytes": 11,
+          "ValueText": "\nPosting "
+        }
+      ],
+      "NameEntries": []
+    }
   }
 ]

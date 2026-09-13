@@ -630,6 +630,41 @@ public sealed class LokadPublicRouteGuardrailTests
             [(byte)'1', (byte)'0', (byte)'0', (byte)'-', 0xFF]));
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void OrderedLiteralWindowGapMinimumAgreesWithOracle(RegexOptions options)
+    {
+        const string pattern = @"river.{10,25}Tom";
+        var regex = new Utf8Regex(pattern, options);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(NativeExecutionKind.AsciiOrderedLiteralWindow, regex.Inspection.ExecutionKind);
+
+        foreach (var gap in new[] { 8, 9, 10, 11, 25, 26 })
+        {
+            var input = "river" + new string('x', gap) + "Tom";
+            var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
+
+            Assert.Equal(oracle.Count(input), regex.Count(inputBytes));
+            Assert.Equal(oracle.Count(input) > 0, regex.IsMatch(inputBytes));
+
+            var enumerated = 0;
+            foreach (var _ in regex.EnumerateMatches(inputBytes))
+            {
+                enumerated++;
+            }
+
+            Assert.Equal(oracle.Count(input), enumerated);
+        }
+
+        const string phantom = "down the river, me and Tom";
+        var phantomBytes = System.Text.Encoding.UTF8.GetBytes(phantom);
+        Assert.Equal(0, oracle.Count(phantom));
+        Assert.Equal(0, regex.Count(phantomBytes));
+        Assert.False(regex.IsMatch(phantomBytes));
+    }
+
     [Fact]
     public void LeipzigSymbolCountUsesUnicodeCategoryDirectFamily()
     {
