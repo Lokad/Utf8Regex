@@ -25,7 +25,22 @@ internal static class PythonReTranslator
         return !max.HasValue || max.Value > 0;
     }
 
+    // Native FindAll over UTF-8 is admissible only when alternation order is
+    // unobservable: prefix-free exact literals guarantee at most one branch
+    // matches at any position, so a literal-family candidate scan cannot diverge
+    // from ordered-alternation semantics. Conditionals stay managed. The facade
+    // additionally requires no empty match. Pinned by
+    // FindAllCanUseUtf8RegexBackendForPrefixFreeLiteralAlternation.
     public static bool CanUseUtf8IterationFastPath(PythonReNode node) => IsUtf8IterationSafe(node);
+
+    // Managed Split is admissible only for structurally mandatory captures:
+    // .NET reports an unmatched group as "" while Python reports None, so
+    // optional or alternated captures take the manual loop. Unnamed-only keeps
+    // managed numbers identical to Python slots (PLAN.md C07); the facade
+    // additionally requires no empty match, or astral-free input at the call
+    // site, because Regex.Split advances empty matches by UTF-16 unit while
+    // Python advances by scalar. Pinned by
+    // ManagedSplitFastPathRequiresMandatoryUnnamedCaptures.
 
     public static bool CanUseManagedSplitFastPath(PythonReNode node) => CapturesAreMandatory(node);
 
