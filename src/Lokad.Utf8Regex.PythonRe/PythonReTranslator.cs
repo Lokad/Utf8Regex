@@ -747,7 +747,8 @@ internal static class PythonReTranslator
         switch (node)
         {
             case PythonReLiteralNode:
-            case PythonReRawNode:
+            // PLAN.md C06: an escaped astral pair is two UTF-16 units, so it takes the grouped default while every other raw atom stays bare.
+            case PythonReRawNode raw when raw.Kind != PythonReRawKind.AstralLiteral:
             case PythonReNamedBackreferenceNode:
             case PythonReNumericBackreferenceNode:
             case PythonReGroupNode:
@@ -814,6 +815,7 @@ internal static class PythonReTranslator
             {
                 PythonReRawKind.StartAnchor or PythonReRawKind.EndAnchor => new PythonReWidth(0, 0),
                 PythonReRawKind.Escape when IsZeroWidthEscape(raw.Text) => new PythonReWidth(0, 0),
+                PythonReRawKind.AstralLiteral => new PythonReWidth(1, 1),
                 _ => new PythonReWidth(1, 1),
             },
             PythonReNamedBackreferenceNode or PythonReNumericBackreferenceNode => new PythonReWidth(0, null),
@@ -1263,7 +1265,8 @@ internal static class PythonReTranslator
     private static string BuildAstralScalarBranch(int scalar)
     {
         var text = char.ConvertFromUtf32(scalar);
-        return Regex.Escape(text);
+        // PLAN.md C06: self-grouped so a repeat binds the whole scalar even when this is the only alternation branch (a bare pair would rebind the low half).
+        return "(?:" + Regex.Escape(text) + ")";
     }
 
     private static IEnumerable<string> BuildAstralRangeBranches(int startScalar, int endScalar)
@@ -1290,7 +1293,8 @@ internal static class PythonReTranslator
         if (lowStart == lowEnd)
         {
             builder.Append(@"\u").Append(((int)lowStart).ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
-            return builder.ToString();
+            // Self-grouped per BuildAstralScalarBranch: a low-half unit must not capture the repeat.
+            return "(?:" + builder.ToString() + ")";
         }
 
         builder.Append('[');
@@ -1298,7 +1302,8 @@ internal static class PythonReTranslator
         builder.Append('-');
         builder.Append(@"\u").Append(((int)lowEnd).ToString("X4", System.Globalization.CultureInfo.InvariantCulture));
         builder.Append(']');
-        return builder.ToString();
+        // Self-grouped per BuildAstralScalarBranch.
+        return "(?:" + builder.ToString() + ")";
     }
 }
 

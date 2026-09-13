@@ -99,14 +99,20 @@ This profile is still incomplete. In particular:
   folding: `(?u:(i)\1)` against `iI` misses here while CPython matches
 * supplementary-plane category matching and astral-adjacent word boundaries are
   bounded by the UTF-16 execution engines (managed `.NET Regex` and the native
-  `Utf8Regex` kernels operate per UTF-16 unit): `\w`/`\d` and their complements
-  and bracket forms do not match supplementary letters/numbers, and `\b`/`\B`
-  around supplementary scalars follow UTF-16 units rather than scalar
-  boundaries. BMP behavior is CPython-faithful, established by a full-scalar
-  census against CPython 3.13.2 (`[\p{L}\p{N}_]` for `\w`,
-  `[\s\x1c-\x1f]` for `\s`, pass-through `\d`). Matching supplementary
-  categories would need a scalar execution layer calling the BCL category
-  facilities at match time; embedding the required Unicode property data as
-  shipped tables is out of scope under the package-size constraint
+  `Utf8Regex` kernels operate per UTF-16 unit): `\w`/`\d` and their positive bracket forms
+  do not match supplementary letters/numbers, and `\b`/`\B` around supplementary
+  scalars follow UTF-16 units rather than scalar boundaries. Dots, astral literals
+  (including case-insensitive folding), and negated classes consume whole supplementary
+  scalars; complements consume whole supplementary scalars too, so `\W`/`\D` match
+  astral letters/digits that CPython excludes while `[^\W]`/`[^\D]` miss them. BMP
+  behavior is CPython-faithful, established by a full-scalar census against CPython 3.13.2
+  (`[\p{L}\p{N}_]` for `\w`, `[\s\x1c-\x1f]` for `\s`, pass-through `\d`). Matching
+  supplementary categories would need a scalar execution layer calling the BCL category
+  facilities at match time; embedding the required Unicode property data as shipped
+  tables is out of scope under the package-size constraint
+* CPython 3.13.2 searches a supplementary scalar with a scoped-ASCII complement
+  (`(?a:\W)`, `(?a:\D)` and bracket forms) and misses, while its own match/fullmatch
+  find the whole scalar. Search, Match, and FullMatch here stay mutually consistent
+  and follow the match/fullmatch oracle.
 
 Unsupported or incomplete cases should fail explicitly rather than silently approximating Python semantics.

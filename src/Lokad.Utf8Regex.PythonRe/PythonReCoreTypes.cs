@@ -190,16 +190,9 @@ internal static class PythonReValueTextExtractor
             return Encoding.UTF8.GetString(input[data.StartOffsetInBytes..data.EndOffsetInBytes]);
         }
 
+        // PLAN.md C06: scalar atoms keep every supported match on scalar boundaries, so offsets slice directly. The former rune-index reinterpretation masked half-unit engine ranges while leaving offsets split; delimited astral routes now surface consistently instead of silently repaired.
         var decoded = Encoding.UTF8.GetString(input);
-        if (IsValidUtf16Boundary(decoded, data.StartOffsetInUtf16) &&
-            IsValidUtf16Boundary(decoded, data.EndOffsetInUtf16))
-        {
-            return decoded[data.StartOffsetInUtf16..data.EndOffsetInUtf16];
-        }
-
-        var start = GetUtf16IndexFromRuneIndex(decoded, data.StartOffsetInUtf16);
-        var end = GetUtf16IndexFromRuneIndex(decoded, data.EndOffsetInUtf16);
-        return decoded[start..end];
+        return decoded[data.StartOffsetInUtf16..data.EndOffsetInUtf16];
     }
 
     public static byte[] GetValueBytes(ReadOnlySpan<byte> input, PythonReGroupData data)
@@ -215,40 +208,6 @@ internal static class PythonReValueTextExtractor
         }
 
         return Encoding.UTF8.GetBytes(GetValueString(input, data));
-    }
-
-    private static bool IsValidUtf16Boundary(string value, int index)
-    {
-        if ((uint)index > (uint)value.Length)
-        {
-            return false;
-        }
-
-        return index == 0 ||
-            index == value.Length ||
-            !(char.IsLowSurrogate(value[index]) && char.IsHighSurrogate(value[index - 1]));
-    }
-
-    private static int GetUtf16IndexFromRuneIndex(string value, int runeIndex)
-    {
-        if (runeIndex <= 0)
-        {
-            return 0;
-        }
-
-        var utf16Index = 0;
-        var currentRuneIndex = 0;
-        while (utf16Index < value.Length && currentRuneIndex < runeIndex)
-        {
-            utf16Index += char.IsHighSurrogate(value[utf16Index]) &&
-                utf16Index + 1 < value.Length &&
-                char.IsLowSurrogate(value[utf16Index + 1])
-                ? 2
-                : 1;
-            currentRuneIndex++;
-        }
-
-        return utf16Index;
     }
 }
 

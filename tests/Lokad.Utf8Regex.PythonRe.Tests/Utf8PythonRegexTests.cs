@@ -525,8 +525,12 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
-    public void Utf8BackendDoesNotInventByteRangesForNonAlignedMatches()
+    public void Utf8BackendReportsContiguousByteRangesForScalarMatches()
     {
+        // PLAN.md C06: `.` consumes one scalar, so the native backend reports the
+        // whole-scalar byte range. The previous revision pinned the half-match
+        // contract (no contiguous range, throwing value bytes); scalar tokenization
+        // eliminated that premise, and invention would now fail these pins.
         var regex = new Utf8PythonRegex(".");
 
         var search = regex.Search("𝒜"u8);
@@ -534,29 +538,23 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(search.Success);
-        Assert.False(search.HasContiguousByteRange);
-        Assert.ThrowsAny<InvalidOperationException>(static () => ThrowForNonContiguousMatchBytes());
+        Assert.Equal(0, search.StartOffsetInBytes);
+        Assert.Equal(4, search.EndOffsetInBytes);
+        Assert.Equal(0, search.StartOffsetInUtf16);
+        Assert.Equal(2, search.EndOffsetInUtf16);
+        Assert.True(search.HasContiguousByteRange);
+        Assert.Equal("𝒜"u8.ToArray(), search.GetValueBytes().ToArray());
+        Assert.Equal("𝒜", search.GetValueString());
 
         Assert.True(detailed.Success);
         Assert.True(detailed.TryGetGroup(0, out var group));
         Assert.True(group.Success);
-        Assert.False(group.Value.HasContiguousByteRange);
-        Assert.ThrowsAny<InvalidOperationException>(static () => ThrowForNonContiguousGroupBytes());
-
-        static void ThrowForNonContiguousMatchBytes()
-        {
-            var localRegex = new Utf8PythonRegex(".");
-            var localSearch = localRegex.Search("𝒜"u8);
-            _ = localSearch.GetValueBytes();
-        }
-
-        static void ThrowForNonContiguousGroupBytes()
-        {
-            var localRegex = new Utf8PythonRegex(".");
-            var localDetailed = localRegex.SearchDetailed("𝒜"u8);
-            _ = localDetailed.TryGetGroup(0, out var localGroup);
-            _ = localGroup.Value.GetValueBytes();
-        }
+        Assert.Equal(0, group.Value.StartOffsetInBytes);
+        Assert.Equal(4, group.Value.EndOffsetInBytes);
+        Assert.Equal(0, group.Value.StartOffsetInUtf16);
+        Assert.Equal(2, group.Value.EndOffsetInUtf16);
+        Assert.True(group.Value.HasContiguousByteRange);
+        Assert.Equal("𝒜", group.Value.GetValueString());
     }
 
     [Fact]

@@ -68,6 +68,7 @@ internal enum PythonReRawKind
     Escape,
     Dot,
     StartAnchor,
+    AstralLiteral,
     EndAnchor,
 }
 
