@@ -48,12 +48,14 @@ var regex = new Utf8Pcre2Regex(
 ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(
     "Visit https://example.com and http://localhost.");
 
-foreach (var match in regex.EnumerateMatches(input))
+var matches = regex.EnumerateMatches(input);
+while (matches.MoveNext())
 {
-    if (match.Success && match.IsByteAligned)
+    var match = matches.Current;
+    if (match.Success && match.IsUtf8SliceWellFormed)
     {
         Console.WriteLine(
-            Encoding.UTF8.GetString(input.Slice(match.IndexInBytes, match.LengthInBytes)));
+            Encoding.UTF8.GetString(input.Slice(match.StartOffsetInBytes, match.EndOffsetInBytes - match.StartOffsetInBytes)));
     }
 }
 
