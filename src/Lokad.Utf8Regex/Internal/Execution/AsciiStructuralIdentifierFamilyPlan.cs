@@ -33,7 +33,6 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
                 : [];
         LeadingBoundary = leadingBoundary;
         TrailingBoundary = trailingBoundary;
-        VerifierProgram = AsciiStructuralVerifierProgram.Create(this);
         SeparatorCharClass = TryCreateAsciiCharClass(separatorSet, out var separatorCharClass)
             ? separatorCharClass
             : default;
@@ -44,6 +43,7 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
             ? identifierTailCharClass
             : default;
         CompiledSuffixParts = CreateCompiledSuffixParts(SuffixParts);
+        VerifierProgram = AsciiStructuralVerifierProgram.Create(this, CompiledSuffixParts);
         HasAsciiUpperWordTailKernel =
             SuffixParts.Length == 0 &&
             !IdentifierStartCharClass.IsEmpty &&
@@ -90,7 +90,8 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
 
     public bool HasAsciiUpperWordTailKernel { get; }
 
-    private static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
+    // PLAN.md D05: single construction owner for compiled suffix parts; the linear verifier shares this array instead of rebuilding it.
+    internal static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
     {
         if (suffixParts.Length == 0)
         {
@@ -112,7 +113,7 @@ internal readonly struct AsciiStructuralIdentifierFamilyPlan
         return compiled;
     }
 
-    private static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
+    internal static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
     {
         return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
     }

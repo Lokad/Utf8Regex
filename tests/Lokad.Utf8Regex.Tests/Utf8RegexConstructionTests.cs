@@ -3059,5 +3059,18 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(5, match.LengthInUtf16);
     }
 
-}
+    [Fact]
+    public void StructuralIdentifierFamilyVerifierSharesCompiledSuffixParts()
+    {
+        // PLAN.md D05: the linear verifier shares the owning plan compiled array.
+        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
+        var plan = regex.Inspection.StructuralIdentifierFamilyPlan;
 
+        Assert.NotEmpty(plan.CompiledSuffixParts);
+        var suffixInstruction = plan.VerifierProgram.LinearProgram.Instructions.First(
+            static instruction => instruction.SuffixParts.Length > 0);
+        Assert.Same(plan.CompiledSuffixParts, suffixInstruction.SuffixParts);
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("prefix TryGetCustomerAsync suffix")));
+    }
+
+}

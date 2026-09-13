@@ -110,10 +110,10 @@ internal readonly struct AsciiStructuralCompiledSuffixPart
 
 internal readonly struct AsciiStructuralVerifierProgram
 {
-    public AsciiStructuralVerifierProgram(AsciiStructuralVerifierStep[]? steps)
+    public AsciiStructuralVerifierProgram(AsciiStructuralVerifierStep[]? steps, AsciiStructuralCompiledSuffixPart[] compiledSuffixParts)
     {
         Steps = steps is { Length: > 0 } ? steps : [];
-        LinearProgram = AsciiStructuralLinearVerifierProgram.Create(Steps);
+        LinearProgram = AsciiStructuralLinearVerifierProgram.Create(Steps, compiledSuffixParts);
     }
 
     public AsciiStructuralVerifierStep[] Steps { get; }
@@ -122,7 +122,7 @@ internal readonly struct AsciiStructuralVerifierProgram
 
     public bool HasValue => Steps is { Length: > 0 };
 
-    public static AsciiStructuralVerifierProgram Create(AsciiStructuralIdentifierFamilyPlan plan)
+    public static AsciiStructuralVerifierProgram Create(AsciiStructuralIdentifierFamilyPlan plan, AsciiStructuralCompiledSuffixPart[] compiledSuffixParts)
     {
         var steps = new List<AsciiStructuralVerifierStep>(8);
         if (!string.IsNullOrEmpty(plan.SeparatorSet))
@@ -150,7 +150,7 @@ internal readonly struct AsciiStructuralVerifierProgram
         }
 
         steps.Add(AsciiStructuralVerifierStep.Accept());
-        return new AsciiStructuralVerifierProgram([.. steps]);
+        return new AsciiStructuralVerifierProgram([.. steps], compiledSuffixParts);
     }
 
     public bool TryMatch(ReadOnlySpan<byte> input, int matchIndex, int prefixLength, out int matchedLength)
@@ -237,7 +237,7 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
 
     public bool HasValue => Instructions is { Length: > 0 };
 
-    public static AsciiStructuralLinearVerifierProgram Create(ReadOnlySpan<AsciiStructuralVerifierStep> steps)
+    public static AsciiStructuralLinearVerifierProgram Create(ReadOnlySpan<AsciiStructuralVerifierStep> steps, AsciiStructuralCompiledSuffixPart[] sharedSuffixParts)
     {
         if (steps.Length == 0)
         {
@@ -248,10 +248,11 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         for (var i = 0; i < steps.Length; i++)
         {
             var step = steps[i];
-            var charClass = TryCreateAsciiCharClass(step.Set, out var createdCharClass)
+            var charClass = AsciiStructuralIdentifierFamilyPlan.TryCreateAsciiCharClass(step.Set, out var createdCharClass)
                 ? createdCharClass
                 : default;
-            var compiledSuffixParts = CreateCompiledSuffixParts(step.SuffixParts);
+            // Suffix steps always carry the owning plan raw parts, so the shared array holds identical data.
+            var compiledSuffixParts = step.SuffixParts.Length == 0 ? [] : sharedSuffixParts;
             instructions[i] = step.Kind switch
             {
                 AsciiStructuralVerifierStepKind.ConsumeSeparator
@@ -360,25 +361,4 @@ internal readonly struct AsciiStructuralLinearVerifierProgram
         return false;
     }
 
-    private static AsciiStructuralCompiledSuffixPart[] CreateCompiledSuffixParts(AsciiStructuralSuffixPart[] suffixParts)
-    {
-        var compiled = new AsciiStructuralCompiledSuffixPart[suffixParts.Length];
-        for (var i = 0; i < suffixParts.Length; i++)
-        {
-            var part = suffixParts[i];
-            compiled[i] = part.IsLiteral
-                ? AsciiStructuralCompiledSuffixPart.CreateLiteral(part.LiteralUtf8)
-                : AsciiStructuralCompiledSuffixPart.CreateSeparator(
-                    part.SeparatorSet,
-                    TryCreateAsciiCharClass(part.SeparatorSet, out var charClass) ? charClass : default,
-                    part.SeparatorMinCount);
-        }
-
-        return compiled;
-    }
-
-    private static bool TryCreateAsciiCharClass(string? runtimeSet, out AsciiCharClass charClass)
-    {
-        return FrontEnd.DotNetAsciiCharClassProjector.TryProjectWholeClass(runtimeSet, out charClass);
-    }
 }
