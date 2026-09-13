@@ -14,7 +14,8 @@ internal sealed class PythonReParser
     private const string AsciiSpaceClass = @"[\t\n\r\f\v ]";
     private const string AsciiNonSpaceClass = @"(?:(?![\t\n\r\f\v ])" + UnicodeScalarPattern + ")";
     private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
-    private const string AsciiNonWordBoundary = @"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
+    // PLAN.md C08: `\B` fails on an empty range in CPython (beginning == end rejects both boundary kinds) while .NET matches empty. The guard fails only when the subject itself is empty, which coincides with an empty range because this API has no endpos parameter.
+    private const string AsciiNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_])))";
     // PLAN.md C04: Python Unicode classes in terms of BCL categories, verified by a
     // full-scalar census against CPython 3.13.2 (census-c04.py): `[\p{L}\p{N}_]`
     // agrees with Python `\w` and `[\s\x1c-\x1f]` agrees with Python `\s` on every
@@ -27,7 +28,7 @@ internal sealed class PythonReParser
     private const string UnicodeNonSpaceClass = @"(?:(?![\s\x1c-\x1f])" + UnicodeScalarPattern + ")";
     private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string UnicodeNonDigitComplement = @"(?:(?!\d)" + UnicodeScalarPattern + ")";
-    private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
+    private const string UnicodeNonWordBoundary = @"(?:(?!\A\z)(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_])))";
     // PLAN.md C06: .NET character classes operate per UTF-16 unit, so a complement or dot that must consume one scalar pairs a BMP-only guard with an explicit scalar alternation (mirrors PythonReTranslator.AnyUnicodeScalarPattern). Complements stay BMP-exact; astral word/digit membership remains delimited per C04.
     private const string UnicodeScalarPattern = @"(?:[\u0000-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])";
     private const string UnicodeScalarDotAll = UnicodeScalarPattern;
@@ -99,6 +100,7 @@ internal sealed class PythonReParser
     private readonly Dictionary<string, int> _namedGroups = new(StringComparer.Ordinal);
     private readonly Dictionary<int, PythonReNode> _groupBodies = new();
     private bool _topLevelAscii;
+    private bool _hasLookbehind;
     private readonly HashSet<string> _openNamedGroups = new(StringComparer.Ordinal);
     private readonly HashSet<int> _openGroupNumbers = [];
     private int _position;
@@ -125,7 +127,7 @@ internal sealed class PythonReParser
             throw Error("unexpected character");
         }
 
-        return new PythonReParseResult(node, options, _groupCount, new Dictionary<string, int>(_namedGroups, StringComparer.Ordinal));
+        return new PythonReParseResult(node, options, _groupCount, new Dictionary<string, int>(_namedGroups, StringComparer.Ordinal), _hasLookbehind);
     }
 
     private void ConsumeLeadingInlineFlags(ref PythonReCompileOptions options)
@@ -392,6 +394,7 @@ internal sealed class PythonReParser
         {
             var inner = ParseAlternation(options);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
+            _hasLookbehind = true;
             return new PythonReGroupNode(PythonReGroupKind.PositiveLookbehind, inner);
         }
 
@@ -399,6 +402,7 @@ internal sealed class PythonReParser
         {
             var inner = ParseAlternation(options);
             ExpectGroupEnd(groupStart, "missing ), unterminated subpattern");
+            _hasLookbehind = true;
             return new PythonReGroupNode(PythonReGroupKind.NegativeLookbehind, inner);
         }
 
@@ -835,6 +839,7 @@ internal sealed class PythonReParser
             'w' or 'W' or 's' or 'S' or 'd' or 'D' when !IsAsciiMode(options) => new PythonReRawNode(GetUnicodePredefinedFragment(ch), PythonReRawKind.Escape),
             'b' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeWordBoundary, PythonReRawKind.Escape),
             'B' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeNonWordBoundary, PythonReRawKind.Escape),
+            'Z' => new PythonReRawNode(@"\z", PythonReRawKind.Escape),
             'A' or 'Z' or 'z' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
                 new PythonReRawNode("\\" + ch, PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 2, 'x'), options, IncludeUpperVariants(options)),
@@ -1608,7 +1613,8 @@ internal readonly record struct PythonReParseResult(
     PythonReNode Root,
     PythonReCompileOptions Options,
     int CaptureGroupCount,
-    IReadOnlyDictionary<string, int> NamedGroups);
+    IReadOnlyDictionary<string, int> NamedGroups,
+    bool HasLookbehind);
 
 internal enum FlagParseContext
 {

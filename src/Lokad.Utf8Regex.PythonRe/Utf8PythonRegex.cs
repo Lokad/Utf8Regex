@@ -91,6 +91,7 @@ public sealed class Utf8PythonRegex
     private readonly PythonReTranslation _translation;
     private readonly int[] _managedGroupNumbersByPythonGroup;
     private readonly bool _groupNumberingIsIdentity;
+    private readonly bool _hasLookbehind;
     private readonly PythonReNameEntry[] _nameEntries;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
@@ -241,8 +242,10 @@ public sealed class Utf8PythonRegex
         var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
+        _hasLookbehind = parseResult.HasLookbehind;
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
-        _managedFullRegex = CreateManagedRegex(@"\A(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+        // PLAN.md C08: `\G` pins the full match to the requested start offset (Python `pos` semantics with intact prefix context); `\A` would pin the real start and forbid pos > 0. Every caller below passes the start offset explicitly.
+        _managedFullRegex = CreateManagedRegex(@"\G(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
         if (_canMatchEmpty && _canMatchNonEmpty)
         {
             _lazyManagedNonEmptyAtSamePositionRegex = new Lazy<Regex>(
@@ -341,7 +344,8 @@ public sealed class Utf8PythonRegex
     /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset.</summary>
     public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
-        if (_utf8Regex is not null)
+        // PLAN.md C08: native value paths skip positive-lookbehind verification (core literal plans drop the assertion while detailed paths verify); keep lookbehind patterns on verified routes.
+        if (_utf8Regex is not null && !_hasLookbehind)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
@@ -379,7 +383,7 @@ public sealed class Utf8PythonRegex
                 });
         }
 
-        if (_utf8Regex is not null)
+        if (_utf8Regex is not null && !_hasLookbehind)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var startOffsetInUtf16 = startOffsetInBytes == 0
@@ -434,17 +438,18 @@ public sealed class Utf8PythonRegex
         }
 
         var utf8FullRegex = GetUtf8FullRegex();
-        if (utf8FullRegex is not null)
+        if (utf8FullRegex is not null && !_hasLookbehind)
         {
-            var tail = input[startOffsetInBytes..];
-            var match = utf8FullRegex.Match(tail);
+            // PLAN.md C08: match the whole subject from the start offset so `^` keeps the real start and lookbehind keeps its prefix; the `\G` wrapper pins the span while `\z` pins the end.
+            var match = utf8FullRegex.MatchFromUtf16Offset(
+                input,
+                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
             if (!match.Success)
             {
                 return default;
             }
 
-            var utf16BaseOffset = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            return Utf8PythonValueMatchFromUtf8Regex(input, match, startOffsetInBytes, utf16BaseOffset);
+            return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
 
         return FullMatchViaManagedRegex(input, startOffsetInBytes);
@@ -463,7 +468,7 @@ public sealed class Utf8PythonRegex
             return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
         }
 
-        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && startOffsetInBytes == 0)
+        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_hasLookbehind && startOffsetInBytes == 0)
         {
             return _utf8Regex.Count(input);
         }
@@ -563,29 +568,29 @@ public sealed class Utf8PythonRegex
         var utf8FullRegex = GetUtf8FullRegex();
         if (utf8FullRegex is not null)
         {
-            var utf8Tail = input[startOffsetInBytes..];
-            var utf8Match = utf8FullRegex.MatchDetailed(utf8Tail);
+            // Whole subject from the start offset: see FullMatch for the pos contract. Native detailed paths verify lookbehind, so they stay available here.
+            var utf8Match = utf8FullRegex.MatchDetailedFromUtf16Offset(
+                input,
+                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
             if (!utf8Match.Success)
             {
                 return default;
             }
 
-            var utf16BaseOffset = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            return CreateMatchContextFromUtf8(input, utf8Match, startOffsetInBytes, utf16BaseOffset);
+            return CreateMatchContextFromUtf8(input, utf8Match);
         }
 
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var tail = subject[startOffsetInUtf16..];
-        var match = _managedFullRegex.Match(tail);
+        var match = _managedFullRegex.Match(subject, startOffsetInUtf16);
         if (!match.Success)
         {
             return default;
         }
 
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateMatchContext(input, match, indexMap, startOffsetInUtf16);
+        return CreateMatchContext(input, match, indexMap);
     }
 
     /// <summary>Returns the first matched value as a string, or <see langword="null"/>.</summary>
@@ -682,29 +687,29 @@ public sealed class Utf8PythonRegex
         var utf8FullRegex = GetUtf8FullRegex();
         if (utf8FullRegex is not null)
         {
-            var utf8Tail = input[startOffsetInBytes..];
-            var utf8Match = utf8FullRegex.MatchDetailed(utf8Tail);
+            // Whole subject from the start offset: see FullMatch for the pos contract. Native detailed paths verify lookbehind, so they stay available here.
+            var utf8Match = utf8FullRegex.MatchDetailedFromUtf16Offset(
+                input,
+                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
             if (!utf8Match.Success)
             {
                 return default;
             }
 
-            var utf16BaseOffset = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-            return CreateDetailedMatchDataFromUtf8(input, utf8Match, startOffsetInBytes, utf16BaseOffset);
+            return CreateDetailedMatchDataFromUtf8(input, utf8Match);
         }
 
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var tail = subject[startOffsetInUtf16..];
-        var match = _managedFullRegex.Match(tail);
+        var match = _managedFullRegex.Match(subject, startOffsetInUtf16);
         if (!match.Success)
         {
             return default;
         }
 
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
-        return CreateDetailedMatchData(input, match, indexMap, startOffsetInUtf16);
+        return CreateDetailedMatchData(input, match, indexMap);
     }
 
     /// <summary>Materializes all non-overlapping matches.</summary>
@@ -2078,7 +2083,7 @@ public sealed class Utf8PythonRegex
         try
         {
             var regex = new Utf8Regex(
-                @"\A(?:" + _translation.Pattern + @")\z",
+                @"\G(?:" + _translation.Pattern + @")\z",
                 _translation.RegexOptions,
                 MatchTimeout);
             return regex.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex ? regex : null;
@@ -2137,7 +2142,8 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if (!_managedFullRegex.IsMatch(subject.AsSpan(startOffsetInUtf16)))
+        // The `\G` wrapper pins the span while `\z` pins the end; matching the whole subject from the start offset keeps `^` and lookbehind context intact (Python `pos` semantics).
+        if (!_managedFullRegex.IsMatch(subject, startOffsetInUtf16))
         {
             return default;
         }
@@ -2217,7 +2223,7 @@ public sealed class Utf8PythonRegex
         int startOffsetInBytes,
         out PythonReUtf8MatchRangeBuffer ranges)
     {
-        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null)
+        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null || _hasLookbehind)
         {
             ranges = default;
             return false;
@@ -2330,20 +2336,14 @@ public sealed class Utf8PythonRegex
     private Utf8PythonMatchContext CreateMatchContext(
         ReadOnlySpan<byte> input,
         Match match,
-        PythonReUtf8IndexMap indexMap) => CreateMatchContext(input, match, indexMap, 0);
-
-    private Utf8PythonMatchContext CreateMatchContext(
-        ReadOnlySpan<byte> input,
-        Match match,
-        PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset)
+        PythonReUtf8IndexMap indexMap)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return CreateMatchSnapshot(match, indexMap, utf16BaseOffset).ToContext(input, _nameEntries);
+        return CreateMatchSnapshot(match, indexMap, 0).ToContext(input, _nameEntries);
     }
 
     private Utf8PythonDetailedMatchData CreateDetailedMatchData(
@@ -2401,13 +2401,7 @@ public sealed class Utf8PythonRegex
 
     private Utf8PythonMatchContext CreateMatchContextFromUtf8(
         ReadOnlySpan<byte> input,
-        Utf8MatchContext match) => CreateMatchContextFromUtf8(input, match, 0, 0);
-
-    private Utf8PythonMatchContext CreateMatchContextFromUtf8(
-        ReadOnlySpan<byte> input,
-        Utf8MatchContext match,
-        int byteBaseOffset,
-        int utf16BaseOffset)
+        Utf8MatchContext match)
     {
         if (!match.Success)
         {
@@ -2418,7 +2412,7 @@ public sealed class Utf8PythonRegex
         var groups = new PythonReGroupData[_managedGroupNumbersByPythonGroup.Length];
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]), byteBaseOffset, utf16BaseOffset);
+            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]));
         }
 
         return new Utf8PythonMatchContext(input, groups, _nameEntries);
@@ -2426,13 +2420,7 @@ public sealed class Utf8PythonRegex
 
     private Utf8PythonDetailedMatchData CreateDetailedMatchDataFromUtf8(
         ReadOnlySpan<byte> input,
-        Utf8MatchContext match) => CreateDetailedMatchDataFromUtf8(input, match, 0, 0);
-
-    private Utf8PythonDetailedMatchData CreateDetailedMatchDataFromUtf8(
-        ReadOnlySpan<byte> input,
-        Utf8MatchContext match,
-        int byteBaseOffset,
-        int utf16BaseOffset)
+        Utf8MatchContext match)
     {
         if (!match.Success)
         {
@@ -2443,7 +2431,7 @@ public sealed class Utf8PythonRegex
         var groups = new PythonReGroupData[_managedGroupNumbersByPythonGroup.Length];
         for (var pythonGroup = 0; pythonGroup < groups.Length; pythonGroup++)
         {
-            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]), byteBaseOffset, utf16BaseOffset);
+            groups[pythonGroup] = PythonReGroupData.FromUtf8Group(pythonGroup, match.GetGroup(_managedGroupNumbersByPythonGroup[pythonGroup]));
         }
 
         return CreateDetailedMatchData(input, groups, _nameEntries);
@@ -2553,20 +2541,14 @@ public sealed class Utf8PythonRegex
 
     private static Utf8PythonValueMatch Utf8PythonValueMatchFromUtf8Regex(
         ReadOnlySpan<byte> input,
-        Utf8ValueMatch match) => Utf8PythonValueMatchFromUtf8Regex(input, match, 0, 0);
-
-    private static Utf8PythonValueMatch Utf8PythonValueMatchFromUtf8Regex(
-        ReadOnlySpan<byte> input,
-        Utf8ValueMatch match,
-        int byteBaseOffset,
-        int utf16BaseOffset)
+        Utf8ValueMatch match)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf8Match(match, byteBaseOffset, utf16BaseOffset));
+        return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf8Match(match));
     }
 
     private void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex)

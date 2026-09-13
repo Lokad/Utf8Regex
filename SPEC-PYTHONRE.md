@@ -76,6 +76,11 @@ Supported feature families in the current profile:
 * Python escape parsing for `\x..`, `\u....`, `\U........`, and octal escapes on `str` patterns
 * ASCII-mode semantics for `\w`, `\W`, `\d`, `\D`, `\s`, `\S`, `\b`, `\B`
 
+## Offset contract
+
+All `startOffsetInBytes` parameters follow CPython `pos` semantics against the pinned 3.13.2 oracle: the match must start at or after `pos`, while `^` still anchors at the real string start (or after a newline under `MULTILINE`), lookbehind and `\b`/`\B` keep their full prefix context, and lookahead and `$`/`\Z` keep their full suffix context. `FullMatch` additionally requires the match to cover the whole `[pos, end)` input. No `endpos` parameter exists; the input end always plays that role. Value, detailed, string, and bytes entry points agree on these rules.
+
+
 ## Deliberate boundaries
 
 This profile is still incomplete. In particular:
