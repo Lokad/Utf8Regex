@@ -1487,7 +1487,21 @@ public sealed class Utf8Regex
             _compiledEngineRuntime.SupportsAsciiWellFormedOnlyMatch &&
             TryUseAsciiInputValidationShortcut(input);
 
-        if (canUseAsciiWellFormedOnlyMatch || _compiledEngineRuntime.SupportsWellFormedOnlyMatch)
+        // An ASCII whole-match is incomplete for non-ASCII input unless the
+        // simple-pattern plan is UTF-8 byte-safe (PLAN.md C01): a miss must not
+        // shortcut Unicode verification. Those inputs fall through to full
+        // validation and the compiled engine, which selects the semantic fallback.
+        // This stays inline: single-caller private helpers count as source debt.
+        var requiresUnicodeVerification =
+            _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+            !_preparedRegex.SimplePatternPlan.IsUtf8ByteSafe &&
+            !Utf8InputAnalyzer.IsAscii(input);
+
+        var canUseWellFormedOnlyMatch =
+            _compiledEngineRuntime.SupportsWellFormedOnlyMatch &&
+            !requiresUnicodeVerification;
+
+        if (canUseAsciiWellFormedOnlyMatch || canUseWellFormedOnlyMatch)
         {
             if (!canUseAsciiWellFormedOnlyMatch)
             {
