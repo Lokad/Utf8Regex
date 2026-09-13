@@ -123,6 +123,12 @@ $pcre2ProjectPath = Join-Path $repositoryRoot "src\Lokad.Utf8Regex.Pcre2\Lokad.U
 [xml] $coreProject = Get-Content -LiteralPath $coreProjectPath
 $versionNode = $coreProject.SelectSingleNode("/Project/PropertyGroup/Version")
 if ($null -eq $versionNode -or [string]::IsNullOrWhiteSpace($versionNode.InnerText)) {
+    # Shared release metadata (PLAN.md D08) centralizes the coherent package version.
+    $sharedPropsPath = Join-Path $repositoryRoot "src\Directory.Build.props"
+    [xml] $sharedProps = Get-Content -LiteralPath $sharedPropsPath
+    $versionNode = $sharedProps.SelectSingleNode("/Project/PropertyGroup/Version")
+}
+if ($null -eq $versionNode -or [string]::IsNullOrWhiteSpace($versionNode.InnerText)) {
     throw "Could not read the package version from $coreProjectPath."
 }
 
