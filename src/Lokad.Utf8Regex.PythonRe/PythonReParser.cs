@@ -5,7 +5,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 internal sealed class PythonReParser
 {
-    private const string PatternBadEscapeLetters = "ceghijklmopqyCEFGHIJKLMNOPQRTVXY";
+    private const string PatternBadEscapeLetters = "ceghijklmopqyCEFGHIJKLMNOPQRTVXYz";
     private const string CharacterClassBadEscapeLetters = "ceghijklmopqyzABCEFGHIJKLMOPQRTVXYZ";
     private const string AsciiWordClass = "[A-Za-z0-9_]";
     private const string AsciiNonWordClass = "(?:(?![A-Za-z0-9_])" + UnicodeScalarPattern + ")";
@@ -127,7 +127,7 @@ internal sealed class PythonReParser
             throw Error("unexpected character");
         }
 
-        return new PythonReParseResult(node, options, _groupCount, new Dictionary<string, int>(_namedGroups, StringComparer.Ordinal), _hasLookbehind);
+        return new PythonReParseResult(node, options, _groupCount, new Dictionary<string, int>(_namedGroups, StringComparer.Ordinal), _hasLookbehind, new Dictionary<int, PythonReNode>(_groupBodies));
     }
 
     private void ConsumeLeadingInlineFlags(ref PythonReCompileOptions options)
@@ -840,7 +840,7 @@ internal sealed class PythonReParser
             'b' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeWordBoundary, PythonReRawKind.Escape),
             'B' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeNonWordBoundary, PythonReRawKind.Escape),
             'Z' => new PythonReRawNode(@"\z", PythonReRawKind.Escape),
-            'A' or 'Z' or 'z' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
+            'A' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
                 new PythonReRawNode("\\" + ch, PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 2, 'x'), options, IncludeUpperVariants(options)),
             'u' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 4, 'u'), options, IncludeUpperVariants(options)),
@@ -1375,7 +1375,8 @@ internal sealed class PythonReParser
 
         while (!IsAtEnd)
         {
-            if (char.IsWhiteSpace(Current))
+            // CPython verbose skips exactly space, tab, LF, CR, VT, and FF (Lib/re/_parser.py WHITESPACE), unlike char.IsWhiteSpace, which also eats no-break spaces and Unicode spaces that CPython preserves literally.
+            if (Current is ' ' or '\t' or '\n' or '\r' or '\v' or '\f')
             {
                 _position++;
                 continue;
@@ -1614,7 +1615,8 @@ internal readonly record struct PythonReParseResult(
     PythonReCompileOptions Options,
     int CaptureGroupCount,
     IReadOnlyDictionary<string, int> NamedGroups,
-    bool HasLookbehind);
+    bool HasLookbehind,
+    IReadOnlyDictionary<int, PythonReNode> GroupBodies);
 
 internal enum FlagParseContext
 {

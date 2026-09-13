@@ -2258,8 +2258,8 @@ internal sealed class PythonReBenchmarkContext
                 ? new Utf8Regex(translatedPattern, regexOptions)
                 : null;
             _replacementNonEmptyAtSamePositionRegex = _supportsReplacementPhases &&
-                PythonReTranslator.CanMatchEmpty(parsed.Root) &&
-                PythonReTranslator.CanMatchNonEmpty(parsed.Root)
+                PythonReTranslator.CanMatchEmpty(parsed.Root, parsed) &&
+                PythonReTranslator.CanMatchNonEmpty(parsed.Root, parsed)
                     ? new Regex(
                         @"\G(?:(?:" + translatedPattern + @"))(?!\G)",
                         regexOptions,

@@ -454,8 +454,8 @@ public sealed class Utf8PythonRegexCpythonParityTests
         Assert.Equal("bx", GetGroup1(new Utf8PythonRegex(@"\b(b.)\b").SearchDetailed("abcd abc bcd bx"u8)));
         Assert.Equal("bx", GetGroup1(new Utf8PythonRegex(@"\B(b.)\B").SearchDetailed("abc bcd bc abxd"u8)));
         Assert.Equal("abc", new Utf8PythonRegex(@"^abc$", PythonReCompileOptions.Multiline).Search("\nabc\n"u8).GetValueString());
-        Assert.Equal("abc", new Utf8PythonRegex(@"^\Aabc\z$", PythonReCompileOptions.Multiline).Search("abc"u8).GetValueString());
-        Assert.False(new Utf8PythonRegex(@"^\Aabc\z$", PythonReCompileOptions.Multiline).Search("\nabc\n"u8).Success);
+        Assert.Equal("abc", new Utf8PythonRegex(@"^\Aabc\Z$", PythonReCompileOptions.Multiline).Search("abc"u8).GetValueString());
+        Assert.False(new Utf8PythonRegex(@"^\Aabc\Z$", PythonReCompileOptions.Multiline).Search("\nabc\n"u8).Success);
         Assert.Equal("1aa! a", new Utf8PythonRegex(@"\d\D\w\W\s\S").Search("1aa! a"u8).GetValueString());
     }
 

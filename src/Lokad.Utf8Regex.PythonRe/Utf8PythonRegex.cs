@@ -164,8 +164,8 @@ public sealed class Utf8PythonRegex
 
         var parser = new PythonReParser(pattern);
         var parseResult = parser.Parse(options);
-        _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root);
-        _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root);
+        _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
+        _canMatchNonEmpty = PythonReTranslator.CanMatchNonEmpty(parseResult.Root, parseResult);
         _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
         _canUseManagedSplitFastPath =
             (!_canMatchEmpty &&

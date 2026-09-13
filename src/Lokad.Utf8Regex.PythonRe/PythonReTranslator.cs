@@ -13,11 +13,15 @@ internal static class PythonReTranslator
     private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string AnyUnicodeScalarPattern = @"(?:[\u0000-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])";
 
-    public static bool CanMatchEmpty(PythonReNode node) => GetWidth(node).Min == 0;
-
-    public static bool CanMatchNonEmpty(PythonReNode node)
+    public static bool CanMatchEmpty(PythonReNode node, PythonReParseResult parseResult)
     {
-        var max = GetWidth(node).Max;
+        // Backreferences keep CPython getwidth content semantics (PLAN.md C10): a backreference to an unset group fails in both CPython 3.13.2 and .NET 10 (verified: `(a)?b\1` on "b" matches in neither), so in every successful match each executed backreference contributes at least its group's content minimum, while alternation minima and zeroable quantifiers already absorb non-executed positions. The structural minimum is therefore a lower bound over successful matches: zero keeps the general route (always safe) and a positive minimum proves no empty match exists.
+        return GetWidth(node, parseResult).Min == 0;
+    }
+
+    public static bool CanMatchNonEmpty(PythonReNode node, PythonReParseResult parseResult)
+    {
+        var max = GetWidth(node, parseResult).Max;
         return !max.HasValue || max.Value > 0;
     }
 
@@ -338,6 +342,54 @@ internal static class PythonReTranslator
     public static PythonReTranslation Translate(PythonReParseResult parseResult)
     {
         ValidateReferences(parseResult.Root, parseResult.CaptureGroupCount, parseResult.NamedGroups);
+        // PLAN.md C10: lookbehind width is validated up front over the whole tree (fixed content widths, backreferences resolved to their group widths) so emission never meets an invalid lookbehind.
+        ValidateLookbehindWidths(parseResult.Root, parseResult);
+
+        static void ValidateLookbehindWidths(PythonReNode node, PythonReParseResult result)
+        {
+            switch (node)
+            {
+                case PythonReGroupNode { Kind: PythonReGroupKind.PositiveLookbehind, Inner: var positiveInner }:
+                    EnsureFixedWidth(positiveInner, result);
+                    ValidateLookbehindWidths(positiveInner, result);
+                    break;
+                case PythonReGroupNode { Kind: PythonReGroupKind.NegativeLookbehind, Inner: var negativeInner }:
+                    EnsureFixedWidth(negativeInner, result);
+                    ValidateLookbehindWidths(negativeInner, result);
+                    break;
+                case PythonReAlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        ValidateLookbehindWidths(branch, result);
+                    }
+
+                    break;
+                case PythonReSequenceNode sequence:
+                    foreach (var element in sequence.Elements)
+                    {
+                        ValidateLookbehindWidths(element, result);
+                    }
+
+                    break;
+                case PythonReQuantifierNode quantifier:
+                    ValidateLookbehindWidths(quantifier.Inner, result);
+                    break;
+                case PythonReGroupNode group:
+                    ValidateLookbehindWidths(group.Inner, result);
+                    break;
+                case PythonReConditionalNode conditional:
+                    ValidateLookbehindWidths(conditional.YesBranch, result);
+                    if (conditional.NoBranch is not null)
+                    {
+                        ValidateLookbehindWidths(conditional.NoBranch, result);
+                    }
+
+                    break;
+                default:
+                    break;
+            }
+        }
+
         var emittedGroupNames = BuildEmittedGroupNames(parseResult.NamedGroups);
         var builder = new StringBuilder();
         // PLAN.md C07: .NET numbers unnamed groups first (opening-paren order), then named groups (opening-paren order), while Python numbers strictly by opening paren. Precompute the Python-slot to managed-number permutation once; the facade proves the same rule via GroupNumberFromName at runtime.
@@ -671,14 +723,12 @@ internal static class PythonReTranslator
                 return;
 
             case PythonReGroupKind.PositiveLookbehind:
-                EnsureFixedWidth(node.Inner);
                 builder.Append("(?<=");
                 AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
                 return;
 
             case PythonReGroupKind.NegativeLookbehind:
-                EnsureFixedWidth(node.Inner);
                 builder.Append("(?<!");
                 AppendNode(node.Inner, builder, emittedGroupNames, managedNumbersByPython);
                 builder.Append(')');
@@ -815,21 +865,21 @@ internal static class PythonReTranslator
         return true;
     }
 
-    private static void EnsureFixedWidth(PythonReNode node)
+    private static void EnsureFixedWidth(PythonReNode node, PythonReParseResult parseResult)
     {
-        var width = GetWidth(node);
+        var width = GetWidth(node, parseResult);
         if (!width.IsFixed)
         {
             throw new PythonRePatternException("look-behind requires fixed-width pattern");
         }
     }
 
-    private static PythonReWidth GetWidth(PythonReNode node)
+    private static PythonReWidth GetWidth(PythonReNode node, PythonReParseResult parseResult)
     {
         return node switch
         {
-            PythonReAlternationNode alternation => GetAlternationWidth(alternation),
-            PythonReSequenceNode sequence => GetSequenceWidth(sequence),
+            PythonReAlternationNode alternation => GetAlternationWidth(alternation, parseResult),
+            PythonReSequenceNode sequence => GetSequenceWidth(sequence, parseResult),
             PythonReLiteralNode => new PythonReWidth(1, 1),
             PythonReCharacterClassNode => new PythonReWidth(1, 1),
             PythonReRawNode raw => raw.Kind switch
@@ -839,28 +889,33 @@ internal static class PythonReTranslator
                 PythonReRawKind.AstralLiteral => new PythonReWidth(1, 1),
                 _ => new PythonReWidth(1, 1),
             },
-            PythonReNamedBackreferenceNode or PythonReNumericBackreferenceNode => new PythonReWidth(0, null),
-            PythonReConditionalNode conditional => GetConditionalWidth(conditional),
-            PythonReQuantifierNode quantifier => GetQuantifierWidth(quantifier),
+            PythonReNamedBackreferenceNode named => parseResult.NamedGroups.TryGetValue(named.Name, out var namedSlot) && parseResult.GroupBodies.TryGetValue(namedSlot, out var namedBody)
+                ? GetWidth(namedBody, parseResult)
+                : new PythonReWidth(0, null),
+            PythonReNumericBackreferenceNode numeric => parseResult.GroupBodies.TryGetValue(numeric.GroupNumber, out var numberedBody)
+                ? GetWidth(numberedBody, parseResult)
+                : new PythonReWidth(0, null),
+            PythonReConditionalNode conditional => GetConditionalWidth(conditional, parseResult),
+            PythonReQuantifierNode quantifier => GetQuantifierWidth(quantifier, parseResult),
             PythonReGroupNode group => group.Kind switch
             {
                 PythonReGroupKind.PositiveLookahead or
                 PythonReGroupKind.NegativeLookahead or
                 PythonReGroupKind.PositiveLookbehind or
                 PythonReGroupKind.NegativeLookbehind => new PythonReWidth(0, 0),
-                _ => GetWidth(group.Inner),
+                _ => GetWidth(group.Inner, parseResult),
             },
             _ => throw new PythonRePatternException("Unsupported AST node."),
         };
     }
 
-    private static PythonReWidth GetAlternationWidth(PythonReAlternationNode alternation)
+    private static PythonReWidth GetAlternationWidth(PythonReAlternationNode alternation, PythonReParseResult parseResult)
     {
         var min = int.MaxValue;
         int? max = 0;
         foreach (var branch in alternation.Branches)
         {
-            var width = GetWidth(branch);
+            var width = GetWidth(branch, parseResult);
             min = Math.Min(min, width.Min);
             max = CombineMax(max, width.Max, add: false);
         }
@@ -868,42 +923,43 @@ internal static class PythonReTranslator
         return new PythonReWidth(min == int.MaxValue ? 0 : min, max);
     }
 
-    private static PythonReWidth GetSequenceWidth(PythonReSequenceNode sequence)
+    private static PythonReWidth GetSequenceWidth(PythonReSequenceNode sequence, PythonReParseResult parseResult)
     {
         var min = 0;
         int? max = 0;
         foreach (var element in sequence.Elements)
         {
-            var width = GetWidth(element);
-            min += width.Min;
+            var width = GetWidth(element, parseResult);
+            // Widths saturate like CPython MAXWIDTH instead of wrapping (PLAN.md C10): verdicts stay exact wherever exact bounds fit int32, i.e. every feasible pattern.
+            min = (int)Math.Min((long)min + width.Min, int.MaxValue);
             max = AddMax(max, width.Max);
         }
 
         return new PythonReWidth(min, max);
     }
 
-    private static PythonReWidth GetQuantifierWidth(PythonReQuantifierNode quantifier)
+    private static PythonReWidth GetQuantifierWidth(PythonReQuantifierNode quantifier, PythonReParseResult parseResult)
     {
-        var inner = GetWidth(quantifier.Inner);
-        var min = inner.Min * quantifier.Min;
+        var inner = GetWidth(quantifier.Inner, parseResult);
+        var min = (int)Math.Min((long)inner.Min * quantifier.Min, int.MaxValue);
         int? max = null;
         if (quantifier.Max.HasValue && inner.Max.HasValue)
         {
-            max = inner.Max.Value * quantifier.Max.Value;
+            max = (int)Math.Min((long)inner.Max.Value * quantifier.Max.Value, int.MaxValue);
         }
 
         return new PythonReWidth(min, max);
     }
 
-    private static PythonReWidth GetConditionalWidth(PythonReConditionalNode conditional)
+    private static PythonReWidth GetConditionalWidth(PythonReConditionalNode conditional, PythonReParseResult parseResult)
     {
-        var yesWidth = GetWidth(conditional.YesBranch);
+        var yesWidth = GetWidth(conditional.YesBranch, parseResult);
         if (conditional.NoBranch is null)
         {
             return new PythonReWidth(0, yesWidth.Max);
         }
 
-        var noWidth = GetWidth(conditional.NoBranch);
+        var noWidth = GetWidth(conditional.NoBranch, parseResult);
         var min = Math.Min(yesWidth.Min, noWidth.Min);
         int? max;
         if (!yesWidth.Max.HasValue || !noWidth.Max.HasValue)
@@ -925,7 +981,8 @@ internal static class PythonReTranslator
             return null;
         }
 
-        return left.Value + right.Value;
+        var sum = (long)left.Value + right.Value;
+        return sum > int.MaxValue ? int.MaxValue : (int)sum;
     }
 
     private static int? CombineMax(int? left, int? right, bool add)
@@ -935,7 +992,13 @@ internal static class PythonReTranslator
             return null;
         }
 
-        return add ? left.Value + right.Value : Math.Max(left.Value, right.Value);
+        if (!add)
+        {
+            return Math.Max(left.Value, right.Value);
+        }
+
+        var sum = (long)left.Value + right.Value;
+        return sum > int.MaxValue ? int.MaxValue : (int)sum;
     }
 
     private static RegexOptions ToRegexOptions(PythonReCompileOptions options)
