@@ -138,10 +138,15 @@ PythonRe benchmark snapshot and diagnostics:
 - `PythonRe.Benchmarks.json` is the small comparative snapshot for the optional Python-compatible adapter.
 - `src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md` is generated from that snapshot and is the self-contained published view for the Python-compatible adapter. Do not edit its tables by hand.
 - Use `--measure-pythonre-case <id> [iterations] [samples]` for one row.
-- Use `--measure-pythonre-paired-case <id> [samples]` for a non-persisted
-  alternating paired qualification diagnostic against predecoded CPython.
-- Use `--measure-pythonre-paired-case-reversed <id> [samples]` only to check a
-  persistent lane-order effect with the opposite initial lane.
+- Use `--measure-pythonre-paired-case <id> [samples]` for the bounded
+  non-persisted paired diagnostic against predecoded CPython. It calibrates
+  the two runtimes independently, alternates whole paired lanes on one logical
+  processor, records raw samples and harness floors, and does not rewrite the
+  snapshot.
+- Use `--measure-pythonre-paired-case-reversed <id> [samples]` for the same
+  diagnostic with CPython first. Run it only after a normal paired result
+  fails the lane-order gate; cross-process sub-sample slicing is deliberately
+  not used because it disturbed cache residency in bounded trials.
 - Use `--qualify-pythonre-case <id> [samples]` to checkpoint paired evidence
   and Status into the snapshot; use `--qualify-pythonre-case-reversed` for the
   predeclared reversed-first repeat.
@@ -154,15 +159,6 @@ PythonRe benchmark snapshot and diagnostics:
 - Use `--emit-pythonre-priority-report` to rank qualified public CPython wins
   separately by relative and absolute gap, and to list qualified bytes-control
   engine wins without merging the two queues.
-- Use `--measure-pythonre-paired-case <id> [samples]` for the bounded
-  long-lived-worker comparison against predecoded CPython. It calibrates the
-  two runtimes independently, alternates whole paired lanes on one logical
-  processor, records raw samples and harness floors, and does not rewrite the
-  snapshot.
-- Use `--measure-pythonre-paired-case-reversed <id> [samples]` for the same
-  diagnostic with CPython first. Run it only after a normal paired result
-  fails the lane-order gate; cross-process sub-sample slicing is deliberately
-  not used because it disturbed cache residency in bounded trials.
 - Use `--measure-pythonre-shaping-case <id> [iterations] [samples]` to split
   detailed-match discovery, direct public projection, and staged projection.
 - Use `--measure-pythonre-findall-phases <id> [iterations] [samples]` to split
@@ -183,7 +179,7 @@ PythonRe benchmark snapshot and diagnostics:
   hit-late, and miss subjects against predecoded and bytes CPython controls in
   one long-lived worker, then reports robust slopes, local slopes, residuals,
   and modeled break-even sizes. It is diagnostic evidence, not Status.
-- Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 28-case catalog.
+- Use `--refresh-pythonre-benchmarks [iterations] [samples]` for the complete 90-row catalog.
 - Use `--rewrite-pythonre-benchmark-markdown` after a snapshot repair and `--verify-pythonre-benchmark-markdown` in validation. Normal snapshot refresh rewrites the page automatically.
 - Use `--migrate-pythonre-benchmark-snapshot` only for an explicit schema
   migration; it does not reclassify historical measurements as qualified.
