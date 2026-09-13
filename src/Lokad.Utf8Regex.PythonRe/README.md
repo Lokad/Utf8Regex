@@ -49,6 +49,7 @@ are also available as host-friendly conveniences when a runtime needs scalar str
 ## Development Notes
 
 - Benchmarks: [BENCHMARKS.md](./BENCHMARKS.md)
+- Packaged qualification: run `./test-packaged-pythonre.ps1 -Configuration Release` from the repository root to pack a version-coherent core/companion pair and execute the complete PythonRe suite from an isolated NuGet cache.
 - Project: [Lokad.Utf8Regex.PythonRe.csproj](./Lokad.Utf8Regex.PythonRe.csproj)
 - Main runtime: [Utf8PythonRegex.cs](./Utf8PythonRegex.cs)
 - Core match/result types: [PythonReCoreTypes.cs](./PythonReCoreTypes.cs)
