@@ -308,7 +308,8 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         }
     }
 
-    private static bool IsZeroWidthNode(Utf8ExecutionNode node)
+    // PLAN.md D06: single owner for execution-tree analysis primitives shared with the byte-safe linear verifier.
+    internal static bool IsZeroWidthNode(Utf8ExecutionNode node)
     {
         return node.Kind is Utf8ExecutionNodeKind.Empty
             or Utf8ExecutionNodeKind.Bol
@@ -379,7 +380,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         return true;
     }
 
-    private static Utf8ExecutionNode Unwrap(Utf8ExecutionNode node)
+    internal static Utf8ExecutionNode Unwrap(Utf8ExecutionNode node)
     {
         while (node.Kind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group &&
                node.Children.Count == 1)
@@ -390,7 +391,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
         return node;
     }
 
-    private static bool TryGetAsciiBytes(string? text, out byte[] bytes)
+    internal static bool TryGetAsciiBytes(string? text, out byte[] bytes)
     {
         bytes = [];
         if (string.IsNullOrEmpty(text))

@@ -17,6 +17,40 @@ internal static class Utf8ExecutionInterpreter
         return FindNextSimplePattern(input, program, searchPlan, plan, startIndex, captures: null, budget: Utf8ExecutionDeadline.Infinite, out matchedLength);
     }
 
+    // PLAN.md D06: single owner for the interpreter-backed simple-pattern Count loop; both compiled runtimes reach it only after their route-specific preconditions.
+    internal static int CountSimplePattern(
+        ReadOnlySpan<byte> input,
+        Utf8ExecutionProgram? program,
+        in Utf8SearchPlan searchPlan,
+        in AsciiSimplePatternPlan plan,
+        Utf8ExecutionDeadline budget)
+    {
+        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
+        var count = 0;
+        var index = 0;
+        while (index <= input.Length)
+        {
+            var found = FindNextSimplePattern(
+                input,
+                program,
+                searchPlan,
+                plan,
+                index,
+                captures: null,
+                budget,
+                out var matchedLength);
+            if (found < 0)
+            {
+                return count;
+            }
+
+            count++;
+            index = found + Math.Max(matchedLength, 1);
+        }
+
+        return count;
+    }
+
     public static int FindNextSimplePattern(
         ReadOnlySpan<byte> input,
         Utf8ExecutionProgram? program,

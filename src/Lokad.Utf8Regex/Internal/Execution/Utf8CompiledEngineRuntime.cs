@@ -570,30 +570,12 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
             return 1;
         }
 
-        Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeAsciiSimplePattern);
-        var count = 0;
-        var index = 0;
-        while (index <= input.Length)
-        {
-            var found = Utf8ExecutionInterpreter.FindNextSimplePattern(
-                input,
-                _regexPlan.ExecutionProgram,
-                _regexPlan.SearchPlan,
-                _regexPlan.SimplePatternPlan,
-                index,
-                captures: null,
-                budget,
-                out var matchedLength);
-            if (found < 0)
-            {
-                return count;
-            }
-
-            count++;
-            index = found + Math.Max(matchedLength, 1);
-        }
-
-        return count;
+        return Utf8ExecutionInterpreter.CountSimplePattern(
+            input,
+            _regexPlan.ExecutionProgram,
+            _regexPlan.SearchPlan,
+            _regexPlan.SimplePatternPlan,
+            budget);
     }
 
     public override Utf8ValueMatch Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)

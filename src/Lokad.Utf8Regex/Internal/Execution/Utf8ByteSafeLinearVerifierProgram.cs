@@ -208,7 +208,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             }
 
             var steps = new List<Utf8ByteSafeLinearVerifierStep>();
-            var program = TryAppendNode(Unwrap(root), steps)
+            var program = TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(root), steps)
                 ? new Utf8ByteSafeLinearVerifierProgram([.. steps, Utf8ByteSafeLinearVerifierStep.Accept()])
                 : default;
             if (!program.HasValue && _failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
@@ -228,12 +228,12 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
             case Utf8ExecutionNodeKind.Capture:
             case Utf8ExecutionNodeKind.Group:
-                return node.Children.Count == 1 && TryAppendNode(Unwrap(node.Children[0]), steps);
+                return node.Children.Count == 1 && TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), steps);
 
             case Utf8ExecutionNodeKind.Concatenate:
                 for (var i = 0; i < node.Children.Count; i++)
                 {
-                    var child = Unwrap(node.Children[i]);
+                    var child = Utf8DeterministicAnchorSearch.Unwrap(node.Children[i]);
                     if (TryAppendTerminalLoop(node.Children, i, steps))
                     {
                         return true;
@@ -269,7 +269,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                         continue;
                     }
 
-                    if (!TryAppendNode(Unwrap(child), steps))
+                    if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(child), steps))
                     {
                         return false;
                     }
@@ -281,7 +281,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 steps.Add(Utf8ByteSafeLinearVerifierStep.MatchByte((byte)node.Ch));
                 return true;
 
-            case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(node.Text, out var text):
+            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.MatchText(text));
                 return true;
 
@@ -343,7 +343,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
 
         if (node.Children.Count == 1 &&
-            TryExtractAlternationTexts(Unwrap(node.Children[0]), out var alternatives, out var optional) &&
+            TryExtractAlternationTexts(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), out var alternatives, out var optional) &&
             !optional &&
             AreAlternativesPrefixFree(alternatives) &&
             (node.Min == node.Max || allowVariableLength))
@@ -364,7 +364,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             return true;
         }
 
-        if (TryGetAsciiBytes(node.Text, out var loopText))
+        if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText))
         {
             steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(loopText, node.Min, node.Max));
             return true;
@@ -375,14 +375,14 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             return false;
         }
 
-        var child = Unwrap(node.Children[0]);
+        var child = Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]);
         switch (child.Kind)
         {
             case Utf8ExecutionNodeKind.One when child.Ch <= 0x7F:
                 steps.Add(Utf8ByteSafeLinearVerifierStep.LoopByte((byte)child.Ch, node.Min, node.Max));
                 return true;
 
-            case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(child.Text, out var text):
+            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(child.Text, out var text):
                 steps.Add(Utf8ByteSafeLinearVerifierStep.LoopText(text, node.Min, node.Max));
                 return true;
 
@@ -523,7 +523,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
     {
-        var node = Unwrap(children[index]);
+        var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (node.Kind is not (Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop) ||
             !CanTreatRemainingAsZeroWidth(children, index + 1) ||
             !TryAppendLoop(node, steps, allowVariableLength: true))
@@ -533,7 +533,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
         for (var i = index + 1; i < children.Count; i++)
         {
-            if (!TryAppendNode(Unwrap(children[i]), steps))
+            if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(children[i]), steps))
             {
                 return false;
             }
@@ -547,7 +547,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
     {
-        var node = Unwrap(children[index]);
+        var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (node.Kind != Utf8ExecutionNodeKind.Loop || node.Min == node.Max)
         {
             return false;
@@ -565,37 +565,6 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         }
 
         return TryAppendLoop(node, steps, allowVariableLength: true);
-    }
-
-    private Utf8ExecutionNode Unwrap(Utf8ExecutionNode node)
-    {
-        while (node.Kind is Utf8ExecutionNodeKind.Capture or Utf8ExecutionNodeKind.Group &&
-               node.Children.Count == 1)
-        {
-            node = node.Children[0];
-        }
-
-        return node;
-    }
-
-    private bool TryGetAsciiBytes(string? text, out byte[] bytes)
-    {
-        bytes = [];
-        if (string.IsNullOrEmpty(text))
-        {
-            return false;
-        }
-
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] > 0x7F)
-            {
-                return false;
-            }
-        }
-
-        bytes = text.Select(static ch => (byte)ch).ToArray();
-        return true;
     }
 
     private bool TryCreateByteSafeSetStep(string runtimeSet, bool loop, int min, int max, out Utf8ByteSafeLinearVerifierStep step)
@@ -630,7 +599,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
     {
-        var node = Unwrap(children[index]);
+        var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (!CanTreatRemainingAsZeroWidth(children, index + 1))
         {
             if (node.Kind == Utf8ExecutionNodeKind.Alternate &&
@@ -649,7 +618,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
             for (var i = index + 1; i < children.Count; i++)
             {
-                if (!TryAppendNode(Unwrap(children[i]), steps))
+                if (!TryAppendNode(Utf8DeterministicAnchorSearch.Unwrap(children[i]), steps))
                 {
                     return false;
                 }
@@ -666,7 +635,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         int index,
         List<Utf8ByteSafeLinearVerifierStep> steps)
     {
-        var node = Unwrap(children[index]);
+        var node = Utf8DeterministicAnchorSearch.Unwrap(children[index]);
         if (!TryExtractAlternationTexts(node, out var alternatives, out var optional) ||
             !optional ||
             !TryExtractFollowingAsciiPrefix(children, index + 1, out var followingPrefix) ||
@@ -706,26 +675,13 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
     {
         for (var i = startIndex; i < children.Count; i++)
         {
-            if (!IsZeroWidthNode(Unwrap(children[i])))
+            if (!Utf8DeterministicAnchorSearch.IsZeroWidthNode(Utf8DeterministicAnchorSearch.Unwrap(children[i])))
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    private bool IsZeroWidthNode(Utf8ExecutionNode node)
-    {
-        return node.Kind is Utf8ExecutionNodeKind.Empty
-            or Utf8ExecutionNodeKind.Bol
-            or Utf8ExecutionNodeKind.Beginning
-            or Utf8ExecutionNodeKind.Start
-            or Utf8ExecutionNodeKind.Eol
-            or Utf8ExecutionNodeKind.EndZ
-            or Utf8ExecutionNodeKind.End
-            or Utf8ExecutionNodeKind.Boundary
-            or Utf8ExecutionNodeKind.NonBoundary;
     }
 
     private bool TryExtractAlternationTexts(Utf8ExecutionNode node, out byte[][] alternatives, out bool optional)
@@ -737,7 +693,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             node.Min == 0 &&
             node.Max == 1)
         {
-            var candidate = node.Children.Count == 1 ? Unwrap(node.Children[0]) : node;
+            var candidate = node.Children.Count == 1 ? Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]) : node;
             if (TryExtractAlternationTexts(candidate, out alternatives, out _))
             {
                 optional = true;
@@ -753,7 +709,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         var list = new List<byte[]>(node.Children.Count);
         foreach (var child in node.Children)
         {
-            if (!TryExtractFixedAsciiText(Unwrap(child), out var text))
+            if (!TryExtractFixedAsciiText(Utf8DeterministicAnchorSearch.Unwrap(child), out var text))
             {
                 if (_failureKind == Utf8ByteSafeLinearCompileFailureKind.None)
                 {
@@ -777,8 +733,8 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
         prefix = [];
         for (var i = startIndex; i < children.Count; i++)
         {
-            var child = Unwrap(children[i]);
-            if (IsZeroWidthNode(child))
+            var child = Utf8DeterministicAnchorSearch.Unwrap(children[i]);
+            if (Utf8DeterministicAnchorSearch.IsZeroWidthNode(child))
             {
                 continue;
             }
@@ -809,8 +765,8 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
         for (var i = startIndex; i < children.Count; i++)
         {
-            var child = Unwrap(children[i]);
-            if (IsZeroWidthNode(child))
+            var child = Utf8DeterministicAnchorSearch.Unwrap(children[i]);
+            if (Utf8DeterministicAnchorSearch.IsZeroWidthNode(child))
             {
                 continue;
             }
@@ -838,7 +794,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 text = [(byte)node.Ch];
                 return true;
 
-            case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(node.Text, out var bytes):
+            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var bytes):
                 text = bytes;
                 return true;
 
@@ -846,7 +802,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 var buffer = new List<byte>();
                 foreach (var child in node.Children)
                 {
-                    if (!TryExtractFixedAsciiText(Unwrap(child), out var childText))
+                    if (!TryExtractFixedAsciiText(Utf8DeterministicAnchorSearch.Unwrap(child), out var childText))
                     {
                         return false;
                     }
@@ -921,7 +877,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                 AddByteToMask((byte)node.Ch, ref lowMask, ref highMask);
                 return true;
 
-            case Utf8ExecutionNodeKind.Multi when TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
+            case Utf8ExecutionNodeKind.Multi when Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var text) && text.Length > 0:
                 AddByteToMask(text[0], ref lowMask, ref highMask);
                 return true;
 
@@ -931,8 +887,8 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.Concatenate:
                 foreach (var child in node.Children)
                 {
-                    var unwrapped = Unwrap(child);
-                    if (IsZeroWidthNode(unwrapped))
+                    var unwrapped = Utf8DeterministicAnchorSearch.Unwrap(child);
+                    if (Utf8DeterministicAnchorSearch.IsZeroWidthNode(unwrapped))
                     {
                         continue;
                     }
@@ -945,7 +901,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.Alternate:
                 foreach (var child in node.Children)
                 {
-                    if (!TryGetLeadingAsciiByteMask(Unwrap(child), out var childLowMask, out var childHighMask))
+                    if (!TryGetLeadingAsciiByteMask(Utf8DeterministicAnchorSearch.Unwrap(child), out var childLowMask, out var childHighMask))
                     {
                         return false;
                     }
@@ -960,7 +916,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             case Utf8ExecutionNodeKind.LazyLoop:
                 if (node.Children.Count == 1)
                 {
-                    return TryGetLeadingAsciiByteMask(Unwrap(node.Children[0]), out lowMask, out highMask);
+                    return TryGetLeadingAsciiByteMask(Utf8DeterministicAnchorSearch.Unwrap(node.Children[0]), out lowMask, out highMask);
                 }
 
                 if (node.Ch is > (char)0 and <= (char)0x7F)
@@ -974,7 +930,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
                     return TryBuildByteSafeLeadingMask(loopSet, out lowMask, out highMask);
                 }
 
-                if (TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
+                if (Utf8DeterministicAnchorSearch.TryGetAsciiBytes(node.Text, out var loopText) && loopText.Length > 0)
                 {
                     AddByteToMask(loopText[0], ref lowMask, ref highMask);
                     return true;
