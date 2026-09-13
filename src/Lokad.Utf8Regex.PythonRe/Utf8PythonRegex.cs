@@ -87,7 +87,7 @@ public sealed class Utf8PythonRegex
     private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
     private readonly Lazy<Regex>? _lazyManagedNonEmptyAtSamePositionRegex;
     private readonly Regex _managedRegex;
-    private readonly Regex _managedFullRegex;
+    private readonly Lazy<Regex> _lazyManagedFullRegex;
     private readonly PythonReTranslation _translation;
     private readonly int[] _managedGroupNumbersByPythonGroup;
     private readonly bool _groupNumberingIsIdentity;
@@ -245,7 +245,7 @@ public sealed class Utf8PythonRegex
         _hasLookbehind = parseResult.HasLookbehind;
         _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
         // PLAN.md C08: `\G` pins the full match to the requested start offset (Python `pos` semantics with intact prefix context); `\A` would pin the real start and forbid pos > 0. Every caller below passes the start offset explicitly.
-        _managedFullRegex = CreateManagedRegex(@"\G(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout);
+        _lazyManagedFullRegex = new Lazy<Regex>(() => CreateManagedRegex(@"\G(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout), LazyThreadSafetyMode.ExecutionAndPublication);
         if (_canMatchEmpty && _canMatchNonEmpty)
         {
             _lazyManagedNonEmptyAtSamePositionRegex = new Lazy<Regex>(
@@ -584,7 +584,7 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedFullRegex.Match(subject, startOffsetInUtf16);
+        var match = _lazyManagedFullRegex.Value.Match(subject, startOffsetInUtf16);
         if (!match.Success)
         {
             return default;
@@ -703,7 +703,7 @@ public sealed class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedFullRegex.Match(subject, startOffsetInUtf16);
+        var match = _lazyManagedFullRegex.Value.Match(subject, startOffsetInUtf16);
         if (!match.Success)
         {
             return default;
@@ -2039,6 +2039,9 @@ public sealed class Utf8PythonRegex
     internal bool DebugIsManagedNonEmptyAtSamePositionRegexValueCreated =>
         _lazyManagedNonEmptyAtSamePositionRegex?.IsValueCreated ?? false;
 
+    internal bool DebugIsManagedFullRegexValueCreated =>
+        _lazyManagedFullRegex.IsValueCreated;
+
     internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
@@ -2144,7 +2147,7 @@ public sealed class Utf8PythonRegex
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         // The `\G` wrapper pins the span while `\z` pins the end; matching the whole subject from the start offset keeps `^` and lookbehind context intact (Python `pos` semantics).
-        if (!_managedFullRegex.IsMatch(subject, startOffsetInUtf16))
+        if (!_lazyManagedFullRegex.Value.IsMatch(subject, startOffsetInUtf16))
         {
             return default;
         }
