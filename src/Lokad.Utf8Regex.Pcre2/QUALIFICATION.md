@@ -1,5 +1,8 @@
 # Managed PCRE2 profile qualification
 
+> Historical ledger for the 0.2.0 qualification (2026-08-21). Current release
+> qualification work is tracked in [PLAN.md](../../PLAN.md).
+
 This ledger records the 2026-08-21 qualification of
 `Lokad.Utf8Regex.Pcre2` 0.2.0. It describes the selected managed profile; it is
 not a claim of complete upstream PCRE2 compatibility.
@@ -17,7 +20,7 @@ Generic paths such as `artifacts/nuget/*.nupkg` and
 `PCRE2.Benchmarks.json` remain mutable working outputs and are not identified
 by the hashes below. The archived benchmark snapshot is qualified only as the
 exact input to the generated page and priority report; its per-row measurement
-provenance remains mixed and must be refreshed by roadmap Phase 0 before an
+provenance remains mixed and must be refreshed under [PLAN.md](../../PLAN.md) before an
 all-case performance claim.
 
 ## Qualified baseline

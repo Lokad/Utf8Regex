@@ -20,9 +20,9 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData(@"(hello|hi){1,3}", "hellohihey", RegexOptions.None)]
     public void MatchDetailedMatchesRuntimeForMirroredDotNetBatches(string pattern, string input, RegexOptions options)
     {
-        // Mirrored and adapted from:
-        // external/dotnet-runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Match.Tests.cs
-        // external/dotnet-runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Groups.Tests.cs
+        // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
+        // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Match.Tests.cs
+        // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Groups.Tests.cs
         RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
     }
 }

@@ -11,8 +11,8 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     [InlineData(",", "a,b,c,d", 3, RegexOptions.CultureInvariant | RegexOptions.RightToLeft | RegexOptions.ExplicitCapture)]
     public void EnumerateSplitsMatchesRuntimeForMirroredDotNetBatch(string pattern, string input, int count, RegexOptions options)
     {
-        // Mirrored and adapted from:
-        // external/dotnet-runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.EnumerateSplits.Tests.cs
+        // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
+        // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.EnumerateSplits.Tests.cs
         AssertEnumerateSplitsParity(pattern, input, count, options);
     }
 

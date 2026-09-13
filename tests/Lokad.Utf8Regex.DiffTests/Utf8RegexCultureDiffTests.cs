@@ -12,8 +12,8 @@ public sealed class Utf8RegexCultureDiffTests
     [InlineData("^aA$", "aA", "da-DK", RegexOptions.IgnoreCase)]
     public void IsMatchMatchesRuntimeForMirroredCultureCases(string pattern, string input, string cultureName, RegexOptions options)
     {
-        // Mirrored and adapted from:
-        // external/dotnet-runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/RegexCultureTests.cs
+        // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
+        // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/RegexCultureTests.cs
         using var _ = new ThreadCultureScope(cultureName);
 
         var utf8Regex = new Utf8Regex(pattern, options);
@@ -35,8 +35,8 @@ public sealed class Utf8RegexCultureDiffTests
     [InlineData("\u212A|x", "K", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     public void IsMatchMatchesRuntimeForMirroredIgnoreCaseCases(string pattern, string input, RegexOptions options)
     {
-        // Mirrored and adapted from:
-        // external/dotnet-runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/RegexIgnoreCaseTests.cs
+        // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
+        // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/RegexIgnoreCaseTests.cs
         RegexParityContext.Create(pattern, input, options).AssertIsMatchParity();
     }
 
