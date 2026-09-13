@@ -10,10 +10,38 @@ $ErrorActionPreference = "Stop"
 $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
 
+function Stop-StaleProcess([System.Diagnostics.Process]$process, [string]$description) {
+    if ($null -eq $process) {
+        return
+    }
+
+    try {
+        Stop-Process -InputObject $process -Force -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Unable to stop stale $description $($process.Id): $($_.Exception.Message)"
+    }
+}
+
 function Stop-StaleProcesses {
-    $staleProcesses = @("testhost", "VBCSCompiler")
-    foreach ($processName in $staleProcesses) {
-        Get-Process -Name $processName -ErrorAction SilentlyContinue | Stop-Process -Force
+    # Only test hosts launched from this repository are eligible: their command
+    # line references this repository's test output. VBCSCompiler is deliberately
+    # excluded on Windows: it is a shared SDK-wide compiler server without
+    # repository identity, and this repository's builds set
+    # UseSharedCompilation=false, so it never locks repository outputs.
+    # 'dotnet build-server shutdown' below remains the supported lifecycle call
+    # for build servers.
+    if ($IsWindows) {
+        Get-CimInstance Win32_Process -Filter "Name = 'testhost.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -and $_.CommandLine -like ("*" + [WildcardPattern]::Escape($repoRoot) + "*") } |
+            ForEach-Object { Stop-StaleProcess -process (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue) -description "test host" }
+        return
+    }
+
+    foreach ($processName in @("testhost", "VBCSCompiler")) {
+        Get-Process -Name $processName -ErrorAction SilentlyContinue | ForEach-Object {
+            Stop-StaleProcess -process $_ -description $processName
+        }
     }
 }
 
