@@ -9,17 +9,17 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `F3A69CBDE8DC897D789292A45166463C76A2543D68F0317FC6594E94FD9F4C14`
-- Latest managed row measurement: `2026-08-25T20:34:49.7714024+00:00`
-- Latest PCRE.NET / PCRE2 NFA measurement: `2026-08-25T20:34:49.7714024+00:00`
+- Snapshot SHA-256: `DB41504E61AD01C98BB9F7B1628FCEE7BFF34CB44C44077659A1C9B71C073459`
+- Latest managed row measurement: `2026-09-13T22:04:08.1859255+00:00`
+- Latest PCRE.NET / PCRE2 NFA measurement: `2026-09-13T22:04:08.1859255+00:00`
 - Operation rows: `126` across `10` sections
 - Comparable rows at or below the decode-then-.NET median: `47/60`
-- Rows with a PCRE.NET / PCRE2 NFA comparator: `99/126`
-- Comparator Status: `86` managed faster, `0` equivalent, `5` native faster, `8` inconclusive, `0` unqualified, `27` excluded
-- Rows with paired qualification evidence: `99/99`
+- Rows with a PCRE.NET / PCRE2 NFA comparator: `100/126`
+- Comparator Status: `86` managed faster, `0` equivalent, `5` native faster, `9` inconclusive, `0` unqualified, `26` excluded
+- Rows with paired qualification evidence: `100/100`
 - Qualification processor sets: `highest-efficiency-class 0xFFFF (class 1)`
 - Scaling families: `16`
-- Managed/comparator measurement environments represented: `36/34`
+- Managed/comparator measurement environments represented: `37/35`
 
 Managed rows span more than one measurement environment. Consult the JSON row metadata before interpreting small differences as regressions or wins.
 
@@ -91,7 +91,7 @@ Managed qualification lifecycle: The compiled regex is reused; each public invoc
 | `common/matches-word` | **Managed faster** | 8,208 B | 1.642 us | 20.319 us | 0.08x | 0.08–0.08x | -18.680 us | 9 pairs; 40/38 ms; 24,520/1,863 ops/lane; IQR 1.007/1.019 | `Pcre2Literal` | 1.723 us | 5.063 us | 5.867 us | 0.28x | 0 B | 0 B |
 | `common/matches-words` | **Managed faster** | 8,208 B | 4.078 us | 74.459 us | 0.05x | 0.05–0.05x | -70.373 us | 9 pairs; 41/41 ms; 10,004/544 ops/lane; IQR 1.007/1.004 | `Pcre2Backtracking` | 16.687 us | 78.663 us | 79.540 us | 0.05x | 0 B | 0 B |
 | `industry/leipzig-name-family-count` | **Inconclusive** | 16,013,977 B | 2,014.060 us | 15,480.733 us | 0.13x | 0.12–0.14x | -13471.047 us | 9 pairs; 30/46 ms; 15/3 ops/lane; IQR 1.104/1.007 | `Pcre2Backtracking` | 1,831.200 us | 6,301.280 us | 10,981.900 us | 0.18x | 0 B | 0 B |
-| `industry/leipzig-river-window-count` | **Excluded** | 16,013,977 B | 6,103.820 us | — | — | — | — | — | `—` | 6,189.620 us | 20,708.440 us | 26,222.200 us | 0.23x | 4 B | — |
+| `industry/leipzig-river-window-count` | **Inconclusive** | 16,013,977 B | 6,612.833 us | 29,901.200 us | 0.22x | 0.22–0.23x | -23213.167 us | 9 pairs; 40/30 ms; 6/1 ops/lane; IQR 1.028/1.018 | `Pcre2Backtracking` | 7,002.733 us | 23,281.433 us | 30,498.133 us | 0.22x | 0 B | 0 B |
 | `industry/leipzig-symbol-count` | **Inconclusive** | 16,013,977 B | 1,141.910 us | 264,679.300 us | 0.00x | 0.00–0.00x | -263571.826 us | 9 pairs; 45/265 ms; 39/1 ops/lane; IQR 1.071/1.013 | `Pcre2Character` | 1,336.310 us | 12,305.370 us | 16,502.327 us | 0.07x | 0 B | 0 B |
 | `industry/leipzig-twain-count` | **Managed faster** | 16,013,977 B | 3,825.870 us | 5,022.350 us | 0.76x | 0.75–0.77x | -1196.480 us | 9 pairs; 38/40 ms; 10/8 ops/lane; IQR 1.023/1.015 | `Pcre2Literal` | 719.607 us | 1,264.027 us | 6,198.100 us | 0.62x | 0 B | 0 B |
 | `industry/mariomka-email-count` | **Managed faster** | 6,839,410 B | 10,811.800 us | 86,641.600 us | 0.13x | 0.12–0.13x | -75567.225 us | 9 pairs; 43/87 ms; 4/1 ops/lane; IQR 1.032/1.008 | `Pcre2Backtracking` | 839.075 us | 314.680 us | 4,852.845 us | 2.23x | 0 B | 0 B |
@@ -269,6 +269,7 @@ Plan data is captured through the comparator's public compiled-pattern informati
 | `pcre2-managed-compatible-count` | `character/unicode-class-dense` | `94621C05B00C` | 202 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `backtracking/alternation-repeat` | `6854D44D1C19` | 176 B | 136 B | 0 B | 2 chars | 1/97 | 1/122 |
 | `pcre2-managed-compatible-count` | `industry/leipzig-name-family-count` | `672B54609A3F` | 216 B | 136 B | 0 B | 3 chars | 0/ | 0/ |
+| `pcre2-managed-compatible-count` | `industry/leipzig-river-window-count` | `1D3622A048A2` | 210 B | 136 B | 0 B | 18 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/leipzig-symbol-count` | `6C53959C1942` | 162 B | 136 B | 0 B | 1 chars | 0/ | 0/ |
 | `pcre2-managed-compatible-count` | `industry/leipzig-twain-count` | `8A1ADF584CC9` | 169 B | 136 B | 0 B | 5 chars | 1/84 | 1/110 |
 | `pcre2-managed-compatible-count` | `industry/mariomka-email-count` | `1D742A03872D` | 265 B | 136 B | 0 B | 5 chars | 0/ | 1/46 |
@@ -337,7 +338,6 @@ Rows are excluded instead of timed when result checksums differ or PCRE.NET cann
 
 | Section | Case | Reason |
 |---|---|---|
-| `pcre2-managed-compatible-count` | `industry/leipzig-river-window-count` | Structured checksum mismatch: managed=042871D8C5DFED31, comparator=1D86382DC07EC1F7. |
 | `pcre2-managed-compatible-count` | `industry/rust-sherlock-ing-count` | Checksum mismatch: managed=2081, native=1829. |
 | `pcre2-managed-compatible-replace` | `common/replace-words` | PCRE.NET does not expose equivalent UTF-8 span replacement output. |
 | `pcre2-managed-compatible-replace` | `simple/ab-plus` | PCRE.NET does not expose equivalent UTF-8 span replacement output. |
