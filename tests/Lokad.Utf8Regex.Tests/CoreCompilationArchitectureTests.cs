@@ -147,7 +147,9 @@ public sealed class CoreCompilationArchitectureTests
             Path.Combine(sourceRoot, "Internal", "Execution", "Utf8StructuralLinearProgram.cs"));
 
         Assert.True(Directory.Exists(searchRoot));
-        Assert.Empty(Directory.EnumerateFiles(utilitiesRoot, "*.cs", SearchOption.AllDirectories));
+        Assert.False(
+            Directory.Exists(utilitiesRoot) &&
+            Directory.EnumerateFiles(utilitiesRoot, "*.cs", SearchOption.AllDirectories).Any());
         Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedSearcher.cs")));
         Assert.True(File.Exists(Path.Combine(searchRoot, "PreparedWindowSearch.cs")));
         Assert.True(File.Exists(Path.Combine(searchRoot, "Utf8LiteralEquality.cs")));
