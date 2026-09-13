@@ -1891,7 +1891,7 @@ internal static partial class PythonReBenchmarkReporter
             "--exclude-standard",
             "--",
             ".",
-            ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
+            ":(exclude)PLAN.md");
         return new PythonReBenchmarkEnvironment
         {
             SourceCommit = RunGit("rev-parse", "--short=12", "HEAD") ?? "<unknown>",

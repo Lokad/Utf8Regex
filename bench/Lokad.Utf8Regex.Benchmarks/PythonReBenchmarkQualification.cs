@@ -67,7 +67,7 @@ internal static partial class PythonReBenchmarkReporter
             ".",
             ":(exclude)PythonRe.Benchmarks.json",
             ":(exclude)src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md",
-            ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
+            ":(exclude)PLAN.md");
         if (worktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PythonRe paired measurement.");

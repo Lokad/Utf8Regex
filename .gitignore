@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Local release planning
+/PLAN.md
+
 # User-specific files
 *.rsuser
 *.suo

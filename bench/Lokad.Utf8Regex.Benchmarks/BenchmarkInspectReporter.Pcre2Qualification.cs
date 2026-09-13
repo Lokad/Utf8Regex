@@ -48,7 +48,7 @@ internal static partial class BenchmarkInspectReporter
             ".",
             ":(exclude)PCRE2.Benchmarks.json",
             ":(exclude)src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md",
-            ":(exclude)UTF8REGEX-PERFORMANCE-ROADMAP.md");
+            ":(exclude)PLAN.md");
         if (unexpectedWorktreeState is null)
         {
             Console.Error.WriteLine("Could not verify the worktree before PCRE2 qualification.");
