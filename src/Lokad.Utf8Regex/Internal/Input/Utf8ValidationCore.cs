@@ -48,6 +48,12 @@ internal static class Utf8ValidationCore
             // three-byte mask loop wins on CJK-like text. The sample chooses the
             // initial mode. The drain can still enter and leave the wider mode
             // when a heterogeneous subject changes character density later.
+            // The 256-byte window bounds selection to a short constant scan; a
+            // wrong initial pick only costs the first drain segment because the
+            // drain re-resolves the mode below. Re-derive the window with
+            // --measure-utf8-validation-profile over the frozen two-byte,
+            // three-byte, and mixed profiles; it is a cost trade-off, not a
+            // correctness gate.
             var sampleLength = Math.Min(input.Length, 256);
             var twoByteLeads = 0;
             var safeThreeByteLeads = 0;

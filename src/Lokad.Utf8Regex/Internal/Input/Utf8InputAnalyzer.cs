@@ -125,6 +125,12 @@ internal static class Utf8InputAnalyzer
             : ThrowIfInvalidOnlyMode.ValidationCore;
     }
 
+    // Both lanes are exact validity checks, so this gate only selects cost:
+    // constrained (E0/ED) and four-byte leads cost the scalar core a range
+    // check each while BCL Utf8.IsValid stays vectorized. The 256-byte window
+    // bounds the probe to a short constant scan. Re-derive the count with
+    // --measure-utf8-validation-profile over the frozen constrained-three-byte
+    // profiles; it is a cost trade-off, not a correctness gate.
     private static bool ShouldUseUtf8IsValidFastPath(ReadOnlySpan<byte> input)
     {
         var length = Math.Min(input.Length, 256);
