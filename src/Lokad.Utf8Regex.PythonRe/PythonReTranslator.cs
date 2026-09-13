@@ -7,6 +7,10 @@ internal static class PythonReTranslator
 {
     private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     private const string AsciiNonWordBoundary = @"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
+    // PLAN.md C04: Python-Unicode word boundaries over the same BCL-category
+    // class used for \w. Must stay in IsZeroWidthEscape below.
+    private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
+    private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string AnyUnicodeScalarPattern = @"(?:[\u0000-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])";
 
     public static bool CanMatchEmpty(PythonReNode node) => GetWidth(node).Min == 0;
@@ -954,7 +958,9 @@ internal static class PythonReTranslator
     {
         return text is @"\A" or @"\Z" or @"\z" or @"\b" or @"\B" ||
             text == AsciiWordBoundary ||
-            text == AsciiNonWordBoundary;
+            text == AsciiNonWordBoundary ||
+            text == UnicodeWordBoundary ||
+            text == UnicodeNonWordBoundary;
     }
 
     private static bool IsPrefixFreeExactLiteralAlternation(PythonReAlternationNode alternation)
@@ -1086,6 +1092,7 @@ internal static class PythonReTranslator
     {
         var bmpRanges = new List<(int Start, int End)>();
         var bmpFragments = new List<string>();
+        var standaloneAtoms = new List<string>();
         var astralBranches = new List<string>();
 
         foreach (var item in items)
@@ -1120,7 +1127,18 @@ internal static class PythonReTranslator
                     break;
 
                 case PythonReCharacterClassPredefinedItem predefined:
-                    bmpFragments.Add(predefined.RegexClassFragment);
+                    if (predefined.IsStandaloneAtom)
+                    {
+                        // Complete class atoms (PLAN.md C04): emitted as their own
+                        // alternation branch so astral scalars keep matching instead
+                        // of being dropped by the BMP-only class below.
+                        standaloneAtoms.Add(predefined.RegexClassFragment);
+                    }
+                    else
+                    {
+                        bmpFragments.Add(predefined.RegexClassFragment);
+                    }
+
                     break;
             }
         }
@@ -1132,6 +1150,7 @@ internal static class PythonReTranslator
             branches.Add(bmpClass);
         }
 
+        branches.AddRange(standaloneAtoms);
         branches.AddRange(astralBranches);
         return branches.Count switch
         {

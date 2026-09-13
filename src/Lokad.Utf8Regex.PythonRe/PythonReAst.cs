@@ -77,7 +77,7 @@ internal sealed record PythonReCharacterClassLiteralItem(int Scalar) : PythonReC
 
 internal sealed record PythonReCharacterClassRangeItem(int StartScalar, int EndScalar) : PythonReCharacterClassItem;
 
-internal sealed record PythonReCharacterClassPredefinedItem(string RegexClassFragment) : PythonReCharacterClassItem;
+internal sealed record PythonReCharacterClassPredefinedItem(string RegexClassFragment, bool IsStandaloneAtom) : PythonReCharacterClassItem;
 
 internal enum PythonReQuantifierFlavor
 {

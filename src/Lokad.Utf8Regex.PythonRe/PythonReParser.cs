@@ -15,6 +15,18 @@ internal sealed class PythonReParser
     private const string AsciiNonSpaceClass = @"[^\t\n\r\f\v ]";
     private const string AsciiWordBoundary = @"(?:(?<![A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<=[A-Za-z0-9_])(?![A-Za-z0-9_]))";
     private const string AsciiNonWordBoundary = @"(?:(?<=[A-Za-z0-9_])(?=[A-Za-z0-9_])|(?<![A-Za-z0-9_])(?![A-Za-z0-9_]))";
+    // PLAN.md C04: Python Unicode classes in terms of BCL categories, verified by a
+    // full-scalar census against CPython 3.13.2 (census-c04.py): `[\p{L}\p{N}_]`
+    // agrees with Python `\w` and `[\s\x1c-\x1f]` agrees with Python `\s` on every
+    // non-surrogate scalar. No Unicode property tables are embedded: the BCL
+    // supplies the category data. `\d` keeps its .NET pass-through, verified
+    // identical (Unicode decimal digits) on the same census.
+    private const string UnicodeWordClass = @"[\p{L}\p{N}_]";
+    private const string UnicodeNonWordClass = @"[^\p{L}\p{N}_]";
+    private const string UnicodeSpaceClass = @"[\s\x1c-\x1f]";
+    private const string UnicodeNonSpaceClass = @"[^\s\x1c-\x1f]";
+    private const string UnicodeWordBoundary = @"(?:(?<![\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<=[\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
+    private const string UnicodeNonWordBoundary = @"(?:(?<=[\p{L}\p{N}_])(?=[\p{L}\p{N}_])|(?<![\p{L}\p{N}_])(?![\p{L}\p{N}_]))";
     private const string OctalDigits = "01234567";
     private const string HexDigits = "0123456789abcdefABCDEF";
     private readonly string _pattern;
@@ -603,6 +615,9 @@ internal sealed class PythonReParser
             'S' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonSpaceClass, PythonReRawKind.Escape),
             'b' when IsAsciiMode(options) => new PythonReRawNode(AsciiWordBoundary, PythonReRawKind.Escape),
             'B' when IsAsciiMode(options) => new PythonReRawNode(AsciiNonWordBoundary, PythonReRawKind.Escape),
+            'w' or 'W' or 's' or 'S' or 'd' or 'D' when !IsAsciiMode(options) => new PythonReRawNode(GetUnicodePredefinedFragment(ch), PythonReRawKind.Escape),
+            'b' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeWordBoundary, PythonReRawKind.Escape),
+            'B' when !IsAsciiMode(options) => new PythonReRawNode(UnicodeNonWordBoundary, PythonReRawKind.Escape),
             'A' or 'Z' or 'z' or 'b' or 'B' or 'd' or 'D' or 's' or 'S' or 'w' or 'W' or '\\' or '.' or '^' or '$' or '*' or '+' or '?' or '{' or '}' or '[' or ']' or '(' or ')' or '|' =>
                 new PythonReRawNode("\\" + ch, PythonReRawKind.Escape),
             'x' => CreateEscapedLiteralNode(ParseHexEscapeValue(escapeStart, 2, 'x')),
@@ -690,12 +705,12 @@ internal sealed class PythonReParser
 
             if (TryGetAsciiCharacterClassEscapeFragment(escaped, options, out var asciiFragment))
             {
-                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(asciiFragment), escapeStart);
+                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(asciiFragment, IsStandaloneAtom: false), escapeStart);
             }
 
             if (escaped is 'w' or 'W' or 'd' or 'D' or 's' or 'S')
             {
-                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(@"\" + escaped), escapeStart);
+                return new PythonReParsedCharacterClassItem(new PythonReCharacterClassPredefinedItem(GetUnicodePredefinedFragment(escaped), IsStandaloneAtom: true), escapeStart);
             }
 
             return new PythonReParsedCharacterClassItem(new PythonReCharacterClassLiteralItem(escaped), escapeStart);
@@ -990,6 +1005,17 @@ internal sealed class PythonReParser
         return (options | addOptions) & ~removeOptions;
     }
 
+    private static string GetUnicodePredefinedFragment(char escaped) => escaped switch
+    {
+        'w' => UnicodeWordClass,
+        'W' => UnicodeNonWordClass,
+        's' => UnicodeSpaceClass,
+        'S' => UnicodeNonSpaceClass,
+        'd' => @"\d",
+        'D' => @"\D",
+        _ => @"\" + escaped,
+    };
+
     private static bool TryGetAsciiCharacterClassEscapeFragment(char escaped, PythonReCompileOptions options, out string fragment)
     {
         if (!IsAsciiMode(options))
@@ -1097,11 +1123,19 @@ internal sealed class PythonReParser
         {
             PythonReCharacterClassLiteralItem literal => char.ConvertFromUtf32(literal.Scalar),
             PythonReCharacterClassRangeItem range => char.ConvertFromUtf32(range.StartScalar) + "-" + char.ConvertFromUtf32(range.EndScalar),
-            PythonReCharacterClassPredefinedItem predefined => predefined.RegexClassFragment.StartsWith("^", StringComparison.Ordinal)
-                ? @"\" + char.ToUpperInvariant(predefined.RegexClassFragment[1])
-                : predefined.RegexClassFragment.StartsWith(@"\", StringComparison.Ordinal)
-                    ? predefined.RegexClassFragment
-                    : @"\" + InferAsciiEscapeName(predefined.RegexClassFragment),
+            // Standalone Unicode fragments render back to their Python escape so
+            // diagnostics keep naming the source construct (inline switch: a new
+            // single-caller helper would count as source debt).
+            PythonReCharacterClassPredefinedItem predefined => predefined.RegexClassFragment switch
+            {
+                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeWordClass => @"\w",
+                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeNonWordClass => @"\W",
+                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeSpaceClass => @"\s",
+                _ when predefined.IsStandaloneAtom && predefined.RegexClassFragment == UnicodeNonSpaceClass => @"\S",
+                _ when predefined.RegexClassFragment.StartsWith("^", StringComparison.Ordinal) => @"\" + char.ToUpperInvariant(predefined.RegexClassFragment[1]),
+                _ when predefined.RegexClassFragment.StartsWith(@"\", StringComparison.Ordinal) => predefined.RegexClassFragment,
+                _ => @"\" + InferAsciiEscapeName(predefined.RegexClassFragment),
+            },
             _ => "?",
         };
     }

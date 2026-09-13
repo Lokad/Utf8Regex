@@ -340,9 +340,12 @@ public sealed class Utf8PythonRegexTests
         Assert.True(native.DebugIsUtf8FullRegexValueCreated);
         Assert.True(native.DebugHasUtf8FullRegex);
 
-        var managed = new Utf8PythonRegex(@"async\s+Task<");
+        // `^ab[0-9]{2}` keeps a native search route while its anchored full
+        // pattern stays on the managed fallback, so the lazy full matcher is
+        // created once and caches the fallback outcome.
+        var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
         Assert.False(managed.DebugIsUtf8FullRegexValueCreated);
-        Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("async Task<"u8).Success));
+        Parallel.For(0, 32, _ => Assert.True(managed.FullMatch("ab12"u8).Success));
         Assert.True(managed.DebugIsUtf8FullRegexValueCreated);
         Assert.False(managed.DebugHasUtf8FullRegex);
     }
