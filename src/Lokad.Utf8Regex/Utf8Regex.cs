@@ -219,6 +219,10 @@ public sealed class Utf8Regex
     private Utf8AsciiCultureInvariantStrategy? _asciiCultureInvariantStrategy =>
         _program.AsciiCultureInvariantStrategy;
 
+    // PLAN.md C02: true when the construction culture folds ASCII case-sensitively
+    // (Turkic dotted/dotless I). No invariant-folding native kernel may answer then.
+    private bool RequiresCultureSensitiveFallback => _program.RequiresCultureSensitiveFallback;
+
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
 
@@ -859,7 +863,7 @@ public sealed class Utf8Regex
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
-        if (ShouldUseKelvinSignFallback(remaining))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(remaining))
         {
             return CountAtByteOffset(input, start);
         }
@@ -893,7 +897,7 @@ public sealed class Utf8Regex
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
-        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining))
+        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining))
         {
             var startInUtf16 = input.Project(start);
             return new Utf8ValueMatchEnumerator(
@@ -1108,6 +1112,14 @@ public sealed class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input)
     {
+        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
+        // native kernel and answer from the construction-culture oracle.
+        if (RequiresCultureSensitiveFallback)
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (TryIsMatchPrioritizedBooleanFamilyWithoutValidation(input, out var prioritizedIsMatch))
         {
             return prioritizedIsMatch;
@@ -1208,6 +1220,14 @@ public sealed class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input)
     {
+        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
+        // native kernel and answer from the construction-culture oracle.
+        if (RequiresCultureSensitiveFallback)
+        {
+            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+                Utf8Validation.DecodeStrict(input));
+        }
+
         if (_fusedAsciiLiteralCountAnchorOffset >= 0 &&
             _preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral &&
             Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
@@ -1458,6 +1478,13 @@ public sealed class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input)
     {
+        // PLAN.md C02: Turkic-style instances bypass every invariant-folding
+        // native kernel and answer from the construction-culture oracle.
+        if (RequiresCultureSensitiveFallback)
+        {
+            return MatchSemanticFallback(input);
+        }
+
         if (ShouldUseKelvinSignFallback(input))
         {
             return MatchSemanticFallback(input);
@@ -1631,7 +1658,7 @@ public sealed class Utf8Regex
             return twin.EnumerateSplits(input, count).WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
         {
             var subject = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
@@ -1718,7 +1745,7 @@ public sealed class Utf8Regex
             ? default
             : Utf8Validation.Validate(input);
         _ = Utf8Validation.Validate(replacementPatternUtf8);
-        if (ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -1899,7 +1926,7 @@ public sealed class Utf8Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         var validation = Utf8Validation.Validate(input);
-        if (ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),
@@ -2249,7 +2276,7 @@ public sealed class Utf8Regex
         string replacementText,
         Utf8AnalyzedReplacement replacement)
     {
-        if (ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -2394,7 +2421,7 @@ public sealed class Utf8Regex
 
     private string ReplaceToStringCore(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
     {
-        if (ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
@@ -2450,7 +2477,7 @@ public sealed class Utf8Regex
         Span<byte> destination,
         out int bytesWritten)
     {
-        if (ShouldUseKelvinSignFallback(input))
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),

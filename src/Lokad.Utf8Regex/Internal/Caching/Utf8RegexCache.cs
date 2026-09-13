@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Caching;
 
@@ -14,7 +15,12 @@ internal static class Utf8RegexCache
     public static Utf8Regex GetOrAdd(string pattern, RegexOptions options, TimeSpan matchTimeout)
     {
         var normalizedOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-        var key = new Utf8RegexCacheKey(pattern, normalizedOptions, matchTimeout);
+        // Mirror System.Text.RegularExpressions.RegexCache (PLAN.md C02): the
+        // effective construction culture is part of the cache identity, so a
+        // culture-sensitive instance is never reused under another culture.
+        // Invariant requests keep sharing one entry: their culture is constant.
+        var culture = RuntimeFrontEnd.RegexParser.GetTargetCulture(normalizedOptions).ToString();
+        var key = new Utf8RegexCacheKey(pattern, culture, normalizedOptions, matchTimeout);
         return s_cache.GetOrAdd(
             key,
             static cacheKey => new Utf8Regex(cacheKey.Pattern, cacheKey.Options, cacheKey.MatchTimeout));

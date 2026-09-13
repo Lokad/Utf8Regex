@@ -1,4 +1,6 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using System.Globalization;
+using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -11,6 +13,7 @@ internal sealed class Utf8RegexProgram
         Utf8VerifierRuntime verifierRuntime,
         Utf8CompiledEngineRuntime compiledEngineRuntime,
         Utf8AsciiCultureInvariantStrategy? asciiCultureInvariantStrategy,
+        bool requiresCultureSensitiveFallback,
         Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher,
         int[] groupNumbers,
         string[] groupNames)
@@ -20,6 +23,7 @@ internal sealed class Utf8RegexProgram
         VerifierRuntime = verifierRuntime;
         CompiledEngineRuntime = compiledEngineRuntime;
         AsciiCultureInvariantStrategy = asciiCultureInvariantStrategy;
+        RequiresCultureSensitiveFallback = requiresCultureSensitiveFallback;
         DirectStructuralFamilyKernelMatcher = directStructuralFamilyKernelMatcher;
         GroupNumbers = groupNumbers;
         GroupNames = groupNames;
@@ -34,6 +38,8 @@ internal sealed class Utf8RegexProgram
     public Utf8CompiledEngineRuntime CompiledEngineRuntime { get; }
 
     public Utf8AsciiCultureInvariantStrategy? AsciiCultureInvariantStrategy { get; }
+
+    public bool RequiresCultureSensitiveFallback { get; }
 
     public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
@@ -64,9 +70,41 @@ internal sealed class Utf8RegexProgram
         var fallbackRegex = verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         var groupNumbers = fallbackRegex.GetGroupNumbers();
         var groupNames = fallbackRegex.GetGroupNames();
-        var asciiCultureInvariantStrategy =
+        // The ASCII twin replays matching with invariant case folding, which is
+        // only valid when the construction culture folds ASCII the invariant way
+        // (PLAN.md C02). Turkic dotted/dotless-I cultures do not: "I" and "i"
+        // differ there even though both are ASCII. Probe the 52 ASCII letters
+        // instead of naming cultures, so custom cultures stay correct. The probe
+        // stays a local function: single-caller private helpers count as source debt.
+        static bool FoldsAsciiCaseInvariantly(CultureInfo constructionCulture)
+        {
+            for (var c = 'A'; c <= 'Z'; c++)
+            {
+                if (char.ToLower(c, constructionCulture) != char.ToLowerInvariant(c) ||
+                    char.ToUpper(c, constructionCulture) != char.ToUpperInvariant(c))
+                {
+                    return false;
+                }
+            }
+
+            for (var c = 'a'; c <= 'z'; c++)
+            {
+                if (char.ToLower(c, constructionCulture) != char.ToLowerInvariant(c) ||
+                    char.ToUpper(c, constructionCulture) != char.ToUpperInvariant(c))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        var isCultureSensitiveIgnoreCase =
             (effectiveOptions & RegexOptions.IgnoreCase) != 0 &&
-            (effectiveOptions & RegexOptions.CultureInvariant) == 0
+            (effectiveOptions & RegexOptions.CultureInvariant) == 0;
+        var requiresCultureSensitiveFallback = isCultureSensitiveIgnoreCase &&
+            !FoldsAsciiCaseInvariantly(RuntimeFrontEnd.RegexParser.GetTargetCulture(effectiveOptions));
+        var asciiCultureInvariantStrategy = isCultureSensitiveIgnoreCase && !requiresCultureSensitiveFallback
                 ? new Utf8AsciiCultureInvariantStrategy(
                     pattern,
                     options,
@@ -88,6 +126,7 @@ internal sealed class Utf8RegexProgram
             verifierRuntime,
             compiledEngineRuntime,
             asciiCultureInvariantStrategy,
+            requiresCultureSensitiveFallback,
             directStructuralFamilyKernelMatcher,
             groupNumbers,
             groupNames);
