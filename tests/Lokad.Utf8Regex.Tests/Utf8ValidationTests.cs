@@ -617,4 +617,47 @@ public sealed class Utf8ValidationTests
         var subject = Utf8ValidatedInput.Create(input);
         _ = subject.GetBytePosition(offset, "startOffsetInBytes");
     }
+
+    [Fact]
+    public void ThrowIfInvalidOnlyAgreesWithBclOracleOnAdversarialLeads()
+    {
+        // PLAN.md W1: guards the SIMD lead-classification matrix (ASCII,
+        // two-byte, safe/constrained three-byte, four-byte, overlong and
+        // surrogate leads) at every 32-byte alignment reviewers of the
+        // validation drain may disturb.
+        var random = new Random(0xC10);
+        var pool = new byte[] { 0x41, 0x7F, 0xC2, 0xDF, 0xE0, 0xE1, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF4, 0x80, 0xBF, 0xA0, 0x9F, 0xC0, 0xC1, 0xF5, 0xFF, 0xFE };
+        for (var trial = 0; trial < 4000; trial++)
+        {
+            var length = 1 + random.Next(96);
+            var buffer = new byte[length];
+            for (var i = 0; i < length; i++)
+            {
+                buffer[i] = pool[random.Next(pool.Length)];
+            }
+
+            var padLeft = random.Next(40);
+            var input = new byte[padLeft + length];
+            Array.Fill(input, (byte)0x78);
+            Array.Copy(buffer, 0, input, padLeft, length);
+            var expected = Utf8.IsValid(input);
+            var actual = IsValidViaThrow(input);
+            Assert.True(
+                expected == actual,
+                "trial " + trial + ": expected " + expected + " but validated " + actual + " for " + BitConverter.ToString(input));
+        }
+    }
+
+    private static bool IsValidViaThrow(byte[] input)
+    {
+        try
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 }
