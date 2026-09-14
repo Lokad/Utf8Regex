@@ -1,0 +1,10 @@
+# PLAN.md M2: benchmark corpus inputs and SHA-pinned test vectors must be
+# byte-identical on every checkout. Without pinned handling, autocrlf
+# conversion silently changes case inputs and the catalog fingerprint
+# per machine (observed: PythonRe catalog hash drift with a clean tree).
+# -text keeps blob bytes exact everywhere, including inputs that
+# intentionally contain CRLF sequences.
+bench/Lokad.Utf8Regex.Benchmarks/DotNetPerformanceReplica/Stress/Data/** -text
+bench/Lokad.Utf8Regex.Benchmarks/LokadReplica/Code/Data/** -text
+tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/*.json -text
+tests/Lokad.Utf8Regex.Pcre2.Tests/Corpus/*.json -text
