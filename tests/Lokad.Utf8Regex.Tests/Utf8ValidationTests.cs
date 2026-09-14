@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics;
 using System.Text;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Input;
@@ -165,7 +166,11 @@ public sealed class Utf8ValidationTests
             drainSafeThreeByte: false,
             out var nextOffset,
             out var errorOffset));
-        Assert.Equal(input.Length, nextOffset);
+        if (Vector256.IsHardwareAccelerated)
+        {
+            Assert.Equal(input.Length, nextOffset);
+        }
+
         Assert.Equal(-1, errorOffset);
     }
 
@@ -182,7 +187,11 @@ public sealed class Utf8ValidationTests
             drainSafeThreeByte: false,
             out var nextOffset,
             out var errorOffset));
-        Assert.Equal(sparseScalarOffset, nextOffset);
+        if (Vector256.IsHardwareAccelerated)
+        {
+            Assert.Equal(sparseScalarOffset, nextOffset);
+        }
+
         Assert.Equal(-1, errorOffset);
     }
 
@@ -203,8 +212,20 @@ public sealed class Utf8ValidationTests
                 drainSafeThreeByte: false,
                 out var nextOffset,
                 out var errorOffset));
-            Assert.Equal(input.Length, nextOffset);
+            if (Vector256.IsHardwareAccelerated)
+            {
+                Assert.Equal(input.Length, nextOffset);
+            }
+
             Assert.Equal(-1, errorOffset);
+
+            // Drain-level malformed detection is a 256-bit-block property: lean paths stop
+            // at the scalar lead and let the resuming validator report the error, so end-to-end
+            // soundness holds on every ISA (see the ungated asserts above and the full-validation suites).
+            if (!Vector256.IsHardwareAccelerated)
+            {
+                continue;
+            }
 
             for (var byteOffset = 1; byteOffset < 6; byteOffset++)
             {

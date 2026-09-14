@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -13,11 +14,19 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
         var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = Encoding.ASCII.GetBytes("LogTrace λ LogDebug_ LogInformation. LogWarning LogError");
 
-        Assert.True(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
+        if (Vector256.IsHardwareAccelerated)
+        {
+            Assert.True(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
+        }
+
         Assert.Equal(4, regex.Count(input));
-        Assert.Equal(
-            "compiled_fused_ascii_literal_family_count",
-            regex.CollectCountDiagnostics(input).ExecutionRoute);
+
+        if (Vector256.IsHardwareAccelerated)
+        {
+            Assert.Equal(
+                "compiled_fused_ascii_literal_family_count",
+                regex.CollectCountDiagnostics(input).ExecutionRoute);
+        }
     }
 
     [Fact]
