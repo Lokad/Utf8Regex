@@ -120,6 +120,12 @@ internal static partial class BenchmarkProgramRouter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pcre2-construction-case", StringComparison.Ordinal))
+        {
+            exitCode = BenchmarkInspectReporter.RunMeasurePcre2ConstructionCase(args[1], args.Length >= 3 ? args[2] : null, args.Length >= 4 ? args[3] : null);
+            return true;
+        }
+
         if (args.Length >= 1 && args[0].Equals("--emit-pcre2-perf-ledger", StringComparison.Ordinal))
         {
             exitCode = BenchmarkInspectReporter.RunEmitUtf8Pcre2PerfLedger(args.Length >= 2 ? args[1] : null);

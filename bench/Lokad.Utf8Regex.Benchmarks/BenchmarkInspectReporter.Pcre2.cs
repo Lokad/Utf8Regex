@@ -592,6 +592,62 @@ internal static partial class BenchmarkInspectReporter
         }
     }
 
+    public static int RunMeasurePcre2ConstructionCase(string caseId, string? instancesText, string? samplesText)
+    {
+        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var instanceCount = string.IsNullOrWhiteSpace(instancesText)
+            ? 4
+            : Math.Clamp(ParseIterations(instancesText), 1, 16);
+        var samples = Math.Clamp(ParseSamples(samplesText), 1, 9);
+        var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
+
+        Console.WriteLine($"CaseId            : {benchmarkCase.Id}");
+        Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
+        Console.WriteLine($"Options           : {benchmarkCase.Options}");
+        Console.WriteLine($"Instances         : {instanceCount}");
+        Console.WriteLine($"Samples           : {samples}");
+        Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
+
+        // Prime shared JIT outside every timed sample; the first-use rows below intentionally isolate per-instance work.
+        const int sharedTierPrimeCalls = 64;
+        var primeRegex = new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options));
+        var primeSink = 0;
+        for (var i = 0; i < sharedTierPrimeCalls; i++)
+        {
+            if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
+            {
+                primeSink ^= primeRegex.IsMatch(context.InputBytes) ? 1 : 0;
+            }
+
+            if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
+            {
+                primeSink ^= primeRegex.Count(context.InputBytes);
+            }
+        }
+
+        GC.KeepAlive(primeSink);
+        Console.WriteLine($"SharedTierPrimeCalls: {sharedTierPrimeCalls}");
+
+        MeasureFixedConstruction("Pcre2Construct", samples, instanceCount,
+            () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)));
+
+        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
+        {
+            MeasureFixedFirstCall("Pcre2FirstIsMatch", samples, instanceCount,
+                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
+                regex => regex.IsMatch(context.InputBytes) ? 1 : 0);
+        }
+
+        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
+        {
+            MeasureFixedFirstCall("Pcre2FirstCount", samples, instanceCount,
+                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
+                regex => regex.Count(context.InputBytes));
+        }
+
+        return 0;
+    }
+
     public static int RunMeasureUtf8Pcre2SpecialCase(string caseId, string? iterationsText, string? samplesText)
     {
         var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);

@@ -116,6 +116,7 @@ PCRE2 benchmark snapshot and diagnostics:
   - `--inspect-pcre2-case`
   - `--measure-pcre2-compatible-case`
   - `--measure-pcre2-special-case`
+  - `--measure-pcre2-construction-case`
   - `--measure-literal-family-selector`
   - `--measure-pcre2-workspace-pool-cost`
   - `--measure-pcre2-vm-metering-cost`
