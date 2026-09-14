@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -117,6 +118,8 @@ public sealed class Utf8PythonRegex
     private readonly PythonReDirectBackendKind _countBackend;
     private readonly PythonReDirectBackendKind _findAllBackend;
     private readonly PythonReDirectBackendKind _replaceBackend;
+    private const int ReplacementPlanCacheCapacity = 16;
+    private readonly Utf8BoundedPreparationCache<string, PythonReReplacementPlan> _replacementPlanCache = new(ReplacementPlanCacheCapacity);
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with default options and timeout.</summary>
     public Utf8PythonRegex(string pattern)
@@ -1257,13 +1260,20 @@ public sealed class Utf8PythonRegex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count) =>
         Replace(input, replacement, count, 0);
 
+    // PLAN.md D03: replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
+    private PythonReReplacementPlan GetReplacementPlan(string replacement) =>
+        _replacementPlanCache.GetOrAdd(
+            replacement,
+            this,
+            static (template, self) => PythonReReplacementParser.Parse(template, self._translation.CaptureGroupCount, self._namedGroups));
+
     /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes)
     {
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
-            var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+            var plan = GetReplacementPlan(replacement);
             if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
@@ -1297,7 +1307,7 @@ public sealed class Utf8PythonRegex
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             ValidateStartOffset(input, startOffsetInBytes);
-            var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+            var plan = GetReplacementPlan(replacement);
             if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
                     input,
                     plan,
@@ -1333,7 +1343,7 @@ public sealed class Utf8PythonRegex
         int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+        var plan = GetReplacementPlan(replacement);
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
@@ -1440,7 +1450,7 @@ public sealed class Utf8PythonRegex
         int startOffsetInBytes)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        var plan = PythonReReplacementParser.Parse(replacement, _translation.CaptureGroupCount, _namedGroups);
+        var plan = GetReplacementPlan(replacement);
         if (!_canMatchEmpty || _canUseManagedEmptyReplacementFastPath)
         {
             if (!_canMatchEmpty && TryReplaceViaUtf8Literal(
@@ -2015,6 +2025,8 @@ public sealed class Utf8PythonRegex
     internal bool DebugUsesAsciiWordBoundarySplit => _canCountAsciiWordBoundariesDirectly;
 
     internal bool DebugUsesManagedEmptyReplacementFastPath => _canUseManagedEmptyReplacementFastPath;
+
+    internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 

@@ -1322,6 +1322,31 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ReplacementPlansArePreparedOncePerTemplate()
+    {
+        // PLAN.md D03: bounded template preparation shares one parsed plan.
+        var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
+
+        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
+        Assert.Equal("xx <foo> yy <foo>", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>"));
+        Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
+        Assert.Equal("xx <foo> yy <foo>", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>"));
+        Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
+        Assert.Equal("xx - yy -", regex.ReplaceToString("xx foo-foo yy foo-foo"u8, "-"));
+        Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
+    }
+
+    [Fact]
+    public void InvalidReplacementTemplateIsNeverRetained()
+    {
+        var regex = new Utf8PythonRegex("foo");
+
+        Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString("foo"u8, "\\"));
+        Assert.Throws<PythonRePatternException>(() => regex.ReplaceToString("foo"u8, "\\"));
+        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
+    }
+
+    [Fact]
     public void ReplaceCanUseManagedBackendForAlternationPatterns()
     {
         var regex = new Utf8PythonRegex(@"(?:b)|(?::+)");
