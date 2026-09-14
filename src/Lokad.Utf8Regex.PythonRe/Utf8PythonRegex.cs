@@ -1153,46 +1153,19 @@ public sealed class Utf8PythonRegex
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var firstMatch = _managedRegex.Match(subject, startOffsetInUtf16);
-        if (!firstMatch.Success)
-        {
-            return [];
-        }
-
-        var indexMap = PythonReUtf8IndexMap.Create(input, subject);
+        var indexMap = default(PythonReUtf8IndexMap);
+        var hasIndexMap = false;
         List<Utf8PythonDetailedMatchData> matches = [];
-        var searchIndex = startOffsetInUtf16;
-        var match = firstMatch;
-        while (match.Success)
+        var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+        while (cursor.TryMoveNext(out var match))
         {
+            if (!hasIndexMap)
+            {
+                indexMap = PythonReUtf8IndexMap.Create(input, subject);
+                hasIndexMap = true;
+            }
+
             matches.Add(CreateDetailedMatchData(input, match, indexMap));
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                match = _managedRegex.Match(subject, searchIndex);
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionManagedMatch(
-                    subject,
-                    match.Index,
-                    out var nonEmptyMatch,
-                    out _))
-            {
-                matches.Add(CreateDetailedMatchData(input, nonEmptyMatch, indexMap));
-                searchIndex = nonEmptyMatch.Index + nonEmptyMatch.Length;
-                match = _managedRegex.Match(subject, searchIndex);
-                continue;
-            }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
-            match = _managedRegex.Match(subject, searchIndex);
         }
 
         return matches.ToArray();
