@@ -505,6 +505,19 @@ public sealed class Utf8PythonRegexTests
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Count(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
     }
+    [Fact]
+    public void EvaluatorExceptionPropagatesAndLeavesInstanceUsable()
+    {
+        // PLAN.md M1: user callbacks run inside cursor-driven replacement loops; the exception must surface unchanged and leave no per-operation state behind. CPython re.sub propagates the callback exception identically.
+        var regex = new Utf8PythonRegex("([a-z]+)");
+        var input = System.Text.Encoding.UTF8.GetBytes("cat dog");
+        Assert.Throws<System.InvalidOperationException>(() =>
+            regex.SubnToString(input, 0, static (_, _) => throw new System.InvalidOperationException("boom"), 0, 0));
+        var again = regex.SubnToString(input, "-", static (prefix, _) => prefix, count: 0);
+        Assert.Equal("- -", again.ResultText);
+        Assert.Equal(2, again.ReplacementCount);
+    }
+
 
 
     [Fact]
