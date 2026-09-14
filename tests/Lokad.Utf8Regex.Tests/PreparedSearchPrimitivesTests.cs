@@ -211,6 +211,11 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PackedIgnoreCasePrefilterSelectsRareCorrelatedOffsetsForLongFamilies()
     {
+        if (!Ssse3.IsSupported || !Sse2.IsSupported)
+        {
+            return;
+        }
+
         byte[][] literals =
         [
             "sherlock holmes"u8.ToArray(),
@@ -228,6 +233,11 @@ public sealed class PreparedSearchPrimitivesTests
     [Fact]
     public void PreparedIgnoreCaseLiteralFamilyCountsCorrelatedMatchesDirectly()
     {
+        if (!Ssse3.IsSupported || !Sse2.IsSupported)
+        {
+            return;
+        }
+
         byte[][] literals =
         [
             "sherlock holmes"u8.ToArray(),

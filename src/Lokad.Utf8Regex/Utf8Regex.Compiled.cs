@@ -8,6 +8,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
@@ -57,6 +58,14 @@ public sealed partial class Utf8Regex
 
     private bool CanUseFusedCompiledUtf8LiteralFamilyCount()
     {
+        // The fused family kernels are only evidenced with vector support: without SSSE3
+        // the route miscounts ordered alternations (observed 2 vs oracle 1 on a CJK
+        // alternation), so decline and let a verified fallback count instead.
+        if (!Sse2.IsSupported || !Ssse3.IsSupported)
+        {
+            return false;
+        }
+
         if (_compiledEngine.Kind != Utf8CompiledEngineKind.LiteralFamily ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             UsesRightToLeft() ||
