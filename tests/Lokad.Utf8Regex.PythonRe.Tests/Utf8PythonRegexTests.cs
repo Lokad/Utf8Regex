@@ -1322,6 +1322,17 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void ManagedCountProgressionMatchesCpython()
+    {
+        // PLAN.md D02: the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.
+        Assert.Equal(6, new Utf8PythonRegex("x*").Count("axbxc"u8));
+        Assert.Equal(4, new Utf8PythonRegex("x*").Count("a\U0001F600b"u8));
+        Assert.Equal(3, new Utf8PythonRegex("(a)?").Count("ab"u8));
+        Assert.Equal(3, new Utf8PythonRegex("x*").Count("xax"u8, 1));
+        Assert.Equal(2, new Utf8PythonRegex("a*").Count("aa"u8, 1));
+    }
+
+    [Fact]
     public void ReplacementPlansArePreparedOncePerTemplate()
     {
         // PLAN.md D03: bounded template preparation shares one parsed plan.

@@ -1924,61 +1924,30 @@ public sealed class Utf8PythonRegex
         int startOffsetInUtf16)
     {
         var count = 0;
-        var searchIndex = startOffsetInUtf16;
-        while (searchIndex <= subject.Length)
+        var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+        while (cursor.TryMoveNext(out _))
         {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
             count++;
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionManagedMatch(
-                    subject,
-                    match.Index,
-                    out var nonEmptyAtSamePosition,
-                    out var nonEmptyUtf16BaseOffset))
-            {
-                count++;
-                searchIndex = nonEmptyUtf16BaseOffset +
-                    nonEmptyAtSamePosition.Index +
-                    nonEmptyAtSamePosition.Length;
-                continue;
-            }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         return count;
     }
 
-    // PLAN.md D02: single owner for the nonempty same-position retry guard; both shapers share it.
-    private bool TryMatchNonEmptyAtSamePosition(
+    // PLAN.md D02: single owner for the nonempty same-position retry guard; shapers and the managed progression cursor share it.
+    internal static bool TryMatchNonEmptyAtSamePosition(
+        Lazy<Regex>? nonEmptyMatcher,
         string subject,
         int utf16Position,
         out Match match)
     {
-        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
+        if (nonEmptyMatcher is null ||
             (uint)utf16Position >= (uint)subject.Length)
         {
             match = System.Text.RegularExpressions.Match.Empty;
             return false;
         }
 
-        match = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
+        match = nonEmptyMatcher.Value.Match(subject, utf16Position);
         return match.Success && match.Index == utf16Position && match.Length != 0;
     }
 
@@ -1988,7 +1957,7 @@ public sealed class Utf8PythonRegex
         PythonReUtf8IndexMap indexMap,
         out PythonReManagedMatchSnapshot snapshot)
     {
-        if (!TryMatchNonEmptyAtSamePosition(subject, utf16Position, out var match))
+        if (!TryMatchNonEmptyAtSamePosition(_lazyManagedNonEmptyAtSamePositionRegex, subject, utf16Position, out var match))
         {
             snapshot = default;
             return false;
@@ -2005,7 +1974,7 @@ public sealed class Utf8PythonRegex
         out int utf16BaseOffset)
     {
         utf16BaseOffset = 0;
-        return TryMatchNonEmptyAtSamePosition(subject, utf16Position, out match);
+        return TryMatchNonEmptyAtSamePosition(_lazyManagedNonEmptyAtSamePositionRegex, subject, utf16Position, out match);
     }
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
@@ -2137,7 +2106,7 @@ public sealed class Utf8PythonRegex
         _translation.RegexOptions,
         MatchTimeout);
 
-    private static int AdvancePastScalar(string subject, int utf16Position) =>
+    internal static int AdvancePastScalar(string subject, int utf16Position) =>
         checked(utf16Position + Rune.GetRuneAt(subject, utf16Position).Utf16SequenceLength);
 
     private static int GetUtf16OffsetOfBytePrefix(ReadOnlySpan<byte> input, int startOffsetInBytes)
