@@ -877,40 +877,10 @@ public sealed class Utf8PythonRegex
             }
 
             List<string> collected = [];
-            var searchIndex = startOffsetInUtf16;
-            while (searchIndex <= subject.Length)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                var match = _managedRegex.Match(subject, searchIndex);
-                if (!match.Success)
-                {
-                    break;
-                }
-
                 AppendFindAllScalarValue(collected, match, 1);
-
-                if (match.Length > 0)
-                {
-                    searchIndex = match.Index + match.Length;
-                    continue;
-                }
-
-                if (TryCreateNonEmptySamePositionManagedMatch(
-                    subject,
-                    match.Index,
-                    out var nonEmptyMatch,
-                    out var nonEmptyUtf16BaseOffset))
-                {
-                    AppendFindAllScalarValue(collected, nonEmptyMatch, 1);
-                    searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
-                    continue;
-                }
-
-                if (match.Index >= subject.Length)
-                {
-                    break;
-                }
-
-                searchIndex = AdvancePastScalar(subject, match.Index);
             }
 
             return new Utf8PythonFindAllResult
@@ -944,40 +914,10 @@ public sealed class Utf8PythonRegex
 
         List<string[]> tuples = [];
         {
-            var searchIndex = startOffsetInUtf16;
-            while (searchIndex <= subject.Length)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                var match = _managedRegex.Match(subject, searchIndex);
-                if (!match.Success)
-                {
-                    break;
-                }
-
                 AppendFindAllTupleValue(tuples, match);
-
-                if (match.Length > 0)
-                {
-                    searchIndex = match.Index + match.Length;
-                    continue;
-                }
-
-                if (TryCreateNonEmptySamePositionManagedMatch(
-                    subject,
-                    match.Index,
-                    out var nonEmptyMatch,
-                    out var nonEmptyUtf16BaseOffset))
-                {
-                    AppendFindAllTupleValue(tuples, nonEmptyMatch);
-                    searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
-                    continue;
-                }
-
-                if (match.Index >= subject.Length)
-                {
-                    break;
-                }
-
-                searchIndex = AdvancePastScalar(subject, match.Index);
             }
         }
 
@@ -1044,15 +984,9 @@ public sealed class Utf8PythonRegex
         if (_translation.CaptureGroupCount == 1)
         {
             List<byte[]> collected = [];
-            var searchIndex = startOffsetInUtf16;
-            while (searchIndex <= subject.Length)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                var match = _managedRegex.Match(subject, searchIndex);
-                if (!match.Success)
-                {
-                    break;
-                }
-
                 if (!hasIndexMap)
                 {
                     indexMap = PythonReUtf8IndexMap.Create(input, subject);
@@ -1060,26 +994,6 @@ public sealed class Utf8PythonRegex
                 }
 
                 AppendFindAllScalarBytes(collected, input, CreateMatchSnapshot(match, indexMap), 1);
-
-                if (match.Length > 0)
-                {
-                    searchIndex = match.Index + match.Length;
-                    continue;
-                }
-
-                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
-                {
-                    AppendFindAllScalarBytes(collected, input, nonEmptySnapshot, 1);
-                    searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
-                    continue;
-                }
-
-                if (match.Index >= subject.Length)
-                {
-                    break;
-                }
-
-                searchIndex = AdvancePastScalar(subject, match.Index);
             }
 
             return new Utf8PythonFindAllUtf8Result
@@ -1092,15 +1006,9 @@ public sealed class Utf8PythonRegex
 
         List<byte[][]> tuples = [];
         {
-            var searchIndex = startOffsetInUtf16;
-            while (searchIndex <= subject.Length)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                var match = _managedRegex.Match(subject, searchIndex);
-                if (!match.Success)
-                {
-                    break;
-                }
-
                 if (!hasIndexMap)
                 {
                     indexMap = PythonReUtf8IndexMap.Create(input, subject);
@@ -1108,26 +1016,6 @@ public sealed class Utf8PythonRegex
                 }
 
                 AppendFindAllTupleBytes(tuples, input, CreateMatchSnapshot(match, indexMap));
-
-                if (match.Length > 0)
-                {
-                    searchIndex = match.Index + match.Length;
-                    continue;
-                }
-
-                if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
-                {
-                    AppendFindAllTupleBytes(tuples, input, nonEmptySnapshot);
-                    searchIndex = nonEmptySnapshot.Groups[0].EndOffsetInUtf16;
-                    continue;
-                }
-
-                if (match.Index >= subject.Length)
-                {
-                    break;
-                }
-
-                searchIndex = AdvancePastScalar(subject, match.Index);
             }
         }
 
@@ -1310,15 +1198,9 @@ public sealed class Utf8PythonRegex
 
         var replaced = 0;
         var lastIndex = startOffsetInUtf16;
-        var searchIndex = startOffsetInUtf16;
-        while (searchIndex <= subject.Length)
+        var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+        while (cursor.TryMoveNext(out var match))
         {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
             var snapshot = CreateMatchSnapshot(match, indexMap);
             var context = snapshot.ToContext(input, _nameEntries);
             var value = context.Value;
@@ -1333,35 +1215,6 @@ public sealed class Utf8PythonRegex
             {
                 break;
             }
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
-            {
-                var nonEmptyContext = nonEmptySnapshot.ToContext(input, _nameEntries);
-                var nonEmptyValue = nonEmptyContext.Value;
-                if (count == 0 || replaced < count)
-                {
-                    builder.Append(subject.AsSpan(lastIndex, nonEmptyValue.StartOffsetInUtf16 - lastIndex));
-                    builder.Append(plan.Expand(nonEmptyContext));
-                    lastIndex = nonEmptyValue.EndOffsetInUtf16;
-                    replaced++;
-                }
-
-                searchIndex = nonEmptyValue.EndOffsetInUtf16;
-                continue;
-            }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         builder.Append(subject.AsSpan(lastIndex));
@@ -1887,22 +1740,6 @@ public sealed class Utf8PythonRegex
 
         match = nonEmptyMatcher.Value.Match(subject, utf16Position);
         return match.Success && match.Index == utf16Position && match.Length != 0;
-    }
-
-    private bool TryCreateNonEmptySamePositionMatchSnapshot(
-        string subject,
-        int utf16Position,
-        PythonReUtf8IndexMap indexMap,
-        out PythonReManagedMatchSnapshot snapshot)
-    {
-        if (!TryMatchNonEmptyAtSamePosition(_lazyManagedNonEmptyAtSamePositionRegex, subject, utf16Position, out var match))
-        {
-            snapshot = default;
-            return false;
-        }
-
-        snapshot = CreateMatchSnapshot(match, indexMap);
-        return true;
     }
 
     private bool TryCreateNonEmptySamePositionManagedMatch(

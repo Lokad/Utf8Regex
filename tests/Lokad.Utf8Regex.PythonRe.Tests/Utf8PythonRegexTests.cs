@@ -1322,6 +1322,31 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void SubnManualLoopHonorsLimitsWithEmptyMatches()
+    {
+        // PLAN.md D02: the managed progression cursor owns empty-match advancement in Subn; oracle is CPython 3.13.2 re.subn.
+        var optional = new Utf8PythonRegex("(a)?");
+
+        var one = optional.SubnToString("ab"u8, "-", 1);
+        Assert.Equal("-b", one.ResultText);
+        Assert.Equal(1, one.ReplacementCount);
+
+        var all = optional.SubnToString("ab"u8, "-", 0);
+        Assert.Equal("--b-", all.ResultText);
+        Assert.Equal(3, all.ReplacementCount);
+
+        var alternation = new Utf8PythonRegex("a*|b");
+
+        var first = alternation.SubnToString("ba"u8, "-", 1);
+        Assert.Equal("-ba", first.ResultText);
+        Assert.Equal(1, first.ReplacementCount);
+
+        var every = alternation.SubnToString("ba"u8, "-", 0);
+        Assert.Equal("----", every.ResultText);
+        Assert.Equal(4, every.ReplacementCount);
+    }
+
+    [Fact]
     public void ManagedCountProgressionMatchesCpython()
     {
         // PLAN.md D02: the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.
