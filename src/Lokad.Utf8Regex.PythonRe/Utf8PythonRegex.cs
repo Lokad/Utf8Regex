@@ -1955,21 +1955,30 @@ public sealed class Utf8PythonRegex
         return count;
     }
 
+    // PLAN.md D02: single owner for the nonempty same-position retry guard; both shapers share it.
+    private bool TryMatchNonEmptyAtSamePosition(
+        string subject,
+        int utf16Position,
+        out Match match)
+    {
+        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
+            (uint)utf16Position >= (uint)subject.Length)
+        {
+            match = System.Text.RegularExpressions.Match.Empty;
+            return false;
+        }
+
+        match = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
+        return match.Success && match.Index == utf16Position && match.Length != 0;
+    }
+
     private bool TryCreateNonEmptySamePositionMatchSnapshot(
         string subject,
         int utf16Position,
         PythonReUtf8IndexMap indexMap,
         out PythonReManagedMatchSnapshot snapshot)
     {
-        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
-            (uint)utf16Position >= (uint)subject.Length)
-        {
-            snapshot = default;
-            return false;
-        }
-
-        var match = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
-        if (!match.Success || match.Index != utf16Position || match.Length == 0)
+        if (!TryMatchNonEmptyAtSamePosition(subject, utf16Position, out var match))
         {
             snapshot = default;
             return false;
@@ -1985,25 +1994,8 @@ public sealed class Utf8PythonRegex
         out Match match,
         out int utf16BaseOffset)
     {
-        if (_lazyManagedNonEmptyAtSamePositionRegex is null ||
-            (uint)utf16Position >= (uint)subject.Length)
-        {
-            match = System.Text.RegularExpressions.Match.Empty;
-            utf16BaseOffset = 0;
-            return false;
-        }
-
-        var candidate = _lazyManagedNonEmptyAtSamePositionRegex.Value.Match(subject, utf16Position);
-        if (!candidate.Success || candidate.Index != utf16Position || candidate.Length == 0)
-        {
-            match = System.Text.RegularExpressions.Match.Empty;
-            utf16BaseOffset = 0;
-            return false;
-        }
-
-        match = candidate;
         utf16BaseOffset = 0;
-        return true;
+        return TryMatchNonEmptyAtSamePosition(subject, utf16Position, out match);
     }
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
