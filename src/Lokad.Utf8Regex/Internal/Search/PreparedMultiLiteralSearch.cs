@@ -2352,13 +2352,14 @@ internal readonly struct PreparedMultiLiteralEarliestExactSearch
 
 internal readonly struct PreparedMultiLiteralAutomatonSearch
 {
-    private PreparedMultiLiteralAutomatonSearch(int[] transitions, int[] bestOutputOrders, int[] bestOutputLengths, int[] shortestOutputLengths, int shortestLength)
+    private PreparedMultiLiteralAutomatonSearch(int[] transitions, int[] bestOutputOrders, int[] bestOutputLengths, int[] shortestOutputLengths, int shortestLength, int longestLength)
     {
         Transitions = transitions;
         BestOutputOrders = bestOutputOrders;
         BestOutputLengths = bestOutputLengths;
         ShortestOutputLengths = shortestOutputLengths;
         ShortestLength = shortestLength;
+        LongestLength = longestLength;
     }
 
     public int[] Transitions { get; }
@@ -2370,6 +2371,8 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
     public int[] ShortestOutputLengths { get; }
 
     public int ShortestLength { get; }
+
+    public int LongestLength { get; }
 
     public int StateCount => BestOutputOrders.Length;
 
@@ -2416,16 +2419,18 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
     {
         if (literals.Length == 0)
         {
-            return new PreparedMultiLiteralAutomatonSearch([], [], [], [], int.MaxValue);
+            return new PreparedMultiLiteralAutomatonSearch([], [], [], [], int.MaxValue, 0);
         }
 
         var nodes = new List<MutablePreparedMultiLiteralAutomatonNode> { new() };
         var shortestLength = int.MaxValue;
+        var longestLength = 0;
 
         for (var i = 0; i < literals.Length; i++)
         {
             var literal = literals[i];
             shortestLength = Math.Min(shortestLength, literal.Length);
+            longestLength = Math.Max(longestLength, literal.Length);
             InsertLiteral(nodes, literal, i);
         }
 
@@ -2452,7 +2457,7 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
             }
         }
 
-        return new PreparedMultiLiteralAutomatonSearch(transitions, bestOutputOrders, bestOutputLengths, shortestOutputLengths, shortestLength);
+        return new PreparedMultiLiteralAutomatonSearch(transitions, bestOutputOrders, bestOutputLengths, shortestOutputLengths, shortestLength, longestLength);
     }
 
     public int IndexOf(ReadOnlySpan<byte> input)
@@ -2477,6 +2482,13 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
             return true;
         }
 
+        // Ordered alternation reports the lowest-order branch at the leftmost start, not the
+        // first-ending match: keep scanning while a better match can still emerge, bounded by
+        // the longest literal.
+        var bestStart = int.MaxValue;
+        var bestOrder = int.MaxValue;
+        var bestReportedLength = 0;
+        var bestLiteralId = -1;
         var state = 0;
         for (var i = 0; i < input.Length; i++)
         {
@@ -2484,14 +2496,33 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
             var bestLength = BestOutputLengths[state];
             if (bestLength > 0)
             {
-                index = i - bestLength + 1;
-                matchedLength = bestLength;
-                literalId = BestOutputOrders[state];
-                return true;
+                var candidateStart = i - bestLength + 1;
+                var candidateOrder = BestOutputOrders[state];
+                if (candidateStart < bestStart ||
+                    (candidateStart == bestStart && candidateOrder < bestOrder))
+                {
+                    bestStart = candidateStart;
+                    bestOrder = candidateOrder;
+                    bestReportedLength = bestLength;
+                    bestLiteralId = candidateOrder;
+                }
+            }
+
+            if (bestOrder >= 0 && i - bestStart >= LongestLength - 1)
+            {
+                break;
             }
         }
 
-        return false;
+        if (bestLiteralId < 0)
+        {
+            return false;
+        }
+
+        index = bestStart;
+        matchedLength = bestReportedLength;
+        literalId = bestLiteralId;
+        return true;
     }
 
     public int LastIndexOf(ReadOnlySpan<byte> input)
@@ -2571,24 +2602,49 @@ internal readonly struct PreparedMultiLiteralAutomatonSearch
             automatonState = 0;
         }
 
+        // Ordered alternation reports the lowest-order branch at the leftmost start, not the
+        // first-ending match: keep scanning while a better match can still emerge, bounded by
+        // the longest literal.
+        var bestStart = int.MaxValue;
+        var bestOrder = int.MaxValue;
+        var bestReportedLength = 0;
+        var bestLiteralId = -1;
         for (var i = scanIndex; i < input.Length; i++)
         {
             automatonState = Transitions[(automatonState * 256) + input[i]];
             var bestLength = BestOutputLengths[automatonState];
             if (bestLength > 0)
             {
-                index = i - bestLength + 1;
-                matchedLength = bestLength;
-                literalId = BestOutputOrders[automatonState];
+                var candidateStart = i - bestLength + 1;
+                var candidateOrder = BestOutputOrders[automatonState];
+                if (candidateStart < bestStart ||
+                    (candidateStart == bestStart && candidateOrder < bestOrder))
+                {
+                    bestStart = candidateStart;
+                    bestOrder = candidateOrder;
+                    bestReportedLength = bestLength;
+                    bestLiteralId = candidateOrder;
+                }
+            }
 
-                var nextStart = index + matchedLength;
-                state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
-                return true;
+            if (bestOrder >= 0 && i - bestStart >= LongestLength - 1)
+            {
+                break;
             }
         }
 
-        state = new PreparedMultiLiteralScanState(input.Length, input.Length, automatonState);
-        return false;
+        if (bestLiteralId < 0)
+        {
+            state = new PreparedMultiLiteralScanState(input.Length, input.Length, automatonState);
+            return false;
+        }
+
+        index = bestStart;
+        matchedLength = bestReportedLength;
+        literalId = bestLiteralId;
+        var nextStart = index + matchedLength;
+        state = new PreparedMultiLiteralScanState(nextStart, nextStart, 0);
+        return true;
     }
 
     public bool TryFindNextOverlappingMatch(
