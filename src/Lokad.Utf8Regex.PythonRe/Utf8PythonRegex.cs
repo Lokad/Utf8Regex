@@ -1355,66 +1355,23 @@ public sealed class Utf8PythonRegex
 
         var replaced = 0;
         var lastIndex = startOffsetInUtf16;
-        var searchIndex = startOffsetInUtf16;
-        while (searchIndex <= subject.Length)
-        {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                break;
-            }
-
-            var detailed = CreateDetailedMatchData(input, match, indexMap);
-            var value = detailed.Value;
-            if (count == 0 || replaced < count)
-            {
-                builder.Append(subject.AsSpan(lastIndex, value.StartOffsetInUtf16 - lastIndex));
-                builder.Append(evaluator(state, detailed));
-                lastIndex = value.EndOffsetInUtf16;
-                replaced++;
-            }
-            else
-            {
-                break;
-            }
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionManagedMatch(
-                subject,
-                match.Index,
-                out var nonEmptyMatch,
-                out var nonEmptyUtf16BaseOffset))
-            {
-                var nonEmptyDetailed = CreateDetailedMatchData(
-                    input,
-                    nonEmptyMatch,
-                    indexMap,
-                    nonEmptyUtf16BaseOffset);
-                var nonEmptyValue = nonEmptyDetailed.Value;
+                var detailed = CreateDetailedMatchData(input, match, indexMap);
+                var value = detailed.Value;
                 if (count == 0 || replaced < count)
                 {
-                    builder.Append(subject.AsSpan(lastIndex, nonEmptyValue.StartOffsetInUtf16 - lastIndex));
-                    builder.Append(evaluator(state, nonEmptyDetailed));
-                    lastIndex = nonEmptyValue.EndOffsetInUtf16;
+                    builder.Append(subject.AsSpan(lastIndex, value.StartOffsetInUtf16 - lastIndex));
+                    builder.Append(evaluator(state, detailed));
+                    lastIndex = value.EndOffsetInUtf16;
                     replaced++;
                 }
-
-                searchIndex = nonEmptyValue.EndOffsetInUtf16;
-                continue;
+                else
+                {
+                    break;
+                }
             }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
-        }
 
         builder.Append(subject.AsSpan(lastIndex));
         return new Utf8PythonSubnResult
@@ -1682,16 +1639,6 @@ public sealed class Utf8PythonRegex
 
         match = nonEmptyMatcher.Value.Match(subject, utf16Position);
         return match.Success && match.Index == utf16Position && match.Length != 0;
-    }
-
-    private bool TryCreateNonEmptySamePositionManagedMatch(
-        string subject,
-        int utf16Position,
-        out Match match,
-        out int utf16BaseOffset)
-    {
-        utf16BaseOffset = 0;
-        return TryMatchNonEmptyAtSamePosition(_lazyManagedNonEmptyAtSamePositionRegex, subject, utf16Position, out match);
     }
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
@@ -2046,20 +1993,14 @@ public sealed class Utf8PythonRegex
     private Utf8PythonDetailedMatchData CreateDetailedMatchData(
         ReadOnlySpan<byte> input,
         Match match,
-        PythonReUtf8IndexMap indexMap) => CreateDetailedMatchData(input, match, indexMap, 0);
-
-    private Utf8PythonDetailedMatchData CreateDetailedMatchData(
-        ReadOnlySpan<byte> input,
-        Match match,
-        PythonReUtf8IndexMap indexMap,
-        int utf16BaseOffset)
+        PythonReUtf8IndexMap indexMap)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return CreateDetailedMatchData(input, match, indexMap, _nameEntries, utf16BaseOffset);
+        return CreateDetailedMatchData(input, match, indexMap, _nameEntries, 0);
     }
 
     private Utf8PythonDetailedMatchData CreateDetailedMatchData(
@@ -2397,71 +2338,22 @@ public sealed class Utf8PythonRegex
 
         var replaced = 0;
         var lastIndexInBytes = startOffsetInBytes;
-        var searchIndex = startOffsetInUtf16;
-        while (searchIndex <= subject.Length)
-        {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            while (cursor.TryMoveNext(out var match))
             {
-                break;
-            }
-
-            var value = PythonReGroupData.FromUtf16(0, match, indexMap);
-            if (count == 0 || replaced < count)
-            {
-                AppendUtf8(builder, input[lastIndexInBytes..value.StartOffsetInBytes]);
-                AppendUtf8(builder, replacementFactory(input, match, indexMap, 0, state));
-                lastIndexInBytes = value.EndOffsetInBytes;
-                replaced++;
-            }
-            else
-            {
-                break;
-            }
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionManagedMatch(
-                subject,
-                match.Index,
-                out var nonEmptyMatch,
-                out var nonEmptyUtf16BaseOffset))
-            {
-                var nonEmptyValue = PythonReGroupData.FromUtf16(
-                    0,
-                    nonEmptyMatch,
-                    indexMap,
-                    nonEmptyUtf16BaseOffset);
+                var value = PythonReGroupData.FromUtf16(0, match, indexMap);
                 if (count == 0 || replaced < count)
                 {
-                    AppendUtf8(builder, input[lastIndexInBytes..nonEmptyValue.StartOffsetInBytes]);
-                    AppendUtf8(
-                        builder,
-                        replacementFactory(
-                            input,
-                            nonEmptyMatch,
-                            indexMap,
-                            nonEmptyUtf16BaseOffset,
-                            state));
-                    lastIndexInBytes = nonEmptyValue.EndOffsetInBytes;
+                    AppendUtf8(builder, input[lastIndexInBytes..value.StartOffsetInBytes]);
+                    AppendUtf8(builder, replacementFactory(input, match, indexMap, 0, state));
+                    lastIndexInBytes = value.EndOffsetInBytes;
                     replaced++;
                 }
-
-                searchIndex = nonEmptyValue.EndOffsetInUtf16;
-                continue;
+                else
+                {
+                    break;
+                }
             }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
-        }
 
         AppendUtf8(builder, input[lastIndexInBytes..]);
         return new Utf8PythonSubnUtf8Result
