@@ -57,7 +57,21 @@ internal readonly struct Pcre2GroupData
             };
         }
 
-        var decoded = Encoding.UTF8.GetString(input);
+        return FromDecodedSubject(input, Encoding.UTF8.GetString(input), number, group);
+    }
+
+    // PLAN.md D04: managed-backend callers already hold the decoded subject; mapping from it avoids one full decode and string allocation per group.
+    internal static Pcre2GroupData FromDecodedSubject(ReadOnlySpan<byte> input, string decoded, int number, Group group)
+    {
+        if (!group.Success)
+        {
+            return new Pcre2GroupData
+            {
+                Number = number,
+                Success = false,
+            };
+        }
+
         var startOffsetInBytes = Encoding.UTF8.GetByteCount(decoded.AsSpan(0, group.Index));
         var byteLength = Encoding.UTF8.GetByteCount(decoded.AsSpan(group.Index, group.Length));
         return new Pcre2GroupData
@@ -234,14 +248,14 @@ public readonly ref struct Utf8Pcre2ValueMatch
         return Encoding.UTF8.GetString(GetValueBytes());
     }
 
-    internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Match match)
+    internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, string decoded, Match match)
     {
         if (!match.Success)
         {
             return default;
         }
 
-        return new Utf8Pcre2ValueMatch(input, Pcre2GroupData.FromUtf16(input, 0, match.Groups[0]));
+        return new Utf8Pcre2ValueMatch(input, Pcre2GroupData.FromDecodedSubject(input, decoded, 0, match.Groups[0]));
     }
 
     internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
@@ -430,7 +444,7 @@ public readonly ref struct Utf8Pcre2MatchContext
     /// <exception cref="InvalidOperationException">No successful, exactly projectable match is available.</exception>
     public string GetValueString() => Value.GetValueString();
 
-    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Match? match, string[]? groupNames)
+    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, string decoded, Match? match, string[]? groupNames)
     {
         if (match is null)
         {
@@ -440,7 +454,7 @@ public readonly ref struct Utf8Pcre2MatchContext
         var groups = new Pcre2GroupData[match.Groups.Count];
         for (var i = 0; i < groups.Length; i++)
         {
-            groups[i] = Pcre2GroupData.FromUtf16(input, i, match.Groups[i]);
+            groups[i] = Pcre2GroupData.FromDecodedSubject(input, decoded, i, match.Groups[i]);
         }
 
         Pcre2NameEntry[]? nameEntries = null;

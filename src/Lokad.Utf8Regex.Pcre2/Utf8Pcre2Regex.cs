@@ -1091,7 +1091,7 @@ public sealed class Utf8Pcre2Regex
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
         var match = ManagedRegex.Match(decoded, utf16Start);
-        return Utf8Pcre2ValueMatch.Create(input, match);
+        return Utf8Pcre2ValueMatch.Create(input, decoded, match);
     }
 
 
@@ -1100,7 +1100,7 @@ public sealed class Utf8Pcre2Regex
         var decoded = Encoding.UTF8.GetString(input);
         var utf16Start = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
         var match = ManagedRegex.Match(decoded, utf16Start);
-        return Utf8Pcre2MatchContext.Create(input, match, GroupNames);
+        return Utf8Pcre2MatchContext.Create(input, decoded, match, GroupNames);
     }
 
     private Utf8Pcre2MatchContext MatchDetailedUsingUtf8Backend(
