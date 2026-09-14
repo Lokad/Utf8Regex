@@ -734,15 +734,9 @@ public sealed class Utf8PythonRegex
         var hasIndexMap = false;
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var matches = new List<Utf8PythonMatchData>();
-        var searchIndex = startOffsetInUtf16;
-        while (searchIndex <= subject.Length)
+        var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+        while (cursor.TryMoveNext(out var match))
         {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
             if (!hasIndexMap)
             {
                 indexMap = PythonReUtf8IndexMap.Create(input, subject);
@@ -761,35 +755,6 @@ public sealed class Utf8PythonRegex
                 EndOffsetInUtf16 = value.EndOffsetInUtf16,
                 ValueText = value.GetValueString(),
             });
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if (TryCreateNonEmptySamePositionMatchSnapshot(subject, match.Index, indexMap, out var nonEmptySnapshot))
-            {
-                var nonEmptyValue = nonEmptySnapshot.ToContext(input, _nameEntries).Value;
-                matches.Add(new Utf8PythonMatchData
-                {
-                    Success = true,
-                    StartOffsetInBytes = nonEmptyValue.StartOffsetInBytes,
-                    EndOffsetInBytes = nonEmptyValue.EndOffsetInBytes,
-                    StartOffsetInUtf16 = nonEmptyValue.StartOffsetInUtf16,
-                    EndOffsetInUtf16 = nonEmptyValue.EndOffsetInUtf16,
-                    ValueText = nonEmptyValue.GetValueString(),
-                });
-                searchIndex = nonEmptyValue.EndOffsetInUtf16;
-                continue;
-            }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
         }
 
         return matches.ToArray();
