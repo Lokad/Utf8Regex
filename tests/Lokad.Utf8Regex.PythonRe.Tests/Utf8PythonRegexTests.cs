@@ -1392,6 +1392,38 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void TemplateSubnHonorsLimits()
+    {
+        // PLAN.md D03: non-empty-matching patterns take the single-pass cursor template route; oracle is CPython 3.13.2 re.subn.
+        var words = new Utf8PythonRegex("([a-z]+)");
+
+        var all = words.SubnToString("cat dog"u8, "<\\1>", 0, 0);
+        Assert.Equal("<cat> <dog>", all.ResultText);
+        Assert.Equal(2, all.ReplacementCount);
+
+        var one = words.SubnToString("cat dog"u8, "<\\1>", 1, 0);
+        Assert.Equal("<cat> dog", one.ResultText);
+        Assert.Equal(1, one.ReplacementCount);
+
+        var offset = words.SubnToString("cat dog"u8, "<\\1>", 0, 4);
+        Assert.Equal("cat <dog>", offset.ResultText);
+        Assert.Equal(1, offset.ReplacementCount);
+
+        var capped = words.SubnToString("cat dog"u8, "<\\1>", 2, 0);
+        Assert.Equal("<cat> <dog>", capped.ResultText);
+        Assert.Equal(2, capped.ReplacementCount);
+
+        var over = words.SubnToString("cat"u8, "<\\1>", 5, 0);
+        Assert.Equal("<cat>", over.ResultText);
+        Assert.Equal(1, over.ReplacementCount);
+
+        var groups = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
+        var swapped = groups.Subn("ab-12 cd-34"u8, "\\2:\\1", 0, 0);
+        Assert.Equal("12:ab 34:cd", System.Text.Encoding.UTF8.GetString(swapped.ResultBytes));
+        Assert.Equal(2, swapped.ReplacementCount);
+    }
+
+    [Fact]
     public void ManagedCountProgressionMatchesCpython()
     {
         // PLAN.md D02: the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.

@@ -1911,11 +1911,30 @@ public sealed class Utf8PythonRegex
     {
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        // PLAN.md D03: bounded requests only need matches up to the cap; the early-stopping
+        // allocation-free enumeration replaces the full Count scan. Pinned by TemplateSubnHonorsLimits.
+        int CountUpToCap()
+        {
+            var total = 0;
+            foreach (var _ in _managedRegex.EnumerateMatches(subject.AsSpan(startOffsetInUtf16)))
+            {
+                total++;
+                if (total >= count)
+                {
+                    break;
+                }
+            }
+
+            return total;
+        }
+
         var maximumReplacements = count == 0 ? int.MaxValue : count;
         // PLAN.md D03: a single requested replacement needs only existence, not a full count; IsMatch explores a prefix of the Count exploration.
         var replacementCount = count == 1 && _managedRegex.IsMatch(subject, startOffsetInUtf16)
             ? 1
-            : Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
+            : !_canMatchEmpty && count > 1
+                ? CountUpToCap()
+                : Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
         return new Utf8PythonSubnResult
         {
             ResultText = ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16),
