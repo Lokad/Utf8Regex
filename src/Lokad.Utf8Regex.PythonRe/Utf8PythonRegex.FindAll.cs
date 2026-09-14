@@ -176,7 +176,7 @@ public sealed partial class Utf8PythonRegex
             var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
             while (cursor.TryMoveNext(out var match))
             {
-                AppendFindAllScalarValue(collected, match, 1);
+                collected.Add(GetFindAllGroupValue(match, 1));
             }
 
             return new Utf8PythonFindAllResult
@@ -213,7 +213,13 @@ public sealed partial class Utf8PythonRegex
             var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
             while (cursor.TryMoveNext(out var match))
             {
-                AppendFindAllTupleValue(tuples, match);
+                var tuple = new string[_translation.CaptureGroupCount];
+                for (var i = 0; i < tuple.Length; i++)
+                {
+                    tuple[i] = GetFindAllGroupValue(match, i + 1);
+                }
+
+                tuples.Add(tuple);
             }
         }
 
@@ -289,7 +295,7 @@ public sealed partial class Utf8PythonRegex
                     hasIndexMap = true;
                 }
 
-                AppendFindAllScalarBytes(collected, input, CreateMatchSnapshot(match, indexMap), 1);
+                collected.Add(GetFindAllGroupBytes(input, CreateMatchSnapshot(match, indexMap).Groups, 1));
             }
 
             return new Utf8PythonFindAllUtf8Result
@@ -311,7 +317,14 @@ public sealed partial class Utf8PythonRegex
                     hasIndexMap = true;
                 }
 
-                AppendFindAllTupleBytes(tuples, input, CreateMatchSnapshot(match, indexMap));
+                var snapshot = CreateMatchSnapshot(match, indexMap);
+                var tuple = new byte[_translation.CaptureGroupCount][];
+                for (var i = 0; i < tuple.Length; i++)
+                {
+                    tuple[i] = GetFindAllGroupBytes(input, snapshot.Groups, i + 1);
+                }
+
+                tuples.Add(tuple);
             }
         }
 

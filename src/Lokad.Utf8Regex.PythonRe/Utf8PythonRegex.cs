@@ -1223,38 +1223,6 @@ public sealed partial class Utf8PythonRegex
         lastIndex = absoluteEnd;
     }
 
-    private void AppendFindAllScalarValue(List<string> values, Match match, int groupNumber)
-    {
-        values.Add(GetFindAllGroupValue(match, groupNumber));
-    }
-
-    private static void AppendFindAllScalarBytes(List<byte[]> values, ReadOnlySpan<byte> input, PythonReManagedMatchSnapshot snapshot, int groupNumber)
-    {
-        values.Add(GetFindAllGroupBytes(input, snapshot.Groups, groupNumber));
-    }
-
-    private void AppendFindAllTupleValue(List<string[]> tuples, Match match)
-    {
-        var tuple = new string[_translation.CaptureGroupCount];
-        for (var i = 0; i < tuple.Length; i++)
-        {
-            tuple[i] = GetFindAllGroupValue(match, i + 1);
-        }
-
-        tuples.Add(tuple);
-    }
-
-    private void AppendFindAllTupleBytes(List<byte[][]> tuples, ReadOnlySpan<byte> input, PythonReManagedMatchSnapshot snapshot)
-    {
-        var tuple = new byte[_translation.CaptureGroupCount][];
-        for (var i = 0; i < tuple.Length; i++)
-        {
-            tuple[i] = GetFindAllGroupBytes(input, snapshot.Groups, i + 1);
-        }
-
-        tuples.Add(tuple);
-    }
-
     private string GetFindAllGroupValue(Match match, int groupNumber)
     {
         var managedGroupNumber = _managedGroupNumbersByPythonGroup[groupNumber];
