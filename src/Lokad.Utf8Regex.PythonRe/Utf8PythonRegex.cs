@@ -2275,7 +2275,10 @@ public sealed class Utf8PythonRegex
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var maximumReplacements = count == 0 ? int.MaxValue : count;
-        var replacementCount = Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
+        // PLAN.md D03: a single requested replacement needs only existence, not a full count; IsMatch explores a prefix of the Count exploration.
+        var replacementCount = count == 1 && _managedRegex.IsMatch(subject, startOffsetInUtf16)
+            ? 1
+            : Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
         return new Utf8PythonSubnResult
         {
             ResultText = ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16),

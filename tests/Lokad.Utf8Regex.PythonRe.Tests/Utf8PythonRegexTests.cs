@@ -1305,6 +1305,23 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void SubnWithSingleReplacementLimitReportsExactCount()
+    {
+        // PLAN.md D03: count 1 needs only existence, not a full-subject count.
+        var regex = new Utf8PythonRegex(@"(?P<word>foo)-(?P=word)");
+
+        var replaced = regex.SubnToString("xx foo-foo yy foo-foo"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 3);
+
+        Assert.Equal("xx <foo> yy foo-foo", replaced.ResultText);
+        Assert.Equal(1, replaced.ReplacementCount);
+
+        var missed = regex.SubnToString("xx no-hit yy"u8, "<\\g<word>>", count: 1, startOffsetInBytes: 0);
+
+        Assert.Equal("xx no-hit yy", missed.ResultText);
+        Assert.Equal(0, missed.ReplacementCount);
+    }
+
+    [Fact]
     public void ReplaceCanUseManagedBackendForAlternationPatterns()
     {
         var regex = new Utf8PythonRegex(@"(?:b)|(?::+)");
