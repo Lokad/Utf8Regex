@@ -1347,6 +1347,22 @@ public sealed class Utf8PythonRegexTests
     }
 
     [Fact]
+    public void SplitManagedLoopHonorsLimitsWithEmptyMatches()
+    {
+        // PLAN.md D02: the managed progression cursor owns empty-match advancement in Split; oracle is CPython 3.13.2 re.split.
+        var star = new Utf8PythonRegex("x*");
+
+        Assert.Equal(["", "a", "", "b", "", "c", ""], star.SplitToStrings("axbxc"u8, 0));
+        Assert.Equal(["", "axbxc"], star.SplitToStrings("axbxc"u8, 1));
+        Assert.Equal(["", "a", "bxc"], star.SplitToStrings("axbxc"u8, 2));
+
+        var optional = new Utf8PythonRegex("(x)?");
+
+        Assert.Equal<string?[]>(["", null, "a", null, "b", null, ""], optional.SplitToStrings("ab"u8, 0));
+        Assert.Equal<string?[]>(["", null, "ab"], optional.SplitToStrings("ab"u8, 1));
+    }
+
+    [Fact]
     public void ManagedCountProgressionMatchesCpython()
     {
         // PLAN.md D02: the managed progression cursor owns empty-match advancement; oracle is CPython 3.13.2 re.findall length.

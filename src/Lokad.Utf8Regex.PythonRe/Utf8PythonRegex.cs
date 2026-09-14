@@ -1546,42 +1546,13 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var parts = new List<string?>();
         var lastIndex = startOffsetInUtf16;
-        var searchIndex = startOffsetInUtf16;
-        var splitCount = 0;
-
-        while (searchIndex <= subject.Length && (maxSplit == 0 || splitCount < maxSplit))
-        {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            var splitCount = 0;
+            while ((maxSplit == 0 || splitCount < maxSplit) && cursor.TryMoveNext(out var match))
             {
-                break;
-            }
-
-            AppendSplitMatch(parts, subject, match, ref lastIndex);
-            splitCount++;
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if ((maxSplit == 0 || splitCount < maxSplit) &&
-                TryCreateNonEmptySamePositionManagedMatch(subject, match.Index, out var nonEmptyMatch, out var nonEmptyUtf16BaseOffset))
-            {
-                AppendSplitMatch(parts, subject, nonEmptyMatch, ref lastIndex, nonEmptyUtf16BaseOffset);
+                AppendSplitMatch(parts, subject, match, ref lastIndex, 0);
                 splitCount++;
-                searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
-                continue;
             }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
-        }
 
         parts.Add(subject[lastIndex..]);
         return parts.ToArray();
@@ -1649,42 +1620,13 @@ public sealed class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var parts = new List<Utf8PythonSplitItem>();
         var lastIndex = startOffsetInUtf16;
-        var searchIndex = startOffsetInUtf16;
-        var splitCount = 0;
-
-        while (searchIndex <= subject.Length && (maxSplit == 0 || splitCount < maxSplit))
-        {
-            var match = _managedRegex.Match(subject, searchIndex);
-            if (!match.Success)
+            var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
+            var splitCount = 0;
+            while ((maxSplit == 0 || splitCount < maxSplit) && cursor.TryMoveNext(out var match))
             {
-                break;
-            }
-
-            AppendSplitDetailedMatch(parts, subject, match, ref lastIndex);
-            splitCount++;
-
-            if (match.Length > 0)
-            {
-                searchIndex = match.Index + match.Length;
-                continue;
-            }
-
-            if ((maxSplit == 0 || splitCount < maxSplit) &&
-                TryCreateNonEmptySamePositionManagedMatch(subject, match.Index, out var nonEmptyMatch, out var nonEmptyUtf16BaseOffset))
-            {
-                AppendSplitDetailedMatch(parts, subject, nonEmptyMatch, ref lastIndex, nonEmptyUtf16BaseOffset);
+                AppendSplitDetailedMatch(parts, subject, match, ref lastIndex, 0);
                 splitCount++;
-                searchIndex = nonEmptyUtf16BaseOffset + nonEmptyMatch.Index + nonEmptyMatch.Length;
-                continue;
             }
-
-            if (match.Index >= subject.Length)
-            {
-                break;
-            }
-
-            searchIndex = AdvancePastScalar(subject, match.Index);
-        }
 
         parts.Add(new Utf8PythonSplitItem
         {
@@ -2306,11 +2248,6 @@ public sealed class Utf8PythonRegex
         return Utf8PythonValueMatch.Create(input, PythonReGroupData.FromUtf8Match(match));
     }
 
-    private void AppendSplitMatch(List<string?> parts, string subject, Match match, ref int lastIndex)
-    {
-        AppendSplitMatch(parts, subject, match, ref lastIndex, 0);
-    }
-
     private void AppendSplitMatch(
         List<string?> parts,
         string subject,
@@ -2329,15 +2266,6 @@ public sealed class Utf8PythonRegex
         }
 
         lastIndex = absoluteEnd;
-    }
-
-    private void AppendSplitDetailedMatch(
-        List<Utf8PythonSplitItem> parts,
-        string subject,
-        Match match,
-        ref int lastIndex)
-    {
-        AppendSplitDetailedMatch(parts, subject, match, ref lastIndex, 0);
     }
 
     private void AppendSplitDetailedMatch(
