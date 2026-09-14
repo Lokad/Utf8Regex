@@ -5,8 +5,11 @@ namespace Lokad.Utf8Regex.PythonRe;
 // PLAN.md D02: one managed global progression cursor owns empty-match advancement
 // and the same-position nonempty retry; output consumers own shaping. Operation
 // deadlines ride with the caller-supplied Regex instances (constructed with the
-// operation timeout), so the cursor performs no manual polling and preserves the
-// established timeout behavior. The empty-advance policy is scalar-first, matching
+// operation timeout), so the cursor performs no manual polling; each progression step
+// keeps that step full budget, so worst-case wall time scales with step count
+// rather than a single Regex.Count or Split call budget, while a slow step still throws
+// instead of hanging, pinned by ManagedCursorLoopsHonorTimeout. CPython defines no
+// timeout oracle. The empty-advance policy is scalar-first, matching
 // CPython progression; PCRE2 keeps its distinct policy outside this type.
 internal ref struct PythonReManagedMatchCursor
 {

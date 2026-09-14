@@ -494,6 +494,18 @@ public sealed class Utf8PythonRegexTests
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatch(input));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FullMatchDetailedData(input));
     }
+    [Fact]
+    public void ManagedCursorLoopsHonorTimeout()
+    {
+        // PLAN.md D02/M1: cursor loops run one Regex.Match per progression step, so each step keeps the instance timeout budget and a slow step still throws instead of hanging; CPython defines no timeout oracle.
+        var regex = new Utf8PythonRegex("(a*)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+        Assert.Contains("Count=ManagedRegex", regex.DebugDescribeExecutionPlan());
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Count(input));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindAllToStrings(input));
+    }
+
 
     [Fact]
     public void SearchDetailedExposesNamedCapture()
