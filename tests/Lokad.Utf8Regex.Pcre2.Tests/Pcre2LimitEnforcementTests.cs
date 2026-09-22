@@ -145,4 +145,62 @@ public sealed class Pcre2LimitEnforcementTests
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
     }
+    public static IEnumerable<object?[]> ShallowDepthRows()
+    {
+        yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
+        yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
+        yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ShallowDepthRows))]
+    public void TinyDepthLimitSucceedsOnShallowShapes(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        // Depth tracks peak backtracking-frame depth, not match count: these
+        // shapes never push more than one frame, so a limit of one admits
+        // their full counts.
+        var limits = new Utf8Pcre2ExecutionLimits { DepthLimit = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
+
+    public static IEnumerable<object?[]> MeteredHeapRows()
+    {
+        yield return new object?[] { "[ab]+", Pcre2CompileOptions.None, "ab ab ab", 3 };
+        yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
+        yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
+        yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
+        yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
+        yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "abb abb", 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(MeteredHeapRows))]
+    public void TinyHeapLimitBreachesOnMeteredWorkspace(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
+    }
+
+    public static IEnumerable<object?[]> WorkspaceFreeHeapRows()
+    {
+        yield return new object?[] { "foo", Pcre2CompileOptions.None, "foo foo foo", 3 };
+        yield return new object?[] { "^ERROR", Pcre2CompileOptions.Multiline, "ERROR a\nERROR b\nERROR c", 3 };
+        yield return new object?[] { "(?#comment)ab", Pcre2CompileOptions.None, "xxab xxab xxab", 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(WorkspaceFreeHeapRows))]
+    public void TinyHeapLimitSucceedsOnWorkspaceFreePaths(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        // Direct paths (literal scan, character scan, Utf8-kind delegation)
+        // rent no metered working bytes, so a one-byte heap budget admits
+        // their full counts.
+        var limits = new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
 }
