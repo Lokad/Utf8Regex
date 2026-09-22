@@ -138,7 +138,8 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         int count,
         Utf8ReplacementBytesFactory<TState> replacementFactory,
-        TState state)
+        TState state,
+        CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
@@ -154,6 +155,7 @@ public sealed partial class Utf8PythonRegex
             var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
             while (cursor.TryMoveNext(out var match))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var value = PythonReGroupData.FromUtf16(0, match, indexMap);
                 if (count == 0 || replaced < count)
                 {

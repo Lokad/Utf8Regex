@@ -350,7 +350,8 @@ public sealed partial class Utf8PythonRegex
             count,
             (source, match, indexMap, utf16BaseOffset, state) =>
                 state.ExpandToUtf8(source, CreateMatchSnapshot(match, indexMap, utf16BaseOffset).Groups),
-            plan);
+            plan,
+            default);
     }
 
     /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
@@ -440,7 +441,8 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes,
         out byte[] resultBytes,
-        out int replacementCount)
+        out int replacementCount,
+        CancellationToken cancellationToken)
     {
         resultBytes = [];
         replacementCount = 0;
@@ -468,6 +470,7 @@ public sealed partial class Utf8PythonRegex
         {
             while ((count == 0 || replaced < count) && cursor.MoveNext())
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var match = cursor.CurrentValueMatch;
                 if (!match.Success || match.IndexInUtf16 < startOffsetInUtf16)
                 {
@@ -545,10 +548,21 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
+        return SubnToStringEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, default);
+    }
+
+    private Utf8PythonSubnResult SubnToStringEvaluatorCore<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes,
+        CancellationToken cancellationToken)
+    {
         ValidateStartOffset(input, startOffsetInBytes);
 
         var subject = Decode(input);
-        if (TryEvaluateOwnedSubstitution(input, subject, state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        if (TryEvaluateOwnedSubstitution(input, subject, state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount, cancellationToken))
         {
             return new Utf8PythonSubnResult
             {
@@ -567,6 +581,7 @@ public sealed partial class Utf8PythonRegex
             var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
             while (cursor.TryMoveNext(out var match))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var detailed = CreateDetailedMatchData(input, match, indexMap);
                 var value = detailed.Value;
                 if (count == 0 || replaced < count)
@@ -602,7 +617,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SubnToString(input, state, evaluator, count, startOffsetInBytes);
+        return SubnToStringEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Evaluates all string replacements and returns UTF-8 bytes plus count.</summary>
@@ -626,7 +641,18 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
-        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        return SubnEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, default);
+    }
+
+    private Utf8PythonSubnUtf8Result SubnEvaluatorCore<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonMatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes,
+        CancellationToken cancellationToken)
+    {
+        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount, cancellationToken))
         {
             return new Utf8PythonSubnUtf8Result
             {
@@ -643,7 +669,7 @@ public sealed partial class Utf8PythonRegex
                 state.Evaluator(
                     state.Value,
                     CreateDetailedMatchData(source, match, indexMap, state.NameEntries, utf16BaseOffset))),
-            (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
+            (Value: state, Evaluator: evaluator, NameEntries: _nameEntries), cancellationToken);
     }
 
     /// <summary>Evaluates string replacements after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
@@ -658,7 +684,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Subn(input, state, evaluator, count, startOffsetInBytes);
+        return SubnEvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Replaces all matches with a stateful UTF-8 evaluator.</summary>
@@ -721,7 +747,18 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
-        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => evaluator(s, m), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        return SubnUtf8EvaluatorCore(input, state, evaluator, count, startOffsetInBytes, default);
+    }
+
+    private Utf8PythonSubnUtf8Result SubnUtf8EvaluatorCore<TState>(
+        ReadOnlySpan<byte> input,
+        TState state,
+        Utf8PythonUtf8MatchEvaluator<TState> evaluator,
+        int count,
+        int startOffsetInBytes,
+        CancellationToken cancellationToken)
+    {
+        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => evaluator(s, m), count, startOffsetInBytes, out var ownedBytes, out var ownedCount, cancellationToken))
         {
             return new Utf8PythonSubnUtf8Result
             {
@@ -737,7 +774,7 @@ public sealed partial class Utf8PythonRegex
             (source, match, indexMap, utf16BaseOffset, state) => state.Evaluator(
                 state.Value,
                 CreateDetailedMatchData(source, match, indexMap, state.NameEntries, utf16BaseOffset)),
-            (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
+            (Value: state, Evaluator: evaluator, NameEntries: _nameEntries), cancellationToken);
     }
 
     /// <summary>Evaluates UTF-8 replacements after a byte offset and returns bytes plus count, observing cancellation before matching begins.</summary>
@@ -752,7 +789,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Subn(input, state, evaluator, count, startOffsetInBytes);
+        return SubnUtf8EvaluatorCore(input, state, evaluator, count, startOffsetInBytes, cancellationToken);
     }
 
 }

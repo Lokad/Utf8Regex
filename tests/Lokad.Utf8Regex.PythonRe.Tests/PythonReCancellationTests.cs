@@ -307,4 +307,93 @@ public sealed class PythonReCancellationTests
         Assert.Equal(regex.Match(s_input, 4).GetValueString(), regex.Match(s_input, 4, token).GetValueString());
         Assert.Equal(regex.ReplaceToString(s_input, "pet", 0, 4), regex.ReplaceToString(s_input, "pet", 0, 4, token));
     }
+
+    [Fact]
+    public void CancelInsideEvaluatorAbortsOwnedSubn()
+    {
+        var regex = Create();
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("cat horse cat");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Subn(
+            input,
+            0,
+            (int state, Utf8PythonDetailedMatchData match) => { if (++calls == 1) { canceled.Cancel(); } return "[" + match.Value.ValueText + "]"; },
+            0,
+            0,
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
+    }
+
+    [Fact]
+    public void CancelInsideEvaluatorAbortsManagedSubn()
+    {
+        var regex = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None);
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("ab ab");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Subn(
+            input,
+            0,
+            (int state, Utf8PythonDetailedMatchData match) => { if (++calls == 1) { canceled.Cancel(); } return "[" + match.Value.ValueText + "]"; },
+            0,
+            0,
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+        Assert.True(regex.DebugIsManagedRegexValueCreated);
+    }
+
+    [Fact]
+    public void CancelInsideUtf8EvaluatorAbortsSubn()
+    {
+        var regex = Create();
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("cat horse cat");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Subn(
+            input,
+            0,
+            (int state, Utf8PythonDetailedMatchData match) => { if (++calls == 1) { canceled.Cancel(); } return Encoding.UTF8.GetBytes("[" + match.Value.ValueText + "]"); },
+            0,
+            0,
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void CancelInsideEvaluatorAbortsSubnToString()
+    {
+        var regex = Create();
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("cat horse cat");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.SubnToString(
+            input,
+            0,
+            (int state, Utf8PythonDetailedMatchData match) => { if (++calls == 1) { canceled.Cancel(); } return "[" + match.Value.ValueText + "]"; },
+            0,
+            0,
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void UncanceledEvaluatorParity()
+    {
+        var regex = Create();
+        var token = CancellationToken.None;
+        var input = Encoding.UTF8.GetBytes("cat horse cat");
+        var plainCalls = 0;
+        var tokenCalls = 0;
+        var plain = regex.Subn(input, 0, (int state, Utf8PythonDetailedMatchData match) => { plainCalls++; return "[" + match.Value.ValueText + "]"; }, 0, 0);
+        var withToken = regex.Subn(input, 0, (int state, Utf8PythonDetailedMatchData match) => { tokenCalls++; return "[" + match.Value.ValueText + "]"; }, 0, 0, token);
+        Assert.Equal(plain.ResultBytes, withToken.ResultBytes);
+        Assert.Equal(plain.ReplacementCount, withToken.ReplacementCount);
+        Assert.Equal(plainCalls, tokenCalls);
+    }
 }

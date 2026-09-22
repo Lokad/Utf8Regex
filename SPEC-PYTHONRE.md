@@ -124,7 +124,7 @@ Unsupported or incomplete cases should fail explicitly rather than silently appr
 
 ## Cancellation and resource contract
 
-Same entry contract as the core library: every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. Lazy `FindIterDetailed` observes the token at creation.
+Same entry contract as the core library: every execution operation has an explicit `CancellationToken` twin that throws `OperationCanceledException` carrying an already-canceled token before matching begins, ahead of input validation. Lazy `FindIterDetailed` observes the token at creation. Evaluator-driven substitution additionally observes the token on every match iteration across owned and managed paths, so canceling from inside the callback aborts deterministically.
 
 Timeouts pass through with `RegexMatchTimeoutException` identity. PythonRe defines no work, depth, or memory budgets; defaults are unlimited everywhere. The shared `Utf8ResourcePolicy` is accepted like the core library (unlimited only; finite budgets are rejected loudly).
 

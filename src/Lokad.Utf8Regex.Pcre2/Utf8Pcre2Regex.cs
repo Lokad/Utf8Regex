@@ -687,7 +687,23 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, state, evaluator, startOffsetInBytes, matchOptions);
+        if (TryReplaceUsingLiteralDriver(
+                input,
+                state,
+                (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); evaluator(in context, ref writer, ref s); },
+                startOffsetInBytes,
+                matchOptions,
+                out var literalResult))
+        {
+            return literalResult;
+        }
+
+        return Encoding.UTF8.GetBytes(ReplaceWithUtf8Evaluator(
+            input,
+            state,
+            (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); evaluator(in context, ref writer, ref s); },
+            startOffsetInBytes,
+            matchOptions));
     }
 
     /// <summary>Replaces matches using a PCRE2 replacement template and returns UTF-16 text.</summary>
@@ -762,7 +778,23 @@ public sealed partial class Utf8Pcre2Regex
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, state, evaluator, startOffsetInBytes, matchOptions);
+        if (TryReplaceToStringViaLiteralDriver(
+                input,
+                state,
+                (in Utf8Pcre2MatchContext context, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); return evaluator(in context, ref s); },
+                startOffsetInBytes,
+                matchOptions,
+                out var literalResult))
+        {
+            return literalResult;
+        }
+
+        return ReplaceWithUtf16Evaluator(
+            input,
+            state,
+            (in Utf8Pcre2MatchContext context, ref TState s) => { cancellationToken.ThrowIfCancellationRequested(); return evaluator(in context, ref s); },
+            startOffsetInBytes,
+            matchOptions);
     }
 
     /// <summary>Attempts to write a UTF-8 replacement result into a caller-provided destination.</summary>

@@ -517,7 +517,7 @@ Supported-profile boundary for completion is also explicit:
 
 ### Cancellation, timeouts, and resource limits
 
-Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation.
+Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation. Evaluator-driven replacement additionally observes the token before every callback on all paths, so canceling from inside the callback aborts deterministically.
 
 `MatchLimit`, `DepthLimit`, and `HeapLimitInBytes` are enforced on every program kind, including `Utf8Regex`-kind global operations; a breach raises `Pcre2MatchException` with the `MatchLimit`, `DepthLimit`, or `HeapLimit` kind. Zero disables each limit. Timeout breach on owned routes raises `Pcre2MatchException` with the `Timeout` kind. Defaults are unlimited. The shared `Utf8ResourcePolicy` maps onto these limits through explicit constructor overloads (null becomes legacy zero; overflow and zero budgets are rejected; result-bytes budgets are reserved and rejected everywhere).
 
