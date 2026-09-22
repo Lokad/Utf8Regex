@@ -57,6 +57,19 @@ public sealed partial class Utf8PythonRegex
         return Encoding.UTF8.GetBytes(ReplaceToString(input, replacement, count, startOffsetInBytes));
     }
 
+    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, replacement, count, startOffsetInBytes);
+    }
+
     /// <summary>Replaces all matches and returns a string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement) =>
         ReplaceToString(input, replacement, 0, 0);
@@ -171,6 +184,19 @@ public sealed partial class Utf8PythonRegex
         replacementCount = replaced;
         return true;
     }
+    /// <summary>Replaces matches after a byte offset and returns a string, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, replacement, count, startOffsetInBytes);
+    }
+
     /// <summary>Replaces all matches and returns the string plus replacement count.</summary>
 
     public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement) =>
@@ -253,6 +279,19 @@ public sealed partial class Utf8PythonRegex
         };
     }
 
+    /// <summary>Replaces matches after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return SubnToString(input, replacement, count, startOffsetInBytes);
+    }
+
     /// <summary>Replaces all matches and returns UTF-8 bytes plus replacement count.</summary>
     public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement) =>
         Subn(input, replacement, 0, 0);
@@ -314,6 +353,19 @@ public sealed partial class Utf8PythonRegex
             plan);
     }
 
+    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Subn(input, replacement, count, startOffsetInBytes);
+    }
+
     /// <summary>Replaces all matches with a stateful string evaluator and returns UTF-8 bytes.</summary>
     public byte[] Replace<TState>(
         ReadOnlySpan<byte> input,
@@ -336,6 +388,21 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes)
     {
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
+    }
+
+    /// <summary>Replaces matches after a byte offset with a stateful string evaluator, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, state, evaluator, count, startOffsetInBytes);
     }
 
     /// <summary>Replaces all matches with a stateful evaluator and returns a string.</summary>
@@ -442,6 +509,21 @@ public sealed partial class Utf8PythonRegex
         replacementCount = replaced;
         return true;
     }
+    /// <summary>Replaces matches after a byte offset with a stateful evaluator and returns a string, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, state, evaluator, count, startOffsetInBytes);
+    }
+
     /// <summary>Evaluates all replacements and returns the string plus replacement count.</summary>
     public Utf8PythonSubnResult SubnToString<TState>(
         ReadOnlySpan<byte> input,
@@ -508,6 +590,21 @@ public sealed partial class Utf8PythonRegex
         };
     }
 
+    /// <summary>Evaluates replacements after a byte offset and returns the string plus count, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return SubnToString(input, state, evaluator, count, startOffsetInBytes);
+    }
+
     /// <summary>Evaluates all string replacements and returns UTF-8 bytes plus count.</summary>
     public Utf8PythonSubnUtf8Result Subn<TState>(
         ReadOnlySpan<byte> input,
@@ -549,6 +646,21 @@ public sealed partial class Utf8PythonRegex
             (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
     }
 
+    /// <summary>Evaluates string replacements after a byte offset and returns UTF-8 bytes plus count, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonMatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Subn(input, state, evaluator, count, startOffsetInBytes);
+    }
+
     /// <summary>Replaces all matches with a stateful UTF-8 evaluator.</summary>
     public byte[] Replace<TState>(
         ReadOnlySpan<byte> input,
@@ -571,6 +683,21 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes)
     {
         return Subn(input, state, evaluator, count, startOffsetInBytes).ResultBytes;
+    }
+
+    /// <summary>Replaces matches after a byte offset with a stateful UTF-8 evaluator, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, state, evaluator, count, startOffsetInBytes);
     }
 
     /// <summary>Evaluates all UTF-8 replacements and returns bytes plus replacement count.</summary>
@@ -612,4 +739,20 @@ public sealed partial class Utf8PythonRegex
                 CreateDetailedMatchData(source, match, indexMap, state.NameEntries, utf16BaseOffset)),
             (Value: state, Evaluator: evaluator, NameEntries: _nameEntries));
     }
+
+    /// <summary>Evaluates UTF-8 replacements after a byte offset and returns bytes plus count, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="count">The maximum number of replacements to perform.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<byte> input, TState state, Utf8PythonUtf8MatchEvaluator<TState> evaluator, int count, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Subn(input, state, evaluator, count, startOffsetInBytes);
+    }
+
 }

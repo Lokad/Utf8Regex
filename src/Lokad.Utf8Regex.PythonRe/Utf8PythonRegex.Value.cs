@@ -21,6 +21,17 @@ public sealed partial class Utf8PythonRegex
         return Search(input, startOffsetInBytes).Success;
     }
 
+    /// <summary>Tests for a match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return IsMatch(input, startOffsetInBytes);
+    }
+
     /// <summary>Finds the first match in the UTF-8 input.</summary>
     public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input) => Search(input, 0);
 
@@ -40,6 +51,17 @@ public sealed partial class Utf8PythonRegex
         }
 
         return SearchViaManagedRegex(input, startOffsetInBytes);
+    }
+
+    /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Search(input, startOffsetInBytes);
     }
 
     /// <summary>Matches at the beginning of the UTF-8 input.</summary>
@@ -85,6 +107,17 @@ public sealed partial class Utf8PythonRegex
 
         var context = MatchDetailed(input, startOffsetInBytes);
         return context.Value;
+    }
+
+    /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Match(input, startOffsetInBytes);
     }
 
     /// <summary>Matches the complete UTF-8 input.</summary>
@@ -136,6 +169,17 @@ public sealed partial class Utf8PythonRegex
         }
 
         return FullMatchViaManagedRegex(input, startOffsetInBytes);
+    }
+
+    /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return FullMatch(input, startOffsetInBytes);
     }
 
     /// <summary>Counts non-overlapping Python-style matches in the UTF-8 input.</summary>
@@ -205,4 +249,16 @@ public sealed partial class Utf8PythonRegex
 
         return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16);
     }
+
+    /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Count(input, startOffsetInBytes);
+    }
+
 }

@@ -78,6 +78,17 @@ public sealed partial class Utf8PythonRegex
         return matches.ToArray();
     }
 
+    /// <summary>Materializes all matches at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonMatchData[] FindAll(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return FindAll(input, startOffsetInBytes);
+    }
+
     /// <summary>Returns Python <c>findall</c> string values using capture-dependent shaping.</summary>
     public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input) => FindAllToStrings(input, 0);
 
@@ -291,6 +302,17 @@ public sealed partial class Utf8PythonRegex
         };
     }
 
+    /// <summary>Returns shaped <c>findall</c> strings after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return FindAllToStrings(input, startOffsetInBytes);
+    }
+
     /// <summary>Returns Python <c>findall</c> values as owned UTF-8 byte arrays.</summary>
     public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input) => FindAllToUtf8(input, 0);
 
@@ -453,4 +475,16 @@ public sealed partial class Utf8PythonRegex
             TupleValues = tuples.ToArray(),
         };
     }
+
+    /// <summary>Returns shaped UTF-8 <c>findall</c> values after a byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return FindAllToUtf8(input, startOffsetInBytes);
+    }
+
 }
