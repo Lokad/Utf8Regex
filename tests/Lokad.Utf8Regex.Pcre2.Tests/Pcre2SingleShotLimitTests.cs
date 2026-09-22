@@ -49,4 +49,35 @@ public sealed class Pcre2SingleShotLimitTests
         Assert.True(actual.Success);
         Assert.Equal(expected.StartOffsetInUtf16, actual.StartOffsetInUtf16);
     }
+    [Theory]
+    [InlineData("abc", "xxABCxx", true)]
+    [InlineData("^ERROR", "ERROR a", false)]
+    public void CharacterSingleShotsMeterEveryProbe(string pattern, string inputText, bool breaches)
+    {
+        // Pcre2Character single-shots charge per candidate probe: a first-position hit fits one unit, a later hit does not.
+        var options = pattern.StartsWith("^") ? Pcre2CompileOptions.Multiline : Pcre2CompileOptions.Caseless;
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var regex = new Utf8Pcre2Regex(pattern, options, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        if (breaches)
+        {
+            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
+            Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.Match(input)).ErrorKind);
+        }
+        else
+        {
+            Assert.True(regex.IsMatch(input));
+            Assert.True(regex.Match(input).Success);
+        }
+    }
+
+    [Theory]
+    [InlineData("cat|horse", "cat horse cat")]
+    [InlineData("cat|horse", "cat!")]
+    public void FamilySingleShotBreachesEvenTrivialHits(string pattern, string inputText)
+    {
+        // The literal-family IsMatch charges per branch exploration, so even a first-position hit exceeds one unit.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
+    }
 }
