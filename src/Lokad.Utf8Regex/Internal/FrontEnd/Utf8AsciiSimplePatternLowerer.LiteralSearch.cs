@@ -39,7 +39,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 continue;
             }
 
-            if (token.Kind == AsciiSimplePatternTokenKind.CharClass &&
+            // Case-pair folding is only valid under IgnoreCase: without it, [Aa] must expand to both branches below, never fold to one folded byte.
+            if (ignoreCase &&
+                token.Kind == AsciiSimplePatternTokenKind.CharClass &&
                 !token.CharClass.IsEmpty &&
                 TryExtractIgnoreCaseLiteral(token.CharClass, out var literal))
             {
