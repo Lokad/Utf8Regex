@@ -16,51 +16,51 @@ namespace Lokad.Utf8Regex.Tests;
 /// </summary>
 public sealed class EngineRouteCoverageMatrixTests
 {
-    public static IEnumerable<object[]> RouteMatrix()
+    public static IEnumerable<object?[]> RouteMatrix()
     {
         // Literals and alternations: owned exact-literal families (owner R03). Cover: ExactUtf8LiteralIsMatchTests, DotNetPerformanceRouteGuardrailTests.
-        yield return new object[] { "exact-ascii-literal", "abc", RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
-        yield return new object[] { "exact-unicode-ru", "Шерлок", RegexOptions.None, "prefix Шерлок suffix", "ExactUtf8Literal", null, true, true };
-        yield return new object[] { "exact-unicode-zh", "夏洛克", RegexOptions.None, "prefix夏洛克suffix", "ExactUtf8Literal", null, true, true };
-        yield return new object[] { "literal-alternation-en", "Sherlock Holmes|John Watson|Irene Adler", RegexOptions.None, "John Watson esq", "ExactUtf8Literals", null, true, true };
+        yield return new object?[] { "exact-ascii-literal", "abc", RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "exact-unicode-ru", "Шерлок", RegexOptions.None, "prefix Шерлок suffix", "ExactUtf8Literal", null, true, true };
+        yield return new object?[] { "exact-unicode-zh", "夏洛克", RegexOptions.None, "prefix夏洛克suffix", "ExactUtf8Literal", null, true, true };
+        yield return new object?[] { "literal-alternation-en", "Sherlock Holmes|John Watson|Irene Adler", RegexOptions.None, "John Watson esq", "ExactUtf8Literals", null, true, true };
         // Unbounded class/word loops: BCL fallback with unsupported_loop (owner R03). digit-range stays AsciiSimplePattern but BCL-verifies both ops on hit input (Unicode digit semantics). Cover: Utf8RegexConstructionTests fallback-reason cases.
-        yield return new object[] { "char-class-plus", "[a-z]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object[] { "negated-class", "[^0-9]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object[] { "bounded-repeat", "[A-Za-z]{8,13}", RegexOptions.None, "xxabcdefghxx", "AsciiSimplePattern", null, true, true };
-        yield return new object[] { "digit-range", "\\d{3}-\\d{4}", RegexOptions.CultureInvariant, "call 555-1234 now", "AsciiSimplePattern", null, false, false };
+        yield return new object?[] { "char-class-plus", "[a-z]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "negated-class", "[^0-9]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "bounded-repeat", "[A-Za-z]{8,13}", RegexOptions.None, "xxabcdefghxx", "AsciiSimplePattern", null, true, true };
+        yield return new object?[] { "digit-range", "\\d{3}-\\d{4}", RegexOptions.CultureInvariant, "call 555-1234 now", "AsciiSimplePattern", null, false, false };
         // Anchors and boundaries over literal/ASCII patterns (owner R03).
-        yield return new object[] { "start-anchor", "^abc", RegexOptions.CultureInvariant, "abcdef", "AsciiSimplePattern", null, true, true };
-        yield return new object[] { "end-anchor", "abc$", RegexOptions.CultureInvariant, "xxabc", "AsciiSimplePattern", null, true, true };
-        yield return new object[] { "word-boundary", "\\bword\\b", RegexOptions.CultureInvariant, "a word here", "ExactAsciiLiteral", null, true, true };
-        yield return new object[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, true, true };
+        yield return new object?[] { "start-anchor", "^abc", RegexOptions.CultureInvariant, "abcdef", "AsciiSimplePattern", null, true, true };
+        yield return new object?[] { "end-anchor", "abc$", RegexOptions.CultureInvariant, "xxabc", "AsciiSimplePattern", null, true, true };
+        yield return new object?[] { "word-boundary", "\\bword\\b", RegexOptions.CultureInvariant, "a word here", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, true, true };
         // Assertions and backreferences: BCL fallback with specific reasons, except single lookahead-pos which rides the literal family (owner R03).
-        yield return new object[] { "lookahead-pos", "a(?=b)", RegexOptions.CultureInvariant, "ab", "ExactAsciiLiteral", null, true, true };
-        yield return new object[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", false, false };
-        yield return new object[] { "lookbehind-pos", "(?<=a)b", RegexOptions.CultureInvariant, "ab", "FallbackRegex", "unsupported_lookaround", true, true };
-        yield return new object[] { "lookbehind-neg", "(?<!a)b", RegexOptions.CultureInvariant, "cb", "FallbackRegex", "unsupported_lookaround", true, true };
-        yield return new object[] { "backreference", "(a)\\1", RegexOptions.CultureInvariant, "aa", "FallbackRegex", "unsupported_backreference", true, true };
-        yield return new object[] { "named-backreference", "(?<w>a)\\k<w>", RegexOptions.CultureInvariant, "aa", "FallbackRegex", "unsupported_backreference", true, true };
+        yield return new object?[] { "lookahead-pos", "a(?=b)", RegexOptions.CultureInvariant, "ab", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", false, false };
+        yield return new object?[] { "lookbehind-pos", "(?<=a)b", RegexOptions.CultureInvariant, "ab", "FallbackRegex", "unsupported_lookaround", true, true };
+        yield return new object?[] { "lookbehind-neg", "(?<!a)b", RegexOptions.CultureInvariant, "cb", "FallbackRegex", "unsupported_lookaround", true, true };
+        yield return new object?[] { "backreference", "(a)\\1", RegexOptions.CultureInvariant, "aa", "FallbackRegex", "unsupported_backreference", true, true };
+        yield return new object?[] { "named-backreference", "(?<w>a)\\k<w>", RegexOptions.CultureInvariant, "aa", "FallbackRegex", "unsupported_backreference", true, true };
         // Captures: literal-embedded captures stay native; quantified or word captures fall back (owner R03).
-        yield return new object[] { "repeated-capture", "(a)+", RegexOptions.CultureInvariant, "aaa", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object[] { "named-capture", "(?<word>\\w+)", RegexOptions.CultureInvariant, "hello", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "repeated-capture", "(a)+", RegexOptions.CultureInvariant, "aaa", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "named-capture", "(?<word>\\w+)", RegexOptions.CultureInvariant, "hello", "FallbackRegex", "unsupported_loop", true, true };
         // Options and modes: RightToLeft literals stay native; culture-sensitive and non-default modes fall back (owner R03; adapters own their models in R04).
-        yield return new object[] { "right-to-left", "abc", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
-        yield return new object[] { "ignorecase-invariant", "abc", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
-        yield return new object[] { "ignorecase-culture", "abc", RegexOptions.IgnoreCase, "xxABCxx", "FallbackRegex", "culture_sensitive_ignore_case", true, true };
-        yield return new object[] { "explicit-capture", "(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "ExactAsciiLiteral", null, true, true };
-        yield return new object[] { "whitespace-mode", "a b c", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "abc", "FallbackRegex", "unsupported_pattern", true, true };
-        yield return new object[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", false, false };
-        yield return new object[] { "ecmascript", "abc", RegexOptions.ECMAScript, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
-        yield return new object[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
+        yield return new object?[] { "right-to-left", "abc", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "ignorecase-invariant", "abc", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
+        yield return new object?[] { "ignorecase-culture", "abc", RegexOptions.IgnoreCase, "xxABCxx", "FallbackRegex", "culture_sensitive_ignore_case", true, true };
+        yield return new object?[] { "explicit-capture", "(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "whitespace-mode", "a b c", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "abc", "FallbackRegex", "unsupported_pattern", true, true };
+        yield return new object?[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "ecmascript", "abc", RegexOptions.ECMAScript, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
+        yield return new object?[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
         // Empty-match and astral edge cases (owner R03).
-        yield return new object[] { "empty-star", "a*", RegexOptions.CultureInvariant, "bbb", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object[] { "astral-literal", "\U0001F600", RegexOptions.CultureInvariant, "\U0001F600", "ExactUtf8Literal", null, true, true };
+        yield return new object?[] { "empty-star", "a*", RegexOptions.CultureInvariant, "bbb", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "astral-literal", "\U0001F600", RegexOptions.CultureInvariant, "\U0001F600", "ExactUtf8Literal", null, true, true };
         // Conditionals and balancing: BCL fallback with unsupported_conditional (owner R03).
-        yield return new object[] { "conditional", "(a)?(?(1)ab|cd)", RegexOptions.CultureInvariant, "aab", "FallbackRegex", "unsupported_conditional", true, true };
-        yield return new object[] { "balancing", "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))", RegexOptions.CultureInvariant, "BEGINEND", "FallbackRegex", "unsupported_conditional", true, true };
+        yield return new object?[] { "conditional", "(a)?(?(1)ab|cd)", RegexOptions.CultureInvariant, "aab", "FallbackRegex", "unsupported_conditional", true, true };
+        yield return new object?[] { "balancing", "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))", RegexOptions.CultureInvariant, "BEGINEND", "FallbackRegex", "unsupported_conditional", true, true };
         // Structural word shapes: BCL fallback on this shape (owner R03).
-        yield return new object[] { "word-email-shape", "\\w+@\\w+\\.\\w+", RegexOptions.CultureInvariant, "mail me a@b.cd ok", "FallbackRegex", "unsupported_loop", true, true };
-        yield return new object[] { "compiled-literal", "abc", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "word-email-shape", "\\w+@\\w+\\.\\w+", RegexOptions.CultureInvariant, "mail me a@b.cd ok", "FallbackRegex", "unsupported_loop", true, true };
+        yield return new object?[] { "compiled-literal", "abc", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
     }
 
     [Theory]
@@ -75,6 +75,7 @@ public sealed class EngineRouteCoverageMatrixTests
         bool expectIsMatchVerifierFree,
         bool expectCountVerifierFree)
     {
+        Assert.NotEmpty(name);
         var regex = new Utf8Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expectedKindName, regex.Inspection.ExecutionKind.ToString());
