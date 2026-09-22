@@ -25,6 +25,8 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "literal-alternation-en", "Sherlock Holmes|John Watson|Irene Adler", RegexOptions.None, "John Watson esq", "ExactUtf8Literals", null, true, true };
         // Case-pair classes expand to a native family without IgnoreCase (folding fix): must stay native and verifier-free, never silently fall back. Cover: Utf8EquivalentSpellingDiffTests.
         yield return new object?[] { "case-pair-class-family", "[Aa][Bb][Cc]", RegexOptions.CultureInvariant, "xxABCxx", "ExactUtf8Literals", null, true, true };
+        yield return new object?[] { "single-upper-class-literal", "[A]", RegexOptions.CultureInvariant, "A", "ExactAsciiLiteral", null, true, true };
+        yield return new object?[] { "case-pair-class-ignorecase", "[Aa][Bb][Cc]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
         // Unbounded class/word loops: BCL fallback with unsupported_loop (owner R03). digit-range stays AsciiSimplePattern but BCL-verifies both ops on hit input (Unicode digit semantics). Cover: Utf8RegexConstructionTests fallback-reason cases.
         yield return new object?[] { "char-class-plus", "[a-z]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "negated-class", "[^0-9]+", RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_loop", true, true };
