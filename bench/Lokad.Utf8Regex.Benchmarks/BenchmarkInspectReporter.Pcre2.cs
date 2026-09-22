@@ -31,7 +31,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"ExecutionKind     : {context.Utf8Pcre2Regex.DebugExecutionKindName}");
         Console.WriteLine($"UsesTranslation   : {context.Utf8Pcre2Regex.DebugUsesUtf8RegexTranslation}");
         Console.WriteLine($"Utf8ExecKind      : {context.Utf8Pcre2Regex.DebugUtf8RegexExecutionKindName}");
-        Console.WriteLine($"HasManagedRegex   : {context.Utf8Pcre2Regex.DebugHasManagedRegex}");
         Console.WriteLine($"ExecutionPlan     : {context.Utf8Pcre2Regex.DebugDescribeExecutionPlan()}");
         WritePcre2EnumeratorLayout();
         Console.WriteLine($"CandidateSearch   : {context.Utf8Pcre2Regex.DebugCompiledProgram.CandidateSearch.Kind}");
@@ -283,7 +282,6 @@ internal static partial class BenchmarkInspectReporter
                         benchmarkCase.SupportedBackends,
                         regex.DebugExecutionKindName,
                         regex.DebugUtf8RegexExecutionKindName,
-                        regex.DebugHasManagedRegex,
                         regex.DebugDescribeExecutionPlan());
                 })
             .OrderBy(static row => row.CaseId)
@@ -502,7 +500,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Utf8SmallFamilyB  : {Utf8OperationMatchCursor.DebugSmallLiteralFamilySizeInBytes}");
         Console.WriteLine($"Utf8SearchOpB     : {Utf8OperationMatchCursor.DebugSearchOperationPlanSizeInBytes}");
         Console.WriteLine($"Utf8DfaStateB     : {Utf8OperationMatchCursor.DebugDeterministicScanStateSizeInBytes}");
-        Console.WriteLine($"ManagedEnumB      : {Utf8Pcre2ValueMatchEnumerator.DebugManagedEnumeratorSizeInBytes}");
         Console.WriteLine($"MaterializedB     : {Utf8Pcre2ValueMatchEnumerator.DebugMaterializedStateSizeInBytes}");
         Console.WriteLine($"ValueDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugValueDataSizeInBytes}");
         Console.WriteLine($"GroupDataB        : {Utf8Pcre2ValueMatchEnumerator.DebugGroupDataSizeInBytes}");
@@ -1740,7 +1737,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"## {title}");
         foreach (var row in rows)
         {
-            Console.WriteLine($"- {row.CaseId}: ops={row.SupportedOperations}, kind={row.ExecutionKind}, utf8={row.Utf8ExecutionKind}, managed={(row.HasManagedRegex ? "yes" : "no")}, plan={row.ExecutionPlan}");
+            Console.WriteLine($"- {row.CaseId}: ops={row.SupportedOperations}, kind={row.ExecutionKind}, utf8={row.Utf8ExecutionKind}, plan={row.ExecutionPlan}");
         }
 
         Console.WriteLine();
@@ -2026,7 +2023,6 @@ internal static partial class BenchmarkInspectReporter
         Utf8Pcre2BenchmarkBackend SupportedBackends,
         string ExecutionKind,
         string Utf8ExecutionKind,
-        bool HasManagedRegex,
         string ExecutionPlan);
 
     private readonly record struct Pcre2ScalingFamily(

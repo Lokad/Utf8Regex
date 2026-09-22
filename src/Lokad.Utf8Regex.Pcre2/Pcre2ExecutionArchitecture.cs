@@ -103,34 +103,6 @@ internal sealed class Pcre2Utf8ProgramSlot : IPcre2Utf8ProgramSlot
     internal Utf8Regex Regex { get; }
 }
 
-internal interface IPcre2ManagedProgramSlot
-{
-    bool IsPresent { get; }
-}
-
-internal sealed class Pcre2EmptyManagedProgramSlot : IPcre2ManagedProgramSlot
-{
-    internal static Pcre2EmptyManagedProgramSlot Instance { get; } = new();
-
-    private Pcre2EmptyManagedProgramSlot()
-    {
-    }
-
-    public bool IsPresent => false;
-}
-
-internal sealed class Pcre2ManagedProgramSlot : IPcre2ManagedProgramSlot
-{
-    internal Pcre2ManagedProgramSlot(Regex regex)
-    {
-        Regex = regex;
-    }
-
-    public bool IsPresent => true;
-
-    internal Regex Regex { get; }
-}
-
 internal interface IPcre2DirectProgram
 {
     Pcre2DirectProgramKind Kind { get; }
@@ -157,18 +129,6 @@ internal sealed class Pcre2Utf8DirectProgram : IPcre2DirectProgram
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Utf8Regex;
 
     internal Utf8Regex Regex { get; }
-}
-
-internal sealed class Pcre2ManagedDirectProgram : IPcre2DirectProgram
-{
-    internal Pcre2ManagedDirectProgram(Regex regex)
-    {
-        Regex = regex;
-    }
-
-    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.ManagedRegex;
-
-    internal Regex Regex { get; }
 }
 
 internal sealed class Pcre2LiteralDirectProgram : IPcre2DirectProgram
@@ -372,7 +332,6 @@ internal enum Pcre2DirectProgramKind : byte
 {
     None = 0,
     Utf8Regex = 1,
-    ManagedRegex = 2,
     Pcre2Literal = 3,
     Pcre2Character = 4,
     Pcre2Backtracking = 5,
@@ -514,7 +473,6 @@ internal sealed class Pcre2CompiledProgram
     internal Pcre2CompiledProgram(
         Pcre2CompileRequest request,
         IPcre2Utf8ProgramSlot primaryUtf8,
-        IPcre2ManagedProgramSlot managed,
         Pcre2OperationPrograms operations,
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
@@ -524,7 +482,6 @@ internal sealed class Pcre2CompiledProgram
     {
         Request = request;
         PrimaryUtf8 = primaryUtf8;
-        Managed = managed;
         Operations = operations;
         CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
@@ -536,8 +493,6 @@ internal sealed class Pcre2CompiledProgram
     internal Pcre2CompileRequest Request { get; }
 
     internal IPcre2Utf8ProgramSlot PrimaryUtf8 { get; }
-
-    internal IPcre2ManagedProgramSlot Managed { get; }
 
     internal Pcre2OperationPrograms Operations { get; }
 
@@ -562,7 +517,6 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             request,
             Pcre2EmptyUtf8ProgramSlot.Instance,
-            Pcre2EmptyManagedProgramSlot.Instance,
             new Pcre2OperationPrograms(none, none, none, none, none),
             default,
             Pcre2PartialProbeProgram.None,
@@ -588,7 +542,6 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.Managed,
             operations,
             default,
             Pcre2PartialProbeProgram.None,
@@ -614,7 +567,6 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.Managed,
             operations,
             default,
             Pcre2PartialProbeCompiler.Compile(characterProgram, legacy.Request),
@@ -821,7 +773,6 @@ internal static class Pcre2CompiledProgramOverlay
         return new Pcre2CompiledProgram(
             legacy.Request,
             legacy.PrimaryUtf8,
-            legacy.Managed,
             operations,
             candidateSearch,
             Pcre2PartialProbeCompiler.Compile(syntaxTree, legacy.Request),
@@ -962,12 +913,6 @@ internal static class Pcre2ProgramInvariant
             {
                 throw new InvalidOperationException("A direct UTF-8 backend must be owned by its compiled PCRE2 program.");
             }
-        }
-
-        if (directProgram is Pcre2ManagedDirectProgram managedProgram &&
-            (program.Managed is not Pcre2ManagedProgramSlot managed || !ReferenceEquals(managed.Regex, managedProgram.Regex)))
-        {
-            throw new InvalidOperationException("A direct managed backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2AsciiRegularIsMatchDirectProgram asciiRegularProgram &&
@@ -2280,13 +2225,6 @@ internal static class Pcre2Runner
             return true;
         }
 
-        if (program is Pcre2ManagedDirectProgram managedProgram)
-        {
-            var subject = input.GetDecodedString();
-            result = managedProgram.Regex.IsMatch(subject, input.Project(start).Value);
-            return true;
-        }
-
         result = false;
         return false;
     }
@@ -2731,13 +2669,6 @@ internal static class Pcre2GlobalOperationDriver
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = utf8Program.Regex.ByteOffsetExecution.Count(input, start);
-            return true;
-        }
-
-        if (program is Pcre2ManagedDirectProgram managedProgram)
-        {
-            var subject = input.GetDecodedString();
-            result = managedProgram.Regex.Count(subject, input.Project(start).Value);
             return true;
         }
 

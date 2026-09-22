@@ -23,21 +23,19 @@ public sealed class EngineDependencyInventoryTests
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // R00 baseline (2026-09-22, after owned option validation): 4 construction sites.
+        // R05 baseline (2026-09-22, after PCRE2 managed-plumbing deletion): 3 construction sites.
         // - Utf8FallbackVerifierPlan.cs x2: core fallbackRegex + anchoredFallbackRegex.
         //   Purpose: candidate verification, IsMatch/Match/Count/Replace fallback, group metadata.
         //   Replacement owner: R03 (core engine independence).
-        // - Utf8Pcre2Regex.cs x1: PCRE2 managed-compat probe.
-        //   Purpose: compatibility fallback for PCRE2 profiles outside the owned PCRE2 VM.
-        //   Replacement owner: R04 (PCRE2 migration).
         // - Utf8PythonRegex.Managed.cs x1: lazy _managedRegex construction (R04: was unconditional).
         //   Purpose: PythonRe managed-backend lanes only; utf8-backed lanes never construct it.
         //   Replacement owner: R04 (PythonRe migration).
         // Former ValidateOptions probe in Utf8Regex.cs is owned since R00 and must not regress.
-        Assert.Equal(4, hits.Length);
+        // Former PCRE2 managed-compat probe in Utf8Pcre2Regex.cs is deleted since R05 and must not regress.
+        Assert.Equal(3, hits.Length);
         Assert.Equal(2, hits.Count(static hit => hit.Contains("Utf8FallbackVerifierPlan.cs", StringComparison.Ordinal)));
-        Assert.Equal(1, hits.Count(static hit => hit.Contains("Utf8Pcre2Regex.cs", StringComparison.Ordinal)));
         Assert.Equal(1, hits.Count(static hit => hit.Contains("Utf8PythonRegex.Managed.cs", StringComparison.Ordinal)));
+        Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Pcre2Regex.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8Regex.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(hits, static hit => hit.Contains("Utf8RegexSyntax.cs", StringComparison.Ordinal));
     }
@@ -128,10 +126,10 @@ public sealed class EngineDependencyInventoryTests
         };
         Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);
 
-        // 2. BCL enumerator structs: split enumeration, operation cursors, PCRE2 managed lanes.
-        //    Owners: R03 (core) and R04 (PCRE2 managed-lane migration).
+        // 2. BCL enumerator structs: split enumeration and operation cursors (PCRE2 managed lanes deleted in R05).
+        //    Owners: R03 (core) and R05 (PCRE2 managed-lane deletion).
         Assert.Equal(new[] { "Utf8ValueSplitEnumerator.cs" }, FilesContaining("Regex.ValueSplitEnumerator"));
-        Assert.Equal(new[] { "Utf8OperationMatchCursor.cs", "Utf8Pcre2CoreTypes.cs" }, FilesContaining("Regex.ValueMatchEnumerator"));
+        Assert.Equal(new[] { "Utf8OperationMatchCursor.cs" }, FilesContaining("Regex.ValueMatchEnumerator"));
 
         // 3. PythonRe managed execution lives only in the PythonRe adapter. Core must never see it.
         //    Purpose: translated search, full-match, iteration, split, substitution. Owner: R04.
@@ -145,9 +143,9 @@ public sealed class EngineDependencyInventoryTests
             Assert.Contains("Lokad.Utf8Regex.PythonRe", file, StringComparison.Ordinal);
         }
 
-        // 4. BCL Match chaining via NextMatch: core evaluator loop, PCRE2 global loop, PythonRe FindIter.
+        // 4. BCL Match chaining via NextMatch: core evaluator loop and PythonRe FindIter (PCRE2 global loop deleted in R05).
         //    Owners: R03 (core) and R04 (adapters).
-        Assert.Equal(new[] { "Utf8Pcre2Regex.cs", "Utf8PythonRegex.FindIter.cs", "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
+        Assert.Equal(new[] { "Utf8PythonRegex.FindIter.cs", "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
 
         // 5. BCL result plumbing holders. Owner: R02/R03 (owned match/group/capture storage).
         Assert.Equal(new[] { "Utf8MatchContext.cs" }, FilesContaining("Match? _match"));

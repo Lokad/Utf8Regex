@@ -46,48 +46,6 @@ internal readonly struct Pcre2GroupData
     public bool HasUtf16Projection => Success &&
         (!CoordinateFlagsSpecified || Utf16ProjectionIsExact);
 
-    public static Pcre2GroupData FromUtf16(ReadOnlySpan<byte> input, int number, Group group)
-    {
-        if (!group.Success)
-        {
-            return new Pcre2GroupData
-            {
-                Number = number,
-                Success = false,
-            };
-        }
-
-        return FromDecodedSubject(input, Encoding.UTF8.GetString(input), number, group);
-    }
-
-    // PLAN.md D04: managed-backend callers already hold the decoded subject; mapping from it avoids one full decode and string allocation per group.
-    internal static Pcre2GroupData FromDecodedSubject(ReadOnlySpan<byte> input, string decoded, int number, Group group)
-    {
-        if (!group.Success)
-        {
-            return new Pcre2GroupData
-            {
-                Number = number,
-                Success = false,
-            };
-        }
-
-        var startOffsetInBytes = Encoding.UTF8.GetByteCount(decoded.AsSpan(0, group.Index));
-        var byteLength = Encoding.UTF8.GetByteCount(decoded.AsSpan(group.Index, group.Length));
-        return new Pcre2GroupData
-        {
-            Number = number,
-            Success = true,
-            StartOffsetInBytes = startOffsetInBytes,
-            EndOffsetInBytes = startOffsetInBytes + byteLength,
-            StartOffsetInUtf16 = group.Index,
-            EndOffsetInUtf16 = group.Index + group.Length,
-            CoordinateFlagsSpecified = true,
-            Utf8SliceIsWellFormed = true,
-            Utf16ProjectionIsExact = true,
-        };
-    }
-
     public static Pcre2GroupData FromByteOffsets(ReadOnlySpan<byte> input, int number, int startOffsetInBytes, int endOffsetInBytes)
     {
         var startIsBoundary = IsScalarBoundary(input, startOffsetInBytes);
@@ -246,16 +204,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
         }
 
         return Encoding.UTF8.GetString(GetValueBytes());
-    }
-
-    internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, string decoded, Match match)
-    {
-        if (!match.Success)
-        {
-            return default;
-        }
-
-        return new Utf8Pcre2ValueMatch(input, Pcre2GroupData.FromDecodedSubject(input, decoded, 0, match.Groups[0]));
     }
 
     internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
@@ -443,32 +391,6 @@ public readonly ref struct Utf8Pcre2MatchContext
     /// <summary>Gets the complete match as UTF-16 text.</summary>
     /// <exception cref="InvalidOperationException">No successful, exactly projectable match is available.</exception>
     public string GetValueString() => Value.GetValueString();
-
-    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, string decoded, Match? match, string[]? groupNames)
-    {
-        if (match is null)
-        {
-            return default;
-        }
-
-        var groups = new Pcre2GroupData[match.Groups.Count];
-        for (var i = 0; i < groups.Length; i++)
-        {
-            groups[i] = Pcre2GroupData.FromDecodedSubject(input, decoded, i, match.Groups[i]);
-        }
-
-        Pcre2NameEntry[]? nameEntries = null;
-        if (groupNames is { Length: > 0 })
-        {
-            nameEntries = new Pcre2NameEntry[groupNames.Length];
-            for (var i = 0; i < groupNames.Length; i++)
-            {
-                nameEntries[i] = new Pcre2NameEntry { Name = groupNames[i], Number = i };
-            }
-        }
-
-        return new Utf8Pcre2MatchContext(input, groups, nameEntries, mark: null);
-    }
 
     internal static Utf8Pcre2MatchContext Create(
         ReadOnlySpan<byte> input,
@@ -768,8 +690,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
 
     internal static int DebugUtf8EnumeratorSizeInBytes => Unsafe.SizeOf<Utf8ValueMatchEnumerator>();
 
-    internal static int DebugManagedEnumeratorSizeInBytes => Unsafe.SizeOf<Regex.ValueMatchEnumerator>();
-
     internal static int DebugMaterializedStateSizeInBytes => Unsafe.SizeOf<Pcre2MaterializedMatchEnumeratorState>();
 
     internal static int DebugValueDataSizeInBytes => Unsafe.SizeOf<Pcre2ValueData>();
@@ -783,9 +703,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private Pcre2GlobalMatchCursor _directMatches;
     private Utf8PreparedValueMatchEnumerator _utf8PreparedMatches;
     private Utf8ValueMatchEnumerator _utf8Matches;
-    private Regex.ValueMatchEnumerator _managedMatches;
-    private readonly Utf8BoundaryMap? _managedBoundaryMap;
-    private readonly bool _managedMatchesAreAscii;
     private readonly int _utf8RegexByteOffsetBase;
     private readonly int _utf8RegexUtf16OffsetBase;
     private int _pendingNextCursor;
@@ -804,9 +721,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
-        _managedMatches = default;
-        _managedBoundaryMap = null;
-        _managedMatchesAreAscii = false;
         _utf8RegexByteOffsetBase = 0;
         _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
@@ -838,23 +752,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     {
     }
 
-    internal Utf8Pcre2ValueMatchEnumerator(
-        ReadOnlySpan<byte> input,
-        Regex.ValueMatchEnumerator managedMatches,
-        Utf8BoundaryMap? boundaryMap,
-        bool managedMatchesAreAscii)
-    {
-        this = default;
-        _mode = managedMatchesAreAscii
-            ? Pcre2ValueMatchEnumeratorMode.ManagedRegexAsciiEnumerator
-            : Pcre2ValueMatchEnumeratorMode.ManagedRegexBoundaryEnumerator;
-        _input = input;
-        _managedMatches = managedMatches;
-        _managedBoundaryMap = boundaryMap;
-        _managedMatchesAreAscii = managedMatchesAreAscii;
-        _index = -1;
-    }
-
     internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Pcre2GroupData[]? matches, Exception pendingException, int exceptionIndex)
     {
         _mode = Pcre2ValueMatchEnumeratorMode.Pcre2GroupDataArrayWithDeferredException;
@@ -867,9 +764,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
-        _managedMatches = default;
-        _managedBoundaryMap = null;
-        _managedMatchesAreAscii = false;
         _utf8RegexByteOffsetBase = 0;
         _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
@@ -889,9 +783,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _directMatches = default;
         _utf8PreparedMatches = default;
         _utf8Matches = default;
-        _managedMatches = default;
-        _managedBoundaryMap = null;
-        _managedMatchesAreAscii = false;
         _utf8RegexByteOffsetBase = 0;
         _utf8RegexUtf16OffsetBase = 0;
         _pendingNextCursor = 0;
@@ -919,7 +810,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _mode = Pcre2ValueMatchEnumeratorMode.Utf8PreparedAsciiEnumerator;
         _input = input;
         _utf8PreparedMatches = utf8PreparedMatches;
-        _managedMatchesAreAscii = true;
         _index = -1;
     }
 
@@ -1046,38 +936,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 StartOffsetInUtf16 = start,
                 EndOffsetInUtf16 = end,
             };
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.ManagedRegexAsciiEnumerator)
-        {
-            if (!_managedMatches.MoveNext())
-            {
-                _currentData = default;
-                return false;
-            }
-
-            var match = _managedMatches.Current;
-            _currentData = new Pcre2ValueData
-            {
-                Success = true,
-                StartOffsetInBytes = match.Index,
-                EndOffsetInBytes = match.Index + match.Length,
-                StartOffsetInUtf16 = match.Index,
-                EndOffsetInUtf16 = match.Index + match.Length,
-            };
-            return true;
-        }
-
-        if (_mode == Pcre2ValueMatchEnumeratorMode.ManagedRegexBoundaryEnumerator)
-        {
-            if (!_managedMatches.MoveNext())
-            {
-                _currentData = default;
-                return false;
-            }
-
-            _currentData = CreateManagedRegexBoundaryGroupData(_managedMatches.Current);
             return true;
         }
 
@@ -1287,27 +1145,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         };
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Pcre2ValueData CreateManagedRegexBoundaryGroupData(ValueMatch match)
-    {
-        if (_managedBoundaryMap is { } map && map.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out var lengthInBytes))
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException("Managed Regex fallback produced a match that is not aligned to UTF-8 scalar boundaries.");
-        }
-
-        return new Pcre2ValueData
-        {
-            Success = true,
-            StartOffsetInBytes = indexInBytes,
-            EndOffsetInBytes = indexInBytes + lengthInBytes,
-            StartOffsetInUtf16 = match.Index,
-            EndOffsetInUtf16 = match.Index + match.Length,
-        };
-    }
-
     private readonly struct Pcre2ValueData
     {
         public bool Success { get; init; }
@@ -1347,8 +1184,6 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         Pcre2GroupDataArrayWithDeferredException = 1,
         Utf8RegexEnumerator = 2,
         Utf8PreparedAsciiEnumerator = 3,
-        ManagedRegexAsciiEnumerator = 4,
-        ManagedRegexBoundaryEnumerator = 5,
         NativeValueGenerator = 6,
         Pcre2DirectGlobal = 7,
     }

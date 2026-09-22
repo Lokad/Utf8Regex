@@ -36,7 +36,6 @@ public sealed class Pcre2CorpusRoutingTests
             }
 
             Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
-            Assert.False(regex.DebugHasManagedRegex);
         }
     }
 }

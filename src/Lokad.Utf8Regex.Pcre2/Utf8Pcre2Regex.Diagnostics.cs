@@ -37,13 +37,6 @@ public sealed partial class Utf8Pcre2Regex
             return PrimaryUtf8Regex.ByteOffsetExecution.CountPrepared(subject, start);
         }
 
-        if (_program.Operations.Count.Kind == Pcre2DirectProgramKind.ManagedRegex)
-        {
-            var managedSubject = Encoding.UTF8.GetString(input);
-            var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-            return ManagedRegex.Count(managedSubject, startOffsetInUtf16);
-        }
-
         return Count(input, startOffsetInBytes, Pcre2MatchOptions.None);
     }
 
@@ -151,32 +144,6 @@ public sealed partial class Utf8Pcre2Regex
                 if (!enumerator.Current.TryGetByteRange(out var indexInBytes, out _))
                 {
                     throw new InvalidOperationException("Managed Utf8Regex fallback returned a match that is not aligned to byte boundaries.");
-                }
-
-                sum += indexInBytes;
-            }
-
-            return sum;
-        }
-
-        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.ManagedRegex)
-        {
-            var managedSubject = Encoding.UTF8.GetString(input);
-            var startOffsetInUtf16 = Encoding.UTF8.GetCharCount(input[..startOffsetInBytes]);
-            var matchesAreAscii = managedSubject.Length == input.Length;
-            Utf8BoundaryMap? boundaryMap = matchesAreAscii ? null : Utf8InputAnalyzer.Analyze(input).BoundaryMap;
-            var sum = 0;
-            foreach (var match in ManagedRegex.EnumerateMatches(managedSubject.AsSpan(), startOffsetInUtf16))
-            {
-                if (matchesAreAscii)
-                {
-                    sum += match.Index;
-                    continue;
-                }
-
-                if (boundaryMap is not { } map || !map.TryGetByteRange(match.Index, match.Length, out var indexInBytes, out _))
-                {
-                    throw new InvalidOperationException("Managed Regex fallback produced a match that is not aligned to UTF-8 scalar boundaries.");
                 }
 
                 sum += indexInBytes;
@@ -337,8 +304,6 @@ public sealed partial class Utf8Pcre2Regex
     internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
 
     internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.Inspection.ExecutionKind.ToString() : "<none>";
-
-    internal bool DebugHasManagedRegex => HasManagedRegex;
 
     internal int DebugReplacementCacheEntryCount => _replacementComponent.Count;
 

@@ -297,7 +297,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.False(regex.DebugHasManagedRegex);
+        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
         Assert.Equal("IsMatch=Pcre2LiteralFamily, Count=Pcre2LiteralFamily, Enumerate=Pcre2LiteralFamily, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
 
         var match = regex.Match("xxfooBARzz"u8);
@@ -313,7 +313,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.False(regex.DebugHasManagedRegex);
+        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
 
         var replaced = regex.Replace("fooBAR x"u8, "<$0|$Bar>");
 
@@ -326,7 +326,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.False(regex.DebugHasManagedRegex);
+        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
 
         var state = 0;
         var replaced = regex.ReplaceToString(
@@ -823,7 +823,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.False(regex.DebugHasManagedRegex);
+        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
         Assert.True(regex.IsMatch("user@example.com"u8));
         Assert.False(regex.IsMatch("not-an-email"u8));
     }
@@ -834,7 +834,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.False(regex.DebugHasManagedRegex);
+        Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
         Assert.True(regex.IsMatch("INFO: ok\nERROR: boom"u8));
         Assert.Equal(1, regex.Count("INFO: ok\nERROR: boom"u8));
     }
