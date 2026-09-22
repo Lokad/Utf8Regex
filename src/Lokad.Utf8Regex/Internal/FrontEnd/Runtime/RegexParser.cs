@@ -257,11 +257,13 @@ internal sealed partial class RegexParser
         return mapping;
     }
 
+    private const int MaxValidationDepth = 256;
+
     private bool TryValidateReferences(RegexTree tree, out RegexParseError error, out int errorOffset)
     {
         var validNumbers = new HashSet<int>(_groupNumbers);
         var validNames = new HashSet<string>(_groupNames, StringComparer.Ordinal);
-        return TryValidateNode(tree.Root, validNumbers, validNames, out error, out errorOffset);
+        return TryValidateNode(tree.Root, validNumbers, validNames, out error, out errorOffset, 0);
     }
 
     private static bool TryValidateNode(
@@ -269,8 +271,18 @@ internal sealed partial class RegexParser
         HashSet<int> validNumbers,
         HashSet<string> validNames,
         out RegexParseError error,
-        out int errorOffset)
+        out int errorOffset,
+        int depth)
     {
+        // Deep trees decline validation here; the pattern still reaches the BCL fallback
+        // below, which owns the definitive verdict. This bounds CLR recursion in validation.
+        if (depth > MaxValidationDepth)
+        {
+            error = RegexParseError.InvalidPattern;
+            errorOffset = 0;
+            return false;
+        }
+
         if (node.Kind is RegexNodeKind.Backreference or RegexNodeKind.BackreferenceConditional)
         {
             if (node.Str is { Length: > 0 } referenceName)
@@ -310,7 +322,7 @@ internal sealed partial class RegexParser
 
         for (var i = 0; i < node.ChildCount; i++)
         {
-            if (!TryValidateNode(node.Child(i), validNumbers, validNames, out error, out errorOffset))
+            if (!TryValidateNode(node.Child(i), validNumbers, validNames, out error, out errorOffset, depth + 1))
             {
                 return false;
             }

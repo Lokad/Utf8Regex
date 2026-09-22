@@ -5,8 +5,13 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerBranches(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
+    private static bool TryLowerBranches(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
+        if (depth > MaxLoweringDepth)
+        {
+            branches = [];
+            return false;
+        }
         switch (node.Kind)
         {
             case RuntimeFrontEnd.RegexNodeKind.Capture:
@@ -17,7 +22,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                return TryLowerBranches(node.Child(0), budget, out branches);
+                return TryLowerBranches(node.Child(0), budget, depth + 1, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Empty:
                 branches = [new LoweredBranch([], [], false, false)];
@@ -66,13 +71,13 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return true;
 
             case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
-                return TryLowerPositiveLookaround(node, budget, out branches);
+                return TryLowerPositiveLookaround(node, budget, depth + 1, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Concatenate:
-                return TryLowerConcatenation(node, budget, out branches);
+                return TryLowerConcatenation(node, budget, depth + 1, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Alternate:
-                return TryLowerAlternation(node, budget, out branches);
+                return TryLowerAlternation(node, budget, depth + 1, out branches);
 
             case RuntimeFrontEnd.RegexNodeKind.Oneloop:
                 if (!TryLowerLiteral(node.Ch, out var repeatedLiteral))
@@ -109,7 +114,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                if (!TryLowerBranches(node.Child(0), budget, out var loopBranches))
+                if (!TryLowerBranches(node.Child(0), budget, depth + 1, out var loopBranches))
                 {
                     branches = [];
                     return false;
@@ -159,13 +164,18 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static bool TryLowerConcatenation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
+    private static bool TryLowerConcatenation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
+        if (depth > MaxLoweringDepth)
+        {
+            branches = [];
+            return false;
+        }
         var accumulated = new List<LoweredBranch> { new([], [], false, false) };
 
         for (var i = 0; i < node.ChildCount; i++)
         {
-            if (!TryLowerBranches(node.Child(i), budget, out var childBranches))
+            if (!TryLowerBranches(node.Child(i), budget, depth + 1, out var childBranches))
             {
                 branches = [];
                 return false;
@@ -198,12 +208,17 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerAlternation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
+    private static bool TryLowerAlternation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
+        if (depth > MaxLoweringDepth)
+        {
+            branches = [];
+            return false;
+        }
         var alternates = new List<LoweredBranch>(node.ChildCount);
         for (var i = 0; i < node.ChildCount; i++)
         {
-            if (!TryLowerBranches(node.Child(i), budget, out var childBranches) ||
+            if (!TryLowerBranches(node.Child(i), budget, depth + 1, out var childBranches) ||
                 !budget.TryReserve(childBranches.Length, childBranches.Length))
             {
                 branches = [];
@@ -345,12 +360,17 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, out LoweredBranch[] branches)
+    private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
+        if (depth > MaxLoweringDepth)
+        {
+            branches = [];
+            return false;
+        }
         branches = [];
         if ((node.Options & RegexOptions.RightToLeft) != 0 ||
             node.ChildCount != 1 ||
-            !TryLowerBranches(node.Child(0), budget, out var childBranches) ||
+            !TryLowerBranches(node.Child(0), budget, depth + 1, out var childBranches) ||
             childBranches.Length != 1)
         {
             return false;

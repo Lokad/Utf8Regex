@@ -10,6 +10,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
     private const int MaxLiteralCharClassExpansion = 4;
     private const int MaxPreparationWork = 4096;
     private const int MaxPreparationOutput = 4096;
+    // Bounds CLR recursion in tree lowering; deeper trees decline to the fallback route.
+    private const int MaxLoweringDepth = 256;
 
     public static bool TryCreatePlan(
         Utf8SemanticRegex semanticRegex,
@@ -24,7 +26,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
             root.Kind != RuntimeFrontEnd.RegexNodeKind.Capture ||
             root.ChildCount != 1 ||
-            !TryLowerBranches(root.Child(0), preparationBudget, out var loweredBranches))
+            !TryLowerBranches(root.Child(0), preparationBudget, 0, out var loweredBranches))
         {
             return false;
         }
