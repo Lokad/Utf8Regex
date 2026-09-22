@@ -865,12 +865,10 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
-            subject.GetDecodedString(),
-            start.Value);
-        return CreateValueMatch(input, subject.BoundaryMap, match);
+        // R03: first match of the shared from-offset enumeration, which owns origin
+        // semantics (native byte search or full-input verification per shape).
+        var enumerator = EnumerateMatchesFromUtf16Offset(input, utf16Offset);
+        return enumerator.MoveNext() ? enumerator.Current : Utf8ValueMatch.NoMatch;
     }
 
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
