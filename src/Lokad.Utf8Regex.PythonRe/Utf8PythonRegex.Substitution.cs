@@ -362,6 +362,86 @@ public sealed partial class Utf8PythonRegex
         return SubnToString(input, state, evaluator, count, startOffsetInBytes).ResultText;
     }
 
+    // R04: evaluator substitution on literal shapes discovers through the shared owned cursor
+    // and shapes every callback argument from owned spans; the first hit validates the branch
+    // channel before any output, so an unknown branch still declines cleanly to managed routes.
+    private bool TryEvaluateOwnedSubstitution<TState>(
+        ReadOnlySpan<byte> input,
+        string subject,
+        TState state,
+        Func<TState, Utf8PythonDetailedMatchData, byte[]> replacementFactory,
+        int count,
+        int startOffsetInBytes,
+        out byte[] resultBytes,
+        out int replacementCount)
+    {
+        resultBytes = [];
+        replacementCount = 0;
+        if (_utf8Regex is null || _canMatchEmpty)
+        {
+            return false;
+        }
+
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (!_utf8Regex.TryCreateOwnedSplitCursor(input, out var cursor, out var map) || map is null)
+        {
+            return false;
+        }
+
+        var builder = input.IsEmpty
+            ? new ArrayBufferWriter<byte>()
+            : new ArrayBufferWriter<byte>(input.Length);
+        AppendUtf8(builder, input[..startOffsetInBytes]);
+        var replaced = 0;
+        var lastIndexInBytes = startOffsetInBytes;
+        var indexMap = default(PythonReUtf8IndexMap);
+        var hasIndexMap = false;
+        var first = true;
+        try
+        {
+            while ((count == 0 || replaced < count) && cursor.MoveNext())
+            {
+                var match = cursor.CurrentValueMatch;
+                if (!match.Success || match.IndexInUtf16 < startOffsetInUtf16)
+                {
+                    continue;
+                }
+
+                var branch = cursor.LastLiteralFamilyBranchId;
+                if (first)
+                {
+                    first = false;
+                    if (branch < 0 || (uint)branch >= (uint)map.BranchGroups.Length)
+                    {
+                        return false;
+                    }
+                }
+
+                if (!hasIndexMap)
+                {
+                    indexMap = PythonReUtf8IndexMap.Create(input, subject);
+                    hasIndexMap = true;
+                }
+
+                var detailed = CreateOwnedDetailedMatchData(input, indexMap, match, map, branch);
+                var startByte = detailed.Groups[0].StartOffsetInBytes;
+                var endByte = detailed.Groups[0].EndOffsetInBytes;
+                AppendUtf8(builder, input[lastIndexInBytes..startByte]);
+                AppendUtf8(builder, replacementFactory(state, detailed));
+                lastIndexInBytes = endByte;
+                replaced++;
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
+        }
+
+        AppendUtf8(builder, input[lastIndexInBytes..]);
+        resultBytes = builder.WrittenSpan.ToArray();
+        replacementCount = replaced;
+        return true;
+    }
     /// <summary>Evaluates all replacements and returns the string plus replacement count.</summary>
     public Utf8PythonSubnResult SubnToString<TState>(
         ReadOnlySpan<byte> input,
@@ -386,6 +466,15 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
 
         var subject = Decode(input);
+        if (TryEvaluateOwnedSubstitution(input, subject, state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        {
+            return new Utf8PythonSubnResult
+            {
+                ResultText = Encoding.UTF8.GetString(ownedBytes),
+                ReplacementCount = ownedCount,
+            };
+        }
+
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         var builder = new StringBuilder(subject.Length);
@@ -440,6 +529,15 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
+        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => Encoding.UTF8.GetBytes(evaluator(s, m)), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        {
+            return new Utf8PythonSubnUtf8Result
+            {
+                ResultBytes = ownedBytes,
+                ReplacementCount = ownedCount,
+            };
+        }
+
         return SubnManagedUtf8(
             input,
             startOffsetInBytes,
@@ -496,6 +594,15 @@ public sealed partial class Utf8PythonRegex
         int count,
         int startOffsetInBytes)
     {
+        if (TryEvaluateOwnedSubstitution(input, Decode(input), state, (s, m) => evaluator(s, m), count, startOffsetInBytes, out var ownedBytes, out var ownedCount))
+        {
+            return new Utf8PythonSubnUtf8Result
+            {
+                ResultBytes = ownedBytes,
+                ReplacementCount = ownedCount,
+            };
+        }
+
         return SubnManagedUtf8(
             input,
             startOffsetInBytes,
