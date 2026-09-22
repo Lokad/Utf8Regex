@@ -111,4 +111,14 @@ public sealed class Utf8RegexTimeoutTests
         input[^1] = (byte)'!';
         return input;
     }
+    [Fact]
+    public void FromOffsetOperationsRespectMatchTimeout()
+    {
+        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var input = CreateCatastrophicInput();
+
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchFromUtf16Offset(input, 0));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailedFromUtf16Offset(input, 0));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
+    }
 }
