@@ -32,6 +32,17 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
+        // R03: the ASCII literal cursors below project byte offsets as UTF-16 coordinates
+        // and are only valid for ASCII input; other inputs keep BCL verification.
+        if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
+            regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            literal is { Length: > 0 })
+        {
+            return CreateFallbackMatchEnumerator(
+                verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
+                input);
+        }
+
         return regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or
@@ -83,6 +94,18 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
+        // R03: the ASCII literal cursors below project byte offsets as UTF-16 coordinates
+        // and are only valid for ASCII input; other inputs keep BCL verification.
+        if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
+            regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            literal is { Length: > 0 })
+        {
+            return CreateFallbackSplitEnumerator(
+                verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
+                input,
+                count);
+        }
+
         return regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or
@@ -126,7 +149,7 @@ internal static class Utf8CompiledOperationCursorFactory
                     new Utf8OperationMatchCursor(input, regexPlan, useStructuralLinearProgram: false, budget),
                     count,
                     input.Length),
-            _ => CreateFallbackSplitEnumerator(verifierRuntime, input, count),
+            _ => CreateFallbackSplitEnumerator(verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."), input, count),
         };
     }
 
