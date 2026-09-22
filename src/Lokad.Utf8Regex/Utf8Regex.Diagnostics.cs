@@ -543,6 +543,9 @@ public sealed partial class Utf8Regex
     }
 
     private int DebugReplacementCacheEntryCount => _replacementCache.Count;
+    private bool DebugFallbackRegexIsCreated => _verifierRuntime.FallbackCandidateVerifier.IsFallbackRegexCreated;
+
+    private bool DebugAnchoredFallbackRegexIsCreated => _verifierRuntime.FallbackCandidateVerifier.IsAnchoredFallbackRegexCreated;
 
     internal readonly struct Utf8RegexInspection
     {
@@ -872,6 +875,10 @@ public sealed partial class Utf8Regex
 
         public string DebugLiteralFamilyCaptureMapSummary() =>
             _owner.DebugLiteralFamilyCaptureMapSummary();
+
+        public bool DebugFallbackRegexIsCreated => _owner.DebugFallbackRegexIsCreated;
+
+        public bool DebugAnchoredFallbackRegexIsCreated => _owner.DebugAnchoredFallbackRegexIsCreated;
 
         public int DebugReplacementCacheEntryCount => _owner.DebugReplacementCacheEntryCount;
     }

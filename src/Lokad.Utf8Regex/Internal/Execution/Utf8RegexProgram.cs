@@ -71,12 +71,12 @@ internal sealed class Utf8RegexProgram
             preparedRegex,
             verifierRuntime,
             options);
-        var fallbackRegex = verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         // R02 extraction 4: group metadata comes from the owned parse tree whenever it exists;
-        // the BCL query remains only for patterns the owned parser declines.
+        // the BCL query remains only for patterns the owned parser declines, resolved lazily
+        // so it never constructs the fallback engine by itself.
         Utf8GroupMetadata.TryCreate(preparedRegex.SemanticRegex.RuntimeTree, out var groupMetadata);
-        var groupNumbers = groupMetadata?.GroupNumbers ?? fallbackRegex.GetGroupNumbers();
-        var groupNames = groupMetadata?.GroupNames ?? fallbackRegex.GetGroupNames();
+        var groupNumbers = groupMetadata?.GroupNumbers ?? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
+        var groupNames = groupMetadata?.GroupNames ?? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
         // The ASCII twin replays matching with invariant case folding, which is
         // only valid when the construction culture folds ASCII the invariant way
         // (PLAN.md C02). Turkic dotted/dotless-I cultures do not: "I" and "i"

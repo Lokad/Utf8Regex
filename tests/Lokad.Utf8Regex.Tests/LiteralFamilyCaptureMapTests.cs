@@ -9,19 +9,20 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class LiteralFamilyCaptureMapTests
 {
     [Theory]
-    [InlineData("(cat)|(horse)", "whole=[];branches=[1;2]")]
-    [InlineData("(?<w>cat)|(?<v>horse)", "whole=[];branches=[1;2]")]
-    [InlineData("(cat)|horse", "whole=[];branches=[1;]")]
-    [InlineData("horse|(cat)", "whole=[];branches=[;1]")]
-    [InlineData("(?:(a)|(b))", "whole=[];branches=[1;2]")]
-    [InlineData("((cat)|(horse))", "whole=[1];branches=[2;3]")]
-    [InlineData("(cat|horse)", "whole=[1];branches=[;]")]
-    [InlineData("cat|horse", "whole=[];branches=[;]")]
-    [InlineData("(a)|(ab)", "whole=[];branches=[1;2]")]
-    [InlineData("(a)|(b)|(c)", "whole=[];branches=[1;2;3]")]
-    public void LiteralFamilyCaptureMapMatchesExpectedShape(string pattern, string expected)
+    [InlineData("(cat)|(horse)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    [InlineData("(?<w>cat)|(?<v>horse)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    [InlineData("(cat)|horse", RegexOptions.CultureInvariant, "whole=[];branches=[1;]")]
+    [InlineData("horse|(cat)", RegexOptions.CultureInvariant, "whole=[];branches=[;1]")]
+    [InlineData("(?:(a)|(b))", RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    [InlineData("((cat)|(horse))", RegexOptions.CultureInvariant, "whole=[1];branches=[2;3]")]
+    [InlineData("(cat|horse)", RegexOptions.CultureInvariant, "whole=[1];branches=[;]")]
+    [InlineData("cat|horse", RegexOptions.CultureInvariant, "whole=[];branches=[;]")]
+    [InlineData("(a)|(ab)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    [InlineData("(a)|(b)|(c)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2;3]")]
+    [InlineData("(CAT)|(DOG)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    public void LiteralFamilyCaptureMapMatchesExpectedShape(string pattern, RegexOptions options, string expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options);
         Assert.Equal(expected, regex.Inspection.DebugLiteralFamilyCaptureMapSummary());
     }
 

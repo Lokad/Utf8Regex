@@ -113,6 +113,10 @@ public sealed class Utf8EvaluatorDiffTests
         yield return new object?[] { "(?<w>cat)|(?<v>horse)", RegexOptions.CultureInvariant, "cat horse fish" };
         yield return new object?[] { "(a)|(ab)", RegexOptions.CultureInvariant, "ab" };
         yield return new object?[] { "(ab)|(a)", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "(cat|horse)", RegexOptions.CultureInvariant, "cat horse fish horse" };
+        yield return new object?[] { "(cat|horse)", RegexOptions.CultureInvariant, "no match here" };
+        yield return new object?[] { "(a)", RegexOptions.CultureInvariant, "baac" };
+        yield return new object?[] { "(?<w>cat|horse)", RegexOptions.CultureInvariant, "cat horse" };
         yield return new object?[] { "(cat)|(horse)|(dog)", RegexOptions.CultureInvariant, "dog horse cat" };
         yield return new object?[] { "(caf\u00E9)|(ni\u00F1o)", RegexOptions.None, "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3" };
         yield return new object?[] { "(cat)|(horse)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "CAT horse Cat" };
@@ -207,6 +211,11 @@ public sealed class Utf8EvaluatorDiffTests
         yield return new object?[] { "(?:(a)|(b))", RegexOptions.CultureInvariant, "xbxa" };
         yield return new object?[] { "(k)|(q)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "K Q \u212A" };
         yield return new object?[] { "\\b(cat)|(horse)\\b", RegexOptions.CultureInvariant, "acat horsecatx" };
+        yield return new object?[] { "(cat|horse)", RegexOptions.CultureInvariant, "cat horse fish horse" };
+        yield return new object?[] { "(cat|horse)", RegexOptions.CultureInvariant, "no match here" };
+        yield return new object?[] { "(a)", RegexOptions.CultureInvariant, "baac" };
+        yield return new object?[] { "(?<w>cat|horse)", RegexOptions.CultureInvariant, "cat horse" };
+        yield return new object?[] { "(cat|horse)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "CAT horse" };
     }
 
     [Theory]

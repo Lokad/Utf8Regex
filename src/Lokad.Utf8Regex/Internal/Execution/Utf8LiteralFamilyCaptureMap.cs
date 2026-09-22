@@ -89,7 +89,9 @@ internal sealed class Utf8LiteralFamilyCaptureMap
             break;
         }
 
-        if (node.Kind is not (Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Multi))
+        // Literal runs cover case-folded branches (concatenated per-character sets) as well as
+        // plain literals; every collected capture still spans the whole branch by construction.
+        if (!IsLiteralRun(node))
         {
             groups = [];
             return false;
@@ -97,5 +99,28 @@ internal sealed class Utf8LiteralFamilyCaptureMap
 
         groups = found.ToArray();
         return true;
+    }
+
+    private static bool IsLiteralRun(Utf8ExecutionNode node)
+    {
+        if (node.Kind is Utf8ExecutionNodeKind.One or Utf8ExecutionNodeKind.Multi or Utf8ExecutionNodeKind.Set)
+        {
+            return true;
+        }
+
+        if (node.Kind == Utf8ExecutionNodeKind.Concatenate)
+        {
+            for (var i = 0; i < node.Children.Count; i++)
+            {
+                if (!IsLiteralRun(node.Children[i]))
+                {
+                    return false;
+                }
+            }
+
+            return node.Children.Count > 0;
+        }
+
+        return false;
     }
 }

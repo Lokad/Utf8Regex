@@ -35,9 +35,9 @@ internal static class Utf8FallbackVerifierRuntimeFactory
         RegexOptions options,
         TimeSpan matchTimeout)
     {
-        var fallbackRegex = new Regex(pattern, options, matchTimeout);
-        var anchoredFallbackRegex = plan.Mode is Utf8FallbackVerifierMode.AnchoredRegex or Utf8FallbackVerifierMode.AnchoredSliceRegex
-            ? new Regex(@"\G(?:" + pattern + ")", options, matchTimeout)
+        var fallbackRegex = new Lazy<Regex>(() => new Regex(pattern, options, matchTimeout));
+        Lazy<Regex>? anchoredFallbackRegex = plan.Mode is Utf8FallbackVerifierMode.AnchoredRegex or Utf8FallbackVerifierMode.AnchoredSliceRegex
+            ? new Lazy<Regex>(() => new Regex(@"\G(?:" + pattern + ")", options, matchTimeout))
             : null;
         return plan.Mode switch
         {

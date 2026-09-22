@@ -1302,6 +1302,27 @@ public sealed partial class Utf8Regex
             writer.Append(input[sourcePosition..]);
             return writer.GetValidatedBytes().ToArray();
         }
+        // R03: single groups wrapping a whole literal family enumerate like groupless
+        // shapes and project group 1 from the whole span.
+        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount) && ownedGroupCount > 1)
+        {
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                if (!valueMatch.IsByteAligned)
+                {
+                    throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                }
+
+                writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
+                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, ownedGroupCount);
+                evaluator(in context, ref writer, ref state);
+                sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
+            }
+
+            writer.Append(input[sourcePosition..]);
+            return writer.GetValidatedBytes().ToArray();
+        }
+
 
         // R03: mapped branch shapes discover through the family cursor and shape every
         // callback argument from owned spans. The first hit validates the branch channel;
@@ -1429,6 +1450,24 @@ public sealed partial class Utf8Regex
             builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
             return builder.ToString();
         }
+        // R03: single groups wrapping a whole literal family enumerate like groupless
+        // shapes and project group 1 from the whole span.
+        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount) && ownedGroupCount > 1)
+        {
+            var singleBuilder = new StringBuilder(decoded.Length);
+            var singlePosition = 0;
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                singleBuilder.Append(decoded, singlePosition, valueMatch.IndexInUtf16 - singlePosition);
+                var singleContext = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, ownedGroupCount);
+                singleBuilder.Append(evaluator(in singleContext, ref state));
+                singlePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+            }
+
+            singleBuilder.Append(decoded, singlePosition, decoded.Length - singlePosition);
+            return singleBuilder.ToString();
+        }
+
 
         // R03: mapped branch shapes discover through the family cursor and shape every
         // callback argument from owned spans, with the same first-hit decline contract as

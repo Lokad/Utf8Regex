@@ -7,19 +7,28 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal abstract class Utf8FallbackCandidateVerifier
 {
-    protected Utf8FallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Regex fallbackRegex, Regex? anchoredFallbackRegex)
+    // R03: BCL engines construct lazily so owned routes never construct them; the first
+    // fallback use pays the construction cost once (thread-safe).
+    protected Utf8FallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex)
     {
         Plan = plan;
-        FallbackRegex = fallbackRegex;
-        AnchoredFallbackRegex = anchoredFallbackRegex;
+        _fallbackRegex = fallbackRegex;
+        _anchoredFallbackRegex = anchoredFallbackRegex;
     }
 
     public Utf8FallbackVerifierPlan Plan { get; }
 
-    public Regex FallbackRegex { get; }
+    private readonly Lazy<Regex> _fallbackRegex;
 
-    public Regex? AnchoredFallbackRegex { get; }
+    private readonly Lazy<Regex>? _anchoredFallbackRegex;
 
+    public Regex FallbackRegex => _fallbackRegex.Value;
+
+    public Regex? AnchoredFallbackRegex => _anchoredFallbackRegex?.Value;
+
+    public bool IsFallbackRegexCreated => _fallbackRegex.IsValueCreated;
+
+    public bool IsAnchoredFallbackRegexCreated => _anchoredFallbackRegex?.IsValueCreated ?? false;
     /// <summary>
     /// Verifies one conservative byte-range candidate against the authoritative
     /// managed regex. The complete subject must already be valid UTF-8 and the
@@ -102,7 +111,7 @@ internal abstract class Utf8FallbackCandidateVerifier
 
 internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8StartFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Regex fallbackRegex, Regex? anchoredFallbackRegex)
+    public Utf8StartFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex)
         : base(plan, fallbackRegex, anchoredFallbackRegex)
     {
     }
@@ -147,7 +156,7 @@ internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidate
 
 internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8BoundedSliceFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Regex fallbackRegex, Regex anchoredFallbackRegex)
+    public Utf8BoundedSliceFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex> anchoredFallbackRegex)
         : base(plan, fallbackRegex, anchoredFallbackRegex)
     {
     }
