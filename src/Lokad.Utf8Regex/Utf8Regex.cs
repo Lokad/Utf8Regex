@@ -1471,6 +1471,11 @@ public sealed partial class Utf8Regex
     /// <exception cref="ArgumentException">The evaluator produces malformed UTF-8.</exception>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator)
     {
+        return ReplaceEvaluatorCore(input, state, evaluator, default);
+    }
+
+    private byte[] ReplaceEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
+    {
         var validation = Utf8Validation.Validate(input);
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8BoundaryMap.Create(input, validation);
@@ -1483,6 +1488,7 @@ public sealed partial class Utf8Regex
         {
             foreach (var valueMatch in EnumerateMatches(input))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!valueMatch.IsByteAligned)
                 {
                     throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
@@ -1503,6 +1509,7 @@ public sealed partial class Utf8Regex
         {
             foreach (var valueMatch in EnumerateMatches(input))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!valueMatch.IsByteAligned)
                 {
                     throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
@@ -1539,6 +1546,7 @@ public sealed partial class Utf8Regex
                 var first = true;
                 while (cursor.MoveNext())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var candidate = cursor.CurrentValueMatch;
                     if (!candidate.IsByteAligned)
                     {
@@ -1577,6 +1585,7 @@ public sealed partial class Utf8Regex
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         while (match.Success)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var matchStart = boundaryMap.Resolve(match.Index);
             var matchEnd = boundaryMap.Resolve(match.Index + match.Length);
             if (!matchStart.IsScalarBoundary || !matchEnd.IsScalarBoundary)
@@ -1605,7 +1614,7 @@ public sealed partial class Utf8Regex
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, state, evaluator);
+        return ReplaceEvaluatorCore(input, state, evaluator, cancellationToken);
     }
 
     /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
@@ -1648,6 +1657,11 @@ public sealed partial class Utf8Regex
     /// <typeparam name="TState">The caller-defined state type.</typeparam>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
     {
+        return ReplaceToStringEvaluatorCore(input, state, evaluator, default);
+    }
+
+    private string ReplaceToStringEvaluatorCore<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
+    {
         var validation = Utf8Validation.Validate(input);
         var inputBytes = input.ToArray();
         var decoded = Encoding.UTF8.GetString(input);
@@ -1660,6 +1674,7 @@ public sealed partial class Utf8Regex
             var sourcePosition = 0;
             foreach (var valueMatch in EnumerateMatches(input))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 builder.Append(decoded, sourcePosition, valueMatch.IndexInUtf16 - sourcePosition);
                 var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
                 builder.Append(evaluator(in context, ref state));
@@ -1677,6 +1692,7 @@ public sealed partial class Utf8Regex
             var singlePosition = 0;
             foreach (var valueMatch in EnumerateMatches(input))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 singleBuilder.Append(decoded, singlePosition, valueMatch.IndexInUtf16 - singlePosition);
                 var singleContext = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16, ownedGroupCount);
                 singleBuilder.Append(evaluator(in singleContext, ref state));
@@ -1710,6 +1726,7 @@ public sealed partial class Utf8Regex
                 var first = true;
                 while (cursor.MoveNext())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var candidate = cursor.CurrentValueMatch;
                     var branch = cursor.LastLiteralFamilyBranchId;
                     if (first)
@@ -1744,6 +1761,7 @@ public sealed partial class Utf8Regex
             decoded,
             match =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var context = new Utf8MatchContext(inputBytes, decoded, match, boundaryMap, _groupNames);
                 return evaluator(in context, ref state);
             });
@@ -1759,7 +1777,7 @@ public sealed partial class Utf8Regex
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, state, evaluator);
+        return ReplaceToStringEvaluatorCore(input, state, evaluator, cancellationToken);
     }
 
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
