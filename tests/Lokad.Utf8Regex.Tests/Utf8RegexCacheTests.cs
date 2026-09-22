@@ -123,4 +123,32 @@ public sealed class Utf8RegexCacheTests
         Assert.Throws<RegexParseException>(() => Utf8RegexCache.GetOrAdd("(", RegexOptions.CultureInvariant));
         Assert.Equal(0, Utf8RegexCache.EntryCount);
     }
+    [Fact]
+    public void StaticCacheServesUnlimitedPolicyOnly()
+    {
+        // R06 cache quarantine: the static cache key carries no policy because
+        // the only cache factory builds default (Unlimited) instances. A future
+        // policy-bearing cache entry would fail here first.
+        Utf8RegexCache.ResetForTests();
+
+        Assert.True(Utf8Regex.IsMatch("xxabcxx"u8, "abc", RegexOptions.CultureInvariant));
+
+        var cached = Utf8RegexCache.GetOrAdd("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(Utf8ResourcePolicy.Unlimited, cached.ResourcePolicy);
+        Assert.Equal(1, Utf8RegexCache.EntryCount);
+    }
+
+    [Fact]
+    public void PolicyBearingConstructionBypassesStaticCache()
+    {
+        // R06 cache quarantine: explicit-policy construction never consults or
+        // populates the static cache, so a policy can neither leak into a
+        // shared cached instance nor be relaxed by reusing one.
+        Utf8RegexCache.ResetForTests();
+
+        _ = new Utf8Regex("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited);
+        Assert.Throws<NotSupportedException>(() => new Utf8Regex("abc", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkSteps = 1ul }));
+
+        Assert.Equal(0, Utf8RegexCache.EntryCount);
+    }
 }
