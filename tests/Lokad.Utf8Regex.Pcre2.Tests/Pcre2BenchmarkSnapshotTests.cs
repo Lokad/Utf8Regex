@@ -75,9 +75,9 @@ public sealed class Pcre2BenchmarkSnapshotTests
         var operationRows = sections.EnumerateObject()
             .SelectMany(static section => section.Value.GetProperty("Cases").EnumerateObject())
             .ToArray();
-        Assert.Equal(100, operationRows.Count(static row =>
+        Assert.Equal(101, operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNative", out var native) && native.GetDouble() > 0));
-        Assert.Equal(26, operationRows.Count(static row =>
+        Assert.Equal(25, operationRows.Count(static row =>
             row.Value.GetProperty("PcreNetNativeStatus").GetString() == "Excluded"));
         var pairedRowCount = operationRows.Count(static row =>
             row.Value.TryGetProperty("PcreNetNativePair", out _));
@@ -127,7 +127,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             $"`{statusCounts.GetValueOrDefault("Excluded")}` excluded",
             page,
             StringComparison.Ordinal);
-        Assert.Contains($"Rows with paired qualification evidence: `{pairedRowCount}/100`", page, StringComparison.Ordinal);
+        Assert.Contains($"Rows with paired qualification evidence: `{pairedRowCount}/101`", page, StringComparison.Ordinal);
         if (pairedRowCount > 0)
         {
             Assert.Contains("Qualification processor sets: `highest-efficiency-class ", page, StringComparison.Ordinal);
