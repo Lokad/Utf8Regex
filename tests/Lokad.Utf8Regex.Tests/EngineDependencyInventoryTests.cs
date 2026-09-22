@@ -16,8 +16,7 @@ public sealed class EngineDependencyInventoryTests
         var repoRoot = FindRepositoryRoot();
         var srcRoot = Path.Combine(repoRoot, "src");
         var hits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(static path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
-                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .SelectMany(static path => File.ReadLines(path).Select((line, index) => (Path: path, Line: line, Number: index + 1)))
             .Where(static item => item.Line.Contains("new Regex(", StringComparison.Ordinal))
             .Select(static item => $"{GetRelativePath(item.Path)}:{item.Number}: {item.Line.Trim()}")
@@ -98,8 +97,7 @@ public sealed class EngineDependencyInventoryTests
         string[] FilesContainingAny(params string[] tokens)
         {
             return Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
-                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
                 .Where(path => File.ReadLines(path).Any(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal))))
                 .Select(path => Path.GetFileName(path))
                 .Order(StringComparer.Ordinal)
@@ -158,6 +156,51 @@ public sealed class EngineDependencyInventoryTests
 
         // 6. Regex.Escape is a pure string helper used while building translated patterns.
         Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs", "PythonReParser.cs", "PythonReTranslator.cs" }, FilesContaining("Regex.Escape("));
+    }
+
+    [Fact]
+    public void AdapterIndirectCoreRoutesStayInAllowlistedFiles()
+    {
+        // R00 indirect-route inventory: adapters reach core execution only through the
+        // reviewed ByteOffsetExecution integration surface (PCRE2) and the _utf8Regex
+        // fast-path backend (PythonRe). Replacement owner: R04 (adapter migration).
+        // Core itself names PythonRe only on PYTHONRE-INTEGRATION-POINT lines (the PCRE2
+        // half is guarded by Pcre2SourceGuardTests in the PCRE2 test project).
+        var repoRoot = FindRepositoryRoot();
+        var srcRoot = Path.Combine(repoRoot, "src");
+
+        string[] NamesIn(string directory, params string[] tokens)
+        {
+            return Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Where(path => File.ReadLines(path).Any(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal))))
+                .Select(path => Path.GetFileName(path))
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        var pcre2Directory = Path.Combine(srcRoot, "Lokad.Utf8Regex.Pcre2");
+        Assert.Equal(
+            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.Diagnostics.cs", "Utf8Pcre2Regex.cs" },
+            NamesIn(pcre2Directory, "ByteOffsetExecution"));
+        Assert.Equal(
+            new[] { "Pcre2ExecutionArchitecture.cs", "Utf8Pcre2Regex.cs" },
+            NamesIn(pcre2Directory, "new Utf8Regex("));
+
+        var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
+        Assert.Equal(
+            new[] { "Utf8PythonRegex.Detailed.cs", "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
+            NamesIn(pythonDirectory, "_utf8Regex", "new Utf8Regex("));
+
+        var coreDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex");
+        var unmarked = Directory.EnumerateFiles(coreDirectory, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .SelectMany(path => File.ReadLines(path).Select((line, index) => (Path: path, Line: line, Number: index + 1)))
+            .Where(item => item.Line.Contains("PythonRe", StringComparison.Ordinal) && !item.Line.Contains("PYTHONRE-INTEGRATION-POINT", StringComparison.Ordinal))
+            .Select(item => $"{Path.GetFileName(item.Path)}:{item.Number}: {item.Line.Trim()}")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.Empty(unmarked);
     }
 
     private static string GetRelativePath(string path)
