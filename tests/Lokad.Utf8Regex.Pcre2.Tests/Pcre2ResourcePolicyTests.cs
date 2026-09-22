@@ -49,4 +49,36 @@ public sealed class Pcre2ResourcePolicyTests
         Assert.Equal(3, fromText.Count(Encoding.UTF8.GetBytes("foo foo foo")));
         Assert.Equal(3, fromBytes.Count(Encoding.UTF8.GetBytes("foo foo foo")));
     }
+    [Theory]
+    [InlineData("(a+)+b", "aaab")]
+    [InlineData("(a+)+b", "aaaa")]
+    [InlineData("[ab]+", "ab ab ab")]
+    public void LegacyZeroLimitsMatchUnlimitedPolicy(string pattern, string inputText)
+    {
+        // R06 compatibility evidence: legacy all-zero limits behave exactly like
+        // an explicit Unlimited policy, on a backtracking shape with a hit, a
+        // miss, and a multi-match input.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var baseline = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var explicitUnlimited = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, Utf8ResourcePolicy.Unlimited, Utf8Pcre2Regex.DefaultMatchTimeout);
+
+        Assert.Equal(baseline.IsMatch(input), explicitUnlimited.IsMatch(input));
+        Assert.Equal(baseline.Count(input), explicitUnlimited.Count(input));
+
+        var expectedMatches = 0;
+        var expectedEnumerator = baseline.EnumerateMatches(input);
+        while (expectedEnumerator.MoveNext())
+        {
+            expectedMatches++;
+        }
+
+        var actualMatches = 0;
+        var actualEnumerator = explicitUnlimited.EnumerateMatches(input);
+        while (actualEnumerator.MoveNext())
+        {
+            actualMatches++;
+        }
+
+        Assert.Equal(expectedMatches, actualMatches);
+    }
 }
