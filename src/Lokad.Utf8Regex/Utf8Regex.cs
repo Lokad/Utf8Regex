@@ -883,14 +883,32 @@ public sealed partial class Utf8Regex
 
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var decoded = analysis.GetDecodedString();
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
-        // R03: groupless matches project every view field from owned spans, keeping BCL
-        // discovery until capture tracking migrates; other patterns keep BCL shaping.
-        if (_groupNumbers.Length <= 1 && match.Success)
+        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {
-            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, match.Index, match.Length);
+            // R03: discovery runs through the shared value path and shaping projects owned
+            // spans, so qualifying literal shapes never execute the BCL engine; semantic declines
+            // inside MatchCore keep their existing BCL routes.
+            Utf8ValueMatch first;
+            try
+            {
+                first = MatchCore(input);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!first.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            return ownedGroupCount > 1
+                ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16, ownedGroupCount)
+                : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
@@ -900,13 +918,57 @@ public sealed partial class Utf8Regex
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         var decoded = analysis.GetDecodedString();
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, start.Value);
-        if (_groupNumbers.Length <= 1 && match.Success)
+        if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {
-            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, match.Index, match.Length);
+            // R03: first-of-shared-enumeration keeps origin semantics (absolute anchors,
+            // boundaries, and lookarounds divert to full-input verification inside); shaping
+            // stays owned for qualifying shapes.
+            Utf8ValueMatch first = default;
+            var found = false;
+            foreach (var candidate in EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+            {
+                first = candidate;
+                found = true;
+                break;
+            }
+
+            if (!found || !first.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            return ownedGroupCount > 1
+                ? new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16, ownedGroupCount)
+                : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, start.Value);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
+    }
+
+    private bool TryGetOwnedDetailedGroupCount(out int groupCount)
+    {
+        // R03: groupless literal shapes and single groups wrapping a whole literal family
+        // discover through owned kernels and shape from owned spans. Everything else keeps
+        // BCL discovery and shaping until capture tracking migrates.
+        groupCount = 1;
+        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+        {
+            return false;
+        }
+
+        if (_groupNumbers.Length <= 1)
+        {
+            return true;
+        }
+
+        if (_groupNumbers.Length == 2 && GetWholeLiteralCaptureNumber() == 1)
+        {
+            groupCount = 2;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>

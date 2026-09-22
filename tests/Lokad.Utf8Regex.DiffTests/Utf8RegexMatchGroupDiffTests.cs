@@ -15,6 +15,54 @@ public sealed class Utf8RegexMatchGroupDiffTests
     }
 
     [Theory]
+    [InlineData("cat|horse", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "horsecat", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "no match here", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cat", RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "horsecat", RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "no match here", RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "", RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat|horse)", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat|horse)", "no match here", RegexOptions.CultureInvariant)]
+    [InlineData("(a|ab|abc)", "abcababa", RegexOptions.CultureInvariant)]
+    [InlineData("(caf\u00E9|ni\u00F1o)", "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", RegexOptions.None)]
+    [InlineData("(caf\u00E9|ni\u00F1o)", "no match here", RegexOptions.None)]
+    [InlineData("(cat|horse)", "CAT horse Cat HORSE cat", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "no match here", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(a)", "baac", RegexOptions.CultureInvariant)]
+    [InlineData("(abc)", "xxabcxx", RegexOptions.CultureInvariant)]
+    [InlineData("(abc)", "no match here", RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", RegexOptions.CultureInvariant)]
+    [InlineData("\\b(?:cat|horse)\\b", "acat horsecatx cathorse", RegexOptions.CultureInvariant)]
+    [InlineData("(k|q)", "K Q \u212A", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(Sherlock Holmes|John Watson)", "John Watson esq", RegexOptions.None)]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "no match here", RegexOptions.CultureInvariant)]
+    public void MatchDetailedMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, RegexOptions options)
+    {
+        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+    }
+
+    [Theory]
+    [InlineData("(cat|horse)", "cat horse fish horse", 0, RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "cat horse fish horse", 5, RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "cat horse fish horse", 20, RegexOptions.CultureInvariant)]
+    [InlineData("(cat|horse)", "no match here", 4, RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cat horse fish horse", 4, RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat|horse)", "cat horse fish horse", 9, RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", 3, RegexOptions.CultureInvariant)]
+    [InlineData("\\b(?:cat|horse)\\b", "acat horsecatx cathorse", 5, RegexOptions.CultureInvariant)]
+    [InlineData("(caf\u00E9|ni\u00F1o)", "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", 2, RegexOptions.None)]
+    [InlineData("(cat|horse)", "CAT horse", 1, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    public void MatchDetailedFromOffsetMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int offset, RegexOptions options)
+    {
+        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParityFromOffset(offset);
+    }
+
+    [Theory]
     [InlineData(@"a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase)]
     [InlineData(@"a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase)]
     [InlineData(@"(hello|hi){1,3}", "hellohihey", RegexOptions.None)]

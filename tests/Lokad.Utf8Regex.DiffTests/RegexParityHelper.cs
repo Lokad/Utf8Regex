@@ -98,6 +98,21 @@ internal sealed class RegexParityContext
         AssertEquivalentDetailedMatch(expected, actualCompiled);
     }
 
+    public void AssertDetailedMatchGroupParityFromOffset(int offset)
+    {
+        var bytes = Case.Utf8Input;
+
+        var expected = DotNet.Match(Case.Input, offset);
+        var expectedCompiled = DotNetCompiled.Match(Case.Input, offset);
+        var actual = Utf8.MatchDetailedFromUtf16Offset(bytes, offset);
+        var actualCompiled = Utf8Compiled.MatchDetailedFromUtf16Offset(bytes, offset);
+
+        AssertEquivalentDetailedMatch(expected, actual);
+        AssertEquivalentDetailedMatch(expectedCompiled, actualCompiled);
+        AssertEquivalentDetailedMatch(expected, actualCompiled);
+    }
+
+
     private static void AssertEquivalentMatch(Match expected, Utf8ValueMatch actual)
     {
         Assert.Equal(expected.Success, actual.Success);

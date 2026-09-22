@@ -11,6 +11,7 @@ public readonly ref struct Utf8MatchContext
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly string[]? _groupNames;
     private readonly bool _ownedHasValue;
+    private readonly int _ownedGroupCount;
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
@@ -24,12 +25,29 @@ public readonly ref struct Utf8MatchContext
     }
 
     internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16)
+        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: 1)
+    {
+    }
+
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int groupCount)
+        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount)
+    {
+    }
+
+    internal static Utf8MatchContext Unsuccessful(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames)
+    {
+        // R03: a failed BCL match still reports a single group; owned misses mirror it.
+        return new Utf8MatchContext(input, decoded, boundaryMap, groupNames, hasValue: false, indexInUtf16: 0, lengthInUtf16: 0, groupCount: 1);
+    }
+
+    private Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, bool hasValue, int indexInUtf16, int lengthInUtf16, int groupCount)
     {
         _input = input;
         _decoded = decoded;
         _boundaryMap = boundaryMap;
         _groupNames = groupNames;
-        _ownedHasValue = true;
+        _ownedHasValue = hasValue;
+        _ownedGroupCount = groupCount;
         _ownedIndex = indexInUtf16;
         _ownedLength = lengthInUtf16;
     }
@@ -97,7 +115,7 @@ public readonly ref struct Utf8MatchContext
     }
 
     /// <summary>Gets the number of numbered groups, including group zero, or zero when no match is available.</summary>
-    public int GroupCount => _match?.Groups.Count ?? (_ownedHasValue ? 1 : 0);
+    public int GroupCount => _match?.Groups.Count ?? _ownedGroupCount;
 
     /// <summary>Gets a numbered group from the match.</summary>
     /// <exception cref="InvalidOperationException">No match is available.</exception>
@@ -106,12 +124,19 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            if (!_ownedHasValue)
+            // R03: single-whole-match groups project the owned span; misses mirror the
+            // single BCL group view. Only the default struct still throws below.
+            if (_ownedHasValue && (number == 0 || (number == 1 && _ownedGroupCount > 1)))
+            {
+                return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+            }
+
+            if (_ownedGroupCount == 0)
             {
                 throw new InvalidOperationException("No match is available.");
             }
 
-            return number == 0 ? new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength) : default;
+            return default;
         }
 
         return new Utf8GroupContext(_input, _decoded, _match.Groups[number], _boundaryMap);
@@ -124,12 +149,20 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            if (!_ownedHasValue)
+            var matchesWholeMatchGroup = name == "0" ||
+                (_ownedGroupCount > 1 && _groupNames is not null && _groupNames.Length > 1 && name == _groupNames[1]);
+
+            if (_ownedHasValue && matchesWholeMatchGroup)
+            {
+                return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+            }
+
+            if (_ownedGroupCount == 0)
             {
                 throw new InvalidOperationException("No match is available.");
             }
 
-            return name == "0" ? new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength) : default;
+            return default;
         }
 
         return new Utf8GroupContext(_input, _decoded, _match.Groups[name], _boundaryMap);
@@ -143,9 +176,15 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            if (_ownedHasValue && number == 0)
+            if (_ownedHasValue && (number == 0 || (number == 1 && _ownedGroupCount > 1)))
             {
                 group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                return true;
+            }
+
+            if (!_ownedHasValue && _ownedGroupCount > 0 && number == 0)
+            {
+                group = default;
                 return true;
             }
 
@@ -171,9 +210,18 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            if (_ownedHasValue && name == "0")
+            var matchesWholeMatchGroup = name == "0" ||
+                (_ownedGroupCount > 1 && _groupNames is not null && _groupNames.Length > 1 && name == _groupNames[1]);
+
+            if (_ownedHasValue && matchesWholeMatchGroup)
             {
                 group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                return true;
+            }
+
+            if (!_ownedHasValue && _ownedGroupCount > 0 && matchesWholeMatchGroup)
+            {
+                group = default;
                 return true;
             }
 
