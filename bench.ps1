@@ -88,6 +88,10 @@ if ($effectiveMaxWallTimeSeconds -lt 0) {
 $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
 $processInfo.FileName = "dotnet"
 $processInfo.UseShellExecute = $false
+# The DLL resolves repository files (CPython runner, corpus data) from its working
+# directory. Set it explicitly: PowerShell location and process CWD can diverge on
+# non-Windows hosts, and .NET child processes inherit the latter, not the former.
+$processInfo.WorkingDirectory = $repoRoot
 
 if ($CommandArgs) {
     $benchmarkDll = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0" "Lokad.Utf8Regex.Benchmarks.dll"
