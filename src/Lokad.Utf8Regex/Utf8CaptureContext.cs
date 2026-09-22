@@ -9,6 +9,9 @@ public readonly ref struct Utf8CaptureContext
     private readonly string _decoded;
     private readonly Capture? _capture;
     private readonly Utf8BoundaryMap _boundaryMap;
+    private readonly bool _ownedHasValue;
+    private readonly int _ownedIndex;
+    private readonly int _ownedLength;
 
     internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Capture? capture, Utf8BoundaryMap boundaryMap)
     {
@@ -18,14 +21,24 @@ public readonly ref struct Utf8CaptureContext
         _boundaryMap = boundaryMap;
     }
 
+    internal Utf8CaptureContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, int indexInUtf16, int lengthInUtf16)
+    {
+        _input = input;
+        _decoded = decoded;
+        _boundaryMap = boundaryMap;
+        _ownedHasValue = true;
+        _ownedIndex = indexInUtf16;
+        _ownedLength = lengthInUtf16;
+    }
+
     /// <summary>Gets whether this context represents an existing capture.</summary>
-    public bool Success => _capture is not null;
+    public bool Success => _capture is not null || _ownedHasValue;
 
     /// <summary>Gets the capture start as a zero-based UTF-16 code-unit offset, or zero when no capture exists.</summary>
-    public int IndexInUtf16 => _capture?.Index ?? 0;
+    public int IndexInUtf16 => _capture?.Index ?? (_ownedHasValue ? _ownedIndex : 0);
 
     /// <summary>Gets the capture length in UTF-16 code units, or zero when no capture exists.</summary>
-    public int LengthInUtf16 => _capture?.Length ?? 0;
+    public int LengthInUtf16 => _capture?.Length ?? (_ownedHasValue ? _ownedLength : 0);
 
     /// <summary>Gets whether both UTF-16 capture boundaries map to UTF-8 scalar boundaries.</summary>
     public bool IsByteAligned
@@ -34,6 +47,13 @@ public readonly ref struct Utf8CaptureContext
         {
             if (_capture is not { } capture)
             {
+                if (_ownedHasValue)
+                {
+                    var ownedStart = ResolveBoundary(_ownedIndex);
+                    var ownedEnd = ResolveBoundary(_ownedIndex + _ownedLength);
+                    return ownedStart.IsScalarBoundary && ownedEnd.IsScalarBoundary;
+                }
+
                 return true;
             }
 
@@ -101,7 +121,7 @@ public readonly ref struct Utf8CaptureContext
     /// <summary>Gets the capture value as a UTF-16 string, or an empty string when no capture exists.</summary>
     public string GetValueString()
     {
-        return _capture?.Value ?? string.Empty;
+        return _capture?.Value ?? (_ownedHasValue ? _decoded.Substring(_ownedIndex, _ownedLength) : string.Empty);
     }
 
     private Utf16Boundary ResolveBoundary(int utf16Offset)

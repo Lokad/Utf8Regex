@@ -10,6 +10,9 @@ public readonly ref struct Utf8MatchContext
     private readonly Match? _match;
     private readonly Utf8BoundaryMap _boundaryMap;
     private readonly string[]? _groupNames;
+    private readonly bool _ownedHasValue;
+    private readonly int _ownedIndex;
+    private readonly int _ownedLength;
 
     internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Match? match, Utf8BoundaryMap boundaryMap, string[]? groupNames)
     {
@@ -20,14 +23,25 @@ public readonly ref struct Utf8MatchContext
         _groupNames = groupNames;
     }
 
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16)
+    {
+        _input = input;
+        _decoded = decoded;
+        _boundaryMap = boundaryMap;
+        _groupNames = groupNames;
+        _ownedHasValue = true;
+        _ownedIndex = indexInUtf16;
+        _ownedLength = lengthInUtf16;
+    }
+
     /// <summary>Gets whether the regex found a match.</summary>
-    public bool Success => _match?.Success ?? false;
+    public bool Success => _match?.Success ?? _ownedHasValue;
 
     /// <summary>Gets the successful match start as a zero-based UTF-16 code-unit offset, or zero otherwise.</summary>
-    public int IndexInUtf16 => _match is { Success: true } match ? match.Index : 0;
+    public int IndexInUtf16 => _match is { Success: true } match ? match.Index : (_ownedHasValue ? _ownedIndex : 0);
 
     /// <summary>Gets the successful match length in UTF-16 code units, or zero otherwise.</summary>
-    public int LengthInUtf16 => _match is { Success: true } match ? match.Length : 0;
+    public int LengthInUtf16 => _match is { Success: true } match ? match.Length : (_ownedHasValue ? _ownedLength : 0);
 
     /// <summary>Gets whether both match boundaries map to UTF-8 scalar boundaries.</summary>
     public bool IsByteAligned
@@ -36,6 +50,13 @@ public readonly ref struct Utf8MatchContext
         {
             if (_match is not { Success: true } match)
             {
+                if (_ownedHasValue)
+                {
+                    var ownedStart = ResolveBoundary(_ownedIndex);
+                    var ownedEnd = ResolveBoundary(_ownedIndex + _ownedLength);
+                    return ownedStart.IsScalarBoundary && ownedEnd.IsScalarBoundary;
+                }
+
                 return true;
             }
 
@@ -76,7 +97,7 @@ public readonly ref struct Utf8MatchContext
     }
 
     /// <summary>Gets the number of numbered groups, including group zero, or zero when no match is available.</summary>
-    public int GroupCount => _match?.Groups.Count ?? 0;
+    public int GroupCount => _match?.Groups.Count ?? (_ownedHasValue ? 1 : 0);
 
     /// <summary>Gets a numbered group from the match.</summary>
     /// <exception cref="InvalidOperationException">No match is available.</exception>
@@ -85,7 +106,12 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            throw new InvalidOperationException("No match is available.");
+            if (!_ownedHasValue)
+            {
+                throw new InvalidOperationException("No match is available.");
+            }
+
+            return number == 0 ? new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength) : default;
         }
 
         return new Utf8GroupContext(_input, _decoded, _match.Groups[number], _boundaryMap);
@@ -98,7 +124,12 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            throw new InvalidOperationException("No match is available.");
+            if (!_ownedHasValue)
+            {
+                throw new InvalidOperationException("No match is available.");
+            }
+
+            return name == "0" ? new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength) : default;
         }
 
         return new Utf8GroupContext(_input, _decoded, _match.Groups[name], _boundaryMap);
@@ -110,7 +141,19 @@ public readonly ref struct Utf8MatchContext
     /// <returns><see langword="true"/> when the numbered group exists.</returns>
     public bool TryGetGroup(int number, out Utf8GroupContext group)
     {
-        if (_match is null || number < 0 || number >= _match.Groups.Count)
+        if (_match is null)
+        {
+            if (_ownedHasValue && number == 0)
+            {
+                group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                return true;
+            }
+
+            group = default;
+            return false;
+        }
+
+        if (number < 0 || number >= _match.Groups.Count)
         {
             group = default;
             return false;
@@ -126,7 +169,19 @@ public readonly ref struct Utf8MatchContext
     /// <returns><see langword="true"/> when the named group exists.</returns>
     public bool TryGetGroup(string name, out Utf8GroupContext group)
     {
-        if (_match is null || _groupNames is null || Array.IndexOf(_groupNames, name) < 0)
+        if (_match is null)
+        {
+            if (_ownedHasValue && name == "0")
+            {
+                group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                return true;
+            }
+
+            group = default;
+            return false;
+        }
+
+        if (_groupNames is null || Array.IndexOf(_groupNames, name) < 0)
         {
             group = default;
             return false;
@@ -139,7 +194,12 @@ public readonly ref struct Utf8MatchContext
     /// <summary>Gets the match value as a UTF-16 string, or an empty string after an unsuccessful match.</summary>
     public string GetValueString()
     {
-        return _match is { Success: true } match ? match.Value : string.Empty;
+        if (_match is { Success: true } match)
+        {
+            return match.Value;
+        }
+
+        return _ownedHasValue ? _decoded.Substring(_ownedIndex, _ownedLength) : string.Empty;
     }
 
     /// <summary>Attempts to get the match value from the original UTF-8 input.</summary>

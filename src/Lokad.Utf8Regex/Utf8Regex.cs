@@ -865,10 +865,12 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        // R03: first match of the shared from-offset enumeration, which owns origin
-        // semantics (native byte search or full-input verification per shape).
-        var enumerator = EnumerateMatchesFromUtf16Offset(input, utf16Offset);
-        return enumerator.MoveNext() ? enumerator.Current : Utf8ValueMatch.NoMatch;
+        var subject = Utf8InputAnalyzer.Analyze(input);
+        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
+            subject.GetDecodedString(),
+            start.Value);
+        return CreateValueMatch(input, subject.BoundaryMap, match);
     }
 
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
@@ -1094,6 +1096,27 @@ public sealed partial class Utf8Regex
         var output = new ArrayBufferWriter<byte>(input.Length);
         var writer = new Utf8ReplacementWriter(output);
         var sourcePosition = 0;
+        // R03: patterns without captures project every callback argument from owned spans,
+        // so discovery and shaping both run without the BCL engine; other patterns keep it.
+        if (_groupNumbers.Length <= 1)
+        {
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                if (!valueMatch.IsByteAligned)
+                {
+                    throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                }
+
+                writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
+                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
+                evaluator(in context, ref writer, ref state);
+                sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
+            }
+
+            writer.Append(input[sourcePosition..]);
+            return writer.GetValidatedBytes().ToArray();
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         while (match.Success)
         {
