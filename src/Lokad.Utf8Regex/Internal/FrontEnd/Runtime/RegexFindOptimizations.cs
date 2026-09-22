@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
@@ -63,6 +64,10 @@ internal sealed class RegexFindOptimizations
 
     private static string? TryExtractLeadingLiteral(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         if (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Group && node.ChildCount == 1)
         {
             return TryExtractLeadingLiteral(node.Child(0));
@@ -99,6 +104,10 @@ internal sealed class RegexFindOptimizations
 
     private static int ComputeMinLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return 0;
+        }
         return node.Kind switch
         {
             RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set => 1,
@@ -116,6 +125,10 @@ internal sealed class RegexFindOptimizations
 
     private static int? ComputeMaxLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         return node.Kind switch
         {
             RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set => 1,
@@ -133,6 +146,10 @@ internal sealed class RegexFindOptimizations
 
     private static RegexNodeKind FindLeadingAnchor(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return RegexNodeKind.Unknown;
+        }
         while (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Group or RegexNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
@@ -153,6 +170,10 @@ internal sealed class RegexFindOptimizations
 
     private static RegexNodeKind FindTrailingAnchor(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return RegexNodeKind.Unknown;
+        }
         while (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Group or RegexNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
@@ -173,6 +194,10 @@ internal sealed class RegexFindOptimizations
 
     private static (string Literal, int Distance)? TryExtractFixedDistanceLiteral(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         return TryExtractFixedDistanceLiteralCore(node, 0, out var bestLiteral, out var bestDistance)
             ? (bestLiteral, bestDistance)
             : null;
@@ -180,6 +205,10 @@ internal sealed class RegexFindOptimizations
 
     private static FixedDistanceSet[]? TryExtractFixedDistanceSets(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         var sets = new List<FixedDistanceSet>();
         return TryExtractFixedDistanceSetsCore(node, 0, sets) && sets.Count > 0
             ? [.. sets]
@@ -188,6 +217,10 @@ internal sealed class RegexFindOptimizations
 
     private static bool TryExtractFixedDistanceSetsCore(RegexNode node, int offset, List<FixedDistanceSet> sets)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return false;
+        }
         switch (node.Kind)
         {
             case RegexNodeKind.Capture:
@@ -296,6 +329,12 @@ internal sealed class RegexFindOptimizations
 
     private static bool TryExtractFixedDistanceLiteralCore(RegexNode node, int offset, out string literal, out int distance)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            literal = string.Empty;
+            distance = 0;
+            return false;
+        }
         literal = string.Empty;
         distance = 0;
 
@@ -345,6 +384,10 @@ internal sealed class RegexFindOptimizations
 
     private static int ComputeConcatenationMinLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return 0;
+        }
         var total = 0;
         for (var i = 0; i < node.ChildCount; i++)
         {
@@ -356,6 +399,10 @@ internal sealed class RegexFindOptimizations
 
     private static int ComputeAlternationMinLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return 0;
+        }
         if (node.ChildCount == 0)
         {
             return 0;
@@ -372,6 +419,10 @@ internal sealed class RegexFindOptimizations
 
     private static int? ComputeConcatenationMaxLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         var total = 0;
         for (var i = 0; i < node.ChildCount; i++)
         {
@@ -389,6 +440,10 @@ internal sealed class RegexFindOptimizations
 
     private static int? ComputeAlternationMaxLength(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         var max = 0;
         for (var i = 0; i < node.ChildCount; i++)
         {
@@ -416,6 +471,10 @@ internal sealed class RegexFindOptimizations
 
     private static string? TryExtractLongestLiteral(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         if (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Group && node.ChildCount == 1)
         {
             return TryExtractLongestLiteral(node.Child(0));
@@ -426,6 +485,10 @@ internal sealed class RegexFindOptimizations
 
     private static string[]? TryExtractAlternatePrefixes(RegexNode node)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            return null;
+        }
         if (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Group && node.ChildCount == 1)
         {
             return TryExtractAlternatePrefixes(node.Child(0));
@@ -452,6 +515,11 @@ internal sealed class RegexFindOptimizations
 
     private static bool TryGetLongestLiteral(RegexNode node, out string literal)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            literal = string.Empty;
+            return false;
+        }
         literal = string.Empty;
         if (TryGetLiteralText(node, out var nodeLiteral))
         {
@@ -487,6 +555,11 @@ internal sealed class RegexFindOptimizations
 
     private static bool TryGetLeadingLiteral(RegexNode node, out string literal)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            literal = string.Empty;
+            return false;
+        }
         literal = string.Empty;
         if (TryGetLiteralText(node, out var nodeLiteral))
         {

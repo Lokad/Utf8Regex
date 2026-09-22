@@ -15,6 +15,7 @@ public sealed class Utf8LoweringDepthTests
     [Theory]
     [InlineData(2000)]
     [InlineData(5000)]
+    [InlineData(20000)]
     public void DeepNestingFallsBackWithCorrectResults(int depth)
     {
         var pattern = new string('(', depth) + "abc" + new string(')', depth);
