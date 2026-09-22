@@ -30,8 +30,8 @@ public sealed class EngineDependencyInventoryTests
         // - Utf8Pcre2Regex.cs x1: PCRE2 managed-compat probe.
         //   Purpose: compatibility fallback for PCRE2 profiles outside the owned PCRE2 VM.
         //   Replacement owner: R04 (PCRE2 migration).
-        // - Utf8PythonRegex.Managed.cs x1: unconditional _managedRegex construction.
-        //   Purpose: all PythonRe search/match/iteration/split/substitution execution.
+        // - Utf8PythonRegex.Managed.cs x1: lazy _managedRegex construction (R04: was unconditional).
+        //   Purpose: PythonRe managed-backend lanes only; utf8-backed lanes never construct it.
         //   Replacement owner: R04 (PythonRe migration).
         // Former ValidateOptions probe in Utf8Regex.cs is owned since R00 and must not regress.
         Assert.Equal(4, hits.Length);

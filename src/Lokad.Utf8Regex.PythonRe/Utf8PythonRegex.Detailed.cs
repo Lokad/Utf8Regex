@@ -30,7 +30,7 @@ public sealed partial class Utf8PythonRegex
         var subject = Decode(input);
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Match(subject, startOffsetInUtf16);
+        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         return CreateMatchContext(input, match, indexMap);
     }
 
@@ -56,7 +56,7 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Match(subject, startOffsetInUtf16);
+        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         if (!match.Success || match.Index != startOffsetInUtf16)
         {
             return default;
@@ -148,7 +148,7 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Match(subject, startOffsetInUtf16);
+        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         var indexMap = PythonReUtf8IndexMap.Create(input, subject);
         return CreateDetailedMatchData(input, match, indexMap);
     }
@@ -175,7 +175,7 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Match(subject, startOffsetInUtf16);
+        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         if (!match.Success || match.Index != startOffsetInUtf16)
         {
             return default;

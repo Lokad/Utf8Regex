@@ -441,8 +441,10 @@ internal static class PythonReTranslator
             translatedPattern,
             ToRegexOptions(parseResult.Options),
             parseResult.CaptureGroupCount,
-            emittedGroupNames);
+            emittedGroupNames,
+            managedNumbersByPython);
     }
+
 
     private static bool CapturesAreMandatory(PythonReNode node)
     {
@@ -1410,4 +1412,5 @@ internal readonly record struct PythonReTranslation(
     string Pattern,
     RegexOptions RegexOptions,
     int CaptureGroupCount,
-    IReadOnlyDictionary<string, string> EmittedGroupNames);
+    IReadOnlyDictionary<string, string> EmittedGroupNames,
+    int[] ManagedNumbersByPython);

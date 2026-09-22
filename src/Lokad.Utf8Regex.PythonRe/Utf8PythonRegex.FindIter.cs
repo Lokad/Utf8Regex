@@ -48,7 +48,7 @@ public sealed partial class Utf8PythonRegex
     {
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var firstMatch = _managedRegex.Match(subject, startOffsetInUtf16);
+        var firstMatch = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         if (!firstMatch.Success)
         {
             return [];

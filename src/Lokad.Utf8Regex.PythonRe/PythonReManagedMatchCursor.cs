@@ -14,13 +14,13 @@ namespace Lokad.Utf8Regex.PythonRe;
 internal ref struct PythonReManagedMatchCursor
 {
     private readonly string _subject;
-    private readonly Regex _matcher;
+    private readonly Lazy<Regex> _matcher;
     private readonly Lazy<Regex>? _nonEmptyMatcher;
     private int _searchIndex;
     private bool _retryPending;
     private int _retryPosition;
 
-    internal PythonReManagedMatchCursor(string subject, Regex matcher, Lazy<Regex>? nonEmptyMatcher, int startOffsetInUtf16)
+    internal PythonReManagedMatchCursor(string subject, Lazy<Regex> matcher, Lazy<Regex>? nonEmptyMatcher, int startOffsetInUtf16)
     {
         _subject = subject;
         _matcher = matcher;
@@ -51,7 +51,7 @@ internal ref struct PythonReManagedMatchCursor
                 continue;
             }
 
-            match = _matcher.Match(_subject, _searchIndex);
+            match = _matcher.Value.Match(_subject, _searchIndex);
             if (!match.Success)
             {
                 return false;

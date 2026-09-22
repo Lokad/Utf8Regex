@@ -133,7 +133,7 @@ public sealed partial class Utf8PythonRegex
             if (_optionalExactCaptureFindAllValue is not null)
             {
                 List<string> directValues = [];
-                foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+                foreach (var match in _managedRegex.Value.EnumerateMatches(subject, startOffsetInUtf16))
                 {
                     directValues.Add(match.Length switch
                     {
@@ -156,7 +156,7 @@ public sealed partial class Utf8PythonRegex
             if (_singleTrailingCapturePrefixLength >= 0)
             {
                 List<string> directValues = [];
-                foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+                foreach (var match in _managedRegex.Value.EnumerateMatches(subject, startOffsetInUtf16))
                 {
                     var captureStart = match.Index + _singleTrailingCapturePrefixLength;
                     directValues.Add(subject.Substring(
@@ -190,7 +190,7 @@ public sealed partial class Utf8PythonRegex
         if (_separatedCaptureTupleSeparator is { } separator)
         {
             List<string[]> directTuples = [];
-            foreach (var match in _managedRegex.EnumerateMatches(subject, startOffsetInUtf16))
+            foreach (var match in _managedRegex.Value.EnumerateMatches(subject, startOffsetInUtf16))
             {
                 var matched = subject.AsSpan(match.Index, match.Length);
                 var separatorIndex = matched.IndexOf(separator);

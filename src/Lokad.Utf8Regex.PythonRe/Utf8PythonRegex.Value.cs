@@ -160,7 +160,7 @@ public sealed partial class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (!_canMatchEmpty)
         {
-            return _managedRegex.Count(subject, startOffsetInUtf16);
+            return _managedRegex.Value.Count(subject, startOffsetInUtf16);
         }
 
         return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16);

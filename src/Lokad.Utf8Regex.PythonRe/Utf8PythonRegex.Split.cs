@@ -40,8 +40,8 @@ public sealed partial class Utf8PythonRegex
             maxSplit >= 0)
         {
             return maxSplit is 0 or int.MaxValue
-                ? _managedRegex.Split(subject)
-                : _managedRegex.Split(subject, maxSplit + 1);
+                ? _managedRegex.Value.Split(subject)
+                : _managedRegex.Value.Split(subject, maxSplit + 1);
         }
 
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);

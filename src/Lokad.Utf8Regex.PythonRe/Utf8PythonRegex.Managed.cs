@@ -17,7 +17,7 @@ public sealed partial class Utf8PythonRegex
         ValidateStartOffset(input, startOffsetInBytes);
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        var match = _managedRegex.Match(subject, startOffsetInUtf16);
+        var match = _managedRegex.Value.Match(subject, startOffsetInUtf16);
         if (!match.Success)
         {
             return default;
@@ -93,7 +93,7 @@ public sealed partial class Utf8PythonRegex
         int CountUpToCap()
         {
             var total = 0;
-            foreach (var _ in _managedRegex.EnumerateMatches(subject.AsSpan(startOffsetInUtf16)))
+            foreach (var _ in _managedRegex.Value.EnumerateMatches(subject.AsSpan(startOffsetInUtf16)))
             {
                 total++;
                 if (total >= count)
@@ -107,11 +107,11 @@ public sealed partial class Utf8PythonRegex
 
         var maximumReplacements = count == 0 ? int.MaxValue : count;
         // PLAN.md D03: a single requested replacement needs only existence, not a full count; IsMatch explores a prefix of the Count exploration.
-        var replacementCount = count == 1 && _managedRegex.IsMatch(subject, startOffsetInUtf16)
+        var replacementCount = count == 1 && _managedRegex.Value.IsMatch(subject, startOffsetInUtf16)
             ? 1
             : !_canMatchEmpty && count > 1
                 ? CountUpToCap()
-                : Math.Min(_managedRegex.Count(subject, startOffsetInUtf16), maximumReplacements);
+                : Math.Min(_managedRegex.Value.Count(subject, startOffsetInUtf16), maximumReplacements);
         return new Utf8PythonSubnResult
         {
             ResultText = ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16),
@@ -126,7 +126,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInUtf16)
     {
         var maximumReplacements = count == 0 ? int.MaxValue : count;
-        return _managedRegex.Replace(
+        return _managedRegex.Value.Replace(
             subject,
             plan.ToDotNetReplacementString(_managedGroupNumbersByPythonGroup),
             maximumReplacements,

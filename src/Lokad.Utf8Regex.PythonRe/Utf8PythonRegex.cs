@@ -87,7 +87,7 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8Regex? _utf8Regex;
     private readonly Lazy<Utf8Regex?>? _lazyUtf8FullRegex;
     private readonly Lazy<Regex>? _lazyManagedNonEmptyAtSamePositionRegex;
-    private readonly Regex _managedRegex;
+    private readonly Lazy<Regex> _managedRegex;
     private readonly Lazy<Regex> _lazyManagedFullRegex;
     private readonly PythonReTranslation _translation;
     private readonly int[] _managedGroupNumbersByPythonGroup;
@@ -246,7 +246,10 @@ public sealed partial class Utf8PythonRegex
         _canCountAsciiWordBoundariesDirectly = pattern == @"\b" && (options & PythonReCompileOptions.Ascii) != 0;
         _translation = PythonReTranslator.Translate(parseResult);
         _hasLookbehind = parseResult.HasLookbehind;
-        _managedRegex = CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout);
+        // R04: the translator precomputes the Python-slot to managed-number permutation, so the
+        // BCL group query (and its engine construction) is gone; the managed engine itself
+        // constructs lazily on first managed-backend use.
+        _managedRegex = new Lazy<Regex>(() => CreateManagedRegex(_translation.Pattern, _translation.RegexOptions, MatchTimeout), LazyThreadSafetyMode.ExecutionAndPublication);
         // PLAN.md C08: `\G` pins the full match to the requested start offset (Python `pos` semantics with intact prefix context); `\A` would pin the real start and forbid pos > 0. Every caller below passes the start offset explicitly.
         _lazyManagedFullRegex = new Lazy<Regex>(() => CreateManagedRegex(@"\G(?:" + _translation.Pattern + @")\z", _translation.RegexOptions, MatchTimeout), LazyThreadSafetyMode.ExecutionAndPublication);
         if (_canMatchEmpty && _canMatchNonEmpty)
@@ -255,11 +258,7 @@ public sealed partial class Utf8PythonRegex
                 CreateManagedNonEmptyAtSamePositionRegex,
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
-        _managedGroupNumbersByPythonGroup = GetManagedGroupNumbersByPythonGroup(
-            _managedRegex,
-            parseResult.CaptureGroupCount,
-            parseResult.NamedGroups,
-            _translation.EmittedGroupNames);
+        _managedGroupNumbersByPythonGroup = _translation.ManagedNumbersByPython;
         // PLAN.md C07: every consumer below indexes Python slots; managed numbers only appear at the engine boundary through this permutation.
         _groupNumberingIsIdentity = true;
         for (var pythonGroup = 0; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
@@ -410,6 +409,9 @@ public sealed partial class Utf8PythonRegex
     internal bool DebugIsManagedFullRegexValueCreated =>
         _lazyManagedFullRegex.IsValueCreated;
 
+    internal bool DebugIsManagedRegexValueCreated =>
+        _managedRegex.IsValueCreated;
+
     internal bool DebugHasUtf8FullRegex => GetUtf8FullRegex() is not null;
 
     internal string DebugTranslatedPattern => _translation.Pattern;
@@ -498,31 +500,6 @@ public sealed partial class Utf8PythonRegex
         {
             throw new ArgumentException("The input must be valid UTF-8.", nameof(input), ex);
         }
-    }
-
-    private static int[] GetManagedGroupNumbersByPythonGroup(
-        Regex regex,
-        int captureGroupCount,
-        IReadOnlyDictionary<string, int> namedGroups,
-        IReadOnlyDictionary<string, string> emittedGroupNames)
-    {
-        var namesByPythonGroup = new string?[captureGroupCount + 1];
-        foreach (var pair in namedGroups)
-        {
-            namesByPythonGroup[pair.Value] = pair.Key;
-        }
-
-        var managedGroupNumbers = new int[captureGroupCount + 1];
-        var nextUnnamedManagedGroup = 1;
-        for (var pythonGroup = 1; pythonGroup <= captureGroupCount; pythonGroup++)
-        {
-            var name = namesByPythonGroup[pythonGroup];
-            managedGroupNumbers[pythonGroup] = name is null
-                ? nextUnnamedManagedGroup++
-                : regex.GroupNumberFromName(emittedGroupNames[name]);
-        }
-
-        return managedGroupNumbers;
     }
 
     // PLAN.md C07: public names follow Python slot order, not managed order. Unnamed slots keep their number as their name, matching both engines.
