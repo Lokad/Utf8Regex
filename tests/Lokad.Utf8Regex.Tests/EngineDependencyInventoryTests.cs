@@ -245,6 +245,73 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(offenders);
     }
 
+    [Fact]
+    public void ProductionSourceReachesBclRegexInternalsOnlyThroughTheVendoredFrontEnd()
+    {
+        // R05: BCL regex implementation types (parser, nodes, char classes,
+        // writers/compilers/interpreters, persisted assemblies) are reachable
+        // only via the vendored front-end tree. Everywhere else they must be
+        // qualified through a FrontEnd alias or live in a file with a FrontEnd
+        // using. Own IL emission (Utf8Emit*) is the owned engine and is out of scope here.
+        var repoRoot = FindRepositoryRoot();
+        var srcRoot = Path.Combine(repoRoot, "src");
+        var tokens = new[]
+        {
+            "RegexCharClass",
+            "RegexParser",
+            "RegexNode",
+            "RegexWriter",
+            "RegexCompiler",
+            "RegexInterpreter",
+            "RegexPrefix",
+            "RegexTree",
+            "RegexRunner",
+            "RegexCode",
+            "RegexBoyerMoore",
+            "CompileToAssembly",
+            "Assembly.Load",
+            "Activator.CreateInstance",
+        };
+        var offenders = new System.Collections.Generic.List<string>();
+        foreach (var path in Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                path.Contains($"{Path.DirectorySeparatorChar}Internal{Path.DirectorySeparatorChar}FrontEnd{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var text = File.ReadAllText(path);
+            var hasFrontEndUsing = text.Contains("Internal.FrontEnd", StringComparison.Ordinal) ||
+                text.Contains("RuntimeFrontEnd", StringComparison.Ordinal);
+            var number = 0;
+            foreach (var line in File.ReadLines(path))
+            {
+                number++;
+                foreach (var token in tokens)
+                {
+                    if (!line.Contains(token, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var trimmed = line.Trim();
+                    var isComment = trimmed.StartsWith("//", StringComparison.Ordinal);
+                    if (line.Contains("FrontEnd", StringComparison.Ordinal) || (hasFrontEndUsing && !isComment))
+                    {
+                        break;
+                    }
+
+                    offenders.Add($"{GetRelativePath(path)}:{number}: {trimmed}");
+                    break;
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
+
     private static string GetRelativePath(string path)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
