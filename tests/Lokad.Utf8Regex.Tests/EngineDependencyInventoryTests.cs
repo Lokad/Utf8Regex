@@ -75,6 +75,91 @@ public sealed class EngineDependencyInventoryTests
         }
     }
 
+    [Fact]
+    public void ProductionExecutableEngineUsesStayInAllowlistedFiles()
+    {
+        // R00 executable-use inventory: every production BCL engine member access has an
+        // identified purpose and replacement owner. Compatibility-only references (RegexOptions,
+        // Regex.InfiniteMatchTimeout, RegexMatchTimeoutException and the Regex.Escape string
+        // helper) are pinned separately and are not engine execution.
+        var repoRoot = FindRepositoryRoot();
+        var srcRoot = Path.Combine(repoRoot, "src");
+
+        string[] FilesContaining(string token)
+        {
+            return Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
+                .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Where(path => File.ReadLines(path).Any(line => line.Contains(token, StringComparison.Ordinal)))
+                .Select(path => Path.GetFileName(path))
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        string[] FilesContainingAny(params string[] tokens)
+        {
+            return Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                .Where(path => File.ReadLines(path).Any(line => tokens.Any(token => line.Contains(token, StringComparison.Ordinal))))
+                .Select(path => Path.GetFileName(path))
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        // 1. Core fallback execution (union of the three receiver spellings below).
+        //    Purpose: candidate verification plus all uncovered-pattern routes. Owner: R03.
+        var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
+        var expectedFallbackFiles = new[]
+        {
+            "Utf8AsciiCultureInvariantReplacement.cs",
+            "Utf8AsciiCultureInvariantStrategy.cs",
+            "Utf8CompiledEngineRuntime.cs",
+            "Utf8CompiledOperationCursorFactory.cs",
+            "Utf8FallbackCandidateVerifier.cs",
+            "Utf8QuotedLineSegmentExecutor.cs",
+            "Utf8Regex.Adapters.cs",
+            "Utf8Regex.Compiled.cs",
+            "Utf8Regex.cs",
+            "Utf8Regex.Diagnostics.cs",
+            "Utf8Regex.Fallback.cs",
+            "Utf8Regex.Replacement.cs",
+            "Utf8RegexProgram.cs",
+            "Utf8StructuralLinearCompiledRouter.cs",
+            "Utf8StructuralLinearProgram.cs",
+            "Utf8UnicodeLetterBoundedRepeatExecutor.cs",
+        };
+        Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);
+
+        // 2. BCL enumerator structs: split enumeration, operation cursors, PCRE2 managed lanes.
+        //    Owners: R03 (core) and R04 (PCRE2 managed-lane migration).
+        Assert.Equal(new[] { "Utf8ValueSplitEnumerator.cs" }, FilesContaining("Regex.ValueSplitEnumerator"));
+        Assert.Equal(new[] { "Utf8OperationMatchCursor.cs", "Utf8Pcre2CoreTypes.cs" }, FilesContaining("Regex.ValueMatchEnumerator"));
+
+        // 3. PythonRe managed execution lives only in the PythonRe adapter. Core must never see it.
+        //    Purpose: translated search, full-match, iteration, split, substitution. Owner: R04.
+        var managedHits = Directory.EnumerateFiles(srcRoot, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => File.ReadLines(path).Any(line => line.Contains("_managedRegex", StringComparison.Ordinal)))
+            .ToArray();
+        Assert.NotEmpty(managedHits);
+        foreach (var file in managedHits)
+        {
+            Assert.Contains("Lokad.Utf8Regex.PythonRe", file, StringComparison.Ordinal);
+        }
+
+        // 4. BCL Match chaining via NextMatch: core evaluator loop, PCRE2 global loop, PythonRe FindIter.
+        //    Owners: R03 (core) and R04 (adapters).
+        Assert.Equal(new[] { "Utf8Pcre2Regex.cs", "Utf8PythonRegex.FindIter.cs", "Utf8Regex.cs" }, FilesContaining(".NextMatch()"));
+
+        // 5. BCL result plumbing holders. Owner: R02/R03 (owned match/group/capture storage).
+        Assert.Equal(new[] { "Utf8MatchContext.cs" }, FilesContaining("Match? _match"));
+        Assert.Equal(new[] { "Utf8GroupContext.cs" }, FilesContaining("Group? _group"));
+        Assert.Equal(new[] { "Utf8CaptureContext.cs" }, FilesContaining("Capture? _capture"));
+
+        // 6. Regex.Escape is a pure string helper used while building translated patterns.
+        Assert.Equal(new[] { "Pcre2ExecutionArchitecture.cs", "PythonReParser.cs", "PythonReTranslator.cs" }, FilesContaining("Regex.Escape("));
+    }
+
     private static string GetRelativePath(string path)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
