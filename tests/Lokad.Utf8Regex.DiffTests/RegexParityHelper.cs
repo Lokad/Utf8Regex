@@ -149,5 +149,19 @@ internal sealed class RegexParityContext
                 Assert.Equal(expectedCapture.Value, actualCapture.GetValueString());
             }
         }
+
+        for (var groupIndex = 0; groupIndex < expected.Groups.Count; groupIndex++)
+        {
+            Assert.True(actual.TryGetGroup(groupIndex, out var tryGroup));
+            Assert.Equal(expected.Groups[groupIndex].Success, tryGroup.Success);
+            var groupName = expected.Groups[groupIndex].Name;
+            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
+            Assert.Equal(expected.Groups[groupIndex].Success, tryNamedGroup.Success);
+        }
+
+        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+        Assert.False(actual.GetGroup(expected.Groups.Count).Success);
+        Assert.False(actual.GetGroup("missing-group-name").Success);
     }
 }

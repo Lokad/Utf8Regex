@@ -45,6 +45,7 @@ internal ref struct Utf8OperationMatchCursor
     private PreparedMultiLiteralScanState _multiLiteralScanState;
     private Utf8AsciiDeterministicScanState _deterministicScanState;
     private Utf8ValueMatch _current;
+    private int _lastLiteralFamilyBranchId;
     private int _asciiFixedTokenCurrentIndex;
     private int _asciiFixedTokenMatchLength;
     private int _baseByteOffset;
@@ -212,6 +213,13 @@ internal ref struct Utf8OperationMatchCursor
 
     public Utf8OperationMatch Current
         => new(CurrentValueMatch, branchId: 0, captureSlots: null);
+
+    /// <summary>Gets the alternate index of the last family-mode match, or -1 when the last
+    /// successful move did not come from a literal-family search.</summary>
+    internal int LastLiteralFamilyBranchId =>
+        _mode is EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
+            ? _lastLiteralFamilyBranchId
+            : -1;
 
     public bool MoveNext()
     {
@@ -561,6 +569,7 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
+        _lastLiteralFamilyBranchId = match.LiteralId;
         _current = Utf8ProjectionExecutor.ProjectLiteralFamilyMatch(
             _projectionPlan,
             _input,
@@ -587,7 +596,7 @@ internal ref struct Utf8OperationMatchCursor
         {
             return false;
         }
-
+        _lastLiteralFamilyBranchId = match.LiteralId;
         _current = Utf8ProjectionExecutor.ProjectMatch(
             _projectionPlan,
             _input,

@@ -73,4 +73,47 @@ public sealed class Utf8RegexMatchGroupDiffTests
         // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/Regex.Groups.Tests.cs
         RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
     }
+
+    [Theory]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "horsecat", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cathorse", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "no match here", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "CAT HORSE Cat", RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat)|(?<v>horse)", "cat horse fish", RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat)|(?<v>horse)", "nothing here", RegexOptions.CultureInvariant)]
+    [InlineData("(a)|(ab)", "ab", RegexOptions.CultureInvariant)]
+    [InlineData("(ab)|(a)", "ab", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)|(dog)", "dog horse cat", RegexOptions.CultureInvariant)]
+    [InlineData("(caf\u00E9)|(ni\u00F1o)", "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", RegexOptions.None)]
+    [InlineData("(caf\u00E9)|(ni\u00F1o)", "plain ascii", RegexOptions.None)]
+    [InlineData("(cat)|(horse)", "CAT horse", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(CAT)|(DOG)", "cat dog", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|horse", "horsecat", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|horse", "catcat", RegexOptions.CultureInvariant)]
+    [InlineData("horse|(cat)", "horsecat", RegexOptions.CultureInvariant)]
+    [InlineData("(?:(a)|(b))", "xbxa", RegexOptions.CultureInvariant)]
+    [InlineData("(k)|(q)", "K Q", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cat horse", RegexOptions.RightToLeft | RegexOptions.CultureInvariant)]
+    [InlineData("\\b(cat)|(horse)\\b", "acat horsecatx", RegexOptions.CultureInvariant)]
+    [InlineData("((cat)|(horse))", "cat horse", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "caf\u00E9 cat \U0001F600horse", RegexOptions.CultureInvariant)]
+    public void MatchDetailedMatchesRuntimeForBranchedLiteralFamily(string pattern, string input, RegexOptions options)
+    {
+        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();
+    }
+
+    [Theory]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", 0, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", 4, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", 10, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "horsecat", 5, RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat)|(?<v>horse)", "cat horse fish", 4, RegexOptions.CultureInvariant)]
+    [InlineData("(a)|(ab)", "xab", 1, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|horse", "horsecat", 5, RegexOptions.CultureInvariant)]
+    public void MatchDetailedFromOffsetMatchesRuntimeForBranchedLiteralFamily(string pattern, string input, int offset, RegexOptions options)
+    {
+        RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParityFromOffset(offset);
+    }
 }

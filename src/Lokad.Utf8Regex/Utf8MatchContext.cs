@@ -12,6 +12,8 @@ public readonly ref struct Utf8MatchContext
     private readonly string[]? _groupNames;
     private readonly bool _ownedHasValue;
     private readonly int _ownedGroupCount;
+    private readonly int[]? _ownedGroupStarts;
+    private readonly int[]? _ownedGroupLengths;
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
@@ -50,6 +52,13 @@ public readonly ref struct Utf8MatchContext
         _ownedGroupCount = groupCount;
         _ownedIndex = indexInUtf16;
         _ownedLength = lengthInUtf16;
+
+    }
+    internal Utf8MatchContext(ReadOnlySpan<byte> input, string decoded, Utf8BoundaryMap boundaryMap, string[]? groupNames, int indexInUtf16, int lengthInUtf16, int[] groupStarts, int[] groupLengths)
+        : this(input, decoded, boundaryMap, groupNames, hasValue: true, indexInUtf16, lengthInUtf16, groupCount: groupStarts.Length)
+    {
+        _ownedGroupStarts = groupStarts;
+        _ownedGroupLengths = groupLengths;
     }
 
     /// <summary>Gets whether the regex found a match.</summary>
@@ -124,11 +133,27 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            // R03: single-whole-match groups project the owned span; misses mirror the
-            // single BCL group view. Only the default struct still throws below.
-            if (_ownedHasValue && (number == 0 || (number == 1 && _ownedGroupCount > 1)))
+            // R03: branch-mapped groups project owned spans; single-whole-match groups
+            // project the whole span; misses mirror the single BCL group view.
+            if (_ownedHasValue)
             {
-                return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                if (number == 0)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                }
+
+                if (_ownedGroupStarts is { } starts &&
+                    _ownedGroupLengths is { } lengths &&
+                    (uint)number < (uint)starts.Length &&
+                    starts[number] >= 0)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[number], lengths[number]);
+                }
+
+                if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                }
             }
 
             if (_ownedGroupCount == 0)
@@ -149,12 +174,28 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            var matchesWholeMatchGroup = name == "0" ||
-                (_ownedGroupCount > 1 && _groupNames is not null && _groupNames.Length > 1 && name == _groupNames[1]);
+            // R03: names resolve through the owned group table; unmatched or unknown
+            // names mirror the unsuccessful BCL group view.
+            var groupIndex = name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1);
 
-            if (_ownedHasValue && matchesWholeMatchGroup)
+            if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {
-                return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                if (groupIndex == 0)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                }
+
+                if (_ownedGroupStarts is { } starts &&
+                    _ownedGroupLengths is { } lengths &&
+                    starts[groupIndex] >= 0)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[groupIndex], lengths[groupIndex]);
+                }
+
+                if (_ownedGroupStarts is null && groupIndex == 1)
+                {
+                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                }
             }
 
             if (_ownedGroupCount == 0)
@@ -176,13 +217,32 @@ public readonly ref struct Utf8MatchContext
     {
         if (_match is null)
         {
-            if (_ownedHasValue && (number == 0 || (number == 1 && _ownedGroupCount > 1)))
+            if (_ownedHasValue)
             {
-                group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
-                return true;
-            }
+                if (number == 0)
+                {
+                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return true;
+                }
 
-            if (!_ownedHasValue && _ownedGroupCount > 0 && number == 0)
+                // R03: valid but unmatched branch groups report an unsuccessful view.
+                if (_ownedGroupStarts is { } starts &&
+                    _ownedGroupLengths is { } lengths &&
+                    (uint)number < (uint)starts.Length)
+                {
+                    group = starts[number] >= 0
+                        ? new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[number], lengths[number])
+                        : default;
+                    return true;
+                }
+
+                if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
+                {
+                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return true;
+                }
+            }
+            else if (_ownedGroupCount > 0 && number == 0)
             {
                 group = default;
                 return true;
@@ -209,17 +269,36 @@ public readonly ref struct Utf8MatchContext
     public bool TryGetGroup(string name, out Utf8GroupContext group)
     {
         if (_match is null)
+        if (_match is null)
         {
-            var matchesWholeMatchGroup = name == "0" ||
-                (_ownedGroupCount > 1 && _groupNames is not null && _groupNames.Length > 1 && name == _groupNames[1]);
+            // R03: names resolve through the owned group table; valid but unmatched
+            // branch groups report an unsuccessful view.
+            var groupIndex = name == "0" ? 0 : (_groupNames is not null ? Array.IndexOf(_groupNames, name) : -1);
 
-            if (_ownedHasValue && matchesWholeMatchGroup)
+            if (_ownedHasValue && (uint)groupIndex < (uint)_ownedGroupCount)
             {
-                group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
-                return true;
-            }
+                if (groupIndex == 0)
+                {
+                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return true;
+                }
 
-            if (!_ownedHasValue && _ownedGroupCount > 0 && matchesWholeMatchGroup)
+                if (_ownedGroupStarts is { } starts &&
+                    _ownedGroupLengths is { } lengths)
+                {
+                    group = starts[groupIndex] >= 0
+                        ? new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[groupIndex], lengths[groupIndex])
+                        : default;
+                    return true;
+                }
+
+                if (_ownedGroupStarts is null && groupIndex == 1)
+                {
+                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return true;
+                }
+            }
+            else if (!_ownedHasValue && _ownedGroupCount > 0 && groupIndex == 0)
             {
                 group = default;
                 return true;

@@ -488,6 +488,27 @@ public sealed partial class Utf8Regex
         return splitCount;
     }
 
+    private string DebugLiteralFamilyCaptureMapSummary()
+    {
+        if (_literalFamilyCaptureMap is not { } map)
+        {
+            return "declined";
+        }
+
+        var branches = new StringBuilder();
+        for (var i = 0; i < map.BranchGroups.Length; i++)
+        {
+            if (i > 0)
+            {
+                branches.Append(";");
+            }
+
+            branches.Append(string.Join(",", map.BranchGroups[i]));
+        }
+
+        return "whole=[" + string.Join(",", map.WholeMatchGroups) + "];branches=[" + branches.ToString() + "]";
+    }
+
     private int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
     {
         Utf8Validation.ThrowIfInvalidOnly(input);
@@ -848,6 +869,9 @@ public sealed partial class Utf8Regex
             ReadOnlySpan<byte> input,
             string replacementText) =>
             _owner.DebugReplaceViaNativeTextOperations(input, replacementText);
+
+        public string DebugLiteralFamilyCaptureMapSummary() =>
+            _owner.DebugLiteralFamilyCaptureMapSummary();
 
         public int DebugReplacementCacheEntryCount => _owner.DebugReplacementCacheEntryCount;
     }

@@ -43,6 +43,7 @@ public sealed partial class Utf8Regex
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
+    private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
@@ -110,6 +111,7 @@ public sealed partial class Utf8Regex
                 out var packedNibbleLiteralFamilyCountStrategy)
                     ? packedNibbleLiteralFamilyCountStrategy
                     : null;
+        _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
 
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -908,6 +910,12 @@ public sealed partial class Utf8Regex
                 : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
+            TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
+        {
+            return branched;
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
@@ -942,6 +950,12 @@ public sealed partial class Utf8Regex
                 : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
+            TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, start.Value, out var branched))
+        {
+            return branched;
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, start.Value);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
@@ -969,6 +983,102 @@ public sealed partial class Utf8Regex
         }
 
         return false;
+    }
+
+    private bool TryGetBranchedLiteralFamilyMap(out Utf8LiteralFamilyCaptureMap? map)
+    {
+        // R03: multi-group top-level literal alternations with a branch-to-group map discover
+        // through the family cursor and shape from owned spans. The cursor scans left to right,
+        // so right-to-left shapes keep the BCL routes.
+        map = null;
+        if (_literalFamilyCaptureMap is null ||
+            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
+            _groupNumbers.Length <= 2 ||
+            RequiresCultureSensitiveFallback ||
+            UsesRightToLeft())
+        {
+            return false;
+        }
+
+        map = _literalFamilyCaptureMap;
+        return true;
+    }
+
+    // Returns true when the branched path owns the result (hit or miss); false declines to BCL.
+    private bool TryMatchDetailedBranchedLiteralFamily(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        Utf8LiteralFamilyCaptureMap map,
+        int startInUtf16,
+        out Utf8MatchContext detailed)
+    {
+        detailed = default;
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        {
+            return false;
+        }
+
+        var validation = TryUseAsciiInputValidationShortcut(input)
+            ? default
+            : Utf8Validation.Validate(input);
+        var budget = CreateExecutionBudget();
+        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+            _preparedRegex,
+            _verifierRuntime,
+            input,
+            validation,
+            budget);
+        try
+        {
+            while (cursor.MoveNext())
+            {
+                var candidate = cursor.CurrentValueMatch;
+                if (!candidate.Success || candidate.IndexInUtf16 < startInUtf16)
+                {
+                    continue;
+                }
+
+                var branch = cursor.LastLiteralFamilyBranchId;
+                if (branch < 0 || (uint)branch >= (uint)map.BranchGroups.Length)
+                {
+                    return false;
+                }
+
+                var starts = new int[_groupNumbers.Length];
+                var lengths = new int[_groupNumbers.Length];
+                Array.Fill(starts, -1);
+                starts[0] = candidate.IndexInUtf16;
+                lengths[0] = candidate.LengthInUtf16;
+                foreach (var whole in map.WholeMatchGroups)
+                {
+                    if ((uint)whole < (uint)starts.Length)
+                    {
+                        starts[whole] = candidate.IndexInUtf16;
+                        lengths[whole] = candidate.LengthInUtf16;
+                    }
+                }
+
+                foreach (var group in map.BranchGroups[branch])
+                {
+                    if ((uint)group < (uint)starts.Length)
+                    {
+                        starts[group] = candidate.IndexInUtf16;
+                        lengths[group] = candidate.LengthInUtf16;
+                    }
+                }
+
+                detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, candidate.IndexInUtf16, candidate.LengthInUtf16, starts, lengths);
+                return true;
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
+
+        detailed = Utf8MatchContext.Unsuccessful(input, decoded, boundaryMap, _groupNames);
+        return true;
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
