@@ -160,6 +160,46 @@ public sealed partial class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (!_canMatchEmpty)
         {
+            if (!_hasLookbehind && _utf8Regex is not null && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
+            {
+                var ownedCount = 0;
+                var ownedCountFirst = true;
+                var ownedCountDeclined = false;
+                try
+                {
+                    while (ownedCountCursor.MoveNext())
+                    {
+                        var ownedCountMatch = ownedCountCursor.CurrentValueMatch;
+                        if (!ownedCountMatch.Success || ownedCountMatch.IndexInUtf16 < startOffsetInUtf16)
+                        {
+                            continue;
+                        }
+
+                        var ownedCountBranch = ownedCountCursor.LastLiteralFamilyBranchId;
+                        if (ownedCountFirst)
+                        {
+                            ownedCountFirst = false;
+                            if (ownedCountBranch < 0 || (uint)ownedCountBranch >= (uint)ownedCountMap.BranchGroups.Length)
+                            {
+                                ownedCountDeclined = true;
+                                break;
+                            }
+                        }
+
+                        ownedCount++;
+                    }
+                }
+                catch (Utf8ExecutionDeadlineExpiredException)
+                {
+                    throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
+                }
+
+                if (!ownedCountDeclined)
+                {
+                    return ownedCount;
+                }
+            }
+
             return _managedRegex.Value.Count(subject, startOffsetInUtf16);
         }
 
