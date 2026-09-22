@@ -189,7 +189,7 @@ public sealed class EngineDependencyInventoryTests
 
         var pythonDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex.PythonRe");
         Assert.Equal(
-            new[] { "Utf8PythonRegex.Detailed.cs", "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.Split.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
+            new[] { "Utf8PythonRegex.Detailed.cs", "Utf8PythonRegex.FindAll.cs", "Utf8PythonRegex.FindIter.cs", "Utf8PythonRegex.Split.cs", "Utf8PythonRegex.Utf8.cs", "Utf8PythonRegex.Value.cs", "Utf8PythonRegex.cs" },
             NamesIn(pythonDirectory, "_utf8Regex", "new Utf8Regex("));
 
         var coreDirectory = Path.Combine(srcRoot, "Lokad.Utf8Regex");
