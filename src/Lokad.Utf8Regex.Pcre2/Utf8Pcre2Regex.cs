@@ -225,6 +225,18 @@ public sealed partial class Utf8Pcre2Regex
         throw CreateUnsupportedPatternException();
     }
 
+    /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return IsMatch(input, startOffsetInBytes, matchOptions);
+    }
+
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 subject.</summary>
     public int Count(ReadOnlySpan<byte> input)
         => Count(input, 0, Pcre2MatchOptions.None);
@@ -244,6 +256,18 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         throw CreateUnsupportedPatternException();
+    }
+
+    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Count(input, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Finds the first match in the well-formed UTF-8 subject.</summary>
@@ -271,6 +295,18 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         throw CreateUnsupportedPatternException();
+    }
+
+    /// <summary>Finds the first match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Match(input, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Finds the first match with capture slots, duplicate-name metadata, and <c>(*MARK)</c> state.</summary>
@@ -311,6 +347,18 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         throw CreateUnsupportedPatternException();
+    }
+
+    /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchDetailed(input, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Creates a cursor over non-overlapping matches in the UTF-8 subject.</summary>
@@ -400,6 +448,18 @@ public sealed partial class Utf8Pcre2Regex
             Internal.Planning.Utf8SearchPortfolioKind.IgnoreCaseLiteral;
     }
 
+    /// <summary>Creates a match cursor using an explicit start byte offset and per-operation options, observing cancellation when enumeration begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return EnumerateMatches(input, startOffsetInBytes, matchOptions);
+    }
+
     /// <summary>Probes the UTF-8 subject for a full or permitted subject-end partial match.</summary>
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode)
         => Probe(input, partialMode, 0, Pcre2MatchOptions.None);
@@ -457,6 +517,19 @@ public sealed partial class Utf8Pcre2Regex
         throw CreateUnsupportedProbeException();
     }
 
+    /// <summary>Probes for a full or partial match using an explicit start byte offset and per-operation options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="partialMode">The permitted subject-end partial-match mode.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Probe(input, partialMode, startOffsetInBytes, matchOptions);
+    }
+
     /// <summary>Replaces matches using a PCRE2 replacement template and returns owned UTF-8 bytes.</summary>
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement)
         => Replace(input, replacement, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None);
@@ -474,6 +547,20 @@ public sealed partial class Utf8Pcre2Regex
     {
         ValidateStartOffset(input, startOffsetInBytes);
         return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
+    }
+
+    /// <summary>Replaces matches using explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="replacement">The PCRE2 replacement template.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="substitutionOptions">The substitution options.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, replacement, startOffsetInBytes, substitutionOptions, matchOptions);
     }
 
     /// <summary>Replaces matches using a well-formed UTF-8 PCRE2 replacement template.</summary>
@@ -496,6 +583,20 @@ public sealed partial class Utf8Pcre2Regex
         return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions);
     }
 
+    /// <summary>Replaces matches using a UTF-8 template with explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="substitutionOptions">The substitution options.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, replacementPatternUtf8, startOffsetInBytes, substitutionOptions, matchOptions);
+    }
+
     /// <summary>Replaces matches through a stateful callback that writes UTF-8 replacement content.</summary>
     public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator)
         => Replace(input, state, evaluator, 0, Pcre2MatchOptions.None);
@@ -516,6 +617,21 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         return Encoding.UTF8.GetBytes(ReplaceWithUtf8Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions));
+    }
+
+    /// <summary>Replaces matches through a UTF-8 callback using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Pcre2MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, state, evaluator, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Replaces matches using a PCRE2 replacement template and returns UTF-16 text.</summary>
@@ -542,6 +658,20 @@ public sealed partial class Utf8Pcre2Regex
         return Encoding.UTF8.GetString(result);
     }
 
+    /// <summary>Replaces matches to UTF-16 text using explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="replacement">The PCRE2 replacement template.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="substitutionOptions">The substitution options.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, replacement, startOffsetInBytes, substitutionOptions, matchOptions);
+    }
+
     /// <summary>Replaces matches through a stateful callback that returns UTF-16 replacement text.</summary>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator)
         => ReplaceToString(input, state, evaluator, 0, Pcre2MatchOptions.None);
@@ -562,6 +692,21 @@ public sealed partial class Utf8Pcre2Regex
         }
 
         return ReplaceWithUtf16Evaluator(input, state, evaluator, startOffsetInBytes, matchOptions);
+    }
+
+    /// <summary>Replaces matches through a UTF-16 callback using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Pcre2Utf16MatchEvaluator<TState> evaluator, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, state, evaluator, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Attempts to write a UTF-8 replacement result into a caller-provided destination.</summary>
@@ -604,6 +749,22 @@ public sealed partial class Utf8Pcre2Regex
         replaced.CopyTo(destination);
         bytesWritten = replaced.Length;
         return OperationStatus.Done;
+    }
+
+    /// <summary>Attempts to write a replacement result using explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
+    /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
+    /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="substitutionOptions">The substitution options.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions);
     }
 
     /// <summary>Gets the number of name-to-slot entries, including duplicate names.</summary>
@@ -653,6 +814,20 @@ public sealed partial class Utf8Pcre2Regex
     {
         var context = MatchDetailed(input, startOffsetInBytes, matchOptions);
         return context.TryGetFirstSetGroup(name, out group);
+    }
+
+    /// <summary>Attempts to find the first participating named slot using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="name">The capture group name.</param>
+    /// <param name="group">When this method returns, the first participating capture slot.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return TryGetFirstSetGroup(input, name, out group, startOffsetInBytes, matchOptions);
     }
 
     /// <summary>Copies successive non-overlapping match snapshots into a caller-provided destination.</summary>
@@ -803,6 +978,20 @@ public sealed partial class Utf8Pcre2Regex
         return written;
     }
 
+    /// <summary>Copies successive match snapshots using explicit start and per-match options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="destination">The destination for match snapshots.</param>
+    /// <param name="isMore">When this method returns, whether additional matches remain.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="matchOptions">The per-operation match options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchMany(input, destination, out isMore, startOffsetInBytes, matchOptions);
+    }
+
     /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
     public Utf8Pcre2Analysis Analyze()
     {
@@ -840,6 +1029,22 @@ public sealed partial class Utf8Pcre2Regex
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).IsMatch(input, startOffsetInBytes, Pcre2MatchOptions.None);
     }
 
+    /// <summary>Compiles and tests a PCRE2 pattern with explicit settings, limits, timeout, and start byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="pattern">The PCRE2 pattern.</param>
+    /// <param name="options">The PCRE2 compile options.</param>
+    /// <param name="compileSettings">The compile-time settings.</param>
+    /// <param name="defaultExecutionLimits">The default execution budgets.</param>
+    /// <param name="matchTimeout">The maximum duration of the operation.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public static bool IsMatch(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).IsMatch(input, startOffsetInBytes, Pcre2MatchOptions.None, cancellationToken);
+    }
+
     /// <summary>Compiles a default PCRE2 pattern and finds the first match.</summary>
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern)
         => Match(input, pattern, Pcre2CompileOptions.None, default, default, DefaultMatchTimeout, 0);
@@ -852,6 +1057,22 @@ public sealed partial class Utf8Pcre2Regex
     public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes)
     {
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).Match(input, startOffsetInBytes, Pcre2MatchOptions.None);
+    }
+
+    /// <summary>Compiles and matches a PCRE2 pattern with explicit settings, limits, timeout, and start byte offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="pattern">The PCRE2 pattern.</param>
+    /// <param name="options">The PCRE2 compile options.</param>
+    /// <param name="compileSettings">The compile-time settings.</param>
+    /// <param name="defaultExecutionLimits">The default execution budgets.</param>
+    /// <param name="matchTimeout">The maximum duration of the operation.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public static Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).Match(input, startOffsetInBytes, Pcre2MatchOptions.None, cancellationToken);
     }
 
     /// <summary>Compiles a default PCRE2 pattern and returns replaced UTF-8 bytes.</summary>
@@ -867,6 +1088,24 @@ public sealed partial class Utf8Pcre2Regex
     {
         return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout)
             .Replace(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None);
+    }
+
+    /// <summary>Compiles and replaces with explicit PCRE2 settings, limits, timeout, start offset, and substitution options, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
+    /// <param name="pattern">The PCRE2 pattern.</param>
+    /// <param name="replacement">The PCRE2 replacement template.</param>
+    /// <param name="options">The PCRE2 compile options.</param>
+    /// <param name="compileSettings">The compile-time settings.</param>
+    /// <param name="defaultExecutionLimits">The default execution budgets.</param>
+    /// <param name="matchTimeout">The maximum duration of the operation.</param>
+    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
+    /// <param name="substitutionOptions">The substitution options.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public static byte[] Replace(ReadOnlySpan<byte> input, string pattern, string replacement, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return new Utf8Pcre2Regex(pattern, options, compileSettings, defaultExecutionLimits, matchTimeout).Replace(input, replacement, startOffsetInBytes, substitutionOptions, Pcre2MatchOptions.None, cancellationToken);
     }
 
     private static Utf8ValidatedInput ValidateSubjectAndStart(
