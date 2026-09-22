@@ -18,18 +18,22 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = $PSScriptRoot
 Set-Location $repoRoot
-$benchmarkArtifactsRoot = Join-Path $repoRoot "bench\\Lokad.Utf8Regex.Benchmarks\\bin\\$Configuration\\net10.0"
+$benchmarkArtifactsRoot = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0"
 
-Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" |
-    Where-Object { $_.CommandLine -like '*Lokad.Utf8Regex.Benchmarks-*.dll*' } |
-    ForEach-Object {
-        try {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
+# Stale benchmark hosts lock BenchmarkDotNet artifacts on Windows. Get-CimInstance is
+# Windows-only; on other platforms file locks do not block artifact cleanup, so skip the kill.
+if ($IsWindows) {
+    Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" |
+        Where-Object { $_.CommandLine -like '*Lokad.Utf8Regex.Benchmarks-*.dll*' } |
+        ForEach-Object {
+            try {
+                Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Unable to stop stale benchmark process $($_.ProcessId): $($_.Exception.Message)"
+            }
         }
-        catch {
-            Write-Warning "Unable to stop stale benchmark process $($_.ProcessId): $($_.Exception.Message)"
-        }
-    }
+}
 
 Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf8Regex.Benchmarks-*' -ErrorAction SilentlyContinue |
     ForEach-Object {
@@ -44,7 +48,7 @@ Get-ChildItem -LiteralPath $benchmarkArtifactsRoot -Directory -Filter 'Lokad.Utf
 dotnet build-server shutdown | Out-Null
 
 if (-not $SkipBuild) {
-    dotnet build .\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore
+    dotnet build ./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj --configuration $Configuration --tl:off --nologo -v minimal --no-restore
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
@@ -86,13 +90,13 @@ $processInfo.FileName = "dotnet"
 $processInfo.UseShellExecute = $false
 
 if ($CommandArgs) {
-    $benchmarkDll = Join-Path $repoRoot "bench\Lokad.Utf8Regex.Benchmarks\bin\$Configuration\net10.0\Lokad.Utf8Regex.Benchmarks.dll"
+    $benchmarkDll = Join-Path $repoRoot "bench" "Lokad.Utf8Regex.Benchmarks" "bin" $Configuration "net10.0" "Lokad.Utf8Regex.Benchmarks.dll"
     $processInfo.ArgumentList.Add($benchmarkDll)
 }
 else {
     $processInfo.ArgumentList.Add("run")
     $processInfo.ArgumentList.Add("--project")
-    $processInfo.ArgumentList.Add(".\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj")
+    $processInfo.ArgumentList.Add("./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj")
     $processInfo.ArgumentList.Add("-c")
     $processInfo.ArgumentList.Add($Configuration)
     $processInfo.ArgumentList.Add("--no-build")
