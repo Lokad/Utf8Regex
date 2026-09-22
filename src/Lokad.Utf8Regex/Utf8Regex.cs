@@ -1584,13 +1584,9 @@ public sealed partial class Utf8Regex
 
     private bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
-        // R03: BCL Split splices captured groups into the segment stream, so only
-        // groupless patterns split natively; non-capturing constructs ride along.
-        if (_groupNumbers.Length > 1)
-        {
-            return false;
-        }
-
+        // R03: split segments are match-delimited gaps (BCL EnumerateSplits never splices
+        // group captures, unlike array Split), so grouped literal shapes split natively on the
+        // same group-agnostic cursors; only the compiled engine kind gates the route.
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,

@@ -176,7 +176,6 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var bytes = Encoding.UTF8.GetBytes(input);
         (string Pattern, RegexOptions ExtraOptions)[] cases =
         [
-            (@"\b(café|niño|résumé)\b", RegexOptions.None),
             (@"\b(?:café|niño|résumé)\b", RegexOptions.RightToLeft),
         ];
 

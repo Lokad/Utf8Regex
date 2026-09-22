@@ -167,6 +167,17 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     [InlineData("(?:cat|horse)", "cat horse cathorse", 2, RegexOptions.CultureInvariant)]
     [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", int.MaxValue, RegexOptions.CultureInvariant)]
     [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", 2, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cat horse fish horse", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "horsecat", 2, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cathorse", 3, RegexOptions.Compiled | RegexOptions.CultureInvariant)]
+    [InlineData("(?<w>cat)|(?<v>horse)", "cat horse fish", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|horse", "horsecat", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(a)|(ab)", "xab", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "CAT horse", int.MaxValue, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("(caf\u00E9)|(ni\u00F1o)", "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", int.MaxValue, RegexOptions.None)]
+    [InlineData("\\b(cat|horse)\\b", "acat horsecatx cathorse", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("\\b(cat|horse)\\b", "acat horsecatx cathorse", 2, RegexOptions.CultureInvariant)]
+    [InlineData("\\b(caf\u00E9|ni\u00F1o)\\b", "caf\u00E9 xcaf\u00E9 ni\u00F1o", int.MaxValue, RegexOptions.CultureInvariant)]
     public void EnumerateSplitsMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int count, RegexOptions options)
     {
         var utf8Regex = new Utf8Regex(pattern, options);
