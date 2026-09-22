@@ -51,6 +51,21 @@ This is the one place where the spec must be explicit: .NET regex semantics are 
 
 This requirement should not be misread as an instruction to optimize the rarest edge cases first. It is a statement of the final semantic invariant. The implementation should prioritize the common aligned cases first, while keeping these non-byte-aligned edge cases correct, measurable, and progressively moved from fallback/slower paths into the native engine.
 
+### 3.7 Cancellation and resource limits
+
+Every execution operation has an explicit `CancellationToken` twin. The token is observed **before matching begins**: an already-canceled token throws `OperationCanceledException` carrying that token, ahead of input validation, limit checks, timeout checks, and matching. There are no optional token parameters; each twin is a distinct overload.
+
+Lazy enumerators (`EnumerateMatches`, `EnumerateSplits`) observe the token when enumeration begins, not during enumeration. In-scan cancellation polling is future work, not a current promise. Timeouts stay approximate per 3.4 and keep `RegexMatchTimeoutException`.
+
+The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
+
+```csharp
+using var canceled = new CancellationTokenSource();
+canceled.Cancel();
+var regex = new Utf8Regex("cat|horse");
+Assert.Throws<OperationCanceledException>(() => regex.IsMatch("cat horse"u8, canceled.Token));
+```
+
 ## 4. Public API
 
 The public API is split into:

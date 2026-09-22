@@ -515,6 +515,18 @@ Supported-profile boundary for completion is also explicit:
 * the executable corpus plus `Utf8Pcre2CompletionLedgerTests` are the closure mechanism for this boundary; newly supported or newly rejected cases must be reflected there so the ledger remains a deliberate snapshot instead of drifting implicitly
 * performance work must prefer reuse of existing managed `Lokad.Utf8Regex` infrastructure where semantics allow it; do not introduce a second regex engine architecture under the PCRE2 profile
 
+### Cancellation, timeouts, and resource limits
+
+Every execution operation has an explicit `CancellationToken` twin with the core entry contract: an already-canceled token throws `OperationCanceledException` before matching begins. Lazy `EnumerateMatches` observes the token at creation.
+
+`MatchLimit`, `DepthLimit`, and `HeapLimitInBytes` are enforced on every program kind, including `Utf8Regex`-kind global operations; a breach raises `Pcre2MatchException` with the `MatchLimit`, `DepthLimit`, or `HeapLimit` kind. Zero disables each limit. Timeout breach on owned routes raises `Pcre2MatchException` with the `Timeout` kind. Defaults are unlimited.
+
+```csharp
+var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
+var regex = new Utf8Pcre2Regex("foo", Pcre2CompileOptions.None, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
+```
+
 ### 5. Deliberate managed-profile non-goals
 
 PCRE2 callouts and callback execution are outside this profile.
