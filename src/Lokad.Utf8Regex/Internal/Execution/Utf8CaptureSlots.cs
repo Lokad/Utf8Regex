@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -49,6 +51,29 @@ internal sealed class Utf8CaptureSlots
 
         _starts[slot] = start;
         _lengths[slot] = length;
+    }
+
+    public bool TrySet(int slot, int start, int length, ref Utf8ExecutionBudget budget)
+    {
+        if ((uint)slot >= (uint)_starts.Length)
+        {
+            return true;
+        }
+
+        if (_journaling)
+        {
+            if (!TryEnsureJournalCapacity(ref budget))
+            {
+                return false;
+            }
+
+            var journal = _journal ?? throw new InvalidOperationException("The capture journal could not be allocated.");
+            journal[_journalCount++] = new Utf8CaptureMutation(slot, _starts[slot], _lengths[slot]);
+        }
+
+        _starts[slot] = start;
+        _lengths[slot] = length;
+        return true;
     }
 
     public bool TryGet(int slot, out int start, out int length)
@@ -135,14 +160,41 @@ internal sealed class Utf8CaptureSlots
 
     private void EnsureJournalCapacity()
     {
+        var unlimited = new Utf8ExecutionBudget(default, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        if (!TryEnsureJournalCapacity(ref unlimited))
+        {
+            throw new InvalidOperationException("The capture journal could not be reserved.");
+        }
+    }
+
+    private bool TryEnsureJournalCapacity(ref Utf8ExecutionBudget budget)
+    {
         var journal = _journal;
         if (journal is not null && _journalCount < journal.Length)
         {
-            return;
+            return true;
         }
 
         var requestedLength = journal is null ? Math.Max(16, _starts.Length) : checked(journal.Length * 2);
+        var elementSize = Unsafe.SizeOf<Utf8CaptureMutation>();
+        var liveBytes =
+            checked((ulong)(uint)requestedLength * (ulong)(uint)elementSize) +
+            (journal is null ? 0UL : checked((ulong)(uint)journal.Length * (ulong)(uint)elementSize));
+        if (budget.TryNoteWorkingBytes(liveBytes) != Utf8ExecutionLimitKind.None)
+        {
+            return false;
+        }
+
         var grown = ArrayPool<Utf8CaptureMutation>.Shared.Rent(requestedLength);
+        var actualBytes =
+            checked((ulong)(uint)grown.Length * (ulong)(uint)elementSize) +
+            (journal is null ? 0UL : checked((ulong)(uint)journal.Length * (ulong)(uint)elementSize));
+        if (budget.TryNoteWorkingBytes(actualBytes) != Utf8ExecutionLimitKind.None)
+        {
+            ArrayPool<Utf8CaptureMutation>.Shared.Return(grown);
+            return false;
+        }
+
         if (journal is not null)
         {
             journal.AsSpan(0, _journalCount).CopyTo(grown);
@@ -150,6 +202,7 @@ internal sealed class Utf8CaptureSlots
         }
 
         _journal = grown;
+        return true;
     }
 }
 

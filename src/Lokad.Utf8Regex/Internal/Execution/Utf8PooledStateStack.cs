@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -61,6 +63,22 @@ internal ref struct Utf8PooledStateStack<T> where T : struct
         return true;
     }
 
+    public bool TryPush(T value, ref Utf8ExecutionBudget budget)
+    {
+        if (_count >= _maximumCount)
+        {
+            return false;
+        }
+
+        if (!TryEnsureCapacity(_count + 1, ref budget))
+        {
+            return false;
+        }
+
+        GetItems()[_count++] = value;
+        return true;
+    }
+
     public T Pop()
     {
         if (_count == 0)
@@ -97,20 +115,48 @@ internal ref struct Utf8PooledStateStack<T> where T : struct
 
     private void EnsureCapacity(int requiredCount)
     {
+        var unlimited = new Utf8ExecutionBudget(default, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        if (!TryEnsureCapacity(requiredCount, ref unlimited))
+        {
+            throw new InvalidOperationException("The state stack could not reserve execution storage.");
+        }
+    }
+
+    private bool TryEnsureCapacity(int requiredCount, ref Utf8ExecutionBudget budget)
+    {
         var items = _items;
         if (items is not null && requiredCount <= items.Length)
         {
-            return;
+            return true;
         }
 
         var requestedCount = items is null
             ? Math.Min(Math.Max(4, requiredCount), _maximumCount)
             : Math.Min(checked(items.Length * 2), _maximumCount);
+        var elementSize = Unsafe.SizeOf<T>();
+        var liveBytes =
+            checked((ulong)(uint)requestedCount * (ulong)(uint)elementSize) +
+            (items is null ? 0UL : checked((ulong)(uint)items.Length * (ulong)(uint)elementSize));
+        if (budget.TryNoteWorkingBytes(liveBytes) != Utf8ExecutionLimitKind.None)
+        {
+            return false;
+        }
+
         var grown = ArrayPool<T>.Shared.Rent(requestedCount);
         if (_trackRents)
         {
             _rentCount++;
         }
+
+        var actualBytes =
+            checked((ulong)(uint)grown.Length * (ulong)(uint)elementSize) +
+            (items is null ? 0UL : checked((ulong)(uint)items.Length * (ulong)(uint)elementSize));
+        if (budget.TryNoteWorkingBytes(actualBytes) != Utf8ExecutionLimitKind.None)
+        {
+            ArrayPool<T>.Shared.Return(grown);
+            return false;
+        }
+
         if (items is not null)
         {
             items.AsSpan(0, _count).CopyTo(grown);
@@ -118,6 +164,7 @@ internal ref struct Utf8PooledStateStack<T> where T : struct
         }
 
         _items = grown;
+        return true;
     }
 
     private readonly T[] GetItems()

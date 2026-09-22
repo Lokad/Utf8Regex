@@ -54,11 +54,13 @@ public sealed class Utf8ExecutionDeadlineTests
         Assert.DoesNotContain("RegexMatchTimeoutException", deadlineSource, StringComparison.Ordinal);
         Assert.DoesNotContain("Encoding.", deadlineSource, StringComparison.Ordinal);
 
+        // R02 extraction 2: budgets flow only through invocation machinery under Internal/Execution.
+        // Front-end, planning, search, caching, replacement, and input layers never name
+        // the budget type; adapters reach it through their own PCRE2-marked integration.
         foreach (var path in Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories))
         {
-            // R02 extraction 1 owns these references: the shared invocation budget
-            // and its limits are defined here and referenced nowhere else in the core.
-            if (Path.GetFileName(path) is "Utf8ExecutionBudget.cs" or "Utf8ExecutionLimits.cs")
+            var relative = Path.GetRelativePath(sourceRoot, path);
+            if (relative.StartsWith("Internal" + Path.DirectorySeparatorChar + "Execution", StringComparison.Ordinal))
             {
                 continue;
             }
