@@ -5,11 +5,13 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R03 split ownership for literal families: Split and Replace text operations on
-/// the owned cursors instead of the BCL fallback. Grouped alternations stay BCL-routed for
-/// Split (captured groups splice into the segment stream); Replace owns grouped shapes via
-/// the native plan. Boundary-wrapped, lookahead-gated, and right-to-left shapes keep
-/// declining to the existing BCL routes.
+/// R03 split ownership for literal families: Split and Replace text operations on groupless
+/// literal-family shapes run on the owned cursors instead of the BCL fallback, including
+/// non-capturing groups and lookahead-gated or boundary-wrapped families that keep the
+/// family compiled kind. Capturing groups stay BCL-routed for Split (captured groups splice
+/// into the segment stream); Replace owns grouped shapes via the native plan. Bare
+/// boundary-anchored alternations (which leave the family), right-to-left shapes, and
+/// culture-sensitive shapes keep declining to the existing BCL routes.
 /// </summary>
 public sealed class LiteralFamilyTextOperationOwnershipTests
 {
@@ -22,6 +24,8 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         yield return new object?[] { "a|b|c", RegexOptions.CultureInvariant };
         yield return new object?[] { "Sherlock Holmes|John Watson|Irene Adler", RegexOptions.None };
         yield return new object?[] { "caf\u00E9|ni\u00F1o|r\u00E9sum\u00E9", RegexOptions.None };
+        yield return new object?[] { "(?:cat|horse)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?:cat|horse)(?=horse)", RegexOptions.CultureInvariant };
     }
 
     [Theory]
@@ -37,7 +41,9 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         yield return new object?[] { "\\b(cat|horse)\\b", RegexOptions.CultureInvariant };
         yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant }; // Grouped: BCL Split splices group captures into segments.
+        yield return new object?[] { "cat|horse\\b", RegexOptions.CultureInvariant }; // Bare boundary-anchored alternations leave the literal family.
         yield return new object?[] { "(cat)|(horse)", RegexOptions.Compiled | RegexOptions.CultureInvariant };
+        yield return new object?[] { "cat|horse", RegexOptions.RightToLeft | RegexOptions.CultureInvariant }; // Right-to-left scanning stays BCL-routed.
     }
 
     [Theory]
@@ -61,6 +67,8 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
             "Sherlock Holmes|John Watson|Irene Adler",
             "caf\u00E9|ni\u00F1o|r\u00E9sum\u00E9",
             "x|y|z",
+            "(?:cat|horse)",
+            "(?:cat|horse)(?=horse)",
         ];
         RegexOptions[] options =
         [

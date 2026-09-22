@@ -1343,7 +1343,9 @@ public sealed partial class Utf8Regex
 
     private bool CanUseNativeSplit(Utf8ValidationResult validation)
     {
-        if (_preparedRegex.ExecutionPattern.IndexOf('(') >= 0)
+        // R03: BCL Split splices captured groups into the segment stream, so only
+        // groupless patterns split natively; non-capturing constructs ride along.
+        if (_groupNumbers.Length > 1)
         {
             return false;
         }
@@ -1351,7 +1353,7 @@ public sealed partial class Utf8Regex
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
-            Utf8CompiledEngineKind.LiteralFamily => !_preparedRegex.SearchPlan.HasBoundaryRequirements,
+            Utf8CompiledEngineKind.LiteralFamily => true,
             Utf8CompiledEngineKind.StructuralLinearAutomaton
                 => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
             _ => false,

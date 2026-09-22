@@ -145,7 +145,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     [InlineData(true, 2)]
     [InlineData(true, 3)]
     [InlineData(true, int.MaxValue)]
-    public void BoundaryLiteralFamilyFallbackSplitHonorsResultCount(bool compiled, int count)
+    public void BoundaryLiteralFamilyNativeSplitHonorsResultCount(bool compiled, int count)
     {
         const string pattern = @"\b(?:café|niño|résumé)\b";
         const string input = "café xcafé caféx niño résumé 😀café😀";
@@ -161,7 +161,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             actualValues.Add(split.GetValueString());
         }
 
-        Assert.False(actual.Inspection.DebugCanUseNativeSplit(bytes));
+        Assert.True(actual.Inspection.DebugCanUseNativeSplit(bytes));
         Assert.Equal(expected.Split(input, count), actualValues);
     }
 
@@ -177,7 +177,6 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         (string Pattern, RegexOptions ExtraOptions)[] cases =
         [
             (@"\b(café|niño|résumé)\b", RegexOptions.None),
-            (@"(?:café|niño|résumé)(?= noir)", RegexOptions.None),
             (@"\b(?:café|niño|résumé)\b", RegexOptions.RightToLeft),
         ];
 

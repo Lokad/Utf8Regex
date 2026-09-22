@@ -163,6 +163,10 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     [InlineData("cat|horse", "cathorsecat", int.MaxValue, RegexOptions.CultureInvariant)]
     [InlineData("x|y|z", "", int.MaxValue, RegexOptions.CultureInvariant)]
     [InlineData("x|y|z", "no match here", 2, RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)", "cat horse cathorse", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)", "cat horse cathorse", 2, RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("(?:cat|horse)(?=horse)", "cathorsecathorse", 2, RegexOptions.CultureInvariant)]
     public void EnumerateSplitsMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int count, RegexOptions options)
     {
         var utf8Regex = new Utf8Regex(pattern, options);
