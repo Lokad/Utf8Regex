@@ -1,0 +1,166 @@
+enum PythonRe.PythonReCompileOptions { None, IgnoreCase, Locale, Multiline, DotAll, Verbose, Ascii, Unicode }
+struct PythonRe.PythonReNameEntry
+  property Int32 Number { get; set; }
+  property String Name { get; set; }
+class PythonRe.PythonRePatternException
+  ctor PythonRePatternException(String message)
+  ctor PythonRePatternException(String message, Int32 position)
+  property Int32 Position { get; }
+struct PythonRe.Utf8PythonDetailedMatchData
+  property Boolean Success { get; }
+  property Int32 CaptureSlotCount { get; }
+  property Int32 NameEntryCount { get; }
+  property PythonRe.PythonReNameEntry[] NameEntries { get; set; }
+  property PythonRe.Utf8PythonGroupMatchData Value { get; }
+  property PythonRe.Utf8PythonGroupMatchData[] Groups { get; set; }
+  method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupMatchData group)
+  method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupMatchData group)
+struct PythonRe.Utf8PythonFindAllResult
+  property Int32 Count { get; }
+  property PythonRe.Utf8PythonFindAllShape Shape { get; set; }
+  property String[] ScalarValues { get; set; }
+  property String[][] TupleValues { get; set; }
+enum PythonRe.Utf8PythonFindAllShape { FullMatch, SingleGroup, GroupTuple }
+struct PythonRe.Utf8PythonFindAllUtf8Result
+  property Byte[][] ScalarValues { get; set; }
+  property Byte[][][] TupleValues { get; set; }
+  property Int32 Count { get; }
+  property PythonRe.Utf8PythonFindAllShape Shape { get; set; }
+struct PythonRe.Utf8PythonGroupContext
+  property Boolean Success { get; }
+  property Int32 Number { get; }
+  property PythonRe.Utf8PythonValueMatch Value { get; }
+  method String GetValueString()
+struct PythonRe.Utf8PythonGroupMatchData
+  property Boolean HasContiguousByteRange { get; set; }
+  property Boolean Success { get; set; }
+  property Int32 EndOffsetInBytes { get; set; }
+  property Int32 EndOffsetInUtf16 { get; set; }
+  property Int32 Number { get; set; }
+  property Int32 StartOffsetInBytes { get; set; }
+  property Int32 StartOffsetInUtf16 { get; set; }
+  property String ValueText { get; set; }
+struct PythonRe.Utf8PythonMatchContext
+  property Boolean Success { get; }
+  property Int32 CaptureSlotCount { get; }
+  property Int32 NameEntryCount { get; }
+  property PythonRe.Utf8PythonValueMatch Value { get; }
+  method Boolean TryGetFirstSetGroup(String name, out PythonRe.Utf8PythonGroupContext group)
+  method Boolean TryGetFirstSetGroupValueString(String name, out String value)
+  method Boolean TryGetGroup(Int32 number, out PythonRe.Utf8PythonGroupContext group)
+  method Boolean TryGetGroupValueString(Int32 number, out String value)
+  method PythonRe.PythonReNameEntry[] GetNameEntries()
+  method PythonRe.Utf8PythonGroupContext GetGroup(Int32 number)
+  method String GetValueString()
+struct PythonRe.Utf8PythonMatchData
+  property Boolean Success { get; set; }
+  property Int32 EndOffsetInBytes { get; set; }
+  property Int32 EndOffsetInUtf16 { get; set; }
+  property Int32 StartOffsetInBytes { get; set; }
+  property Int32 StartOffsetInUtf16 { get; set; }
+  property String ValueText { get; set; }
+delegate String PythonRe.Utf8PythonMatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
+class PythonRe.Utf8PythonRegex
+  ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
+  ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
+  ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
+  ctor Utf8PythonRegex(String pattern)
+  ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options)
+  ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
+  property PythonRe.PythonReCompileOptions Options { get; }
+  property String Pattern { get; }
+  property TimeSpan DefaultMatchTimeout { get; set; }
+  property TimeSpan MatchTimeout { get; }
+  method Boolean IsMatch(ReadOnlySpan<Byte> input)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 count)
+  method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 count, Int32 startOffsetInBytes)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator, Int32 count)
+  method Byte[] Replace<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method Int32 Count(ReadOnlySpan<Byte> input)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonDetailedMatchData FullMatchDetailedData(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonDetailedMatchData MatchDetailedData(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonDetailedMatchData SearchDetailedData(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonDetailedMatchData[] FindIterDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonFindAllResult FindAllToStrings(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonMatchContext FullMatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonMatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonMatchContext SearchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonMatchData[] FindAll(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input, Int32 maxSplit)
+  method PythonRe.Utf8PythonSplitItem[] SplitDetailed(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSubnResult SubnToString(ReadOnlySpan<Byte> input, String replacement)
+  method PythonRe.Utf8PythonSubnResult SubnToString(ReadOnlySpan<Byte> input, String replacement, Int32 count)
+  method PythonRe.Utf8PythonSubnResult SubnToString(ReadOnlySpan<Byte> input, String replacement, Int32 count, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator)
+  method PythonRe.Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count)
+  method PythonRe.Utf8PythonSubnResult SubnToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<Byte> input, String replacement)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<Byte> input, String replacement, Int32 count)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<Byte> input, String replacement, Int32 count, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator, Int32 count)
+  method PythonRe.Utf8PythonSubnUtf8Result Subn<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonUtf8MatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonValueMatch FullMatch(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonValueMatch FullMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonValueMatch Match(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method PythonRe.Utf8PythonValueMatch Search(ReadOnlySpan<Byte> input)
+  method PythonRe.Utf8PythonValueMatch Search(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method String FullMatchToString(ReadOnlySpan<Byte> input)
+  method String FullMatchToString(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method String MatchToString(ReadOnlySpan<Byte> input)
+  method String MatchToString(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Int32 count)
+  method String ReplaceToString(ReadOnlySpan<Byte> input, String replacement, Int32 count, Int32 startOffsetInBytes)
+  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator)
+  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count)
+  method String ReplaceToString<TState>(ReadOnlySpan<Byte> input, TState state, PythonRe.Utf8PythonMatchEvaluator<TState> evaluator, Int32 count, Int32 startOffsetInBytes)
+  method String SearchToString(ReadOnlySpan<Byte> input)
+  method String SearchToString(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
+  method String[] GetGroupNames()
+  method String[] SplitToStrings(ReadOnlySpan<Byte> input)
+  method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit)
+  method String[] SplitToStrings(ReadOnlySpan<Byte> input, Int32 maxSplit, Int32 startOffsetInBytes)
+struct PythonRe.Utf8PythonSplitItem
+  property Boolean IsCapture { get; set; }
+  property Int32 CaptureGroupNumber { get; set; }
+  property String ValueText { get; set; }
+struct PythonRe.Utf8PythonSubnResult
+  property Int32 ReplacementCount { get; set; }
+  property String ResultText { get; set; }
+struct PythonRe.Utf8PythonSubnUtf8Result
+  property Byte[] ResultBytes { get; set; }
+  property Int32 ReplacementCount { get; set; }
+delegate Byte[] PythonRe.Utf8PythonUtf8MatchEvaluator<TState>(TState state, PythonRe.Utf8PythonDetailedMatchData match)
+struct PythonRe.Utf8PythonValueMatch
+  property Boolean HasContiguousByteRange { get; }
+  property Boolean Success { get; }
+  property Int32 EndOffsetInBytes { get; }
+  property Int32 EndOffsetInUtf16 { get; }
+  property Int32 StartOffsetInBytes { get; }
+  property Int32 StartOffsetInUtf16 { get; }
+  method ReadOnlySpan<Byte> GetValueBytes()
+  method String GetValueString()
