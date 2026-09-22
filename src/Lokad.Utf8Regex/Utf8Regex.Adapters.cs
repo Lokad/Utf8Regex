@@ -188,7 +188,8 @@ public sealed partial class Utf8Regex
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
-        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining))
+        if (RequiresCultureSensitiveFallback || UsesRightToLeft() || ShouldUseKelvinSignFallback(remaining) ||
+            (start.Value != 0 && RequiresOriginSemanticsForOffsetSearch()))
         {
             var startInUtf16 = input.Project(start);
             return new Utf8ValueMatchEnumerator(
@@ -217,6 +218,18 @@ public sealed partial class Utf8Regex
         Utf8BytePosition start)
     {
         return new Utf8PreparedValueMatchEnumerator(input.Bytes, _preparedRegex.SearchPlan.PreparedSearcher, start);
+    }
+
+    // R03: suffix slicing loses absolute-origin anchors and left context (word boundaries,
+    // lookbehind). From a nonzero start those shapes keep full-input BCL verification;
+    // multiline-anchored patterns divert conservatively, while \G anchors at the search
+    // start exactly like BCL startat and stay native.
+    private bool RequiresOriginSemanticsForOffsetSearch()
+    {
+        return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ||
+            _preparedRegex.Features.HasAbsoluteStartAnchor ||
+            _preparedRegex.Features.HasWordBoundary ||
+            _preparedRegex.Features.HasLookbehind;
     }
 
     internal readonly struct Utf8ByteOffsetExecution

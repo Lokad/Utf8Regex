@@ -8,4 +8,7 @@ internal readonly record struct Utf8RegexFeatures(
     bool HasAtomicGroups,
     bool HasConditionals,
     bool HasLoops,
-    bool HasAlternation);
+    bool HasAlternation,
+    bool HasAbsoluteStartAnchor,
+    bool HasWordBoundary,
+    bool HasLookbehind);

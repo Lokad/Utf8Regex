@@ -28,7 +28,10 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             state.HasAtomicGroups,
             state.HasConditionals,
             state.HasLoops,
-            state.HasAlternation);
+            state.HasAlternation,
+            state.HasAbsoluteStartAnchor,
+            state.HasWordBoundary,
+            state.HasLookbehind);
     }
 
     private static void Visit(RuntimeFrontEnd.RegexNode node, RuntimeFrontEnd.AnalysisResults? runtimeAnalysis, ref FeatureState state)
@@ -47,6 +50,11 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
             case RuntimeFrontEnd.RegexNodeKind.NegativeLookaround:
                 state.HasLookarounds = true;
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    state.HasLookbehind = true;
+                }
+
                 break;
 
             case RuntimeFrontEnd.RegexNodeKind.Atomic:
@@ -75,6 +83,18 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             case RuntimeFrontEnd.RegexNodeKind.Alternate:
                 state.HasAlternation = true;
                 break;
+
+            case RuntimeFrontEnd.RegexNodeKind.Bol:
+            case RuntimeFrontEnd.RegexNodeKind.Beginning:
+                state.HasAbsoluteStartAnchor = true;
+                break;
+
+            case RuntimeFrontEnd.RegexNodeKind.Boundary:
+            case RuntimeFrontEnd.RegexNodeKind.NonBoundary:
+            case RuntimeFrontEnd.RegexNodeKind.ECMABoundary:
+            case RuntimeFrontEnd.RegexNodeKind.NonECMABoundary:
+                state.HasWordBoundary = true;
+                break;
         }
 
         for (var i = 0; i < node.ChildCount; i++)
@@ -93,5 +113,8 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
         public bool HasConditionals;
         public bool HasLoops;
         public bool HasAlternation;
+        public bool HasAbsoluteStartAnchor;
+        public bool HasWordBoundary;
+        public bool HasLookbehind;
     }
 }
