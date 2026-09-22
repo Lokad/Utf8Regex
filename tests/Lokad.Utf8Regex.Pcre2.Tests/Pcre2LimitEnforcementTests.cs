@@ -1,0 +1,98 @@
+using System.Text;
+using Lokad.Utf8Regex.Pcre2;
+
+namespace Lokad.Utf8Regex.Pcre2.Tests;
+
+public sealed class Pcre2LimitEnforcementTests
+{
+    public static IEnumerable<object?[]> CountRows()
+    {
+        yield return new object?[] { "foo", Pcre2CompileOptions.None, "foo foo foo", 3 };
+        yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
+        yield return new object?[] { "[ab]+", Pcre2CompileOptions.None, "ab ab ab", 3 };
+        yield return new object?[] { "foo.+?bar", Pcre2CompileOptions.None, "fooXbar fooYbar", 2 };
+        yield return new object?[] { "^ERROR", Pcre2CompileOptions.Multiline, "ERROR a\nERROR b\nERROR c", 3 };
+        yield return new object?[] { "(?#comment)ab", Pcre2CompileOptions.None, "xxab xxab xxab", 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(CountRows))]
+    public void TinyMatchLimitBreachesEnumerateOnEveryProgramKind(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(inputText));
+        Pcre2MatchException? caught = null;
+        try
+        {
+            while (enumerator.MoveNext())
+            {
+            }
+        }
+        catch (Pcre2MatchException exception)
+        {
+            caught = exception;
+        }
+
+        Assert.NotNull(caught);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, caught.ErrorKind);
+    }
+
+    [Theory]
+    [MemberData(nameof(CountRows))]
+    public void TinyMatchLimitBreachesMatchManyOnEveryProgramKind(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var destination = new Utf8Pcre2MatchData[8];
+        Assert.Throws<Pcre2MatchException>(() => regex.MatchMany(Encoding.UTF8.GetBytes(inputText), destination, out _));
+    }
+
+    [Fact]
+    public void CountRowsSpanEveryProgramKind()
+    {
+        var kinds = new System.Collections.Generic.HashSet<string>();
+        foreach (var row in CountRows())
+        {
+            var regex = new Utf8Pcre2Regex((string)row[0]!, (Pcre2CompileOptions)row[1]!, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+            foreach (var part in regex.DebugDescribeExecutionPlan().Split(", "))
+            {
+                if (part.StartsWith("Count=", System.StringComparison.Ordinal))
+                {
+                    kinds.Add(part.Substring("Count=".Length));
+                }
+            }
+        }
+        Assert.Equal(new[] { "Pcre2Backtracking", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2SingleTokenRepeat", "Utf8Regex" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [MemberData(nameof(CountRows))]
+    public void UnlimitedCountMatchesExpected(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
+
+    [Theory]
+    [MemberData(nameof(CountRows))]
+    public void GenerousMatchLimitPreservesExactCounts(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1000 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
+
+    [Theory]
+    [MemberData(nameof(CountRows))]
+    public void TinyMatchLimitBreachesOnEveryProgramKind(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
+    }
+}
