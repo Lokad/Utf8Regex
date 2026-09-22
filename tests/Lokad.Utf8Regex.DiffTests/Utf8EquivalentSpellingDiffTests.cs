@@ -10,6 +10,9 @@ namespace Lokad.Utf8Regex.DiffTests;
 public sealed class Utf8EquivalentSpellingDiffTests
 {
     [Theory]
+    [InlineData("[A]", "A", RegexOptions.CultureInvariant)]
+    [InlineData("[A]", "a", RegexOptions.CultureInvariant)]
+    [InlineData("[Z]", "Z", RegexOptions.CultureInvariant)]
     [InlineData("[Aa]", "A", RegexOptions.CultureInvariant)]
     [InlineData("[Aa]", "a", RegexOptions.CultureInvariant)]
     [InlineData("abc", "xxabcxx", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
@@ -33,6 +36,9 @@ public sealed class Utf8EquivalentSpellingDiffTests
     }
 
     [Theory]
+    [InlineData("[A]", "A", RegexOptions.CultureInvariant)]
+    [InlineData("[A]", "a", RegexOptions.CultureInvariant)]
+    [InlineData("[Z]", "Z", RegexOptions.CultureInvariant)]
     [InlineData("[Aa]", "A", RegexOptions.CultureInvariant)]
     [InlineData("[Aa]", "a", RegexOptions.CultureInvariant)]
     [InlineData("abc", "xxabcxx", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
