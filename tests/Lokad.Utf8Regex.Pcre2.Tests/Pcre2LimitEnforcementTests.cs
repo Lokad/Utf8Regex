@@ -95,4 +95,49 @@ public sealed class Pcre2LimitEnforcementTests
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
+
+    public static IEnumerable<object?[]> DepthRows()
+    {
+        yield return new object?[] { "(a+)(b+)", Pcre2CompileOptions.None, "aaabbb aaabbb", 2 };
+        yield return new object?[] { "((a+))b", Pcre2CompileOptions.None, "aaab aaab", 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(DepthRows))]
+    public void UnlimitedDepthMatchesExpected(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
+
+    [Theory]
+    [MemberData(nameof(DepthRows))]
+    public void TinyDepthLimitBreachesOnNestedGroups(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { DepthLimit = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
+        Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
+    }
+
+    [Theory]
+    [MemberData(nameof(DepthRows))]
+    public void GenerousDepthLimitPreservesExactCounts(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        var limits = new Utf8Pcre2ExecutionLimits { DepthLimit = 1000000 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
+    }
+
+    [Theory]
+    [MemberData(nameof(DepthRows))]
+    public void TinyHeapLimitBreachesOnBacktrackingWork(string pattern, Pcre2CompileOptions options, string inputText, int expected)
+    {
+        Assert.True(expected > 1);
+        var limits = new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 };
+        var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(inputText)));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
+    }
 }
