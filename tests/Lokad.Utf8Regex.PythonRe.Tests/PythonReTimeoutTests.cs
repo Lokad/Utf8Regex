@@ -46,4 +46,16 @@ public sealed class PythonReTimeoutTests
         Assert.Equal(1, regex.Count(input));
         Assert.Equal("aaab-", regex.SubnToString(input, "-").ResultText);
     }
+    [Fact]
+    public void FiniteTimeoutNeverBreaksFastPaths()
+    {
+        var regex = new Utf8PythonRegex("abc", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var input = Encoding.UTF8.GetBytes("xxabcxx");
+
+        Assert.True(regex.Search(input).Success);
+        Assert.Equal(1, regex.Count(input));
+        Assert.Single(regex.FindAll(input));
+        Assert.Equal("xxZxx", regex.SubnToString(input, "Z").ResultText);
+        Assert.Equal(2, regex.SplitToStrings(input).Length);
+    }
 }

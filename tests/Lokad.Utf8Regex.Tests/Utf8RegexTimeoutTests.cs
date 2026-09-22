@@ -121,4 +121,30 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Throws<RegexMatchTimeoutException>(() => regex.MatchDetailedFromUtf16Offset(input, 0));
         Assert.Throws<RegexMatchTimeoutException>(() => regex.CountFromUtf16Offset(input, 0));
     }
+    [Fact]
+    public void FiniteTimeoutNeverBreaksFastPaths()
+    {
+        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var input = Encoding.UTF8.GetBytes("xxabcxx");
+
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.Match(input).Success);
+        Assert.Equal(1, regex.Count(input));
+        Assert.Equal(Encoding.UTF8.GetBytes("xxZxx"), regex.Replace(input, "Z"));
+        var matches = 0;
+        foreach (var item in regex.EnumerateMatches(input))
+        {
+            matches++;
+        }
+
+        Assert.Equal(1, matches);
+        var splits = 0;
+        foreach (var item in regex.EnumerateSplits(input))
+        {
+            splits++;
+        }
+
+        Assert.Equal(2, splits);
+        Assert.True(regex.MatchDetailed(input).Success);
+    }
 }
