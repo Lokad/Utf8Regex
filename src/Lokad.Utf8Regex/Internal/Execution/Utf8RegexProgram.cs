@@ -16,7 +16,8 @@ internal sealed class Utf8RegexProgram
         bool requiresCultureSensitiveFallback,
         Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher,
         int[] groupNumbers,
-        string[] groupNames)
+        string[] groupNames,
+        Utf8GroupMetadata? groupMetadata)
     {
         PreparedRegex = preparedRegex;
         CompiledEngine = compiledEngine;
@@ -27,6 +28,7 @@ internal sealed class Utf8RegexProgram
         DirectStructuralFamilyKernelMatcher = directStructuralFamilyKernelMatcher;
         GroupNumbers = groupNumbers;
         GroupNames = groupNames;
+        GroupMetadata = groupMetadata;
     }
 
     public Utf8PreparedRegex PreparedRegex { get; }
@@ -46,6 +48,8 @@ internal sealed class Utf8RegexProgram
     public int[] GroupNumbers { get; }
 
     public string[] GroupNames { get; }
+
+    public Utf8GroupMetadata? GroupMetadata { get; }
 
     public static Utf8RegexProgram Compile(
         string pattern,
@@ -68,8 +72,11 @@ internal sealed class Utf8RegexProgram
             verifierRuntime,
             options);
         var fallbackRegex = verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
-        var groupNumbers = fallbackRegex.GetGroupNumbers();
-        var groupNames = fallbackRegex.GetGroupNames();
+        // R02 extraction 4: group metadata comes from the owned parse tree whenever it exists;
+        // the BCL query remains only for patterns the owned parser declines.
+        Utf8GroupMetadata.TryCreate(preparedRegex.SemanticRegex.RuntimeTree, out var groupMetadata);
+        var groupNumbers = groupMetadata?.GroupNumbers ?? fallbackRegex.GetGroupNumbers();
+        var groupNames = groupMetadata?.GroupNames ?? fallbackRegex.GetGroupNames();
         // The ASCII twin replays matching with invariant case folding, which is
         // only valid when the construction culture folds ASCII the invariant way
         // (PLAN.md C02). Turkic dotted/dotless-I cultures do not: "I" and "i"
@@ -129,6 +136,7 @@ internal sealed class Utf8RegexProgram
             requiresCultureSensitiveFallback,
             directStructuralFamilyKernelMatcher,
             groupNumbers,
-            groupNames);
+            groupNames,
+            groupMetadata);
     }
 }

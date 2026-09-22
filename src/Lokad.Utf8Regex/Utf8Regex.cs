@@ -328,25 +328,27 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
+        return _program.GroupMetadata?.GroupNumberFromName(name)
+            ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
     }
 
     /// <summary>Returns the name assigned to a group number, or an empty string when the number is undefined.</summary>
     public string GroupNameFromNumber(int i)
     {
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNameFromNumber(i);
+        return _program.GroupMetadata?.GroupNameFromNumber(i)
+            ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNameFromNumber(i);
     }
 
     /// <summary>Returns the group names defined by the expression, including group zero.</summary>
     public string[] GetGroupNames()
     {
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
+        return _program.GroupMetadata?.GroupNames ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
     }
 
     /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
     public int[] GetGroupNumbers()
     {
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
+        return _program.GroupMetadata?.GroupNumbers ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
     }
 
     /// <summary>Determines whether the well-formed UTF-8 input contains a match.</summary>
