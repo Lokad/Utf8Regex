@@ -13,6 +13,11 @@ public sealed class Pcre2LimitEnforcementTests
         yield return new object?[] { "foo.+?bar", Pcre2CompileOptions.None, "fooXbar fooYbar", 2 };
         yield return new object?[] { "^ERROR", Pcre2CompileOptions.Multiline, "ERROR a\nERROR b\nERROR c", 3 };
         yield return new object?[] { "(?#comment)ab", Pcre2CompileOptions.None, "xxab xxab xxab", 3 };
+        yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
+        yield return new object?[] { "Holmes.{0,25}Watson|Watson.{0,25}Holmes", Pcre2CompileOptions.None, "Holmes+Watson" + new string((char)120, 30) + "Holmes+Watson", 2 };
+        yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
+        yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
+        yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "abb abb", 2 };
     }
 
     [Theory]
@@ -65,7 +70,7 @@ public sealed class Pcre2LimitEnforcementTests
                 }
             }
         }
-        Assert.Equal(new[] { "Pcre2Backtracking", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2SingleTokenRepeat", "Utf8Regex" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
+        Assert.Equal(new[] { "Pcre2AsciiLiteralAlternationRepeat", "Pcre2AsciiOrderedLiteralWindow", "Pcre2Backtracking", "Pcre2Character", "Pcre2Literal", "Pcre2LiteralFamily", "Pcre2LiteralPrefixRepeat", "Pcre2MultilinePrefix", "Pcre2SameStartLiteral", "Pcre2SingleTokenRepeat", "Utf8Regex" }, kinds.OrderBy(static k => k, System.StringComparer.Ordinal));
     }
 
     [Theory]
