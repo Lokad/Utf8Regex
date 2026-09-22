@@ -157,6 +157,29 @@ public sealed partial class Utf8PythonRegex
     {
     }
 
+    /// <summary>Creates a Python-compatible expression from a well-formed UTF-8 pattern with explicit options, timeout, and invocation resource policy.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
+    /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
+    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+        : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout, resourcePolicy)
+    {
+    }
+
+    /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
+    /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
+    public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+        : this(pattern, options, matchTimeout)
+    {
+        resourcePolicy.Validate(nameof(resourcePolicy));
+        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
+        {
+            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets require the PCRE2 profile.");
+        }
+
+        ResourcePolicy = resourcePolicy;
+    }
+
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options and timeout.</summary>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
     {
@@ -327,6 +350,9 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
     public TimeSpan MatchTimeout { get; }
+
+    /// <summary>Gets the invocation resource policy.</summary>
+    public Utf8ResourcePolicy ResourcePolicy { get; }
 
     /// <summary>Returns the group names in group-number order, including group zero.</summary>
     // PLAN.md C09: returned arrays are caller-owned; never expose the compiled backing storage. Empty entry arrays stay shared: they have no slots to mutate.

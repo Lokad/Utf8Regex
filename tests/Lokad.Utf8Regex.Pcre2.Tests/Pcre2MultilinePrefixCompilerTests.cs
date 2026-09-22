@@ -42,7 +42,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             "^ERROR: .+$",
             Pcre2CompileOptions.Multiline,
             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Lf },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Regex.InfiniteMatchTimeout);
         var input = "ERROR: zero\nINFO: one\nERROR: two\r\nERROR: three"u8;
         var secondMatchStart = "ERROR: zero\nINFO: one\n"u8.Length;
@@ -124,7 +124,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             "^ERROR: .+$",
             Pcre2CompileOptions.Multiline,
             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Regex.InfiniteMatchTimeout);
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(explicitCr.DebugCompiledProgram.Operations.Count);

@@ -64,13 +64,16 @@ class PythonRe.Utf8PythonRegex
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
+  ctor Utf8PythonRegex(ReadOnlySpan<Byte> patternUtf8, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   ctor Utf8PythonRegex(String pattern)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options)
   ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout)
+  ctor Utf8PythonRegex(String pattern, PythonRe.PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property PythonRe.PythonReCompileOptions Options { get; }
   property String Pattern { get; }
   property TimeSpan DefaultMatchTimeout { get; set; }
   property TimeSpan MatchTimeout { get; }
+  property Utf8ResourcePolicy ResourcePolicy { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Threading.CancellationToken cancellationToken)

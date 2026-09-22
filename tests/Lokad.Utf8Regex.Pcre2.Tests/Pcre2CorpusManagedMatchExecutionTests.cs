@@ -14,7 +14,7 @@ public sealed class Pcre2CorpusManagedMatchExecutionTests
             corpusCase.Pattern,
             Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions),
             Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings),
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);

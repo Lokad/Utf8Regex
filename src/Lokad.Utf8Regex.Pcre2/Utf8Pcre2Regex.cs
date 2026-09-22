@@ -27,7 +27,20 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Compiles a PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options)
-        : this(pattern, options, default, default, DefaultMatchTimeout)
+        : this(pattern, options, default(Utf8Pcre2CompileSettings), default(Utf8Pcre2ExecutionLimits), DefaultMatchTimeout)
+    {
+    }
+
+    /// <summary>Compiles a PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
+    /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
+    public Utf8Pcre2Regex(
+        string pattern,
+        Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings,
+        Utf8ResourcePolicy resourcePolicy,
+        TimeSpan matchTimeout)
+        : this(pattern, options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout)
     {
     }
 
@@ -59,6 +72,36 @@ public sealed partial class Utf8Pcre2Regex
         {
             _unmeteredIsMatchProgram = isMatchProgram;
         }
+    }
+
+    /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
+    /// <exception cref="NotSupportedException">A result-bytes budget is set. No profile meters result materialization yet.</exception>
+    private static Utf8Pcre2ExecutionLimits ToExecutionLimits(Utf8ResourcePolicy resourcePolicy)
+    {
+        resourcePolicy.Validate(nameof(resourcePolicy));
+        if (resourcePolicy.MaxResultBytes.HasValue)
+        {
+            throw new NotSupportedException("Result-bytes budgets are reserved and not enforced by any profile yet.");
+        }
+
+        uint workSteps = 0;
+        if (resourcePolicy.MaxWorkSteps.HasValue && resourcePolicy.MaxWorkSteps.Value > uint.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(resourcePolicy), "The work-steps budget exceeds the 32-bit PCRE2 range.");
+        }
+
+        if (resourcePolicy.MaxWorkSteps.HasValue)
+        {
+            workSteps = (uint)resourcePolicy.MaxWorkSteps.Value;
+        }
+
+        return new Utf8Pcre2ExecutionLimits
+        {
+            MatchLimit = workSteps,
+            DepthLimit = resourcePolicy.MaxDepth ?? 0u,
+            HeapLimitInBytes = resourcePolicy.MaxWorkingBytes ?? 0ul,
+        };
     }
 
     private static Pcre2CompiledProgram CreateFoundationProgram(Pcre2CompileRequest request)
@@ -95,7 +138,20 @@ public sealed partial class Utf8Pcre2Regex
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with the specified options and default settings, limits, and timeout.</summary>
     public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options)
-        : this(patternUtf8, options, default, default, DefaultMatchTimeout)
+        : this(patternUtf8, options, default(Utf8Pcre2CompileSettings), default(Utf8Pcre2ExecutionLimits), DefaultMatchTimeout)
+    {
+    }
+
+    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
+    /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
+    public Utf8Pcre2Regex(
+        ReadOnlySpan<byte> patternUtf8,
+        Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings,
+        Utf8ResourcePolicy resourcePolicy,
+        TimeSpan matchTimeout)
+        : this(DecodeValidatedUtf8(patternUtf8), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout)
     {
     }
 

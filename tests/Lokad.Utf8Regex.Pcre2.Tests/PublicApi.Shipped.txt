@@ -91,9 +91,11 @@ class Utf8Pcre2Regex
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options)
   ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
+  ctor Utf8Pcre2Regex(ReadOnlySpan<Byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
   ctor Utf8Pcre2Regex(String pattern)
   ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options)
   ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
+  ctor Utf8Pcre2Regex(String pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
   property Int32 NameEntryCount { get; }
   property Pcre2CompileOptions Options { get; }
   property String Pattern { get; }

@@ -115,7 +115,7 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
                          @".*ss",
                          Pcre2CompileOptions.None,
                          new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                         default,
+                         default(Utf8Pcre2ExecutionLimits),
                          Regex.InfiniteMatchTimeout),
                  })
         {

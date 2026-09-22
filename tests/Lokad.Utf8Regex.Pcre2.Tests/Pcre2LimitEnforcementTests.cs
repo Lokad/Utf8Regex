@@ -56,7 +56,7 @@ public sealed class Pcre2LimitEnforcementTests
         var kinds = new System.Collections.Generic.HashSet<string>();
         foreach (var row in CountRows())
         {
-            var regex = new Utf8Pcre2Regex((string)row[0]!, (Pcre2CompileOptions)row[1]!, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+            var regex = new Utf8Pcre2Regex((string)row[0]!, (Pcre2CompileOptions)row[1]!, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
             foreach (var part in regex.DebugDescribeExecutionPlan().Split(", "))
             {
                 if (part.StartsWith("Count=", System.StringComparison.Ordinal))
@@ -72,7 +72,7 @@ public sealed class Pcre2LimitEnforcementTests
     [MemberData(nameof(CountRows))]
     public void UnlimitedCountMatchesExpected(string pattern, Pcre2CompileOptions options, string inputText, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(inputText)));
     }
 

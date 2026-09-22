@@ -114,6 +114,6 @@ public sealed class Pcre2BranchResetCompilerTests
         "(?:(?<n>foo)|(?<n>bar))\\k<n>",
         Pcre2CompileOptions.None,
         new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-        default,
+        default(Utf8Pcre2ExecutionLimits),
         System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
 }

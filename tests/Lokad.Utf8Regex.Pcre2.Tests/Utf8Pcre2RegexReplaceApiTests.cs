@@ -324,7 +324,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             "(?:(?<n>foo)|(?<n>bar))\\k<n>",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var actual = regex.ReplaceToString(
@@ -354,7 +354,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
             "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
         var actual = regex.ReplaceToString(

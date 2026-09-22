@@ -101,7 +101,7 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
             "Holmes.{0,25}Watson|Watson.{0,25}Holmes",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Regex.InfiniteMatchTimeout);
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(explicitCr.DebugCompiledProgram.Operations.Count);

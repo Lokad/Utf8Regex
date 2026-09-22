@@ -99,7 +99,7 @@ public sealed class Pcre2AsciiRegularDotIsMatchCompilerTests
                 FtpLinePattern,
                 Pcre2CompileOptions.None,
                 new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                default,
+                default(Utf8Pcre2ExecutionLimits),
                 Regex.InfiniteMatchTimeout)
                 .DebugCompiledProgram.Operations.IsMatch);
         Assert.Throws<ArgumentException>(() => direct.IsMatch([0xFF]));

@@ -90,10 +90,12 @@ class Utf8Regex
   ctor Utf8Regex(String pattern)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options)
   ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout)
+  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
   property String Pattern { get; }
   property Text.RegularExpressions.RegexOptions Options { get; }
   property TimeSpan DefaultMatchTimeout { get; set; }
   property TimeSpan MatchTimeout { get; }
+  property Utf8ResourcePolicy ResourcePolicy { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input)
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken)
   method Boolean IsMatchFromUtf16Offset(ReadOnlySpan<Byte> input, Int32 utf16Offset)
@@ -163,6 +165,16 @@ struct Utf8ReplacementWriter
   method Void Append(ReadOnlySpan<Char> utf16)
   method Void Append(Text.Rune value)
   method Void AppendAsciiByte(Byte value)
+struct Utf8ResourcePolicy
+  property Nullable<UInt32> MaxDepth { get; set; }
+  property Nullable<UInt64> MaxResultBytes { get; set; }
+  property Nullable<UInt64> MaxWorkSteps { get; set; }
+  property Nullable<UInt64> MaxWorkingBytes { get; set; }
+  property Utf8ResourcePolicy Unlimited { get; }
+  method Boolean Equals(Object obj)
+  method Boolean Equals(Utf8ResourcePolicy other)
+  method Int32 GetHashCode()
+  method String ToString()
 struct Utf8ValueMatch
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16)
   ctor Utf8ValueMatch(Boolean success, Boolean isByteAligned, Int32 indexInUtf16, Int32 lengthInUtf16, Int32 indexInBytes, Int32 lengthInBytes)

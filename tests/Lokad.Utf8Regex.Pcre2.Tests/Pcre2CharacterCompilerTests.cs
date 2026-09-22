@@ -370,5 +370,5 @@ public sealed class Pcre2CharacterCompilerTests
         string pattern,
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings settings) =>
-        new(pattern, options, settings, default, Timeout.InfiniteTimeSpan);
+        new(pattern, options, settings, default(Utf8Pcre2ExecutionLimits), Timeout.InfiniteTimeSpan);
 }

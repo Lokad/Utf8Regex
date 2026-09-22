@@ -14,7 +14,7 @@ public sealed class Pcre2CancellationTests
         return source.Token;
     }
 
-    private static Utf8Pcre2Regex Create() => new("foo", Pcre2CompileOptions.None, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+    private static Utf8Pcre2Regex Create() => new("foo", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
 
     [Fact]
     public void PreCanceledTokenThrowsBeforeIsMatch()
@@ -136,7 +136,7 @@ public sealed class Pcre2CancellationTests
     [Fact]
     public void PreCanceledTokenThrowsBeforeTryGetFirstSetGroup()
     {
-        var regex = new Utf8Pcre2Regex("(?<w>foo)", Pcre2CompileOptions.None, default, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex("(?<w>foo)", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
         var token = CanceledToken();
         var exception = Assert.Throws<OperationCanceledException>(() => regex.TryGetFirstSetGroup(s_input, "w", out _, 0, Pcre2MatchOptions.None, token));
         Assert.Equal(token, exception.CancellationToken);

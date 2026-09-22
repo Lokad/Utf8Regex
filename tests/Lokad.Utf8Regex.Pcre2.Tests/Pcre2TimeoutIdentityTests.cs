@@ -24,7 +24,7 @@ public sealed class Pcre2TimeoutIdentityTests
             "(a+)+$",
             Pcre2CompileOptions.None,
             default,
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(CreateCatastrophicInput()));
@@ -38,7 +38,7 @@ public sealed class Pcre2TimeoutIdentityTests
             "(a+)+$",
             Pcre2CompileOptions.None,
             default,
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             TimeSpan.FromMilliseconds(1));
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(CreateCatastrophicInput()));

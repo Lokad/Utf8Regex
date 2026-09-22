@@ -27,7 +27,7 @@ public sealed class Pcre2CorpusRoutingTests
                     corpusCase.Pattern,
                     Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions),
                     Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings),
-                    default,
+                    default(Utf8Pcre2ExecutionLimits),
                     Utf8Pcre2Regex.DefaultMatchTimeout);
             }
             catch (Exception ex) when (ex is Pcre2CompileException or ArgumentException or NotSupportedException)

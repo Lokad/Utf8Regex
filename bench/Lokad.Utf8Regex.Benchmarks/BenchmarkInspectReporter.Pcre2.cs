@@ -1527,7 +1527,7 @@ internal static partial class BenchmarkInspectReporter
             benchmarkCase.Pattern,
             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
             benchmarkCase.CompileSettings,
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
     private static int ExecutePcre2SnapshotOperation(

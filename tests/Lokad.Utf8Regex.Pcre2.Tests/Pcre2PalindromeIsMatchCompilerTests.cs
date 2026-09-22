@@ -117,7 +117,7 @@ public sealed class Pcre2PalindromeIsMatchCompilerTests
                          "^((.)(?1)\\2|.?)$",
                          Pcre2CompileOptions.None,
                          new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                         default,
+                         default(Utf8Pcre2ExecutionLimits),
                          Regex.InfiniteMatchTimeout),
                  })
         {

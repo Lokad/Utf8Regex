@@ -57,7 +57,7 @@ Every execution operation has an explicit `CancellationToken` twin. The token is
 
 Lazy enumerators (`EnumerateMatches`, `EnumerateSplits`) observe the token when enumeration begins, not during enumeration. In-scan cancellation polling is future work, not a current promise. Timeouts stay approximate per 3.4 and keep `RegexMatchTimeoutException`.
 
-The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
+The core library defines no work, depth, or memory budgets; the only configured cap is the instance `MatchTimeout` (default `Regex.InfiniteMatchTimeout`, i.e. unlimited). The shared `Utf8ResourcePolicy` (nullable work-steps, depth, working-bytes, and result-bytes budgets plus an `Unlimited` singleton) is accepted by an explicit constructor overload for forward compatibility, but any finite budget is rejected loudly with `NotSupportedException`: this profile enforces only match timeouts. Finite behavior beyond timeouts is opt-in future API, never silent and never safe-by-default without evidence.
 
 ```csharp
 using var canceled = new CancellationTokenSource();

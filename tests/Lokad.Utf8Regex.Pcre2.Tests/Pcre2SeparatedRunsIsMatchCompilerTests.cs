@@ -135,7 +135,7 @@ public sealed class Pcre2SeparatedRunsIsMatchCompilerTests
                          UriPattern,
                          Pcre2CompileOptions.None,
                          new Utf8Pcre2CompileSettings { Bsr = Pcre2BsrConvention.AnyCrlf },
-                         default,
+                         default(Utf8Pcre2ExecutionLimits),
                          Regex.InfiniteMatchTimeout),
                  })
         {

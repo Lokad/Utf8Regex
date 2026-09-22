@@ -15,7 +15,7 @@ internal sealed class Utf8Pcre2BenchmarkContext
             benchmarkCase.Pattern,
             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
             benchmarkCase.CompileSettings,
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Utf8Pcre2Regex.DefaultMatchTimeout);
 
         if ((benchmarkCase.SupportedBackends & Utf8Pcre2BenchmarkBackend.Utf8Regex) != 0)

@@ -211,7 +211,7 @@ public sealed class Pcre2ExecutionArchitectureTests
             @"(?:(?<n>f.o)|(?<n>b.r))\k<n>",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Timeout.InfiniteTimeSpan);
 
         var result = regex.DebugCountWithDiagnostics("foofoo barbar xx foofoo"u8, 0);
@@ -234,13 +234,13 @@ public sealed class Pcre2ExecutionArchitectureTests
             @"(?:(?<n>foo)|(?<n>bar))\k<n>",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Timeout.InfiniteTimeSpan);
         var branchResetFollowup = new Utf8Pcre2Regex(
             @"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'",
             Pcre2CompileOptions.None,
             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default,
+            default(Utf8Pcre2ExecutionLimits),
             Timeout.InfiniteTimeSpan);
         var ambiguousPrefixes = new Utf8Pcre2Regex(@"(?|(a|ab))(c|bcd)");
         var relativeBackreference = new Utf8Pcre2Regex(@"(?|(ab))\g{-1}");

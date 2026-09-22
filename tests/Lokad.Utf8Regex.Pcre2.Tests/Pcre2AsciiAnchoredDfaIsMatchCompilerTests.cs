@@ -134,7 +134,7 @@ public sealed class Pcre2AsciiAnchoredDfaIsMatchCompilerTests
                 FloatPattern,
                 Pcre2CompileOptions.None,
                 new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-                default,
+                default(Utf8Pcre2ExecutionLimits),
                 Regex.InfiniteMatchTimeout)
                 .DebugCompiledProgram.Operations.IsMatch);
         Assert.IsNotType<Pcre2AsciiAnchoredDfaIsMatchDirectProgram>(
