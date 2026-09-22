@@ -1408,10 +1408,80 @@ public sealed partial class Utf8Regex
     /// <typeparam name="TState">The caller-defined state type.</typeparam>
     public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator)
     {
-        _ = Utf8Validation.Validate(input);
+        var validation = Utf8Validation.Validate(input);
         var inputBytes = input.ToArray();
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8InputAnalyzer.Analyze(inputBytes).BoundaryMap;
+        // R03: groupless matches enumerate and shape from owned spans; string slicing
+        // needs no byte alignment, matching the BCL oracle on every input.
+        if (_groupNumbers.Length <= 1)
+        {
+            var builder = new StringBuilder(decoded.Length);
+            var sourcePosition = 0;
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                builder.Append(decoded, sourcePosition, valueMatch.IndexInUtf16 - sourcePosition);
+                var context = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
+                builder.Append(evaluator(in context, ref state));
+                sourcePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+            }
+
+            builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
+            return builder.ToString();
+        }
+
+        // R03: mapped branch shapes discover through the family cursor and shape every
+        // callback argument from owned spans, with the same first-hit decline contract as
+        // the byte-wise evaluator overload.
+        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var budget = CreateExecutionBudget();
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _preparedRegex,
+                _verifierRuntime,
+                input,
+                validation,
+                budget);
+            var builder = new StringBuilder(decoded.Length);
+            var sourcePosition = 0;
+            var declined = false;
+            try
+            {
+                var first = true;
+                while (cursor.MoveNext())
+                {
+                    var candidate = cursor.CurrentValueMatch;
+                    var branch = cursor.LastLiteralFamilyBranchId;
+                    if (first)
+                    {
+                        first = false;
+                        if (branch < 0 || (uint)branch >= (uint)branchMap.BranchGroups.Length)
+                        {
+                            declined = true;
+                            break;
+                        }
+                    }
+
+                    builder.Append(decoded, sourcePosition, candidate.IndexInUtf16 - sourcePosition);
+                    var context = CreateBranchedDetailedMatch(input, decoded, boundaryMap, branchMap, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
+                    builder.Append(evaluator(in context, ref state));
+                    sourcePosition = candidate.IndexInUtf16 + candidate.LengthInUtf16;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!declined)
+            {
+                builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
+                return builder.ToString();
+            }
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             decoded,
             match =>

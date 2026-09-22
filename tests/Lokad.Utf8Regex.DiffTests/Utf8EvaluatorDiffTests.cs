@@ -98,6 +98,78 @@ public sealed class Utf8EvaluatorDiffTests
         Assert.Equal(new Regex(pattern, options).Count(text), calls[0]);
     }
 
+    public static IEnumerable<object?[]> StringEvaluatorCases()
+    {
+        yield return new object?[] { "cat|horse", RegexOptions.CultureInvariant, "cat horse fish horse" };
+        yield return new object?[] { "cat|horse", RegexOptions.CultureInvariant, "no match here" };
+        yield return new object?[] { "cat|horse", RegexOptions.CultureInvariant, "" };
+        yield return new object?[] { "[a-z]+", RegexOptions.CultureInvariant, "11ab22cd" };
+        yield return new object?[] { "ABC", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabCxx" };
+        yield return new object?[] { "y", RegexOptions.CultureInvariant, "x\U0001F600y\U0001F600" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "cat horse fish horse" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "horsecat" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "no match here" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "" };
+        yield return new object?[] { "(?<w>cat)|(?<v>horse)", RegexOptions.CultureInvariant, "cat horse fish" };
+        yield return new object?[] { "(a)|(ab)", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "(ab)|(a)", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "(cat)|(horse)|(dog)", RegexOptions.CultureInvariant, "dog horse cat" };
+        yield return new object?[] { "(caf\u00E9)|(ni\u00F1o)", RegexOptions.None, "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "CAT horse Cat" };
+        yield return new object?[] { "(cat)|horse", RegexOptions.CultureInvariant, "horsecat" };
+        yield return new object?[] { "((cat)|(horse))", RegexOptions.CultureInvariant, "cat horse" };
+        yield return new object?[] { "(?:(a)|(b))", RegexOptions.CultureInvariant, "xbxa" };
+        yield return new object?[] { "(k)|(q)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "K Q \u212A" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "cat horse" };
+        yield return new object?[] { "\\b(cat)|(horse)\\b", RegexOptions.CultureInvariant, "acat horsecatx" };
+        yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant, "xxabxx" };
+        yield return new object?[] { "(a)+", RegexOptions.CultureInvariant, "aaabaaa" };
+    }
+
+    [Theory]
+    [MemberData(nameof(StringEvaluatorCases))]
+    public void StringEvaluatorReplaceMatchesRuntime(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var runtime = new Regex(pattern, options);
+        var expected = runtime.Replace(
+            text,
+            static match => "<" + match.Groups[1].Value + "|" + match.Value + ">");
+
+        var utf8 = new Utf8Regex(pattern, options);
+        var calls = new int[1];
+        var actual = utf8.ReplaceToString(
+            input,
+            calls,
+            static (in Utf8MatchContext context, ref int[] count) =>
+            {
+                count[0]++;
+                Assert.True(context.Success);
+                var group = context.GetGroup(1);
+                return "<" + group.GetValueString() + "|" + context.GetValueString() + ">";
+            });
+
+        Assert.Equal(expected, actual);
+        Assert.Equal(new Regex(pattern, options).Count(text), calls[0]);
+    }
+
+    [Theory]
+    [MemberData(nameof(StringEvaluatorCases))]
+    public void StringEvaluatorNullReplacementMatchesRuntime(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var runtime = new Regex(pattern, options);
+        var expected = runtime.Replace(text, static match => (string)null!);
+
+        var utf8 = new Utf8Regex(pattern, options);
+        var actual = utf8.ReplaceToString(
+            input,
+            0,
+            static (in Utf8MatchContext context, ref int state) => (string)null!);
+
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public void EvaluatorTimeoutMatchesRuntime()
     {

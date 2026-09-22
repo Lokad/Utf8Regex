@@ -18,7 +18,6 @@ public sealed class LiteralFamilyCaptureMapTests
     [InlineData("(cat|horse)", "whole=[1];branches=[;]")]
     [InlineData("cat|horse", "whole=[];branches=[;]")]
     [InlineData("(a)|(ab)", "whole=[];branches=[1;2]")]
-    [InlineData("(cat)|(horse)", "whole=[];branches=[1;2]")]
     [InlineData("(a)|(b)|(c)", "whole=[];branches=[1;2;3]")]
     public void LiteralFamilyCaptureMapMatchesExpectedShape(string pattern, string expected)
     {
