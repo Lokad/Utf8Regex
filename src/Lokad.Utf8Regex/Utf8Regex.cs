@@ -489,6 +489,16 @@ public sealed partial class Utf8Regex
         return IsMatchViaCompiledEngine(input, validation, budget);
     }
 
+    /// <summary>Determines whether the well-formed UTF-8 input contains a match, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return IsMatch(input);
+    }
+
     /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset.</summary>
     public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
@@ -497,6 +507,17 @@ public sealed partial class Utf8Regex
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
             subject.GetDecodedString().AsSpan(),
             start.Value);
+    }
+
+    /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return IsMatchFromUtf16Offset(input, utf16Offset);
     }
 
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -510,6 +531,16 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
+    }
+
+    /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Count(input);
     }
 
     private int CountCore(ReadOnlySpan<byte> input)
@@ -757,6 +788,17 @@ public sealed partial class Utf8Regex
             start.Value);
     }
 
+    /// <summary>Counts non-overlapping matches starting at the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return CountFromUtf16Offset(input, utf16Offset);
+    }
+
     /// <summary>Finds the first match and returns its UTF-16 and, when scalar-aligned, UTF-8 byte coordinates.</summary>
     public Utf8ValueMatch Match(ReadOnlySpan<byte> input)
     {
@@ -768,6 +810,16 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
+    }
+
+    /// <summary>Finds the first match and returns its UTF-16 and, when scalar-aligned, UTF-8 byte coordinates, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueMatch Match(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Match(input);
     }
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input)
@@ -875,6 +927,17 @@ public sealed partial class Utf8Regex
         return CreateValueMatch(input, subject.BoundaryMap, match);
     }
 
+    /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchFromUtf16Offset(input, utf16Offset);
+    }
+
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
     public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input)
     {
@@ -918,6 +981,16 @@ public sealed partial class Utf8Regex
 
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
+    }
+
+    /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8MatchContext MatchDetailed(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchDetailed(input);
     }
 
     /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset.</summary>
@@ -1124,6 +1197,17 @@ public sealed partial class Utf8Regex
         return new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, indexInUtf16, lengthInUtf16, starts, lengths);
     }
 
+    /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchDetailedFromUtf16Offset(input, utf16Offset);
+    }
+
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
@@ -1137,6 +1221,16 @@ public sealed partial class Utf8Regex
         var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
         return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
+    }
+
+    /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input, observing cancellation when enumeration begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return EnumerateMatches(input);
     }
 
     /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
@@ -1165,9 +1259,30 @@ public sealed partial class Utf8Regex
             .WithTimeoutMapping(input, Pattern, MatchTimeout);
     }
 
+    /// <summary>Enumerates non-overlapping matches starting at the specified UTF-16 code-unit offset, observing cancellation when enumeration begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueMatchEnumerator EnumerateMatchesFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return EnumerateMatchesFromUtf16Offset(input, utf16Offset);
+    }
+
     /// <summary>Enumerates all split segments, including the final tail.</summary>
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input) =>
         EnumerateSplits(input, int.MaxValue);
+
+    /// <summary>Enumerates all split segments, including the final tail, observing cancellation when enumeration begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return EnumerateSplits(input);
+    }
 
     /// <summary>Enumerates at most the requested number of split segments.</summary>
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count)
@@ -1213,6 +1328,17 @@ public sealed partial class Utf8Regex
             .WithTimeoutMapping(Pattern, MatchTimeout);
     }
 
+    /// <summary>Enumerates at most the requested number of split segments, observing cancellation when enumeration begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="count">The maximum number of split segments to return.</param>
+    /// <param name="cancellationToken">The token to observe when enumeration begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return EnumerateSplits(input, count);
+    }
+
     /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes.</summary>
     /// <param name="input">The well-formed UTF-8 input.</param>
     /// <param name="replacement">A .NET replacement pattern expressed as UTF-16 text.</param>
@@ -1226,6 +1352,17 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
+    }
+
+    /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, replacement);
     }
 
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement)
@@ -1250,6 +1387,17 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
+    }
+
+    /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacementPatternUtf8">The replacement pattern encoded as well-formed UTF-8.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, replacementPatternUtf8);
     }
 
     private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
@@ -1429,6 +1577,19 @@ public sealed partial class Utf8Regex
         return writer.GetValidatedBytes().ToArray();
     }
 
+    /// <summary>Replaces all matches through a stateful callback that writes UTF-8 replacement content, observing cancellation before matching begins.</summary>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match to append replacement content.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public byte[] Replace<TState>(ReadOnlySpan<byte> input, TState state, Utf8MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Replace(input, state, evaluator);
+    }
+
     /// <summary>Replaces all matches and returns the result as a UTF-16 string.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement)
     {
@@ -1440,6 +1601,17 @@ public sealed partial class Utf8Regex
         {
             throw CreateMatchTimeoutException(input);
         }
+    }
+
+    /// <summary>Replaces all matches and returns the result as a UTF-16 string, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, replacement);
     }
 
     private string ReplaceToStringMappedCore(ReadOnlySpan<byte> input, string replacement)
@@ -1559,6 +1731,19 @@ public sealed partial class Utf8Regex
             });
     }
 
+    /// <summary>Replaces all matches through a stateful callback that returns UTF-16 replacement text, observing cancellation before matching begins.</summary>
+    /// <typeparam name="TState">The type of additional state passed to the evaluator.</typeparam>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="state">Additional state passed to the evaluator.</param>
+    /// <param name="evaluator">The callback invoked for each match to produce replacement text.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public string ReplaceToString<TState>(ReadOnlySpan<byte> input, TState state, Utf16MatchEvaluator<TState> evaluator, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReplaceToString(input, state, evaluator);
+    }
+
     /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination.</summary>
     /// <returns><see cref="OperationStatus.Done"/> on success, or <see cref="OperationStatus.DestinationTooSmall"/> when the destination cannot hold the complete result.</returns>
     public OperationStatus TryReplace(
@@ -1636,6 +1821,32 @@ public sealed partial class Utf8Regex
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
         return TryReplaceCore(input, replacementPattern, replacementText, destination, out bytesWritten);
+    }
+
+    /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacement">The replacement text.</param>
+    /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
+    /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return TryReplace(input, replacement, destination, out bytesWritten);
+    }
+
+    /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="replacementPatternUtf8">The replacement pattern encoded as well-formed UTF-8.</param>
+    /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
+    /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return TryReplace(input, replacementPatternUtf8, destination, out bytesWritten);
     }
 
     internal Utf8IsMatchDiagnostics CollectIsMatchDiagnostics(ReadOnlySpan<byte> input)
