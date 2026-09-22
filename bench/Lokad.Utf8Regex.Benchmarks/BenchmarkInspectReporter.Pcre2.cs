@@ -1143,7 +1143,7 @@ internal static partial class BenchmarkInspectReporter
         };
         psi.ArgumentList.Add("run");
         psi.ArgumentList.Add("--project");
-        psi.ArgumentList.Add(@".\bench\Lokad.Utf8Regex.Benchmarks\Lokad.Utf8Regex.Benchmarks.csproj");
+        psi.ArgumentList.Add("./bench/Lokad.Utf8Regex.Benchmarks/Lokad.Utf8Regex.Benchmarks.csproj");
         psi.ArgumentList.Add("-c");
         psi.ArgumentList.Add("Release");
         psi.ArgumentList.Add("--no-build");

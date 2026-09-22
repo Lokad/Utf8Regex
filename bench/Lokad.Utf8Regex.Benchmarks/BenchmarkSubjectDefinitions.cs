@@ -15,7 +15,7 @@ internal static class BenchmarkSubjectDefinitions
     internal const string CodeDeclarationsPattern =
         @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
     internal const string SherlockRussianPattern = "Шерлок Холмс";
-    internal const string SherlockRussianRelativePath = @"opensubtitles\ru-sampled.txt";
+    internal const string SherlockRussianRelativePath = @"opensubtitles/ru-sampled.txt";
 
     private const string DatePattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
     private const string IpPattern =
