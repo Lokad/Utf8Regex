@@ -25,6 +25,28 @@ public sealed partial class Utf8PythonRegex
             return utf8Matches;
         }
 
+        var ownedFindAllSubject = Decode(input);
+        var ownedFindAllStart = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (TryFindIterDetailedOwned(input, ownedFindAllSubject, ownedFindAllStart, out var ownedDetailed))
+        {
+            var ownedFindAll = new Utf8PythonMatchData[ownedDetailed.Length];
+            for (var ownedIndex = 0; ownedIndex < ownedFindAll.Length; ownedIndex++)
+            {
+                var ownedValue = ownedDetailed[ownedIndex].Value;
+                ownedFindAll[ownedIndex] = new Utf8PythonMatchData
+                {
+                    Success = true,
+                    StartOffsetInBytes = ownedValue.StartOffsetInBytes,
+                    EndOffsetInBytes = ownedValue.EndOffsetInBytes,
+                    StartOffsetInUtf16 = ownedValue.StartOffsetInUtf16,
+                    EndOffsetInUtf16 = ownedValue.EndOffsetInUtf16,
+                    ValueText = ownedValue.ValueText,
+                };
+            }
+
+            return ownedFindAll;
+        }
+
         var subject = Decode(input);
         var indexMap = default(PythonReUtf8IndexMap);
         var hasIndexMap = false;
@@ -130,6 +152,22 @@ public sealed partial class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
+            if (TryFindIterDetailedOwned(input, subject, startOffsetInUtf16, out var ownedSingleDetailed))
+            {
+                var ownedSingleValues = new string[ownedSingleDetailed.Length];
+                for (var ownedSingleIndex = 0; ownedSingleIndex < ownedSingleValues.Length; ownedSingleIndex++)
+                {
+                    ownedSingleValues[ownedSingleIndex] = ownedSingleDetailed[ownedSingleIndex].Groups[1].ValueText;
+                }
+
+                return new Utf8PythonFindAllResult
+                {
+                    Shape = Utf8PythonFindAllShape.SingleGroup,
+                    ScalarValues = ownedSingleValues,
+                    TupleValues = [],
+                };
+            }
+
             if (_optionalExactCaptureFindAllValue is not null)
             {
                 List<string> directValues = [];
@@ -205,6 +243,28 @@ public sealed partial class Utf8PythonRegex
                 Shape = Utf8PythonFindAllShape.GroupTuple,
                 ScalarValues = [],
                 TupleValues = directTuples.ToArray(),
+            };
+        }
+
+        if (TryFindIterDetailedOwned(input, subject, startOffsetInUtf16, out var ownedTupleDetailed))
+        {
+            var ownedTupleValues = new string[ownedTupleDetailed.Length][];
+            for (var ownedTupleIndex = 0; ownedTupleIndex < ownedTupleValues.Length; ownedTupleIndex++)
+            {
+                var ownedTuple = new string[_translation.CaptureGroupCount];
+                for (var ownedGroupIndex = 0; ownedGroupIndex < ownedTuple.Length; ownedGroupIndex++)
+                {
+                    ownedTuple[ownedGroupIndex] = ownedTupleDetailed[ownedTupleIndex].Groups[ownedGroupIndex + 1].ValueText;
+                }
+
+                ownedTupleValues[ownedTupleIndex] = ownedTuple;
+            }
+
+            return new Utf8PythonFindAllResult
+            {
+                Shape = Utf8PythonFindAllShape.GroupTuple,
+                ScalarValues = [],
+                TupleValues = ownedTupleValues,
             };
         }
 
@@ -285,6 +345,32 @@ public sealed partial class Utf8PythonRegex
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
         if (_translation.CaptureGroupCount == 1)
         {
+            if (TryFindIterDetailedOwned(input, subject, startOffsetInUtf16, out var ownedSingleByteDetailed))
+            {
+                var ownedSingleByteValues = new byte[ownedSingleByteDetailed.Length][];
+                for (var ownedSingleByteIndex = 0; ownedSingleByteIndex < ownedSingleByteValues.Length; ownedSingleByteIndex++)
+                {
+                    var ownedSingleByteGroup = ownedSingleByteDetailed[ownedSingleByteIndex].Groups[1];
+                    if (ownedSingleByteGroup.Success)
+                    {
+                        ownedSingleByteValues[ownedSingleByteIndex] = ownedSingleByteGroup.HasContiguousByteRange
+                            ? input[ownedSingleByteGroup.StartOffsetInBytes..ownedSingleByteGroup.EndOffsetInBytes].ToArray()
+                            : Encoding.UTF8.GetBytes(ownedSingleByteGroup.ValueText);
+                    }
+                    else
+                    {
+                        ownedSingleByteValues[ownedSingleByteIndex] = [];
+                    }
+                }
+
+                return new Utf8PythonFindAllUtf8Result
+                {
+                    Shape = Utf8PythonFindAllShape.SingleGroup,
+                    ScalarValues = ownedSingleByteValues,
+                    TupleValues = [],
+                };
+            }
+
             List<byte[]> collected = [];
             var cursor = new PythonReManagedMatchCursor(subject, _managedRegex, _lazyManagedNonEmptyAtSamePositionRegex, startOffsetInUtf16);
             while (cursor.TryMoveNext(out var match))
@@ -303,6 +389,38 @@ public sealed partial class Utf8PythonRegex
                 Shape = Utf8PythonFindAllShape.SingleGroup,
                 ScalarValues = collected.ToArray(),
                 TupleValues = [],
+            };
+        }
+
+        if (TryFindIterDetailedOwned(input, subject, startOffsetInUtf16, out var ownedByteTupleDetailed))
+        {
+            var ownedByteTupleValues = new byte[ownedByteTupleDetailed.Length][][];
+            for (var ownedByteTupleIndex = 0; ownedByteTupleIndex < ownedByteTupleValues.Length; ownedByteTupleIndex++)
+            {
+                var ownedByteTuple = new byte[_translation.CaptureGroupCount][];
+                for (var ownedByteGroupIndex = 0; ownedByteGroupIndex < ownedByteTuple.Length; ownedByteGroupIndex++)
+                {
+                    var ownedByteGroup = ownedByteTupleDetailed[ownedByteTupleIndex].Groups[ownedByteGroupIndex + 1];
+                    if (ownedByteGroup.Success)
+                    {
+                        ownedByteTuple[ownedByteGroupIndex] = ownedByteGroup.HasContiguousByteRange
+                            ? input[ownedByteGroup.StartOffsetInBytes..ownedByteGroup.EndOffsetInBytes].ToArray()
+                            : Encoding.UTF8.GetBytes(ownedByteGroup.ValueText);
+                    }
+                    else
+                    {
+                        ownedByteTuple[ownedByteGroupIndex] = [];
+                    }
+                }
+
+                ownedByteTupleValues[ownedByteTupleIndex] = ownedByteTuple;
+            }
+
+            return new Utf8PythonFindAllUtf8Result
+            {
+                Shape = Utf8PythonFindAllShape.GroupTuple,
+                ScalarValues = [],
+                TupleValues = ownedByteTupleValues,
             };
         }
 
