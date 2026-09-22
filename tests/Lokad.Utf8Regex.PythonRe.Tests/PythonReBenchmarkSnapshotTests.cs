@@ -52,7 +52,7 @@ public sealed class PythonReBenchmarkSnapshotTests
 
         var corpus = root.GetProperty("Corpus");
         Assert.Equal("tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json", corpus.GetProperty("SourceFile").GetString());
-        Assert.Equal("0A77376F84956A732A5B5F5D36EA884347FCBA3704DA32D4ED3F6AAFD2554E8B", corpus.GetProperty("Sha256").GetString());
+        Assert.Equal("51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC", corpus.GetProperty("Sha256").GetString());
         Assert.Equal(9, corpus.GetProperty("VectorCount").GetInt32());
         Assert.Equal("not-recorded-in-repository", corpus.GetProperty("UpstreamCpythonRevision").GetString());
         Assert.False(string.IsNullOrWhiteSpace(corpus.GetProperty("Limitation").GetString()));
