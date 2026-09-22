@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -3778,7 +3779,7 @@ internal struct Pcre2ResourceBudget
 
     internal static int DebugDiagnosticsSizeInBytes => Unsafe.SizeOf<Pcre2ExecutionDiagnostics>();
 
-    private readonly Utf8ExecutionDeadline _deadline;
+    private Utf8ExecutionBudget _core;
     private readonly Pcre2ExecutionDiagnosticsCollector? _diagnostics;
 
     internal Pcre2ResourceBudget(
@@ -3787,12 +3788,13 @@ internal struct Pcre2ResourceBudget
         bool collectDiagnostics)
     {
         Limits = limits;
-        _deadline = Utf8ExecutionDeadline.Start(timeout);
+        _core = new Utf8ExecutionBudget(
+            new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes),
+            timeout,
+            CancellationToken.None);
         _diagnostics = collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null;
         CandidateSteps = 0;
         BacktrackingSteps = 0;
-        Depth = 0;
-        HeapBytes = 0;
     }
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
@@ -3801,9 +3803,9 @@ internal struct Pcre2ResourceBudget
 
     internal ulong BacktrackingSteps { get; private set; }
 
-    internal uint Depth { get; private set; }
+    internal uint Depth => _core.PeakDepth;
 
-    internal ulong HeapBytes { get; private set; }
+    internal ulong HeapBytes => _core.PeakWorkingBytes;
 
     internal bool CollectsDiagnostics => _diagnostics is not null;
 
@@ -3814,19 +3816,14 @@ internal struct Pcre2ResourceBudget
             BacktrackingSteps = BacktrackingSteps,
         };
 
-    internal bool RequiresCandidateMetering => !_deadline.IsInfinite || Limits.MatchLimit != 0;
+    internal bool RequiresCandidateMetering => !_core.IsInfiniteDeadline || Limits.MatchLimit != 0;
 
-    internal bool IsUnmetered =>
-        _deadline.IsInfinite &&
-        Limits.MatchLimit == 0 &&
-        Limits.DepthLimit == 0 &&
-        Limits.HeapLimitInBytes == 0;
+    internal bool IsUnmetered => _core.IsUnmetered;
 
     internal void ChargeCandidate()
     {
         CandidateSteps++;
-        _deadline.Step();
-        if (Limits.MatchLimit != 0 && CandidateSteps > Limits.MatchLimit)
+        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
         {
             throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
         }
@@ -3907,9 +3904,7 @@ internal struct Pcre2ResourceBudget
             }
         }
 
-        _deadline.Step();
-        if (Limits.MatchLimit != 0 &&
-            (CandidateSteps > Limits.MatchLimit || BacktrackingSteps > Limits.MatchLimit - CandidateSteps))
+        if (_core.TryChargeStep() != Utf8ExecutionLimitKind.None)
         {
             throw new Pcre2MatchException("The PCRE2 match limit was exceeded.", Pcre2ErrorKind.MatchLimit);
         }
@@ -3925,8 +3920,7 @@ internal struct Pcre2ResourceBudget
 
     internal void ChargeFrame(uint depth, ulong heapBytes)
     {
-        Depth = Math.Max(Depth, depth);
-        if (Limits.DepthLimit != 0 && depth > Limits.DepthLimit)
+        if (_core.TryNoteDepth(depth) != Utf8ExecutionLimitKind.None)
         {
             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
@@ -3936,8 +3930,7 @@ internal struct Pcre2ResourceBudget
 
     internal void ChargeHeap(ulong heapBytes)
     {
-        HeapBytes = Math.Max(HeapBytes, heapBytes);
-        if (Limits.HeapLimitInBytes != 0 && heapBytes > Limits.HeapLimitInBytes)
+        if (_core.TryNoteWorkingBytes(heapBytes) != Utf8ExecutionLimitKind.None)
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -3973,9 +3966,7 @@ internal struct Pcre2ResourceBudget
         }
     }
 
-    internal void SetDepth(uint depth) => Depth = depth;
 
-    internal void SetHeapBytes(ulong heapBytes) => HeapBytes = heapBytes;
 }
 
 internal readonly record struct Pcre2ExecutionDiagnostics(

@@ -56,6 +56,13 @@ public sealed class Utf8ExecutionDeadlineTests
 
         foreach (var path in Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories))
         {
+            // R02 extraction 1 owns these references: the shared invocation budget
+            // and its limits are defined here and referenced nowhere else in the core.
+            if (Path.GetFileName(path) is "Utf8ExecutionBudget.cs" or "Utf8ExecutionLimits.cs")
+            {
+                continue;
+            }
+
             var source = File.ReadAllText(path);
             Assert.DoesNotContain("Utf8ExecutionBudget", source, StringComparison.Ordinal);
             Assert.DoesNotContain("Utf8ExecutionDeadline?", source, StringComparison.Ordinal);
