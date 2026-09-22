@@ -115,7 +115,7 @@ internal sealed class RegexFindOptimizations
             RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic or
             RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloopatomic or
             RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic => node.M,
-            RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.ChildCount == 1 => node.M * ComputeMinLength(node.Child(0)),
+            RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.ChildCount == 1 => (int)Math.Min(int.MaxValue - 1, (long)node.M * ComputeMinLength(node.Child(0))),
             RegexNodeKind.Capture or RegexNodeKind.Group or RegexNodeKind.Atomic when node.ChildCount == 1 => ComputeMinLength(node.Child(0)),
             RegexNodeKind.Concatenate => ComputeConcatenationMinLength(node),
             RegexNodeKind.Alternate => ComputeAlternationMinLength(node),
@@ -388,13 +388,13 @@ internal sealed class RegexFindOptimizations
         {
             return 0;
         }
-        var total = 0;
+        long total = 0;
         for (var i = 0; i < node.ChildCount; i++)
         {
             total += ComputeMinLength(node.Child(i));
         }
 
-        return total;
+        return (int)Math.Min(int.MaxValue - 1, total);
     }
 
     private static int ComputeAlternationMinLength(RegexNode node)
@@ -423,7 +423,7 @@ internal sealed class RegexFindOptimizations
         {
             return null;
         }
-        var total = 0;
+        long total = 0;
         for (var i = 0; i < node.ChildCount; i++)
         {
             var child = ComputeMaxLength(node.Child(i));
@@ -435,7 +435,7 @@ internal sealed class RegexFindOptimizations
             total += child.Value;
         }
 
-        return total;
+        return total < int.MaxValue ? (int)total : null;
     }
 
     private static int? ComputeAlternationMaxLength(RegexNode node)
@@ -466,7 +466,8 @@ internal sealed class RegexFindOptimizations
             return null;
         }
 
-        return multiplier * value.Value;
+        var product = (long)multiplier * value.Value;
+        return product < int.MaxValue ? (int)product : null;
     }
 
     private static string? TryExtractLongestLiteral(RegexNode node)
