@@ -500,7 +500,7 @@ internal static partial class BenchmarkInspectReporter
     }
 
     private static string ComputePcre2SnapshotSha256() =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(
-            Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName))));
+        BenchmarkSnapshotHash.HashNormalizedFile(
+            Path.Combine(Path.GetDirectoryName(FindRepoFile("README.md"))!, Pcre2BenchmarkSnapshotFileName));
 
 }

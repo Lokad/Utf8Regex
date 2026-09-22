@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using System.Security.Cryptography;
 using System.Globalization;
 
@@ -111,7 +112,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
 
         var snapshotPath = FindRepositoryFile("PCRE2.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/BENCHMARKS.md"));
-        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var hash = HashNormalizedSnapshotBytes(snapshotPath);
         var statusCounts = operationRows
             .GroupBy(static row => row.Value.GetProperty("PcreNetNativeStatus").GetString())
             .ToDictionary(static group => group.Key!, static group => group.Count(), StringComparer.Ordinal);
@@ -419,5 +420,11 @@ public sealed class Pcre2BenchmarkSnapshotTests
         }
 
         throw new FileNotFoundException($"Could not locate repository file '{fileName}'.");
+    }
+    private static string HashNormalizedSnapshotBytes(string path)
+    {
+        // Mirror BenchmarkSnapshotHash: snapshot files travel across autocrlf checkouts.
+        var text = File.ReadAllText(path, Encoding.UTF8).Replace("\r\n", "\n");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }

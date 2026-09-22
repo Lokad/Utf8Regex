@@ -9,7 +9,7 @@ Compatible rows compare equivalent work against `Utf8Regex` and .NET 10 `Regex`.
 ## Snapshot summary
 
 - Schema: `9`
-- Snapshot SHA-256: `DEBE09958F9AFB6F25FA326F94CA687DFF5CB0B5CF51DBE4712CBAD538014206`
+- Snapshot SHA-256: `FF2FDD06ABBC1959B226C40E475FEC8E2F2F914ECC801C3505699A7FA7D909CE`
 - Latest managed row measurement: `2026-09-14T00:38:13.4905399+00:00`
 - Latest PCRE.NET / PCRE2 NFA measurement: `2026-09-14T00:38:13.4905399+00:00`
 - Operation rows: `126` across `10` sections

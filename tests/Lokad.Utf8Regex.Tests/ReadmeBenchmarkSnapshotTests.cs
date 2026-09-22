@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -34,7 +35,7 @@ public sealed class ReadmeBenchmarkSnapshotTests
     public void ParityReportMatchesSnapshotAndContainsAllQualifiedRows()
     {
         var snapshotPath = FindRepositoryFile("README.Benchmarks.json");
-        var expectedHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var expectedHash = HashNormalizedSnapshotBytes(snapshotPath);
         using var document = JsonDocument.Parse(File.ReadAllText(FindRepositoryFile("README.Parity.json")));
         var root = document.RootElement;
         Assert.Equal(2, root.GetProperty("SchemaVersion").GetInt32());
@@ -175,5 +176,11 @@ public sealed class ReadmeBenchmarkSnapshotTests
         }
 
         throw new FileNotFoundException($"Could not locate repository file '{fileName}'.");
+    }
+    private static string HashNormalizedSnapshotBytes(string path)
+    {
+        // Mirror BenchmarkSnapshotHash: snapshot files travel across autocrlf checkouts.
+        var text = File.ReadAllText(path, Encoding.UTF8).Replace("\r\n", "\n");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }

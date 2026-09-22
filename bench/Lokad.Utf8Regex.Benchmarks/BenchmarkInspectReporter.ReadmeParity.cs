@@ -48,7 +48,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static string SerializeReadmeParityReport(ReadmeBenchmarkSnapshot snapshot, string snapshotPath)
     {
-        var snapshotHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var snapshotHash = BenchmarkSnapshotHash.HashNormalizedFile(snapshotPath);
         var report = BuildReadmeParityReport(snapshot, snapshotHash);
         return JsonSerializer.Serialize(report, ReadmeBenchmarkSnapshotJsonOptions) + Environment.NewLine;
     }

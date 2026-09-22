@@ -495,6 +495,6 @@ internal static partial class PythonReBenchmarkReporter
         baseline > 0 ? $"{value / baseline:F2}x" : "—";
 
     private static string ComputePythonReSnapshotSha256() =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(FindRepositoryFile(SnapshotFileName))));
+        BenchmarkSnapshotHash.HashNormalizedFile(FindRepositoryFile(SnapshotFileName));
 
 }

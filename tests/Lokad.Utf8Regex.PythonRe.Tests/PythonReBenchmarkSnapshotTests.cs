@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using System.Security.Cryptography;
 using Lokad.Utf8Regex.Benchmarks;
 
@@ -161,7 +162,7 @@ public sealed class PythonReBenchmarkSnapshotTests
 
         var snapshotPath = FindRepositoryFile("PythonRe.Benchmarks.json");
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.PythonRe/BENCHMARKS.md"));
-        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(snapshotPath)));
+        var hash = HashNormalizedSnapshotBytes(snapshotPath);
         var cpythonVersions = cases.EnumerateObject()
             .Select(static benchmarkCase => benchmarkCase.Value
                 .GetProperty("Cpython")
@@ -379,5 +380,11 @@ public sealed class PythonReBenchmarkSnapshotTests
         }
 
         throw new FileNotFoundException($"Could not locate repository file '{fileName}'.");
+    }
+    private static string HashNormalizedSnapshotBytes(string path)
+    {
+        // Mirror BenchmarkSnapshotHash: snapshot files travel across autocrlf checkouts.
+        var text = File.ReadAllText(path, Encoding.UTF8).Replace("\r\n", "\n");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }
