@@ -7,6 +7,25 @@ internal static class Utf8RegexSyntax
         return options & ~RegexOptions.Compiled;
     }
 
+    /// <summary>
+    /// Owned option validation matching <c>System.Text.RegularExpressions.Regex.ValidateOptions</c>
+    /// at <c>external/runtime</c> <c>9ffface2f3f</c> (and identical in assessed .NET 11 RC1
+    /// <c>ab19415702aa</c>). Throws <see cref="ArgumentOutOfRangeException"/> with
+    /// <c>ParamName == "options"</c> for undefined bits and for the two documented
+    /// incompatible combinations (ECMAScript scope and NonBacktracking scope).
+    /// This replaces the former BCL-construction probe without changing observable behavior.
+    /// </summary>
+    public static void ValidateOptions(RegexOptions options)
+    {
+        const int MaxOptionShift = 11;
+        if (((((uint)options) >> MaxOptionShift) != 0) ||
+            ((options & RegexOptions.ECMAScript) != 0 && (options & ~(RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.CultureInvariant)) != 0) ||
+            ((options & RegexOptions.NonBacktracking) != 0 && (options & (RegexOptions.ECMAScript | RegexOptions.RightToLeft)) != 0))
+        {
+            throw new ArgumentOutOfRangeException(nameof(options));
+        }
+    }
+
     public static bool IsRegexMetaCharacter(char ch)
     {
         return ch is '\\' or '.' or '$' or '^' or '{' or '[' or '(' or '|' or ')' or '*' or '+' or '?';

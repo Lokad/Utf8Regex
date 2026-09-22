@@ -302,7 +302,8 @@ public sealed partial class Utf8Regex
 
     private static void ValidateOptions(RegexOptions options)
     {
-        _ = new Regex(string.Empty, Utf8RegexSyntax.NormalizeNonSemanticOptions(options), Regex.InfiniteMatchTimeout);
+        // R00: owned validation; no BCL regex construction. Matches BCL ValidateOptions semantics.
+        Utf8RegexSyntax.ValidateOptions(options);
     }
 
     private static Utf8ValueMatch CreateValueMatch(ReadOnlySpan<byte> input, Utf8BoundaryMap boundaryMap, Match match)
