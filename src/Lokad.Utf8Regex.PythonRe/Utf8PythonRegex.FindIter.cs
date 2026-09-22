@@ -111,8 +111,7 @@ public sealed partial class Utf8PythonRegex
         return true;
     }
 
-    private Utf8PythonDetailedMatchData CreateOwnedDetailedMatchData(
-        ReadOnlySpan<byte> input,
+    private PythonReGroupData[] CreateOwnedPythonGroups(
         PythonReUtf8IndexMap indexMap,
         Utf8ValueMatch match,
         Utf8LiteralFamilyCaptureMap map,
@@ -130,6 +129,18 @@ public sealed partial class Utf8PythonRegex
                 : new PythonReGroupData { Number = pythonGroup, Success = false };
         }
 
+        return groups;
+    }
+
+    private Utf8PythonDetailedMatchData CreateOwnedDetailedMatchData(
+        ReadOnlySpan<byte> input,
+        PythonReUtf8IndexMap indexMap,
+        Utf8ValueMatch match,
+        Utf8LiteralFamilyCaptureMap map,
+        int branch)
+    {
+        var groups = CreateOwnedPythonGroups(indexMap, match, map, branch);
+        return CreateDetailedMatchData(input, groups, _nameEntries);
         return CreateDetailedMatchData(input, groups, _nameEntries);
     }
 

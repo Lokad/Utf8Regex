@@ -46,6 +46,11 @@ public sealed partial class Utf8PythonRegex
 
             var subject = Decode(input);
             var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (TryReplaceOwnedTemplate(input, subject, plan, count, startOffsetInBytes, out var ownedText, out _))
+        {
+            return Encoding.UTF8.GetBytes(ownedText);
+        }
+
             return Encoding.UTF8.GetBytes(ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16));
         }
 
@@ -80,13 +85,94 @@ public sealed partial class Utf8PythonRegex
 
             var subject = Decode(input);
             var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (TryReplaceOwnedTemplate(input, subject, plan, count, startOffsetInBytes, out var ownedText, out _))
+        {
+            return ownedText;
+        }
+
             return ReplaceManagedSubject(subject, plan, count, startOffsetInUtf16);
         }
 
         return SubnToString(input, replacement, count, startOffsetInBytes).ResultText;
     }
 
+    // R04: template substitution on literal shapes discovers through the shared owned cursor
+    // and expands every replacement from owned group spans; the first hit validates the branch
+    // channel before any output, so an unknown branch still declines cleanly to managed routes.
+    private bool TryReplaceOwnedTemplate(
+        ReadOnlySpan<byte> input,
+        string subject,
+        PythonReReplacementPlan plan,
+        int count,
+        int startOffsetInBytes,
+        out string result,
+        out int replacementCount)
+    {
+        result = string.Empty;
+        replacementCount = 0;
+        if (_utf8Regex is null || _canMatchEmpty)
+        {
+            return false;
+        }
+
+        var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (!_utf8Regex.TryCreateOwnedSplitCursor(input, out var cursor, out var map) || map is null)
+        {
+            return false;
+        }
+
+        var builder = new StringBuilder(subject.Length);
+        builder.Append(subject.AsSpan(0, startOffsetInUtf16));
+        var replaced = 0;
+        var lastIndex = startOffsetInUtf16;
+        var indexMap = default(PythonReUtf8IndexMap);
+        var hasIndexMap = false;
+        var first = true;
+        try
+        {
+            while ((count == 0 || replaced < count) && cursor.MoveNext())
+            {
+                var match = cursor.CurrentValueMatch;
+                if (!match.Success || match.IndexInUtf16 < startOffsetInUtf16)
+                {
+                    continue;
+                }
+
+                var branch = cursor.LastLiteralFamilyBranchId;
+                if (first)
+                {
+                    first = false;
+                    if (branch < 0 || (uint)branch >= (uint)map.BranchGroups.Length)
+                    {
+                        return false;
+                    }
+                }
+
+                if (!hasIndexMap)
+                {
+                    indexMap = PythonReUtf8IndexMap.Create(input, subject);
+                    hasIndexMap = true;
+                }
+
+                builder.Append(subject.AsSpan(lastIndex, match.IndexInUtf16 - lastIndex));
+                var groups = CreateOwnedPythonGroups(indexMap, match, map, branch);
+                builder.Append(plan.Expand(new Utf8PythonMatchContext(input, groups, _nameEntries)));
+                lastIndex = match.IndexInUtf16 + match.LengthInUtf16;
+                replaced++;
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
+        }
+
+        builder.Append(subject.AsSpan(lastIndex));
+        result = builder.ToString();
+        replacementCount = replaced;
+        return true;
+    }
     /// <summary>Replaces all matches and returns the string plus replacement count.</summary>
+
     public Utf8PythonSubnResult SubnToString(ReadOnlySpan<byte> input, string replacement) =>
         SubnToString(input, replacement, 0, 0);
 
@@ -119,6 +205,15 @@ public sealed partial class Utf8PythonRegex
                     ReplacementCount = replacementCount,
                 };
             }
+
+        if (TryReplaceOwnedTemplate(input, Decode(input), plan, count, startOffsetInBytes, out var ownedText, out var ownedCount))
+        {
+            return new Utf8PythonSubnResult
+            {
+                ResultText = ownedText,
+                ReplacementCount = ownedCount,
+            };
+        }
 
             return SubnToStringViaManagedRegex(input, plan, count, startOffsetInBytes);
         }
@@ -191,6 +286,16 @@ public sealed partial class Utf8PythonRegex
                     ReplacementCount = replacementCount,
                 };
             }
+
+        var ownedSubject = Decode(input);
+        if (TryReplaceOwnedTemplate(input, ownedSubject, plan, count, startOffsetInBytes, out var ownedText, out var ownedCount))
+        {
+            return new Utf8PythonSubnUtf8Result
+            {
+                ResultBytes = Encoding.UTF8.GetBytes(ownedText),
+                ReplacementCount = ownedCount,
+            };
+        }
 
             var managedResult = SubnToStringViaManagedRegex(input, plan, count, startOffsetInBytes);
             return new Utf8PythonSubnUtf8Result
