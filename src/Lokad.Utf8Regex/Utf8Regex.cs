@@ -884,6 +884,13 @@ public sealed partial class Utf8Regex
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var decoded = analysis.GetDecodedString();
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
+        // R03: groupless matches project every view field from owned spans, keeping BCL
+        // discovery until capture tracking migrates; other patterns keep BCL shaping.
+        if (_groupNumbers.Length <= 1 && match.Success)
+        {
+            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, match.Index, match.Length);
+        }
+
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
@@ -894,6 +901,11 @@ public sealed partial class Utf8Regex
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         var decoded = analysis.GetDecodedString();
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded, start.Value);
+        if (_groupNumbers.Length <= 1 && match.Success)
+        {
+            return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, match.Index, match.Length);
+        }
+
         return new Utf8MatchContext(input, decoded, match, analysis.BoundaryMap, _groupNames);
     }
 
