@@ -114,4 +114,95 @@ public sealed class Utf8EvaluatorDiffTests
             utf8.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { }));
         Assert.Equal(runtimeException.Pattern, utf8Exception.Pattern);
     }
+
+    public static IEnumerable<object?[]> BranchedCases()
+    {
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "cat horse fish horse" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "horsecat" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "cathorse" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "no match here" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.CultureInvariant, "cat" };
+        yield return new object?[] { "(?<w>cat)|(?<v>horse)", RegexOptions.CultureInvariant, "cat horse fish" };
+        yield return new object?[] { "(a)|(ab)", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "(ab)|(a)", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "(cat)|(horse)|(dog)", RegexOptions.CultureInvariant, "dog horse cat" };
+        yield return new object?[] { "(caf\u00E9)|(ni\u00F1o)", RegexOptions.None, "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3" };
+        yield return new object?[] { "(cat)|(horse)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "CAT horse Cat" };
+        yield return new object?[] { "(CAT)|(DOG)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "cat dog" };
+        yield return new object?[] { "(cat)|horse", RegexOptions.CultureInvariant, "horsecat" };
+        yield return new object?[] { "horse|(cat)", RegexOptions.CultureInvariant, "horsecat" };
+        yield return new object?[] { "((cat)|(horse))", RegexOptions.CultureInvariant, "cat horse" };
+        yield return new object?[] { "(?:(a)|(b))", RegexOptions.CultureInvariant, "xbxa" };
+        yield return new object?[] { "(k)|(q)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "K Q \u212A" };
+        yield return new object?[] { "\\b(cat)|(horse)\\b", RegexOptions.CultureInvariant, "acat horsecatx" };
+    }
+
+    [Theory]
+    [MemberData(nameof(BranchedCases))]
+    public void BranchedEvaluatorReplaceMatchesRuntime(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var runtime = new Regex(pattern, options);
+        var expected = Encoding.UTF8.GetBytes(runtime.Replace(
+            text,
+            static match => "<" + match.Groups[1].Value + "|" + match.Value + ">"));
+
+        var utf8 = new Utf8Regex(pattern, options);
+        var calls = new int[1];
+        var actual = utf8.Replace(
+            input,
+            calls,
+            static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int[] count) =>
+            {
+                count[0]++;
+                Assert.True(context.Success);
+                var group = context.GetGroup(1);
+                Assert.Equal(context.GetGroup(0).GetValueString(), context.GetValueString());
+                writer.Append(Encoding.UTF8.GetBytes("<" + group.GetValueString() + "|" + context.GetValueString() + ">"));
+            });
+
+        Assert.Equal(expected, actual);
+        Assert.Equal(new Regex(pattern, options).Count(text), calls[0]);
+    }
+
+    [Theory]
+    [MemberData(nameof(BranchedCases))]
+    public void BranchedEvaluatorGroupValuesMatchRuntime(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var runtime = new Regex(pattern, options);
+        var expectedValues = new List<string>();
+        foreach (System.Text.RegularExpressions.Match match in runtime.Matches(text))
+        {
+            var groups = new List<string>();
+            for (var i = 0; i < match.Groups.Count; i++)
+            {
+                groups.Add(match.Groups[i].Success.ToString() + ":" + match.Groups[i].Value);
+            }
+
+            expectedValues.Add(string.Join(";", groups));
+        }
+
+        var utf8 = new Utf8Regex(pattern, options);
+        var actualValues = new List<string>();
+        var actual = utf8.Replace(
+            input,
+            actualValues,
+            static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref List<string> values) =>
+            {
+                var groups = new List<string>();
+                for (var i = 0; i < context.GroupCount; i++)
+                {
+                    var group = context.GetGroup(i);
+                    groups.Add(group.Success.ToString() + ":" + group.GetValueString());
+                }
+
+                values.Add(string.Join(";", groups));
+                writer.Append(Encoding.UTF8.GetBytes("[" + context.GetValueString() + "]"));
+            });
+
+        var expectedOutput = Encoding.UTF8.GetBytes(runtime.Replace(text, static match => "[" + match.Value + "]"));
+        Assert.Equal(expectedOutput, actual);
+        Assert.Equal(expectedValues, actualValues);
+    }
 }

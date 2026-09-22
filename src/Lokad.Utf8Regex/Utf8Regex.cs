@@ -1045,30 +1045,7 @@ public sealed partial class Utf8Regex
                     return false;
                 }
 
-                var starts = new int[_groupNumbers.Length];
-                var lengths = new int[_groupNumbers.Length];
-                Array.Fill(starts, -1);
-                starts[0] = candidate.IndexInUtf16;
-                lengths[0] = candidate.LengthInUtf16;
-                foreach (var whole in map.WholeMatchGroups)
-                {
-                    if ((uint)whole < (uint)starts.Length)
-                    {
-                        starts[whole] = candidate.IndexInUtf16;
-                        lengths[whole] = candidate.LengthInUtf16;
-                    }
-                }
-
-                foreach (var group in map.BranchGroups[branch])
-                {
-                    if ((uint)group < (uint)starts.Length)
-                    {
-                        starts[group] = candidate.IndexInUtf16;
-                        lengths[group] = candidate.LengthInUtf16;
-                    }
-                }
-
-                detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, candidate.IndexInUtf16, candidate.LengthInUtf16, starts, lengths);
+                detailed = CreateBranchedDetailedMatch(input, decoded, boundaryMap, map, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
                 return true;
             }
         }
@@ -1079,6 +1056,43 @@ public sealed partial class Utf8Regex
 
         detailed = Utf8MatchContext.Unsuccessful(input, decoded, boundaryMap, _groupNames);
         return true;
+    }
+
+    // Shapes one owned detailed view from a mapped branch hit shared by detailed matching
+    // and evaluator replacement.
+    private Utf8MatchContext CreateBranchedDetailedMatch(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        Utf8LiteralFamilyCaptureMap map,
+        int branch,
+        int indexInUtf16,
+        int lengthInUtf16)
+    {
+        var starts = new int[_groupNumbers.Length];
+        var lengths = new int[_groupNumbers.Length];
+        Array.Fill(starts, -1);
+        starts[0] = indexInUtf16;
+        lengths[0] = lengthInUtf16;
+        foreach (var whole in map.WholeMatchGroups)
+        {
+            if ((uint)whole < (uint)starts.Length)
+            {
+                starts[whole] = indexInUtf16;
+                lengths[whole] = lengthInUtf16;
+            }
+        }
+
+        foreach (var group in map.BranchGroups[branch])
+        {
+            if ((uint)group < (uint)starts.Length)
+            {
+                starts[group] = indexInUtf16;
+                lengths[group] = lengthInUtf16;
+            }
+        }
+
+        return new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, indexInUtf16, lengthInUtf16, starts, lengths);
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -1287,6 +1301,61 @@ public sealed partial class Utf8Regex
 
             writer.Append(input[sourcePosition..]);
             return writer.GetValidatedBytes().ToArray();
+        }
+
+        // R03: mapped branch shapes discover through the family cursor and shape every
+        // callback argument from owned spans. The first hit validates the branch channel;
+        // no output is produced before it, so an unknown branch still declines cleanly.
+        if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var budget = CreateExecutionBudget();
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _preparedRegex,
+                _verifierRuntime,
+                input,
+                validation,
+                budget);
+            var declined = false;
+            try
+            {
+                var first = true;
+                while (cursor.MoveNext())
+                {
+                    var candidate = cursor.CurrentValueMatch;
+                    if (!candidate.IsByteAligned)
+                    {
+                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                    }
+
+                    var branch = cursor.LastLiteralFamilyBranchId;
+                    if (first)
+                    {
+                        first = false;
+                        if (branch < 0 || (uint)branch >= (uint)branchMap.BranchGroups.Length)
+                        {
+                            declined = true;
+                            break;
+                        }
+                    }
+
+                    writer.Append(input[sourcePosition..candidate.IndexInBytes]);
+                    var context = CreateBranchedDetailedMatch(input, decoded, boundaryMap, branchMap, branch, candidate.IndexInUtf16, candidate.LengthInUtf16);
+                    evaluator(in context, ref writer, ref state);
+                    sourcePosition = candidate.IndexInBytes + candidate.LengthInBytes;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!declined)
+            {
+                writer.Append(input[sourcePosition..]);
+                return writer.GetValidatedBytes().ToArray();
+            }
         }
 
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(decoded);
