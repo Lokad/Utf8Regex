@@ -44,4 +44,19 @@ public sealed class Pcre2ReplaceLimitTests
             Pcre2MatchOptions.None));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
+    [Fact]
+    public void TinyDepthLimitBreachesTemplateReplace()
+    {
+        var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).Replace(input, "Z"));
+        Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
+    }
+
+    [Fact]
+    public void TinyHeapLimitBreachesTemplateReplace()
+    {
+        var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 }).Replace(input, "Z"));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
+    }
 }
