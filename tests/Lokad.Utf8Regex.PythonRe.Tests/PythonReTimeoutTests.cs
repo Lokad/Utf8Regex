@@ -58,4 +58,17 @@ public sealed class PythonReTimeoutTests
         Assert.Equal("xxZxx", regex.SubnToString(input, "Z").ResultText);
         Assert.Equal(2, regex.SplitToStrings(input).Length);
     }
+    [Fact]
+    public void CatastrophicFindIterDetailedHonorsTimeout()
+    {
+        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.FindIterDetailed(CreateCatastrophicInput()));
+    }
+
+    [Fact]
+    public void CatastrophicSubnHonorsTimeout()
+    {
+        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Subn(CreateCatastrophicInput(), "-"));
+    }
 }
