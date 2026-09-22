@@ -3425,8 +3425,6 @@ internal static partial class BenchmarkInspectReporter
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.Replace)
         {
-            Console.WriteLine($"BaselinePreferFallbackTextOps : {context.Utf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
-            Console.WriteLine($"CompiledPreferFallbackTextOps : {context.CompiledUtf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
             Measure("WellFormedOnly", iterations, () =>
@@ -3445,8 +3443,6 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.Inspection.DebugCanUseNativeSplit(context.InputBytes)}");
             Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(context.InputBytes)}");
             Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.Inspection.DebugCanUseSmallAsciiLiteralFamilySplit(context.InputBytes)}");
-            Console.WriteLine($"BaselinePreferFallbackTextOps : {context.Utf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
-            Console.WriteLine($"CompiledPreferFallbackTextOps : {context.CompiledUtf8Regex.Inspection.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()}");
 
             Measure("ValidationOnly", iterations, () => Utf8Validation.Validate(context.InputBytes).Utf16Length);
             Measure("WellFormedOnly", iterations, () =>

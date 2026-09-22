@@ -28,14 +28,6 @@ public sealed partial class Utf8Regex
                 replacementText));
         }
 
-        if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacementText));
-        }
-
         if (ShouldUseFallbackForSimplePatternReplacement(replacement))
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
@@ -173,13 +165,6 @@ public sealed partial class Utf8Regex
                 replacement.OriginalText);
         }
 
-        if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                replacement.OriginalText);
-        }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement))
         {
@@ -232,18 +217,6 @@ public sealed partial class Utf8Regex
                 : OperationStatus.DestinationTooSmall;
         }
 
-        if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return TryEncodeUtf8ToDestination(
-                _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                    Encoding.UTF8.GetString(input),
-                    replacementText),
-                destination,
-                out bytesWritten)
-                ? OperationStatus.Done
-                : OperationStatus.DestinationTooSmall;
-        }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement))
         {

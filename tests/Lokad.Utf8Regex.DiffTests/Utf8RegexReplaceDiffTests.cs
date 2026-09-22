@@ -34,6 +34,23 @@ public sealed class Utf8RegexReplaceDiffTests
     }
 
     [Theory]
+    [InlineData("a|ab|abc", "abcababa", "Q", RegexOptions.CultureInvariant)]
+    [InlineData("a|ab|abc", "abcababa", "<$&>", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "CAT horse Cat HORSE cat", "Q", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "CAT horse Cat HORSE cat", "$&!", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cathorsecat", "X", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "cat horse fish", "$1-$2", RegexOptions.CultureInvariant)]
+    [InlineData("(cat)|(horse)", "CAT horse", "$1!", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cat horse", "a$`b", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cat horse", "a$" + "'" + "b", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cat horse", "$$", RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "", "Q", RegexOptions.CultureInvariant)]
+    public void ReplaceMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, string replacement, RegexOptions options)
+    {
+        RegexParityContext.Create(pattern, input, options).AssertReplaceParity(replacement);
+    }
+
+    [Theory]
     [InlineData("café", "αcaféβcaféγ", "tea")]
     [InlineData("😀", "😀x😀y", "!")]
     public void ReplaceMatchesRuntimeForNativeUtf8LiteralSubset(string pattern, string input, string replacement)

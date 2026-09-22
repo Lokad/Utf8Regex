@@ -488,11 +488,6 @@ public sealed partial class Utf8Regex
         return splitCount;
     }
 
-    private bool DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations()
-    {
-        return ShouldPreferFallbackForCompiledLiteralFamilyTextOperations();
-    }
-
     private int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement)
     {
         Utf8Validation.ThrowIfInvalidOnly(input);
@@ -845,9 +840,6 @@ public sealed partial class Utf8Regex
 
         public int DebugCountSplitsViaFallback(ReadOnlySpan<byte> input, int count) =>
             _owner.DebugCountSplitsViaFallback(input, count);
-
-        public bool DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations() =>
-            _owner.DebugShouldPreferFallbackForCompiledLiteralFamilyTextOperations();
 
         public int DebugReplaceViaFallback(ReadOnlySpan<byte> input, string replacement) =>
             _owner.DebugReplaceViaFallback(input, replacement);

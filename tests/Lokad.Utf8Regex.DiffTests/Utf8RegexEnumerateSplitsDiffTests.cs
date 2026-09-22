@@ -155,6 +155,24 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData("a|ab|abc", "abcababa", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("a|ab|abc", "abcababa", 3, RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "CAT horse Cat HORSE cat", int.MaxValue, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "CAT horse Cat HORSE cat", 3, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("cat|horse", "cathorsecat", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("x|y|z", "", int.MaxValue, RegexOptions.CultureInvariant)]
+    [InlineData("x|y|z", "no match here", 2, RegexOptions.CultureInvariant)]
+    public void EnumerateSplitsMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int count, RegexOptions options)
+    {
+        var utf8Regex = new Utf8Regex(pattern, options);
+        var expected = EnumerateRuntimeSplits(input, pattern, count, options);
+        var actual = EnumerateUtf8Splits(utf8Regex, input, count);
+
+        Assert.Equal(expected, actual);
+        Assert.True(utf8Regex.Inspection.DebugCanUseNativeSplit(Encoding.UTF8.GetBytes(input)));
+    }
+
     private static List<(string Value, int Index, int Length)> EnumerateRuntimeSplits(
         string input,
         string pattern,

@@ -178,7 +178,6 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         [
             (@"\b(café|niño|résumé)\b", RegexOptions.None),
             (@"(?:café|niño|résumé)(?= noir)", RegexOptions.None),
-            (@"café|niño|résumé", RegexOptions.None),
             (@"\b(?:café|niño|résumé)\b", RegexOptions.RightToLeft),
         ];
 

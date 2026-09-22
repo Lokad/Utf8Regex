@@ -978,12 +978,6 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
-        if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
-        {
-            var subject = Utf8InputAnalyzer.Analyze(input);
-            return new Utf8ValueSplitEnumerator(input, subject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, subject.BoundaryMap)
-                .WithTimeoutMapping(Pattern, MatchTimeout);
-        }
 
         var budget = CreateExecutionBudget();
         var usesAsciiValidationShortcut = TryUseAsciiInputValidationShortcut(input);
@@ -1056,12 +1050,6 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
-        if (ShouldPreferFallbackForCompiledLiteralFamilyTextOperations())
-        {
-            return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
-                Encoding.UTF8.GetString(input),
-                Encoding.UTF8.GetString(replacementPatternUtf8)));
-        }
 
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {
@@ -1363,8 +1351,7 @@ public sealed partial class Utf8Regex
         return _compiledEngine.Kind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
-            Utf8CompiledEngineKind.LiteralFamily => !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                !ShouldPreferFallbackForCompiledLiteralFamilyTextOperations(),
+            Utf8CompiledEngineKind.LiteralFamily => !_preparedRegex.SearchPlan.HasBoundaryRequirements,
             Utf8CompiledEngineKind.StructuralLinearAutomaton
                 => _preparedRegex.StructuralLinearProgram.DeterministicProgram.HasValue && validation.IsAscii,
             _ => false,
@@ -1384,15 +1371,6 @@ public sealed partial class Utf8Regex
         }
 
         return literalFamilyRuntime.Inner.TryGetSmallAsciiLiteralFamilyPrimitive(input, out search);
-    }
-
-    private bool ShouldPreferFallbackForCompiledLiteralFamilyTextOperations()
-    {
-        return _compiledEngine.Kind == Utf8CompiledEngineKind.LiteralFamily &&
-            !UsesRightToLeft() &&
-            _preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
-            !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement;
     }
 
     private bool UsesRightToLeft()
