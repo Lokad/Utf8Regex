@@ -201,6 +201,50 @@ public sealed class EngineDependencyInventoryTests
         Assert.Empty(unmarked);
     }
 
+    [Fact]
+    public void ShippedProjectsDeclareNoExternalEngineDependencies()
+    {
+        // R05: shipped packages must not gain NuGet engine dependencies. Adapters
+        // reference only the core project; the framework supplies the rest.
+        var repoRoot = FindRepositoryRoot();
+        foreach (var project in new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" })
+        {
+            var csproj = File.ReadAllText(Path.Combine(repoRoot, "src", project, project + ".csproj"));
+            Assert.DoesNotContain("PackageReference", csproj, StringComparison.Ordinal);
+            Assert.DoesNotContain("PCRE.NET", csproj, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void ShippedAssembliesReferenceNoExternalEngines()
+    {
+        // R05: the built packages may reference the framework, shared .NET
+        // contracts, and (for adapters) the core library only. Any other
+        // reference, native or managed, fails here for explicit review.
+        var configuration = System.Reflection.CustomAttributeExtensions.GetCustomAttribute<System.Reflection.AssemblyConfigurationAttribute>(typeof(EngineDependencyInventoryTests).Assembly)?.Configuration ?? "Debug";
+        var offenders = new System.Collections.Generic.List<string>();
+        foreach (var project in new[] { "Lokad.Utf8Regex", "Lokad.Utf8Regex.Pcre2", "Lokad.Utf8Regex.PythonRe" })
+        {
+            var dll = Path.Combine(FindRepositoryRoot(), "src", project, "bin", configuration, "net10.0", project + ".dll");
+            Assert.True(File.Exists(dll), "Missing built assembly: " + dll);
+            var references = System.Reflection.Assembly.LoadFrom(dll).GetReferencedAssemblies();
+            foreach (var reference in references)
+            {
+                var name = reference.Name ?? string.Empty;
+                var allowed = name.StartsWith("System.", StringComparison.Ordinal) ||
+                    name.Equals("netstandard", StringComparison.Ordinal) ||
+                    name.Equals("mscorlib", StringComparison.Ordinal) ||
+                    name.Equals("Lokad.Utf8Regex", StringComparison.Ordinal);
+                if (!allowed)
+                {
+                    offenders.Add(project + " -> " + reference.FullName);
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
+
     private static string GetRelativePath(string path)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
