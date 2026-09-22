@@ -49,23 +49,30 @@ internal sealed class Utf8LiteralFamilyCaptureMap
             break;
         }
 
-        if (node.Kind != Utf8ExecutionNodeKind.Alternate || node.Children.Count == 0)
+        if (node.Kind == Utf8ExecutionNodeKind.Alternate && node.Children.Count > 0)
         {
-            return null;
-        }
-
-        var branchGroups = new int[node.Children.Count][];
-        for (var i = 0; i < node.Children.Count; i++)
-        {
-            if (!TryCollectBranchGroups(node.Children[i], out var groups))
+            var branchGroups = new int[node.Children.Count][];
+            for (var i = 0; i < node.Children.Count; i++)
             {
-                return null;
+                if (!TryCollectBranchGroups(node.Children[i], out var groups))
+                {
+                    return null;
+                }
+
+                branchGroups[i] = groups;
             }
 
-            branchGroups[i] = groups;
+            return new Utf8LiteralFamilyCaptureMap(wholeMatchGroups.ToArray(), branchGroups);
         }
 
-        return new Utf8LiteralFamilyCaptureMap(wholeMatchGroups.ToArray(), branchGroups);
+        // A lone literal (or literal run) is a single groupless branch; this lets split
+        // and other whole-stream consumers share one branch-indexed machinery.
+        if (IsLiteralRun(node))
+        {
+            return new Utf8LiteralFamilyCaptureMap(wholeMatchGroups.ToArray(), [[]]);
+        }
+
+        return null;
     }
 
     private static bool TryCollectBranchGroups(Utf8ExecutionNode node, out int[] groups)

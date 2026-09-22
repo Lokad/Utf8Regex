@@ -1004,6 +1004,35 @@ public sealed partial class Utf8Regex
         return true;
     }
 
+    // Adapter-owned split discovery: literal shapes (singular or family, grouped or not) share
+    // one branch-indexed cursor over the construction-time capture map. False declines to the
+    // adapter BCL routes; the caller validates branch identity on its first hit.
+    internal bool TryCreateOwnedSplitCursor(ReadOnlySpan<byte> input, out Utf8OperationMatchCursor cursor, out Utf8LiteralFamilyCaptureMap? map)
+    {
+        cursor = default;
+        map = null;
+        if (_literalFamilyCaptureMap is null ||
+            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
+            RequiresCultureSensitiveFallback ||
+            UsesRightToLeft() ||
+            ShouldUseKelvinSignFallback(input))
+        {
+            return false;
+        }
+
+        var validation = TryUseAsciiInputValidationShortcut(input)
+            ? default
+            : Utf8Validation.Validate(input);
+        cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+            _preparedRegex,
+            _verifierRuntime,
+            input,
+            validation,
+            CreateExecutionBudget());
+        map = _literalFamilyCaptureMap;
+        return true;
+    }
+
     // Returns true when the branched path owns the result (hit or miss); false declines to BCL.
     private bool TryMatchDetailedBranchedLiteralFamily(
         ReadOnlySpan<byte> input,

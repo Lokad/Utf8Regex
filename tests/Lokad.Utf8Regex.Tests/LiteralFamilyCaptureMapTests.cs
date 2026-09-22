@@ -20,6 +20,8 @@ public sealed class LiteralFamilyCaptureMapTests
     [InlineData("(a)|(ab)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
     [InlineData("(a)|(b)|(c)", RegexOptions.CultureInvariant, "whole=[];branches=[1;2;3]")]
     [InlineData("(CAT)|(DOG)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "whole=[];branches=[1;2]")]
+    [InlineData("abc", RegexOptions.CultureInvariant, "whole=[];branches=[]")]
+    [InlineData("(abc)", RegexOptions.CultureInvariant, "whole=[1];branches=[]")]
     public void LiteralFamilyCaptureMapMatchesExpectedShape(string pattern, RegexOptions options, string expected)
     {
         var regex = new Utf8Regex(pattern, options);
@@ -31,7 +33,6 @@ public sealed class LiteralFamilyCaptureMapTests
     [InlineData("\\b(cat)|(horse)\\b")]
     [InlineData("[a-z]+")]
     [InlineData("(a)+")]
-    [InlineData("abc")]
     [InlineData("(?<=a)(b)|(c)")]
     public void UnsupportedShapesDeclineCaptureMapping(string pattern)
     {

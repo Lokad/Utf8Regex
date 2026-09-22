@@ -31,6 +31,16 @@ public sealed partial class Utf8PythonRegex
         {
             return SplitAsciiWordBoundaries(subject, maxSplit);
         }
+        if (TrySplitToOwnedItems(input, subject, maxSplit, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes), out var ownedItems))
+        {
+            var values = new string?[ownedItems.Length];
+            for (var i = 0; i < values.Length; i++)
+            {
+                values[i] = ownedItems[i].ValueText;
+            }
+
+            return values;
+        }
 
         // Regex.Split advances empty matches by UTF-16 code unit, whereas Python advances by scalar.
         if (_groupNumberingIsIdentity &&
@@ -57,6 +67,90 @@ public sealed partial class Utf8PythonRegex
 
         parts.Add(subject[lastIndex..]);
         return parts.ToArray();
+    }
+
+    // R04: literal shapes (singular or family, grouped or not) split on the shared owned
+    // cursor with branch-indexed group spans; captures follow Python slot order with null for
+    // unmatched groups. The first hit validates the branch channel before any output, so an
+    // unknown branch still declines cleanly to the managed routes.
+    private bool TrySplitToOwnedItems(
+        ReadOnlySpan<byte> input,
+        string subject,
+        int maxSplit,
+        int startOffsetInUtf16,
+        out Utf8PythonSplitItem[] items)
+    {
+        items = [];
+        if (_utf8Regex is null || _canMatchEmpty)
+        {
+            return false;
+        }
+
+        if (!_utf8Regex.TryCreateOwnedSplitCursor(input, out var cursor, out var map) || map is null)
+        {
+            return false;
+        }
+
+        var parts = new List<Utf8PythonSplitItem>();
+        var lastIndex = startOffsetInUtf16;
+        var splitCount = 0;
+        var first = true;
+        try
+        {
+            while ((maxSplit == 0 || splitCount < maxSplit) && cursor.MoveNext())
+            {
+                var match = cursor.CurrentValueMatch;
+                if (!match.Success || match.IndexInUtf16 < startOffsetInUtf16)
+                {
+                    continue;
+                }
+
+                var branch = cursor.LastLiteralFamilyBranchId;
+                if (first)
+                {
+                    first = false;
+                    if (branch < 0 || (uint)branch >= (uint)map.BranchGroups.Length)
+                    {
+                        return false;
+                    }
+                }
+
+                parts.Add(new Utf8PythonSplitItem
+                {
+                    ValueText = subject[lastIndex..match.IndexInUtf16],
+                    IsCapture = false,
+                    CaptureGroupNumber = 0,
+                });
+                for (var pythonGroup = 1; pythonGroup < _managedGroupNumbersByPythonGroup.Length; pythonGroup++)
+                {
+                    var managedGroup = _managedGroupNumbersByPythonGroup[pythonGroup];
+                    var matched = Array.IndexOf(map.WholeMatchGroups, managedGroup) >= 0 ||
+                        Array.IndexOf(map.BranchGroups[branch], managedGroup) >= 0;
+                    parts.Add(new Utf8PythonSplitItem
+                    {
+                        ValueText = matched ? subject[match.IndexInUtf16..(match.IndexInUtf16 + match.LengthInUtf16)] : null,
+                        IsCapture = true,
+                        CaptureGroupNumber = pythonGroup,
+                    });
+                }
+
+                lastIndex = match.IndexInUtf16 + match.LengthInUtf16;
+                splitCount++;
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
+        }
+
+        parts.Add(new Utf8PythonSplitItem
+        {
+            ValueText = subject[lastIndex..],
+            IsCapture = false,
+            CaptureGroupNumber = 0,
+        });
+        items = parts.ToArray();
+        return true;
     }
 
     private static string?[] SplitAsciiWordBoundaries(string subject, int maxSplit)
@@ -116,6 +210,10 @@ public sealed partial class Utf8PythonRegex
             }
 
             return items;
+        }
+        if (TrySplitToOwnedItems(input, subject, maxSplit, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes), out var ownedItems))
+        {
+            return ownedItems;
         }
 
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);

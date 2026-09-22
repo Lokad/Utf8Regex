@@ -214,10 +214,10 @@ internal ref struct Utf8OperationMatchCursor
     public Utf8OperationMatch Current
         => new(CurrentValueMatch, branchId: 0, captureSlots: null);
 
-    /// <summary>Gets the alternate index of the last family-mode match, or -1 when the last
-    /// successful move did not come from a literal-family search.</summary>
+    /// <summary>Gets the alternate index of the last literal match, or -1 when the last
+    /// successful move did not come from a literal search. Singular literals always report 0.</summary>
     internal int LastLiteralFamilyBranchId =>
-        _mode is EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
+        _mode is EnumeratorMode.ExactAsciiLiteral or EnumeratorMode.ExactUtf8Literal or EnumeratorMode.ExactUtf8Literals or EnumeratorMode.AsciiLiteralIgnoreCase or EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
             ? _lastLiteralFamilyBranchId
             : -1;
 
@@ -463,6 +463,7 @@ internal ref struct Utf8OperationMatchCursor
         var advance = index + literal.Length;
         _remaining = _remaining[advance..];
         _consumed += advance;
+        _lastLiteralFamilyBranchId = 0;
         return true;
     }
 
@@ -493,6 +494,7 @@ internal ref struct Utf8OperationMatchCursor
         var advance = index + literal.Length;
         _remaining = _remaining[advance..];
         _consumed += advance;
+        _lastLiteralFamilyBranchId = 0;
         return true;
     }
 
@@ -527,6 +529,7 @@ internal ref struct Utf8OperationMatchCursor
             out _consumed,
             out _consumedUtf16);
         _remaining = _input[_consumed..];
+        _lastLiteralFamilyBranchId = 0;
         return true;
     }
 
