@@ -1,0 +1,55 @@
+namespace Lokad.Utf8Regex.Internal.Execution;
+
+/// <summary>
+/// Flavor-neutral aggregate admission ledger for invocation-owned storage: frames,
+/// repeats, capture slots/history, decode/coordinate buffers, and output staging.
+/// Reservation precedes acquisition, so a denied reservation must skip the
+/// allocation it would have covered; callers map denial onto their own failure
+/// vocabulary (see <see cref="Utf8ExecutionLimitKind"/>). Zero means unlimited.
+/// Growth and copies must reserve the new extent while the old extent is still
+/// held, then release the old extent, so overlap peaks are admitted, not assumed.
+/// Hold by reference (as a field), never copy mid-operation: the reserved total
+/// lives in this struct.
+/// </summary>
+internal struct Utf8StorageLedger
+{
+    private ulong _reservedBytes;
+
+    internal Utf8StorageLedger(ulong maxLiveBytes)
+    {
+        MaxLiveBytes = maxLiveBytes;
+    }
+
+    internal ulong MaxLiveBytes { get; }
+
+    internal ulong ReservedBytes => _reservedBytes;
+
+    internal bool IsUnlimited => MaxLiveBytes == 0;
+
+    internal bool TryReserve(ulong bytes)
+    {
+        if (bytes > ulong.MaxValue - _reservedBytes)
+        {
+            return false;
+        }
+
+        var admitted = _reservedBytes + bytes;
+        if (MaxLiveBytes != 0 && admitted > MaxLiveBytes)
+        {
+            return false;
+        }
+
+        _reservedBytes = admitted;
+        return true;
+    }
+
+    internal void Release(ulong bytes)
+    {
+        if (bytes > _reservedBytes)
+        {
+            throw new InvalidOperationException("Storage release exceeds the outstanding reservation.");
+        }
+
+        _reservedBytes -= bytes;
+    }
+}
