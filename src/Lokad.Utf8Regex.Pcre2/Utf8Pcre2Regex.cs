@@ -461,6 +461,11 @@ public sealed partial class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.NoInlining)]
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
+    }
+
+    private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
 
@@ -476,7 +481,7 @@ public sealed partial class Utf8Pcre2Regex
 
         if (_program.Operations.Enumerate.Kind != Pcre2DirectProgramKind.None)
         {
-            return EnumerateMatchesViaConfiguredBackend(subject, start);
+            return EnumerateMatchesViaConfiguredBackend(subject, start, matchOptions, cancellationToken);
         }
 
         throw CreateUnsupportedPatternException();
@@ -488,8 +493,39 @@ public sealed partial class Utf8Pcre2Regex
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesViaConfiguredBackend(
         Utf8ValidatedInput input,
-        Utf8BytePosition start)
+        Utf8BytePosition start,
+        Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken)
     {
+        if (matchOptions == Pcre2MatchOptions.None &&
+            _program.Operations.Enumerate is Pcre2SliceDirectProgram slice)
+        {
+            return new Utf8Pcre2ValueMatchEnumerator(
+                input.Bytes,
+                new Pcre2SliceGlobalMatchCursor(
+                    slice.SliceProgram,
+                    input,
+                    start,
+                    _program.Request,
+                    cancellationToken));
+        }
+
+        if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
+        {
+            var fallback = (_program.Operations.Enumerate as Pcre2SliceDirectProgram)?.Fallback
+                ?? throw new InvalidOperationException(
+                    "The PCRE2 slice enumerator has no execution program.");
+            var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+                fallback,
+                _program.CandidateSearchPlan,
+                input,
+                start,
+                matchOptions,
+                _program.Request,
+                collectDiagnostics: false);
+            return new Utf8Pcre2ValueMatchEnumerator(input.Bytes, fallbackCursor);
+        }
+
         return _program.Operations.Enumerate.Kind switch
         {
             Pcre2DirectProgramKind.Utf8Regex => EnumerateMatchesViaUtf8RegexBackend(input, start),
@@ -542,7 +578,7 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return EnumerateMatches(input, startOffsetInBytes, matchOptions);
+        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Probes the UTF-8 subject for a full or permitted subject-end partial match.</summary>

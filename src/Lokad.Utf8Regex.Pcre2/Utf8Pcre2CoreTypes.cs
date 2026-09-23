@@ -685,6 +685,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
 
     internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
+    internal static int DebugSliceCursorSizeInBytes => Unsafe.SizeOf<Pcre2SliceGlobalMatchCursor>();
 
     internal static int DebugUtf8PreparedEnumeratorSizeInBytes => Unsafe.SizeOf<Utf8PreparedValueMatchEnumerator>();
 
@@ -701,6 +702,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     private readonly Pcre2MaterializedMatchEnumeratorState _materializedMatches;
     private readonly Pcre2NativeValueEnumeratorKind _generatorExecutionKind;
     private Pcre2GlobalMatchCursor _directMatches;
+    private Pcre2SliceGlobalMatchCursor _sliceMatches;
     private Utf8PreparedValueMatchEnumerator _utf8PreparedMatches;
     private Utf8ValueMatchEnumerator _utf8Matches;
     private readonly int _utf8RegexByteOffsetBase;
@@ -804,6 +806,17 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         _index = -1;
     }
 
+    internal Utf8Pcre2ValueMatchEnumerator(
+        ReadOnlySpan<byte> input,
+        Pcre2SliceGlobalMatchCursor sliceMatches)
+    {
+        this = default;
+        _mode = Pcre2ValueMatchEnumeratorMode.Pcre2Slice;
+        _input = input;
+        _sliceMatches = sliceMatches;
+        _index = -1;
+    }
+
     internal Utf8Pcre2ValueMatchEnumerator(ReadOnlySpan<byte> input, Utf8PreparedValueMatchEnumerator utf8PreparedMatches, int startOffsetInBytes)
     {
         this = default;
@@ -902,6 +915,34 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
                 CoordinateFlagsSpecified = true,
                 Utf8SliceIsWellFormed = match.IsUtf8SliceWellFormed,
                 Utf16ProjectionIsExact = match.HasUtf16Projection,
+            };
+            return true;
+        }
+
+        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2Slice)
+        {
+            if (!_sliceMatches.MoveNext())
+            {
+                _currentData = default;
+                return false;
+            }
+
+            var range = _sliceMatches.Current;
+            var projected = Pcre2GroupData.FromByteOffsets(
+                _input,
+                0,
+                range.StartOffsetInBytes,
+                range.EndOffsetInBytes);
+            _currentData = new Pcre2ValueData
+            {
+                Success = true,
+                StartOffsetInBytes = projected.StartOffsetInBytes,
+                EndOffsetInBytes = projected.EndOffsetInBytes,
+                StartOffsetInUtf16 = projected.StartOffsetInUtf16,
+                EndOffsetInUtf16 = projected.EndOffsetInUtf16,
+                CoordinateFlagsSpecified = true,
+                Utf8SliceIsWellFormed = projected.IsUtf8SliceWellFormed,
+                Utf16ProjectionIsExact = projected.HasUtf16Projection,
             };
             return true;
         }
@@ -1186,6 +1227,7 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
         Utf8PreparedAsciiEnumerator = 3,
         NativeValueGenerator = 6,
         Pcre2DirectGlobal = 7,
+        Pcre2Slice = 8,
     }
 
     internal enum Pcre2NativeValueEnumeratorKind : byte

@@ -862,6 +862,16 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
 
+        if (operations.Enumerate is Pcre2BacktrackingDirectProgram enumerateBacktracking)
+        {
+            operations = operations with
+            {
+                Enumerate = new Pcre2SliceDirectProgram(
+                    sliceProgram,
+                    enumerateBacktracking.Program),
+            };
+        }
+
         return new Pcre2CompiledProgram(
             program.Request,
             program.PrimaryUtf8,

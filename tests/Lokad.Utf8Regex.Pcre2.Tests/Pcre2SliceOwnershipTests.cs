@@ -34,7 +34,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             "IsMatch=Pcre2Slice, " +
             "Count=Pcre2Slice, " +
-            "Enumerate=Pcre2Backtracking, " +
+            "Enumerate=Pcre2Slice, " +
             "Match=Pcre2Slice, " +
             "Replace=Pcre2Backtracking",
             regex.DebugDescribeExecutionPlan());
@@ -206,7 +206,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedOperationsMatchOracleOnAstralInput()
     {
         const string pattern = "(a+)(b+)";
-        const string inputText = " plus aaabb minus ";
+        const string inputText = "\U0001F600aaabb\U0001F600";
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText);
@@ -309,7 +309,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedDetailedMatchesOracleOnAstralInput()
     {
         const string pattern = "(a+)(b+)";
-        const string inputText = " plus aaabb minus ";
+        const string inputText = "\U0001F600aaabb\U0001F600";
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText);
@@ -363,6 +363,160 @@ public sealed class Pcre2SliceOwnershipTests
         var exception = Assert.Throws<Pcre2MatchException>(
             () => regex.MatchDetailed(input, 0));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    public static IEnumerable<object?[]> EnumerateCases()
+    {
+        yield return new object?[]
+            { "(a+)(b+)", "aab aabb aaabbb", 0, new[] { 0, 3, 4, 8, 9, 15 } };
+        yield return new object?[]
+            { "(a+)(b+)", "aab aabb aaabbb", 4, new[] { 4, 8, 9, 15 } };
+        yield return new object?[]
+            { "(ab|cd)+", "ab cd abcd", 0, new[] { 0, 2, 3, 5, 6, 10 } };
+        yield return new object?[]
+            { "(a+)(b+)", "xyz", 0, new int[0] };
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumerateCases))]
+    public void OwnedEnumerateYieldsOracleSequence(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        int[] expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern)
+            .Matches(inputText, startOffsetInBytes)
+            .Select(static m => new[] { m.Index, m.Index + m.Length })
+            .SelectMany(static pair => pair)
+            .ToArray();
+        Assert.Equal(expected, oracle);
+        var actual = new List<int>();
+        var enumerator = regex.EnumerateMatches(input, startOffsetInBytes);
+        while (enumerator.MoveNext())
+        {
+            actual.Add(enumerator.Current.StartOffsetInBytes);
+            actual.Add(enumerator.Current.EndOffsetInBytes);
+        }
+
+        Assert.Equal(expected, actual.ToArray());
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void OwnedEnumerateEmptyCapableFollowsPcre2Rule()
+    {
+        var regex = new Utf8Pcre2Regex("x*|y", Pcre2CompileOptions.None);
+        var actual = new List<int>();
+        var enumerator = regex.EnumerateMatches(Utf8("y"), 0);
+        while (enumerator.MoveNext())
+        {
+            actual.Add(enumerator.Current.StartOffsetInBytes);
+            actual.Add(enumerator.Current.EndOffsetInBytes);
+        }
+
+        Assert.Equal(new[] { 0, 0, 0, 1, 1, 1 }, actual.ToArray());
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void OwnedEnumerateMatchesOracleOnAstralInput()
+    {
+        const string pattern = "(a+)(b+)";
+        const string inputText = "\U0001F600aaabb\U0001F600";
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Matches(inputText);
+        var actual = new List<string>();
+        var enumerator = regex.EnumerateMatches(input, 0);
+        while (enumerator.MoveNext())
+        {
+            actual.Add(enumerator.Current.GetValueString());
+        }
+
+        Assert.Equal(
+            oracle.Select(static m => m.Value).ToArray(),
+            actual.ToArray());
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void OwnedEnumerateSupportsAbandonmentAndMatchMany()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        var input = Utf8("aab aabb aaabbb");
+        var partial = regex.EnumerateMatches(input, 0);
+        Assert.True(partial.MoveNext());
+        Assert.Equal(0, partial.Current.StartOffsetInBytes);
+        Assert.Equal(3, partial.Current.EndOffsetInBytes);
+
+        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[8];
+        Assert.Equal(
+            3,
+            regex.MatchMany(input, destination, out var isMore));
+        Assert.False(isMore);
+        Assert.Equal(9, destination[2].StartOffsetInBytes);
+        Assert.Equal(15, destination[2].EndOffsetInBytes);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void PreCanceledTokenAbortsOwnedEnumeration()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(
+            () => regex.EnumerateMatches(
+                Utf8("aab"), 0, Pcre2MatchOptions.None, canceled.Token));
+    }
+
+    [Fact]
+    public void ExhaustedMatchLimitFailsEnumerationWithMatchLimitIdentity()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var enumerator = regex.EnumerateMatches(Utf8("aab aabb"), 0);
+        try
+        {
+            enumerator.MoveNext();
+            Assert.Fail("Expected Pcre2MatchException.");
+        }
+        catch (Pcre2MatchException exception)
+        {
+            Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
+        }
+    }
+
+    [Fact]
+    public void OwnedEnumerationTimeoutThrowsTimeoutIdentity()
+    {
+        var input = Utf8(new string((char)97, 2000));
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            default,
+            TimeSpan.FromMilliseconds(1));
+        var enumerator = regex.EnumerateMatches(input, 0);
+        try
+        {
+            enumerator.MoveNext();
+            Assert.Fail("Expected Pcre2MatchException.");
+        }
+        catch (Pcre2MatchException exception)
+        {
+            Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
+        }
         Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
     }
 

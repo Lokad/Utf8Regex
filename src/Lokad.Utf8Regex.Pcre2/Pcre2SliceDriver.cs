@@ -12,6 +12,132 @@ namespace Lokad.Utf8Regex.Pcre2;
 // request limits, timeout, and live token. Limit breaches and deadline expiry
 // surface with the established PCRE2 failure vocabulary. Non-None match
 // options decline to the shell backtracking fallback at the dispatch site.
+// R02a lazy slice enumeration for the PCRE2 profile. One cursor owns a
+// cumulative invocation across MoveNext calls (budgets accumulate through
+// lazy enumeration with no reset); every step rents and releases its slots
+// in a finally block, so an abandoned cursor retains no ledger reservations.
+// Global progression mirrors the census driver: PCRE2 same-position
+// non-empty retry on empty matches, scalar advance otherwise, byte steps
+// on misses. IsMatch, first-match, and Count all ride this stepping loop.
+internal ref struct Pcre2SliceGlobalMatchCursor
+{
+    private readonly Utf8SliceProgram _program;
+    private Utf8ValidatedInput _input;
+    private readonly Pcre2CompileRequest _request;
+    private Utf8SliceInvocation _invocation;
+    private int _position;
+    private bool _retryPending;
+    private int _retryPosition;
+
+    internal Pcre2SliceGlobalMatchCursor(
+        Utf8SliceProgram program,
+        Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request,
+        CancellationToken cancellationToken)
+    {
+        _program = program;
+        _input = input;
+        _request = request;
+        _invocation = Pcre2SliceDriver.CreateInvocation(request, cancellationToken);
+        _position = start.Value;
+        _retryPending = false;
+        _retryPosition = start.Value;
+        Current = Pcre2CharacterMatch.NoMatch;
+    }
+
+    internal Pcre2CharacterMatch Current { get; private set; }
+
+    internal bool MoveNext()
+    {
+        var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        try
+        {
+            var bytes = _input.Bytes;
+            while (true)
+            {
+                if (_retryPending)
+                {
+                    _retryPending = false;
+                    var retry = Utf8SliceRunner.TryMatchAt(
+                        _program,
+                        bytes,
+                        _retryPosition,
+                        slots.Starts,
+                        slots.Ends,
+                        false,
+                        true,
+                        ref _invocation);
+                    Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
+                    if (retry.IsMatch)
+                    {
+                        Current = Pcre2CharacterMatch.Create(
+                            _retryPosition, retry.EndIndex);
+                        _position = retry.EndIndex;
+                        return true;
+                    }
+
+                    if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
+                            ref _input,
+                            _request.Settings,
+                            new Utf8BytePosition(_retryPosition),
+                            out var advanced))
+                    {
+                        return false;
+                    }
+
+                    _position = advanced.Value;
+                }
+
+                while (_position <= bytes.Length)
+                {
+                    var outcome = Utf8SliceRunner.TryMatchAt(
+                        _program,
+                        bytes,
+                        _position,
+                        slots.Starts,
+                        slots.Ends,
+                        false,
+                        false,
+                        ref _invocation);
+                    Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
+                    if (!outcome.IsMatch)
+                    {
+                        _position++;
+                        continue;
+                    }
+
+                    Current = Pcre2CharacterMatch.Create(
+                        _position, outcome.EndIndex);
+                    if (outcome.EndIndex == _position)
+                    {
+                        _retryPending = true;
+                        _retryPosition = _position;
+                    }
+                    else
+                    {
+                        _position = outcome.EndIndex;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException(
+                "The PCRE2 match deadline expired.",
+                Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref _invocation);
+        }
+    }
+}
+
 internal static class Pcre2SliceDriver
 {
     internal static bool IsMatch(
@@ -21,41 +147,9 @@ internal static class Pcre2SliceDriver
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
     {
-        var invocation = CreateInvocation(request, cancellationToken);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
-        {
-            var bytes = input.Bytes;
-            for (var position = start.Value; position <= bytes.Length; position++)
-            {
-                var outcome = Utf8SliceRunner.TryMatchAt(
-                    program,
-                    bytes,
-                    position,
-                    slots.Starts,
-                    slots.Ends,
-                    false,
-                    false,
-                    ref invocation);
-                ThrowIfSliceBreached(outcome.Breach);
-                if (outcome.IsMatch)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException(
-                "The PCRE2 match deadline expired.",
-                Pcre2ErrorKind.Timeout);
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        var cursor = new Pcre2SliceGlobalMatchCursor(
+            program, input, start, request, cancellationToken);
+        return cursor.MoveNext();
     }
 
     internal static Pcre2CharacterMatch FindFirst(
@@ -65,41 +159,9 @@ internal static class Pcre2SliceDriver
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
     {
-        var invocation = CreateInvocation(request, cancellationToken);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
-        {
-            var bytes = input.Bytes;
-            for (var position = start.Value; position <= bytes.Length; position++)
-            {
-                var outcome = Utf8SliceRunner.TryMatchAt(
-                    program,
-                    bytes,
-                    position,
-                    slots.Starts,
-                    slots.Ends,
-                    false,
-                    false,
-                    ref invocation);
-                ThrowIfSliceBreached(outcome.Breach);
-                if (outcome.IsMatch)
-                {
-                    return Pcre2CharacterMatch.Create(position, outcome.EndIndex);
-                }
-            }
-
-            return Pcre2CharacterMatch.NoMatch;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException(
-                "The PCRE2 match deadline expired.",
-                Pcre2ErrorKind.Timeout);
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        var cursor = new Pcre2SliceGlobalMatchCursor(
+            program, input, start, request, cancellationToken);
+        return cursor.MoveNext() ? cursor.Current : Pcre2CharacterMatch.NoMatch;
     }
 
     internal static int Count(
@@ -109,78 +171,15 @@ internal static class Pcre2SliceDriver
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
     {
-        var invocation = CreateInvocation(request, cancellationToken);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
+        var cursor = new Pcre2SliceGlobalMatchCursor(
+            program, input, start, request, cancellationToken);
+        var count = 0;
+        while (cursor.MoveNext())
         {
-            var bytes = input.Bytes;
-            var count = 0;
-            var position = start.Value;
-            while (position <= bytes.Length)
-            {
-                var outcome = Utf8SliceRunner.TryMatchAt(
-                    program,
-                    bytes,
-                    position,
-                    slots.Starts,
-                    slots.Ends,
-                    false,
-                    false,
-                    ref invocation);
-                ThrowIfSliceBreached(outcome.Breach);
-                if (!outcome.IsMatch)
-                {
-                    position++;
-                    continue;
-                }
-
-                count = checked(count + 1);
-                if (outcome.EndIndex != position)
-                {
-                    position = outcome.EndIndex;
-                    continue;
-                }
-
-                var retry = Utf8SliceRunner.TryMatchAt(
-                    program,
-                    bytes,
-                    position,
-                    slots.Starts,
-                    slots.Ends,
-                    false,
-                    true,
-                    ref invocation);
-                ThrowIfSliceBreached(retry.Breach);
-                if (retry.IsMatch)
-                {
-                    position = retry.EndIndex;
-                    continue;
-                }
-
-                if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                        ref input,
-                        request.Settings,
-                        new Utf8BytePosition(position),
-                        out var advanced))
-                {
-                    break;
-                }
-
-                position = advanced.Value;
-            }
-
-            return count;
+            count = checked(count + 1);
         }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException(
-                "The PCRE2 match deadline expired.",
-                Pcre2ErrorKind.Timeout);
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+
+        return count;
     }
 
     internal static bool TryMatchDetailed(
@@ -193,7 +192,7 @@ internal static class Pcre2SliceDriver
         out string? mark)
     {
         var invocation = CreateInvocation(request, cancellationToken);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        var slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
         try
         {
             var bytes = input.Bytes;
@@ -273,7 +272,27 @@ internal static class Pcre2SliceDriver
         return groups;
     }
 
-    private static Utf8SliceInvocation CreateInvocation(
+    // Slot admission fail-closes inside the shared runner with
+    // InvalidOperationException; surface it with the PCRE2 heap
+    // vocabulary at the adapter boundary instead.
+    internal static Utf8SliceSlots RentProgramSlots(
+        Utf8SliceProgram program,
+        ref Utf8SliceInvocation invocation)
+    {
+        try
+        {
+            return Utf8SliceRunner.RentSlots(
+                program.GroupCount, ref invocation);
+        }
+        catch (InvalidOperationException)
+        {
+            throw new Pcre2MatchException(
+                "The PCRE2 heap limit was exceeded.",
+                Pcre2ErrorKind.HeapLimit);
+        }
+    }
+
+    internal static Utf8SliceInvocation CreateInvocation(
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
     {
@@ -286,7 +305,7 @@ internal static class Pcre2SliceDriver
             cancellationToken);
     }
 
-    private static void ThrowIfSliceBreached(Utf8ExecutionLimitKind breach)
+    internal static void ThrowIfSliceBreached(Utf8ExecutionLimitKind breach)
     {
         switch (breach)
         {
