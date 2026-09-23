@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T00:55:52.2909515+00:00`
-- Snapshot SHA-256: `570ECFB3BE8565045FDC8A03ABFEB3389C1B10475134E59209FFCC5E3526E81E`
+- Generated: `2026-09-23T01:00:28.7832642+00:00`
+- Snapshot SHA-256: `141B4871306AA58641D9838A9422069E0D7FF50EC97CB869BE4736AB6C7B98F5`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `58` managed faster, `0` equivalent, `4` CPython faster, `22` inconclusive, `6` unqualified
+- Public Status: `60` managed faster, `0` equivalent, `5` CPython faster, `23` inconclusive, `2` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -122,8 +122,8 @@ Historical independent point columns were measured from source `434eb20d0007` on
 | `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.033 us | 0.132 us | 0.25x | 0.266 us | 0.048 us | 32 B |
 | `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.059 us | 0.128 us | 0.46x | 0.253 us | 0.079 us | 32 B |
 | `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.079 us | 0.135 us | 0.58x | 0.271 us | 0.116 us | 48 B |
-| `common/date-miss` | `IsMatch` | Historical | Unqualified | 2.233 us | 1.073 us | 2.08x | 1.193 us | 2.173 us | 120 B |
-| `common/ip-match` | `IsMatch` | Historical | Unqualified | 0.348 us | 0.256 us | 1.36x | 0.391 us | 0.256 us | 264 B |
+| `common/date-miss` | `IsMatch` | ScalarResult | CPython faster | 0.983 us | 0.816 us | 1.20x | 1.193 us | 2.173 us | 120 B |
+| `common/ip-match` | `IsMatch` | ScalarResult | Managed faster | 0.192 us | 0.236 us | 0.82x | 0.391 us | 0.256 us | 264 B |
 
 ### Detailed and scalar projections
 
@@ -197,8 +197,8 @@ Historical independent point columns were measured from source `434eb20d0007` on
 
 | Case | Operation | Contract | Status | PythonRe elapsed | CPython predecoded elapsed | Rstrong | CPython + decode elapsed | .NET + decode elapsed | PythonRe alloc |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
-| `corpus/mail-email-count` | `Count` | Historical | Unqualified | 11,183.784 us | 301,910.206 us | 0.04x | 311,991.011 us | 8,412.575 us | 12,389,328 B |
-| `corpus/code-log-methods` | `Count` | Historical | Unqualified | 67.041 us | 710.456 us | 0.09x | 706.507 us | 67.662 us | 106,728 B |
+| `corpus/mail-email-count` | `Count` | ScalarResult | Managed faster | 6,810.762 us | 246,448.200 us | 0.03x | 311,991.011 us | 8,412.575 us | 12,389,328 B |
+| `corpus/code-log-methods` | `Count` | ScalarResult | Inconclusive | 27.222 us | 529.986 us | 0.05x | 706.507 us | 67.662 us | 106,728 B |
 | `corpus/code-declarations` | `Count` | Historical | Unqualified | 776.594 us | 738.481 us | 1.05x | 744.238 us | 770.800 us | 106,728 B |
 | `corpus/sherlock-ru` | `Count` | Historical | Unqualified | 219.375 us | 621.720 us | 0.35x | 4,066.119 us | 5,240.930 us | 0 B |
 
@@ -395,8 +395,8 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `split/zero-width` | `_sre C Pattern.split` | `strict UTF-8 decode; adapter ASCII-boundary split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/unicode` | `_sre C Pattern.split` | `strict UTF-8 decode; .NET Regex split; string shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `split/detailed` | `_sre C Pattern.split + Python split-item metadata projection` | `strict UTF-8 decode; .NET Regex split; item-metadata shaping` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
-| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `common/ip-match` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `common/date-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Rbyte 1.66x [1.61, 1.72]; NotApplicable |
+| `common/ip-match` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; boolean result` | Rbyte 0.79x [0.75, 0.84]; NotApplicable |
 | `corpus/mail-email-count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `corpus/code-log-methods` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `corpus/code-declarations` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
