@@ -44,6 +44,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
+    private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
     /// <summary>Compiles a culture-invariant expression with <see cref="DefaultMatchTimeout"/>.</summary>
@@ -131,6 +132,11 @@ public sealed partial class Utf8Regex
                     ? packedNibbleLiteralFamilyCountStrategy
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
+        // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
+        // slice. Construction-time lowering is unbounded work; admission is R02b debt.
+        _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
+            ? Utf8SliceParser.TryParse(pattern, options)
+            : null;
 
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -429,7 +435,7 @@ public sealed partial class Utf8Regex
 
         try
         {
-            return IsMatchCore(input);
+            return IsMatchCore(input, CancellationToken.None);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -437,8 +443,102 @@ public sealed partial class Utf8Regex
         }
     }
 
-    private bool IsMatchCore(ReadOnlySpan<byte> input)
+    private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
+        if (!TryUseAsciiInputValidationShortcut(input))
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+        }
+
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = RentSliceSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.IsMatch(program, input, slots.Starts, slots.Ends, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            {
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            }
+
+            return outcome.IsMatch;
+        }
+        finally
+        {
+            ReleaseSliceSlots(slots, ref invocation);
+        }
+    }
+
+    private int OwnedSliceCount(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
+    {
+        if (!TryUseAsciiInputValidationShortcut(input))
+        {
+            Utf8Validation.ThrowIfInvalidOnly(input);
+        }
+
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = RentSliceSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.Count(program, input, slots.Starts, slots.Ends, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            {
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            }
+
+            return outcome.Count;
+        }
+        finally
+        {
+            ReleaseSliceSlots(slots, ref invocation);
+        }
+    }
+
+    private readonly struct SliceSlots
+    {
+        internal SliceSlots(int[] starts, int[] ends)
+        {
+            Starts = starts;
+            Ends = ends;
+        }
+
+        internal int[] Starts { get; }
+        internal int[] Ends { get; }
+    }
+
+    private static SliceSlots RentSliceSlots(int groups, ref Utf8SliceInvocation invocation)
+    {
+        if (groups == 0)
+        {
+            return new SliceSlots(Array.Empty<int>(), Array.Empty<int>());
+        }
+
+        if (!invocation.Ledger.TryReserve((ulong)groups * 8))
+        {
+            throw new InvalidOperationException("Owned slice capture slots breached an unlimited invocation budget.");
+        }
+
+        var starts = new int[groups];
+        var ends = new int[groups];
+        Array.Fill(starts, -1);
+        Array.Fill(ends, -1);
+        return new SliceSlots(starts, ends);
+    }
+
+    private static void ReleaseSliceSlots(SliceSlots slots, ref Utf8SliceInvocation invocation)
+    {
+        if (slots.Starts.Length != 0)
+        {
+            invocation.Ledger.Release((ulong)slots.Starts.Length * 8);
+        }
+    }
+
+    private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceIsMatch(input, _sliceProgram, cancellationToken);
+        }
+
         // PLAN.md C02: Turkic-style instances bypass every invariant-folding
         // native kernel and answer from the construction-culture oracle.
         if (RequiresCultureSensitiveFallback)
@@ -529,7 +629,14 @@ public sealed partial class Utf8Regex
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return IsMatch(input);
+        try
+        {
+            return IsMatchCore(input, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset.</summary>
@@ -558,7 +665,7 @@ public sealed partial class Utf8Regex
     {
         try
         {
-            return CountCore(input);
+            return CountCore(input, CancellationToken.None);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -573,11 +680,23 @@ public sealed partial class Utf8Regex
     public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Count(input);
+        try
+        {
+            return CountCore(input, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
-    private int CountCore(ReadOnlySpan<byte> input)
+    private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceCount(input, _sliceProgram, cancellationToken);
+        }
+
         // PLAN.md C02: Turkic-style instances bypass every invariant-folding
         // native kernel and answer from the construction-culture oracle.
         if (RequiresCultureSensitiveFallback)

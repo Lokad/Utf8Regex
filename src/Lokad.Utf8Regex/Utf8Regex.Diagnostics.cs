@@ -558,6 +558,8 @@ public sealed partial class Utf8Regex
 
         public NativeExecutionKind ExecutionKind => _owner.ExecutionKind;
 
+        public bool DebugUsesOwnedSliceProgram => _owner._sliceProgram is not null;
+
         public Utf8PreparedRegex PreparedRegex => _owner.PreparedRegex;
 
         public Utf8SearchPlan SearchPlan => _owner.SearchPlan;
