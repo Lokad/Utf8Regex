@@ -1,0 +1,300 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Pcre2;
+
+namespace Lokad.Utf8Regex.Pcre2.Tests;
+
+// R02a slice ownership for the PCRE2 profile: slice-shaped patterns execute
+// IsMatch, Count, and first-match Match on the shared primary-library slice
+// runner through Pcre2SliceDirectProgram, with PCRE2-owned global
+// progression, budgets, timeout, and failure vocabulary. Detailed results,
+// enumeration, and replacement stay on the backtracking fallback until their
+// owned projections land.
+public sealed class Pcre2SliceOwnershipTests
+{
+    public static IEnumerable<object?[]> SliceShapes()
+    {
+        yield return new object?[] { "(a+)(b+)" };
+        yield return new object?[] { "(ab|cd)+" };
+        yield return new object?[] { "(a|ab)+c" };
+        yield return new object?[] { "(ab|a)+z" };
+        yield return new object?[] { "(a{2,3}b+)|(c+d)" };
+        yield return new object?[] { "a*?b" };
+        yield return new object?[] { "x*|y" };
+        yield return new object?[] { "a+b" };
+        yield return new object?[] { "a+b?" };
+        yield return new object?[] { "foo|" };
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceShapes))]
+    public void SliceShapesRouteIsMatchCountAndMatchThroughSlice(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        Assert.Equal(
+            "IsMatch=Pcre2Slice, " +
+            "Count=Pcre2Slice, " +
+            "Enumerate=Pcre2Backtracking, " +
+            "Match=Pcre2Slice, " +
+            "Replace=Pcre2Backtracking",
+            regex.DebugDescribeExecutionPlan());
+    }
+
+    [Fact]
+    public void LazyBoundedRepeatMatchRoutesThroughSlice()
+    {
+        var regex = new Utf8Pcre2Regex("a{2,4}?a", Pcre2CompileOptions.None);
+        Assert.Contains(
+            "Match=Pcre2Slice",
+            regex.DebugDescribeExecutionPlan());
+    }
+
+    public static IEnumerable<object?[]> DeclinedOptions()
+    {
+        yield return new object?[] { Pcre2CompileOptions.Caseless };
+        yield return new object?[] { Pcre2CompileOptions.Anchored };
+        yield return new object?[] { Pcre2CompileOptions.EndAnchored };
+        yield return new object?[] { Pcre2CompileOptions.Ungreedy };
+        yield return new object?[] { Pcre2CompileOptions.NoAutoCapture };
+        yield return new object?[] { Pcre2CompileOptions.FirstLine };
+    }
+
+    [Theory]
+    [MemberData(nameof(DeclinedOptions))]
+    public void IncompatibleOptionsDeclineSliceRouting(Pcre2CompileOptions options)
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options);
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+    }
+
+    [Theory]
+    [InlineData("[a-z]+")]
+    [InlineData("(a+)+$")]
+    [InlineData("(?P<word>foo)-(?P=word)")]
+    public void NonSliceShapesDeclineSliceRouting(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+    }
+
+    private static Regex Bcl(string pattern)
+    {
+        return new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
+    }
+
+    private static byte[] Utf8(string value)
+    {
+        return Encoding.UTF8.GetBytes(value);
+    }
+
+    public static IEnumerable<object?[]> SearchCases()
+    {
+        yield return new object?[] { "(a+)(b+)", "xxaaabbyy", 0, true };
+        yield return new object?[] { "(a+)(b+)", "xxaaabbyy", 2, true };
+        yield return new object?[] { "(a+)(b+)", "xxaaayy", 0, false };
+        yield return new object?[] { "(ab|cd)+", "xxabcdcdyy", 4, true };
+        yield return new object?[] { "(ab|a)+z", "ababaz", 2, true };
+        yield return new object?[] { "a*?b", "xxaaabyy", 3, true };
+        yield return new object?[] { "(a+)(b+)", "zz", 0, false };
+        yield return new object?[] { "(a+)(b+)", "zz", 2, false };
+        yield return new object?[] { "a+b", "aaab", 0, true };
+        yield return new object?[] { "a+b", "aaac", 0, false };
+        yield return new object?[] { "a+b?", "aab", 0, true };
+    }
+
+    [Theory]
+    [MemberData(nameof(SearchCases))]
+    public void OwnedIsMatchMatchesOracle(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        Assert.Equal(expected, Bcl(pattern).IsMatch(inputText, startOffsetInBytes));
+        Assert.Equal(expected, regex.IsMatch(input, startOffsetInBytes));
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> CountCases()
+    {
+        yield return new object?[] { "(a+)(b+)", "aab aabb", 0, 2 };
+        yield return new object?[] { "(a+)(b+)", "aab aabb", 4, 1 };
+        yield return new object?[] { "(ab|cd)+", "ab cd abcd", 0, 3 };
+        yield return new object?[] { "(a|ab)+c", "xxabcabccyy", 0, 2 };
+        yield return new object?[] { "(a+)(b+)", "xyz", 0, 0 };
+        yield return new object?[] { "a+b", "aab aabb", 0, 2 };
+        yield return new object?[] { "a+b?", "aab", 0, 1 };
+        yield return new object?[] { "foo|", "xfoo", 0, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(CountCases))]
+    public void OwnedCountMatchesOracle(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        Assert.Equal(expected, Bcl(pattern).Matches(inputText, startOffsetInBytes).Count);
+        Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("x*|y", "y", 0, 3)]
+    [InlineData("x*|y", "yy", 0, 5)]
+    public void OwnedEmptyCapableCountFollowsPcre2EmptyRule(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> FirstMatchCases()
+    {
+        yield return new object?[] { "(a+)(b+)", "xxaaabbyy", 0, 2, 7 };
+        yield return new object?[] { "(a+)(b+)", "xxaaabbyy", 3, 3, 7 };
+        yield return new object?[] { "(a+)(b+)", "xxaaayy", 0, -1, -1 };
+        yield return new object?[] { "(ab|cd)+", "xxabcdcdyy", 0, 2, 8 };
+        yield return new object?[] { "a{2,4}?a", "aaaaa", 0, 0, 3 };
+        yield return new object?[] { "a+b", "aaab", 0, 0, 4 };
+    }
+
+    [Theory]
+    [MemberData(nameof(FirstMatchCases))]
+    public void OwnedFirstMatchMatchesOracle(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        int expectedStart,
+        int expectedEnd)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
+        Assert.Equal(expectedStart >= 0, oracle.Success);
+        var found = regex.Match(input, startOffsetInBytes);
+        Assert.Equal(oracle.Success, found.Success);
+        if (oracle.Success)
+        {
+            Assert.Equal(oracle.Index, expectedStart);
+            Assert.Equal(oracle.Index + oracle.Length, expectedEnd);
+            Assert.Equal(expectedStart, found.StartOffsetInBytes);
+            Assert.Equal(expectedEnd, found.EndOffsetInBytes);
+        }
+
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void OwnedOperationsMatchOracleOnAstralInput()
+    {
+        const string pattern = "(a+)(b+)";
+        const string inputText = " plus aaabb minus ";
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Match(inputText);
+        Assert.True(oracle.Success);
+        var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
+        var expectedEnd = expectedStart + Encoding.UTF8.GetByteCount(oracle.Value);
+        Assert.True(regex.IsMatch(input, 0));
+        Assert.Equal(1, regex.Count(input, 0));
+        var found = regex.Match(input, 0);
+        Assert.True(found.Success);
+        Assert.Equal(expectedStart, found.StartOffsetInBytes);
+        Assert.Equal(expectedEnd, found.EndOffsetInBytes);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void AnchoredMatchOptionsFallBackToBacktracking()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        var hit = regex.Match(Utf8("aaabbxx"), 0, Pcre2MatchOptions.Anchored);
+        Assert.True(hit.Success);
+        Assert.Equal(0, hit.StartOffsetInBytes);
+        Assert.Equal(5, hit.EndOffsetInBytes);
+        var miss = regex.Match(Utf8("xxaaabbyy"), 0, Pcre2MatchOptions.Anchored);
+        Assert.False(miss.Success);
+        var offset = regex.Match(Utf8("xxaaabbyy"), 2, Pcre2MatchOptions.Anchored);
+        Assert.True(offset.Success);
+        Assert.Equal(2, offset.StartOffsetInBytes);
+    }
+
+    [Fact]
+    public void PreCanceledTokenAbortsOwnedOperations()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var input = Utf8("xxaaabbyy");
+        Assert.Throws<OperationCanceledException>(
+            () => regex.IsMatch(input, 0, Pcre2MatchOptions.None, canceled.Token));
+        Assert.Throws<OperationCanceledException>(
+            () => regex.Count(input, 0, Pcre2MatchOptions.None, canceled.Token));
+        Assert.Throws<OperationCanceledException>(
+            () => regex.Match(input, 0, Pcre2MatchOptions.None, canceled.Token));
+    }
+
+    [Fact]
+    public void GenerousMatchLimitSucceedsOnSlice()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1000000 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var input = Utf8("xxaaabbyy");
+        Assert.True(regex.IsMatch(input, 0));
+        Assert.Equal(1, regex.Count(input, 0));
+        Assert.True(regex.Match(input, 0).Success);
+    }
+
+    [Fact]
+    public void ExhaustedMatchLimitFailsWithMatchLimitIdentity()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var input = Utf8("xxaaabbyy");
+        var countException = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, countException.ErrorKind);
+        var searchException = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input, 0));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, searchException.ErrorKind);
+    }
+
+    [Fact]
+    public void OwnedCountTimeoutThrowsTimeoutIdentity()
+    {
+        var input = Utf8(new string((char)97, 2000));
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            default,
+            TimeSpan.FromMilliseconds(1));
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(input, 0));
+        Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+}

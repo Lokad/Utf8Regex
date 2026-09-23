@@ -12,7 +12,7 @@ public sealed class Pcre2LiteralPrefixRepeatCompilerTests
         var input = "ab abb abbb x ab"u8;
 
         Assert.Equal(
-            "IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            "IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Backtracking",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input));
         Assert.Equal(4, regex.Count(input));

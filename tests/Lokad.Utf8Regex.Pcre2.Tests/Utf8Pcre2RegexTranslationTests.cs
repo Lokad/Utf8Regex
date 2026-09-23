@@ -280,12 +280,12 @@ public sealed class Utf8Pcre2RegexTranslationTests
     }
 
     [Fact]
-    public void LiteralFamilyCountLeavesEmptyAlternativesAndCompileAnchorsOnBacktracking()
+    public void LiteralFamilyCountLeavesEmptyAlternativesOnSliceAndCompileAnchorsOnBacktracking()
     {
         var empty = new Utf8Pcre2Regex("foo|");
         var anchored = new Utf8Pcre2Regex("foo|bar", Pcre2CompileOptions.Anchored);
 
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(empty.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2SliceDirectProgram>(empty.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(anchored.DebugCompiledProgram.Operations.Count);
         Assert.Equal(3, empty.Count("xfoo"u8));
         Assert.Equal(0, anchored.Count("xfoo"u8));
@@ -349,7 +349,7 @@ public sealed class Utf8Pcre2RegexTranslationTests
         var regex = new Utf8Pcre2Regex("(a)b+");
 
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
-        Assert.Equal("IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Backtracking, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
+        Assert.Equal("IsMatch=Pcre2LiteralPrefixRepeat, Count=Pcre2LiteralPrefixRepeat, Enumerate=Pcre2LiteralPrefixRepeat, Match=Pcre2Slice, Replace=Pcre2Backtracking", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("xxabbbzz"u8));
         Assert.Equal(2, regex.Count("ab abb"u8));
 

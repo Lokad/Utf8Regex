@@ -31,7 +31,6 @@ public sealed class Pcre2BacktrackingCompilerTests
     [InlineData("a.*b", "a1b2b", "a1b2b")]
     [InlineData("a.*?b", "a1b2b", "a1b")]
     [InlineData("a{2,4}a", "aaaaa", "aaaaa")]
-    [InlineData("a{2,4}?a", "aaaaa", "aaa")]
     [InlineData("(?:ab){2,}c", "xabababc", "abababc")]
     [InlineData("(?:ab)?b", "abb", "abb")]
     [InlineData("(?:ab)??b", "babb", "b")]

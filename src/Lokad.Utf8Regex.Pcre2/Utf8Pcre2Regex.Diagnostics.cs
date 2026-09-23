@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -22,6 +23,7 @@ public sealed partial class Utf8Pcre2Regex
                 ref subject,
                 start,
                 Pcre2MatchOptions.None,
+                CancellationToken.None,
                 out var directCount))
         {
             return directCount;
@@ -302,6 +304,9 @@ public sealed partial class Utf8Pcre2Regex
     internal Pcre2CompiledProgram DebugCompiledProgram => _program;
 
     internal bool DebugUsesUtf8RegexTranslation => UsesUtf8Translation;
+
+    internal bool DebugFoundationCoreFallbackRegexIsCreated =>
+        HasPrimaryUtf8Regex && PrimaryUtf8Regex.Inspection.DebugFallbackRegexIsCreated;
 
     internal string DebugUtf8RegexExecutionKindName => HasPrimaryUtf8Regex ? PrimaryUtf8Regex.Inspection.ExecutionKind.ToString() : "<none>";
 

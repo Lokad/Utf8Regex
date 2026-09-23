@@ -280,8 +280,13 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Determines whether a match exists using an explicit start byte offset and per-operation options.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        return IsMatchCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
+    }
+
+    private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, out var result))
+        if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, cancellationToken, out var result))
         {
             return result;
         }
@@ -298,7 +303,7 @@ public sealed partial class Utf8Pcre2Regex
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return IsMatch(input, startOffsetInBytes, matchOptions);
+        return IsMatchCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 subject.</summary>
@@ -312,9 +317,14 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options.</summary>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        return CountCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
+    }
+
+    private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         ThrowIfGenericIterationMayBeNonMonotone();
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, out var result))
+        if (Pcre2GlobalOperationDriver.TryCount(_program, ref subject, start, matchOptions, cancellationToken, out var result))
         {
             return result;
         }
@@ -331,7 +341,7 @@ public sealed partial class Utf8Pcre2Regex
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Count(input, startOffsetInBytes, matchOptions);
+        return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Finds the first match in the well-formed UTF-8 subject.</summary>
@@ -345,8 +355,13 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Finds the first match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        return MatchCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
+    }
+
+    private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
-        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, out var directMatch))
+        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, cancellationToken, out var directMatch))
         {
             return Utf8Pcre2ValueMatch.Create(input, directMatch);
         }
@@ -370,7 +385,7 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Match(input, startOffsetInBytes, matchOptions);
+        return MatchCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Finds the first match with capture slots, duplicate-name metadata, and <c>(*MARK)</c> state.</summary>
@@ -398,7 +413,7 @@ public sealed partial class Utf8Pcre2Regex
                 : default;
         }
 
-        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, out var directMatch))
+        if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, CancellationToken.None, out var directMatch))
         {
             return directMatch.Success
                 ? Utf8Pcre2MatchContext.Create(input, [directMatch], NameEntries)

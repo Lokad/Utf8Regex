@@ -65,6 +65,7 @@ internal static class Pcre2Compiler
                 foundation,
                 backtracking.SyntaxTree,
                 backtracking.Program);
+            foundation = Pcre2CompiledProgramOverlay.WithSlice(foundation);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -177,6 +178,27 @@ internal sealed class Pcre2BacktrackingDirectProgram : IPcre2DirectProgram
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Backtracking;
 
     internal Pcre2BacktrackingProgram Program { get; }
+}
+
+// R02a: routes slice-shaped patterns through the shared
+// primary-library slice runner. The shell keeps the replaced
+// backtracking program for non-None match options, which the
+// shared runner does not model.
+internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
+{
+    internal Pcre2SliceDirectProgram(
+        Utf8SliceProgram sliceProgram,
+        Pcre2BacktrackingProgram fallback)
+    {
+        SliceProgram = sliceProgram;
+        Fallback = fallback;
+    }
+
+    public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Slice;
+
+    internal Utf8SliceProgram SliceProgram { get; }
+
+    internal Pcre2BacktrackingProgram Fallback { get; }
 }
 
 internal sealed class Pcre2AsciiRegularIsMatchDirectProgram : IPcre2DirectProgram
@@ -348,6 +370,7 @@ internal enum Pcre2DirectProgramKind : byte
     Pcre2SeparatedRunsIsMatch = 16,
     Pcre2AsciiBoundedIsMatch = 17,
     Pcre2AsciiAnchoredDfaIsMatch = 18,
+    Pcre2Slice = 19,
 }
 
 internal readonly record struct Pcre2OperationPrograms(
@@ -780,6 +803,83 @@ internal static class Pcre2CompiledProgramOverlay
             backtrackingProgram.GroupNames,
             backtrackingProgram.NameEntries);
     }
+
+    // R02a slice routing for IsMatch, Count, and first-match Match.
+    // Detailed results, enumeration, and replacement stay on the
+    // replaced backtracking programs until their owned projections
+    // land. Eligibility piggybacks the foundation core instance: its
+    // owned slice program already encodes ASCII-only literals,
+    // numbered captures, ordered alternation, supported repeats, and
+    // case-sensitive options. The explicit option gate additionally
+    // declines whole-pattern search-domain constraints (Anchored,
+    // EndAnchored, FirstLine), greediness inversion (Ungreedy),
+    // capture renumbering (NoAutoCapture), and unreviewed case
+    // folding (Caseless), even though the core parser currently
+    // declines the latter families on its own. Multiline, DotAll,
+    // DollarEndOnly, and Ucp are inert: no anchor, dot, class, or
+    // boundary construct can appear in a core slice program, so they
+    // cannot change slice-shape semantics. Extended and ExtendedMore
+    // decline through the core parser, which rejects
+    // IgnorePatternWhitespace.
+    internal static Pcre2CompiledProgram WithSlice(
+        Pcre2CompiledProgram program)
+    {
+        if (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot primary ||
+            primary.Regex.Inspection.OwnedSliceProgram is not { } sliceProgram ||
+            (program.Request.Options & SliceIncompatibleOptions) != 0)
+        {
+            return program;
+        }
+
+        var operations = program.Operations;
+        if (operations.IsMatch is Pcre2BacktrackingDirectProgram isMatchBacktracking)
+        {
+            operations = operations with
+            {
+                IsMatch = new Pcre2SliceDirectProgram(
+                    sliceProgram,
+                    isMatchBacktracking.Program),
+            };
+        }
+
+        if (operations.Count is Pcre2BacktrackingDirectProgram countBacktracking)
+        {
+            operations = operations with
+            {
+                Count = new Pcre2SliceDirectProgram(
+                    sliceProgram,
+                    countBacktracking.Program),
+            };
+        }
+
+        if (operations.Match is Pcre2BacktrackingDirectProgram matchBacktracking)
+        {
+            operations = operations with
+            {
+                Match = new Pcre2SliceDirectProgram(
+                    sliceProgram,
+                    matchBacktracking.Program),
+            };
+        }
+
+        return new Pcre2CompiledProgram(
+            program.Request,
+            program.PrimaryUtf8,
+            operations,
+            program.CandidateSearch,
+            program.PartialProbe,
+            program.SyntaxTree,
+            program.GroupNames,
+            program.NameEntries);
+    }
+
+    private const Pcre2CompileOptions SliceIncompatibleOptions =
+        Pcre2CompileOptions.Caseless |
+        Pcre2CompileOptions.Anchored |
+        Pcre2CompileOptions.EndAnchored |
+        Pcre2CompileOptions.Ungreedy |
+        Pcre2CompileOptions.NoAutoCapture |
+        Pcre2CompileOptions.FirstLine;
 }
 
 internal sealed class Pcre2SingleTokenRepeatProgram
@@ -903,6 +1003,26 @@ internal static class Pcre2ProgramInvariant
         ValidateDirectProgram(program.Operations.Replace, program);
     }
 
+    private static bool IsOwnedIsMatchFallback(
+        Pcre2CompiledProgram program,
+        Pcre2BacktrackingProgram fallback)
+    {
+        return (program.Operations.IsMatch is Pcre2BacktrackingDirectProgram backtracking &&
+            ReferenceEquals(fallback, backtracking.Program)) ||
+            (program.Operations.IsMatch is Pcre2SliceDirectProgram slice &&
+            ReferenceEquals(fallback, slice.Fallback));
+    }
+
+    private static bool IsOwnedMatchFallback(
+        Pcre2CompiledProgram program,
+        Pcre2BacktrackingProgram fallback)
+    {
+        return (program.Operations.Match is Pcre2BacktrackingDirectProgram backtracking &&
+            ReferenceEquals(fallback, backtracking.Program)) ||
+            (program.Operations.Match is Pcre2SliceDirectProgram slice &&
+            ReferenceEquals(fallback, slice.Fallback));
+    }
+
     private static void ValidateDirectProgram(IPcre2DirectProgram directProgram, Pcre2CompiledProgram program)
     {
         if (directProgram is Pcre2Utf8DirectProgram utf8Program)
@@ -912,6 +1032,18 @@ internal static class Pcre2ProgramInvariant
             if (!isOwnedUtf8Program)
             {
                 throw new InvalidOperationException("A direct UTF-8 backend must be owned by its compiled PCRE2 program.");
+            }
+        }
+
+        if (directProgram is Pcre2SliceDirectProgram sliceProgram)
+        {
+            var isOwnedSliceProgram = program.PrimaryUtf8 is Pcre2Utf8ProgramSlot slicePrimary &&
+                ReferenceEquals(
+                    slicePrimary.Regex.Inspection.OwnedSliceProgram,
+                    sliceProgram.SliceProgram);
+            if (!isOwnedSliceProgram)
+            {
+                throw new InvalidOperationException("A direct slice backend must be owned by its compiled PCRE2 program.");
             }
         }
 
@@ -945,50 +1077,43 @@ internal static class Pcre2ProgramInvariant
         }
 
         if (directProgram is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram &&
-            (program.Operations.IsMatch is not Pcre2BacktrackingDirectProgram ownedBacktracking ||
-             !ReferenceEquals(sameStartLiteralProgram.Fallback, ownedBacktracking.Program)))
+            !IsOwnedIsMatchFallback(program, sameStartLiteralProgram.Fallback))
         {
             throw new InvalidOperationException("A same-start literal backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2LiteralPrefixRepeatDirectProgram literalPrefixRepeatProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedMatchBacktracking ||
-             !ReferenceEquals(literalPrefixRepeatProgram.Fallback, ownedMatchBacktracking.Program)))
+            !IsOwnedMatchFallback(program, literalPrefixRepeatProgram.Fallback))
         {
             throw new InvalidOperationException("A literal-prefix repeat backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2PalindromeIsMatchDirectProgram palindromeProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedPalindromeFallback ||
-             !ReferenceEquals(palindromeProgram.Fallback, ownedPalindromeFallback.Program)))
+            !IsOwnedMatchFallback(program, palindromeProgram.Fallback))
         {
             throw new InvalidOperationException("A palindrome IsMatch backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2LeadingDotStarLiteralIsMatchDirectProgram leadingDotStarLiteralProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedDotStarFallback ||
-             !ReferenceEquals(leadingDotStarLiteralProgram.Fallback, ownedDotStarFallback.Program)))
+            !IsOwnedMatchFallback(program, leadingDotStarLiteralProgram.Fallback))
         {
             throw new InvalidOperationException("A leading dot-star literal IsMatch backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2SeparatedRunsIsMatchDirectProgram separatedRunsProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedSeparatedRunsFallback ||
-             !ReferenceEquals(separatedRunsProgram.Fallback, ownedSeparatedRunsFallback.Program)))
+            !IsOwnedMatchFallback(program, separatedRunsProgram.Fallback))
         {
             throw new InvalidOperationException("A separated-runs IsMatch backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2AsciiBoundedIsMatchDirectProgram asciiBoundedProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedAsciiBoundedFallback ||
-             !ReferenceEquals(asciiBoundedProgram.Fallback, ownedAsciiBoundedFallback.Program)))
+            !IsOwnedMatchFallback(program, asciiBoundedProgram.Fallback))
         {
             throw new InvalidOperationException("A bounded ASCII IsMatch backend must be owned by its compiled PCRE2 program.");
         }
 
         if (directProgram is Pcre2AsciiAnchoredDfaIsMatchDirectProgram asciiAnchoredDfaProgram &&
-            (program.Operations.Match is not Pcre2BacktrackingDirectProgram ownedAsciiAnchoredDfaFallback ||
-             !ReferenceEquals(asciiAnchoredDfaProgram.Fallback, ownedAsciiAnchoredDfaFallback.Program)))
+            !IsOwnedMatchFallback(program, asciiAnchoredDfaProgram.Fallback))
         {
             throw new InvalidOperationException("An anchored ASCII DFA IsMatch backend must be owned by its compiled PCRE2 program.");
         }
@@ -1965,6 +2090,7 @@ internal static class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken,
         out bool result)
     {
         var program = compiledProgram.Operations.IsMatch;
@@ -2219,6 +2345,29 @@ internal static class Pcre2Runner
             return true;
         }
 
+        if (program is Pcre2SliceDirectProgram sliceProgram)
+        {
+            if (matchOptions != Pcre2MatchOptions.None)
+            {
+                result = ExecuteBacktracking(
+                    sliceProgram.Fallback,
+                    compiledProgram.CandidateSearch,
+                    ref input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request).Success;
+                return true;
+            }
+
+            result = Pcre2SliceDriver.IsMatch(
+                sliceProgram.SliceProgram,
+                ref input,
+                start,
+                compiledProgram.Request,
+                cancellationToken);
+            return true;
+        }
+
         if (program is Pcre2Utf8DirectProgram utf8Program)
         {
             result = utf8Program.Regex.ByteOffsetExecution.IsMatch(input, start);
@@ -2234,10 +2383,34 @@ internal static class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken,
         out Pcre2GroupData result)
     {
         Pcre2CharacterMatch directMatch;
-        if (compiledProgram.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
+        if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
+        {
+            if (matchOptions != Pcre2MatchOptions.None)
+            {
+                directMatch = ExecuteBacktracking(
+                    sliceProgram.Fallback,
+                    compiledProgram.CandidateSearch,
+                    ref input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request);
+            }
+            else
+            {
+                directMatch = Pcre2SliceDriver.FindFirst(
+                    sliceProgram.SliceProgram,
+                    ref input,
+                    start,
+                    compiledProgram.Request,
+                    cancellationToken);
+            }
+        }
+
+        else if (compiledProgram.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
         {
             var literalMatch = ExecuteLiteral(
                 literalProgram.Program,
@@ -2547,6 +2720,7 @@ internal static class Pcre2GlobalOperationDriver
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken,
         out int result)
     {
         var program = compiledProgram.Operations.Count;
@@ -2663,6 +2837,36 @@ internal static class Pcre2GlobalOperationDriver
                 result = checked(result + 1);
             }
 
+            return true;
+        }
+
+        if (program is Pcre2SliceDirectProgram sliceProgram)
+        {
+            if (matchOptions != Pcre2MatchOptions.None)
+            {
+                var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+                    sliceProgram.Fallback,
+                    compiledProgram.CandidateSearchPlan,
+                    input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request,
+                    collectDiagnostics: false);
+                result = 0;
+                while (fallbackCursor.MoveNext())
+                {
+                    result = checked(result + 1);
+                }
+
+                return true;
+            }
+
+            result = Pcre2SliceDriver.Count(
+                sliceProgram.SliceProgram,
+                ref input,
+                start,
+                compiledProgram.Request,
+                cancellationToken);
             return true;
         }
 

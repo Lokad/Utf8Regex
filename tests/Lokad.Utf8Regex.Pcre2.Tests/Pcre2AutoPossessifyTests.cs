@@ -39,8 +39,6 @@ public sealed class Pcre2AutoPossessifyTests
     [Theory]
     [InlineData(@"\d+b", "123b")]
     [InlineData(@"\d+b", "123c")]
-    [InlineData("a+b", "aaab")]
-    [InlineData("a+b", "aaac")]
     [InlineData(@"\d+bc", "12bc")]
     [InlineData(@"\d+bc", "12bd")]
     public void EngagedShapesMatchBcl(string pattern, string inputText)
@@ -63,7 +61,6 @@ public sealed class Pcre2AutoPossessifyTests
 
     [Theory]
     [InlineData("[ab]+b")]
-    [InlineData("a+b?")]
     public void OverlappingOrNullableShapesDecline(string pattern)
     {
         AssertAutoPossessCount(pattern, 0);
