@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -40,7 +41,7 @@ public sealed class Utf8SliceBoundsTests
         var input = Encoding.ASCII.GetBytes("aaabbb");
         var invocation = Invoke(10, 0, 0, CancellationToken.None);
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
+        var outcome = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
         Assert.False(outcome.IsMatch);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -53,7 +54,7 @@ public sealed class Utf8SliceBoundsTests
         var input = Encoding.ASCII.GetBytes("aaabbb");
         var invocation = Invoke(0, 1, 0, CancellationToken.None);
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
+        var outcome = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.Depth, outcome.Breach);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -65,7 +66,7 @@ public sealed class Utf8SliceBoundsTests
         var input = Encoding.ASCII.GetBytes("aaabbb");
         var invocation = Invoke(0, 0, 1, CancellationToken.None);
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
+        var outcome = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -80,7 +81,7 @@ public sealed class Utf8SliceBoundsTests
         var invocation = Invoke(0, 0, 0, canceled.Token);
         var (starts, ends) = Slots(program);
         var exception = Assert.Throws<OperationCanceledException>(
-            () => Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation));
+            () => Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation));
         Assert.Equal(canceled.Token, exception.CancellationToken);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -95,7 +96,7 @@ public sealed class Utf8SliceBoundsTests
         invocation.CheckpointHook = _ => source.Cancel();
         var (starts, ends) = Slots(program);
         var exception = Assert.Throws<OperationCanceledException>(
-            () => Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation));
+            () => Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation));
         Assert.Equal(source.Token, exception.CancellationToken);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
 
@@ -115,8 +116,8 @@ public sealed class Utf8SliceBoundsTests
         var live = Invoke(0, 0, 0, source.Token);
         var (starts0, ends0) = Slots(program);
         var (starts1, ends1) = Slots(program);
-        var quiet = Utf8SliceRunner.IsMatch(program, input, starts0, ends0, ref silent);
-        var loud = Utf8SliceRunner.IsMatch(program, input, starts1, ends1, ref live);
+        var quiet = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts0, ends0, ref silent);
+        var loud = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts1, ends1, ref live);
         Assert.True(quiet.IsMatch);
         Assert.True(loud.IsMatch);
         Assert.Equal(starts0, starts1);
@@ -136,7 +137,7 @@ public sealed class Utf8SliceBoundsTests
             var input = Encoding.ASCII.GetBytes(inputs[index]);
             var invocation = Invoke(0, 0, 0, CancellationToken.None);
             var (starts, ends) = Slots(program);
-            results[index] = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch;
+            results[index] = Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).IsMatch;
         });
         var oracle = new Regex("(a+)(b+)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         for (var index = 0; index < inputs.Length; index++)
@@ -152,7 +153,7 @@ public sealed class Utf8SliceBoundsTests
         Assert.Equal(128 * System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>(), Utf8SliceRunner.TrailReserveBytes);
         Assert.Equal(128 * System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceCountMutation>(), Utf8SliceRunner.JournalReserveBytes);
         Assert.Equal(28, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceFrame>());
-        Assert.Equal(12, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>());
+        Assert.Equal(16, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceTrailEntry>());
         Assert.Equal(12, System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8SliceCountMutation>());
     }
 
@@ -163,10 +164,10 @@ public sealed class Utf8SliceBoundsTests
         var input = Encoding.ASCII.GetBytes("aaabbb");
         var invocation = Invoke(1000000, 100000, 1000000, CancellationToken.None);
         var (starts, ends) = Slots(program);
-        Assert.True(Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.True(Utf8SliceRunner.IsMatch(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).IsMatch);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         (starts, ends) = Slots(program);
-        Assert.Equal(1, Utf8SliceRunner.Count(program, input, starts, ends, ref invocation).Count);
+        Assert.Equal(1, Utf8SliceRunner.Count(program, input, Utf8BoundaryMap.Create(input), starts, ends, ref invocation).Count);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 }

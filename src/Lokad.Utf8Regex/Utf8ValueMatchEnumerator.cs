@@ -41,6 +41,16 @@ public ref struct Utf8ValueMatchEnumerator
     {
     }
 
+    internal Utf8ValueMatchEnumerator(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        TimeSpan timeout,
+        CancellationToken token)
+        : this(new Utf8OperationMatchCursor(program, input, map, timeout, token))
+    {
+    }
+
     /// <summary>Gets the match at the current enumerator position.</summary>
     public Utf8ValueMatch Current => _cursor.CurrentValueMatch;
 

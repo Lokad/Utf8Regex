@@ -12,6 +12,8 @@ public readonly ref struct Utf8GroupContext
     private readonly bool _ownedHasValue;
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
+    private readonly int[]? _ownedCaptureStarts;
+    private readonly int[]? _ownedCaptureLengths;
 
     internal Utf8GroupContext(ReadOnlySpan<byte> input, string decoded, Group? group, Utf8BoundaryMap boundaryMap)
     {
@@ -31,6 +33,20 @@ public readonly ref struct Utf8GroupContext
         _ownedLength = lengthInUtf16;
     }
 
+    internal Utf8GroupContext(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        int indexInUtf16,
+        int lengthInUtf16,
+        int[] captureStarts,
+        int[] captureLengths)
+        : this(input, decoded, boundaryMap, indexInUtf16, lengthInUtf16)
+    {
+        _ownedCaptureStarts = captureStarts;
+        _ownedCaptureLengths = captureLengths;
+    }
+
     /// <summary>Gets whether the group participated in the match.</summary>
     public bool Success => _group?.Success ?? _ownedHasValue;
 
@@ -41,7 +57,7 @@ public readonly ref struct Utf8GroupContext
     public int LengthInUtf16 => _group is { Success: true } group ? group.Length : (_ownedHasValue ? _ownedLength : 0);
 
     /// <summary>Gets the number of captures retained for the group.</summary>
-    public int CaptureCount => _group?.Captures.Count ?? (_ownedHasValue ? 1 : 0);
+    public int CaptureCount => _group?.Captures.Count ?? _ownedCaptureStarts?.Length ?? (_ownedHasValue ? 1 : 0);
 
     /// <summary>Gets whether both group boundaries map to UTF-8 scalar boundaries.</summary>
     public bool IsByteAligned
@@ -134,6 +150,16 @@ public readonly ref struct Utf8GroupContext
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         if (_group is null)
         {
+            if (_ownedCaptureStarts is { } starts && _ownedCaptureLengths is { } lengths)
+            {
+                if ((uint)index >= (uint)starts.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                }
+
+                return new Utf8CaptureContext(_input, _decoded, _boundaryMap, starts[index], lengths[index]);
+            }
+
             if (!_ownedHasValue || index > 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

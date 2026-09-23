@@ -94,10 +94,24 @@ public sealed class Utf8SliceWiringTests
     [Fact]
     public void OwnedPathsNeverConstructBclFallback()
     {
+        // Covers every operation the slice serves; Replace/Split/from-offset
+        // paths still use fallback until their own migration lands.
         var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy zz");
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
+        Assert.True(regex.Match(input).Success);
+        var detailed = regex.MatchDetailed(input);
+        Assert.True(detailed.Success);
+        Assert.Equal("aaa", detailed.GetGroup(1).GetValueString());
+        var enumerated = 0;
+        foreach (var item in regex.EnumerateMatches(input))
+        {
+            enumerated++;
+            Assert.True(item.Success);
+        }
+
+        Assert.Equal(1, enumerated);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }

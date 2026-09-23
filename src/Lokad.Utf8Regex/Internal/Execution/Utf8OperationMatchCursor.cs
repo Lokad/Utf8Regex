@@ -2,6 +2,7 @@ using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -50,6 +51,9 @@ internal ref struct Utf8OperationMatchCursor
     private int _asciiFixedTokenMatchLength;
     private int _baseByteOffset;
     private int _baseUtf16Offset;
+    private Utf8SliceProgram? _sliceProgram;
+    private Utf8SliceInvocation _sliceInvocation;
+    private int _sliceUnit;
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
@@ -221,6 +225,84 @@ internal ref struct Utf8OperationMatchCursor
             ? _lastLiteralFamilyBranchId
             : -1;
 
+    public Utf8OperationMatchCursor(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        TimeSpan timeout,
+        CancellationToken token)
+    {
+        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _smallAsciiLiteralFamilySearch = default;
+        _literalSearch = null;
+        _alternateLiteralUtf16Lengths = null;
+        _hasBoundaryRequirements = false;
+        _hasTrailingLiteralRequirement = false;
+        _literal = null;
+        _input = input;
+        _boundaryMap = map;
+        _budget = Utf8ExecutionDeadline.Infinite;
+        _literalUtf16Length = 0;
+        _totalUtf16Length = map.Utf16Length;
+        _projectionPlan = new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16BoundaryMap);
+        _program = default;
+        _fallbackEnumerator = default;
+        _remaining = default;
+        _consumed = 0;
+        _consumedUtf16 = 0;
+        _multiLiteralScanState = default;
+        _deterministicScanState = default;
+        _current = Utf8ValueMatch.NoMatch;
+        _lastLiteralFamilyBranchId = 0;
+        _asciiFixedTokenCurrentIndex = -1;
+        _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
+        _sliceProgram = program;
+        _sliceInvocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), timeout, token);
+        _sliceUnit = 0;
+        _mode = EnumeratorMode.OwnedSlice;
+    }
+
+    private bool MoveNextOwnedSlice()
+    {
+        if (_sliceProgram is null || _boundaryMap is null)
+        {
+            return false;
+        }
+
+        var map = _boundaryMap.Value;
+        var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
+        try
+        {
+            while (_sliceUnit <= map.Utf16Length)
+            {
+                var outcome = Utf8SliceRunner.TryMatchFromUnit(
+                    _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                {
+                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                }
+
+                if (!outcome.Found)
+                {
+                    _sliceUnit++;
+                    continue;
+                }
+
+                _current = Utf8SliceRunner.ProjectMatch(map, outcome);
+                _sliceUnit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
+        }
+    }
+
     public bool MoveNext()
     {
         return _mode switch
@@ -238,6 +320,7 @@ internal ref struct Utf8OperationMatchCursor
             EnumeratorMode.EmptyLiteral => MoveNextEmptyLiteral(),
             EnumeratorMode.FallbackRegex => MoveNextFallback(),
             EnumeratorMode.FallbackRegexAscii => MoveNextFallbackAscii(),
+            EnumeratorMode.OwnedSlice => MoveNextOwnedSlice(),
             _ => false,
         };
     }
@@ -810,5 +893,6 @@ internal ref struct Utf8OperationMatchCursor
         SmallAsciiLiteralFamily = 11,
         EmittedKernelPattern = 12,
         FallbackRegexAscii = 13,
+        OwnedSlice = 14,
     }
 }

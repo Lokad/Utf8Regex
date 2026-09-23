@@ -178,7 +178,6 @@ public sealed class LazyFallbackConstructionTests
     [Theory]
     [InlineData("[a-z]+", "xxabcxx")]
     [InlineData("(a)(b)", "xxabxx")]
-    [InlineData("(a)+", "aaabaaa")]
     public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

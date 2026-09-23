@@ -14,6 +14,8 @@ public readonly ref struct Utf8MatchContext
     private readonly int _ownedGroupCount;
     private readonly int[]? _ownedGroupStarts;
     private readonly int[]? _ownedGroupLengths;
+    private readonly int[][]? _ownedCaptureStarts;
+    private readonly int[][]? _ownedCaptureLengths;
     private readonly int _ownedIndex;
     private readonly int _ownedLength;
 
@@ -59,6 +61,36 @@ public readonly ref struct Utf8MatchContext
     {
         _ownedGroupStarts = groupStarts;
         _ownedGroupLengths = groupLengths;
+    }
+
+    internal Utf8MatchContext(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        string[]? groupNames,
+        int indexInUtf16,
+        int lengthInUtf16,
+        int[] groupStarts,
+        int[] groupLengths,
+        int[][] captureStarts,
+        int[][] captureLengths)
+        : this(input, decoded, boundaryMap, groupNames, indexInUtf16, lengthInUtf16, groupStarts, groupLengths)
+    {
+        _ownedCaptureStarts = captureStarts;
+        _ownedCaptureLengths = captureLengths;
+    }
+
+    private Utf8GroupContext OwnedGroupView(int number, int indexInUtf16, int lengthInUtf16)
+    {
+        if (_ownedCaptureStarts is { } starts &&
+            _ownedCaptureLengths is { } lengths &&
+            (uint)number < (uint)starts.Length &&
+            (uint)number < (uint)lengths.Length)
+        {
+            return new Utf8GroupContext(_input, _decoded, _boundaryMap, indexInUtf16, lengthInUtf16, starts[number], lengths[number]);
+        }
+
+        return new Utf8GroupContext(_input, _decoded, _boundaryMap, indexInUtf16, lengthInUtf16);
     }
 
     /// <summary>Gets whether the regex found a match.</summary>
@@ -139,7 +171,7 @@ public readonly ref struct Utf8MatchContext
             {
                 if (number == 0)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
                 }
 
                 if (_ownedGroupStarts is { } starts &&
@@ -147,12 +179,12 @@ public readonly ref struct Utf8MatchContext
                     (uint)number < (uint)starts.Length &&
                     starts[number] >= 0)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[number], lengths[number]);
+                    return OwnedGroupView(number, starts[number], lengths[number]);
                 }
 
                 if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
                 }
             }
 
@@ -182,19 +214,19 @@ public readonly ref struct Utf8MatchContext
             {
                 if (groupIndex == 0)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
                 }
 
                 if (_ownedGroupStarts is { } starts &&
                     _ownedGroupLengths is { } lengths &&
                     starts[groupIndex] >= 0)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[groupIndex], lengths[groupIndex]);
+                    return OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex]);
                 }
 
                 if (_ownedGroupStarts is null && groupIndex == 1)
                 {
-                    return new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    return OwnedGroupView(0, _ownedIndex, _ownedLength);
                 }
             }
 
@@ -221,7 +253,7 @@ public readonly ref struct Utf8MatchContext
             {
                 if (number == 0)
                 {
-                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                     return true;
                 }
 
@@ -231,14 +263,14 @@ public readonly ref struct Utf8MatchContext
                     (uint)number < (uint)starts.Length)
                 {
                     group = starts[number] >= 0
-                        ? new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[number], lengths[number])
+                        ? OwnedGroupView(number, starts[number], lengths[number])
                         : default;
                     return true;
                 }
 
                 if (_ownedGroupStarts is null && number == 1 && _ownedGroupCount > 1)
                 {
-                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                     return true;
                 }
             }
@@ -279,7 +311,7 @@ public readonly ref struct Utf8MatchContext
             {
                 if (groupIndex == 0)
                 {
-                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                     return true;
                 }
 
@@ -287,14 +319,14 @@ public readonly ref struct Utf8MatchContext
                     _ownedGroupLengths is { } lengths)
                 {
                     group = starts[groupIndex] >= 0
-                        ? new Utf8GroupContext(_input, _decoded, _boundaryMap, starts[groupIndex], lengths[groupIndex])
+                        ? OwnedGroupView(groupIndex, starts[groupIndex], lengths[groupIndex])
                         : default;
                     return true;
                 }
 
                 if (_ownedGroupStarts is null && groupIndex == 1)
                 {
-                    group = new Utf8GroupContext(_input, _decoded, _boundaryMap, _ownedIndex, _ownedLength);
+                    group = OwnedGroupView(0, _ownedIndex, _ownedLength);
                     return true;
                 }
             }
