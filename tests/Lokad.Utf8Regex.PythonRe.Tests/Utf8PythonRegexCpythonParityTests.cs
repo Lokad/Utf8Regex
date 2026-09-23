@@ -244,6 +244,20 @@ public sealed class Utf8PythonRegexCpythonParityTests
     }
 
     [Fact]
+    public void BalancingShapesFollowCpythonUnknownExtension()
+    {
+        // .NET balancing captures have no Python counterpart: CPython 3.13.2
+        // rejects every (?< opener past (?<=/(?<!/(?<> as an unknown extension
+        // naming the next character (ground-truth rejections probed locally).
+        AssertPatternError(@"(?<o>a)+(?<-o>b)+", "unknown extension ?<o", 1);
+        AssertPatternError(@"(?<a>x)(?<b-a>y)", "unknown extension ?<a", 1);
+        AssertPatternError(@"(?<a>x)(?<b-a>y)(?<c-b>z)", "unknown extension ?<a", 1);
+        AssertPatternError(@"(?<-o>b)", "unknown extension ?<-", 1);
+        AssertPatternError(@"(?<1-a>x)", "unknown extension ?<1", 1);
+        AssertPatternError(@"(?<a-1>x)", "unknown extension ?<a", 1);
+    }
+
+    [Fact]
     public void ConditionalReferenceErrorsFollowCpythonExamples()
     {
         AssertPatternError(@"(?P<a>)(?(0)a|b)", "bad group number", 10);

@@ -846,7 +846,8 @@ internal static class Pcre2CompiledProgramOverlay
             sliceProgram.RequiresUnicodeWordBoundary ||
             sliceProgram.RequiresUnicodeShorthand ||
             sliceProgram.HasNonFixedLookbehind ||
-            sliceProgram.HasMixedNamedGroups)
+            sliceProgram.HasMixedNamedGroups ||
+            sliceProgram.HasBalancing)
         {
             return program;
         }

@@ -30,6 +30,16 @@ internal struct Utf8SliceTrailEntry
     internal int OldValue;
     internal int NewValue;
     internal bool IsStart;
+    internal bool IsHead;
+    internal bool IsRestore;
+}
+
+internal struct Utf8SliceBalanceEntry
+{
+    internal int Slot;
+    internal int Start;
+    internal int End;
+    internal int Prev;
 }
 
 internal struct Utf8SliceCountMutation
@@ -140,11 +150,13 @@ internal static class Utf8SliceRunner
     internal const int FrameChunkCapacity = 64;
     internal const int TrailChunkCapacity = 128;
     internal const int JournalChunkCapacity = 128;
+    internal const int BalanceChunkCapacity = 128;
     internal const int ChunkTableCapacity = 4;
 
     internal static int FrameReserveBytes => Unsafe.SizeOf<Utf8SliceFrame>() * FrameChunkCapacity;
     internal static int TrailReserveBytes => Unsafe.SizeOf<Utf8SliceTrailEntry>() * TrailChunkCapacity;
     internal static int JournalReserveBytes => Unsafe.SizeOf<Utf8SliceCountMutation>() * JournalChunkCapacity;
+    internal static int BalanceReserveBytes => Unsafe.SizeOf<Utf8SliceBalanceEntry>() * BalanceChunkCapacity;
 
     internal static Utf8SliceSlots RentSlots(int groups, ref Utf8SliceInvocation invocation)
     {
@@ -360,14 +372,24 @@ internal static class Utf8SliceRunner
         Array.Fill(counts, -1);
         Array.Fill(captureStarts, -1);
         Array.Fill(captureEnds, -1);
+        var heads = RentIntArray(program.GroupCount, ref invocation, out breach);
+        if (breach != Utf8ExecutionLimitKind.None)
+        {
+            ReleaseIntArray(positions, ref invocation);
+            ReleaseIntArray(counts, ref invocation);
+            return new Utf8SliceMatchOutcome(false, -1, breach, null, null);
+        }
+
+        Array.Fill(heads, -1);
         var stacks = new ChunkedStacks();
         try
         {
-            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
+            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
         }
         finally
         {
             stacks.ReleaseAll(ref invocation);
+            ReleaseIntArray(heads, ref invocation);
             ReleaseIntArray(positions, ref invocation);
             ReleaseIntArray(counts, ref invocation);
         }
@@ -552,6 +574,7 @@ internal static class Utf8SliceRunner
         int[] captureEnds,
         int[] counts,
         int[] positions,
+        int[] balanceHeads,
         bool collectHistory,
         bool requireNonEmpty,
         bool startIsScalarBoundary,
@@ -771,6 +794,20 @@ internal static class Utf8SliceRunner
                     }
 
                     captureEnds[instruction.A] = inputIndex;
+                    if (program.HasBalancing)
+                    {
+                        // Balancing stacks mirror every capture so pops can
+                        // restore previous tops; the head journal makes the
+                        // push vanish on backtrack like any trail write.
+                        if (!stacks.PushBalance(instruction.A, captureStarts[instruction.A], inputIndex, balanceHeads[instruction.A], ref invocation) ||
+                            !stacks.PushHeadTrail(instruction.A, balanceHeads[instruction.A], stacks.BalanceCount - 1, ref invocation))
+                        {
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        }
+
+                        balanceHeads[instruction.A] = stacks.BalanceCount - 1;
+                    }
+
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.Dot:
@@ -1223,6 +1260,7 @@ internal static class Utf8SliceRunner
                                     captureEnds,
                                     nestedCounts,
                                     nestedPositions,
+                                    balanceHeads,
                                     false,
                                     false,
                                     candidateAligned,
@@ -1292,6 +1330,61 @@ internal static class Utf8SliceRunner
                     }
 
                     break;
+                case Utf8SliceInstructionKind.BalancePop:
+                    {
+                        // Balancing pop: an empty stack fails the path;
+                        // otherwise the top capture leaves the stack, slots
+                        // restore to the previous top (or unset), and an
+                        // interval capture optionally records [popped end,
+                        // current position). Every write journals through
+                        // the trail, so backtracking undoes pops exactly
+                        // like any capture write.
+                        var popSlot = instruction.A;
+                        var captureSlot = instruction.B;
+                        if (balanceHeads[popSlot] < 0)
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        var top = stacks.BalanceEntryAt(balanceHeads[popSlot]);
+                        var previousStart = -1;
+                        var previousEnd = -1;
+                        if (top.Prev >= 0)
+                        {
+                            var below = stacks.BalanceEntryAt(top.Prev);
+                            previousStart = below.Start;
+                            previousEnd = below.End;
+                        }
+
+                        if (!stacks.PushRestoreTrail(popSlot, captureStarts[popSlot], previousStart, captureEnds[popSlot], previousEnd, ref invocation) ||
+                            !stacks.PushHeadTrail(popSlot, balanceHeads[popSlot], top.Prev, ref invocation))
+                        {
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        }
+
+                        captureStarts[popSlot] = previousStart;
+                        captureEnds[popSlot] = previousEnd;
+                        balanceHeads[popSlot] = top.Prev;
+                        if (captureSlot >= 0)
+                        {
+                            if (!stacks.PushTrail(captureSlot, captureStarts[captureSlot], top.End, true, ref invocation) ||
+                                !stacks.PushTrail(captureSlot, captureEnds[captureSlot], inputIndex, false, ref invocation) ||
+                                !stacks.PushBalance(captureSlot, top.End, inputIndex, balanceHeads[captureSlot], ref invocation) ||
+                                !stacks.PushHeadTrail(captureSlot, balanceHeads[captureSlot], stacks.BalanceCount - 1, ref invocation))
+                            {
+                                return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                            }
+
+                            captureStarts[captureSlot] = top.End;
+                            captureEnds[captureSlot] = inputIndex;
+                            balanceHeads[captureSlot] = stacks.BalanceCount - 1;
+                        }
+
+                        programIndex++;
+                        break;
+                    }
+
                 case Utf8SliceInstructionKind.Accept:
                     if (requireNonEmpty && inputIndex == start)
                     {
@@ -1322,7 +1415,7 @@ internal static class Utf8SliceRunner
                 }
 
                 stacks.TruncateJournal(popped.JournalCount, counts, positions);
-                stacks.TruncateTrail(popped.TrailCount, captureStarts, captureEnds);
+                stacks.TruncateTrail(popped.TrailCount, captureStarts, captureEnds, balanceHeads);
                 switch (popped.ResumeKind)
                 {
                     case Utf8SliceResumeKind.Alternation:
@@ -1402,14 +1495,17 @@ internal static class Utf8SliceRunner
         private Utf8SliceFrame[][] _frameTables;
         private Utf8SliceTrailEntry[][] _trailTables;
         private Utf8SliceCountMutation[][] _journalTables;
+        private Utf8SliceBalanceEntry[][] _balanceTables;
         private int _frameCount;
         private int _trailCount;
         private int _journalCount;
+        private int _balanceCount;
         private ulong _reservedBytes;
 
         internal int FrameCount => _frameCount;
         internal int TrailCount => _trailCount;
         internal int JournalCount => _journalCount;
+        internal int BalanceCount => _balanceCount;
 
         internal bool PushFrame(Utf8SliceFrame frame, ref Utf8SliceInvocation invocation)
         {
@@ -1422,10 +1518,39 @@ internal static class Utf8SliceRunner
                 new Utf8SliceTrailEntry { Slot = slot, OldValue = oldValue, NewValue = newValue, IsStart = isStart }, ref invocation, ref _reservedBytes);
         }
 
+        internal bool PushRestoreTrail(int slot, int oldStart, int newStart, int oldEnd, int newEnd, ref Utf8SliceInvocation invocation)
+        {
+            // Balance-pop slot restores: live slot state for backtrack
+            // truncation, but no capture record (the popped capture
+            // drains through its head entry; the restored top stays
+            // recorded from its own capture time).
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldStart, NewValue = newStart, IsStart = true, IsRestore = true }, ref invocation, ref _reservedBytes) &&
+                Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldEnd, NewValue = newEnd, IsStart = false, IsRestore = true }, ref invocation, ref _reservedBytes);
+        }
+
         internal bool PushJournal(int repeatId, int oldCount, int oldPosition, ref Utf8SliceInvocation invocation)
         {
             return Push(ref _journalTables, ref _journalCount, JournalChunkCapacity, JournalReserveBytes,
                 new Utf8SliceCountMutation { RepeatId = repeatId, OldCount = oldCount, OldPosition = oldPosition }, ref invocation, ref _reservedBytes);
+        }
+
+        internal bool PushBalance(int slot, int start, int end, int prev, ref Utf8SliceInvocation invocation)
+        {
+            return Push(ref _balanceTables, ref _balanceCount, BalanceChunkCapacity, BalanceReserveBytes,
+                new Utf8SliceBalanceEntry { Slot = slot, Start = start, End = end, Prev = prev }, ref invocation, ref _reservedBytes);
+        }
+
+        internal bool PushHeadTrail(int slot, int oldHead, int newHead, ref Utf8SliceInvocation invocation)
+        {
+            return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity, TrailReserveBytes,
+                new Utf8SliceTrailEntry { Slot = slot, OldValue = oldHead, NewValue = newHead, IsStart = false, IsHead = true }, ref invocation, ref _reservedBytes);
+        }
+
+        internal Utf8SliceBalanceEntry BalanceEntryAt(int index)
+        {
+            return _balanceTables[index / BalanceChunkCapacity][index % BalanceChunkCapacity];
         }
 
         internal bool PopFrame(out Utf8SliceFrame frame)
@@ -1446,13 +1571,17 @@ internal static class Utf8SliceRunner
             return _trailTables[index / TrailChunkCapacity][index % TrailChunkCapacity];
         }
 
-        internal void TruncateTrail(int count, int[] captureStarts, int[] captureEnds)
+        internal void TruncateTrail(int count, int[] captureStarts, int[] captureEnds, int[] balanceHeads)
         {
             while (_trailCount > count)
             {
                 _trailCount--;
                 var entry = _trailTables[_trailCount / TrailChunkCapacity][_trailCount % TrailChunkCapacity];
-                if (entry.IsStart)
+                if (entry.IsHead)
+                {
+                    balanceHeads[entry.Slot] = entry.OldValue;
+                }
+                else if (entry.IsStart)
                 {
                     captureStarts[entry.Slot] = entry.OldValue;
                 }
@@ -1501,12 +1630,31 @@ internal static class Utf8SliceRunner
 
             var reservedBytes = (ulong)groups * 4;
             var counts = new int[groups];
+            var sawBalanceDrain = false;
             try
             {
                 for (var entry = 0; entry < _trailCount; entry++)
                 {
                     var item = _trailTables[entry / TrailChunkCapacity][entry % TrailChunkCapacity];
-                    if (!item.IsStart)
+                    if (item.IsRestore)
+                    {
+                        continue;
+                    }
+                    if (item.IsHead)
+                    {
+                        // Balance pops drain the stack: chunk indexes grow
+                        // monotonically, so a head entry moving to a lower
+                        // index (or -1) is a pop that removes the most
+                        // recent capture; anything else is a push. Sizing
+                        // counts every capture write: the fill cursor drains
+                        // through the same head entries below and the arrays
+                        // shrink to the drained length afterwards.
+                        if (item.NewValue < item.OldValue)
+                        {
+                            sawBalanceDrain = true;
+                        }
+                    }
+                    else if (!item.IsStart)
                     {
                         counts[item.Slot]++;
                     }
@@ -1547,7 +1695,18 @@ internal static class Utf8SliceRunner
                 for (var entry = 0; entry < _trailCount; entry++)
                 {
                     var item = _trailTables[entry / TrailChunkCapacity][entry % TrailChunkCapacity];
-                    if (item.IsStart)
+                    if (item.IsRestore)
+                    {
+                        continue;
+                    }
+                    if (item.IsHead)
+                    {
+                        if (item.NewValue < item.OldValue)
+                        {
+                            counts[item.Slot]--;
+                        }
+                    }
+                    else if (item.IsStart)
                     {
                         open[item.Slot] = item.NewValue;
                     }
@@ -1556,6 +1715,32 @@ internal static class Utf8SliceRunner
                         captureStarts[item.Slot][counts[item.Slot]] = open[item.Slot];
                         captureLengths[item.Slot][counts[item.Slot]] = item.NewValue - open[item.Slot];
                         counts[item.Slot]++;
+                    }
+                }
+
+                if (sawBalanceDrain)
+                {
+                    // Drained pops were recorded transiently above while
+                    // their head entries rewound the per-group cursors:
+                    // shrink every drained array and hand the slack back.
+                    for (var group = 0; group < groups; group++)
+                    {
+                        if (counts[group] < captureStarts[group].Length)
+                        {
+                            var slack = (ulong)(captureStarts[group].Length - counts[group]) * 8;
+                            if (counts[group] == 0)
+                            {
+                                captureStarts[group] = Array.Empty<int>();
+                                captureLengths[group] = Array.Empty<int>();
+                            }
+                            else
+                            {
+                                Array.Resize(ref captureStarts[group], counts[group]);
+                                Array.Resize(ref captureLengths[group], counts[group]);
+                            }
+
+                            invocation.Ledger.Release(slack);
+                        }
                     }
                 }
 
@@ -1578,9 +1763,11 @@ internal static class Utf8SliceRunner
             _frameTables = Array.Empty<Utf8SliceFrame[]>();
             _trailTables = Array.Empty<Utf8SliceTrailEntry[]>();
             _journalTables = Array.Empty<Utf8SliceCountMutation[]>();
+            _balanceTables = Array.Empty<Utf8SliceBalanceEntry[]>();
             _frameCount = 0;
             _trailCount = 0;
             _journalCount = 0;
+            _balanceCount = 0;
         }
 
         private static bool Push<T>(

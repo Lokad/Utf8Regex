@@ -59,6 +59,9 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?'word'a)", 1)]
     [InlineData("(?<a>x)(b)(?<c>y)", 3)]
     [InlineData("(?<a>(b))", 2)]
+    [InlineData("(?<o>a)(?<-o>b)", 1)]
+    [InlineData("(?<a>x)(?<b-a>y)", 2)]
+    [InlineData("(?<open>a)(?<-open>b)", 1)]
     [InlineData("(a)(b)\\2\\1", 2)]
     [InlineData("\\d+", 0)]
     [InlineData("\\w+", 0)]
@@ -117,6 +120,11 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?P<x>a)")]
     [InlineData("(?<a>x")]
     [InlineData("(?<a>x]")]
+    [InlineData("(?<-b>a)(?<b>c)")]
+    [InlineData("(?<b-a>x)(?<b-c>y)")]
+    [InlineData("(?<a-a>x)")]
+    [InlineData("(?<1-a>x)")]
+    [InlineData("(?<a-1>x)")]
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));

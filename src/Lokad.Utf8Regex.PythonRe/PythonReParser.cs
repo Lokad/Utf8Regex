@@ -512,6 +512,12 @@ internal sealed class PythonReParser
             {
                 throw new PythonRePatternException("unknown extension ?<>", _position - 1);
             }
+
+            // CPython rejects every other (?< opener (balancing shapes,
+            // stray flags) as an unknown extension naming the next
+            // character; the flag-set fallthrough below only served these
+            // invalid spellings with a misleading missing-flag error.
+            throw new PythonRePatternException("unknown extension ?<" + _pattern[_position + 1], _position - 1);
         }
 
         var addOptions = ParseFlagSet(allowEmpty: false, context: FlagParseContext.Added);

@@ -131,6 +131,11 @@ internal static class Utf8SliceParser
                     return new Utf8SliceNode.LookbehindNode(
                         RenumberCaptures(lookbehind.Body, finals),
                         lookbehind.Positive);
+                case Utf8SliceNode.BalanceNode balance:
+                    return new Utf8SliceNode.BalanceNode(
+                        finals[balance.PopSlot] - 1,
+                        balance.CaptureSlot < 0 ? -1 : finals[balance.CaptureSlot] - 1,
+                        RenumberCaptures(balance.Body, finals));
                 default:
                     return node;
             }
@@ -161,7 +166,17 @@ internal static class Utf8SliceParser
             groupNames[finals[decl.Slot]] = decl.Name ?? ((uint)finals[decl.Slot]).ToString();
         }
 
-        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames);
+        // Balancing stacks live in attempt-local chunks while nested
+        // lookbehind runs share live slots and heads: a capture or pop
+        // inside a lookbehind body would alias shared balance heads through
+        // the nested tables, so such mixes decline to legacy-exact routing.
+        // (Inline lookahead shares the same tables and stays owned.)
+        if (parser.SawBalancing && parser.SawLookbehindGroupWrite)
+        {
+            return null;
+        }
+
+        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing);
     }
 
     private sealed class Parser
@@ -172,8 +187,11 @@ internal static class Utf8SliceParser
         private int _position;
         private int _groups;
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
-        private readonly HashSet<string> _groupNames = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _groupSlots = new(StringComparer.Ordinal);
+        private bool _sawBalancing;
         private bool _sawFiniteMaximumLazyRepeat;
+        private int _lookbehindDepth;
+        private bool _sawLookbehindGroupWrite;
 
         internal Parser(string pattern, bool matchNewline, bool matchMultiline)
         {
@@ -185,6 +203,8 @@ internal static class Utf8SliceParser
         internal int Position => _position;
         internal int GroupCount => _groups;
         internal List<(int Slot, string? Name)> GroupDecls => _groupDecls;
+        internal bool SawBalancing => _sawBalancing;
+        internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
         internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
@@ -397,7 +417,10 @@ internal static class Utf8SliceParser
                         {
                             var behindPositive = _pattern[_position + 3] == '=';
                             _position += 4;
-                            if (!TryParseAlternation(depth + 1, out var lookbehind) || AtEnd || _pattern[_position] != ')')
+                            _lookbehindDepth++;
+                            var parsedBehind = TryParseAlternation(depth + 1, out var lookbehind);
+                            _lookbehindDepth--;
+                            if (!parsedBehind || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
                             }
@@ -421,6 +444,112 @@ internal static class Utf8SliceParser
                             // decline so legacy routing preserves exact BCL
                             // behavior including construction failures.
                             var closer = marker == '<' ? '>' : '\'';
+                            var scan = _position + 3;
+                            var nameScanEnd = scan;
+                            while (nameScanEnd < _pattern.Length)
+                            {
+                                var scanChar = _pattern[nameScanEnd];
+                                if ((scanChar >= 'a' && scanChar <= 'z') ||
+                                    (scanChar >= 'A' && scanChar <= 'Z') ||
+                                    (scanChar >= '0' && scanChar <= '9') ||
+                                    scanChar == '_')
+                                {
+                                    nameScanEnd++;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+
+                            if ((nameScanEnd > scan || (scan < _pattern.Length && _pattern[scan] == '-')) &&
+                                nameScanEnd < _pattern.Length &&
+                                _pattern[nameScanEnd] == '-')
+                            {
+                                // Balancing `(?<n1-n2>`, `(?<-n2>` (and
+                                // '-quoted forms): pop n2 (fail if empty),
+                                // optionally capturing [popped end,
+                                // pop-time position) into n1. n1 follows
+                                // named rules and defines a group; n2 must
+                                // be backward-defined; forward or undefined
+                                // targets, duplicates, digit starts,
+                                // mismatched closers, and self-pops decline
+                                // so legacy routing preserves exact BCL
+                                // behavior including construction failures.
+                                string? captureName = nameScanEnd > scan
+                                    ? _pattern.Substring(scan, nameScanEnd - scan)
+                                    : null;
+                                if (captureName is not null &&
+                                    (captureName[0] >= '0' && captureName[0] <= '9'))
+                                {
+                                    return false;
+                                }
+
+                                var popStart = nameScanEnd + 1;
+                                var popEnd = popStart;
+                                while (popEnd < _pattern.Length)
+                                {
+                                    var popChar = _pattern[popEnd];
+                                    if ((popChar >= 'a' && popChar <= 'z') ||
+                                        (popChar >= 'A' && popChar <= 'Z') ||
+                                        (popChar >= '0' && popChar <= '9') ||
+                                        popChar == '_')
+                                    {
+                                        popEnd++;
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+
+                                if (popEnd == popStart ||
+                                    _pattern[popStart] >= '0' && _pattern[popStart] <= '9' ||
+                                    popEnd >= _pattern.Length ||
+                                    _pattern[popEnd] != closer)
+                                {
+                                    return false;
+                                }
+
+                                var popName = _pattern.Substring(popStart, popEnd - popStart);
+                                if (captureName == popName)
+                                {
+                                    return false;
+                                }
+
+                                if (!_groupSlots.TryGetValue(popName, out var popTemp))
+                                {
+                                    return false;
+                                }
+
+                                var captureTemp = -1;
+                                if (captureName is not null)
+                                {
+                                    captureTemp = _groups++;
+                                    if (!_groupSlots.TryAdd(captureName, captureTemp))
+                                    {
+                                        return false;
+                                    }
+
+                                    _groupDecls.Add((captureTemp, captureName));
+                                }
+
+                                _position = popEnd + 1;
+                                if (!TryParseAlternation(depth + 1, out var balanceBody) || AtEnd || _pattern[_position] != ')')
+                                {
+                                    return false;
+                                }
+
+                                _position++;
+                                node = new Utf8SliceNode.BalanceNode(popTemp, captureTemp, balanceBody ?? new Utf8SliceNode.EmptyNode());
+                                _sawBalancing = true;
+                                if (_lookbehindDepth > 0)
+                                {
+                                    _sawLookbehindGroupWrite = true;
+                                }
+                                return true;
+                            }
+
                             var nameStart = _position + 3;
                             var nameEnd = nameStart;
                             while (nameEnd < _pattern.Length)
@@ -452,14 +581,18 @@ internal static class Utf8SliceParser
                             }
 
                             var name = _pattern.Substring(nameStart, nameEnd - nameStart);
-                            if (!_groupNames.Add(name))
+                            _position = nameEnd + 1;
+                            var namedSlot = _groups++;
+                            if (!_groupSlots.TryAdd(name, namedSlot))
                             {
                                 return false;
                             }
 
-                            _position = nameEnd + 1;
-                            var namedSlot = _groups++;
                             _groupDecls.Add((namedSlot, name));
+                            if (_lookbehindDepth > 0)
+                            {
+                                _sawLookbehindGroupWrite = true;
+                            }
                             if (!TryParseAlternation(depth + 1, out var namedBody) || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
@@ -474,6 +607,10 @@ internal static class Utf8SliceParser
                     _position++;
                     var slot = _groups++;
                     _groupDecls.Add((slot, null));
+                    if (_lookbehindDepth > 0)
+                    {
+                        _sawLookbehindGroupWrite = true;
+                    }
                     if (!TryParseAlternation(depth + 1, out var body) || AtEnd || _pattern[_position] != ')')
                     {
                         return false;

@@ -122,6 +122,21 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // R03 balancing: adapter byte-offset entries serve the owned slice
+        // exactly like the UTF-16-offset drivers; the BCL fallback below
+        // keeps shapes the slice declines.
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        {
+            try
+            {
+                return OwnedSliceIsMatchFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
             input.GetDecodedString().AsSpan(),
             input.Project(start).Value);
@@ -129,6 +144,18 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        {
+            try
+            {
+                return OwnedSliceMatchFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
             input.GetDecodedString(),
             input.Project(start).Value);
@@ -137,6 +164,18 @@ public sealed partial class Utf8Regex
 
     private Utf8MatchContext MatchDetailedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        {
+            try
+            {
+                return OwnedSliceMatchDetailedFromUnit(input.Bytes, _sliceProgram, input.GetDecodedString(), input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         var decoded = input.GetDecodedString();
         var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
             decoded,
@@ -146,6 +185,18 @@ public sealed partial class Utf8Regex
 
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        {
+            try
+            {
+                return OwnedSliceCountFromUnit(input.Bytes, _sliceProgram, input.BoundaryMap, input.Project(start).Value, CancellationToken.None);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input.Bytes);
+            }
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
             input.GetDecodedString().AsSpan(),
             input.Project(start).Value);
@@ -185,6 +236,15 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator EnumerateMatchesAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // Zero-start adapter enumeration rides the owned slice; nonzero
+        // starts keep the origin-semantics fallback below (suffix slicing
+        // loses absolute-origin anchors and left context).
+        if (start.Value == 0 && _sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
+        {
+            return OwnedSliceEnumerateMatches(input.Bytes, _sliceProgram, CancellationToken.None)
+                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
