@@ -32,6 +32,11 @@ internal struct Utf8ExecutionBudget
 
     internal bool IsInfiniteDeadline => _deadline.IsInfinite;
 
+    internal void ThrowIfCancellationRequested()
+    {
+        _token.ThrowIfCancellationRequested();
+    }
+
     internal bool IsUnmetered =>
         Limits.MaxWorkSteps == 0 &&
         Limits.MaxDepth == 0 &&
