@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T03:52:26.5331456+00:00`
-- Snapshot SHA-256: `A029DF64BE7FA67859DA49ADD62CD049A8D1A00E225E1E7075D55975BDB9FF14`
+- Generated: `2026-09-23T03:54:40.4451963+00:00`
+- Snapshot SHA-256: `222E67C64FFEDC386E9B06A600AD0EB2B1554792BD67606980A49C5B8620F923`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `4` managed faster, `0` equivalent, `3` CPython faster, `1` inconclusive, `82` unqualified
+- Public Status: `7` managed faster, `0` equivalent, `3` CPython faster, `2` inconclusive, `78` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -94,10 +94,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `unicode/fullmatch` | `FullMatch` | ConsumedGroupZeroRanges | CPython faster | 15.154 us | 13.838 us | 1.09x | 23.220 us | 27.260 us | 14,360 B |
 | `literal/search-early` | `Search` | ConsumedGroupZeroRanges | CPython faster | 1.037 us | 0.145 us | 7.18x | 5.304 us | 15.841 us | 0 B |
 | `anchor/fullmatch-miss` | `FullMatch` | ConsumedGroupZeroRanges | Managed faster | 0.069 us | 0.104 us | 0.66x | 0.265 us | 0.085 us | 40 B |
-| `ignorecase/search-hit` | `Search` | Historical | Unqualified | 0.303 us | 0.205 us | 1.48x | 0.347 us | 0.200 us | 280 B |
-| `ignorecase/search-miss` | `Search` | Historical | Unqualified | 0.092 us | 0.213 us | 0.43x | 0.348 us | 0.055 us | 64 B |
-| `multiline/search-hit` | `Search` | Historical | Unqualified | 0.159 us | 0.159 us | 1.00x | 0.292 us | 0.126 us | 272 B |
-| `multiline/search-miss` | `Search` | Historical | Unqualified | 0.120 us | 0.172 us | 0.70x | 0.296 us | 0.083 us | 64 B |
+| `ignorecase/search-hit` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.115 us | 0.240 us | 0.48x | 0.347 us | 0.200 us | 280 B |
+| `ignorecase/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.051 us | 0.177 us | 0.29x | 0.348 us | 0.055 us | 64 B |
+| `multiline/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.086 us | 0.215 us | 0.39x | 0.292 us | 0.126 us | 272 B |
+| `multiline/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.072 us | 0.208 us | 0.34x | 0.296 us | 0.083 us | 64 B |
 | `dotall/fullmatch-hit` | `FullMatch` | Historical | Unqualified | 0.106 us | 0.151 us | 0.70x | 0.667 us | 72.246 us | 0 B |
 | `verbose/fullmatch-hit` | `FullMatch` | Historical | Unqualified | 0.125 us | 0.164 us | 0.76x | 0.309 us | 0.160 us | 48 B |
 | `unicode-option/search-hit` | `Search` | Historical | Unqualified | 0.389 us | 0.131 us | 2.96x | 0.322 us | 0.170 us | 312 B |
@@ -319,10 +319,10 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `unicode/fullmatch` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Excluded: pattern or subject is not entirely ASCII. |
 | `literal/search-early` | `_sre C Pattern.search` | `Utf8Regex/ExactAsciiLiteral; value ranges` | Rbyte 6.65x [6.56, 6.79]; CpythonFaster |
 | `anchor/fullmatch-miss` | `_sre C Pattern.fullmatch` | `Utf8Regex/AsciiSimplePattern; full-match value ranges` | Rbyte 0.51x [0.50, 0.51]; ManagedFaster |
-| `ignorecase/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `ignorecase/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `multiline/search-hit` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `multiline/search-miss` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `ignorecase/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 0.46x [0.44, 0.48]; NotApplicable |
+| `ignorecase/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 0.23x [0.22, 0.24]; NotApplicable |
+| `multiline/search-hit` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Rbyte 0.34x [0.33, 0.36]; ManagedFaster |
+| `multiline/search-miss` | `_sre C Pattern.search` | `Utf8Regex/AsciiSimplePattern; value ranges` | Rbyte 0.31x [0.31, 0.31]; ManagedFaster |
 | `dotall/fullmatch-hit` | `_sre C Pattern.fullmatch` | `strict UTF-8 validation; direct ASCII literal-prefix/dot-all/literal-suffix full match; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
 | `verbose/fullmatch-hit` | `_sre C Pattern.fullmatch` | `strict UTF-8 decode; .NET Regex; full-match value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
 | `unicode-option/search-hit` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Excluded: pattern or subject is not entirely ASCII. |
