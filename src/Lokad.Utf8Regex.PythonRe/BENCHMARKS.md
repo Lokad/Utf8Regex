@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:18:41.1815102+00:00`
-- Snapshot SHA-256: `AD3059EAFBD00B6D792FEE3D60C9DB99E74D95757DF2ECC1ED21CAE9C9914BAF`
+- Generated: `2026-09-23T04:20:11.5997623+00:00`
+- Snapshot SHA-256: `996CDF0C305D225F8E5A156FEC6655DE343DE816E3DB42DD8FB8F84355A8B764`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `42` managed faster, `0` equivalent, `3` CPython faster, `19` inconclusive, `26` unqualified
+- Public Status: `45` managed faster, `0` equivalent, `3` CPython faster, `20` inconclusive, `22` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -154,10 +154,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 31.282 us | 25.875 us | 1.22x | 30.059 us | 20.884 us | 8,216 B |
 | `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 1.959 us | 48.675 us | 0.04x | 76.976 us | 1.174 us | 17,456 B |
 | `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 1.413 us | 20.913 us | 0.07x | 32.008 us | 0.791 us | 8,288 B |
-| `findall/from-offset-strings` | `FindAllStringsFromOffset` | Historical | Unqualified | 7.744 us | 13.640 us | 0.57x | 14.357 us | 55.401 us | 4,120 B |
-| `findall/empty-progression-strings` | `FindAllStrings` | Historical | Unqualified | 1.669 us | 32.332 us | 0.05x | 32.750 us | 48.585 us | 4,128 B |
-| `findall/optional-capture-strings` | `FindAllStrings` | Historical | Unqualified | 52.122 us | 45.246 us | 1.15x | 45.175 us | 100.983 us | 15,088 B |
-| `findall/named-capture-strings` | `FindAllStrings` | Historical | Unqualified | 76.638 us | 75.083 us | 1.02x | 76.012 us | 143.500 us | 58,120 B |
+| `findall/from-offset-strings` | `FindAllStringsFromOffset` | EagerMaterializedResult | Managed faster | 3.652 us | 11.226 us | 0.31x | 14.357 us | 55.401 us | 4,120 B |
+| `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 0.968 us | 27.912 us | 0.03x | 32.750 us | 48.585 us | 4,128 B |
+| `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 32.219 us | 37.791 us | 0.81x | 45.175 us | 100.983 us | 15,088 B |
+| `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 45.464 us | 59.788 us | 0.76x | 76.012 us | 143.500 us | 58,120 B |
 | `findall/structural-many` | `FindAllStructural` | Historical | Unqualified | 84.959 us | 153.155 us | 0.55x | 154.318 us | 105.079 us | 46,640 B |
 | `finditer/zero-detailed` | `FindIterDetailed` | Historical | Unqualified | 1.079 us | 150.581 us | 0.01x | 152.775 us | 0.610 us | 17,456 B |
 
