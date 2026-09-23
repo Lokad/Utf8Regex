@@ -171,6 +171,29 @@ internal static class Utf8SliceRunner
         }
     }
 
+    internal static void ReleaseHistory(int[][]? starts, int[][]? lengths, ref Utf8SliceInvocation invocation)
+    {
+        if (starts is null || lengths is null)
+        {
+            return;
+        }
+
+        invocation.Ledger.Release((ulong)starts.Length * 8);
+        invocation.Ledger.Release((ulong)lengths.Length * 8);
+        for (var group = 0; group < starts.Length && group < lengths.Length; group++)
+        {
+            if (starts[group].Length != 0)
+            {
+                invocation.Ledger.Release((ulong)starts[group].Length * 4);
+            }
+
+            if (lengths[group].Length != 0)
+            {
+                invocation.Ledger.Release((ulong)lengths[group].Length * 4);
+            }
+        }
+    }
+
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -745,6 +768,13 @@ internal static class Utf8SliceRunner
             out int[][] captureStarts,
             out int[][] captureLengths)
         {
+            if (!invocation.Ledger.TryReserve((ulong)groups * 16))
+            {
+                captureStarts = Array.Empty<int[]>();
+                captureLengths = Array.Empty<int[]>();
+                return false;
+            }
+
             captureStarts = new int[groups][];
             captureLengths = new int[groups][];
             if (groups == 0)

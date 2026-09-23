@@ -497,6 +497,12 @@ public sealed partial class Utf8Regex
         var map = analysis.BoundaryMap;
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        int[][]? byteStarts = null;
+        int[][]? byteLengths = null;
+        int[]? groupStarts = null;
+        int[]? groupLengths = null;
+        int[][]? historyStarts = null;
+        int[][]? historyLengths = null;
         try
         {
             var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, 0, slots.Starts, slots.Ends, ref invocation);
@@ -515,52 +521,103 @@ public sealed partial class Utf8Regex
                 return Utf8MatchContext.Unsuccessful(input, decoded, map, _groupNames);
             }
 
-            var groupStarts = RentGroupArray(program.GroupCount + 1, ref invocation);
-            var groupLengths = RentGroupArray(program.GroupCount + 1, ref invocation);
-            var historyStarts = new int[program.GroupCount + 1][];
-            var historyLengths = new int[program.GroupCount + 1][];
-            try
+            byteStarts = outcome.CaptureStarts;
+            byteLengths = outcome.CaptureLengths;
+            groupStarts = RentGroupArray(program.GroupCount + 1, ref invocation);
+            groupLengths = RentGroupArray(program.GroupCount + 1, ref invocation);
+            historyStarts = RentHistoryOuters(program.GroupCount + 1, ref invocation);
+            historyLengths = RentHistoryOuters(program.GroupCount + 1, ref invocation);
+            groupStarts[0] = outcome.StartUnit;
+            groupLengths[0] = outcome.EndUnit - outcome.StartUnit;
+            historyStarts[0] = RentSingle(outcome.StartUnit, ref invocation);
+            historyLengths[0] = RentSingle(outcome.EndUnit - outcome.StartUnit, ref invocation);
+            for (var group = 1; group <= program.GroupCount; group++)
             {
-                groupStarts[0] = outcome.StartUnit;
-                groupLengths[0] = outcome.EndUnit - outcome.StartUnit;
-                historyStarts[0] = [outcome.StartUnit];
-                historyLengths[0] = [outcome.EndUnit - outcome.StartUnit];
-                for (var group = 1; group <= program.GroupCount; group++)
+                ConvertHistory(
+                    map,
+                    byteStarts[group - 1],
+                    byteLengths[group - 1],
+                    ref invocation,
+                    out historyStarts[group],
+                    out historyLengths[group]);
+                if (historyStarts[group].Length == 0)
                 {
-                    ConvertHistory(
-                        map,
-                        outcome.CaptureStarts[group - 1],
-                        outcome.CaptureLengths[group - 1],
-                        ref invocation,
-                        out historyStarts[group],
-                        out historyLengths[group]);
-                    if (historyStarts[group].Length == 0)
-                    {
-                        groupStarts[group] = -1;
-                        groupLengths[group] = 0;
-                    }
-                    else
-                    {
-                        groupStarts[group] = historyStarts[group][^1];
-                        groupLengths[group] = historyLengths[group][^1];
-                    }
+                    groupStarts[group] = -1;
+                    groupLengths[group] = 0;
                 }
+                else
+                {
+                    groupStarts[group] = historyStarts[group][^1];
+                    groupLengths[group] = historyLengths[group][^1];
+                }
+            }
 
-                return new Utf8MatchContext(
-                    input, decoded, map, _groupNames,
-                    outcome.StartUnit, outcome.EndUnit - outcome.StartUnit,
-                    groupStarts, groupLengths, historyStarts, historyLengths);
-            }
-            finally
-            {
-                ReleaseGroupArray(groupLengths, ref invocation);
-                ReleaseGroupArray(groupStarts, ref invocation);
-            }
+            return new Utf8MatchContext(
+                input, decoded, map, _groupNames,
+                outcome.StartUnit, outcome.EndUnit - outcome.StartUnit,
+                groupStarts, groupLengths, historyStarts, historyLengths);
         }
         finally
         {
+            // The context retains the converted arrays; their reservations transfer
+            // to the caller-owned result while working storage balances to zero.
+            if (historyStarts is not null && historyLengths is not null)
+            {
+                for (var group = 0; group < historyStarts.Length; group++)
+                {
+                    if (historyStarts[group] is not null)
+                    {
+                        ReleaseGroupArray(historyStarts[group], ref invocation);
+                    }
+
+                    if (historyLengths[group] is not null)
+                    {
+                        ReleaseGroupArray(historyLengths[group], ref invocation);
+                    }
+                }
+
+                ReleaseHistoryOuters(historyStarts, ref invocation);
+                ReleaseHistoryOuters(historyLengths, ref invocation);
+            }
+
+            if (groupStarts is not null)
+            {
+                ReleaseGroupArray(groupStarts, ref invocation);
+            }
+
+            if (groupLengths is not null)
+            {
+                ReleaseGroupArray(groupLengths, ref invocation);
+            }
+
+            Utf8SliceRunner.ReleaseHistory(byteStarts, byteLengths, ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
+    }
+
+    private static int[][] RentHistoryOuters(int length, ref Utf8SliceInvocation invocation)
+    {
+        if (!invocation.Ledger.TryReserve((ulong)length * 8))
+        {
+            throw new InvalidOperationException("Owned slice group storage breached an unlimited invocation budget.");
+        }
+
+        return new int[length][];
+    }
+
+    private static void ReleaseHistoryOuters(int[][] arrays, ref Utf8SliceInvocation invocation)
+    {
+        invocation.Ledger.Release((ulong)arrays.Length * 8);
+    }
+
+    private static int[] RentSingle(int value, ref Utf8SliceInvocation invocation)
+    {
+        if (!invocation.Ledger.TryReserve(4))
+        {
+            throw new InvalidOperationException("Owned slice group storage breached an unlimited invocation budget.");
+        }
+
+        return [value];
     }
 
     private static void ConvertHistory(
@@ -1639,10 +1696,22 @@ public sealed partial class Utf8Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, replacement);
+        try
+        {
+            return ReplaceStringCore(input, replacement, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement)
+    {
+        return ReplaceStringCore(input, replacement, CancellationToken.None);
+    }
+
+    private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
     {
         var analyzed = GetParsedReplacement(replacement);
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
@@ -1650,7 +1719,188 @@ public sealed partial class Utf8Regex
             return Utf8AsciiCultureInvariantReplacement.Replace(twin, input, analyzed);
         }
 
-        return ReplaceCore(input, replacement, analyzed);
+        return ReplaceCore(input, replacement, analyzed, cancellationToken);
+    }
+
+    private byte[] OwnedSliceReplace(
+        ReadOnlySpan<byte> input,
+        Utf8SliceProgram program,
+        Utf8AnalyzedReplacement replacement,
+        CancellationToken token)
+    {
+        var map = Utf8BoundaryMap.Create(input);
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        if (!Utf8SliceOutputWriter.Rent(input.Length, ref invocation, out var writer))
+        {
+            throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+        }
+
+        var unit = 0;
+        var lastEndByte = 0;
+        try
+        {
+            while (unit <= map.Utf16Length)
+            {
+                var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                {
+                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                }
+
+                if (!outcome.Found || outcome.CaptureStarts is null || outcome.CaptureLengths is null)
+                {
+                    break;
+                }
+
+                if (!writer.Append(input.Slice(lastEndByte, outcome.StartByte - lastEndByte), ref invocation) ||
+                    !ExpandOwnedSliceTemplate(ref writer, replacement, input, outcome, program.GroupCount, ref invocation))
+                {
+                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+                }
+
+                Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);
+                lastEndByte = outcome.EndByte;
+                unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+            }
+
+            if (!writer.Append(input.Slice(lastEndByte), ref invocation))
+            {
+                throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+            }
+
+            return writer.ToArrayAndRelease(ref invocation);
+        }
+        finally
+        {
+            writer.Release(ref invocation);
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
+    }
+
+    private static bool ExpandOwnedSliceTemplate(
+        ref Utf8SliceOutputWriter writer,
+        Utf8AnalyzedReplacement replacement,
+        ReadOnlySpan<byte> input,
+        Utf8SliceDetailedOutcome outcome,
+        int groups,
+        ref Utf8SliceInvocation invocation)
+    {
+        foreach (var instruction in replacement.Plan.Instructions)
+        {
+            switch (instruction.Kind)
+            {
+                case Utf8ReplacementInstructionKind.Literal:
+                    if (!writer.Append(instruction.LiteralUtf8, ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.Group:
+                    if (!AppendOwnedSliceGroup(ref writer, input, outcome, instruction.GroupNumber, groups, ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.WholeMatch:
+                    if (!writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.LeftPortion:
+                    if (!writer.Append(input.Slice(0, outcome.StartByte), ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.RightPortion:
+                    if (!writer.Append(input.Slice(outcome.EndByte), ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.LastGroup:
+                    if (!AppendOwnedSliceLastGroup(ref writer, input, outcome, groups, ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8ReplacementInstructionKind.WholeString:
+                    if (!writer.Append(input, ref invocation))
+                    {
+                        return false;
+                    }
+
+                    break;
+                default:
+                    throw new InvalidOperationException("Unsupported replacement instruction kind.");
+            }
+        }
+
+        return true;
+    }
+
+    private static bool AppendOwnedSliceGroup(
+        ref Utf8SliceOutputWriter writer,
+        ReadOnlySpan<byte> input,
+        Utf8SliceDetailedOutcome outcome,
+        int groupNumber,
+        int groups,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (groupNumber == 0)
+        {
+            return writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation);
+        }
+
+        if (outcome.CaptureStarts is null || outcome.CaptureLengths is null ||
+            groupNumber < 1 || groupNumber > groups)
+        {
+            return true;
+        }
+
+        var starts = outcome.CaptureStarts[groupNumber - 1];
+        var lengths = outcome.CaptureLengths[groupNumber - 1];
+        if (starts.Length == 0)
+        {
+            return true;
+        }
+
+        return writer.Append(
+            input.Slice(starts[^1], lengths[^1]),
+            ref invocation);
+    }
+
+    private static bool AppendOwnedSliceLastGroup(
+        ref Utf8SliceOutputWriter writer,
+        ReadOnlySpan<byte> input,
+        Utf8SliceDetailedOutcome outcome,
+        int groups,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
+        {
+            return true;
+        }
+
+        for (var group = groups; group >= 1; group--)
+        {
+            var starts = outcome.CaptureStarts[group - 1];
+            var lengths = outcome.CaptureLengths[group - 1];
+            if (starts.Length != 0)
+            {
+                return writer.Append(input.Slice(starts[^1], lengths[^1]), ref invocation);
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
@@ -1674,10 +1924,22 @@ public sealed partial class Utf8Regex
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, replacementPatternUtf8);
+        try
+        {
+            return ReplaceUtf8Core(input, replacementPatternUtf8, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8)
+    {
+        return ReplaceUtf8Core(input, replacementPatternUtf8, CancellationToken.None);
+    }
+
+    private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
     {
         var validation = TryUseAsciiInputValidationShortcut(input)
             ? default
@@ -1690,6 +1952,14 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceReplace(
+                input,
+                _sliceProgram,
+                GetParsedReplacement(Encoding.UTF8.GetString(replacementPatternUtf8)),
+                cancellationToken);
+        }
 
         if (TryGetDirectLiteralReplacementBytes(replacementPatternUtf8, out var directReplacementBytes))
         {

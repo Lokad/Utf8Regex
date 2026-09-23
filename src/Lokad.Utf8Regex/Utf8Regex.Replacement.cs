@@ -19,13 +19,19 @@ public sealed partial class Utf8Regex
     private byte[] ReplaceCore(
         ReadOnlySpan<byte> input,
         string replacementText,
-        Utf8AnalyzedReplacement replacement)
+        Utf8AnalyzedReplacement replacement,
+        CancellationToken cancellationToken)
     {
         if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Utf8Validation.DecodeStrict(input),
                 replacementText));
+        }
+
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
         }
 
         if (ShouldUseFallbackForSimplePatternReplacement(replacement))
