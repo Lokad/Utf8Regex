@@ -151,6 +151,15 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
+        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-search-attribution", StringComparison.Ordinal))
+        {
+            exitCode = RunMeasurePythonReSearchAttribution(
+                args[1],
+                ParsePositive(args, 2, 20),
+                Math.Clamp(ParsePositive(args, 3, 5), 1, 9));
+            return true;
+        }
+
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-one-shot-phases", StringComparison.Ordinal))
         {
             exitCode = MeasureOneShotPhases(
