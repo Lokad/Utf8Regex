@@ -44,7 +44,6 @@ public sealed class Utf8SliceClassTests
 
     public static IEnumerable<object?[]> DeclinedClassShapes()
     {
-        yield return new object?[] { "[\\d]+" };
         yield return new object?[] { "[a\\db]+" };
         yield return new object?[] { "[\\w]" };
         yield return new object?[] { "[\\p{L}]" };

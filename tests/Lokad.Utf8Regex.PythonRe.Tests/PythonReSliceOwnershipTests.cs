@@ -464,6 +464,101 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 shorthands: bare and grouped digits pass the translator
+    // through and run the owned core slice (BCL-exact on every input the
+    // translator leaves alone); all other shorthands are rewritten scalar-
+    // exact or fragmented and decline. Astral Nd inputs stay out: the
+    // translator has no scalar rewrite for digit shapes, so the owned route
+    // inherits BCL unit semantics there while CPython matches whole scalars
+    // (R04 work).
+    [Theory]
+    [InlineData("(\\d+)")]
+    [InlineData("\\d+")]
+    public void DigitShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSearchBackend);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
+    }
+
+    [Theory]
+    [InlineData("(\\w+)")]
+    [InlineData("(\\s+)")]
+    [InlineData("\\D+")]
+    [InlineData("\\w+")]
+    [InlineData("\\W+")]
+    [InlineData("\\s+")]
+    [InlineData("\\S+")]
+    [InlineData("[\\d]")]
+    public void BareShorthandShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> ShorthandSearchCases()
+    {
+        yield return new object?[] { "(\\d+)", "a12b", 0, true, 1, 3 };
+        yield return new object?[] { "(\\w+)", "a_bc1", 0, true, 0, 5 };
+        yield return new object?[] { "(\\s+)", "a b", 0, true, 1, 2 };
+        yield return new object?[] { "\\d+", "a1b", 0, true, 1, 2 };
+        yield return new object?[] { "\\w+", "aé", 0, true, 0, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ShorthandSearchCases))]
+    public void ShorthandSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(\\d+)", "a12b34", 2)]
+    [InlineData("(\\w+)", "a b_c1", 2)]
+    [InlineData("\\d+", "a1b2", 2)]
+    public void ShorthandCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(\\d+)", "12ab", true)]
+    [InlineData("(\\w+)", "a_bc1", true)]
+    public void ShorthandMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(\\d+)", "12", true)]
+    [InlineData("(\\s+)", " ", true)]
+    public void ShorthandFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Fact]
     public void PreCanceledTokenAbortsOwnedSearch()
     {

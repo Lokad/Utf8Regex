@@ -213,32 +213,30 @@ internal static class Utf8SliceRunner
         (1 << (int)UnicodeCategory.DecimalDigitNumber) |
         (1 << (int)UnicodeCategory.ConnectorPunctuation);
 
-    // Classifies the scalar starting at index for word-boundary purposes,
-    // mirroring the pinned boundary definition: ASCII by bitmap, BMP by
-    // Unicode category plus zero-width joiners (which count for boundaries
-    // but not for the word class), astral and continuation bytes as
-    // non-word (the oracle sees surrogate halves, which are never word
-    // chars). Total on any index, so unaligned byte-stepping attempts stay
-    // fail-closed.
-    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index)
+    // Classifies the scalar starting at index for word purposes,
+    // mirroring the pinned definitions: ASCII by bitmap, BMP by Unicode
+    // category, astral and continuation bytes as non-word (the oracle sees
+    // surrogate halves, which are never word chars). Zero-width joiners
+    // count only when requested (boundaries, not the word class). Total on
+    // any index, so unaligned byte-stepping attempts stay fail-closed.
+    // Decodes the BMP scalar starting at index: ASCII, continuation,
+    // invalid, astral, truncated, and out-of-range positions fail closed.
+    // Callers pass validated scalar starts; the guards keep byte-stepping
+    // attempts fail-closed without revalidating the input.
+    private static bool TryDecodeBmpScalar(ReadOnlySpan<byte> input, int index, out char scalar)
     {
+        scalar = default;
         if ((uint)index >= (uint)input.Length)
         {
             return false;
         }
 
         var lead = input[index];
-        if (lead < 0x80)
-        {
-            return (WordAsciiMask[lead >> 3] & (byte)(1 << (lead & 7))) != 0;
-        }
-
-        if ((lead & 0xC0) == 0x80 || lead < 0xC2 || lead >= 0xF0)
+        if (lead < 0x80 || (lead & 0xC0) == 0x80 || lead < 0xC2 || lead >= 0xF0)
         {
             return false;
         }
 
-        char scalar;
         if (lead < 0xE0)
         {
             if (index + 1 >= input.Length)
@@ -258,8 +256,29 @@ internal static class Utf8SliceRunner
             scalar = (char)(((lead & 0x0F) << 12) | ((input[index + 1] & 0x3F) << 6) | (input[index + 2] & 0x3F));
         }
 
+        return true;
+    }
+
+    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners)
+    {
+        if ((uint)index >= (uint)input.Length)
+        {
+            return false;
+        }
+
+        var lead = input[index];
+        if (lead < 0x80)
+        {
+            return (WordAsciiMask[lead >> 3] & (byte)(1 << (lead & 7))) != 0;
+        }
+
+        if (!TryDecodeBmpScalar(input, index, out var scalar))
+        {
+            return false;
+        }
+
         return (WordUnicodeCategoriesMask & (1 << (int)char.GetUnicodeCategory(scalar))) != 0 ||
-            scalar == (char)0x200C || scalar == (char)0x200D;
+            (includeJoiners && (scalar == (char)0x200C || scalar == (char)0x200D));
     }
 
     internal static Utf8SliceMatchOutcome TryMatchAt(
@@ -869,12 +888,91 @@ internal static class Utf8SliceRunner
                                 previous--;
                             }
 
-                            beforeWord = IsWordScalarStartingAt(input, previous);
+                            beforeWord = IsWordScalarStartingAt(input, previous, true);
                         }
 
-                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex);
+                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex, true);
                         if ((beforeWord != afterWord) == (instruction.A != 0))
                         {
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+                    }
+                    else
+                    {
+                        failed = true;
+                    }
+
+                    break;
+                case Utf8SliceInstructionKind.Shorthand:
+                    // Unicode shorthand classes: positive members match one
+                    // scalar (astral leads fail, as the oracle tests halves
+                    // that never match). Negated members match one ASCII
+                    // complement byte or one whole non-ASCII scalar (BMP
+                    // units agree; astral inputs are declined at routing).
+                    // Continuation bytes fail, so byte-stepping drivers
+                    // cannot report unaligned starts. Inputs are validated
+                    // before execution, hence lead widths stay in bounds
+                    // without revalidation here.
+                    if (inputIndex < input.Length &&
+                        (input[inputIndex] & 0xC0) != 0x80)
+                    {
+                        var candidate = input[inputIndex];
+                        var negated = (instruction.A & 1) != 0;
+                        bool positive;
+                        bool inClass;
+                        if (candidate < 0x80)
+                        {
+                            positive = instruction.A switch
+                            {
+                                0 or 1 => candidate >= (byte)'0' && candidate <= (byte)'9',
+                                2 or 3 => IsWordScalarStartingAt(input, inputIndex, false),
+                                _ => candidate == (byte)'\t' || candidate == (byte)'\n' || candidate == (byte)'\v' ||
+                                    candidate == (byte)'\f' || candidate == (byte)'\r' || candidate == (byte)' ',
+                            };
+                            inClass = positive != negated;
+                        }
+                        else if (candidate < 0xF0 &&
+                            TryDecodeBmpScalar(input, inputIndex, out var member))
+                        {
+                            var category = char.GetUnicodeCategory(member);
+                            positive = instruction.A switch
+                            {
+                                0 or 1 => category == UnicodeCategory.DecimalDigitNumber,
+                                2 or 3 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
+                                _ => member == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
+                                    category == UnicodeCategory.LineSeparator ||
+                                    category == UnicodeCategory.ParagraphSeparator,
+                            };
+                            inClass = positive != negated;
+                        }
+                        else
+                        {
+                            inClass = negated && candidate >= 0xF0;
+                        }
+
+                        if (inClass)
+                        {
+                            if (candidate < 0x80)
+                            {
+                                inputIndex++;
+                            }
+                            else if (candidate < 0xE0)
+                            {
+                                inputIndex += 2;
+                            }
+                            else if (candidate < 0xF0)
+                            {
+                                inputIndex += 3;
+                            }
+                            else
+                            {
+                                inputIndex += 4;
+                            }
+
                             programIndex++;
                         }
                         else

@@ -17,6 +17,7 @@ public sealed class Utf8SliceBoundaryTests
         yield return new object?[] { "\\B" };
         yield return new object?[] { "x\\b!" };
         yield return new object?[] { "x\\Bx" };
+        yield return new object?[] { "\\b\\w+\\b" };
         yield return new object?[] { "\\A.*\\z" };
         yield return new object?[] { "\\A.*\\Z" };
         yield return new object?[] { "(\\by\\b)" };
@@ -44,7 +45,7 @@ public sealed class Utf8SliceBoundaryTests
     [Theory]
     [InlineData("\\G")]
     [InlineData("\\Gab")]
-    [InlineData("\\b\\w+\\b")]
+    [InlineData("\\G\\w+")]
     public void UnsupportedBoundaryShapesDecline(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

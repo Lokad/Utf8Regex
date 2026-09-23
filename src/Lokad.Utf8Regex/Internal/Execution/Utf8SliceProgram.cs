@@ -2,7 +2,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, dots, anchors, word boundaries, and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
+/// sets, dots, anchors, word boundaries, shorthand classes, and empty.
+/// Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
     Empty = 0,
@@ -15,6 +16,19 @@ internal enum Utf8SliceNodeKind : byte
     Dot = 7,
     Anchor = 8,
     Boundary = 9,
+    Shorthand = 10,
+}
+
+/// <summary>Unicode shorthand classes for the owned slice. Odd values are
+/// the complements of the preceding even value.</summary>
+internal enum Utf8SliceShorthand : byte
+{
+    Digit = 0,
+    NonDigit = 1,
+    Word = 2,
+    NonWord = 3,
+    Space = 4,
+    NonSpace = 5,
 }
 
 /// <summary>Anchor flavors for the owned slice: line edges honor Multiline,
@@ -54,6 +68,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
 
     internal sealed record BoundaryNode(bool IsWordBoundary) : Utf8SliceNode(Utf8SliceNodeKind.Boundary);
+
+    internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -73,6 +89,7 @@ internal enum Utf8SliceInstructionKind : byte
     Dot = 11,
     Anchor = 12,
     Boundary = 13,
+    Shorthand = 14,
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -97,7 +114,7 @@ internal readonly struct Utf8SliceInstruction
 /// repeat count, and capture slot count. All mutable run state is invocation-owned.</summary>
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -105,6 +122,7 @@ internal sealed class Utf8SliceProgram
         GroupCount = groupCount;
         RequiresAstralFreeInput = requiresAstralFreeInput;
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
+        RequiresUnicodeShorthand = requiresUnicodeShorthand;
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
@@ -127,6 +145,12 @@ internal sealed class Utf8SliceProgram
     // semantics (BCL-exact, including zero-width joiners). Consumers whose
     // native boundary is ASCII-scoped decline marked programs.
     internal bool RequiresUnicodeWordBoundary { get; }
+
+    // R03 shorthand marker: the shared runner applies Unicode shorthand
+    // semantics (decimal digits, word chars, and separators beyond ASCII).
+    // Consumers whose native shorthands are ASCII-scoped decline marked
+    // programs.
+    internal bool RequiresUnicodeShorthand { get; }
 
     // Routing gate: true unless this program needs astral-free input and
     // the subject carries astral lead bytes (which validated inputs hold only
@@ -158,10 +182,12 @@ internal static class Utf8SliceLowerer
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresAstralFreeInput = false;
         var requiresUnicodeWordBoundary = false;
+        var requiresUnicodeShorthand = false;
         foreach (var instruction in lowerer.Instructions)
         {
             if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
-                (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0))
+                (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0) ||
+                (instruction.Kind == Utf8SliceInstructionKind.Shorthand && instruction.A % 2 == 1))
             {
                 requiresAstralFreeInput = true;
             }
@@ -171,7 +197,12 @@ internal static class Utf8SliceLowerer
                 requiresUnicodeWordBoundary = true;
             }
 
-            if (requiresAstralFreeInput && requiresUnicodeWordBoundary)
+            if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
+            {
+                requiresUnicodeShorthand = true;
+            }
+
+            if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand)
             {
                 break;
             }
@@ -183,7 +214,8 @@ internal static class Utf8SliceLowerer
             lowerer.RepeatCount,
             lowerer.GroupCount,
             requiresAstralFreeInput,
-            requiresUnicodeWordBoundary);
+            requiresUnicodeWordBoundary,
+            requiresUnicodeShorthand);
     }
 
     private sealed class Lowering
@@ -303,6 +335,9 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, 0, 0, 0));
+                    break;
+                case Utf8SliceNode.ShorthandNode shorthand:
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)

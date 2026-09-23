@@ -825,7 +825,9 @@ internal static class Pcre2CompiledProgramOverlay
     // shared runner, so every other convention declines. Word boundaries
     // decline unconditionally below: the shared runner applies Unicode word
     // semantics while the native boundary stays ASCII-scoped (UCP parity is
-    // future work). Extended and ExtendedMore
+    // future work). Shorthand classes decline for the same reason: the
+    // shared runner applies Unicode digits, word chars, and separators
+    // while the native shorthands stay ASCII-scoped. Extended and ExtendedMore
     // decline through the core parser, which rejects
     // IgnorePatternWhitespace.
     internal static Pcre2CompiledProgram WithSlice(
@@ -836,7 +838,8 @@ internal static class Pcre2CompiledProgramOverlay
             (program.Request.Options & SliceIncompatibleOptions) != 0 ||
             (program.Request.Settings.Newline is not Pcre2NewlineConvention.Default &&
              program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
-            sliceProgram.RequiresUnicodeWordBoundary)
+            sliceProgram.RequiresUnicodeWordBoundary ||
+            sliceProgram.RequiresUnicodeShorthand)
         {
             return program;
         }

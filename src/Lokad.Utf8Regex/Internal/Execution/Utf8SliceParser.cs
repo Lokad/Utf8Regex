@@ -332,6 +332,23 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
+                    Utf8SliceShorthand? shorthand = escaped switch
+                    {
+                        'd' => Utf8SliceShorthand.Digit,
+                        'D' => Utf8SliceShorthand.NonDigit,
+                        'w' => Utf8SliceShorthand.Word,
+                        'W' => Utf8SliceShorthand.NonWord,
+                        's' => Utf8SliceShorthand.Space,
+                        'S' => Utf8SliceShorthand.NonSpace,
+                        _ => null,
+                    };
+                    if (shorthand is not null)
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.ShorthandNode(shorthand.Value);
+                        return true;
+                    }
+
                     if (!IsEscapablePunctuation(escaped))
                     {
                         return false;
@@ -389,6 +406,41 @@ internal static class Utf8SliceParser
         {
             node = null;
             _position++;
+
+            // Single-shorthand classes fold to the shorthand atom they denote.
+            var shorthandOffset = 0;
+            if (_position + shorthandOffset < _pattern.Length && _pattern[_position + shorthandOffset] == '^')
+            {
+                shorthandOffset++;
+            }
+
+            if (_position + shorthandOffset + 2 < _pattern.Length &&
+                _pattern[_position + shorthandOffset] == '\\' &&
+                _pattern[_position + shorthandOffset + 2] == ']')
+            {
+                Utf8SliceShorthand? shorthand = _pattern[_position + shorthandOffset + 1] switch
+                {
+                    'd' => Utf8SliceShorthand.Digit,
+                    'D' => Utf8SliceShorthand.NonDigit,
+                    'w' => Utf8SliceShorthand.Word,
+                    'W' => Utf8SliceShorthand.NonWord,
+                    's' => Utf8SliceShorthand.Space,
+                    'S' => Utf8SliceShorthand.NonSpace,
+                    _ => (Utf8SliceShorthand?)null,
+                };
+                if (shorthand is not null)
+                {
+                    if (shorthandOffset == 1)
+                    {
+                        shorthand = (Utf8SliceShorthand)((int)shorthand.Value ^ 1);
+                    }
+
+                    _position += shorthandOffset + 3;
+                    node = new Utf8SliceNode.ShorthandNode(shorthand.Value);
+                    return true;
+                }
+            }
+
             var negated = false;
             if (!AtEnd && _pattern[_position] == '^')
             {
