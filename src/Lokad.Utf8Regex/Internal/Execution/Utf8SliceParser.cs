@@ -304,6 +304,34 @@ internal static class Utf8SliceParser
                     }
 
                     var escaped = _pattern[_position + 1];
+                    if (escaped == 'b' || escaped == 'B')
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.BoundaryNode(escaped == 'b');
+                        return true;
+                    }
+
+                    if (escaped == 'A')
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.Beginning, false);
+                        return true;
+                    }
+
+                    if (escaped == 'Z')
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.End, false);
+                        return true;
+                    }
+
+                    if (escaped == 'z')
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.VeryEnd, false);
+                        return true;
+                    }
+
                     if (!IsEscapablePunctuation(escaped))
                     {
                         return false;
@@ -325,11 +353,11 @@ internal static class Utf8SliceParser
                     return TryParseClass(out node);
                 case '^':
                     _position++;
-                    node = new Utf8SliceNode.AnchorNode(true, _matchMultiline);
+                    node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.Beginning, _matchMultiline);
                     return true;
                 case '$':
                     _position++;
-                    node = new Utf8SliceNode.AnchorNode(false, _matchMultiline);
+                    node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.End, _matchMultiline);
                     return true;
                 case '.':
                     _position++;

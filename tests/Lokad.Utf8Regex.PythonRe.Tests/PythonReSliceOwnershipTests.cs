@@ -375,6 +375,95 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 boundaries: the translator rewrites `\b`/`\B` into
+    // lookaround plus `[\p{L}\p{N}_]` guards (and anchors into forms) the
+    // core slice declines, so all boundary shapes decline the owned slice
+    // while keeping parity through the translated pattern. Expectations mix
+    // translated-oracle agreement with CPython 3.13.2 ground truths (UTF-16
+    // offsets); the Mn/ZWJ-adjacent translator model stays R04 verification
+    // debt and is not pinned beyond the ZWJ row below.
+    [Theory]
+    [InlineData("\\bword\\b")]
+    [InlineData("\\b")]
+    [InlineData("\\B")]
+    [InlineData("\\bx\\b")]
+    [InlineData("\\Aab")]
+    [InlineData("ab\\Z")]
+    public void BoundaryShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> BoundarySearchCases()
+    {
+        yield return new object?[] { "\\bword\\b", "a word here", 0, true, 2, 6 };
+        yield return new object?[] { "\\bx\\b", "axb", 0, false, 0, 0 };
+        yield return new object?[] { "\\b", "a\u00E9", 0, true, 0, 0 };
+        yield return new object?[] { "\\b", "a\u200Db", 0, true, 0, 0 };
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundarySearchCases))]
+    public void BoundarySearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("\\bword\\b", "a word here", 1)]
+    [InlineData("\\B", "ab", 1)]
+    public void BoundaryCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void EmptyCapableBoundaryCountUsesManagedBackend()
+    {
+        // Like `.*`: empty-capable declined shapes count through the managed
+        // engine with identical results.
+        var regex = new Utf8PythonRegex("\\b", PythonReCompileOptions.None);
+        Assert.Equal(6, regex.Count(Utf8("a word here"), 0));
+    }
+
+    [Theory]
+    [InlineData("\\bword\\b", "word here", true)]
+    [InlineData("\\bword\\b", "a word here", false)]
+    public void BoundaryMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("\\bword\\b", "word", true)]
+    [InlineData("\\bword\\b", "words", false)]
+    public void BoundaryFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Fact]
     public void PreCanceledTokenAbortsOwnedSearch()
     {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Input;
 
@@ -192,6 +193,73 @@ internal static class Utf8SliceRunner
                 invocation.Ledger.Release((ulong)lengths[group].Length * 4);
             }
         }
+    }
+
+    // 16 bytes covering chars 0 through 127 with a set bit where the
+    // char is a word char ([0-9A-Z_a-z]), mirroring the pinned runtime
+    // boundary bitmap.
+    private static ReadOnlySpan<byte> WordAsciiMask => [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+        0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07,
+    ];
+
+    private const int WordUnicodeCategoriesMask =
+        (1 << (int)UnicodeCategory.UppercaseLetter) |
+        (1 << (int)UnicodeCategory.LowercaseLetter) |
+        (1 << (int)UnicodeCategory.TitlecaseLetter) |
+        (1 << (int)UnicodeCategory.ModifierLetter) |
+        (1 << (int)UnicodeCategory.OtherLetter) |
+        (1 << (int)UnicodeCategory.NonSpacingMark) |
+        (1 << (int)UnicodeCategory.DecimalDigitNumber) |
+        (1 << (int)UnicodeCategory.ConnectorPunctuation);
+
+    // Classifies the scalar starting at index for word-boundary purposes,
+    // mirroring the pinned boundary definition: ASCII by bitmap, BMP by
+    // Unicode category plus zero-width joiners (which count for boundaries
+    // but not for the word class), astral and continuation bytes as
+    // non-word (the oracle sees surrogate halves, which are never word
+    // chars). Total on any index, so unaligned byte-stepping attempts stay
+    // fail-closed.
+    private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index)
+    {
+        if ((uint)index >= (uint)input.Length)
+        {
+            return false;
+        }
+
+        var lead = input[index];
+        if (lead < 0x80)
+        {
+            return (WordAsciiMask[lead >> 3] & (byte)(1 << (lead & 7))) != 0;
+        }
+
+        if ((lead & 0xC0) == 0x80 || lead < 0xC2 || lead >= 0xF0)
+        {
+            return false;
+        }
+
+        char scalar;
+        if (lead < 0xE0)
+        {
+            if (index + 1 >= input.Length)
+            {
+                return false;
+            }
+
+            scalar = (char)(((lead & 0x1F) << 6) | (input[index + 1] & 0x3F));
+        }
+        else
+        {
+            if (index + 2 >= input.Length)
+            {
+                return false;
+            }
+
+            scalar = (char)(((lead & 0x0F) << 12) | ((input[index + 1] & 0x3F) << 6) | (input[index + 2] & 0x3F));
+        }
+
+        return (WordUnicodeCategoriesMask & (1 << (int)char.GetUnicodeCategory(scalar))) != 0 ||
+            scalar == (char)0x200C || scalar == (char)0x200D;
     }
 
     internal static Utf8SliceMatchOutcome TryMatchAt(
@@ -723,23 +791,27 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Anchor:
-                    // Zero-width line edges: `^` holds at the input origin
-                    // or (multiline) just after a line feed; `$` holds at
-                    // the input end, before a trailing line feed, or
-                    // (multiline) just before any line feed. Line feeds
-                    // are single bytes, so these checks are
+                    // Zero-width edges: beginning holds at the input origin
+                    // or (multiline `^`) just after a line feed; lax end
+                    // (`$`, `\Z`) holds at the input end, before a trailing
+                    // line feed, or (multiline `$`) just before any line
+                    // feed; strict end (`\z`) holds only at the input end.
+                    // Line feeds are single bytes, so these checks are
                     // encoding-indifferent and need no astral routing.
                     // Guards order short-circuit before any indexing.
-                    var anchorAtBeginning = instruction.A == 0;
                     var anchorMultiline = instruction.B != 0;
                     bool anchorHolds;
-                    if (anchorAtBeginning)
+                    if (instruction.A == 0)
                     {
                         // Origin assertions additionally require a
                         // scalar-aligned attempt: a low-surrogate unit maps
                         // to byte zero, where the oracle never matches `^`.
                         anchorHolds = (inputIndex == 0 && startIsScalarBoundary) ||
                             (anchorMultiline && inputIndex > 0 && input[inputIndex - 1] == (byte)'\n');
+                    }
+                    else if (instruction.A == 2)
+                    {
+                        anchorHolds = inputIndex == input.Length;
                     }
                     else if (inputIndex == input.Length)
                     {
@@ -757,6 +829,58 @@ internal static class Utf8SliceRunner
                     if (anchorHolds)
                     {
                         programIndex++;
+                    }
+                    else
+                    {
+                        failed = true;
+                    }
+
+                    break;
+                case Utf8SliceInstructionKind.Boundary:
+                    // Zero-width word edges: `\b` holds on a word/non-word
+                    // transition, `\B` where both sides agree. Only
+                    // scalar-aligned attempts evaluate: mid-scalar bytes
+                    // admit no BCL position, so both fail there, while a
+                    // low-surrogate unit (scalar start, unaligned attempt)
+                    // reproduces the oracle halves position, where both
+                    // halves are non-word and `\B` holds.
+                    if (!startIsScalarBoundary)
+                    {
+                        // Between surrogate halves both sides are non-word
+                        // by construction, so `\B` holds and `\b` fails.
+                        if (inputIndex < input.Length && (input[inputIndex] & 0xC0) != 0x80 && instruction.A == 0)
+                        {
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+                    }
+                    else if (inputIndex <= input.Length &&
+                        (inputIndex == input.Length || (input[inputIndex] & 0xC0) != 0x80))
+                    {
+                        var beforeWord = false;
+                        if (inputIndex > 0)
+                        {
+                            var previous = inputIndex - 1;
+                            while (previous > 0 && (input[previous] & 0xC0) == 0x80)
+                            {
+                                previous--;
+                            }
+
+                            beforeWord = IsWordScalarStartingAt(input, previous);
+                        }
+
+                        var afterWord = inputIndex < input.Length && IsWordScalarStartingAt(input, inputIndex);
+                        if ((beforeWord != afterWord) == (instruction.A != 0))
+                        {
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
                     }
                     else
                     {

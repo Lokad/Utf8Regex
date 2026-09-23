@@ -462,7 +462,6 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    [InlineData(@"\A(a+)+b$", true)]
     [InlineData(@"\G(a+)+b$", true)]
     [InlineData("(?:^a|^b)c", true)]
     [InlineData("(?:^a|b)c", false)]

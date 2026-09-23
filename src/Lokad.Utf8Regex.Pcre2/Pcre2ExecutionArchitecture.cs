@@ -822,7 +822,10 @@ internal static class Pcre2CompiledProgramOverlay
     // core program newline rule at construction, so it needs no gate
     // here. Dots need a newline-convention rule:
     // only Default (line feed) and Lf exclude exactly newline like the
-    // shared runner, so every other convention declines. Extended and ExtendedMore
+    // shared runner, so every other convention declines. Word boundaries
+    // decline unconditionally below: the shared runner applies Unicode word
+    // semantics while the native boundary stays ASCII-scoped (UCP parity is
+    // future work). Extended and ExtendedMore
     // decline through the core parser, which rejects
     // IgnorePatternWhitespace.
     internal static Pcre2CompiledProgram WithSlice(
@@ -832,7 +835,8 @@ internal static class Pcre2CompiledProgramOverlay
             primary.Regex.Inspection.OwnedSliceProgram is not { } sliceProgram ||
             (program.Request.Options & SliceIncompatibleOptions) != 0 ||
             (program.Request.Settings.Newline is not Pcre2NewlineConvention.Default &&
-             program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf))
+             program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
+            sliceProgram.RequiresUnicodeWordBoundary)
         {
             return program;
         }
