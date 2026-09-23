@@ -44,7 +44,7 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         // PLAN.md C08: native value paths skip positive-lookbehind verification (core literal plans drop the assertion while detailed paths verify); keep lookbehind patterns on verified routes.
-        if (_utf8Regex is not null && !_hasLookbehind)
+        if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
@@ -99,7 +99,7 @@ public sealed partial class Utf8PythonRegex
                 });
         }
 
-        if (_utf8Regex is not null && !_hasLookbehind)
+        if (_utf8Regex is not null && (!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var startOffsetInUtf16 = startOffsetInBytes == 0
@@ -170,7 +170,7 @@ public sealed partial class Utf8PythonRegex
         }
 
         var utf8FullRegex = GetUtf8FullRegex();
-        if (utf8FullRegex is not null && !_hasLookbehind)
+        if (utf8FullRegex is not null && (!_hasLookbehind || utf8FullRegex.Inspection.DebugUsesOwnedSliceProgram))
         {
             // PLAN.md C08: match the whole subject from the start offset so `^` keeps the real start and lookbehind keeps its prefix; the `\G` wrapper pins the span while `\z` pins the end.
             var match = utf8FullRegex.MatchFromUtf16Offset(
@@ -225,7 +225,7 @@ public sealed partial class Utf8PythonRegex
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
-        if (!_hasLookbehind && _utf8Regex is not null &&
+        if ((!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex is not null &&
             _utf8Regex.Inspection.DebugUsesOwnedSliceProgram &&
             _utf8Regex.Inspection.OwnedSliceProgram is { } ownedProgram)
         {
@@ -242,7 +242,7 @@ public sealed partial class Utf8PythonRegex
 
         if (!_canMatchEmpty)
         {
-            if (!_hasLookbehind && _utf8Regex is not null && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
+            if ((!_hasLookbehind || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram) && _utf8Regex is not null && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
             {
                 var ownedCount = 0;
                 var ownedCountFirst = true;

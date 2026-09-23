@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, dots, anchors, word boundaries, shorthand classes, backreferences,
+/// sets, dots, anchors, word boundaries, shorthand classes, backreferences, lookarounds,
 /// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
@@ -18,6 +18,8 @@ internal enum Utf8SliceNodeKind : byte
     Boundary = 9,
     Shorthand = 10,
     Backref = 11,
+    Lookahead = 12,
+    Lookbehind = 13,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -73,6 +75,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
     internal sealed record BackrefNode(int Slot) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
+    internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -94,6 +98,9 @@ internal enum Utf8SliceInstructionKind : byte
     Boundary = 13,
     Shorthand = 14,
     Backref = 15,
+    Fail = 16,
+    Lookbehind = 17,
+    Commit = 18,
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -116,9 +123,26 @@ internal readonly struct Utf8SliceInstruction
 
 /// <summary>Immutable lowered slice program: instruction array, ASCII set masks,
 /// repeat count, and capture slot count. All mutable run state is invocation-owned.</summary>
+/// <summary>Lowered lookbehind body: a private instruction stream with local
+/// repeat ids and set masks, plus byte-length bounds for the start search.
+/// The body shares the parent capture slots at run time.</summary>
+internal sealed class Utf8SliceAssertion
+{
+    internal Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes)
+    {
+        Body = body;
+        MinLengthBytes = minLengthBytes;
+        MaxLengthBytes = maxLengthBytes;
+    }
+
+    internal Utf8SliceProgram Body { get; }
+    internal int MinLengthBytes { get; }
+    internal int MaxLengthBytes { get; }
+}
+
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -127,12 +151,25 @@ internal sealed class Utf8SliceProgram
         RequiresAstralFreeInput = requiresAstralFreeInput;
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
+        Assertions = assertions;
+        HasNonFixedLookbehind = hasNonFixedLookbehind;
+        OrdinalGroupNumbers = new int[groupCount + 1];
+        OrdinalGroupNames = new string[groupCount + 1];
+        for (var group = 0; group <= groupCount; group++)
+        {
+            OrdinalGroupNumbers[group] = group;
+            OrdinalGroupNames[group] = ((uint)group).ToString();
+        }
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
     internal byte[][] SetMasks { get; }
     internal int RepeatCount { get; }
     internal int GroupCount { get; }
+    internal Utf8SliceAssertion[] Assertions { get; }
+    internal bool HasNonFixedLookbehind { get; }
+    internal int[] OrdinalGroupNumbers { get; }
+    internal string[] OrdinalGroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
     // scalar per dot while the .NET oracle matches one UTF-16 unit per dot,
     // and negated ASCII classes consume whole non-ASCII scalars while the
@@ -187,28 +224,60 @@ internal static class Utf8SliceLowerer
         var requiresAstralFreeInput = false;
         var requiresUnicodeWordBoundary = false;
         var requiresUnicodeShorthand = false;
-        foreach (var instruction in lowerer.Instructions)
+        static void Classify(
+            Utf8SliceInstruction instruction,
+            ref bool astral,
+            ref bool word,
+            ref bool shorthand)
         {
             if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
                 (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0) ||
                 (instruction.Kind == Utf8SliceInstructionKind.Shorthand && instruction.A % 2 == 1))
             {
-                requiresAstralFreeInput = true;
+                astral = true;
             }
 
             if (instruction.Kind == Utf8SliceInstructionKind.Boundary)
             {
-                requiresUnicodeWordBoundary = true;
+                word = true;
             }
 
             if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
             {
-                requiresUnicodeShorthand = true;
+                shorthand = true;
             }
+        }
 
+        foreach (var instruction in lowerer.Instructions)
+        {
+            Classify(instruction, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand);
             if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand)
             {
                 break;
+            }
+        }
+
+        // Lookbehind bodies run on the same bytes through the shared runner,
+        // so their markers hoist: a dot, negated class, or negated shorthand
+        // inside a body needs astral-free input exactly like the main stream.
+        // Bodies whose byte length is not fixed are also recorded for
+        // consumers whose native lookbehind is fixed-length only.
+        var assertions = lowerer.Assertions.ToArray();
+        var hasNonFixedLookbehind = false;
+        foreach (var assertion in assertions)
+        {
+            if (assertion.MinLengthBytes != assertion.MaxLengthBytes)
+            {
+                hasNonFixedLookbehind = true;
+            }
+
+            foreach (var nested in assertion.Body.Instructions)
+            {
+                Classify(nested, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand);
+                if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand)
+                {
+                    break;
+                }
             }
         }
 
@@ -219,7 +288,9 @@ internal static class Utf8SliceLowerer
             lowerer.GroupCount,
             requiresAstralFreeInput,
             requiresUnicodeWordBoundary,
-            requiresUnicodeShorthand);
+            requiresUnicodeShorthand,
+            assertions,
+            hasNonFixedLookbehind);
     }
 
     private sealed class Lowering
@@ -228,6 +299,7 @@ internal static class Utf8SliceLowerer
         internal readonly List<byte[]> SetMasks = new();
         internal int RepeatCount;
         internal int GroupCount;
+        internal readonly List<Utf8SliceAssertion> Assertions = new();
 
         internal void Emit(Utf8SliceInstruction instruction)
         {
@@ -236,6 +308,82 @@ internal static class Utf8SliceLowerer
 
         internal bool EmitNode(Utf8SliceNode node)
         {
+            // Byte-length bounds for lookbehind start search, saturated:
+            // the lower bound keeps the search inside the subject, the
+            // upper bound comes from the longest servable body. Captures
+            // are unbounded above and empty below; nested assertions are
+            // zero-width.
+            static int Saturate(long value)
+            {
+                return value > int.MaxValue ? int.MaxValue : (int)value;
+            }
+
+            static (int Minimum, int Maximum) Measure(Utf8SliceNode measured)
+            {
+                switch (measured)
+                {
+                    case Utf8SliceNode.EmptyNode:
+                    case Utf8SliceNode.AnchorNode:
+                    case Utf8SliceNode.BoundaryNode:
+                    case Utf8SliceNode.LookaheadNode:
+                    case Utf8SliceNode.LookbehindNode:
+                        return (0, 0);
+                    case Utf8SliceNode.LiteralNode:
+                        return (1, 1);
+                    case Utf8SliceNode.SetNode set:
+                        return set.Negated ? (1, 4) : (1, 1);
+                    case Utf8SliceNode.DotNode:
+                        return (1, 4);
+                    case Utf8SliceNode.ShorthandNode shorthand:
+                        return (int)shorthand.Shorthand % 2 == 1 ? (1, 4) : (1, 3);
+                    case Utf8SliceNode.BackrefNode:
+                        return (0, int.MaxValue);
+                    case Utf8SliceNode.CaptureNode capture:
+                        return Measure(capture.Body);
+                    case Utf8SliceNode.ConcatNode concat:
+                        var totalMinimum = 0L;
+                        var totalMaximum = 0L;
+                        foreach (var child in concat.Children)
+                        {
+                            var (childMinimum, childMaximum) = Measure(child);
+                            totalMinimum += childMinimum;
+                            totalMaximum += childMaximum;
+                        }
+
+                        return (Saturate(totalMinimum), Saturate(totalMaximum));
+                    case Utf8SliceNode.AlternationNode alternation:
+                        var branchMinimum = int.MaxValue;
+                        var branchMaximum = 0;
+                        foreach (var branch in alternation.Branches)
+                        {
+                            var totalBranchMinimum = 0L;
+                            var totalBranchMaximum = 0L;
+                            foreach (var child in branch)
+                            {
+                                var (childMinimum, childMaximum) = Measure(child);
+                                totalBranchMinimum += childMinimum;
+                                totalBranchMaximum += childMaximum;
+                            }
+
+                            branchMinimum = Math.Min(branchMinimum, Saturate(totalBranchMinimum));
+                            branchMaximum = Math.Max(branchMaximum, Saturate(totalBranchMaximum));
+                        }
+
+                        return alternation.Branches.Length == 0
+                            ? (0, 0)
+                            : (branchMinimum, branchMaximum);
+                    case Utf8SliceNode.RepeatNode repeat:
+                        var (bodyMinimum, bodyMaximum) = Measure(repeat.Body);
+                        var repeatMinimum = Saturate((long)bodyMinimum * repeat.Minimum);
+                        var repeatMaximum = repeat.Maximum == int.MaxValue || bodyMaximum == int.MaxValue
+                            ? int.MaxValue
+                            : Saturate((long)bodyMaximum * repeat.Maximum);
+                        return (repeatMinimum, repeatMaximum);
+                    default:
+                        return (0, int.MaxValue);
+                }
+            }
+
             if (Instructions.Count >= Utf8SliceLowerer.MaxInstructions)
             {
                 return false;
@@ -351,6 +499,69 @@ internal static class Utf8SliceLowerer
 
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, 0, 0, 0));
                     break;
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    // Atomic first-success assertions on the shared trail:
+                    // a surviving body commits (popping to the assertion
+                    // fork, restoring repeat state, keeping captures) while
+                    // any failing path unwinds to the fork and truncates the
+                    // body writes.
+                    if (lookahead.Positive)
+                    {
+                        var forkIndex = Instructions.Count;
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
+                        if (!EmitNode(lookahead.Body))
+                        {
+                            return false;
+                        }
+
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
+                        var jumpIndex = Instructions.Count;
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                        var failIndex = Instructions.Count;
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                        Patch(forkIndex, failIndex);
+                        Patch(jumpIndex, Instructions.Count);
+                    }
+                    else
+                    {
+                        var forkIndex = Instructions.Count;
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 1, 0, 0));
+                        if (!EmitNode(lookahead.Body))
+                        {
+                            return false;
+                        }
+
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                        Patch(forkIndex, Instructions.Count);
+                    }
+
+                    break;
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    {
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body);
+                        if (body is null)
+                        {
+                            return false;
+                        }
+
+                        if (body.GroupCount > GroupCount)
+                        {
+                            GroupCount = body.GroupCount;
+                        }
+
+                        var (minimum, maximum) = Measure(lookbehind.Body);
+                        var assertionIndex = Assertions.Count;
+                        Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum));
+                        Emit(new Utf8SliceInstruction(
+                            Utf8SliceInstructionKind.Lookbehind,
+                            assertionIndex,
+                            lookbehind.Positive ? 1 : 0,
+                            0,
+                            0));
+                        break;
+                    }
+
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)
                     {

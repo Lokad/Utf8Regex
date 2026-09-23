@@ -8,14 +8,28 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2AssertionCompilerTests
 {
     [Theory]
-    [InlineData("foo(?=bar)", "xxfoobar", "foo")]
     [InlineData("foo(?!bar)", "xxfoobaz", "foo")]
     [InlineData("(?<=abc)def", "xxabcdef", "def")]
     [InlineData("(?<!abc)def", "xxzzzdef", "def")]
-    [InlineData("(?=(?:ab|a))a", "xxab", "a")]
     [InlineData("(?=(?=ab))ab", "xxab", "ab")]
-    public void LookaroundsComposeInTheGenericProgram(string pattern, string input, string expected)
+    public void LookaroundsComposeThroughSlice(string pattern, string input, string expected)
     {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        var match = regex.Match(Encoding.UTF8.GetBytes(input));
+
+        Assert.True(match.Success);
+        Assert.Equal(expected, match.GetValueString());
+        // R03 lookaround slice: fixed-shape assertions run first-match on the shared slice runner instead of the generic VM.
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    [Theory]
+    [InlineData("foo(?=bar)", "xxfoobar", "foo")]
+    [InlineData("(?=(?:ab|a))a", "xxab", "a")]
+    public void NonSliceLookaroundsStayInTheGenericProgram(string pattern, string input, string expected)
+    {
+        // Positive lookahead behind a leading literal keeps native precedence, and non-capturing bodies decline the core slice: both stay on the generic VM.
         var regex = new Utf8Pcre2Regex(pattern);
 
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
@@ -142,7 +156,8 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void WarmedCaptureFreeLookaheadIsMatchDoesNotAllocate()
     {
-        var regex = new Utf8Pcre2Regex("(?=ab|ac)ab");
+        // R03 lookaround slice: "(?=ab|ac)ab" IsMatch now rides the shared slice runner (which rents ledger-charged slots per call), so the warmed zero-allocation pin moves to a lookahead shape that stays on the generic backtracking VM (non-capturing bodies decline the slice).
+        var regex = new Utf8Pcre2Regex("(?=(?:ab|ac))a");
         var input = "xxab"u8;
         for (var index = 0; index < 32; index++)
         {

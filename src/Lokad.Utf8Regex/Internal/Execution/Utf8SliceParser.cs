@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// (literals, ranges, and supported escapes; negated classes decline astral
 /// inputs at routing).
 /// Anything else (boundaries,
-/// lookarounds, backreferences, named/non-capturing groups, shorthand escapes,
+/// backreferences, named/non-capturing groups, shorthand escapes,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
@@ -285,6 +285,42 @@ internal static class Utf8SliceParser
                     if (depth >= MaxNestingDepth)
                     {
                         return false;
+                    }
+
+                    // Zero-width lookarounds bind their bodies without
+                    // consuming a group number; every other (? form keeps
+                    // declining through the capture path below.
+                    if (_position + 2 < _pattern.Length && _pattern[_position + 1] == '?')
+                    {
+                        var marker = _pattern[_position + 2];
+                        if (marker == '=' || marker == '!')
+                        {
+                            var positive = marker == '=';
+                            _position += 3;
+                            if (!TryParseAlternation(depth + 1, out var lookahead) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            node = new Utf8SliceNode.LookaheadNode(lookahead ?? new Utf8SliceNode.EmptyNode(), positive);
+                            return true;
+                        }
+
+                        if (marker == '<' && _position + 3 < _pattern.Length &&
+                            (_pattern[_position + 3] == '=' || _pattern[_position + 3] == '!'))
+                        {
+                            var behindPositive = _pattern[_position + 3] == '=';
+                            _position += 4;
+                            if (!TryParseAlternation(depth + 1, out var lookbehind) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            node = new Utf8SliceNode.LookbehindNode(lookbehind ?? new Utf8SliceNode.EmptyNode(), behindPositive);
+                            return true;
+                        }
                     }
 
                     _position++;

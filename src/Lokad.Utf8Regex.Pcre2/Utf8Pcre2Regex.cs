@@ -1916,6 +1916,11 @@ public sealed partial class Utf8Pcre2Regex
                 matchOptions);
         }
 
+        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
+        {
+            return ReplaceSliceWithEvaluator(input, sliceProgram, state, evaluator, startOffsetInBytes);
+        }
+
         var subject = Encoding.UTF8.GetString(input);
         var builder = new StringBuilder(subject.Length);
         var position = 0;
@@ -1926,6 +1931,46 @@ public sealed partial class Utf8Pcre2Regex
             var value = enumerator.Current;
             builder.Append(subject, position, value.StartOffsetInUtf16 - position);
             var context = MatchDetailed(input, value.StartOffsetInBytes, matchOptions);
+            var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
+            evaluator(in context, ref writer, ref state);
+            builder.Append(writer.ToValidatedString());
+            position = value.EndOffsetInUtf16;
+        }
+
+        builder.Append(subject, position, subject.Length - position);
+        return builder.ToString();
+    }
+
+    // Slice-Replace evaluators must project each global yield through a
+    // same-start re-query (CaptureGroupsAt): re-deriving contexts with
+    // first-match MatchDetailed loses the same-position non-empty retry,
+    // so empty-then-nonempty yields project the empty match instead of
+    // the retried one. Both evaluator flavors share this loop; the UTF-16
+    // flavor adapts through the UTF-8 evaluator shape.
+    private string ReplaceSliceWithEvaluator<TState>(
+        ReadOnlySpan<byte> input,
+        Pcre2SliceDirectProgram sliceProgram,
+        TState state,
+        Pcre2MatchEvaluator<TState> evaluator,
+        int startOffsetInBytes)
+    {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2SliceGlobalMatchCursor(
+            sliceProgram.SliceProgram,
+            validated,
+            start,
+            _program.Request,
+            CancellationToken.None);
+        var subject = Encoding.UTF8.GetString(input);
+        var builder = new StringBuilder(subject.Length);
+        var position = 0;
+        while (cursor.MoveNext())
+        {
+            var range = cursor.Current;
+            var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
+            var value = groups[0];
+            builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            var context = Utf8Pcre2MatchContext.Create(input, groups, NameEntries, null);
             var writer = new global::Lokad.Utf8Regex.Utf8ReplacementWriter();
             evaluator(in context, ref writer, ref state);
             builder.Append(writer.ToValidatedString());
@@ -1947,6 +1992,16 @@ public sealed partial class Utf8Pcre2Regex
                 evaluator,
                 startOffsetInBytes,
                 matchOptions);
+        }
+
+        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
+        {
+            return ReplaceSliceWithEvaluator(
+                input,
+                sliceProgram,
+                state,
+                (in Utf8Pcre2MatchContext context, ref global::Lokad.Utf8Regex.Utf8ReplacementWriter writer, ref TState s) => writer.Append(evaluator(in context, ref s).AsSpan()),
+                startOffsetInBytes);
         }
 
         var subject = Encoding.UTF8.GetString(input);

@@ -48,6 +48,13 @@ public sealed class Utf8SliceParserTests
     [InlineData("\\bword\\b", 0)]
     [InlineData("x\\by", 0)]
     [InlineData("(a)\\1", 1)]
+    [InlineData("(?=a)a", 0)]
+    [InlineData("((?=a)a)", 1)]
+    [InlineData("(?!a)b", 0)]
+    [InlineData("(?<=a)b", 0)]
+    [InlineData("(?<!a)b", 0)]
+    [InlineData("(?<=(a|ab))", 1)]
+    [InlineData("(?=(a)(b))", 2)]
     [InlineData("(a)(b)\\2\\1", 2)]
     [InlineData("\\d+", 0)]
     [InlineData("\\w+", 0)]
@@ -63,7 +70,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData("(?=a)a")]
     [InlineData("(a)(?(1)b|c)")]
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
@@ -81,12 +87,19 @@ public sealed class Utf8SliceParserTests
     [InlineData("[^]")]
     [InlineData("(?<w>[a-z]+)")]
     [InlineData("(?:[a-z]+)")]
-    [InlineData("(?=[a-z]+)")]
     [InlineData("a)[a-z]+")]
     [InlineData("(?(1)[a-z]+|c)")]
     [InlineData("\\1(a)")]
     [InlineData("a\\12b")]
     [InlineData("(a)\\10")]
+    [InlineData("(?#comment)")]
+    [InlineData("(?>a)")]
+    [InlineData("(?|a)")]
+    [InlineData("(?P=name)")]
+    [InlineData("(?'name'a)")]
+    [InlineData("(?=a")]
+    [InlineData("(?<=a")]
+    [InlineData("(?<")]
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));

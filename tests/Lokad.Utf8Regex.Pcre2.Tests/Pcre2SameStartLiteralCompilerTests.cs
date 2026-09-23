@@ -12,7 +12,7 @@ public sealed class Pcre2SameStartLiteralCompilerTests
         var input = "abcdefabc"u8;
 
         Assert.Equal(
-            "IsMatch=Pcre2Backtracking, Count=Pcre2SameStartLiteral, Enumerate=Pcre2SameStartLiteral, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            "IsMatch=Pcre2Slice, Count=Pcre2SameStartLiteral, Enumerate=Pcre2SameStartLiteral, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.Equal(3, regex.Count(input));
 
@@ -128,8 +128,9 @@ public sealed class Pcre2SameStartLiteralCompilerTests
                      new Utf8Pcre2Regex("(?<=abc)(|def)", Pcre2CompileOptions.Caseless),
                  })
         {
-            Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-            Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
+            // R03 lookaround slice: fixed-shape assertions may ride the shared slice runner for Count/Enumerate; the analyzer still rejects every row below (never SameStartLiteral), with slice behavior covered by Pcre2SliceLookaroundTests.
+            Assert.IsNotType<Pcre2SameStartLiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+            Assert.IsNotType<Pcre2SameStartLiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         }
     }
 }

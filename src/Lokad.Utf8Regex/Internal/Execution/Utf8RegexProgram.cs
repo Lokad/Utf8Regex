@@ -15,8 +15,8 @@ internal sealed class Utf8RegexProgram
         Utf8AsciiCultureInvariantStrategy? asciiCultureInvariantStrategy,
         bool requiresCultureSensitiveFallback,
         Utf8EmittedKernelMatcher? directStructuralFamilyKernelMatcher,
-        int[] groupNumbers,
-        string[] groupNames,
+        Lazy<int[]> groupNumbers,
+        Lazy<string[]> groupNames,
         Utf8GroupMetadata? groupMetadata)
     {
         PreparedRegex = preparedRegex;
@@ -45,9 +45,9 @@ internal sealed class Utf8RegexProgram
 
     public Utf8EmittedKernelMatcher? DirectStructuralFamilyKernelMatcher { get; }
 
-    public int[] GroupNumbers { get; }
+    public Lazy<int[]> GroupNumbers { get; }
 
-    public string[] GroupNames { get; }
+    public Lazy<string[]> GroupNames { get; }
 
     public Utf8GroupMetadata? GroupMetadata { get; }
 
@@ -75,8 +75,9 @@ internal sealed class Utf8RegexProgram
         // the BCL query remains only for patterns the owned parser declines, resolved lazily
         // so it never constructs the fallback engine by itself.
         Utf8GroupMetadata.TryCreate(preparedRegex.SemanticRegex.RuntimeTree, out var groupMetadata);
-        var groupNumbers = groupMetadata?.GroupNumbers ?? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
-        var groupNames = groupMetadata?.GroupNames ?? verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
+        var fallbackVerifier = verifierRuntime.FallbackCandidateVerifier;
+        var groupNumbers = new Lazy<int[]>(() => groupMetadata?.GroupNumbers ?? fallbackVerifier.FallbackRegex.GetGroupNumbers());
+        var groupNames = new Lazy<string[]>(() => groupMetadata?.GroupNames ?? fallbackVerifier.FallbackRegex.GetGroupNames());
         // The ASCII twin replays matching with invariant case folding, which is
         // only valid when the construction culture folds ASCII the invariant way
         // (PLAN.md C02). Turkic dotted/dotless-I cultures do not: "I" and "i"
@@ -116,7 +117,7 @@ internal sealed class Utf8RegexProgram
                     pattern,
                     options,
                     matchTimeout,
-                    groupNames)
+                    groupNames.Value)
                 : null;
         var directStructuralFamilyKernelMatcher =
             preparedRegex.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&

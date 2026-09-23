@@ -163,16 +163,49 @@ public sealed class LazyFallbackConstructionTests
 
     [Theory]
     [InlineData("\\b(?:cat|horse)\\b", "CAT horse Cat")]
-    [InlineData("(?<=a)(b)|(c)", "xabc")]
     [InlineData("^abc", "xxabc")]
     public void OriginSensitiveFromOffsetConstructsFallbackEngine(string pattern, string inputText)
     {
-        // From-offset origin shapes (anchors, boundaries, lookbehind) divert to full-input
-        // BCL verification inside the shared enumerator (established taxonomy).
+        // From-offset origin shapes that the slice cannot serve (anchors,
+        // boundaries, non-slice lookbehind) divert to full-input BCL
+        // verification inside the shared enumerator (established taxonomy).
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailedFromUtf16Offset(input, 1));
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?<=a)(b)|(c)", "xabc", 1, true, 2, 3)]
+    [InlineData("(?<=a)(b)|(c)", "xabc", 3, true, 3, 4)]
+    [InlineData("(?<=a)(b)|(c)", "xab", 3, false, 0, 0)]
+    public void OriginSensitiveLookbehindFromOffsetStaysOwned(
+        string pattern, string inputText, int offset, bool expectedSuccess, int expectedIndex, int expectedEnd)
+    {
+        // Slice lookbehind searches backward from the attempt origin with
+        // ordinal group metadata, so from-offset detailed matches keep full
+        // left context with no fallback construction.
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match(inputText, offset);
+        var actual = regex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(oracle.Success, actual.Success);
+        Assert.Equal(expectedSuccess, actual.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expectedIndex, actual.GetGroup(0).IndexInUtf16);
+            Assert.Equal(expectedEnd, actual.GetGroup(0).IndexInUtf16 + actual.GetGroup(0).LengthInUtf16);
+            for (var group = 1; group <= 2; group++)
+            {
+                Assert.Equal(oracle.Groups[group].Success, actual.GetGroup(group).Success);
+                if (oracle.Groups[group].Success)
+                {
+                    Assert.Equal(oracle.Groups[group].Value, actual.GetGroup(group).GetValueString());
+                }
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Theory]

@@ -44,9 +44,9 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "end-anchor", "abc$", RegexOptions.CultureInvariant, "xxabc", "AsciiSimplePattern", null, true, true };
         yield return new object?[] { "word-boundary", "\\bword\\b", RegexOptions.CultureInvariant, "a word here", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "multiline-anchor", "^abc", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabc", "AsciiSimplePattern", null, true, true };
-        // Assertions and backreferences: BCL fallback with specific reasons, except single lookahead-pos which rides the literal family (owner R03).
+        // Assertions and backreferences: BCL fallback construction with specific reasons, except single lookahead-pos which rides the literal family; slice-served assertions run IsMatch/Count verifier-free (owner R03).
         yield return new object?[] { "lookahead-pos", "a(?=b)", RegexOptions.CultureInvariant, "ab", "ExactAsciiLiteral", null, true, true };
-        yield return new object?[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", false, false };
+        yield return new object?[] { "lookahead-neg", "a(?!b)", RegexOptions.CultureInvariant, "ac", "FallbackRegex", "unsupported_lookaround", true, true };
         yield return new object?[] { "lookbehind-pos", "(?<=a)b", RegexOptions.CultureInvariant, "ab", "FallbackRegex", "unsupported_lookaround", true, true };
         yield return new object?[] { "lookbehind-neg", "(?<!a)b", RegexOptions.CultureInvariant, "cb", "FallbackRegex", "unsupported_lookaround", true, true };
         yield return new object?[] { "backreference", "(a)\\1", RegexOptions.CultureInvariant, "aa", "FallbackRegex", "unsupported_backreference", true, true };

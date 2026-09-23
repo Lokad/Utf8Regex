@@ -68,7 +68,7 @@ public sealed partial class Utf8PythonRegex
         int startOffsetInBytes,
         out PythonReUtf8MatchRangeBuffer ranges)
     {
-        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null || _hasLookbehind)
+        if (_findAllBackend != PythonReDirectBackendKind.Utf8Regex || _utf8Regex is null || (!_hasLookbehind && !_utf8Regex.Inspection.DebugUsesOwnedSliceProgram))
         {
             ranges = default;
             return false;

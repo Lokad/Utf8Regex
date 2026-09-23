@@ -786,4 +786,103 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
+    // R03 lookarounds: all four assertions pass the translator through
+    // verbatim over ASCII bodies and run the owned core slice; rewritten
+    // bodies decline; variable-width lookbehind fails translation exactly
+    // like CPython (fixed-width required). Expectations mix
+    // translated-oracle agreement with CPython 3.13.2 ground truths.
+    [Theory]
+    [InlineData("(?=a)a")]
+    [InlineData("(?!b)a")]
+    [InlineData("(?<=a)b")]
+    [InlineData("(?<!a)b")]
+    [InlineData("a(?<=a)b")]
+    public void LookaroundShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?=\\w+)a")]
+    public void LookaroundShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?<=a+)b")]
+    [InlineData("(?<=(a|ab))")]
+    public void VariableLookbehindFailsTranslation(string pattern)
+    {
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(pattern, PythonReCompileOptions.None));
+    }
+
+    public static IEnumerable<object?[]> LookaroundSearchCases()
+    {
+        yield return new object?[] { "(?=a)a", "xaa", 0, true, 1, 2 };
+        yield return new object?[] { "(?!b)a", "xab", 0, true, 1, 2 };
+        yield return new object?[] { "(?<=a)b", "xab", 0, true, 2, 3 };
+        yield return new object?[] { "(?<!a)b", "xcb", 0, true, 2, 3 };
+        yield return new object?[] { "a(?<=a)b", "xab", 0, true, 1, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookaroundSearchCases))]
+    public void LookaroundSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?=a)a", "aaa", 3)]
+    [InlineData("(?<=a)b", "aab ab", 2)]
+    [InlineData("(?!b)a", "ba ba", 2)]
+    public void LookaroundCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?=a)a", "aa", true)]
+    [InlineData("(?!b)a", "ab", true)]
+    [InlineData("a(?<=a)b", "ab", true)]
+    [InlineData("(?<=a)b", "ab", false)]
+    public void LookaroundMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?!b)a", "a", true)]
+    [InlineData("a(?<=a)b", "ab", true)]
+    [InlineData("(?=a)a", "aa", false)]
+    [InlineData("(?<=a)b", "ab", false)]
+    public void LookaroundFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
 }

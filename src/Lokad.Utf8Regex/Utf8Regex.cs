@@ -138,6 +138,16 @@ public sealed partial class Utf8Regex
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
             ? Utf8SliceParser.TryParse(pattern, options)
             : null;
+        // R03 lookbehind: the owned front end leaves no runtime tree for
+        // captures in lookbehind, which defers group metadata to first use.
+        // Invalid patterns must still fail construction exactly like the
+        // BCL-backed route, so when neither the tree nor the slice serves
+        // the pattern, resolve group numbers now (BCL-invalid shapes throw
+        // here; BCL-valid legacy shapes keep current eager behavior).
+        if (_sliceProgram is null && preparedRegex.SemanticRegex.RuntimeTree is null)
+        {
+            _ = _program.GroupNumbers.Value;
+        }
 
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
@@ -268,9 +278,9 @@ public sealed partial class Utf8Regex
     private Utf8EmittedKernelMatcher? _directStructuralFamilyKernelMatcher =>
         _program.DirectStructuralFamilyKernelMatcher;
 
-    private int[] _groupNumbers => _program.GroupNumbers;
+    private int[] _groupNumbers => _sliceProgram is not null ? _sliceProgram.OrdinalGroupNumbers : _program.GroupNumbers.Value;
 
-    private string[] _groupNames => _program.GroupNames;
+    private string[] _groupNames => _sliceProgram is not null ? _sliceProgram.OrdinalGroupNames : _program.GroupNames.Value;
 
     private bool _allowsTrailingNewlineBeforeEnd =>
         _preparedRegex.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
@@ -370,6 +380,20 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
+        // Slice programs only serve numbered groups, so ordinal answers are
+        // BCL-exact without constructing the fallback engine.
+        if (_sliceProgram is not null)
+        {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            return uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var result) && result <= (uint)_sliceProgram.GroupCount
+                ? (int)result
+                : -1;
+        }
+
         return _program.GroupMetadata?.GroupNumberFromName(name)
             ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNumberFromName(name);
     }
@@ -377,6 +401,11 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the name assigned to a group number, or an empty string when the number is undefined.</summary>
     public string GroupNameFromNumber(int i)
     {
+        if (_sliceProgram is not null)
+        {
+            return (uint)i <= (uint)_sliceProgram.GroupCount ? ((uint)i).ToString() : string.Empty;
+        }
+
         return _program.GroupMetadata?.GroupNameFromNumber(i)
             ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GroupNameFromNumber(i);
     }
@@ -384,12 +413,22 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the group names defined by the expression, including group zero.</summary>
     public string[] GetGroupNames()
     {
+        if (_sliceProgram is not null)
+        {
+            return _sliceProgram.OrdinalGroupNames;
+        }
+
         return _program.GroupMetadata?.GroupNames ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();
     }
 
     /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
     public int[] GetGroupNumbers()
     {
+        if (_sliceProgram is not null)
+        {
+            return _sliceProgram.OrdinalGroupNumbers;
+        }
+
         return _program.GroupMetadata?.GroupNumbers ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNumbers();
     }
 
