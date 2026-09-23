@@ -133,7 +133,8 @@ public sealed partial class Utf8Regex
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // slice. Construction-time lowering is unbounded work; admission is R02b debt.
+        // slice. R02b construction admission caps the pattern length and lowered
+        // instruction count; over-cap shapes decline here to legacy routing.
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
             ? Utf8SliceParser.TryParse(pattern, options)
             : null;

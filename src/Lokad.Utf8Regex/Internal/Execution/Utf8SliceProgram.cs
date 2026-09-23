@@ -93,10 +93,21 @@ internal sealed class Utf8SliceProgram
 /// <summary>Lowers immutable slice trees to flat programs with patched jumps.</summary>
 internal static class Utf8SliceLowerer
 {
-    internal static Utf8SliceProgram Lower(Utf8SliceNode root)
+    // Expansion-site backstop for the parser length cap: lowering is linear, so
+    // this only trips on synthetic trees or future parser changes, never on
+    // admitted patterns. The bound keeps retained programs near twenty megabytes
+    // worst case (one million twenty-byte instructions); over-limit trees decline
+    // to null and callers keep legacy routing.
+    internal const int MaxInstructions = 1048576;
+
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root)
     {
         var lowerer = new Lowering();
-        lowerer.EmitNode(root);
+        if (!lowerer.EmitNode(root))
+        {
+            return null;
+        }
+
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
@@ -117,8 +128,13 @@ internal static class Utf8SliceLowerer
             Instructions.Add(instruction);
         }
 
-        internal void EmitNode(Utf8SliceNode node)
+        internal bool EmitNode(Utf8SliceNode node)
         {
+            if (Instructions.Count >= Utf8SliceLowerer.MaxInstructions)
+            {
+                return false;
+            }
+
             switch (node)
             {
                 case Utf8SliceNode.EmptyNode:
@@ -139,7 +155,10 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)
                     {
-                        EmitNode(child);
+                        if (!EmitNode(child))
+                        {
+                            return false;
+                        }
                     }
 
                     break;
@@ -158,7 +177,10 @@ internal static class Utf8SliceLowerer
                             Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
                             foreach (var child in alternation.Branches[branch])
                             {
-                                EmitNode(child);
+                                if (!EmitNode(child))
+                                {
+                                    return false;
+                                }
                             }
 
                             endJumps.Add(Instructions.Count);
@@ -169,7 +191,10 @@ internal static class Utf8SliceLowerer
                         {
                             foreach (var child in alternation.Branches[branch])
                             {
-                                EmitNode(child);
+                                if (!EmitNode(child))
+                                {
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -189,7 +214,10 @@ internal static class Utf8SliceLowerer
                     var repeatId = RepeatCount++;
                     var repeatIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatGreedy, 0, 0, 0, 0));
-                    EmitNode(repeat.Body);
+                    if (!EmitNode(repeat.Body))
+                    {
+                        return false;
+                    }
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatEnd, repeatIndex, 0, 0, 0));
                     var exitIndex = Instructions.Count;
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.RepeatExit, repeatId, 0, 0, 0));
@@ -209,12 +237,17 @@ internal static class Utf8SliceLowerer
                     }
 
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureStart, capture.Slot, 0, 0, 0));
-                    EmitNode(capture.Body);
+                    if (!EmitNode(capture.Body))
+                    {
+                        return false;
+                    }
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, 0, 0, 0));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
             }
+
+            return true;
         }
 
         private void Patch(int index, int target)

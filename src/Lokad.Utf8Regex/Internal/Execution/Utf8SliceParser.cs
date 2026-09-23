@@ -8,10 +8,20 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// lookarounds, backreferences, named/non-capturing groups, shorthand escapes,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
-/// nesting beyond <see cref="MaxNestingDepth"/> also declines.</summary>
+/// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
+/// admission: patterns longer than <see cref="MaxPatternLength"/> decline before any
+/// parse work so retained slice programs stay bounded; declined shapes keep
+/// legacy routing.</summary>
 internal static class Utf8SliceParser
 {
     internal const int MaxNestingDepth = 64;
+
+    // Defense cap, not a language limit: the longest surveyed corpus and test
+    // patterns stay under a hundred characters, so 64 KiB leaves orders of
+    // magnitude of headroom while bounding retained programs to single-digit
+    // megabytes. Over-length shapes decline to legacy routing with identical
+    // behavior; construction never fails on length.
+    internal const int MaxPatternLength = 65536;
 
     private const RegexOptions RejectedOptions =
         RegexOptions.IgnoreCase |
@@ -24,6 +34,11 @@ internal static class Utf8SliceParser
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
         if (pattern is null)
+        {
+            return null;
+        }
+
+        if (pattern.Length > MaxPatternLength)
         {
             return null;
         }

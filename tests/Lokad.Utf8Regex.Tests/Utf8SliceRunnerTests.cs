@@ -59,7 +59,9 @@ public sealed class Utf8SliceRunnerTests
 
     private static Utf8SliceProgram Lower(Utf8SliceNode root)
     {
-        return Utf8SliceLowerer.Lower(root);
+        var program = Utf8SliceLowerer.Lower(root);
+        Assert.NotNull(program);
+        return program;
     }
 
     private static (int[] Starts, int[] Ends) Slots(Utf8SliceProgram program)

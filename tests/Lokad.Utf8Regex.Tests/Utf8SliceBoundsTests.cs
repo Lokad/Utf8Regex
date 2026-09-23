@@ -14,10 +14,12 @@ public sealed class Utf8SliceBoundsTests
 {
     private static Utf8SliceProgram PlusProgram()
     {
-        return Utf8SliceLowerer.Lower(new Utf8SliceNode.ConcatNode([
+        var program = Utf8SliceLowerer.Lower(new Utf8SliceNode.ConcatNode([
             new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97), 1, int.MaxValue, false)),
             new Utf8SliceNode.CaptureNode(1, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(98), 1, int.MaxValue, false)),
         ]));
+        Assert.NotNull(program);
+        return program;
     }
 
     private static (int[] Starts, int[] Ends) Slots(Utf8SliceProgram program)
@@ -33,7 +35,6 @@ public sealed class Utf8SliceBoundsTests
     {
         return new Utf8SliceInvocation(new Utf8ExecutionLimits(work, depth, bytes), Regex.InfiniteMatchTimeout, token);
     }
-
     [Fact]
     public void StepBudgetBreachesDeterministically()
     {
@@ -102,7 +103,9 @@ public sealed class Utf8SliceBoundsTests
 
         static Utf8SliceProgram Lower(Utf8SliceNode root)
         {
-            return Utf8SliceLowerer.Lower(root);
+            var program = Utf8SliceLowerer.Lower(root);
+            Assert.NotNull(program);
+            return program;
         }
     }
 
