@@ -3908,6 +3908,10 @@ internal struct Pcre2ResourceBudget
                     diagnostics.VmRepeatEnterSteps++;
                     diagnostics.VmPossessiveTokenScanSteps++;
                     break;
+                case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
+                    diagnostics.VmRepeatSteps++;
+                    diagnostics.VmRepeatEnterSteps++;
+                    break;
                 case Pcre2BacktrackingInstructionKind.CaptureStart:
                 case Pcre2BacktrackingInstructionKind.CaptureEnd:
                 case Pcre2BacktrackingInstructionKind.Backreference:

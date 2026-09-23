@@ -472,6 +472,7 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     ControlDeferred = 20,
     MatchBoundaryReset = 21,
     PossessiveTokenRepeat = 22,
+    CollapsibleTokenRepeat = 23,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -567,6 +568,23 @@ internal readonly struct Pcre2BacktrackingInstruction
             minimum,
             maximum,
             Pcre2RepeatPreference.Possessive);
+
+    internal static Pcre2BacktrackingInstruction CreateCollapsibleTokenRepeat(
+        Pcre2CharacterToken token,
+        int fallbackTarget,
+        int exitTarget,
+        int repeatId,
+        int minimum,
+        int maximum) =>
+        new(
+            Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat,
+            token,
+            fallbackTarget,
+            exitTarget,
+            repeatId,
+            minimum,
+            maximum,
+            Pcre2RepeatPreference.Greedy);
 
     internal static Pcre2BacktrackingInstruction CreateAccept() =>
         new(Pcre2BacktrackingInstructionKind.Accept, default, 0, 0, 0, 0, 0, Pcre2RepeatPreference.Greedy);

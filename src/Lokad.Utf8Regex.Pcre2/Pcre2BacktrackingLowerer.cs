@@ -238,6 +238,29 @@ internal sealed class Pcre2BacktrackingLowerer
                         repeat.Minimum,
                         repeat.Maximum));
                 }
+                else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
+                    repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
+                    collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)
+                {
+                    var collapsibleId = _repeatCount++;
+                    if (collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                        (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                    {
+                        collapsibleToken.CharacterClass.PrepareAsciiSearchValues();
+                    }
+
+                    var collapsibleIndex = _instructions.Count;
+                    _instructions.Add(default);
+                    EmitRepeat(repeat);
+                    var collapsibleExit = _instructions.Count - 1;
+                    _instructions[collapsibleIndex] = Pcre2BacktrackingInstruction.CreateCollapsibleTokenRepeat(
+                        collapsibleToken,
+                        collapsibleIndex + 1,
+                        collapsibleExit,
+                        collapsibleId,
+                        repeat.Minimum,
+                        repeat.Maximum);
+                }
                 else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
                 {
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateAtomicStart());

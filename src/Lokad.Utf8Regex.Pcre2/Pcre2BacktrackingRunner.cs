@@ -895,6 +895,118 @@ internal static class Pcre2BacktrackingRunner
                         }
                         break;
 
+                    case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
+                        if (!budget.IsUnmetered)
+                        {
+                            instructionIndex = instruction.PrimaryTarget;
+                            continue;
+                        }
+
+                        var collapsibleToken = instruction.Token;
+                        var collapsibleMaximum = instruction.Maximum;
+                        var collapsibleStart = inputIndex;
+                        var collapsibleCount = 0;
+                        var collapsibleAsciiSearchValues =
+                            collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+                            (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0
+                                ? collapsibleToken.CharacterClass.AsciiSearchValues
+                                : null;
+                        var collapsibleLiteralByte =
+                            collapsibleToken.Kind == Pcre2CharacterTokenKind.Literal &&
+                            collapsibleToken.Literal.Value <= 0x7F
+                                ? (byte)collapsibleToken.Literal.Value
+                                : (byte?)null;
+                        while (collapsibleCount < collapsibleMaximum)
+                        {
+                            if (inputIndex < input.Length)
+                            {
+                                if (collapsibleLiteralByte is { } literalByte)
+                                {
+                                    while (collapsibleCount < collapsibleMaximum &&
+                                        inputIndex < input.Length &&
+                                        input[inputIndex] == literalByte)
+                                    {
+                                        inputIndex++;
+                                        collapsibleCount++;
+                                    }
+                                }
+                                else if (collapsibleAsciiSearchValues is not null)
+                                {
+                                    var remainingMaximum = collapsibleMaximum - collapsibleCount;
+                                    var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
+                                    var stop = input.Slice(inputIndex, remainingLength).IndexOfAnyExcept(collapsibleAsciiSearchValues);
+                                    var asciiCount = stop < 0 ? remainingLength : stop;
+                                    inputIndex += asciiCount;
+                                    collapsibleCount += asciiCount;
+                                }
+
+                                if (collapsibleCount >= collapsibleMaximum || inputIndex >= input.Length)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (!Pcre2CharacterRunner.TryMatchToken(
+                                    collapsibleToken,
+                                    program.Request,
+                                    input,
+                                    inputIndex,
+                                    firstMatchingPosition,
+                                    matchOptions,
+                                    out var collapsibleEnd))
+                            {
+                                break;
+                            }
+
+                            inputIndex = collapsibleEnd;
+                            collapsibleCount++;
+                        }
+
+                        if (collapsibleCount < instruction.Minimum)
+                        {
+                            break;
+                        }
+
+                        if (collapsibleCount > 0)
+                        {
+                            PushFrame(
+                                ref frames,
+                                new Pcre2BacktrackingFrame(
+                                    instruction.PrimaryTarget,
+                                    collapsibleStart,
+                                    reportedStartOffsetInBytes,
+                                    matchBoundaryWasReset,
+                                    repeatMutations.Count,
+                                    captureMutations.Count,
+                                    subroutineCallMutations.Count,
+                                    atomicCheckpoints.Count,
+                                    markMutations.Count,
+                                    markTrail.Count,
+                                    Pcre2BacktrackingResumeAction.None,
+                                    0,
+                                    0,
+                                    0,
+                                    default,
+                                    -1,
+                                    0,
+                                    -1),
+                                repeatMutations.Count,
+                                captureMutations.Count,
+                                subroutineCallMutations.Count,
+                                atomicCheckpoints.Count,
+                                markMutations.Count,
+                                markTrail.Count,
+                                program.RepeatCount,
+                                captureStarts.Length,
+                                depthBase,
+                                subroutineCalls.Count,
+                                ref budget);
+                        }
+
+                        SetRepeat(instruction.RepeatId, collapsibleCount, inputIndex, counts, positions, ref repeatMutations, ref budget);
+                        instructionIndex = instruction.SecondaryTarget;
+                        continue;
+
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
                         if (captureStarts.IsEmpty)
                         {
