@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:07:12.5153771+00:00`
-- Snapshot SHA-256: `264BF5145BD72F9A957101A13698DC619EB6CE731D4808063F082837FF7FCEBF`
+- Generated: `2026-09-23T04:09:11.2251214+00:00`
+- Snapshot SHA-256: `7073C18A1D18C6553388ED785FF5D157FDE256BB768764DBED1E214710065993`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `31` managed faster, `0` equivalent, `3` CPython faster, `10` inconclusive, `46` unqualified
+- Public Status: `34` managed faster, `0` equivalent, `3` CPython faster, `11` inconclusive, `42` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -142,10 +142,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 163.113 us | 308.266 us | 0.53x | 386.740 us | 455.065 us | 165,936 B |
 | `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 12.096 us | 16.155 us | 0.74x | 33.968 us | 72.601 us | 4,120 B |
 | `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 32.393 us | 37.762 us | 0.85x | 61.262 us | 82.955 us | 24,600 B |
-| `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 198.098 us | 177.891 us | 1.11x | 180.681 us | 387.484 us | 149,792 B |
-| `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 324.050 us | 307.647 us | 1.05x | 308.273 us | 625.652 us | 299,296 B |
-| `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 645.053 us | 1,040.629 us | 0.62x | 1,037.212 us | 719.675 us | 1,528,096 B |
-| `findall/unicode-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 337.219 us | 566.456 us | 0.60x | 567.932 us | 382.628 us | 785,704 B |
+| `findall/one-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 108.427 us | 128.736 us | 0.84x | 180.681 us | 387.484 us | 149,792 B |
+| `findall/many-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 179.990 us | 205.639 us | 0.87x | 308.273 us | 625.652 us | 299,296 B |
+| `findall/many-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 340.432 us | 725.307 us | 0.47x | 1,037.212 us | 719.675 us | 1,528,096 B |
+| `findall/unicode-capture-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 211.538 us | 345.114 us | 0.60x | 567.932 us | 382.628 us | 785,704 B |
 | `iteration/finditer-detailed` | `FindIterDetailed` | Historical | Unqualified | 166.844 us | 456.120 us | 0.37x | 454.376 us | 162.644 us | 415,976 B |
 | `zero-width/count` | `Count` | Historical | Unqualified | 29.790 us | 716.419 us | 0.04x | 720.494 us | 1,814.579 us | 34,840 B |
 | `count/zero` | `Count` | Historical | Unqualified | 1.554 us | 75.719 us | 0.02x | 76.829 us | 1.133 us | 17,432 B |
