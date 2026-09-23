@@ -61,6 +61,7 @@ Examples:
 ./bench.ps1 -CommandArgs "--measure-case-deep","structural/keyword-family-to-capitalized-identifier","20"
 ./bench.ps1 -CommandArgs "--measure-case-deep","literal-family/method-token-family","20"
 ./bench.ps1 -CommandArgs "--measure-count-attribution-case","literal/sherlock-zh","20","5"
+./bench.ps1 -CommandArgs "--measure-slice-policy-lanes","20000","5"
 ./bench.ps1 -CommandArgs "--dump-dotnet-generated-regex-case","lokad/lexer/doc-line"
 ./bench.ps1 -CommandArgs "--measure-utf8-validation-profile","three-byte-large","20"
 ./bench.ps1 -CommandArgs "--inspect-utf8-validation-route","industry/mariomka-email-count"
@@ -219,6 +220,13 @@ Current intended uses:
 - --measure-case-deep
   - run the best available family-specific drilldown for one benchmark case id
   - dispatches internally to the appropriate literal-family, structural-family, prefix-loop, or whole-document drilldown
+- --measure-slice-policy-lanes
+  - run the R02a focused cost controls over the fixed slice catalog (IsMatch plus Count)
+  - reports unlimited/no-token, finite-limits/no-token (PCRE2 only; core and PythonRe
+    reject finite budgets), and live-token lanes with per-lane results, routes, timings,
+    and allocations
+  - validates lane agreement within each profile before timing; defaults to 20000
+    iterations and five samples with alternating sample order
 - --measure-count-attribution-case
   - run a bounded, alternating production-route Count breakdown for one case
   - reports the selected ordinary/compiled kernels, required UTF-8 validation,

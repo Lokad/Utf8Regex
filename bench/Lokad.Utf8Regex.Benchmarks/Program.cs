@@ -95,6 +95,13 @@ if (args.Length >= 2 && args[0].Equals("--measure-compiled-microcost-case", Stri
     return BenchmarkInspectReporter.RunMeasureCompiledMicrocostCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
+if (args.Length >= 1 && args[0].Equals("--measure-slice-policy-lanes", StringComparison.Ordinal))
+{
+    return BenchmarkInspectReporter.RunMeasureSlicePolicyLanes(
+        args.Length >= 2 ? args[1] : null,
+        args.Length >= 3 ? args[2] : null);
+}
+
 if (args.Length >= 2 && args[0].Equals("--measure-count-attribution-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureCountAttributionCase(
