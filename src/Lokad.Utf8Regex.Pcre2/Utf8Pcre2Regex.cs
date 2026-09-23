@@ -2171,6 +2171,20 @@ public sealed partial class Utf8Pcre2Regex
     // the same cumulative invocation, so request budgets never reset
     // across the replacement. Template parsing and expansion reuse the
     // established PCRE2 machinery over the decoded subject.
+    private static void ThrowHeapLimitExceeded()
+    {
+        throw new Pcre2MatchException(
+            "The PCRE2 heap limit was exceeded.",
+            Pcre2ErrorKind.HeapLimit);
+    }
+
+    // R02b reusable output storage: fixed-template substitution shapes into
+    // the shared ledger-charged byte writer instead of an uncharged builder.
+    // Matching steps, depth, deadline, and token polling live in the cursor
+    // invocation; this shaping scope caps working bytes only, mirroring the
+    // accounting split between invocation working storage and result
+    // materialization. Simple plans stay byte-exact end to end; full
+    // templates expand to string once per match and encode in place.
     private byte[] ReplaceSliceDetailed(
         ReadOnlySpan<byte> input,
         Pcre2SliceDirectProgram sliceProgram,
@@ -2180,70 +2194,103 @@ public sealed partial class Utf8Pcre2Regex
         CancellationToken cancellationToken)
     {
         var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var shaping = new Utf8SliceInvocation(
+            new Utf8ExecutionLimits(0, 0, _program.Request.DefaultLimits.HeapLimitInBytes),
+            _program.Request.MatchTimeout,
+            cancellationToken);
+        if (!Utf8SliceOutputWriter.Rent(input.Length, ref shaping, out var writer))
+        {
+            ThrowHeapLimitExceeded();
+        }
+
         var cursor = new Pcre2SliceGlobalMatchCursor(
             sliceProgram.SliceProgram,
             validated,
             start,
             _program.Request,
             cancellationToken);
-        if (!cursor.MoveNext())
+        try
         {
-            return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
-                ? []
-                : input.ToArray();
-        }
+            if (!cursor.MoveNext())
+            {
+                return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
+                    ? []
+                    : input.ToArray();
+            }
 
-        var subject = Encoding.UTF8.GetString(input);
-        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
-        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
-        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
-            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
-            : GetSimpleReplacementPlan(replacement, templateOptions);
-        var builder = new StringBuilder(subject.Length + replacement.Length);
-        var position = 0;
-        do
-        {
-            var range = cursor.Current;
-            var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
-            var value = groups[0];
+            var subject = Encoding.UTF8.GetString(input);
+            var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
+            var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+            var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+                ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
+                : GetSimpleReplacementPlan(replacement, templateOptions);
+            var position = 0;
+            do
+            {
+                var range = cursor.Current;
+                var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
+                var value = groups[0];
+                if (!replacementOnly)
+                {
+                    if (!writer.Append(input.Slice(position, value.StartOffsetInBytes - position), ref shaping))
+                    {
+                        ThrowHeapLimitExceeded();
+                    }
+                }
+
+                if (simplePlan is { } plan)
+                {
+                    foreach (var segment in plan.Segments)
+                    {
+                        if (segment.IsWholeMatch)
+                        {
+                            if (!writer.Append(input.Slice(value.StartOffsetInBytes, value.EndOffsetInBytes - value.StartOffsetInBytes), ref shaping))
+                            {
+                                ThrowHeapLimitExceeded();
+                            }
+                        }
+                        else if (!writer.Append(segment.LiteralUtf8, ref shaping))
+                        {
+                            ThrowHeapLimitExceeded();
+                        }
+                    }
+                }
+                else
+                {
+                    var expanded = EvaluateReplacementTemplate(
+                        replacement,
+                        templateOptions,
+                        subject,
+                        value.StartOffsetInUtf16,
+                        value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
+                        number => ResolveNativeNumberReference(groups, number, subject),
+                        name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
+                        () => ResolveNativeLastCapturedReference(groups, subject),
+                        mark: null);
+                    if (!writer.AppendUtf16(expanded.AsSpan(), ref shaping))
+                    {
+                        ThrowHeapLimitExceeded();
+                    }
+                }
+
+                position = value.EndOffsetInBytes;
+            }
+            while (cursor.MoveNext());
+
             if (!replacementOnly)
             {
-                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+                if (!writer.Append(input.Slice(position), ref shaping))
+                {
+                    ThrowHeapLimitExceeded();
+                }
             }
 
-            if (simplePlan is { } plan)
-            {
-                AppendSimpleReplacement(
-                    builder,
-                    plan,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
-            }
-            else
-            {
-                builder.Append(EvaluateReplacementTemplate(
-                    replacement,
-                    templateOptions,
-                    subject,
-                    value.StartOffsetInUtf16,
-                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
-                    number => ResolveNativeNumberReference(groups, number, subject),
-                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
-                    () => ResolveNativeLastCapturedReference(groups, subject),
-                    mark: null));
-            }
-
-            position = value.EndOffsetInUtf16;
+            return writer.ToArrayAndRelease(ref shaping);
         }
-        while (cursor.MoveNext());
-
-        if (!replacementOnly)
+        finally
         {
-            builder.Append(subject, position, subject.Length - position);
+            writer.Release(ref shaping);
         }
-
-        return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
     private bool RejectsReplacementIteration()

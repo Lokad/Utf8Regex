@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Ledger-charged growable byte buffer for owned result shaping.
@@ -28,39 +30,77 @@ internal struct Utf8SliceOutputWriter
 
     internal bool Append(ReadOnlySpan<byte> bytes, ref Utf8SliceInvocation invocation)
     {
-        if (_buffer is null)
+        if (!EnsureCapacity((long)_length + bytes.Length, ref invocation))
         {
             return false;
         }
 
-        var needed = (long)_length + bytes.Length;
-        if (needed > _buffer.Length)
+        // EnsureCapacity established a buffer; re-read it for null-state flow.
+        if (_buffer is not { } buffer)
         {
-            var grown = (long)_buffer.Length * 2;
-            if (grown < needed)
-            {
-                grown = needed;
-            }
-
-            if (grown > Array.MaxLength)
-            {
-                return false;
-            }
-
-            if (!invocation.Ledger.TryReserve((ulong)grown))
-            {
-                return false;
-            }
-
-            var next = new byte[(int)grown];
-            Array.Copy(_buffer, next, _length);
-            invocation.Ledger.Release(_reservedBytes);
-            _buffer = next;
-            _reservedBytes = (ulong)grown;
+            return false;
         }
 
-        bytes.CopyTo(_buffer.AsSpan(_length));
+        bytes.CopyTo(buffer.AsSpan(_length));
         _length += bytes.Length;
+        return true;
+    }
+
+    // Encodes UTF-16 text directly into spare capacity so shaped expansions
+    // never stage through temporary byte arrays. Shares the ledger-charged
+    // growth protocol with Append.
+    internal bool AppendUtf16(ReadOnlySpan<char> text, ref Utf8SliceInvocation invocation)
+    {
+        var byteCount = Encoding.UTF8.GetByteCount(text);
+        if (!EnsureCapacity((long)_length + byteCount, ref invocation))
+        {
+            return false;
+        }
+
+        // EnsureCapacity established a buffer; re-read it for null-state flow.
+        if (_buffer is not { } buffer)
+        {
+            return false;
+        }
+
+        _length += Encoding.UTF8.GetBytes(text, buffer.AsSpan(_length));
+        return true;
+    }
+
+    private bool EnsureCapacity(long needed, ref Utf8SliceInvocation invocation)
+    {
+        var buffer = _buffer;
+        if (buffer is null)
+        {
+            return false;
+        }
+
+        if (needed <= buffer.Length)
+        {
+            return true;
+        }
+
+        var grown = (long)buffer.Length * 2;
+        if (grown < needed)
+        {
+            grown = needed;
+        }
+
+        if (grown > Array.MaxLength)
+        {
+            return false;
+        }
+
+        if (!invocation.Ledger.TryReserve((ulong)grown))
+        {
+            return false;
+        }
+
+        var next = new byte[(int)grown];
+        Array.Copy(buffer, next, _length);
+        invocation.Ledger.Release(_reservedBytes);
+        _buffer = next;
+        _reservedBytes = (ulong)grown;
         return true;
     }
 

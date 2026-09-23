@@ -596,6 +596,79 @@ public sealed class Pcre2SliceOwnershipTests
     }
 
     [Fact]
+    public void TinyHeapLimitFailsShapingAdmissionWithHeapLimitIdentity()
+    {
+        var input = Utf8("xxaaabbyy");
+        var starved = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var rentException = Assert.Throws<Pcre2MatchException>(
+            () => starved.ReplaceToString(input, "<$0>"));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, rentException.ErrorKind);
+
+        var grown = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 20 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var growthException = Assert.Throws<Pcre2MatchException>(
+            () => grown.ReplaceToString(input, "<$0>"));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, growthException.ErrorKind);
+        Assert.False(grown.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void SubstituteLiteralTreatsTemplateLiterally()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        Assert.Equal(
+            "xx<$0>yy",
+            regex.ReplaceToString(
+                Utf8("xxaaabbyy"),
+                "<$0>",
+                0,
+                Pcre2SubstitutionOptions.SubstituteLiteral));
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("xxaaabbyy", "<aaabb>")]
+    [InlineData("xyz", "")]
+    public void SubstituteReplacementOnlyOmitsUnmatchedText(
+        string inputText,
+        string expected)
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        Assert.Equal(
+            expected,
+            regex.ReplaceToString(
+                Utf8(inputText),
+                "<$0>",
+                0,
+                Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+    }
+
+    [Fact]
+    public void FullTemplateExpansionAgreesWithBacktracking()
+    {
+        var input = Utf8("xxaaabbyy");
+        var sliced = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        var backtracked = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.Caseless);
+        Assert.DoesNotContain(
+            "Pcre2Slice",
+            backtracked.DebugDescribeExecutionPlan());
+        Assert.Equal("xx<aaa|bb>yy", backtracked.ReplaceToString(input, "<$1|$2>"));
+        Assert.Equal(
+            backtracked.ReplaceToString(input, "<$1|$2>"),
+            sliced.ReplaceToString(input, "<$1|$2>"));
+        Assert.False(sliced.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+[Fact]
     public void AnchoredReplaceFallsBackToBacktracking()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
