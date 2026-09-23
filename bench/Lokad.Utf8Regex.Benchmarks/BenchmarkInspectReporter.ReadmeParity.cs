@@ -21,7 +21,9 @@ internal static partial class BenchmarkInspectReporter
         var snapshotPath = FindRepoFile(ReadmeBenchmarkSnapshotFileName);
         var expected = SerializeReadmeParityReport(LoadReadmeBenchmarkSnapshot(), snapshotPath);
         var reportPath = FindRepoFile(ReadmeParityReportFileName);
-        var actual = File.ReadAllText(reportPath, Encoding.UTF8);
+        // Snapshot files travel across autocrlf checkouts: normalize before comparing so the
+        // gate checks report content, not the platform that last wrote the file.
+        var actual = File.ReadAllText(reportPath, Encoding.UTF8).ReplaceLineEndings("\n");
         if (!string.Equals(actual, expected, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
@@ -50,7 +52,9 @@ internal static partial class BenchmarkInspectReporter
     {
         var snapshotHash = BenchmarkSnapshotHash.HashNormalizedFile(snapshotPath);
         var report = BuildReadmeParityReport(snapshot, snapshotHash);
-        return JsonSerializer.Serialize(report, ReadmeBenchmarkSnapshotJsonOptions) + Environment.NewLine;
+        // Canonical LF throughout: the indented JSON writer follows the host newline, so
+        // normalize the whole document. Report bytes must be identical on every platform.
+        return JsonSerializer.Serialize(report, ReadmeBenchmarkSnapshotJsonOptions).ReplaceLineEndings("\n") + "\n";
     }
 
     private static ReadmeParityReport BuildReadmeParityReport(
