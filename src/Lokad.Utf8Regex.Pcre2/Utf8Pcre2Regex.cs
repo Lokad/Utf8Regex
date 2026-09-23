@@ -669,7 +669,7 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
         ValidateStartOffset(input, startOffsetInBytes);
-        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
+        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None);
     }
 
     /// <summary>Replaces matches using explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
@@ -683,7 +683,8 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, replacement, startOffsetInBytes, substitutionOptions, matchOptions);
+        ValidateStartOffset(input, startOffsetInBytes);
+        return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Replaces matches using a well-formed UTF-8 PCRE2 replacement template.</summary>
@@ -703,7 +704,7 @@ public sealed partial class Utf8Pcre2Regex
     {
         _ = Utf8Validation.Validate(replacementPatternUtf8);
         ValidateStartOffset(input, startOffsetInBytes);
-        return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions);
+        return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None);
     }
 
     /// <summary>Replaces matches using a UTF-8 template with explicit start, substitution, and per-match options, observing cancellation before matching begins.</summary>
@@ -717,7 +718,9 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Replace(input, replacementPatternUtf8, startOffsetInBytes, substitutionOptions, matchOptions);
+        _ = Utf8Validation.Validate(replacementPatternUtf8);
+        ValidateStartOffset(input, startOffsetInBytes);
+        return ReplaceCore(input, Encoding.UTF8.GetString(replacementPatternUtf8), substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Replaces matches through a stateful callback that writes UTF-8 replacement content.</summary>
@@ -792,7 +795,7 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Replaces matches to UTF-16 text using explicit start, substitution, and per-match options.</summary>
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions)
     {
-        var result = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions);
+        var result = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, CancellationToken.None);
         _ = Utf8Validation.Validate(result);
         return Encoding.UTF8.GetString(result);
     }
@@ -808,7 +811,9 @@ public sealed partial class Utf8Pcre2Regex
     public string ReplaceToString(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes, Pcre2SubstitutionOptions substitutionOptions, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return ReplaceToString(input, replacement, startOffsetInBytes, substitutionOptions, matchOptions);
+        var tokenResult = ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken);
+        _ = Utf8Validation.Validate(tokenResult);
+        return Encoding.UTF8.GetString(tokenResult);
     }
 
     /// <summary>Replaces matches through a stateful callback that returns UTF-16 replacement text.</summary>
@@ -1718,7 +1723,8 @@ public sealed partial class Utf8Pcre2Regex
         string replacement,
         Pcre2SubstitutionOptions substitutionOptions,
         int startOffsetInBytes,
-        Pcre2MatchOptions matchOptions)
+        Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken)
     {
         if (RejectsReplacementIteration())
         {
@@ -1747,6 +1753,28 @@ public sealed partial class Utf8Pcre2Regex
                 matchOptions);
         }
 
+        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram)
+        {
+            if (matchOptions != Pcre2MatchOptions.None)
+            {
+                return ReplaceBacktrackingDetailed(
+                    input,
+                    sliceProgram.Fallback,
+                    replacement,
+                    substitutionOptions,
+                    startOffsetInBytes,
+                    matchOptions);
+            }
+
+            return ReplaceSliceDetailed(
+                input,
+                sliceProgram,
+                replacement,
+                substitutionOptions,
+                startOffsetInBytes,
+                cancellationToken);
+        }
+
         if (_program.Operations.Replace.Kind != Pcre2DirectProgramKind.None)
         {
             return ReplaceUsingDecodedDetailedIteration(input, replacement, substitutionOptions, startOffsetInBytes, Encoding.UTF8.GetString(input));
@@ -1772,6 +1800,13 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         out byte[] result)
     {
+        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram &&
+            sliceProgram.SliceProgram.GroupCount > 0)
+        {
+            result = [];
+            return false;
+        }
+
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
             (backtrackingProgram.Program.CaptureSlotCount > 1 ||
              backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
@@ -1819,6 +1854,13 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions,
         out string result)
     {
+        if (_program.Operations.Replace is Pcre2SliceDirectProgram sliceProgram &&
+            sliceProgram.SliceProgram.GroupCount > 0)
+        {
+            result = string.Empty;
+            return false;
+        }
+
         if (_program.Operations.Replace is Pcre2BacktrackingDirectProgram backtrackingProgram &&
             (backtrackingProgram.Program.CaptureSlotCount > 1 ||
              backtrackingProgram.Program.SuppressesUnresetEmptyMatches))
@@ -2109,6 +2151,87 @@ public sealed partial class Utf8Pcre2Regex
                     name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
                     () => ResolveNativeLastCapturedReference(groups, subject),
                     mark: current.Mark));
+            }
+
+            position = value.EndOffsetInUtf16;
+        }
+        while (cursor.MoveNext());
+
+        if (!replacementOnly)
+        {
+            builder.Append(subject, position, subject.Length - position);
+        }
+
+        return Encoding.UTF8.GetBytes(builder.ToString());
+    }
+
+    // R02a fixed-template substitution on the shared slice runner.
+    // Iteration reuses the slice global cursor (PCRE2 empty rules);
+    // every yielded match is re-queried for detailed captures through
+    // the same cumulative invocation, so request budgets never reset
+    // across the replacement. Template parsing and expansion reuse the
+    // established PCRE2 machinery over the decoded subject.
+    private byte[] ReplaceSliceDetailed(
+        ReadOnlySpan<byte> input,
+        Pcre2SliceDirectProgram sliceProgram,
+        string replacement,
+        Pcre2SubstitutionOptions substitutionOptions,
+        int startOffsetInBytes,
+        CancellationToken cancellationToken)
+    {
+        var validated = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
+        var cursor = new Pcre2SliceGlobalMatchCursor(
+            sliceProgram.SliceProgram,
+            validated,
+            start,
+            _program.Request,
+            cancellationToken);
+        if (!cursor.MoveNext())
+        {
+            return (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0
+                ? []
+                : input.ToArray();
+        }
+
+        var subject = Encoding.UTF8.GetString(input);
+        var replacementOnly = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0;
+        var templateOptions = substitutionOptions & ~Pcre2SubstitutionOptions.SubstituteReplacementOnly;
+        var simplePlan = (substitutionOptions & Pcre2SubstitutionOptions.SubstituteLiteral) != 0
+            ? new Pcre2SimpleReplacementPlan([Pcre2SimpleReplacementSegment.FromLiteral(replacement)])
+            : GetSimpleReplacementPlan(replacement, templateOptions);
+        var builder = new StringBuilder(subject.Length + replacement.Length);
+        var position = 0;
+        do
+        {
+            var range = cursor.Current;
+            var groups = cursor.CaptureGroupsAt(range.StartOffsetInBytes, range.EndOffsetInBytes > range.StartOffsetInBytes);
+            var value = groups[0];
+            if (!replacementOnly)
+            {
+                builder.Append(subject, position, value.StartOffsetInUtf16 - position);
+            }
+
+            if (simplePlan is { } plan)
+            {
+                AppendSimpleReplacement(
+                    builder,
+                    plan,
+                    subject,
+                    value.StartOffsetInUtf16,
+                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16);
+            }
+            else
+            {
+                builder.Append(EvaluateReplacementTemplate(
+                    replacement,
+                    templateOptions,
+                    subject,
+                    value.StartOffsetInUtf16,
+                    value.EndOffsetInUtf16 - value.StartOffsetInUtf16,
+                    number => ResolveNativeNumberReference(groups, number, subject),
+                    name => ResolveNativeNamedReference(groups, NameEntries, name, subject),
+                    () => ResolveNativeLastCapturedReference(groups, subject),
+                    mark: null));
             }
 
             position = value.EndOffsetInUtf16;

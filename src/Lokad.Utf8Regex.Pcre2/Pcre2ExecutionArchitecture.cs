@@ -872,6 +872,16 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
 
+        if (operations.Replace is Pcre2BacktrackingDirectProgram replaceBacktracking)
+        {
+            operations = operations with
+            {
+                Replace = new Pcre2SliceDirectProgram(
+                    sliceProgram,
+                    replaceBacktracking.Program),
+            };
+        }
+
         return new Pcre2CompiledProgram(
             program.Request,
             program.PrimaryUtf8,

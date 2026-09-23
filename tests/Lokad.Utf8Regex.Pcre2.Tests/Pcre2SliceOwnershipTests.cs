@@ -36,7 +36,7 @@ public sealed class Pcre2SliceOwnershipTests
             "Count=Pcre2Slice, " +
             "Enumerate=Pcre2Slice, " +
             "Match=Pcre2Slice, " +
-            "Replace=Pcre2Backtracking",
+            "Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
     }
 
@@ -517,6 +517,141 @@ public sealed class Pcre2SliceOwnershipTests
         {
             Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         }
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    public static IEnumerable<object?[]> ReplaceCases()
+    {
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaabbyy", "<$0>", "xx<aaabb>yy" };
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaabbyy", "<$1|$2>", "xx<aaa|bb>yy" };
+        yield return new object?[]
+            { "(a+)(b+)", "aab aabb", "[$0]", "[aab] [aabb]" };
+        yield return new object?[]
+            { "(ab|cd)+", "xxabcdcdyy", "<$1>", "xx<cd>yy" };
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaayy", "Z", "xxaaayy" };
+        yield return new object?[]
+            { "a+b", "aaab", "($0)", "(aaab)" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ReplaceCases))]
+    public void OwnedReplaceMatchesExpected(
+        string pattern,
+        string inputText,
+        string replacement,
+        string expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        Assert.Equal(expected, regex.ReplaceToString(input, replacement));
+        Assert.Equal(
+            expected,
+            Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("y")]
+    [InlineData("yy")]
+    [InlineData("xyx")]
+    public void OwnedReplaceEmptyMatchesAgreeWithBacktracking(string inputText)
+    {
+        var input = Utf8(inputText);
+        var sliced = new Utf8Pcre2Regex("x*|y", Pcre2CompileOptions.None);
+        var backtracked = new Utf8Pcre2Regex("(?:x*|y)", Pcre2CompileOptions.None);
+        Assert.DoesNotContain(
+            "Pcre2Slice",
+            backtracked.DebugDescribeExecutionPlan());
+        Assert.Equal(
+            backtracked.ReplaceToString(input, "-"),
+            sliced.ReplaceToString(input, "-"));
+        Assert.Equal(
+            backtracked.ReplaceToString(input, "<$0>"),
+            sliced.ReplaceToString(input, "<$0>"));
+        Assert.False(sliced.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void OwnedReplaceMatchesExpectedOnAstralInput()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        Assert.Equal(
+            "\U0001F600<aaabb>\U0001F600",
+            regex.ReplaceToString(Utf8("\U0001F600aaabb\U0001F600"), "<$0>"));
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void OwnedReplaceHonorsStartOffset()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        Assert.Equal(
+            "aab <aabb>",
+            regex.ReplaceToString(Utf8("aab aabb"), "<$0>", 4));
+    }
+
+    [Fact]
+    public void AnchoredReplaceFallsBackToBacktracking()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        Assert.Equal(
+            "<aaabb>xx",
+            regex.ReplaceToString(
+                Utf8("aaabbxx"), "<$0>", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
+        Assert.Equal(
+            "xxaaabbyy",
+            regex.ReplaceToString(
+                Utf8("xxaaabbyy"), "<$0>", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
+    }
+
+    [Fact]
+    public void PreCanceledTokenAbortsOwnedReplace()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(
+            () => regex.Replace(
+                Utf8("xxaaabbyy"),
+                "<$0>",
+                0,
+                Pcre2SubstitutionOptions.None,
+                Pcre2MatchOptions.None,
+                canceled.Token));
+    }
+
+    [Fact]
+    public void ExhaustedMatchLimitFailsReplaceWithMatchLimitIdentity()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(
+            () => regex.ReplaceToString(Utf8("xxaaabbyy"), "<$0>"));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
+    }
+
+    [Fact]
+    public void OwnedReplaceTimeoutThrowsTimeoutIdentity()
+    {
+        var input = Utf8(new string((char)97, 2000));
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            default,
+            TimeSpan.FromMilliseconds(1));
+        var exception = Assert.Throws<Pcre2MatchException>(
+            () => regex.ReplaceToString(input, "<$0>"));
+        Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
     }
 

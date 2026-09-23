@@ -48,6 +48,58 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal Pcre2CharacterMatch Current { get; private set; }
 
+    // Single-attempt detailed capture for a yielded match start. The
+    // caller shares this cursor invocation so replacement budgets stay
+    // cumulative; slots are rented and released inside this call.
+    // A yielded non-empty range re-queries with requireNonEmpty so a
+    // retry-won match reproduces exactly; the pruned search provably
+    // returns the same first hit (pruning only removes empty accepts
+    // that precede nothing, since the unpruned search passed them by).
+    // Empty yields re-query normally. Callers pass whether the yielded
+    // range was non-empty.
+    internal Pcre2GroupData[] CaptureGroupsAt(int startByte, bool requireNonEmpty)
+    {
+        var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
+        try
+        {
+            Array.Fill(slots.Starts, -1);
+            Array.Fill(slots.Ends, -1);
+            var outcome = Utf8SliceRunner.TryMatchAt(
+                _program,
+                _input.Bytes,
+                startByte,
+                slots.Starts,
+                slots.Ends,
+                false,
+                requireNonEmpty,
+                ref _invocation);
+            Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
+            if (!outcome.IsMatch)
+            {
+                throw new InvalidOperationException(
+                    "Slice re-query missed a yielded match.");
+            }
+
+            return Pcre2SliceDriver.ProjectSliceGroups(
+                _program,
+                _input.Bytes,
+                startByte,
+                outcome.EndIndex,
+                slots.Starts,
+                slots.Ends);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException(
+                "The PCRE2 match deadline expired.",
+                Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref _invocation);
+        }
+    }
+
     internal bool MoveNext()
     {
         var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
@@ -248,7 +300,7 @@ internal static class Pcre2SliceDriver
     // group by group instead: every slice range starts and ends on
     // scalar boundaries, where FromByteOffsets agrees exactly with
     // the batch projector (same flags, same prefix code-unit counts).
-    private static Pcre2GroupData[] ProjectSliceGroups(
+    internal static Pcre2GroupData[] ProjectSliceGroups(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int matchStart,
