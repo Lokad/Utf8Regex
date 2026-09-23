@@ -72,6 +72,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 slots.Ends,
                 false,
                 requireNonEmpty,
+                Pcre2SliceDriver.IsScalarAligned(_input.Bytes, startByte),
                 ref _invocation);
             Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
             if (!outcome.IsMatch)
@@ -119,6 +120,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                         slots.Ends,
                         false,
                         true,
+                        Pcre2SliceDriver.IsScalarAligned(bytes, _retryPosition),
                         ref _invocation);
                     Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
                     if (retry.IsMatch)
@@ -151,6 +153,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                         slots.Ends,
                         false,
                         false,
+                        Pcre2SliceDriver.IsScalarAligned(bytes, _position),
                         ref _invocation);
                     Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
                     if (!outcome.IsMatch)
@@ -192,6 +195,14 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
 internal static class Pcre2SliceDriver
 {
+    // Attempt-origin alignment for absolute-origin assertions (`^`): the end
+    // of input is always aligned, and any byte below it is aligned unless it
+    // opens a UTF-8 continuation byte.
+    internal static bool IsScalarAligned(ReadOnlySpan<byte> bytes, int position)
+    {
+        return (uint)position >= (uint)bytes.Length || (bytes[position] & 0xC0) != 0x80;
+    }
+
     internal static bool IsMatch(
         Utf8SliceProgram program,
         ref Utf8ValidatedInput input,
@@ -260,6 +271,7 @@ internal static class Pcre2SliceDriver
                     slots.Ends,
                     false,
                     false,
+                    Pcre2SliceDriver.IsScalarAligned(bytes, position),
                     ref invocation);
                 ThrowIfSliceBreached(outcome.Breach);
                 if (!outcome.IsMatch)

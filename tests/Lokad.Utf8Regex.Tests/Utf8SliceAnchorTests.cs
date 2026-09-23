@@ -227,6 +227,56 @@ public sealed class Utf8SliceAnchorTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
+    // Absolute-origin assertions additionally require a scalar-aligned
+    // attempt: a low-surrogate unit maps to byte zero, where the oracle
+    // never matches `^`. Without the alignment gate these rows overcounted.
+    [Theory]
+    [InlineData("^", "\U0001F600", 1)]
+    [InlineData("^", "\U0001F600a", 1)]
+    [InlineData("$", "\U0001F600", 1)]
+    [InlineData("^$", "\U0001F600", 0)]
+    public void AstralOriginCountMatchesOracle(
+        string pattern, string inputText, int expectedCount)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expectedCount, regex.Count(input));
+        var enumerated = new List<int>();
+        foreach (var item in regex.EnumerateMatches(input))
+        {
+            enumerated.Add(item.IndexInUtf16);
+        }
+
+        Assert.Equal(expectedCount, enumerated.Count);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void AstralOriginMultilineCountMatchesOracle()
+    {
+        const string pattern = "^";
+        const string inputText = "\U0001F600a\nbxc";
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void AstralOriginReplaceMatchesOracle()
+    {
+        const string inputText = "\U0001F600";
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex("^", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, "Z");
+        var regex = new Utf8Regex("^", RegexOptions.CultureInvariant);
+        Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, "Z")));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     [Theory]
     [InlineData("(^a.*b$)", "xxaa1bbyy", "<$1>")]
     [InlineData("(^a.*b$)", "aa1bb", "<$1>")]

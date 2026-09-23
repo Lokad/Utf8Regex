@@ -141,7 +141,7 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        var matched = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, ref invocation);
+        var matched = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
         Assert.True(matched.IsMatch);
         var oracle = new Regex(@"(ab|cd)+", RegexOptions.CultureInvariant).Match(inputText);
         Assert.Equal(oracle.Groups[1].Value, Encoding.ASCII.GetString(input[starts[0]..ends[0]]));

@@ -200,9 +200,10 @@ internal static class Utf8SliceRunner
         int start,
         int[] captureStarts,
         int[] captureEnds,
+        bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
-        return TryMatchAt(program, input, start, captureStarts, captureEnds, false, ref invocation);
+        return TryMatchAt(program, input, start, captureStarts, captureEnds, false, startIsScalarBoundary, ref invocation);
     }
 
     internal static Utf8SliceUnitOutcome TryMatchFromUnitNonEmpty(
@@ -219,8 +220,9 @@ internal static class Utf8SliceRunner
             return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
         }
 
-        var startByte = map.Resolve(unit).ByteOffset;
-        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, false, true, ref invocation);
+        var startBoundary = map.Resolve(unit);
+        var startByte = startBoundary.ByteOffset;
+        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, false, true, startBoundary.IsScalarBoundary, ref invocation);
         if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
         {
             return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, outcome.Breach);
@@ -237,9 +239,10 @@ internal static class Utf8SliceRunner
         int[] captureStarts,
         int[] captureEnds,
         bool collectHistory,
+        bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
-        return TryMatchAt(program, input, start, captureStarts, captureEnds, collectHistory, false, ref invocation);
+        return TryMatchAt(program, input, start, captureStarts, captureEnds, collectHistory, false, startIsScalarBoundary, ref invocation);
     }
 
     internal static Utf8SliceMatchOutcome TryMatchAt(
@@ -250,6 +253,7 @@ internal static class Utf8SliceRunner
         int[] captureEnds,
         bool collectHistory,
         bool requireNonEmpty,
+        bool startIsScalarBoundary,
         ref Utf8SliceInvocation invocation)
     {
         var counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
@@ -269,7 +273,7 @@ internal static class Utf8SliceRunner
         var stacks = new ChunkedStacks();
         try
         {
-            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, collectHistory, requireNonEmpty, ref stacks, ref invocation);
+            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
         }
         finally
         {
@@ -293,8 +297,9 @@ internal static class Utf8SliceRunner
             return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
         }
 
-        var startByte = map.Resolve(unit).ByteOffset;
-        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, ref invocation);
+        var startBoundary = map.Resolve(unit);
+        var startByte = startBoundary.ByteOffset;
+        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, startBoundary.IsScalarBoundary, ref invocation);
         if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
         {
             return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, outcome.Breach);
@@ -420,8 +425,9 @@ internal static class Utf8SliceRunner
         invocation.Budget.ThrowIfCancellationRequested();
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
-            var startByte = map.Resolve(unit).ByteOffset;
-            var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, true, ref invocation);
+            var startBoundary = map.Resolve(unit);
+            var startByte = startBoundary.ByteOffset;
+            var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, true, startBoundary.IsScalarBoundary, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 return new Utf8SliceDetailedOutcome(false, -1, -1, -1, -1, null, null, outcome.Breach);
@@ -458,6 +464,7 @@ internal static class Utf8SliceRunner
         int[] positions,
         bool collectHistory,
         bool requireNonEmpty,
+        bool startIsScalarBoundary,
         ref ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation)
     {
@@ -728,7 +735,10 @@ internal static class Utf8SliceRunner
                     bool anchorHolds;
                     if (anchorAtBeginning)
                     {
-                        anchorHolds = inputIndex == 0 ||
+                        // Origin assertions additionally require a
+                        // scalar-aligned attempt: a low-surrogate unit maps
+                        // to byte zero, where the oracle never matches `^`.
+                        anchorHolds = (inputIndex == 0 && startIsScalarBoundary) ||
                             (anchorMultiline && inputIndex > 0 && input[inputIndex - 1] == (byte)'\n');
                     }
                     else if (inputIndex == input.Length)
