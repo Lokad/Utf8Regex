@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:02:33.9707687+00:00`
-- Snapshot SHA-256: `69F0E7300B36DBA696D2F5626AB712BFEF5CFD98DCDB54F8A1023D3DB04CE19A`
+- Generated: `2026-09-23T04:03:50.7382956+00:00`
+- Snapshot SHA-256: `DFE63493D91B3991FA361C1FCE4F0407CED37181545D7A0F8FEAE088F75E94A0`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `24` managed faster, `0` equivalent, `3` CPython faster, `5` inconclusive, `58` unqualified
+- Public Status: `27` managed faster, `0` equivalent, `3` CPython faster, `6` inconclusive, `54` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -118,10 +118,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `possessive/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.102 us | 0.215 us | 0.47x | 0.274 us | 0.135 us | 248 B |
 | `leading-inline/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.112 us | 0.232 us | 0.48x | 0.300 us | 0.173 us | 272 B |
 | `unicode-literal/search-hit` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.119 us | 0.143 us | 0.83x | 0.257 us | 0.124 us | 0 B |
-| `unicode-literal/search-miss` | `Search` | Historical | Unqualified | 0.524 us | 0.214 us | 2.45x | 1.016 us | 0.999 us | 0 B |
-| `unicode-category/search-miss` | `Search` | Historical | Unqualified | 0.083 us | 0.140 us | 0.59x | 0.264 us | 0.045 us | 32 B |
-| `greedy/search-miss` | `Search` | Historical | Unqualified | 0.110 us | 0.129 us | 0.85x | 0.262 us | 0.076 us | 32 B |
-| `alternation/search-miss` | `Search` | Historical | Unqualified | 0.149 us | 0.144 us | 1.04x | 0.265 us | 0.111 us | 48 B |
+| `unicode-literal/search-miss` | `Search` | ConsumedGroupZeroRanges | Inconclusive | 0.294 us | 0.177 us | 1.67x | 1.016 us | 0.999 us | 0 B |
+| `unicode-category/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.055 us | 0.148 us | 0.37x | 0.264 us | 0.045 us | 32 B |
+| `greedy/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.064 us | 0.136 us | 0.47x | 0.262 us | 0.076 us | 32 B |
+| `alternation/search-miss` | `Search` | ConsumedGroupZeroRanges | Managed faster | 0.089 us | 0.148 us | 0.60x | 0.265 us | 0.111 us | 48 B |
 | `common/date-miss` | `IsMatch` | Historical | Unqualified | 2.180 us | 1.073 us | 2.03x | 1.191 us | 2.181 us | 120 B |
 | `common/ip-match` | `IsMatch` | Historical | Unqualified | 0.351 us | 0.255 us | 1.37x | 0.391 us | 0.264 us | 264 B |
 
@@ -345,8 +345,8 @@ These fields prevent a composed host-language operation or a managed decode fall
 | `unicode-literal/search-hit` | `_sre C Pattern.search` | `Utf8Regex/ExactUtf8Literal; value ranges` | Excluded: pattern or subject is not entirely ASCII. |
 | `unicode-literal/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactUtf8Literal; value ranges` | Excluded: pattern or subject is not entirely ASCII. |
 | `unicode-category/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Excluded: Locale or Unicode flags are not valid for equivalent CPython bytes patterns. |
-| `greedy/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
-| `alternation/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactUtf8Literals; value ranges` | Eligible: ASCII one-shot semantics and byte/UTF-16 coordinates are identical. |
+| `greedy/search-miss` | `_sre C Pattern.search` | `Utf8Regex/FallbackRegex; value ranges` | Rbyte 0.41x [0.40, 0.43]; NotApplicable |
+| `alternation/search-miss` | `_sre C Pattern.search` | `Utf8Regex/ExactUtf8Literals; value ranges` | Rbyte 0.54x [0.53, 0.55]; ManagedFaster |
 | `capture/search-detailed` | `_sre C Pattern.search + Python detailed projection` | `Utf8Regex/FallbackRegex; detailed capture projection` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `family/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/ExactUtf8Literals; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
 | `class-run/count` | `_sre scanner + Python finditer/sum` | `Utf8Regex/FallbackRegex; Python-style count progression` | Excluded: the first byte-control profile is limited to one-shot matching operations. |
