@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, dots, and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
+/// sets, dots, anchors, and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
     Empty = 0,
@@ -13,6 +13,7 @@ internal enum Utf8SliceNodeKind : byte
     Repeat = 5,
     Capture = 6,
     Dot = 7,
+    Anchor = 8,
 }
 
 /// <summary>Immutable tree node for the owned R02a slice.</summary>
@@ -39,6 +40,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record CaptureNode(int Slot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
 
     internal sealed record DotNode(bool MatchNewline) : Utf8SliceNode(Utf8SliceNodeKind.Dot);
+
+    internal sealed record AnchorNode(bool AtBeginning, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -56,6 +59,7 @@ internal enum Utf8SliceInstructionKind : byte
     CaptureEnd = 9,
     Accept = 10,
     Dot = 11,
+    Anchor = 12,
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -260,6 +264,9 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.DotNode dot:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Dot, dot.MatchNewline ? 1 : 0, 0, 0, 0));
+                    break;
+                case Utf8SliceNode.AnchorNode anchor:
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Anchor, anchor.AtBeginning ? 0 : 1, anchor.MatchMultiline ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)

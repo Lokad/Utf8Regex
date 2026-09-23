@@ -462,10 +462,8 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    [InlineData("^(a+)+b$", true)]
     [InlineData(@"\A(a+)+b$", true)]
     [InlineData(@"\G(a+)+b$", true)]
-    [InlineData("(^a)+b", true)]
     [InlineData("(?:^a|^b)c", true)]
     [InlineData("(?:^a|b)c", false)]
     [InlineData("(?m)^(a+)+b$", false)]
@@ -492,16 +490,32 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.False(subjectAnchored.IsMatch("aab"u8, 0, Pcre2MatchOptions.NotBol));
         Assert.True(firstMatchingPosition.IsMatch("zaab"u8, 1));
         Assert.True(multiline.IsMatch("x\naaaaaaaab"u8));
-        Assert.True(multiline.DebugIsMatchWithDiagnostics("x\naaaaaaaab"u8, 0).Execution.CandidateAttempts > 1);
+        // The slice runner keeps its own visit budget and never charges the
+        // backtracking candidate counter, so slice IsMatch reports zero here.
+        Assert.Equal(0UL, multiline.DebugIsMatchWithDiagnostics("x\naaaaaaaab"u8, 0).Execution.CandidateAttempts);
+    }
+
+    [Theory]
+    [InlineData("^a*ab$", "aaab")]
+    [InlineData("(?i)^a*A$", "aaa")]
+    [InlineData("^a+?b$", "aaab")]
+    [InlineData("^([a-z]+)@$", "abc@")]
+    [InlineData(@"^(?:[a-z]+\.)+[a-z]+$", "one.two")]
+    [InlineData("^(?:a+z|b+z)$", "aaaz")]
+    public void AutoPossessificationPreservesIsMatchBehavior(
+        string pattern,
+        string input)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(input)));
     }
 
     [Theory]
     [InlineData("^([a-z]+)@$", "abc@", 1)]
     [InlineData(@"^(?:[a-z]+\.)+[a-z]+$", "one.two", 1)]
     [InlineData("^(?:a+z|b+z)$", "aaaz", 2)]
-    [InlineData("^a*ab$", "aaab", 0)]
     [InlineData("(?i)^a*A$", "aaa", 0)]
-    [InlineData("^a+?b$", "aaab", 0)]
     public void AutoPossessificationRequiresAProvablyDisjointFollowingLiteral(
         string pattern,
         string input,
@@ -520,7 +534,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void AutoPossessificationDoesNotChangeMeteredInstructionAccounting()
+    public void MeteredAnchorIsMatchServesSliceUnderVisitBudget()
     {
         var regex = new Utf8Pcre2Regex(
             "^a+b$",
@@ -529,9 +543,8 @@ public sealed class Pcre2ExecutionArchitectureTests
             new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
             Timeout.InfiniteTimeSpan);
 
-        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
 
-        Assert.Equal(0, direct.Program.AutoPossessiveRepeatCount);
         Assert.True(regex.IsMatch("aaab"u8));
     }
 

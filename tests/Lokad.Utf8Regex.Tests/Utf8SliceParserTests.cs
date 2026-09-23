@@ -26,6 +26,11 @@ public sealed class Utf8SliceParserTests
     [InlineData("a.c", 0)]
     [InlineData("a.*b", 0)]
     [InlineData("(a.c)+", 1)]
+    [InlineData("^ab", 0)]
+    [InlineData("ab$", 0)]
+    [InlineData("^a.*b$", 0)]
+    [InlineData("^(a.c)+$", 1)]
+    [InlineData("a^b", 0)]
     public void SupportedShapesLower(string pattern, int expectedGroups)
     {
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -37,8 +42,6 @@ public sealed class Utf8SliceParserTests
 
     [Theory]
     [InlineData("[a-z]+")]
-    [InlineData("^ab")]
-    [InlineData("ab$")]
     [InlineData(@"\bword")]
     [InlineData("(?=a)a")]
     [InlineData("(a)(?(1)b|c)")]

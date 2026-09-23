@@ -174,6 +174,119 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Throws<OperationCanceledException>(() => regex.FullMatch(input, 0, canceled.Token));
     }
 
+    // R03 anchors: dot-free anchor shapes (`^a|b$`) pass the translator
+    // verbatim and run the owned core slice; dotted anchor shapes decline
+    // (scalar-exact class rewrite, same as dots). Simple literal anchors
+    // (`a$`, `^a`) stay on the AsciiSimple core route. Multiline `^` search
+    // past a line feed misses on the AsciiSimple route (pre-existing core
+    // gap, also observable without PythonRe); multiline rows below only
+    // cover slice-owned shapes. Expectations are CPython 3.13.2 ground
+    // truth with UTF-16 offsets.
+    [Theory]
+    [InlineData("^a|b$")]
+    public void AnchorShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSearchBackend);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
+    }
+
+    [Theory]
+    [InlineData("^a.*b$")]
+    [InlineData("^(a.c)+$")]
+    [InlineData("a$")]
+    [InlineData("^a")]
+    public void DottedAndSimpleAnchorsDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> AnchorSearchCases()
+    {
+        yield return new object?[] { "^a|b$", "aXb", 0, true, 0, 1 };
+        yield return new object?[] { "^a|b$", "xax", 0, false, 0, 0 };
+        yield return new object?[] { "^a.*b$", "a1b", 0, true, 0, 3 };
+        yield return new object?[] { "^a.*b$", "xa1b", 0, false, 0, 0 };
+        yield return new object?[] { "^(a.c)+$", "abcayc", 0, true, 0, 6 };
+        yield return new object?[] { "a$", "xxa", 0, true, 2, 3 };
+        yield return new object?[] { "^a", "axx", 0, true, 0, 1 };
+    }
+
+    [Theory]
+    [MemberData(nameof(AnchorSearchCases))]
+    public void AnchorSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void MultilineAnchorSearchMatchesTranslatedOracle()
+    {
+        var regex = new Utf8PythonRegex("^a|b$", PythonReCompileOptions.Multiline);
+        Assert.True(regex.DebugUsesOwnedSlice);
+        var expected = new Regex(
+            regex.DebugTranslatedPattern,
+            RegexOptions.CultureInvariant | RegexOptions.Multiline,
+            Regex.InfiniteMatchTimeout).Match("x\na");
+        var found = regex.Search(Utf8("x\na"), 0);
+        Assert.True(expected.Success);
+        Assert.True(found.Success);
+        Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+        Assert.Equal(2, found.StartOffsetInUtf16);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
+    }
+
+    [Theory]
+    [InlineData("^a|b$", "aXb", 2)]
+    [InlineData("^a.*b$", "a1b", 1)]
+    [InlineData("^(a.c)+$", "abcayc", 1)]
+    public void AnchorCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("^a|b$", "aXb", true)]
+    [InlineData("^a|b$", "xax", false)]
+    [InlineData("^a.*b$", "a1b", true)]
+    public void AnchorMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("^a|b$", "a", true)]
+    [InlineData("^a|b$", "b", true)]
+    [InlineData("^a|b$", "aXb", false)]
+    [InlineData("^a.*b$", "a1b", true)]
+    public void AnchorFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Fact]
     public void PreCanceledTokenAbortsOwnedSearch()
     {

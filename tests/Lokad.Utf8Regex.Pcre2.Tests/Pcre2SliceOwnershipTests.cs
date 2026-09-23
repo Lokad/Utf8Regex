@@ -69,7 +69,6 @@ public sealed class Pcre2SliceOwnershipTests
 
     [Theory]
     [InlineData("[a-z]+")]
-    [InlineData("(a+)+$")]
     [InlineData("(?P<word>foo)-(?P=word)")]
     public void NonSliceShapesDeclineSliceRouting(string pattern)
     {

@@ -13,7 +13,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             "INFO: boot\nERROR: first\nERROR: \nERROR: \r\nERROR: café\n");
 
         Assert.Equal(
-            "IsMatch=Pcre2MultilinePrefix, Count=Pcre2MultilinePrefix, Enumerate=Pcre2MultilinePrefix, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            "IsMatch=Pcre2MultilinePrefix, Count=Pcre2MultilinePrefix, Enumerate=Pcre2MultilinePrefix, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
@@ -72,11 +72,11 @@ public sealed class Pcre2MultilinePrefixCompilerTests
     }
 
     [Fact]
-    public void ExactLinePrefixMatchesEquivalentVmAcrossAsciiOffsets()
+    public void ExactLinePrefixMatchesEquivalentOwnedAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
-        var vm = new Utf8Pcre2Regex("^(ERROR: ).+$", Pcre2CompileOptions.Multiline);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
+        var owned = new Utf8Pcre2Regex("^(ERROR: ).+$", Pcre2CompileOptions.Multiline);
+        Assert.IsType<Pcre2SliceDirectProgram>(owned.DebugCompiledProgram.Operations.Count);
 
         foreach (var inputText in new[]
                  {
@@ -91,8 +91,8 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             var input = Encoding.UTF8.GetBytes(inputText);
             for (var start = 0; start <= input.Length; start++)
             {
-                Assert.Equal(vm.IsMatch(input, start), direct.IsMatch(input, start));
-                Assert.Equal(vm.Count(input, start), direct.Count(input, start));
+                Assert.Equal(owned.IsMatch(input, start), direct.IsMatch(input, start));
+                Assert.Equal(owned.Count(input, start), direct.Count(input, start));
 
                 var directRanges = new List<(int Start, int End)>();
                 var directMatches = direct.EnumerateMatches(input, start);
@@ -103,16 +103,16 @@ public sealed class Pcre2MultilinePrefixCompilerTests
                         directMatches.Current.EndOffsetInBytes));
                 }
 
-                var vmRanges = new List<(int Start, int End)>();
-                var vmMatches = vm.EnumerateMatches(input, start);
-                while (vmMatches.MoveNext())
+                var ownedRanges = new List<(int Start, int End)>();
+                var ownedMatches = owned.EnumerateMatches(input, start);
+                while (ownedMatches.MoveNext())
                 {
-                    vmRanges.Add((
-                        vmMatches.Current.StartOffsetInBytes,
-                        vmMatches.Current.EndOffsetInBytes));
+                    ownedRanges.Add((
+                        ownedMatches.Current.StartOffsetInBytes,
+                        ownedMatches.Current.EndOffsetInBytes));
                 }
 
-                Assert.Equal(vmRanges, directRanges);
+                Assert.Equal(ownedRanges, directRanges);
             }
         }
     }
@@ -128,10 +128,13 @@ public sealed class Pcre2MultilinePrefixCompilerTests
             Regex.InfiniteMatchTimeout);
 
         Assert.IsType<Pcre2BacktrackingDirectProgram>(explicitCr.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        // R03 anchor slice: star, lazy, and DotAll line shapes decline the
+        // prefix program in the analyzer but land on the shared slice
+        // runner instead of backtracking. None route MultilinePrefix.
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("^ERROR: .*$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("^ERROR: .+?$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
@@ -140,7 +143,7 @@ public sealed class Pcre2MultilinePrefixCompilerTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("^ERROR\\n.+$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex(
                 "^ERROR: .+$",
                 Pcre2CompileOptions.Multiline | Pcre2CompileOptions.DotAll)

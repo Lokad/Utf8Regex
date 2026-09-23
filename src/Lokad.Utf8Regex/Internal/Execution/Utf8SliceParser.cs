@@ -4,7 +4,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
-/// numbered groups, and (R03) dots with Singleline-scoped newline matching.
+/// numbered groups, (R03) dots with Singleline-scoped newline matching,
+/// and anchors with Multiline-scoped line edges.
 /// Anything else (classes, anchors, boundaries,
 /// lookarounds, backreferences, named/non-capturing groups, shorthand escapes,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
@@ -57,7 +58,7 @@ internal static class Utf8SliceParser
             }
         }
 
-        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0);
+        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0);
         if (!parser.TryParseAlternation(0, out var root) || parser.Position != pattern.Length)
         {
             return null;
@@ -71,13 +72,15 @@ internal static class Utf8SliceParser
     {
         private readonly string _pattern;
         private readonly bool _matchNewline;
+        private readonly bool _matchMultiline;
         private int _position;
         private int _groups;
 
-        internal Parser(string pattern, bool matchNewline)
+        internal Parser(string pattern, bool matchNewline, bool matchMultiline)
         {
             _pattern = pattern;
             _matchNewline = matchNewline;
+            _matchMultiline = matchMultiline;
         }
 
         internal int Position => _position;
@@ -297,9 +300,15 @@ internal static class Utf8SliceParser
                 case '}':
                 case '[':
                 case ']':
-                case '^':
-                case '$':
                     return false;
+                case '^':
+                    _position++;
+                    node = new Utf8SliceNode.AnchorNode(true, _matchMultiline);
+                    return true;
+                case '$':
+                    _position++;
+                    node = new Utf8SliceNode.AnchorNode(false, _matchMultiline);
+                    return true;
                 case '.':
                     _position++;
                     node = new Utf8SliceNode.DotNode(_matchNewline);

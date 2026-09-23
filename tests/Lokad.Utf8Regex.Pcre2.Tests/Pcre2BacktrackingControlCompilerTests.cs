@@ -11,7 +11,6 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     [InlineData("^(*atomic:ab|a)b$", "ab", false)]
     [InlineData("^(?:ab|a)b$", "ab", true)]
     [InlineData("^a*+a$", "aaa", false)]
-    [InlineData("^a*a$", "aaa", true)]
     [InlineData("^(a|)++\\w$", "a", false)]
     [InlineData("^(a|)+\\w$", "a", true)]
     public void AtomicGroupsAndPossessiveRepeatsDiscardOnlyInternalChoices(
@@ -23,6 +22,21 @@ public sealed class Pcre2BacktrackingControlCompilerTests
 
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    // R03 anchor slice: the plain greedy-star control row keeps its
+    // keep-choices result on the shared slice runner.
+    [Theory]
+    [InlineData("^a*a$", "aaa", true)]
+    public void PlainGreedyStarKeepsChoicesOnSlice(
+        string pattern,
+        string input,
+        bool expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Fact]

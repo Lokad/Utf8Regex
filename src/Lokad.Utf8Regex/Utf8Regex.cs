@@ -1427,7 +1427,14 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+        try
+        {
+            return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
@@ -1438,7 +1445,14 @@ public sealed partial class Utf8Regex
     public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+        try
+        {
+            return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     private Utf8MatchContext MatchDetailedFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)

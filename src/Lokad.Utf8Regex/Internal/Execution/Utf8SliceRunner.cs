@@ -682,6 +682,45 @@ internal static class Utf8SliceRunner
                     }
 
                     break;
+                case Utf8SliceInstructionKind.Anchor:
+                    // Zero-width line edges: `^` holds at the input origin
+                    // or (multiline) just after a line feed; `$` holds at
+                    // the input end, before a trailing line feed, or
+                    // (multiline) just before any line feed. Line feeds
+                    // are single bytes, so these checks are
+                    // encoding-indifferent and need no astral routing.
+                    // Guards order short-circuit before any indexing.
+                    var anchorAtBeginning = instruction.A == 0;
+                    var anchorMultiline = instruction.B != 0;
+                    bool anchorHolds;
+                    if (anchorAtBeginning)
+                    {
+                        anchorHolds = inputIndex == 0 ||
+                            (anchorMultiline && inputIndex > 0 && input[inputIndex - 1] == (byte)'\n');
+                    }
+                    else if (inputIndex == input.Length)
+                    {
+                        anchorHolds = true;
+                    }
+                    else if (anchorMultiline)
+                    {
+                        anchorHolds = input[inputIndex] == (byte)'\n';
+                    }
+                    else
+                    {
+                        anchorHolds = inputIndex + 1 == input.Length && input[inputIndex] == (byte)'\n';
+                    }
+
+                    if (anchorHolds)
+                    {
+                        programIndex++;
+                    }
+                    else
+                    {
+                        failed = true;
+                    }
+
+                    break;
                 case Utf8SliceInstructionKind.Accept:
                     if (requireNonEmpty && inputIndex == start)
                     {
