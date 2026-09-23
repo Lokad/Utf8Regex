@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.PythonRe;
 
@@ -58,6 +59,12 @@ internal static partial class PythonReBenchmarkReporter
             RequireSearchAttributionOutcome("KernelVsCore", coreOutcome, kernelOutcome);
         }
 
+        var prefilterRejects = Utf8PrefilterExecutor.Rejects(core.Inspection.PreparedRegex.SearchPlan.PrefilterPlan, input);
+        if (prefilterRejects && adapterOutcome.Success)
+        {
+            throw new InvalidOperationException($"Search attribution prefilter rejects {caseId} but the adapter matched.");
+        }
+
         Console.WriteLine($"CaseId            : {caseId}");
         Console.WriteLine($"Operation         : {benchmarkCase.Operation}");
         Console.WriteLine($"Pattern           : {benchmarkCase.Pattern}");
@@ -79,6 +86,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             new("ThrowIfInvalidOnly", () => ExecuteSearchAttributionValidationOnly(input), input.Length),
             new("FullValidate", () => ExecuteSearchAttributionFullValidation(input), ExecuteSearchAttributionFullValidation(input)),
+            new("PrefilterOnly", () => ExecutePrefilterOnly(core, input), ExecutePrefilterOnly(core, input)),
         };
 
         if (hasKernel)
@@ -228,6 +236,11 @@ internal static partial class PythonReBenchmarkReporter
         return Utf8Validation.Validate(input).Utf16Length;
     }
 
+    private static int ExecutePrefilterOnly(Utf8Regex core, byte[] input)
+    {
+        return Utf8PrefilterExecutor.Rejects(core.Inspection.PreparedRegex.SearchPlan.PrefilterPlan, input) ? 1 : 0;
+    }
+
     private static int EncodeSearchAttributionOutcome((bool Success, int Start, int End) outcome)
     {
         return outcome.Success ? checked((outcome.Start + 1) * 1000003 ^ outcome.End) : 0;
@@ -370,6 +383,12 @@ internal static partial class PythonReBenchmarkReporter
             medians.TryGetValue("AdapterPublic", out var adapterPublic))
         {
             Console.WriteLine($"Composition       : validation {validation:F3} + kernel {kernel:F3} = {validation + kernel:F3} vs measured validation-then-kernel {validationThenKernel:F3} vs public {adapterPublic:F3}");
+        }
+
+        if (medians.TryGetValue("PrefilterOnly", out var prefilter) &&
+            medians.TryGetValue("AdapterPublic", out var adapterOnly))
+        {
+            Console.WriteLine($"PrefilterShare      : prefilter {prefilter:F3} of public {adapterOnly:F3}");
         }
 
         Console.WriteLine("CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups");
