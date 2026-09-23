@@ -989,6 +989,90 @@ internal static class Utf8SliceRunner
                     }
 
                     break;
+                case Utf8SliceInstructionKind.Hybrid:
+                    {
+                        // Mixed ASCII/Unicode classes: ASCII bytes decide by
+                        // mask (shorthand ASCII parts folded in at lowering);
+                        // non-ASCII leads consult the recorded shorthand
+                        // members with full Unicode categories. BMP units
+                        // agree with the oracle; astral follows the halves
+                        // mirror (positive members miss, negated members
+                        // hit) and routing admits astral only when nothing
+                        // can diverge. Continuation bytes fail, so
+                        // byte-stepping drivers cannot report unaligned
+                        // starts. Inputs are validated before execution,
+                        // hence lead widths stay in bounds without
+                        // revalidation here.
+                        static bool MatchesMember(char scalar, Utf8SliceShorthand shorthand)
+                        {
+                            var category = char.GetUnicodeCategory(scalar);
+                            return ((int)shorthand) switch
+                            {
+                                0 => category == UnicodeCategory.DecimalDigitNumber,
+                                1 => category != UnicodeCategory.DecimalDigitNumber,
+                                2 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
+                                3 => (WordUnicodeCategoriesMask & (1 << (int)category)) == 0,
+                                4 => scalar == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
+                                    category == UnicodeCategory.LineSeparator ||
+                                    category == UnicodeCategory.ParagraphSeparator,
+                                _ => scalar != '\u0085' && category != UnicodeCategory.SpaceSeparator &&
+                                    category != UnicodeCategory.LineSeparator &&
+                                    category != UnicodeCategory.ParagraphSeparator,
+                            };
+                        }
+
+                        if (inputIndex < input.Length &&
+                            (input[inputIndex] & 0xC0) != 0x80)
+                        {
+                            var candidate = input[inputIndex];
+                            bool inClass;
+                            var width = 1;
+                            if (candidate < 0x80)
+                            {
+                                var inMask = (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
+                                inClass = inMask != (instruction.B != 0);
+                            }
+                            else if (candidate < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
+                            {
+                                width = candidate < 0xE0 ? 2 : 3;
+                                var hit = false;
+                                for (var bit = 0; bit < 6; bit++)
+                                {
+                                    if ((instruction.C & (1 << bit)) != 0 &&
+                                        MatchesMember(scalar, (Utf8SliceShorthand)bit))
+                                    {
+                                        hit = true;
+                                        break;
+                                    }
+                                }
+
+                                inClass = hit != (instruction.B != 0);
+                            }
+                            else
+                            {
+                                width = 4;
+                                var hit = candidate >= 0xF0 && (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0;
+                                inClass = hit != (instruction.B != 0);
+                            }
+
+                            if (inClass)
+                            {
+                                inputIndex += width;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+                    }
+
+                    break;
                 case Utf8SliceInstructionKind.Backref:
                     // Ordinal backreference: an unmatched (or in-progress)
                     // group fails, otherwise the captured bytes must repeat

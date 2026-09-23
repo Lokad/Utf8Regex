@@ -885,4 +885,87 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
+    // R03 mixed-class shorthands: member shorthands are rewritten
+    // scalar-exact by the translator (like bare shorthands), so mixed
+    // classes decline the owned slice with translated-oracle parity.
+    // Expectations mix translated-oracle agreement with CPython 3.13.2
+    // ground truths (CPython classes are Unicode, matching the rewrite).
+    [Theory]
+    [InlineData("[\\da]")]
+    [InlineData("[^\\da]")]
+    [InlineData("[\\w-]")]
+    [InlineData("[\\da]+")]
+    public void HybridShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> HybridSearchCases()
+    {
+        var arabicDigit = char.ConvertFromUtf32(0x660);
+        yield return new object?[] { "[\\da]", "x1a", 0, true, 1, 2 };
+        yield return new object?[] { "[\\da]", "x" + arabicDigit + "y", 0, true, 1, 2 };
+        yield return new object?[] { "[^\\da]", "xay", 0, true, 0, 1 };
+        yield return new object?[] { "[\\w-]", "a-b", 0, true, 0, 1 };
+    }
+
+    [Theory]
+    [MemberData(nameof(HybridSearchCases))]
+    public void HybridSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> HybridCountCases()
+    {
+        var arabicDigit = char.ConvertFromUtf32(0x660);
+        yield return new object?[] { "[\\da]", "a1b2", 3 };
+        yield return new object?[] { "[\\da]", "a" + arabicDigit + "b", 2 };
+        yield return new object?[] { "[^\\da]", "a-b", 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(HybridCountCases))]
+    public void HybridCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[\\da]+", "a1b", true)]
+    [InlineData("[\\da]+", "xb", false)]
+    public void HybridMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[\\da]+", "a1", true)]
+    [InlineData("[\\da]+", "a1b", false)]
+    public void HybridFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
 }

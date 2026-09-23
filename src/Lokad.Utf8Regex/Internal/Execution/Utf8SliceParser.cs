@@ -443,11 +443,13 @@ internal static class Utf8SliceParser
 
         // ASCII character classes, mirroring the pinned runtime parser:
         // literals (with `]`-first and `-`/POSIX-edge rules), ascending
-        // ranges (escapes allowed as bounds), and supported single-char
-        // escapes. Anything Unicode, shorthand, or structural (categories,
-        // hex/octal/control escapes, subtraction, reversed ranges) declines
-        // to null so legacy routing preserves exact behavior including
-        // construction failures. `[` followed by `:`, `.`, or `=` also
+        // ranges (escapes allowed as bounds), supported single-char
+        // escapes, and shorthand members (always members, never bounds).
+        // Anything Unicode, categorical, or structural (categories,
+        // hex/octal/control escapes, subtraction, reversed ranges,
+        // shorthand upper bounds) declines to null so legacy routing
+        // preserves exact behavior including construction failures.
+        // `[` followed by `:`, `.`, or `=` also
         // declines: those open POSIX, collating, or equivalence classes in
         // sibling flavors while BCL reads plain literals, and a shared
         // program cannot serve both readings.
@@ -498,6 +500,7 @@ internal static class Utf8SliceParser
             }
 
             var bits = new bool[128];
+            var memberBits = 0;
             var lowerBound = -1;
             var inRange = false;
             var firstChar = true;
@@ -517,7 +520,92 @@ internal static class Utf8SliceParser
                 if (character == '\\' && !AtEnd)
                 {
                     var escaped = _pattern[_position];
-                    if (escaped is 'd' or 'D' or 's' or 'S' or 'w' or 'W' or 'p' or 'P')
+                    if (escaped is 'd' or 'D' or 's' or 'S' or 'w' or 'W')
+                    {
+                        // Mixed-class shorthand members (BCL uniform rule):
+                        // a shorthand is always a member, never a bound; a
+                        // following dash stays literal through the existing
+                        // dash logic below. In upper-bound position (after
+                        // `X-`) BCL throws, so decline to legacy-exact.
+                        if (inRange)
+                        {
+                            return false;
+                        }
+
+                        Utf8SliceShorthand shorthand = escaped switch
+                        {
+                            'd' => Utf8SliceShorthand.Digit,
+                            'D' => Utf8SliceShorthand.NonDigit,
+                            'w' => Utf8SliceShorthand.Word,
+                            'W' => Utf8SliceShorthand.NonWord,
+                            's' => Utf8SliceShorthand.Space,
+                            _ => Utf8SliceShorthand.NonSpace,
+                        };
+                        memberBits |= 1 << (int)shorthand;
+                        switch (escaped)
+                        {
+                            case 'd':
+                                for (var digit = '0'; digit <= '9'; digit++)
+                                {
+                                    bits[digit] = true;
+                                }
+
+                                break;
+                            case 'D':
+                                for (var nonDigit = 0; nonDigit < 128; nonDigit++)
+                                {
+                                    if (nonDigit < '0' || nonDigit > '9')
+                                    {
+                                        bits[nonDigit] = true;
+                                    }
+                                }
+
+                                break;
+                            case 'w':
+                                for (var word = 0; word < 128; word++)
+                                {
+                                    if ((word >= '0' && word <= '9') || (word >= 'A' && word <= 'Z') || word == '_' || (word >= 'a' && word <= 'z'))
+                                    {
+                                        bits[word] = true;
+                                    }
+                                }
+
+                                break;
+                            case 'W':
+                                for (var nonWord = 0; nonWord < 128; nonWord++)
+                                {
+                                    if ((nonWord < '0' || nonWord > '9') && (nonWord < 'A' || nonWord > 'Z') && nonWord != '_' && (nonWord < 'a' || nonWord > 'z'))
+                                    {
+                                        bits[nonWord] = true;
+                                    }
+                                }
+
+                                break;
+                            case 's':
+                                for (var space = 0x09; space <= 0x0D; space++)
+                                {
+                                    bits[space] = true;
+                                }
+
+                                bits[0x20] = true;
+                                break;
+                            default:
+                                for (var nonSpace = 0; nonSpace < 128; nonSpace++)
+                                {
+                                    if ((nonSpace < 0x09 || nonSpace > 0x0D) && nonSpace != 0x20)
+                                    {
+                                        bits[nonSpace] = true;
+                                    }
+                                }
+
+                                break;
+                        }
+
+                        _position++;
+                        continue;
+                    }
+
+                    if (escaped is 'p' or 'P')
                     {
                         return false;
                     }
@@ -666,7 +754,27 @@ internal static class Utf8SliceParser
                 }
             }
 
-            node = new Utf8SliceNode.SetNode(mask, negated);
+            Utf8SliceShorthand[] members;
+            if (memberBits == 0)
+            {
+                members = [];
+            }
+            else
+            {
+                var collected = new Utf8SliceShorthand[6];
+                var collectedCount = 0;
+                for (var bit = 0; bit < 6; bit++)
+                {
+                    if ((memberBits & (1 << bit)) != 0)
+                    {
+                        collected[collectedCount++] = (Utf8SliceShorthand)bit;
+                    }
+                }
+
+                members = collected[..collectedCount];
+            }
+
+            node = new Utf8SliceNode.SetNode(mask, negated, members);
             return true;
         }
 

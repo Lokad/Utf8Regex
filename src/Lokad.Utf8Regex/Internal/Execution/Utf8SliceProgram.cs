@@ -50,7 +50,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record LiteralNode(byte Value) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
-    internal sealed record SetNode(byte[] Mask16, bool Negated) : Utf8SliceNode(Utf8SliceNodeKind.Set)
+    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members) : Utf8SliceNode(Utf8SliceNodeKind.Set)
     {
         internal bool Matches(byte value)
         {
@@ -101,6 +101,13 @@ internal enum Utf8SliceInstructionKind : byte
     Fail = 16,
     Lookbehind = 17,
     Commit = 18,
+    Hybrid = 19,
+}
+
+/// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
+internal static class Utf8SliceHybridMembers
+{
+    internal const int NegatedBits = 42;
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -245,6 +252,20 @@ internal static class Utf8SliceLowerer
             if (instruction.Kind == Utf8SliceInstructionKind.Shorthand)
             {
                 shorthand = true;
+            }
+
+            // Mixed classes always carry Unicode shorthand semantics (even
+            // digit-only mixes match non-ASCII digits), so they decline
+            // ASCII-scoped consumers. Astral inputs decline when the class
+            // can match astral scalars whole while the oracle matches
+            // halves: negated hybrids, or any negated-shorthand member.
+            if (instruction.Kind == Utf8SliceInstructionKind.Hybrid)
+            {
+                shorthand = true;
+                if (instruction.B != 0 || (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0)
+                {
+                    astral = true;
+                }
             }
         }
 
@@ -404,7 +425,25 @@ internal static class Utf8SliceLowerer
 
                     var maskIndex = SetMasks.Count;
                     SetMasks.Add(set.Mask16);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, 0, 0));
+                    if (set.Members.Length == 0)
+                    {
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, 0, 0));
+                    }
+                    else
+                    {
+                        // Mixed classes keep shorthand members alongside the
+                        // ASCII mask: the mask (with shorthand ASCII parts
+                        // folded in) decides ASCII bytes, the members decide
+                        // non-ASCII scalars with full Unicode categories.
+                        var memberMask = 0;
+                        foreach (var member in set.Members)
+                        {
+                            memberMask |= 1 << (int)member;
+                        }
+
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Hybrid, maskIndex, set.Negated ? 1 : 0, memberMask, 0));
+                    }
+
                     break;
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)

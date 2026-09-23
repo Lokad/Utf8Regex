@@ -44,7 +44,7 @@ public sealed class Utf8SliceRunnerTests
             }
         }
 
-        return new Utf8SliceNode.SetNode(mask, false);
+        return new Utf8SliceNode.SetNode(mask, false, []);
     }
 
     private static Utf8SliceNode Plus(Utf8SliceNode body)
