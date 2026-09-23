@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:17:21.7280122+00:00`
-- Snapshot SHA-256: `80A098442E3C501CA9331FC8E036F929CBA3A9B8AF36AD23E90061D96FAC0A24`
+- Generated: `2026-09-23T04:18:41.1815102+00:00`
+- Snapshot SHA-256: `AD3059EAFBD00B6D792FEE3D60C9DB99E74D95757DF2ECC1ED21CAE9C9914BAF`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `40` managed faster, `0` equivalent, `3` CPython faster, `17` inconclusive, `30` unqualified
+- Public Status: `42` managed faster, `0` equivalent, `3` CPython faster, `19` inconclusive, `26` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -150,10 +150,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `zero-width/count` | `Count` | ScalarResult | Managed faster | 17.161 us | 591.391 us | 0.03x | 720.494 us | 1,814.579 us | 34,840 B |
 | `count/zero` | `Count` | ScalarResult | Inconclusive | 1.272 us | 49.590 us | 0.03x | 76.829 us | 1.133 us | 17,432 B |
 | `count/one` | `Count` | ScalarResult | Managed faster | 0.171 us | 1.097 us | 0.16x | 2.416 us | 0.705 us | 0 B |
-| `count/empty-progression` | `Count` | Historical | Unqualified | 308.865 us | 255.695 us | 1.21x | 254.161 us | 67.819 us | 430,312 B |
-| `count/from-offset` | `CountFromOffset` | Historical | Unqualified | 53.194 us | 29.516 us | 1.80x | 30.059 us | 20.884 us | 8,216 B |
-| `findall/zero-strings` | `FindAllStrings` | Historical | Unqualified | 3.000 us | 75.133 us | 0.04x | 76.976 us | 1.174 us | 17,456 B |
-| `findall/one-strings` | `FindAllStrings` | Historical | Unqualified | 2.142 us | 31.393 us | 0.07x | 32.008 us | 0.791 us | 8,288 B |
+| `count/empty-progression` | `Count` | ScalarResult | Inconclusive | 168.993 us | 186.195 us | 0.89x | 254.161 us | 67.819 us | 430,312 B |
+| `count/from-offset` | `CountFromOffset` | ScalarResult | Inconclusive | 31.282 us | 25.875 us | 1.22x | 30.059 us | 20.884 us | 8,216 B |
+| `findall/zero-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 1.959 us | 48.675 us | 0.04x | 76.976 us | 1.174 us | 17,456 B |
+| `findall/one-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 1.413 us | 20.913 us | 0.07x | 32.008 us | 0.791 us | 8,288 B |
 | `findall/from-offset-strings` | `FindAllStringsFromOffset` | Historical | Unqualified | 7.744 us | 13.640 us | 0.57x | 14.357 us | 55.401 us | 4,120 B |
 | `findall/empty-progression-strings` | `FindAllStrings` | Historical | Unqualified | 1.669 us | 32.332 us | 0.05x | 32.750 us | 48.585 us | 4,128 B |
 | `findall/optional-capture-strings` | `FindAllStrings` | Historical | Unqualified | 52.122 us | 45.246 us | 1.15x | 45.175 us | 100.983 us | 15,088 B |
