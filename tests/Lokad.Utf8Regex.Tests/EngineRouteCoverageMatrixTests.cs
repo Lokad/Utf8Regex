@@ -55,12 +55,13 @@ public sealed class EngineRouteCoverageMatrixTests
         yield return new object?[] { "repeated-capture", "(a)+", RegexOptions.CultureInvariant, "aaa", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "named-capture", "(?<word>\\w+)", RegexOptions.CultureInvariant, "hello", "FallbackRegex", "unsupported_loop", true, true };
         // Options and modes: RightToLeft literals stay native; culture-sensitive and non-default modes fall back (owner R03; adapters own their models in R04).
+        // R03 dot slice: singleline-dot keeps its FallbackRegex construction kind but IsMatch/Count run verifier-free on the owned slice (ASCII input serves).
         yield return new object?[] { "right-to-left", "abc", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabcxx", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "ignorecase-invariant", "abc", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "AsciiLiteralIgnoreCase", null, true, true };
         yield return new object?[] { "ignorecase-culture", "abc", RegexOptions.IgnoreCase, "xxABCxx", "FallbackRegex", "culture_sensitive_ignore_case", true, true };
         yield return new object?[] { "explicit-capture", "(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "ExactAsciiLiteral", null, true, true };
         yield return new object?[] { "whitespace-mode", "a b c", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "abc", "FallbackRegex", "unsupported_pattern", true, true };
-        yield return new object?[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", false, false };
+        yield return new object?[] { "singleline-dot", "a.*b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "FallbackRegex", "unsupported_loop", true, true };
         yield return new object?[] { "ecmascript", "abc", RegexOptions.ECMAScript, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
         yield return new object?[] { "nonbacktracking", "abc", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, "xxabcxx", "FallbackRegex", "unsupported_options", true, true };
         // Empty-match and astral edge cases (owner R03).

@@ -11,7 +11,7 @@ public sealed class Pcre2LeadingDotStarLiteralIsMatchCompilerTests
         var regex = new Utf8Pcre2Regex(@".*(ss)");
 
         Assert.Equal(
-            "IsMatch=Pcre2LeadingDotStarLiteralIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            "IsMatch=Pcre2LeadingDotStarLiteralIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("Essential services"u8));
         Assert.False(regex.IsMatch("A regular service"u8));

@@ -133,7 +133,7 @@ public sealed partial class Utf8Regex
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // slice. R02b construction admission caps the pattern length and lowered
+        // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
         // instruction count; over-cap shapes decline here to legacy routing.
         _sliceProgram = preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !RequiresCultureSensitiveFallback
             ? Utf8SliceParser.TryParse(pattern, options)
@@ -635,7 +635,7 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceIsMatch(input, _sliceProgram, cancellationToken);
         }
@@ -775,7 +775,7 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -843,7 +843,7 @@ public sealed partial class Utf8Regex
 
     private int CountCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceCount(input, _sliceProgram, cancellationToken);
         }
@@ -1116,7 +1116,7 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceCountFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1184,7 +1184,7 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatch(input, _sliceProgram, cancellationToken);
         }
@@ -1316,7 +1316,7 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1367,7 +1367,7 @@ public sealed partial class Utf8Regex
     private Utf8MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchDetailed(input, _sliceProgram, cancellationToken);
         }
@@ -1446,7 +1446,7 @@ public sealed partial class Utf8Regex
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         var decoded = analysis.GetDecodedString();
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchDetailedFromUnit(input, _sliceProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
         }
@@ -1656,7 +1656,7 @@ public sealed partial class Utf8Regex
             return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceEnumerateMatches(input, _sliceProgram, CancellationToken.None)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -1682,7 +1682,7 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceEnumerateMatches(input, _sliceProgram, cancellationToken)
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -2076,7 +2076,7 @@ public sealed partial class Utf8Regex
                 Encoding.UTF8.GetString(replacementPatternUtf8)));
         }
 
-        if (_sliceProgram is not null)
+        if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceReplace(
                 input,

@@ -183,6 +183,128 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Throws<OperationCanceledException>(() => regex.Search(Utf8("xxaaabbyy"), 0, canceled.Token));
         Assert.Throws<OperationCanceledException>(() => regex.Count(Utf8("xxaaabbyy"), 0, canceled.Token));
     }
+
+    // R03 dots: the translator rewrites every `.` into a scalar-exact
+    // lookahead plus BMP/surrogate-pair alternation, which the core slice
+    // parser declines (classes, lookarounds, non-capturing groups). Dot
+    // shapes therefore never produce an owned slice program; scalar
+    // parity rides the translated pattern instead. These pins lock both
+    // the decline and the CPython ground truths (verified against
+    // CPython 3.13.2 `re`: scalar dots, whole-scalar counts, DOTALL).
+    public static IEnumerable<object?[]> DotShapes()
+    {
+        yield return new object?[] { "(a.c)+" };
+        yield return new object?[] { "a.c" };
+        yield return new object?[] { "a.*b" };
+        yield return new object?[] { ".." };
+        yield return new object?[] { ".*" };
+        yield return new object?[] { "x*|y." };
+        yield return new object?[] { "a|.*" };
+    }
+
+    [Theory]
+    [MemberData(nameof(DotShapes))]
+    public void DotShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> DotSearchCases()
+    {
+        yield return new object?[] { "(a.c)+", "xa\U0001F600c", 0, true, 1, 5 };
+        yield return new object?[] { "a.c", "xa\U0001F600c", 0, true, 1, 5 };
+        yield return new object?[] { "a.*b", "a\U0001F600b", 0, true, 0, 4 };
+        yield return new object?[] { "..", "\U0001F600\U0001F600", 0, true, 0, 4 };
+        yield return new object?[] { "..", "\U0001F600", 0, false, 0, 0 };
+        yield return new object?[] { "(a.c)+", "xxabcaycyy", 0, true, 2, 8 };
+    }
+
+    [Theory]
+    [MemberData(nameof(DotSearchCases))]
+    public void DotSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> DotCountCases()
+    {
+        yield return new object?[] { "(a.c)+", "xa\U0001F600c", 0, 1 };
+        yield return new object?[] { "a.*b", "a\U0001F600b", 0, 1 };
+        yield return new object?[] { "(a.c)+", "abc ayc", 0, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(DotCountCases))]
+    public void DotCountMatchesCpython(string pattern, string inputText, int startByte, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), startByte));
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void DotStarCountMatchesCpython()
+    {
+        Assert.Equal(2, new Utf8PythonRegex(".*", PythonReCompileOptions.None).Count(Utf8("\U0001F600"), 0));
+    }
+
+    [Theory]
+    [InlineData("a.c", "a\U0001F600c", true)]
+    [InlineData("(a.c)+", "xa\U0001F600c", false)]
+    [InlineData("a.*b", "a\U0001F600b", true)]
+    public void DotMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("a.c", "a\U0001F600c", true)]
+    [InlineData("..", "\U0001F600", false)]
+    [InlineData("a.*b", "a\U0001F600b", true)]
+    public void DotFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("a.*b", "xxa\nbzz", false)]
+    [InlineData("a.*b", "xxa\rbzz", true)]
+    public void DotNewlineSemanticsMatchCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Search(Utf8(inputText), 0).Success);
+    }
+
+    [Fact]
+    public void DotAllSearchMatchesNewline()
+    {
+        var regex = new Utf8PythonRegex("a.*b", PythonReCompileOptions.DotAll);
+        Assert.False(regex.DebugUsesOwnedSlice);
+        Assert.True(regex.Search(Utf8("xxa\nbzz"), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
+    }
 }
 
 

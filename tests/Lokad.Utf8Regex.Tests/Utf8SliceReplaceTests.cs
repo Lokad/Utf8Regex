@@ -45,6 +45,16 @@ public sealed class Utf8SliceReplaceTests
         AssertReplaceParity(pattern, inputText, replacement);
     }
 
+    [Theory]
+    [InlineData("(a.*b)", "xxaa1bbyy", "<$1>")]
+    [InlineData("a(.*)b", "xa1bxa22by", "<$1>")]
+    [InlineData("(a.c)+", "xxabcayc", "[$1]")]
+    [InlineData(".*", "ab", "<$&>")]
+    public void OwnedDotReplaceMatchesOracle(string pattern, string inputText, string replacement)
+    {
+        AssertReplaceParity(pattern, inputText, replacement);
+    }
+
     [Fact]
     public void OwnedReplaceNeverConstructsBclFallback()
     {

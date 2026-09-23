@@ -3,8 +3,9 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
-/// literals, concatenation, ordered alternation, greedy/lazy repetition, and
-/// numbered groups. Anything else (classes, dot, anchors, boundaries,
+/// literals, concatenation, ordered alternation, greedy/lazy repetition,
+/// numbered groups, and (R03) dots with Singleline-scoped newline matching.
+/// Anything else (classes, anchors, boundaries,
 /// lookarounds, backreferences, named/non-capturing groups, shorthand escapes,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
@@ -56,7 +57,7 @@ internal static class Utf8SliceParser
             }
         }
 
-        var parser = new Parser(pattern);
+        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0);
         if (!parser.TryParseAlternation(0, out var root) || parser.Position != pattern.Length)
         {
             return null;
@@ -69,12 +70,14 @@ internal static class Utf8SliceParser
     private sealed class Parser
     {
         private readonly string _pattern;
+        private readonly bool _matchNewline;
         private int _position;
         private int _groups;
 
-        internal Parser(string pattern)
+        internal Parser(string pattern, bool matchNewline)
         {
             _pattern = pattern;
+            _matchNewline = matchNewline;
         }
 
         internal int Position => _position;
@@ -296,8 +299,11 @@ internal static class Utf8SliceParser
                 case ']':
                 case '^':
                 case '$':
-                case '.':
                     return false;
+                case '.':
+                    _position++;
+                    node = new Utf8SliceNode.DotNode(_matchNewline);
+                    return true;
                 default:
                     _position++;
                     node = new Utf8SliceNode.LiteralNode((byte)character);

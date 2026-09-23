@@ -108,7 +108,13 @@ public sealed class Pcre2AsciiOrderedLiteralWindowCompilerTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("Holmes.{0,25}?Watson|Watson.{0,25}?Holmes")
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        // R03 dot slice: unbounded dot-star Count runs the shared
+        // slice runner with identical results; the window analyzer
+        // still rejects this shape for its own program.
+        Assert.IsType<Pcre2SliceDirectProgram>(
+            new Utf8Pcre2Regex("Holmes.*Watson|Watson.*Holmes")
+                .DebugCompiledProgram.Operations.Count);
+        Assert.IsNotType<Pcre2AsciiOrderedLiteralWindowDirectProgram>(
             new Utf8Pcre2Regex("Holmes.*Watson|Watson.*Holmes")
                 .DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(

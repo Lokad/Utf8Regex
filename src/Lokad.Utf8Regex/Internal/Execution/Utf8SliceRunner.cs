@@ -643,6 +643,45 @@ internal static class Utf8SliceRunner
                     captureEnds[instruction.A] = inputIndex;
                     programIndex++;
                     break;
+                case Utf8SliceInstructionKind.Dot:
+                    // Dots consume one scalar: ASCII and BMP leads take
+                    // their scalar, astral leads take all four bytes.
+                    // Continuation bytes fail the attempt, so byte-stepping
+                    // drivers cannot report unaligned starts. Inputs are
+                    // validated before execution, hence lead widths stay
+                    // in bounds without revalidation here. Unit-exact
+                    // consumers decline astral inputs at routing, where
+                    // scalar and unit semantics diverge.
+                    if (inputIndex < input.Length &&
+                        (instruction.A != 0 || input[inputIndex] != (byte)'\n') &&
+                        (input[inputIndex] & 0xC0) != 0x80)
+                    {
+                        var lead = input[inputIndex];
+                        if (lead < 0x80)
+                        {
+                            inputIndex++;
+                        }
+                        else if (lead < 0xE0)
+                        {
+                            inputIndex += 2;
+                        }
+                        else if (lead < 0xF0)
+                        {
+                            inputIndex += 3;
+                        }
+                        else
+                        {
+                            inputIndex += 4;
+                        }
+
+                        programIndex++;
+                    }
+                    else
+                    {
+                        failed = true;
+                    }
+
+                    break;
                 case Utf8SliceInstructionKind.Accept:
                     if (requireNonEmpty && inputIndex == start)
                     {

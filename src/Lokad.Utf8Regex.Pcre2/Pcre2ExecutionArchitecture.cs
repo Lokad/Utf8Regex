@@ -815,10 +815,14 @@ internal static class Pcre2CompiledProgramOverlay
     // EndAnchored, FirstLine), greediness inversion (Ungreedy),
     // capture renumbering (NoAutoCapture), and unreviewed case
     // folding (Caseless), even though the core parser currently
-    // declines the latter families on its own. Multiline, DotAll,
-    // DollarEndOnly, and Ucp are inert: no anchor, dot, class, or
+    // declines the latter families on its own. Multiline,
+    // DollarEndOnly, and Ucp are inert: no anchor, class, or
     // boundary construct can appear in a core slice program, so they
-    // cannot change slice-shape semantics. Extended and ExtendedMore
+    // cannot change slice-shape semantics. DotAll is folded into the
+    // core program newline rule at construction, so it needs no gate
+    // here. Dots need a newline-convention rule:
+    // only Default (line feed) and Lf exclude exactly newline like the
+    // shared runner, so every other convention declines. Extended and ExtendedMore
     // decline through the core parser, which rejects
     // IgnorePatternWhitespace.
     internal static Pcre2CompiledProgram WithSlice(
@@ -826,7 +830,9 @@ internal static class Pcre2CompiledProgramOverlay
     {
         if (program.PrimaryUtf8 is not Pcre2Utf8ProgramSlot primary ||
             primary.Regex.Inspection.OwnedSliceProgram is not { } sliceProgram ||
-            (program.Request.Options & SliceIncompatibleOptions) != 0)
+            (program.Request.Options & SliceIncompatibleOptions) != 0 ||
+            (program.Request.Settings.Newline is not Pcre2NewlineConvention.Default &&
+             program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf))
         {
             return program;
         }

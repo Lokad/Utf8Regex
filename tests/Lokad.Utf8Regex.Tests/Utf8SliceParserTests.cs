@@ -5,7 +5,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>R02a slice recognition: ASCII literals, concatenation, ordered
 /// alternation, greedy/lazy repetition, and numbered groups lower to owned
-/// programs; every other construct or sensitive option declines so existing
+/// programs (R03 adds dots with Singleline-scoped newline matching); every
+/// other construct or sensitive option declines so existing
 /// routes preserve behavior including construction failures.</summary>
 public sealed class Utf8SliceParserTests
 {
@@ -22,6 +23,9 @@ public sealed class Utf8SliceParserTests
     [InlineData("()", 1)]
     [InlineData(@"a\+b", 0)]
     [InlineData("a{0}b", 0)]
+    [InlineData("a.c", 0)]
+    [InlineData("a.*b", 0)]
+    [InlineData("(a.c)+", 1)]
     public void SupportedShapesLower(string pattern, int expectedGroups)
     {
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -33,7 +37,6 @@ public sealed class Utf8SliceParserTests
 
     [Theory]
     [InlineData("[a-z]+")]
-    [InlineData("a.c")]
     [InlineData("^ab")]
     [InlineData("ab$")]
     [InlineData(@"\bword")]

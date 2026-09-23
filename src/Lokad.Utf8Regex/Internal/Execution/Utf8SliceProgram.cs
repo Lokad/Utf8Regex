@@ -2,7 +2,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
+/// sets, dots, and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
     Empty = 0,
@@ -12,6 +12,7 @@ internal enum Utf8SliceNodeKind : byte
     Alternation = 4,
     Repeat = 5,
     Capture = 6,
+    Dot = 7,
 }
 
 /// <summary>Immutable tree node for the owned R02a slice.</summary>
@@ -36,6 +37,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record RepeatNode(Utf8SliceNode Body, int Minimum, int Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat);
 
     internal sealed record CaptureNode(int Slot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
+
+    internal sealed record DotNode(bool MatchNewline) : Utf8SliceNode(Utf8SliceNodeKind.Dot);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -52,6 +55,7 @@ internal enum Utf8SliceInstructionKind : byte
     CaptureStart = 8,
     CaptureEnd = 9,
     Accept = 10,
+    Dot = 11,
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -76,18 +80,36 @@ internal readonly struct Utf8SliceInstruction
 /// repeat count, and capture slot count. All mutable run state is invocation-owned.</summary>
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput)
     {
         Instructions = instructions;
         SetMasks = setMasks;
         RepeatCount = repeatCount;
         GroupCount = groupCount;
+        RequiresAstralFreeInput = requiresAstralFreeInput;
     }
 
     internal Utf8SliceInstruction[] Instructions { get; }
     internal byte[][] SetMasks { get; }
     internal int RepeatCount { get; }
     internal int GroupCount { get; }
+    // R03 dot marker: the shared runner consumes one whole scalar per dot
+    // while the .NET oracle matches one UTF-16 unit per dot. Programs
+    // containing a dot set this marker; routing declines astral inputs for
+    // them so unit-exact shapes keep oracle parity. ASCII and BMP inputs
+    // stay owned: their units are scalars, so both semantics agree. Other
+    // shapes never set this: literals, concatenation, alternation, repeats,
+    // and captures are encoding-indifferent, so their routes skip the input
+    // scan below entirely.
+    internal bool RequiresAstralFreeInput { get; }
+
+    // Routing gate: true unless this program needs astral-free input and
+    // the subject carries astral lead bytes (which validated inputs hold only
+    // as four-byte scalar starts). Vector-scanned; BMP and ASCII pass through.
+    internal bool ServesInput(ReadOnlySpan<byte> input)
+    {
+        return !RequiresAstralFreeInput || input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0;
+    }
 }
 
 /// <summary>Lowers immutable slice trees to flat programs with patched jumps.</summary>
@@ -109,11 +131,22 @@ internal static class Utf8SliceLowerer
         }
 
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
+        var requiresAstralFreeInput = false;
+        foreach (var instruction in lowerer.Instructions)
+        {
+            if (instruction.Kind == Utf8SliceInstructionKind.Dot)
+            {
+                requiresAstralFreeInput = true;
+                break;
+            }
+        }
+
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
             lowerer.SetMasks.ToArray(),
             lowerer.RepeatCount,
-            lowerer.GroupCount);
+            lowerer.GroupCount,
+            requiresAstralFreeInput);
     }
 
     private sealed class Lowering
@@ -224,6 +257,9 @@ internal static class Utf8SliceLowerer
                     Instructions[repeatIndex] = new Utf8SliceInstruction(
                         repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy,
                         exitIndex, repeatId, repeat.Minimum, repeat.Maximum);
+                    break;
+                case Utf8SliceNode.DotNode dot:
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Dot, dot.MatchNewline ? 1 : 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)

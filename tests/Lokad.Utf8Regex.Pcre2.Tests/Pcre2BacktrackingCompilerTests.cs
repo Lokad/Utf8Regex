@@ -28,8 +28,6 @@ public sealed class Pcre2BacktrackingCompilerTests
     }
 
     [Theory]
-    [InlineData("a.*b", "a1b2b", "a1b2b")]
-    [InlineData("a.*?b", "a1b2b", "a1b")]
     [InlineData("a{2,4}a", "aaaaa", "aaaaa")]
     [InlineData("(?:ab){2,}c", "xabababc", "abababc")]
     [InlineData("(?:ab)?b", "abb", "abb")]
@@ -46,6 +44,25 @@ public sealed class Pcre2BacktrackingCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    // R03 dot slice: greedy/lazy dot-star quantifier shapes run first-match
+    // Match on the shared slice runner with identical PCRE2-ordered results.
+    [Theory]
+    [InlineData("a.*b", "a1b2b", "a1b2b")]
+    [InlineData("a.*?b", "a1b2b", "a1b")]
+    public void DotQuantifiersComposeOnSlice(
+        string pattern,
+        string inputText,
+        string expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
+
+        Assert.True(match.Success);
+        Assert.Equal(expected, match.GetValueString());
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Theory]
