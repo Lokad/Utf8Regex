@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T00:49:51.1141053+00:00`
-- Snapshot SHA-256: `9404CD2803F063056DA0BA7CB3B16EF64A5EEB50273AC243220C6FD661D46410`
+- Generated: `2026-09-23T00:51:56.9176779+00:00`
+- Snapshot SHA-256: `37EFDB951CC298988ECA9E67B1B0C33CF76B09D76C8892DA9F9462EC29C21BF8`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `54` managed faster, `0` equivalent, `3` CPython faster, `19` inconclusive, `14` unqualified
+- Public Status: `56` managed faster, `0` equivalent, `4` CPython faster, `20` inconclusive, `10` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -177,7 +177,7 @@ Historical independent point columns were measured from source `434eb20d0007` on
 | `replacement/unmatched-template-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 18.599 us | 31.212 us | 0.59x | 42.461 us | 39.854 us | 3,344 B |
 | `replacement/limited-string` | `ReplaceStringLimited` | EagerMaterializedResult | Inconclusive | 0.656 us | 0.285 us | 2.28x | 1.044 us | 5.308 us | 12,576 B |
 | `replacement/empty-progression-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 6.421 us | 15.211 us | 0.42x | 19.918 us | 11.829 us | 1,792 B |
-| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | Historical | Unqualified | 95.306 us | 3,674.679 us | 0.03x | 3,685.979 us | 85.846 us | 219,928 B |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | EagerMaterializedResult | Managed faster | 57.526 us | 2,473.652 us | 0.02x | 3,685.979 us | 85.846 us | 219,928 B |
 
 ### Split
 
@@ -185,9 +185,9 @@ Historical independent point columns were measured from source `434eb20d0007` on
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `split/no-captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 113.835 us | 128.938 us | 0.84x | 170.070 us | 244.600 us | 269,640 B |
 | `split/captures` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 343.777 us | 153.759 us | 2.22x | 198.820 us | 787.500 us | 499,051 B |
-| `split/no-separator` | `SplitStrings` | Historical | Unqualified | 1.717 us | 24.903 us | 0.07x | 24.139 us | 5.103 us | 8,920 B |
-| `split/one-separator` | `SplitStrings` | Historical | Unqualified | 1.487 us | 11.635 us | 0.13x | 11.292 us | 2.912 us | 8,496 B |
-| `split/limited` | `SplitStringsLimited` | Historical | Unqualified | 1.795 us | 0.433 us | 4.14x | 1.035 us | 4.123 us | 12,152 B |
+| `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.844 us | 8.824 us | 0.10x | 24.139 us | 5.103 us | 8,920 B |
+| `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Managed faster | 0.837 us | 4.335 us | 0.19x | 11.292 us | 2.912 us | 8,496 B |
+| `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | CPython faster | 1.138 us | 0.381 us | 3.00x | 1.035 us | 4.123 us | 12,152 B |
 | `split/optional-capture` | `SplitStrings` | Historical | Unqualified | 81.467 us | 78.331 us | 1.04x | 79.448 us | 88.821 us | 182,032 B |
 | `split/zero-width` | `SplitStrings` | Historical | Unqualified | 12.142 us | 51.149 us | 0.24x | 51.780 us | 309.861 us | 48,656 B |
 | `split/unicode` | `SplitStrings` | Historical | Unqualified | 24.958 us | 30.147 us | 0.83x | 32.443 us | 53.266 us | 26,104 B |
