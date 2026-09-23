@@ -62,20 +62,24 @@ public sealed partial class Utf8Regex
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(pattern, options, matchTimeout)
+        : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
-        resourcePolicy.Validate(nameof(resourcePolicy));
-        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
-        {
-            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets are not supported here.");
-        }
-
-        ResourcePolicy = resourcePolicy;
     }
 
     /// <summary>Compiles an expression with the specified .NET regex options and match timeout.</summary>
     public Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
+        : this(pattern, options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
     {
+    }
+
+    /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
+    private Utf8Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+    {
+        if (checkPolicy)
+        {
+            ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
+        }
+
         Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
         ValidateOptions(options);
         Pattern = pattern;
@@ -200,6 +204,17 @@ public sealed partial class Utf8Regex
                     Utf8PrioritizedBooleanFamilyKind.AnchoredAsciiLeadingDigitsTail,
                 _ => Utf8PrioritizedBooleanFamilyKind.None,
             };
+        }
+
+        ResourcePolicy = resourcePolicy;
+    }
+
+    private static void ValidateCorePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
+    {
+        resourcePolicy.Validate(paramName);
+        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
+        {
+            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets are not supported here.");
         }
     }
 

@@ -32,6 +32,29 @@ public sealed class PythonReResourcePolicyTests
         var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
         Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
     }
+    [Fact]
+    public void FinitePolicyIsRejectedBeforePatternCompilation()
+    {
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul };
+        Assert.Throws<System.NotSupportedException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+    }
+
+    [Fact]
+    public void ZeroPolicyIsRejectedBeforePatternCompilation()
+    {
+        var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+    }
+
+    [Fact]
+    public void SpanPolicyIsRejectedBeforePatternDecoding()
+    {
+        var zero = new Utf8ResourcePolicy { MaxDepth = 0u };
+        var invalidBytes = new byte[] { 0x63, 0x61, 0x74, 0xFF };
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex(invalidBytes, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, zero));
+        Assert.Throws<System.ArgumentException>(() => new Utf8PythonRegex(invalidBytes, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited));
+    }
+
     [Theory]
     [InlineData("cat", "xxcatxx")]
     [InlineData(@"(\w+)@(\w+)", "mail me a@b.cd ok")]

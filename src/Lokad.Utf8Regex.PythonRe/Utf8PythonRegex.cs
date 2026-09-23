@@ -161,28 +161,38 @@ public sealed partial class Utf8PythonRegex
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(DecodeUtf8(patternUtf8, nameof(patternUtf8)), options, matchTimeout, resourcePolicy)
+        : this(DecodePatternAfterPolicyValidation(patternUtf8, resourcePolicy), options, matchTimeout, resourcePolicy)
     {
+    }
+
+    private static string DecodePatternAfterPolicyValidation(ReadOnlySpan<byte> patternUtf8, Utf8ResourcePolicy resourcePolicy)
+    {
+        ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
+        return DecodeUtf8(patternUtf8, nameof(patternUtf8));
     }
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options, timeout, and invocation resource policy.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero; use null for unlimited.</exception>
     /// <exception cref="NotSupportedException">A work, depth, working-bytes, or result-bytes budget is set. This profile enforces only match timeouts.</exception>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
-        : this(pattern, options, matchTimeout)
+        : this(pattern, options, matchTimeout, resourcePolicy, checkPolicy: true)
     {
-        resourcePolicy.Validate(nameof(resourcePolicy));
-        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
-        {
-            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets require the PCRE2 profile.");
-        }
-
-        ResourcePolicy = resourcePolicy;
     }
 
     /// <summary>Creates a Python-compatible expression from UTF-16 text with explicit options and timeout.</summary>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout)
+        : this(pattern, options, matchTimeout, Utf8ResourcePolicy.Unlimited, checkPolicy: false)
     {
+    }
+
+    /// <summary>Shared construction worker. Validates the policy before any parsing or preparation when requested.</summary>
+    private Utf8PythonRegex(string pattern, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, bool checkPolicy)
+    {
+        if (checkPolicy)
+        {
+            ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
+        }
+
         PythonReCompileValidator.Validate(pattern, options);
         Pattern = pattern;
         Options = options;
@@ -330,6 +340,17 @@ public sealed partial class Utf8PythonRegex
         _replaceBackend = _canUseZeroOffsetUtf8ValueFastPath
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
+
+        ResourcePolicy = resourcePolicy;
+    }
+
+    private static void ValidatePythonRePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
+    {
+        resourcePolicy.Validate(paramName);
+        if (resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue || resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue)
+        {
+            throw new NotSupportedException("This profile enforces only match timeouts; work, depth, and memory budgets require the PCRE2 profile.");
+        }
     }
 
     /// <summary>Gets or sets the timeout used by constructors that do not specify one.</summary>

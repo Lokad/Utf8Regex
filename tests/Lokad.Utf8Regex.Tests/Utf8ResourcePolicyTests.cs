@@ -43,6 +43,20 @@ public sealed class Utf8ResourcePolicyTests
         Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("cat", System.Text.RegularExpressions.RegexOptions.None, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, policy));
     }
     [Fact]
+    public void FinitePolicyIsRejectedBeforePatternCompilation()
+    {
+        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul };
+        Assert.Throws<System.NotSupportedException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
+    }
+
+    [Fact]
+    public void ZeroPolicyIsRejectedBeforePatternCompilation()
+    {
+        var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
+    }
+
+    [Fact]
     public void DefaultConstructionReportsUnlimitedPolicy()
     {
         // R06 compatibility decision: defaults stay unlimited (BCL-compatible);

@@ -62,6 +62,13 @@ public sealed class Pcre2ConstructorCompatibilityTests
     }
 
     [Fact]
+    public void ZeroPolicyIsRejectedBeforePatternCompilation()
+    {
+        var zero = new Utf8ResourcePolicy { MaxDepth = 0u };
+        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Pcre2Regex.Create("[invalid", Pcre2CompileOptions.None, default, zero, Utf8Pcre2Regex.DefaultMatchTimeout));
+    }
+
+    [Fact]
     public void UnlimitedFactoryMatchesDefaultConstruction()
     {
         var baseline = new Utf8Pcre2Regex("(a+)+b", Pcre2CompileOptions.None);
