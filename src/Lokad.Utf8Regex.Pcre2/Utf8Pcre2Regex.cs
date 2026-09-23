@@ -32,16 +32,19 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Compiles a PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
+    /// <remarks>Policy-based construction is a named factory rather than a constructor overload so
+    /// that legacy <c>new</c> calls with bare <c>default</c> settings or limits keep binding the
+    /// <see cref="Utf8Pcre2ExecutionLimits"/> constructor overload unambiguously.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
     /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
-    public Utf8Pcre2Regex(
+    public static Utf8Pcre2Regex Create(
         string pattern,
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings,
         Utf8ResourcePolicy resourcePolicy,
         TimeSpan matchTimeout)
-        : this(pattern, options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout)
     {
+        return new Utf8Pcre2Regex(pattern, options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout);
     }
 
     /// <summary>Compiles a PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
@@ -143,16 +146,21 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
+    /// <remarks>The policy is validated before the UTF-8 pattern bytes are decoded. Policy-based
+    /// construction is a named factory rather than a constructor overload; see
+    /// <see cref="Create(string, Pcre2CompileOptions, Utf8Pcre2CompileSettings, Utf8ResourcePolicy, TimeSpan)"/>.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
     /// <exception cref="NotSupportedException">A result-bytes budget is set.</exception>
-    public Utf8Pcre2Regex(
+    /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8.</exception>
+    public static Utf8Pcre2Regex Create(
         ReadOnlySpan<byte> patternUtf8,
         Pcre2CompileOptions options,
         Utf8Pcre2CompileSettings compileSettings,
         Utf8ResourcePolicy resourcePolicy,
         TimeSpan matchTimeout)
-        : this(DecodeValidatedUtf8(patternUtf8), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout)
     {
+        var defaultExecutionLimits = ToExecutionLimits(resourcePolicy);
+        return new Utf8Pcre2Regex(DecodeValidatedUtf8(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
     }
 
     /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, execution limits, and timeout.</summary>
