@@ -149,7 +149,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -160,12 +160,13 @@ internal sealed class Utf8SliceProgram
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
         Assertions = assertions;
         HasNonFixedLookbehind = hasNonFixedLookbehind;
+        GroupNames = groupNames;
+        HasMixedNamedGroups = hasMixedNamedGroups;
         OrdinalGroupNumbers = new int[groupCount + 1];
-        OrdinalGroupNames = new string[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
             OrdinalGroupNumbers[group] = group;
-            OrdinalGroupNames[group] = ((uint)group).ToString();
+
         }
     }
 
@@ -175,8 +176,9 @@ internal sealed class Utf8SliceProgram
     internal int GroupCount { get; }
     internal Utf8SliceAssertion[] Assertions { get; }
     internal bool HasNonFixedLookbehind { get; }
+    internal bool HasMixedNamedGroups { get; }
     internal int[] OrdinalGroupNumbers { get; }
-    internal string[] OrdinalGroupNames { get; }
+    internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
     // scalar per dot while the .NET oracle matches one UTF-16 unit per dot,
     // and negated ASCII classes consume whole non-ASCII scalars while the
@@ -219,9 +221,9 @@ internal static class Utf8SliceLowerer
     // to null and callers keep legacy routing.
     internal const int MaxInstructions = 1048576;
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames)
     {
-        var lowerer = new Lowering();
+        var lowerer = new Lowering(groupNames);
         if (!lowerer.EmitNode(root))
         {
             return null;
@@ -302,6 +304,38 @@ internal static class Utf8SliceLowerer
             }
         }
 
+        // Hand-built trees (tests, assertion bodies without renumbering
+        // context) carry no names; ordinals are BCL-exact for them since
+        // only the parser admits named shapes, always with real names.
+        var resolvedNames = groupNames;
+        if (resolvedNames is null)
+        {
+            resolvedNames = new string[lowerer.GroupCount + 1];
+            for (var number = 0; number <= lowerer.GroupCount; number++)
+            {
+                resolvedNames[number] = ((uint)number).ToString();
+            }
+        }
+
+        // Mixed named/unnamed shapes number differently across oracles
+        // (BCL unnamed-first vs positional), so consumers with positional
+        // native numbering decline them. All-digit spellings can never be
+        // names (explicit numbers decline at parse), so a name matching
+        // its slot number is exactly an unnamed group.
+        var hasUnnamedGroups = false;
+        var hasNamedGroups = false;
+        for (var number = 1; number < resolvedNames.Length; number++)
+        {
+            if (resolvedNames[number] == number.ToString())
+            {
+                hasUnnamedGroups = true;
+            }
+            else
+            {
+                hasNamedGroups = true;
+            }
+        }
+
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
             lowerer.SetMasks.ToArray(),
@@ -311,7 +345,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             assertions,
-            hasNonFixedLookbehind);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups);
     }
 
     private sealed class Lowering
@@ -321,6 +355,12 @@ internal static class Utf8SliceLowerer
         internal int RepeatCount;
         internal int GroupCount;
         internal readonly List<Utf8SliceAssertion> Assertions = new();
+        internal readonly string[]? GroupNames;
+
+        internal Lowering(string[]? groupNames)
+        {
+            GroupNames = groupNames;
+        }
 
         internal void Emit(Utf8SliceInstruction instruction)
         {
@@ -578,7 +618,7 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     {
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body);
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames);
                         if (body is null)
                         {
                             return false;

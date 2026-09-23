@@ -9,6 +9,9 @@ public sealed class Utf8RegexMatchGroupDiffTests
     [InlineData(@"(\x30\x31\x32)", "012", RegexOptions.None)]
     [InlineData(@"(a)(b)?", "xab ay", RegexOptions.None)]
     [InlineData(@"(?<word>abc)(?<digit>\d)", "xxabc1yy", RegexOptions.None)]
+    [InlineData(@"(?<b>a)(c)+", "xaccy", RegexOptions.CultureInvariant)]
+    [InlineData(@"(?<a>x)(b)(?<c>y)", "xby", RegexOptions.CultureInvariant)]
+    [InlineData(@"((?<a>x)+)", "xx", RegexOptions.CultureInvariant)]
     public void MatchDetailedMatchesRuntimeForCuratedGroupCases(string pattern, string input, RegexOptions options)
     {
         RegexParityContext.Create(pattern, input, options).AssertDetailedMatchGroupParity();

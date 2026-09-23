@@ -830,7 +830,9 @@ internal static class Pcre2CompiledProgramOverlay
     // while the native shorthands stay ASCII-scoped. Variable-length
     // lookbehind declines because native PCRE2 rejects it at compile time
     // while the shared runner would match (fixed-length lookbehind agrees
-    // on case-sensitive ASCII shapes). Extended and ExtendedMore
+    // on case-sensitive ASCII shapes). Mixed named/unnamed shapes decline
+    // because native PCRE2 numbers captures positionally while BCL numbers
+    // unnamed groups first (all-named shapes agree). Extended and ExtendedMore
     // decline through the core parser, which rejects
     // IgnorePatternWhitespace.
     internal static Pcre2CompiledProgram WithSlice(
@@ -843,7 +845,8 @@ internal static class Pcre2CompiledProgramOverlay
              program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
             sliceProgram.RequiresUnicodeWordBoundary ||
             sliceProgram.RequiresUnicodeShorthand ||
-            sliceProgram.HasNonFixedLookbehind)
+            sliceProgram.HasNonFixedLookbehind ||
+            sliceProgram.HasMixedNamedGroups)
         {
             return program;
         }

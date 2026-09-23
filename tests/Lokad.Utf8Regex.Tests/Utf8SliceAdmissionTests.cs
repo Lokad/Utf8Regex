@@ -51,7 +51,7 @@ public sealed class Utf8SliceAdmissionTests
             branches[index] = new Utf8SliceNode[] { shared };
         }
 
-        Assert.Null(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches)));
+        Assert.Null(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches), null));
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class Utf8SliceAdmissionTests
             branches[index] = new Utf8SliceNode[] { shared };
         }
 
-        Assert.NotNull(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches)));
+        Assert.NotNull(Utf8SliceLowerer.Lower(new Utf8SliceNode.AlternationNode(branches), null));
     }
 
     private static string RepeatSliceShape(int repetitions)

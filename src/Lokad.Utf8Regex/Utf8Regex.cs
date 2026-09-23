@@ -280,7 +280,7 @@ public sealed partial class Utf8Regex
 
     private int[] _groupNumbers => _sliceProgram is not null ? _sliceProgram.OrdinalGroupNumbers : _program.GroupNumbers.Value;
 
-    private string[] _groupNames => _sliceProgram is not null ? _sliceProgram.OrdinalGroupNames : _program.GroupNames.Value;
+    private string[] _groupNames => _sliceProgram is not null ? _sliceProgram.GroupNames : _program.GroupNames.Value;
 
     private bool _allowsTrailingNewlineBeforeEnd =>
         _preparedRegex.SimplePatternPlan.AllowsTrailingNewlineBeforeEnd;
@@ -380,13 +380,22 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
-        // Slice programs only serve numbered groups, so ordinal answers are
-        // BCL-exact without constructing the fallback engine.
+        // Slice programs publish BCL-exact names by final number, so name
+        // answers need no fallback engine.
         if (_sliceProgram is not null)
         {
             if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
+            }
+
+            var numbers = _sliceProgram.GroupNames;
+            for (var number = 0; number < numbers.Length; number++)
+            {
+                if (numbers[number] == name)
+                {
+                    return number;
+                }
             }
 
             return uint.TryParse(name, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var result) && result <= (uint)_sliceProgram.GroupCount
@@ -403,7 +412,8 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
-            return (uint)i <= (uint)_sliceProgram.GroupCount ? ((uint)i).ToString() : string.Empty;
+            var names = _sliceProgram.GroupNames;
+            return (uint)i < (uint)names.Length ? names[i] : string.Empty;
         }
 
         return _program.GroupMetadata?.GroupNameFromNumber(i)
@@ -415,7 +425,7 @@ public sealed partial class Utf8Regex
     {
         if (_sliceProgram is not null)
         {
-            return _sliceProgram.OrdinalGroupNames;
+            return _sliceProgram.GroupNames;
         }
 
         return _program.GroupMetadata?.GroupNames ?? _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.GetGroupNames();

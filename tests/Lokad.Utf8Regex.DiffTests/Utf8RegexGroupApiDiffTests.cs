@@ -28,6 +28,9 @@ public sealed class Utf8RegexGroupApiDiffTests
         yield return new object?[] { "(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant };
         yield return new object?[] { string.Empty, RegexOptions.CultureInvariant };
         yield return new object?[] { "(?<1>a)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?<b>a)(c)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?<a>x)(b)(?<c>y)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?<a>(b))+", RegexOptions.CultureInvariant };
     }
 
     [Theory]

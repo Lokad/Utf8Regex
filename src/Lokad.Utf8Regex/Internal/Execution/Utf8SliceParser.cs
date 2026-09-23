@@ -4,12 +4,14 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
-/// numbered groups, (R03) dots with Singleline-scoped newline matching,
-/// anchors with Multiline-scoped line edges, and ASCII character classes
-/// (literals, ranges, and supported escapes; negated classes decline astral
-/// inputs at routing).
-/// Anything else (boundaries,
-/// backreferences, named/non-capturing groups, shorthand escapes,
+/// numbered and named groups (BCL unnamed-first numbering), (R03) dots with
+/// Singleline-scoped newline matching, anchors with Multiline-scoped line
+/// edges, ASCII character classes (literals, ranges, supported escapes, and
+/// shorthand members), word boundaries, shorthand classes, backreferences,
+/// and zero-width lookarounds (dots, negated classes, and negated shorthands
+/// decline astral inputs at routing).
+/// Anything else (non-capturing groups, conditionals, balancing captures,
+/// duplicate or explicitly-numbered names, categories,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
@@ -79,7 +81,87 @@ internal static class Utf8SliceParser
         }
 
         root ??= new Utf8SliceNode.EmptyNode();
-        return Utf8SliceLowerer.Lower(root);
+
+        // BCL numbers unnamed groups left-to-right first, then named
+        // groups; backreference digits already denote final numbers
+        // (digit minus one), so only captures rewrite from temporary
+        // open-order slots. Named shapes also publish names by final
+        // number for projection.
+        static Utf8SliceNode RenumberCaptures(Utf8SliceNode node, int[] finals)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.CaptureNode capture:
+                    return new Utf8SliceNode.CaptureNode(
+                        finals[capture.Slot] - 1,
+                        RenumberCaptures(capture.Body, finals));
+                case Utf8SliceNode.ConcatNode concat:
+                    var children = new Utf8SliceNode[concat.Children.Length];
+                    for (var child = 0; child < children.Length; child++)
+                    {
+                        children[child] = RenumberCaptures(concat.Children[child], finals);
+                    }
+
+                    return new Utf8SliceNode.ConcatNode(children);
+                case Utf8SliceNode.AlternationNode alternation:
+                    var branches = new Utf8SliceNode[alternation.Branches.Length][];
+                    for (var branch = 0; branch < branches.Length; branch++)
+                    {
+                        var rewritten = new Utf8SliceNode[alternation.Branches[branch].Length];
+                        for (var child = 0; child < rewritten.Length; child++)
+                        {
+                            rewritten[child] = RenumberCaptures(alternation.Branches[branch][child], finals);
+                        }
+
+                        branches[branch] = rewritten;
+                    }
+
+                    return new Utf8SliceNode.AlternationNode(branches);
+                case Utf8SliceNode.RepeatNode repeat:
+                    return new Utf8SliceNode.RepeatNode(
+                        RenumberCaptures(repeat.Body, finals),
+                        repeat.Minimum,
+                        repeat.Maximum,
+                        repeat.Lazy);
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    return new Utf8SliceNode.LookaheadNode(
+                        RenumberCaptures(lookahead.Body, finals),
+                        lookahead.Positive);
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    return new Utf8SliceNode.LookbehindNode(
+                        RenumberCaptures(lookbehind.Body, finals),
+                        lookbehind.Positive);
+                default:
+                    return node;
+            }
+        }
+
+        var finals = new int[parser.GroupCount];
+        var final = 1;
+        foreach (var decl in parser.GroupDecls)
+        {
+            if (decl.Name is null)
+            {
+                finals[decl.Slot] = final++;
+            }
+        }
+
+        foreach (var decl in parser.GroupDecls)
+        {
+            if (decl.Name is not null)
+            {
+                finals[decl.Slot] = final++;
+            }
+        }
+
+        var groupNames = new string[parser.GroupCount + 1];
+        groupNames[0] = "0";
+        foreach (var decl in parser.GroupDecls)
+        {
+            groupNames[finals[decl.Slot]] = decl.Name ?? ((uint)finals[decl.Slot]).ToString();
+        }
+
+        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames);
     }
 
     private sealed class Parser
@@ -89,6 +171,8 @@ internal static class Utf8SliceParser
         private readonly bool _matchMultiline;
         private int _position;
         private int _groups;
+        private readonly List<(int Slot, string? Name)> _groupDecls = new();
+        private readonly HashSet<string> _groupNames = new(StringComparer.Ordinal);
         private bool _sawFiniteMaximumLazyRepeat;
 
         internal Parser(string pattern, bool matchNewline, bool matchMultiline)
@@ -100,6 +184,7 @@ internal static class Utf8SliceParser
 
         internal int Position => _position;
         internal int GroupCount => _groups;
+        internal List<(int Slot, string? Name)> GroupDecls => _groupDecls;
         internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
@@ -321,10 +406,74 @@ internal static class Utf8SliceParser
                             node = new Utf8SliceNode.LookbehindNode(lookbehind ?? new Utf8SliceNode.EmptyNode(), behindPositive);
                             return true;
                         }
+
+                        if (marker == '<' || marker == '\'')
+                        {
+                            // Named captures bind like numbered captures;
+                            // BCL numbers unnamed groups left-to-right first
+                            // and named groups after, so temporary slots
+                            // renumber once the full parse lands (see
+                            // TryParse). Names are ASCII letters, digits,
+                            // and underscores with a non-digit start;
+                            // all-digit spellings (explicit numbers),
+                            // digit starts, empty names, mismatched closers,
+                            // duplicates, and balancing subtraction all
+                            // decline so legacy routing preserves exact BCL
+                            // behavior including construction failures.
+                            var closer = marker == '<' ? '>' : '\'';
+                            var nameStart = _position + 3;
+                            var nameEnd = nameStart;
+                            while (nameEnd < _pattern.Length)
+                            {
+                                var nameChar = _pattern[nameEnd];
+                                if ((nameChar >= 'a' && nameChar <= 'z') ||
+                                    (nameChar >= 'A' && nameChar <= 'Z') ||
+                                    (nameChar >= '0' && nameChar <= '9') ||
+                                    nameChar == '_')
+                                {
+                                    nameEnd++;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (nameEnd == nameStart ||
+                                nameEnd >= _pattern.Length ||
+                                _pattern[nameEnd] != closer)
+                            {
+                                return false;
+                            }
+
+                            if (_pattern[nameStart] >= '0' && _pattern[nameStart] <= '9')
+                            {
+                                return false;
+                            }
+
+                            var name = _pattern.Substring(nameStart, nameEnd - nameStart);
+                            if (!_groupNames.Add(name))
+                            {
+                                return false;
+                            }
+
+                            _position = nameEnd + 1;
+                            var namedSlot = _groups++;
+                            _groupDecls.Add((namedSlot, name));
+                            if (!TryParseAlternation(depth + 1, out var namedBody) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            node = new Utf8SliceNode.CaptureNode(namedSlot, namedBody ?? new Utf8SliceNode.EmptyNode());
+                            return true;
+                        }
                     }
 
                     _position++;
                     var slot = _groups++;
+                    _groupDecls.Add((slot, null));
                     if (!TryParseAlternation(depth + 1, out var body) || AtEnd || _pattern[_position] != ')')
                     {
                         return false;

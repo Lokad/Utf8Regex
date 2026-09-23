@@ -968,4 +968,101 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
+    // R03 named captures: (?P<name>...) passes the translator through
+    // (managed numbers follow the translator permutation) and runs the
+    // owned core slice, which renumbers BCL-style underneath; detailed
+    // projection restores Python numbering. Named backreferences decline.
+    // Expectations mix translated-oracle agreement with CPython 3.13.2
+    // ground truths (CPython numbers sequentially, unlike BCL).
+    [Theory]
+    [InlineData("(?P<w>a)+")]
+    [InlineData("(?P<a>x)(?P<b>y)+")]
+    public void NamedShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?P<w>a)(?P=w)")]
+    public void NamedBackrefShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> NamedSearchCases()
+    {
+        yield return new object?[] { "(?P<w>a)+", "xaa", 0, true, 1, 3 };
+        yield return new object?[] { "(?P<w>a)(b)", "xab", 0, true, 1, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(NamedSearchCases))]
+    public void NamedSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void NamedDetailedProjectsPythonNumbering()
+    {
+        // Python numbers sequentially (w=1, b=2) while the owned slice
+        // numbers BCL-style underneath; projection must show Python order.
+        var regex = new Utf8PythonRegex("(?P<w>a)(b)", PythonReCompileOptions.None);
+        var detailed = regex.SearchDetailed(Utf8("xab"), 0);
+        Assert.True(detailed.Success);
+        Assert.Equal("a", detailed.GetGroup(1).GetValueString());
+        Assert.Equal("b", detailed.GetGroup(2).GetValueString());
+        Assert.True(detailed.TryGetFirstSetGroup("w", out var word));
+        Assert.Equal("a", word.GetValueString());
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugSearchBackend);
+        Assert.False(regex.DebugIsManagedRegexValueCreated);
+    }
+
+    [Theory]
+    [InlineData("(?P<w>a)+", "aa aa", 2)]
+    [InlineData("(?P<w>a)(b)", "ab ab", 2)]
+    public void NamedCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?P<w>a)+", "aa", true)]
+    [InlineData("(?P<w>a)(b)", "ab", true)]
+    public void NamedMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?P<w>a)+", "aa", true)]
+    [InlineData("(?P<w>a)(b)", "ab", true)]
+    public void NamedFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
 }
