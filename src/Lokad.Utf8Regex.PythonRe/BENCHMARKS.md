@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T01:00:28.7832642+00:00`
-- Snapshot SHA-256: `141B4871306AA58641D9838A9422069E0D7FF50EC97CB869BE4736AB6C7B98F5`
+- Generated: `2026-09-23T01:02:26.8744949+00:00`
+- Snapshot SHA-256: `BB2A0DD4F2957284B2E5C565761D37803BBD700902C41CD926DCA4A6EA990BBB`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `60` managed faster, `0` equivalent, `5` CPython faster, `23` inconclusive, `2` unqualified
+- Public Status: `62` managed faster, `0` equivalent, `5` CPython faster, `23` inconclusive, `0` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -199,8 +199,8 @@ Historical independent point columns were measured from source `434eb20d0007` on
 |---|---|---|---|---:|---:|---:|---:|---:|---:|
 | `corpus/mail-email-count` | `Count` | ScalarResult | Managed faster | 6,810.762 us | 246,448.200 us | 0.03x | 311,991.011 us | 8,412.575 us | 12,389,328 B |
 | `corpus/code-log-methods` | `Count` | ScalarResult | Inconclusive | 27.222 us | 529.986 us | 0.05x | 706.507 us | 67.662 us | 106,728 B |
-| `corpus/code-declarations` | `Count` | Historical | Unqualified | 776.594 us | 738.481 us | 1.05x | 744.238 us | 770.800 us | 106,728 B |
-| `corpus/sherlock-ru` | `Count` | Historical | Unqualified | 219.375 us | 621.720 us | 0.35x | 4,066.119 us | 5,240.930 us | 0 B |
+| `corpus/code-declarations` | `Count` | ScalarResult | Managed faster | 371.806 us | 558.518 us | 0.68x | 744.238 us | 770.800 us | 106,728 B |
+| `corpus/sherlock-ru` | `Count` | ScalarResult | Managed faster | 123.607 us | 212.475 us | 0.58x | 4,066.119 us | 5,240.930 us | 0 B |
 
 ### Construction and first call
 
