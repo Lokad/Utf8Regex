@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Unicode;
 using Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -85,6 +86,7 @@ internal static partial class PythonReBenchmarkReporter
         var lanes = new List<PythonReSearchAttributionLane>
         {
             new("ThrowIfInvalidOnly", () => ExecuteSearchAttributionValidationOnly(input), input.Length),
+            new("BclIsValidOnly", () => ExecuteBclIsValidOnly(input), input.Length),
             new("FullValidate", () => ExecuteSearchAttributionFullValidation(input), ExecuteSearchAttributionFullValidation(input)),
             new("PrefilterOnly", () => ExecutePrefilterOnly(core, input), ExecutePrefilterOnly(core, input)),
         };
@@ -229,6 +231,11 @@ internal static partial class PythonReBenchmarkReporter
     {
         Utf8Validation.ThrowIfInvalidOnly(input);
         return input.Length;
+    }
+
+    private static int ExecuteBclIsValidOnly(byte[] input)
+    {
+        return Utf8.IsValid(input) ? input.Length : 0;
     }
 
     private static int ExecuteSearchAttributionFullValidation(byte[] input)
