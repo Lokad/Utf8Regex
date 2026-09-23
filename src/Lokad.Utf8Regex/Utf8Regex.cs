@@ -470,7 +470,7 @@ public sealed partial class Utf8Regex
         int fromUnit,
         CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         int[][]? byteStarts = null;
         int[][]? byteLengths = null;
@@ -793,7 +793,7 @@ public sealed partial class Utf8Regex
         int startUnit,
         CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
         {
@@ -1134,7 +1134,7 @@ public sealed partial class Utf8Regex
         int startUnit,
         CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
         {
@@ -1335,7 +1335,7 @@ public sealed partial class Utf8Regex
         int startUnit,
         CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
         {
@@ -1853,7 +1853,7 @@ public sealed partial class Utf8Regex
         CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         if (!Utf8SliceOutputWriter.Rent(input.Length, ref invocation, out var writer))
         {

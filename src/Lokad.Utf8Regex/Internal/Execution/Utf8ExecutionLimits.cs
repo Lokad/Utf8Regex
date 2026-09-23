@@ -8,4 +8,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 internal readonly record struct Utf8ExecutionLimits(
     ulong MaxWorkSteps,
     uint MaxDepth,
-    ulong MaxWorkingBytes);
+    ulong MaxWorkingBytes)
+{
+    // R02b budgeted-invocation placeholder: profiles whose policy
+    // constructors still reject finite budgets build every slice invocation
+    // from this unbounded value. Profiles with real request limits build
+    // their own values instead; no caller may assume this member means
+    // anything other than no-cap.
+    internal static readonly Utf8ExecutionLimits Unlimited = new(0, 0, 0);
+}

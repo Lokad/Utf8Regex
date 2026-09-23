@@ -136,6 +136,44 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
 
+    [Theory]
+    [InlineData("(a+)(b+)", "xxaaabbyy", 0)]
+    [InlineData("(a+)(b+)", "xxaaabbyy", 2)]
+    [InlineData("(a+)(b+)", "xxaaayy", 0)]
+    public void LiveTokenMatchesTokenless(string pattern, string inputText, int start)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        using var source = new CancellationTokenSource();
+        var token = source.Token;
+        Assert.Equal(
+            regex.IsMatch(input, start),
+            regex.IsMatch(input, start, token));
+        Assert.Equal(
+            regex.Search(input, start).Success,
+            regex.Search(input, start, token).Success);
+        Assert.Equal(
+            regex.Match(input, start).Success,
+            regex.Match(input, start, token).Success);
+        Assert.Equal(
+            regex.Count(input, start),
+            regex.Count(input, start, token));
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void PreCanceledTokenAbortsOwnedValueOperations()
+    {
+        var regex = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        var input = Utf8("xxaaabbyy");
+        Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, 0, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.Match(input, 0, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.FullMatch(input, 0, canceled.Token));
+    }
+
     [Fact]
     public void PreCanceledTokenAbortsOwnedSearch()
     {

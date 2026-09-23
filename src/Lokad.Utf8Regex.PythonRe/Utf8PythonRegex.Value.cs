@@ -29,7 +29,7 @@ public sealed partial class Utf8PythonRegex
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return IsMatch(input, startOffsetInBytes);
+        return Search(input, startOffsetInBytes, cancellationToken).Success;
     }
 
     /// <summary>Finds the first match in the UTF-8 input.</summary>
@@ -38,15 +38,21 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset.</summary>
     public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
+        return SearchCore(input, startOffsetInBytes, CancellationToken.None);
+    }
+
+    private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
         // PLAN.md C08: native value paths skip positive-lookbehind verification (core literal plans drop the assertion while detailed paths verify); keep lookbehind patterns on verified routes.
         if (_utf8Regex is not null && !_hasLookbehind)
         {
             ValidateStartOffset(input, startOffsetInBytes);
             var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
-                ? _utf8Regex.Match(input)
+                ? _utf8Regex.Match(input, cancellationToken)
                 : _utf8Regex.MatchFromUtf16Offset(
                     input,
-                    GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+                    GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes),
+                    cancellationToken);
             return Utf8PythonValueMatchFromUtf8Regex(input, match);
         }
 
@@ -61,7 +67,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Search(input, startOffsetInBytes);
+        return SearchCore(input, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Matches at the beginning of the UTF-8 input.</summary>
@@ -69,6 +75,11 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Matches exactly at a zero-based UTF-8 byte offset.</summary>
     public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        return MatchCore(input, startOffsetInBytes, CancellationToken.None);
+    }
+
+    private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         if (startOffsetInBytes == 0 && _asciiLiteralPrefixDigitMatchPrefix is not null)
         {
@@ -95,8 +106,8 @@ public sealed partial class Utf8PythonRegex
                 ? 0
                 : GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
             var match = startOffsetInBytes == 0 && _canUseZeroOffsetUtf8SearchValueFastPath
-                ? _utf8Regex.Match(input)
-                : _utf8Regex.MatchFromUtf16Offset(input, startOffsetInUtf16);
+                ? _utf8Regex.Match(input, cancellationToken)
+                : _utf8Regex.MatchFromUtf16Offset(input, startOffsetInUtf16, cancellationToken);
             if (!match.Success || match.IndexInUtf16 != startOffsetInUtf16)
             {
                 return default;
@@ -117,7 +128,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Match(input, startOffsetInBytes);
+        return MatchCore(input, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Matches the complete UTF-8 input.</summary>
@@ -125,6 +136,11 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset.</summary>
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes)
+    {
+        return FullMatchCore(input, startOffsetInBytes, CancellationToken.None);
+    }
+
+    private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_asciiDotAllFullMatchPrefix is not null && _asciiDotAllFullMatchSuffix is not null)
@@ -159,7 +175,8 @@ public sealed partial class Utf8PythonRegex
             // PLAN.md C08: match the whole subject from the start offset so `^` keeps the real start and lookbehind keeps its prefix; the `\G` wrapper pins the span while `\z` pins the end.
             var match = utf8FullRegex.MatchFromUtf16Offset(
                 input,
-                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
+                GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes),
+                cancellationToken);
             if (!match.Success)
             {
                 return default;
@@ -179,7 +196,7 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return FullMatch(input, startOffsetInBytes);
+        return FullMatchCore(input, startOffsetInBytes, cancellationToken);
     }
 
     /// <summary>Counts non-overlapping Python-style matches in the UTF-8 input.</summary>
@@ -282,7 +299,7 @@ public sealed partial class Utf8PythonRegex
         // past the scalar, reproducing CPython finditer adjacency.
         var map = Lokad.Utf8Regex.Internal.Input.Utf8BoundaryMap.Create(input);
         var invocation = new Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation(
-            new Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimits(0, 0, 0),
+            Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimits.Unlimited,
             MatchTimeout,
             cancellationToken);
         var slots = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);

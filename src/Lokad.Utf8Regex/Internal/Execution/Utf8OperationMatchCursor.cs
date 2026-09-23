@@ -259,7 +259,7 @@ internal ref struct Utf8OperationMatchCursor
         _baseByteOffset = 0;
         _baseUtf16Offset = 0;
         _sliceProgram = program;
-        _sliceInvocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), timeout, token);
+        _sliceInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token);
         _sliceUnit = 0;
         _mode = EnumeratorMode.OwnedSlice;
     }

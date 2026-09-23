@@ -344,6 +344,10 @@ internal static class Pcre2SliceDriver
         }
     }
 
+    // Request limits apply to slice per-instruction-visit steps, frame depth, and
+    // ledger bytes. Step counts are not comparable across engines (a backtracking VM
+    // step is not a slice visit); only limit enforcement behavior is shared, so
+    // numeric limits must not be read as cross-engine budgets.
     internal static Utf8SliceInvocation CreateInvocation(
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
