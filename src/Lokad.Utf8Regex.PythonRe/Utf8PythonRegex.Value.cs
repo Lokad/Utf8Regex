@@ -188,6 +188,11 @@ public sealed partial class Utf8PythonRegex
     /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset.</summary>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
+        return CountCore(input, startOffsetInBytes, CancellationToken.None);
+    }
+
+    private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
+    {
         ValidateStartOffset(input, startOffsetInBytes);
         if (_canCountAsciiWordBoundariesDirectly && MatchTimeout == Timeout.InfiniteTimeSpan)
         {
@@ -195,13 +200,29 @@ public sealed partial class Utf8PythonRegex
             return CountAsciiWordBoundaries(decoded, GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes));
         }
 
-        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_hasLookbehind && startOffsetInBytes == 0)
+        if (_countBackend == PythonReDirectBackendKind.Utf8Regex && _utf8Regex is not null && !_hasLookbehind && startOffsetInBytes == 0 &&
+            !_utf8Regex.Inspection.DebugUsesOwnedSliceProgram)
         {
-            return _utf8Regex.Count(input);
+            return _utf8Regex.Count(input, cancellationToken);
         }
 
         var subject = Decode(input);
         var startOffsetInUtf16 = GetUtf16OffsetOfBytePrefix(input, startOffsetInBytes);
+        if (!_hasLookbehind && _utf8Regex is not null &&
+            _utf8Regex.Inspection.DebugUsesOwnedSliceProgram &&
+            _utf8Regex.Inspection.OwnedSliceProgram is { } ownedProgram)
+        {
+            try
+            {
+                return CountOwnedSlicePythonStyle(
+                    input, startOffsetInUtf16, ownedProgram, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw new RegexMatchTimeoutException(subject, _translation.Pattern, MatchTimeout);
+            }
+        }
+
         if (!_canMatchEmpty)
         {
             if (!_hasLookbehind && _utf8Regex is not null && _utf8Regex.TryCreateOwnedSplitCursor(input, out var ownedCountCursor, out var ownedCountMap) && ownedCountMap is not null)
@@ -250,6 +271,98 @@ public sealed partial class Utf8PythonRegex
         return CountManagedMatchesPythonStyle(subject, startOffsetInUtf16);
     }
 
+    private int CountOwnedSlicePythonStyle(
+        ReadOnlySpan<byte> input,
+        int startOffsetInUtf16,
+        Lokad.Utf8Regex.Internal.Execution.Utf8SliceProgram program,
+        CancellationToken cancellationToken)
+    {
+        // Mirrors PythonReManagedMatchCursor: after an empty match the same
+        // position is retried requiring a non-empty match before advancing
+        // past the scalar, reproducing CPython finditer adjacency.
+        var map = Lokad.Utf8Regex.Internal.Input.Utf8BoundaryMap.Create(input);
+        var invocation = new Lokad.Utf8Regex.Internal.Execution.Utf8SliceInvocation(
+            new Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimits(0, 0, 0),
+            MatchTimeout,
+            cancellationToken);
+        var slots = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var count = 0;
+            var unit = startOffsetInUtf16;
+            var retryPending = false;
+            var retryUnit = 0;
+            while (true)
+            {
+                Lokad.Utf8Regex.Internal.Execution.Utf8SliceUnitOutcome outcome;
+                if (retryPending)
+                {
+                    retryPending = false;
+                    if (retryUnit >= map.Utf16Length)
+                    {
+                        break;
+                    }
+
+                    outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnitNonEmpty(
+                        program, input, map, retryUnit, slots.Starts, slots.Ends, ref invocation);
+                    if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
+                    {
+                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                    }
+
+                    if (outcome.Found)
+                    {
+                        count++;
+                        unit = outcome.EndUnit;
+                        continue;
+                    }
+
+                    if (!map.TryAdvanceScalar(retryUnit, out var advanced))
+                    {
+                        break;
+                    }
+
+                    unit = advanced.Utf16Offset;
+                    continue;
+                }
+
+                if (unit > map.Utf16Length)
+                {
+                    break;
+                }
+
+                outcome = Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.TryMatchFromUnit(
+                    program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
+                if (outcome.Breach != Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionLimitKind.None)
+                {
+                    throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                }
+
+                if (!outcome.Found)
+                {
+                    unit++;
+                    continue;
+                }
+
+                count++;
+                if (outcome.EndUnit == outcome.StartUnit)
+                {
+                    retryPending = true;
+                    retryUnit = outcome.StartUnit;
+                    continue;
+                }
+
+                unit = outcome.EndUnit;
+            }
+
+            return count;
+        }
+        finally
+        {
+            Lokad.Utf8Regex.Internal.Execution.Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
+    }
+
     /// <summary>Counts non-overlapping matches at or after a zero-based UTF-8 byte offset, observing cancellation before matching begins.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
@@ -258,7 +371,7 @@ public sealed partial class Utf8PythonRegex
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Count(input, startOffsetInBytes);
+        return CountCore(input, startOffsetInBytes, cancellationToken);
     }
 
 }

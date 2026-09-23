@@ -446,55 +446,29 @@ public sealed partial class Utf8Regex
     private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
-        {
-            var outcome = Utf8SliceRunner.IsMatch(program, input, map, slots.Starts, slots.Ends, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
-                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
-            return outcome.IsMatch;
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        return OwnedSliceIsMatchFromUnit(input, program, map, 0, token);
     }
 
     private Utf8ValueMatch OwnedSliceMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
-        {
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, 0, slots.Starts, slots.Ends, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
-                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
-            if (!outcome.Found)
-            {
-                return Utf8ValueMatch.NoMatch;
-            }
-
-            return Utf8SliceRunner.ProjectMatch(map, outcome);
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        return OwnedSliceMatchFromUnit(input, program, map, 0, token);
     }
 
     private Utf8MatchContext OwnedSliceMatchDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        var decoded = analysis.GetDecodedString();
-        var map = analysis.BoundaryMap;
+        return OwnedSliceMatchDetailedFromUnit(input, program, analysis.GetDecodedString(), analysis.BoundaryMap, 0, token);
+    }
+
+    private Utf8MatchContext OwnedSliceMatchDetailedFromUnit(
+        ReadOnlySpan<byte> input,
+        Utf8SliceProgram program,
+        string decoded,
+        Utf8BoundaryMap map,
+        int fromUnit,
+        CancellationToken token)
+    {
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         int[][]? byteStarts = null;
@@ -505,7 +479,7 @@ public sealed partial class Utf8Regex
         int[][]? historyLengths = null;
         try
         {
-            var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, 0, slots.Starts, slots.Ends, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, fromUnit, slots.Starts, slots.Ends, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
             {
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
@@ -655,22 +629,7 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCount(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
-        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-        try
-        {
-            var outcome = Utf8SliceRunner.Count(program, input, map, slots.Starts, slots.Ends, ref invocation);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-            {
-                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
-            }
-
-            return outcome.Count;
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-        }
+        return OwnedSliceCountFromUnit(input, program, map, 0, token);
     }
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
@@ -783,11 +742,14 @@ public sealed partial class Utf8Regex
     /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset.</summary>
     public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
-            subject.GetDecodedString().AsSpan(),
-            start.Value);
+        try
+        {
+            return IsMatchFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Determines whether a match starts at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
@@ -798,7 +760,54 @@ public sealed partial class Utf8Regex
     public bool IsMatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return IsMatchFromUtf16Offset(input, utf16Offset);
+        try
+        {
+            return IsMatchFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
+    }
+
+    private bool IsMatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        var subject = Utf8InputAnalyzer.Analyze(input);
+        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.IsMatch(
+            subject.GetDecodedString().AsSpan(),
+            start.Value);
+    }
+
+    /// <summary>Owned slice boolean search from a UTF-16 start unit.</summary>
+    private bool OwnedSliceIsMatchFromUnit(
+        ReadOnlySpan<byte> input,
+        Utf8SliceProgram program,
+        Utf8BoundaryMap map,
+        int startUnit,
+        CancellationToken token)
+    {
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            {
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            }
+
+            return outcome.Found;
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
     }
 
     /// <summary>Counts non-overlapping matches in the well-formed UTF-8 input.</summary>
@@ -1074,11 +1083,14 @@ public sealed partial class Utf8Regex
     /// <summary>Counts non-overlapping matches starting at the specified UTF-16 code-unit offset.</summary>
     public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
-            subject.GetDecodedString().AsSpan(),
-            start.Value);
+        try
+        {
+            return CountFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Counts non-overlapping matches starting at the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
@@ -1089,7 +1101,54 @@ public sealed partial class Utf8Regex
     public int CountFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return CountFromUtf16Offset(input, utf16Offset);
+        try
+        {
+            return CountFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
+    }
+
+    private int CountFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        var subject = Utf8InputAnalyzer.Analyze(input);
+        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceCountFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(
+            subject.GetDecodedString().AsSpan(),
+            start.Value);
+    }
+
+    /// <summary>Owned slice count from a UTF-16 start unit.</summary>
+    private int OwnedSliceCountFromUnit(
+        ReadOnlySpan<byte> input,
+        Utf8SliceProgram program,
+        Utf8BoundaryMap map,
+        int startUnit,
+        CancellationToken token)
+    {
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.CountFrom(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            {
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            }
+
+            return outcome.Count;
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
     }
 
     /// <summary>Finds the first match and returns its UTF-16 and, when scalar-aligned, UTF-8 byte coordinates.</summary>
@@ -1224,12 +1283,14 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
-        var subject = Utf8InputAnalyzer.Analyze(input);
-        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
-        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
-            subject.GetDecodedString(),
-            start.Value);
-        return CreateValueMatch(input, subject.BoundaryMap, match);
+        try
+        {
+            return MatchFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
     }
 
     /// <summary>Finds the first match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
@@ -1240,7 +1301,60 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatch MatchFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchFromUtf16Offset(input, utf16Offset);
+        try
+        {
+            return MatchFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw CreateMatchTimeoutException(input);
+        }
+    }
+
+    private Utf8ValueMatch MatchFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        var subject = Utf8InputAnalyzer.Analyze(input);
+        var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
+        }
+
+        var match = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Match(
+            subject.GetDecodedString(),
+            start.Value);
+        return CreateValueMatch(input, subject.BoundaryMap, match);
+    }
+
+    /// <summary>Owned slice first-match from a UTF-16 start unit.</summary>
+    private Utf8ValueMatch OwnedSliceMatchFromUnit(
+        ReadOnlySpan<byte> input,
+        Utf8SliceProgram program,
+        Utf8BoundaryMap map,
+        int startUnit,
+        CancellationToken token)
+    {
+        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0), MatchTimeout, token);
+        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            {
+                throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+            }
+
+            if (!outcome.Found)
+            {
+                return Utf8ValueMatch.NoMatch;
+            }
+
+            return Utf8SliceRunner.ProjectMatch(map, outcome);
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
     }
 
     /// <summary>Finds the first match and exposes its groups and captures over the original UTF-8 input.</summary>
@@ -1312,9 +1426,29 @@ public sealed partial class Utf8Regex
     /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset.</summary>
     public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset)
     {
+        return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, CancellationToken.None);
+    }
+
+    /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
+    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
+    /// <param name="cancellationToken">The token to observe before matching begins.</param>
+    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
+    public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return MatchDetailedFromUtf16OffsetCore(input, utf16Offset, cancellationToken);
+    }
+
+    private Utf8MatchContext MatchDetailedFromUtf16OffsetCore(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
+    {
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         var decoded = analysis.GetDecodedString();
+        if (_sliceProgram is not null)
+        {
+            return OwnedSliceMatchDetailedFromUnit(input, _sliceProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
+        }
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {
             // R03: first-of-shared-enumeration keeps origin semantics (absolute anchors,
@@ -1511,17 +1645,6 @@ public sealed partial class Utf8Regex
         }
 
         return new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, indexInUtf16, lengthInUtf16, starts, lengths);
-    }
-
-    /// <summary>Finds the first detailed match at or after the specified UTF-16 code-unit offset, observing cancellation before matching begins.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="utf16Offset">The zero-based UTF-16 code-unit offset of the position where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe before matching begins.</param>
-    /// <exception cref="OperationCanceledException">The token was already canceled.</exception>
-    public Utf8MatchContext MatchDetailedFromUtf16Offset(ReadOnlySpan<byte> input, int utf16Offset, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return MatchDetailedFromUtf16Offset(input, utf16Offset);
     }
 
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>

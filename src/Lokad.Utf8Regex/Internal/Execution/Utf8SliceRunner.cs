@@ -205,6 +205,31 @@ internal static class Utf8SliceRunner
         return TryMatchAt(program, input, start, captureStarts, captureEnds, false, ref invocation);
     }
 
+    internal static Utf8SliceUnitOutcome TryMatchFromUnitNonEmpty(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        int unit,
+        int[] captureStarts,
+        int[] captureEnds,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (unit < 0 || unit > map.Utf16Length)
+        {
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
+        }
+
+        var startByte = map.Resolve(unit).ByteOffset;
+        var outcome = TryMatchAt(program, input, startByte, captureStarts, captureEnds, false, true, ref invocation);
+        if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
+        {
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, outcome.Breach);
+        }
+
+        var endUnit = map.GetUtf16OffsetForByteOffset(outcome.EndIndex);
+        return new Utf8SliceUnitOutcome(true, unit, endUnit, startByte, outcome.EndIndex, Utf8ExecutionLimitKind.None);
+    }
+
     internal static Utf8SliceMatchOutcome TryMatchAt(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -212,6 +237,19 @@ internal static class Utf8SliceRunner
         int[] captureStarts,
         int[] captureEnds,
         bool collectHistory,
+        ref Utf8SliceInvocation invocation)
+    {
+        return TryMatchAt(program, input, start, captureStarts, captureEnds, collectHistory, false, ref invocation);
+    }
+
+    internal static Utf8SliceMatchOutcome TryMatchAt(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        int start,
+        int[] captureStarts,
+        int[] captureEnds,
+        bool collectHistory,
+        bool requireNonEmpty,
         ref Utf8SliceInvocation invocation)
     {
         var counts = RentIntArray(program.RepeatCount, ref invocation, out var breach);
@@ -231,7 +269,7 @@ internal static class Utf8SliceRunner
         var stacks = new ChunkedStacks();
         try
         {
-            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, collectHistory, ref stacks, ref invocation);
+            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, collectHistory, requireNonEmpty, ref stacks, ref invocation);
         }
         finally
         {
@@ -326,17 +364,18 @@ internal static class Utf8SliceRunner
             : new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 
-    internal static Utf8SliceCountOutcome Count(
+    internal static Utf8SliceCountOutcome CountFrom(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         Utf8BoundaryMap map,
+        int fromUnit,
         int[] captureStarts,
         int[] captureEnds,
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         var count = 0;
-        var unit = 0;
+        var unit = fromUnit;
         while (unit <= map.Utf16Length)
         {
             var outcome = TryMatchFromUnit(program, input, map, unit, captureStarts, captureEnds, ref invocation);
@@ -356,6 +395,17 @@ internal static class Utf8SliceRunner
         }
 
         return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
+    }
+
+    internal static Utf8SliceCountOutcome Count(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        int[] captureStarts,
+        int[] captureEnds,
+        ref Utf8SliceInvocation invocation)
+    {
+        return CountFrom(program, input, map, 0, captureStarts, captureEnds, ref invocation);
     }
 
     internal static Utf8SliceDetailedOutcome TryFindFirstDetailed(
@@ -407,6 +457,7 @@ internal static class Utf8SliceRunner
         int[] counts,
         int[] positions,
         bool collectHistory,
+        bool requireNonEmpty,
         ref ChunkedStacks stacks,
         ref Utf8SliceInvocation invocation)
     {
@@ -593,6 +644,12 @@ internal static class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.Accept:
+                    if (requireNonEmpty && inputIndex == start)
+                    {
+                        failed = true;
+                        break;
+                    }
+
                     if (!collectHistory)
                     {
                         return new Utf8SliceMatchOutcome(true, inputIndex, Utf8ExecutionLimitKind.None, null, null);

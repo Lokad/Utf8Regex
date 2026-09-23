@@ -560,6 +560,8 @@ public sealed partial class Utf8Regex
 
         public bool DebugUsesOwnedSliceProgram => _owner._sliceProgram is not null;
 
+        internal Utf8SliceProgram? OwnedSliceProgram => _owner._sliceProgram;
+
         public Utf8PreparedRegex PreparedRegex => _owner.PreparedRegex;
 
         public Utf8SearchPlan SearchPlan => _owner.SearchPlan;

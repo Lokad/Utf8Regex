@@ -42,7 +42,6 @@ public sealed class PythonReCountOwnershipTests
     public static IEnumerable<object?[]> ManagedCountCases()
     {
         var none = PythonReCompileOptions.None;
-        yield return new object?[] { "a*", none, "ba", 0, 3 };
         yield return new object?[] { "(?P<word>foo)-(?P=word)", none, "xx foo-foo yy foo-foo", 3, 2 };
         yield return new object?[] { "\\b|\\w+", none, "\u00E9 skip y", 8, 3 };
     }

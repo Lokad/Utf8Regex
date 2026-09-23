@@ -201,6 +201,72 @@ public sealed class LazyFallbackConstructionTests
     }
 
 
+    public static IEnumerable<object?[]> OwnedSliceFromOffsetCases()
+    {
+        // Slice shapes only: plain literal alternations take specialized literal
+        // routes (no slice program); the shapes below are the R02a fallback-kind
+        // slice catalog from Utf8SliceWiringTests plus an astral-bodied repeat.
+        RegexOptions[] selections =
+        [
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        ];
+        (string pattern, string input, int[] offsets)[] rows =
+        [
+            ("(a+)(b+)", "xxaaabbyy", [0, 2, 3]),
+            ("(ab|cd)+", "xxabcdcdyy", [0, 2, 4]),
+            ("(a|ab)+c", "xxabcabccyy", [0, 2, 5]),
+            ("(ab|a)+z", "ababaz", [0, 2]),
+            ("a*?b", "xxaaabyy", [0, 3]),
+            ("(a{2,3}b+)|(c+d)", "xxaabbbyy", [0, 2]),
+            ("(a+)(b+)", "\U0001F600aaabb\U0001F600", [0, 2]),
+        ];
+        foreach (var (pattern, input, offsets) in rows)
+        {
+            foreach (var options in selections)
+            {
+                foreach (var offset in offsets)
+                {
+                    yield return new object?[] { pattern, options, input, offset };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(OwnedSliceFromOffsetCases))]
+    public void OwnedSliceFromOffsetOperationsStayOwned(string pattern, RegexOptions options, string inputText, int offset)
+    {
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern + " options=" + options.ToString());
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        Assert.Equal(oracle.IsMatch(inputText, offset), regex.IsMatchFromUtf16Offset(input, offset));
+        Assert.Equal(oracle.Matches(inputText, offset).Count, regex.CountFromUtf16Offset(input, offset));
+
+        var expected = oracle.Match(inputText, offset);
+        var actual = regex.MatchFromUtf16Offset(input, offset);
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Length, actual.LengthInUtf16);
+        }
+
+        var detailed = regex.MatchDetailedFromUtf16Offset(input, offset);
+        Assert.Equal(expected.Success, detailed.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, detailed.IndexInUtf16);
+            Assert.Equal(expected.Length, detailed.LengthInUtf16);
+        }
+
+        Touch(detailed);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern + " options=" + options.ToString() + " offset=" + offset.ToString());
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated, "pattern=" + pattern + " options=" + options.ToString() + " offset=" + offset.ToString());
+    }
+
     private static void Touch(Utf8MatchContext match)
     {
         _ = match.Success;

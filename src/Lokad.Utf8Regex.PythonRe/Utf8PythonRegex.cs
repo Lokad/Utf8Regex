@@ -331,7 +331,9 @@ public sealed partial class Utf8PythonRegex
             _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
         _searchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
         _matchBackend = _utf8Regex is not null ? PythonReDirectBackendKind.Utf8Regex : PythonReDirectBackendKind.ManagedRegex;
-        _countBackend = _utf8Regex is not null && !_canMatchEmpty
+        var utf8ServesCount = _utf8Regex is not null &&
+            (!_canMatchEmpty || _utf8Regex.Inspection.DebugUsesOwnedSliceProgram);
+        _countBackend = utf8ServesCount
             ? PythonReDirectBackendKind.Utf8Regex
             : PythonReDirectBackendKind.ManagedRegex;
         _findAllBackend = _utf8Regex is not null && !_canMatchEmpty && _canUseUtf8IterationFastPath
@@ -439,6 +441,8 @@ public sealed partial class Utf8PythonRegex
     internal int DebugReplacementPlanCacheEntryCount => _replacementPlanCache.Count;
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
+
+    internal bool DebugUsesOwnedSlice => _utf8Regex?.Inspection.DebugUsesOwnedSliceProgram == true;
 
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
 
