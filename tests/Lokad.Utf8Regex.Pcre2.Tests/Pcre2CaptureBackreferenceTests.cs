@@ -65,8 +65,10 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.Equal(0, failures);
     }
 
+    // R03 backreference slice: "(a|ab)\1" first-match now rides the shared
+    // slice runner (see Pcre2SliceBackrefTests); the remaining rows stay on
+    // the generic backtracking VM.
     [Theory]
-    [InlineData("(a|ab)\\1", "abab", "abab")]
     [InlineData("(a)\\g{1}", "aa", "aa")]
     [InlineData("(a)\\g{-1}", "aa", "aa")]
     [InlineData("(?<x>a)\\k<x>", "aa", "aa")]
@@ -207,8 +209,12 @@ public sealed class Pcre2CaptureBackreferenceTests
     [Fact]
     public void WarmedBackreferenceIsMatchReusesCaptureState()
     {
-        var regex = new Utf8Pcre2Regex("(ab|a)+\\1z");
-        var input = "abababz"u8;
+        // R03 backreference slice: "(ab|a)+\1z" IsMatch now rides the shared
+        // slice runner (which rents ledger-charged slots per call), so the
+        // warmed zero-allocation pin moves to a backreference shape that
+        // stays on the generic backtracking VM (octal-disambiguated "\11").
+        var regex = new Utf8Pcre2Regex("(a)\\11");
+        var input = "a\x09"u8;
         for (var index = 0; index < 32; index++)
         {
             _ = regex.IsMatch(input);

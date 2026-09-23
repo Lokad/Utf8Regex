@@ -47,6 +47,8 @@ public sealed class Utf8SliceParserTests
     [InlineData("ab\\Z", 0)]
     [InlineData("\\bword\\b", 0)]
     [InlineData("x\\by", 0)]
+    [InlineData("(a)\\1", 1)]
+    [InlineData("(a)(b)\\2\\1", 2)]
     [InlineData("\\d+", 0)]
     [InlineData("\\w+", 0)]
     [InlineData("[\\d]", 0)]
@@ -63,7 +65,6 @@ public sealed class Utf8SliceParserTests
     [Theory]
     [InlineData("(?=a)a")]
     [InlineData("(a)(?(1)b|c)")]
-    [InlineData(@"(a)\1")]
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData(@"\q")]
@@ -83,9 +84,19 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?=[a-z]+)")]
     [InlineData("a)[a-z]+")]
     [InlineData("(?(1)[a-z]+|c)")]
+    [InlineData("\\1(a)")]
+    [InlineData("a\\12b")]
+    [InlineData("(a)\\10")]
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+    }
+
+    [Fact]
+    public void NonAsciiLiteralBackrefShapesDecline()
+    {
+        Assert.Null(Utf8SliceParser.TryParse("(" + ((char)0xE9) + ")\\1", RegexOptions.CultureInvariant));
+        Assert.Null(Utf8SliceParser.TryParse("(" + char.ConvertFromUtf32(0x1F600) + ")\\1", RegexOptions.CultureInvariant));
     }
 
     [Theory]

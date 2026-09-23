@@ -358,7 +358,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         var unboundedRepeat = new Utf8Pcre2Regex(@"(?:ab|cd)+z");
         var possessiveRepeat = new Utf8Pcre2Regex(@"(?:a|b){1,2}+a");
 
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(nonExact.DebugCompiledProgram.Operations.Count);
+        // R03 backreference slice: the finite literal language still rejects the class-plus-backref shape, but Count now rides the shared slice runner instead of the generic VM.
+        Assert.IsType<Pcre2SliceDirectProgram>(nonExact.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(caseless.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(nonRootAtomic.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooManyAlternatives.DebugCompiledProgram.Operations.Count);

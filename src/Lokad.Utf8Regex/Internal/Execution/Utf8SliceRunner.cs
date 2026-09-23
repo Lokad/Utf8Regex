@@ -357,6 +357,8 @@ internal static class Utf8SliceRunner
         }
 
         Array.Fill(counts, -1);
+        Array.Fill(captureStarts, -1);
+        Array.Fill(captureEnds, -1);
         var stacks = new ChunkedStacks();
         try
         {
@@ -983,6 +985,59 @@ internal static class Utf8SliceRunner
                     else
                     {
                         failed = true;
+                    }
+
+                    break;
+                case Utf8SliceInstructionKind.Backref:
+                    // Ordinal backreference: an unmatched (or in-progress)
+                    // group fails, otherwise the captured bytes must repeat
+                    // verbatim at the current position. Byte comparison is
+                    // encoding-indifferent (captures never hold astral
+                    // scalars on served programs). Each compared byte
+                    // charges work so long captures stay bounded and
+                    // cancellable like the rest of the engine.
+                    if (captureStarts[instruction.A] < 0 ||
+                        captureEnds[instruction.A] < captureStarts[instruction.A])
+                    {
+                        failed = true;
+                        break;
+                    }
+
+                    {
+                        var referEnd = captureEnds[instruction.A];
+                        var referLength = referEnd - captureStarts[instruction.A];
+                        if (referLength > input.Length - inputIndex)
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        var compared = 0;
+                        while (compared < referLength)
+                        {
+                            var charge = invocation.Budget.TryChargeStep();
+                            if (charge != Utf8ExecutionLimitKind.None)
+                            {
+                                return new Utf8SliceMatchOutcome(false, -1, charge, null, null);
+                            }
+
+                            if (input[captureStarts[instruction.A] + compared] != input[inputIndex + compared])
+                            {
+                                break;
+                            }
+
+                            compared++;
+                        }
+
+                        if (compared < referLength)
+                        {
+                            failed = true;
+                        }
+                        else
+                        {
+                            inputIndex += referLength;
+                            programIndex++;
+                        }
                     }
 
                     break;

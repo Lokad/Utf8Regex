@@ -690,6 +690,100 @@ public sealed class PythonReSliceOwnershipTests
         Assert.True(regex.Search(Utf8("xxa\nbzz"), 0).Success);
         Assert.False(regex.DebugIsManagedRegexValueCreated);
     }
+    // R03 backreferences: numeric backward references pass the translator
+    // through verbatim (managed numbers equal Python numbers when no named
+    // group shifts them) and run the owned core slice; named references and
+    // rewritten group bodies decline. Expectations mix translated-oracle
+    // agreement with CPython 3.13.2 ground truths.
+    [Theory]
+    [InlineData("(a)\\1")]
+    [InlineData("(a)(b)\\2\\1")]
+    [InlineData("(a|b)+\\1")]
+    [InlineData("(\\d+)\\1")]
+    [InlineData("(x)?b\\1")]
+    public void BackrefShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?P<x>a)(?P=x)")]
+    [InlineData("(\\w+)\\1")]
+    public void BackrefShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> BackrefSearchCases()
+    {
+        yield return new object?[] { "(a)\\1", "xaa", 0, true, 1, 3 };
+        yield return new object?[] { "(a)(b)\\2\\1", "xxabbayy", 0, true, 2, 6 };
+        yield return new object?[] { "(a|b)+\\1", "abb", 0, true, 0, 3 };
+        yield return new object?[] { "(x)?b\\1", "b", 0, false, 0, 0 };
+        yield return new object?[] { "(x)?b\\1", "bxb", 0, false, 0, 0 };
+        yield return new object?[] { "(\\d+)\\1", "a1212b", 0, true, 1, 5 };
+        yield return new object?[] { "(?P<x>a)(?P=x)", "xxaayy", 0, true, 2, 4 };
+    }
+
+    [Theory]
+    [MemberData(nameof(BackrefSearchCases))]
+    public void BackrefSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(a)\\1", "aa aa", 2)]
+    [InlineData("(a|b)+\\1", "abb abb", 2)]
+    [InlineData("(x)?b\\1", "bbb", 0)]
+    [InlineData("(\\d+)\\1", "12ab1212", 1)]
+    [InlineData("(?P<x>a)(?P=x)", "aa aa", 2)]
+    public void BackrefCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(a)\\1", "aa", true)]
+    [InlineData("(a)\\1", "ab", false)]
+    [InlineData("(a|b)+\\1", "abb", true)]
+    [InlineData("(\\d+)\\1", "1212", true)]
+    public void BackrefMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(a)\\1", "aa", true)]
+    [InlineData("(a)\\1", "ab", false)]
+    [InlineData("(a|b)+\\1", "abb", true)]
+    [InlineData("(\\d+)\\1", "1212", true)]
+    public void BackrefFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
 }
-
-

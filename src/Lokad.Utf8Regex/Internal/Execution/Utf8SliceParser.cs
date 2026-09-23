@@ -349,6 +349,19 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
+                    // Single-digit backreferences bind earlier groups only:
+                    // a following digit makes the escape multi-character
+                    // (octal or two-digit reference in BCL), and undefined
+                    // numbers stay legacy-exact (BCL throws or octal-matches).
+                    if (escaped >= '1' && escaped <= '9' &&
+                        (_position + 2 >= _pattern.Length || !char.IsAsciiDigit(_pattern[_position + 2])) &&
+                        escaped - '0' <= _groups)
+                    {
+                        _position += 2;
+                        node = new Utf8SliceNode.BackrefNode(escaped - '0' - 1);
+                        return true;
+                    }
+
                     if (!IsEscapablePunctuation(escaped))
                     {
                         return false;

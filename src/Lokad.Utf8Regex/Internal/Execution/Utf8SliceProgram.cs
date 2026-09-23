@@ -2,8 +2,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, dots, anchors, word boundaries, shorthand classes, and empty.
-/// Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
+/// sets, dots, anchors, word boundaries, shorthand classes, backreferences,
+/// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
     Empty = 0,
@@ -17,6 +17,7 @@ internal enum Utf8SliceNodeKind : byte
     Anchor = 8,
     Boundary = 9,
     Shorthand = 10,
+    Backref = 11,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -70,6 +71,8 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record BoundaryNode(bool IsWordBoundary) : Utf8SliceNode(Utf8SliceNodeKind.Boundary);
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
+
+    internal sealed record BackrefNode(int Slot) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -90,6 +93,7 @@ internal enum Utf8SliceInstructionKind : byte
     Anchor = 12,
     Boundary = 13,
     Shorthand = 14,
+    Backref = 15,
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -338,6 +342,14 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
+                    break;
+                case Utf8SliceNode.BackrefNode backref:
+                    if (backref.Slot < 0 || backref.Slot >= GroupCount)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences bind earlier groups.");
+                    }
+
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, 0, 0, 0));
                     break;
                 case Utf8SliceNode.CaptureNode capture:
                     if (capture.Slot < 0)
