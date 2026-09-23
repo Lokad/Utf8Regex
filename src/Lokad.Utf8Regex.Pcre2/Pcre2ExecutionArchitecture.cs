@@ -2476,9 +2476,37 @@ internal static class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
+        CancellationToken cancellationToken,
         out Pcre2GroupData[] result,
         out string? mark)
     {
+        if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
+        {
+            if (matchOptions != Pcre2MatchOptions.None)
+            {
+                var fallbackMatch = ExecuteBacktrackingDetailed(
+                    sliceProgram.Fallback,
+                    compiledProgram.CandidateSearch,
+                    ref input,
+                    start,
+                    matchOptions,
+                    compiledProgram.Request);
+                result = fallbackMatch.Success ?
+                    fallbackMatch.CaptureResult.ProjectedGroups : [];
+                mark = fallbackMatch.Mark;
+                return true;
+            }
+
+            return Pcre2SliceDriver.TryMatchDetailed(
+                sliceProgram.SliceProgram,
+                ref input,
+                start,
+                compiledProgram.Request,
+                cancellationToken,
+                out result,
+                out mark);
+        }
+
         if (compiledProgram.Operations.Match is not Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
             result = [];

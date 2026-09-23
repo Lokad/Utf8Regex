@@ -222,6 +222,150 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> DetailedCases()
+    {
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaabbyy", 0, true, "aaabb", "aaa", "bb" };
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaabbyy", 3, true, "aabb", "aa", "bb" };
+        yield return new object?[]
+            { "(a+)(b+)", "xxaaayy", 0, false, "", "", "" };
+        yield return new object?[]
+            { "(ab|cd)+", "xxabcdcdyy", 0, true, "abcdcd", "cd", "" };
+        yield return new object?[]
+            { "x*|y", "y", 0, true, "", "", "" };
+    }
+
+    [Theory]
+    [MemberData(nameof(DetailedCases))]
+    public void OwnedDetailedProjectsGroups(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        bool expectedSuccess,
+        string expectedWhole,
+        string expectedFirst,
+        string expectedSecond)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
+        Assert.Equal(expectedSuccess, oracle.Success);
+        var detailed = regex.MatchDetailed(input, startOffsetInBytes);
+        Assert.Equal(oracle.Success, detailed.Success);
+        if (oracle.Success)
+        {
+            Assert.Equal(oracle.Groups[0].Value, expectedWhole);
+            Assert.Equal(expectedWhole, detailed.Value.GetValueString());
+            if (oracle.Groups.Count > 1)
+            {
+                Assert.Equal(
+                    oracle.Groups[1].Success,
+                    detailed.GetGroup(1).Success);
+                Assert.Equal(expectedFirst, detailed.GetGroup(1).GetValueString());
+            }
+            if (oracle.Groups.Count > 2)
+            {
+                Assert.Equal(
+                    oracle.Groups[2].Success,
+                    detailed.GetGroup(2).Success);
+                Assert.Equal(expectedSecond, detailed.GetGroup(2).GetValueString());
+            }
+        }
+
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(cat)|(horse)", "cat horse", 0, 1, "cat")]
+    [InlineData("(cat)|(horse)", "cat horse", 4, 2, "horse")]
+    public void OwnedDetailedReportsUnmatchedGroups(
+        string pattern,
+        string inputText,
+        int startOffsetInBytes,
+        int winningGroup,
+        string winningValue)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
+        var detailed = regex.MatchDetailed(input, startOffsetInBytes);
+        Assert.True(oracle.Success);
+        Assert.True(detailed.Success);
+        Assert.True(detailed.GetGroup(winningGroup).Success);
+        Assert.Equal(winningValue, detailed.GetGroup(winningGroup).GetValueString());
+        Assert.Equal(
+            oracle.Groups[3 - winningGroup].Success,
+            detailed.GetGroup(3 - winningGroup).Success);
+        Assert.False(detailed.GetGroup(3 - winningGroup).Success);
+        Assert.False(
+            regex.DebugFoundationCoreFallbackRegexIsCreated,
+            "pattern=" + pattern);
+    }
+
+    [Fact]
+    public void OwnedDetailedMatchesOracleOnAstralInput()
+    {
+        const string pattern = "(a+)(b+)";
+        const string inputText = " plus aaabb minus ";
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var input = Utf8(inputText);
+        var oracle = Bcl(pattern).Match(inputText);
+        var detailed = regex.MatchDetailed(input, 0);
+        Assert.True(oracle.Success);
+        Assert.True(detailed.Success);
+        Assert.Equal(oracle.Groups[0].Value, detailed.Value.GetValueString());
+        Assert.Equal(oracle.Groups[1].Value, detailed.GetGroup(1).GetValueString());
+        Assert.Equal(oracle.Groups[2].Value, detailed.GetGroup(2).GetValueString());
+        var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
+        Assert.Equal(expectedStart, detailed.Value.StartOffsetInBytes);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void AnchoredDetailedFallsBackToBacktracking()
+    {
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
+        var hit = regex.MatchDetailed(Utf8("aaabbxx"), 0, Pcre2MatchOptions.Anchored);
+        Assert.True(hit.Success);
+        Assert.Equal("aaabb", hit.Value.GetValueString());
+        Assert.Equal("aaa", hit.GetGroup(1).GetValueString());
+        var miss = regex.MatchDetailed(Utf8("xxaaabbyy"), 0, Pcre2MatchOptions.Anchored);
+        Assert.False(miss.Success);
+    }
+
+    [Fact]
+    public void ExhaustedMatchLimitFailsDetailedWithMatchLimitIdentity()
+    {
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
+            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var exception = Assert.Throws<Pcre2MatchException>(
+            () => regex.MatchDetailed(Utf8("xxaaabbyy"), 0));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
+    }
+
+    [Fact]
+    public void OwnedDetailedTimeoutThrowsTimeoutIdentity()
+    {
+        var input = Utf8(new string((char)97, 2000));
+        var regex = new Utf8Pcre2Regex(
+            "(a+)(b+)",
+            Pcre2CompileOptions.None,
+            default,
+            default,
+            TimeSpan.FromMilliseconds(1));
+        var exception = Assert.Throws<Pcre2MatchException>(
+            () => regex.MatchDetailed(input, 0));
+        Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated);
+    }
+
     [Fact]
     public void AnchoredMatchOptionsFallBackToBacktracking()
     {

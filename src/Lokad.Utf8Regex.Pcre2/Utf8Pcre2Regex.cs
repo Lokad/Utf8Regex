@@ -399,12 +399,18 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options.</summary>
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions)
     {
+        return MatchDetailedCore(input, startOffsetInBytes, matchOptions, CancellationToken.None);
+    }
+
+    private Utf8Pcre2MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    {
         var subject = ValidateSubjectAndStart(input, startOffsetInBytes, out var start);
         if (Pcre2Runner.TryMatchDetailed(
                 _program,
                 ref subject,
                 start,
                 matchOptions,
+                cancellationToken,
                 out var directGroups,
                 out var directMark))
         {
@@ -437,7 +443,7 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchDetailed(input, startOffsetInBytes, matchOptions);
+        return MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Creates a cursor over non-overlapping matches in the UTF-8 subject.</summary>
@@ -573,12 +579,14 @@ public sealed partial class Utf8Pcre2Regex
             return ProbeViaNonPartialMatch(input, startOffsetInBytes);
         }
 
-        if (_program.Operations.Match is Pcre2BacktrackingDirectProgram &&
+        if (_program.Operations.Match 
+            is Pcre2BacktrackingDirectProgram or Pcre2SliceDirectProgram &&
             Pcre2Runner.TryMatchDetailed(
                 _program,
                 ref subject,
                 start,
                 matchOptions,
+                CancellationToken.None,
                 out var directGroups,
                 out var directMark))
         {
@@ -1107,13 +1115,14 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2Analysis Analyze()
     {
         var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
+        var sliceFallback = (_program.Operations.Match as Pcre2SliceDirectProgram)?.Fallback;
         var literal = (_program.Operations.Match as Pcre2LiteralDirectProgram)?.Program;
         return new Utf8Pcre2Analysis
         {
             // R05: every selectable program kind is owned; no BCL-direct kind remains.
             IsFullyNative = true,
             IsExactLiteral = literal is not null,
-            MinRequiredLengthInBytes = literal?.LiteralUtf8.Length ?? backtracking?.AnalyzedMinimumByteLength ?? 0,
+            MinRequiredLengthInBytes = literal?.LiteralUtf8.Length ?? backtracking?.AnalyzedMinimumByteLength ?? sliceFallback?.AnalyzedMinimumByteLength ?? 0,
             HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
             UsesBranchReset = backtracking?.GroupNames.Length > 1 &&
                 backtracking.CaptureSlotCount < backtracking.GroupNames.Length,

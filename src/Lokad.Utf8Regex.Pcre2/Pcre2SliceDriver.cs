@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -180,6 +181,96 @@ internal static class Pcre2SliceDriver
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
+    }
+
+    internal static bool TryMatchDetailed(
+        Utf8SliceProgram program,
+        ref Utf8ValidatedInput input,
+        Utf8BytePosition start,
+        Pcre2CompileRequest request,
+        CancellationToken cancellationToken,
+        out Pcre2GroupData[] groups,
+        out string? mark)
+    {
+        var invocation = CreateInvocation(request, cancellationToken);
+        var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        try
+        {
+            var bytes = input.Bytes;
+            for (var position = start.Value; position <= bytes.Length; position++)
+            {
+                Array.Fill(slots.Starts, -1);
+                Array.Fill(slots.Ends, -1);
+                var outcome = Utf8SliceRunner.TryMatchAt(
+                    program,
+                    bytes,
+                    position,
+                    slots.Starts,
+                    slots.Ends,
+                    false,
+                    false,
+                    ref invocation);
+                ThrowIfSliceBreached(outcome.Breach);
+                if (!outcome.IsMatch)
+                {
+                    continue;
+                }
+
+                groups = ProjectSliceGroups(
+                    program,
+                    bytes,
+                    position,
+                    outcome.EndIndex,
+                    slots.Starts,
+                    slots.Ends);
+                mark = null;
+                return true;
+            }
+
+            groups = [];
+            mark = null;
+            return true;
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException(
+                "The PCRE2 match deadline expired.",
+                Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
+        }
+    }
+
+    // Slice capture slots are zero-based for groups 1..N while
+    // Pcre2Runner.ProjectCaptures expects one-based slots, so the
+    // shared batch projector cannot consume them directly. Project
+    // group by group instead: every slice range starts and ends on
+    // scalar boundaries, where FromByteOffsets agrees exactly with
+    // the batch projector (same flags, same prefix code-unit counts).
+    private static Pcre2GroupData[] ProjectSliceGroups(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        int matchStart,
+        int matchEnd,
+        int[] captureStarts,
+        int[] captureEnds)
+    {
+        var groups = new Pcre2GroupData[program.GroupCount + 1];
+        groups[0] = Pcre2GroupData.FromByteOffsets(
+            input, 0, matchStart, matchEnd);
+        for (var group = 1; group <= program.GroupCount; group++)
+        {
+            var captureStart = captureStarts[group - 1];
+            var captureEnd = captureEnds[group - 1];
+            groups[group] = captureStart < 0 || captureEnd < captureStart
+                ? new Pcre2GroupData { Number = group, Success = false }
+                : Pcre2GroupData.FromByteOffsets(
+                    input, group, captureStart, captureEnd);
+        }
+
+        return groups;
     }
 
     private static Utf8SliceInvocation CreateInvocation(
