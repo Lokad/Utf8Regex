@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:20:11.5997623+00:00`
-- Snapshot SHA-256: `996CDF0C305D225F8E5A156FEC6655DE343DE816E3DB42DD8FB8F84355A8B764`
+- Generated: `2026-09-23T04:21:45.6324723+00:00`
+- Snapshot SHA-256: `5B88B0EFDFD3342BDF162C82C2876410A66DD15A16B7DF0883C30D98AF21FA64`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `45` managed faster, `0` equivalent, `3` CPython faster, `20` inconclusive, `22` unqualified
+- Public Status: `48` managed faster, `0` equivalent, `3` CPython faster, `21` inconclusive, `18` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -158,8 +158,8 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `findall/empty-progression-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 0.968 us | 27.912 us | 0.03x | 32.750 us | 48.585 us | 4,128 B |
 | `findall/optional-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 32.219 us | 37.791 us | 0.81x | 45.175 us | 100.983 us | 15,088 B |
 | `findall/named-capture-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 45.464 us | 59.788 us | 0.76x | 76.012 us | 143.500 us | 58,120 B |
-| `findall/structural-many` | `FindAllStructural` | Historical | Unqualified | 84.959 us | 153.155 us | 0.55x | 154.318 us | 105.079 us | 46,640 B |
-| `finditer/zero-detailed` | `FindIterDetailed` | Historical | Unqualified | 1.079 us | 150.581 us | 0.01x | 152.775 us | 0.610 us | 17,456 B |
+| `findall/structural-many` | `FindAllStructural` | EagerMaterializedResult | Managed faster | 47.635 us | 115.868 us | 0.41x | 154.318 us | 105.079 us | 46,640 B |
+| `finditer/zero-detailed` | `FindIterDetailed` | EagerMaterializedResult | Managed faster | 1.043 us | 90.601 us | 0.01x | 152.775 us | 0.610 us | 17,456 B |
 
 ### Replace and Subn
 
@@ -171,8 +171,8 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `replacement/subn-utf8` | `SubnUtf8` | EagerMaterializedResult | Inconclusive | 23.901 us | 70.203 us | 0.38x | 86.854 us | 452.245 us | 20,720 B |
 | `replacement/evaluator-string` | `SubnEvaluatorString` | EagerMaterializedResult | Inconclusive | 210.027 us | 9,829.700 us | 0.02x | 14,665.680 us | 344.504 us | 878,872 B |
 | `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | EagerMaterializedResult | Managed faster | 213.837 us | 9,775.917 us | 0.02x | 14,662.325 us | 341.058 us | 875,768 B |
-| `replacement/no-match-string` | `ReplaceString` | Historical | Unqualified | 1.447 us | 2.270 us | 0.64x | 3.032 us | 7.428 us | 20,232 B |
-| `replacement/one-template-string` | `ReplaceString` | Historical | Unqualified | 1.055 us | 16,940.993 us | 0.00x | 16,912.899 us | 2.834 us | 8,496 B |
+| `replacement/no-match-string` | `ReplaceString` | EagerMaterializedResult | Managed faster | 1.074 us | 1.320 us | 0.81x | 3.032 us | 7.428 us | 20,232 B |
+| `replacement/one-template-string` | `ReplaceString` | EagerMaterializedResult | Inconclusive | 0.754 us | 8,757.550 us | 0.00x | 16,912.899 us | 2.834 us | 8,496 B |
 | `replacement/named-template-string` | `ReplaceString` | Historical | Unqualified | 0.674 us | 0.774 us | 0.87x | 1.014 us | 0.489 us | 360 B |
 | `replacement/unmatched-template-string` | `ReplaceString` | Historical | Unqualified | 30.283 us | 41.912 us | 0.72x | 42.345 us | 31.077 us | 3,344 B |
 | `replacement/limited-string` | `ReplaceStringLimited` | Historical | Unqualified | 0.916 us | 0.395 us | 2.32x | 1.017 us | 5.174 us | 12,576 B |
