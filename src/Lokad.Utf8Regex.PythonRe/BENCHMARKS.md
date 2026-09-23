@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T04:05:26.2044708+00:00`
-- Snapshot SHA-256: `B3B06064E114A2A1877A62DC91F1AE604C51BF5EF00CCA595298961EB00D01F8`
+- Generated: `2026-09-23T04:07:12.5153771+00:00`
+- Snapshot SHA-256: `264BF5145BD72F9A957101A13698DC619EB6CE731D4808063F082837FF7FCEBF`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `29` managed faster, `0` equivalent, `3` CPython faster, `8` inconclusive, `50` unqualified
+- Public Status: `31` managed faster, `0` equivalent, `3` CPython faster, `10` inconclusive, `46` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -138,10 +138,10 @@ Historical independent point columns were measured from source `30f9b58c44cc` on
 | `family/count` | `Count` | ScalarResult | Inconclusive | 70.036 us | 1,355.226 us | 0.05x | 1,477.809 us | 764.313 us | 0 B |
 | `class-run/count` | `Count` | ScalarResult | Managed faster | 386.476 us | 1,401.141 us | 0.28x | 1,747.536 us | 697.325 us | 172,056 B |
 | `unicode/count` | `Count` | ScalarResult | Managed faster | 25.337 us | 228.452 us | 0.11x | 360.670 us | 310.392 us | 0 B |
-| `findall/full-strings` | `FindAllStrings` | Historical | Unqualified | 306.298 us | 266.724 us | 1.15x | 267.831 us | 405.500 us | 165,936 B |
-| `findall/full-utf8` | `FindAllUtf8` | Historical | Unqualified | 296.348 us | 411.164 us | 0.72x | 386.740 us | 455.065 us | 165,936 B |
-| `findall/unicode-full-strings` | `FindAllStrings` | Historical | Unqualified | 23.934 us | 22.345 us | 1.07x | 33.968 us | 72.601 us | 4,120 B |
-| `findall/unicode-full-utf8` | `FindAllUtf8` | Historical | Unqualified | 56.422 us | 49.313 us | 1.14x | 61.262 us | 82.955 us | 24,600 B |
+| `findall/full-strings` | `FindAllStrings` | EagerMaterializedResult | Inconclusive | 207.911 us | 227.929 us | 0.90x | 267.831 us | 405.500 us | 165,936 B |
+| `findall/full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Managed faster | 163.113 us | 308.266 us | 0.53x | 386.740 us | 455.065 us | 165,936 B |
+| `findall/unicode-full-strings` | `FindAllStrings` | EagerMaterializedResult | Managed faster | 12.096 us | 16.155 us | 0.74x | 33.968 us | 72.601 us | 4,120 B |
+| `findall/unicode-full-utf8` | `FindAllUtf8` | EagerMaterializedResult | Inconclusive | 32.393 us | 37.762 us | 0.85x | 61.262 us | 82.955 us | 24,600 B |
 | `findall/one-capture-strings` | `FindAllStrings` | Historical | Unqualified | 198.098 us | 177.891 us | 1.11x | 180.681 us | 387.484 us | 149,792 B |
 | `findall/many-capture-strings` | `FindAllStrings` | Historical | Unqualified | 324.050 us | 307.647 us | 1.05x | 308.273 us | 625.652 us | 299,296 B |
 | `findall/many-capture-utf8` | `FindAllUtf8` | Historical | Unqualified | 645.053 us | 1,040.629 us | 0.62x | 1,037.212 us | 719.675 us | 1,528,096 B |
