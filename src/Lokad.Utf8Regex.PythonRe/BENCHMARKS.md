@@ -22,14 +22,14 @@ Eligible ASCII one-shot rows also measure a CPython bytes `Pattern` over the ide
 
 ## Snapshot summary
 
-- Generated: `2026-09-23T00:51:56.9176779+00:00`
-- Snapshot SHA-256: `37EFDB951CC298988ECA9E67B1B0C33CF76B09D76C8892DA9F9462EC29C21BF8`
+- Generated: `2026-09-23T00:55:52.2909515+00:00`
+- Snapshot SHA-256: `570ECFB3BE8565045FDC8A03ABFEB3389C1B10475134E59209FFCC5E3526E81E`
 - Schema: `10`
 - Catalog SHA-256: `44F1F6CBA90CD0835980E6D9269CBD95BCF05E4A4043C65C3E71B8681B579666`
 - Cases: `90`
 - Lifecycle families: `0`
 - Scaling families: `7`
-- Public Status: `56` managed faster, `0` equivalent, `4` CPython faster, `20` inconclusive, `10` unqualified
+- Public Status: `58` managed faster, `0` equivalent, `4` CPython faster, `22` inconclusive, `6` unqualified
 - Historical point measurement environments represented: `1`
 - Corpus: [`tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json`](../../tests/Lokad.Utf8Regex.PythonRe.Tests/Corpus/ported-core.json) (`9` vectors, SHA-256 `51793C8077BE3C54BB7A45283D08FCADB32CFEAAEE06A5A90AFEE5DBA8DEBCDC`)
 - Corpus provenance limitation: The original upstream CPython version was not recorded; do not infer one from local vector names.
@@ -188,10 +188,10 @@ Historical independent point columns were measured from source `434eb20d0007` on
 | `split/no-separator` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 0.844 us | 8.824 us | 0.10x | 24.139 us | 5.103 us | 8,920 B |
 | `split/one-separator` | `SplitStrings` | EagerMaterializedResult | Managed faster | 0.837 us | 4.335 us | 0.19x | 11.292 us | 2.912 us | 8,496 B |
 | `split/limited` | `SplitStringsLimited` | EagerMaterializedResult | CPython faster | 1.138 us | 0.381 us | 3.00x | 1.035 us | 4.123 us | 12,152 B |
-| `split/optional-capture` | `SplitStrings` | Historical | Unqualified | 81.467 us | 78.331 us | 1.04x | 79.448 us | 88.821 us | 182,032 B |
-| `split/zero-width` | `SplitStrings` | Historical | Unqualified | 12.142 us | 51.149 us | 0.24x | 51.780 us | 309.861 us | 48,656 B |
-| `split/unicode` | `SplitStrings` | Historical | Unqualified | 24.958 us | 30.147 us | 0.83x | 32.443 us | 53.266 us | 26,104 B |
-| `split/detailed` | `SplitDetailed` | Historical | Unqualified | 63.565 us | 117.574 us | 0.54x | 117.792 us | 94.755 us | 116,752 B |
+| `split/optional-capture` | `SplitStrings` | EagerMaterializedResult | Managed faster | 40.028 us | 57.817 us | 0.69x | 79.448 us | 88.821 us | 182,032 B |
+| `split/zero-width` | `SplitStrings` | EagerMaterializedResult | Inconclusive | 6.160 us | 44.842 us | 0.13x | 51.780 us | 309.861 us | 48,656 B |
+| `split/unicode` | `SplitStrings` | EagerMaterializedResult | Managed faster | 14.570 us | 26.098 us | 0.56x | 32.443 us | 53.266 us | 26,104 B |
+| `split/detailed` | `SplitDetailed` | EagerMaterializedResult | Inconclusive | 34.289 us | 86.021 us | 0.40x | 117.792 us | 94.755 us | 116,752 B |
 
 ### Real-corpus workloads
 
