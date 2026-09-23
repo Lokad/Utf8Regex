@@ -23,7 +23,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record LiteralNode(byte Value) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
-    internal sealed record SetNode(byte[] Mask16) : Utf8SliceNode(Utf8SliceNodeKind.Set)
+    internal sealed record SetNode(byte[] Mask16, bool Negated) : Utf8SliceNode(Utf8SliceNodeKind.Set)
     {
         internal bool Matches(byte value)
         {
@@ -97,14 +97,16 @@ internal sealed class Utf8SliceProgram
     internal byte[][] SetMasks { get; }
     internal int RepeatCount { get; }
     internal int GroupCount { get; }
-    // R03 dot marker: the shared runner consumes one whole scalar per dot
-    // while the .NET oracle matches one UTF-16 unit per dot. Programs
-    // containing a dot set this marker; routing declines astral inputs for
-    // them so unit-exact shapes keep oracle parity. ASCII and BMP inputs
-    // stay owned: their units are scalars, so both semantics agree. Other
-    // shapes never set this: literals, concatenation, alternation, repeats,
-    // and captures are encoding-indifferent, so their routes skip the input
-    // scan below entirely.
+    // R03 astral-divergence marker: the shared runner consumes one whole
+    // scalar per dot while the .NET oracle matches one UTF-16 unit per dot,
+    // and negated ASCII classes consume whole non-ASCII scalars while the
+    // oracle matches astral halves. Programs containing a dot or a negated
+    // class set this marker; routing declines astral inputs for them so
+    // unit-exact shapes keep oracle parity. ASCII and BMP inputs stay owned:
+    // their units are scalars, so both semantics agree. Other shapes never
+    // set this: literals, positive classes, concatenation, alternation,
+    // repeats, captures, and anchors are encoding-indifferent, so their
+    // routes skip the input scan below entirely.
     internal bool RequiresAstralFreeInput { get; }
 
     // Routing gate: true unless this program needs astral-free input and
@@ -138,7 +140,8 @@ internal static class Utf8SliceLowerer
         var requiresAstralFreeInput = false;
         foreach (var instruction in lowerer.Instructions)
         {
-            if (instruction.Kind == Utf8SliceInstructionKind.Dot)
+            if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
+                (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0))
             {
                 requiresAstralFreeInput = true;
                 break;
@@ -187,7 +190,7 @@ internal static class Utf8SliceLowerer
 
                     var maskIndex = SetMasks.Count;
                     SetMasks.Add(set.Mask16);
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.ConcatNode concat:
                     foreach (var child in concat.Children)

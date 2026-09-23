@@ -24,6 +24,7 @@ public sealed class Utf8SliceWiringTests
     [InlineData("(ab|a)+z")]
     [InlineData("(a{2,3}b+)|(c+d)")]
     [InlineData("a*?b")]
+    [InlineData("[a-z]+")]
     public void SliceShapesRouteOwned(string pattern)
     {
         foreach (var options in Selections)
@@ -34,9 +35,9 @@ public sealed class Utf8SliceWiringTests
     }
 
     [Theory]
-    [InlineData("[a-z]+")]
     [InlineData("(a|ab)c")]
     [InlineData("a{2,3}b")]
+    [InlineData("([0-9]){1,3}?x", RegexOptions.Compiled | RegexOptions.CultureInvariant)]
     [InlineData("a.c")]
     [InlineData("(a+)(b+)", RegexOptions.IgnoreCase)]
     public void DeclinedShapesKeepLegacyRouting(string pattern, RegexOptions options = RegexOptions.CultureInvariant)

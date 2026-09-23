@@ -1064,9 +1064,12 @@ public sealed partial class Utf8Pcre2Regex
             written++;
         }
 
+        // Probe exactly like the sibling MatchMany fallbacks (and the direct
+        // cursor fast path): a full destination does not imply a remaining
+        // match, and slice-served enumeration can end exactly at capacity.
         if (written == destination.Length)
         {
-            isMore = true;
+            isMore = enumerator.MoveNext();
             return written;
         }
 

@@ -176,7 +176,6 @@ public sealed class LazyFallbackConstructionTests
     }
 
     [Theory]
-    [InlineData("[a-z]+", "xxabcxx")]
     [InlineData("(a)(b)", "xxabxx")]
     public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
     {

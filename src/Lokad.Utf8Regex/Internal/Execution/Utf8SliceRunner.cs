@@ -494,11 +494,44 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Set:
-                    if (inputIndex < input.Length && input[inputIndex] < 128 &&
-                        (program.SetMasks[instruction.A][input[inputIndex] >> 3] & (byte)(1 << (input[inputIndex] & 7))) != 0)
+                    // Positive classes match one ASCII member byte. Negated
+                    // classes match one ASCII non-member byte or one whole
+                    // non-ASCII scalar (BMP units agree; astral inputs are
+                    // declined at routing). Continuation bytes fail, so
+                    // byte-stepping drivers cannot report unaligned starts.
+                    // Inputs are validated before execution, hence lead
+                    // widths stay in bounds without revalidation here.
+                    if (inputIndex < input.Length &&
+                        (input[inputIndex] & 0xC0) != 0x80)
                     {
-                        inputIndex++;
-                        programIndex++;
+                        var candidate = input[inputIndex];
+                        var inMask = candidate < 128 &&
+                            (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
+                        if (inMask != (instruction.B != 0))
+                        {
+                            if (candidate < 0x80)
+                            {
+                                inputIndex++;
+                            }
+                            else if (candidate < 0xE0)
+                            {
+                                inputIndex += 2;
+                            }
+                            else if (candidate < 0xF0)
+                            {
+                                inputIndex += 3;
+                            }
+                            else
+                            {
+                                inputIndex += 4;
+                            }
+
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
                     }
                     else
                     {

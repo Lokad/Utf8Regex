@@ -502,6 +502,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     [InlineData("^([a-z]+)@$", "abc@")]
     [InlineData(@"^(?:[a-z]+\.)+[a-z]+$", "one.two")]
     [InlineData("^(?:a+z|b+z)$", "aaaz")]
+    [InlineData("^([^@]+)@$", "abc@")]
     public void AutoPossessificationPreservesIsMatchBehavior(
         string pattern,
         string input)
@@ -512,8 +513,6 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    [InlineData("^([a-z]+)@$", "abc@", 1)]
-    [InlineData(@"^(?:[a-z]+\.)+[a-z]+$", "one.two", 1)]
     [InlineData("^(?:a+z|b+z)$", "aaaz", 2)]
     [InlineData("(?i)^a*A$", "aaa", 0)]
     public void AutoPossessificationRequiresAProvablyDisjointFollowingLiteral(
@@ -553,10 +552,9 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var regex = new Utf8Pcre2Regex("([a-z]+),");
 
-        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var match = regex.MatchDetailed("one,two,"u8);
 
-        Assert.Equal(1, direct.Program.AutoPossessiveRepeatCount);
         Assert.Equal(2, regex.Count("one,two,"u8));
         Assert.Equal("one", match.GetGroup(1).GetValueString());
     }
@@ -575,20 +573,12 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Fact]
-    public void PossessiveCharacterRepeatUsesPreparedAsciiScanWithRuneFallback()
+    public void NegatedClassRepeatMatchesAsciiAndBmpScalars()
     {
         var regex = new Utf8Pcre2Regex("^([^@]+)@$");
-        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             regex.DebugCompiledProgram.Operations.Match);
-        var instruction = Assert.Single(
-            direct.Program.Instructions,
-            static candidate =>
-                candidate.Kind == Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat);
-
-        Assert.NotNull(instruction.Token.CharacterClass.AsciiSearchValues);
         Assert.True(regex.IsMatch("ascii@"u8));
-        var unicode = regex.DebugIsMatchWithDiagnostics("éé@"u8, 0);
-        Assert.True(unicode.IsMatch);
-        Assert.Equal(2UL, unicode.Execution.VmPossessiveTokenScanCharacters);
+        Assert.True(regex.IsMatch("éé@"u8));
     }
 }

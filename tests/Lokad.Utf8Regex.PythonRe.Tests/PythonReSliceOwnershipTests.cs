@@ -287,6 +287,94 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 classes: positive ASCII classes pass the translator through
+    // and run the owned core slice; negated classes are rewritten
+    // scalar-exact (like dots) and decline the slice while keeping CPython
+    // parity through the translated pattern. Expectations are CPython
+    // 3.13.2 ground truth with UTF-16 offsets. `[\\n-\\r]`-style escape
+    // ranges are excluded: the translator currently drops those backslashes
+    // (pre-existing translator gap, out of slice scope).
+    // The translator wraps every class in a non-capturing group the
+    // core slice declines, and rewrites complements scalar-exact, so all
+    // class shapes decline the owned slice (like dots) while keeping
+    // parity through the translated pattern.
+    [Theory]
+    [InlineData("[a-z]+")]
+    [InlineData("[abc]+")]
+    [InlineData("[a-c-e]+")]
+    [InlineData("[A-z]+")]
+    [InlineData("[^a-z]+")]
+    [InlineData("[\\d]+")]
+    public void ClassShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> ClassSearchCases()
+    {
+        yield return new object?[] { "[a-z]+", "xa\U0001F600by", 0, true, 0, 2 };
+        yield return new object?[] { "[^a-z]+", "x\U0001F600y", 0, true, 1, 3 };
+        yield return new object?[] { "[abc]+", "xxcabbayy", 0, true, 2, 7 };
+        yield return new object?[] { "[a-c-e]+", "xxdyy", 0, false, 0, 0 };
+        yield return new object?[] { "[A-z]+", "xx[yy", 0, true, 0, 5 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ClassSearchCases))]
+    public void ClassSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[a-z]+", "xa\U0001F600by", 2)]
+    [InlineData("[^a-z]+", "x\U0001F600y", 1)]
+    [InlineData("[a-c-e]+", "abcdef-", 3)]
+    public void ClassCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[a-z]+", "abc", true)]
+    [InlineData("[^a-z]+", "x\U0001F600y", false)]
+    [InlineData("[abc]+", "xca", false)]
+    public void ClassMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[a-z]+", "abc", true)]
+    [InlineData("[^a-z]+", "\U0001F600", true)]
+    [InlineData("[a-z]+", "abC", false)]
+    public void ClassFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Fact]
     public void PreCanceledTokenAbortsOwnedSearch()
     {

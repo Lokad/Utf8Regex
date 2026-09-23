@@ -19,6 +19,13 @@ public sealed class Pcre2AutoPossessifyTests
         Assert.Equal(expected, program.Program.AutoPossessiveRepeatCount);
     }
 
+    private static void AssertAutoPossessCount(string pattern, Pcre2CompileOptions options, int expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, options, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.Equal(expected, program.Program.AutoPossessiveRepeatCount);
+    }
+
     private static void AssertMatchesBcl(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -60,9 +67,12 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Theory]
-    [InlineData("[ab]+b")]
-    public void OverlappingOrNullableShapesDecline(string pattern)
+    [InlineData("[ab]+b", Pcre2CompileOptions.Caseless)]
+    public void OverlappingOrNullableShapesDecline(string pattern, Pcre2CompileOptions options)
     {
-        AssertAutoPossessCount(pattern, 0);
+        // R03 class slice serves the default-options shape on the shared
+        // runner; caseless still routes the backtracking program, where the
+        // overlap decline is proven.
+        AssertAutoPossessCount(pattern, options, 0);
     }
 }

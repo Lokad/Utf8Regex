@@ -31,6 +31,15 @@ public sealed class Utf8SliceParserTests
     [InlineData("^a.*b$", 0)]
     [InlineData("^(a.c)+$", 1)]
     [InlineData("a^b", 0)]
+    [InlineData("[a-z]", 0)]
+    [InlineData("[^a-z]", 0)]
+    [InlineData("[a-c-e]", 0)]
+    [InlineData("[A-z]", 0)]
+    [InlineData("[\\b]", 0)]
+    [InlineData("[]a]", 0)]
+    [InlineData("[-a]", 0)]
+    [InlineData("[[a]", 0)]
+    [InlineData("[^]a]", 0)]
     public void SupportedShapesLower(string pattern, int expectedGroups)
     {
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
@@ -41,7 +50,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData("[a-z]+")]
     [InlineData(@"\bword")]
     [InlineData("(?=a)a")]
     [InlineData("(a)(?(1)b|c)")]
@@ -56,9 +64,42 @@ public sealed class Utf8SliceParserTests
     [InlineData("a)")]
     [InlineData("a**")]
     [InlineData("a{3,2}")]
+    [InlineData("[\\d]")]
+    [InlineData("[z-a]")]
+    [InlineData("[a-[b]]")]
+    [InlineData("[[:alpha:]]")]
+    [InlineData("[\\x41]")]
+    [InlineData("[]")]
+    [InlineData("[^]")]
+    [InlineData("(?<w>[a-z]+)")]
+    [InlineData("(?:[a-z]+)")]
+    [InlineData("(?=[a-z]+)")]
+    [InlineData("a)[a-z]+")]
+    [InlineData("(?(1)[a-z]+|c)")]
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [InlineData("a{2,4}?a")]
+    [InlineData("([0-9]){1,3}?x")]
+    [InlineData("a??")]
+    public void FiniteMaximumLazyRepeatDeclinesCompiledLane(string pattern)
+    {
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [InlineData("a.*?b")]
+    [InlineData("a*?b")]
+    [InlineData("a+?b")]
+    [InlineData("a{2,4}a")]
+    public void InfiniteMaximumLazyAndGreedyRepeatsStayCompiled(string pattern)
+    {
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant));
     }
 
     [Theory]

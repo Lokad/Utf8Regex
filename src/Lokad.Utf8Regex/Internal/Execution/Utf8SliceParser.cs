@@ -5,8 +5,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
 /// numbered groups, (R03) dots with Singleline-scoped newline matching,
-/// and anchors with Multiline-scoped line edges.
-/// Anything else (classes, anchors, boundaries,
+/// anchors with Multiline-scoped line edges, and ASCII character classes
+/// (literals, ranges, and supported escapes; negated classes decline astral
+/// inputs at routing).
+/// Anything else (boundaries,
 /// lookarounds, backreferences, named/non-capturing groups, shorthand escapes,
 /// case/direction-sensitive options) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
@@ -64,6 +66,18 @@ internal static class Utf8SliceParser
             return null;
         }
 
+        // .NET 10 per-lane contract: the BCL compiler keeps one iteration of
+        // progress when a finite-maximum lazy loop abandons at its maximum
+        // while the interpreter abandons fully (pinned by
+        // LazyLoopAbandonmentPinsDotNet10OracleDisagreement). The shared
+        // runner follows interpreter abandonment, so compiled-lane shapes
+        // with finite-maximum lazy repeats decline to their BCL-compiled
+        // fallback; infinite-maximum lazy loops agree on both lanes.
+        if ((options & RegexOptions.Compiled) != 0 && parser.SawFiniteMaximumLazyRepeat)
+        {
+            return null;
+        }
+
         root ??= new Utf8SliceNode.EmptyNode();
         return Utf8SliceLowerer.Lower(root);
     }
@@ -75,6 +89,7 @@ internal static class Utf8SliceParser
         private readonly bool _matchMultiline;
         private int _position;
         private int _groups;
+        private bool _sawFiniteMaximumLazyRepeat;
 
         internal Parser(string pattern, bool matchNewline, bool matchMultiline)
         {
@@ -85,6 +100,7 @@ internal static class Utf8SliceParser
 
         internal int Position => _position;
         internal int GroupCount => _groups;
+        internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
 
         internal bool TryParseAlternation(int depth, out Utf8SliceNode? root)
         {
@@ -185,6 +201,11 @@ internal static class Utf8SliceParser
             {
                 lazy = true;
                 _position++;
+            }
+
+            if (lazy && maximum != int.MaxValue)
+            {
+                _sawFiniteMaximumLazyRepeat = true;
             }
 
             node = new Utf8SliceNode.RepeatNode(atom, minimum, maximum, lazy);
@@ -298,9 +319,10 @@ internal static class Utf8SliceParser
                 case '?':
                 case '{':
                 case '}':
-                case '[':
                 case ']':
                     return false;
+                case '[':
+                    return TryParseClass(out node);
                 case '^':
                     _position++;
                     node = new Utf8SliceNode.AnchorNode(true, _matchMultiline);
@@ -323,6 +345,200 @@ internal static class Utf8SliceParser
         private static bool IsEscapablePunctuation(char character)
         {
             return character is '.' or '$' or '^' or '{' or '}' or '[' or ']' or '(' or ')' or '|' or '*' or '+' or '?' or '\\';
+        }
+
+        // ASCII character classes, mirroring the pinned runtime parser:
+        // literals (with `]`-first and `-`/POSIX-edge rules), ascending
+        // ranges (escapes allowed as bounds), and supported single-char
+        // escapes. Anything Unicode, shorthand, or structural (categories,
+        // hex/octal/control escapes, subtraction, reversed ranges) declines
+        // to null so legacy routing preserves exact behavior including
+        // construction failures. `[` followed by `:`, `.`, or `=` also
+        // declines: those open POSIX, collating, or equivalence classes in
+        // sibling flavors while BCL reads plain literals, and a shared
+        // program cannot serve both readings.
+        private bool TryParseClass(out Utf8SliceNode? node)
+        {
+            node = null;
+            _position++;
+            var negated = false;
+            if (!AtEnd && _pattern[_position] == '^')
+            {
+                negated = true;
+                _position++;
+            }
+
+            var bits = new bool[128];
+            var lowerBound = -1;
+            var inRange = false;
+            var firstChar = true;
+            var closed = false;
+            for (; !AtEnd; firstChar = false)
+            {
+                var translatedChar = false;
+                var character = _pattern[_position];
+                _position++;
+                if (character == ']' && !firstChar)
+                {
+                    closed = true;
+                    break;
+                }
+
+                int value;
+                if (character == '\\' && !AtEnd)
+                {
+                    var escaped = _pattern[_position];
+                    if (escaped is 'd' or 'D' or 's' or 'S' or 'w' or 'W' or 'p' or 'P')
+                    {
+                        return false;
+                    }
+
+                    if (escaped == '-')
+                    {
+                        _position++;
+                        if (inRange)
+                        {
+                            if (lowerBound > '-')
+                            {
+                                return false;
+                            }
+
+                            for (var member = lowerBound; member <= '-'; member++)
+                            {
+                                bits[member] = true;
+                            }
+
+                            inRange = false;
+                            lowerBound = -1;
+                        }
+                        else
+                        {
+                            bits['-'] = true;
+                        }
+
+                        continue;
+                    }
+
+                    switch (escaped)
+                    {
+                        case 'a':
+                            value = 7;
+                            break;
+                        case 'b':
+                            value = 8;
+                            break;
+                        case 'e':
+                            value = 27;
+                            break;
+                        case 'f':
+                            value = 12;
+                            break;
+                        case 'n':
+                            value = 10;
+                            break;
+                        case 'r':
+                            value = 13;
+                            break;
+                        case 't':
+                            value = 9;
+                            break;
+                        case 'v':
+                            value = 11;
+                            break;
+                        case '0':
+                            if (_position + 1 < _pattern.Length && char.IsAsciiDigit(_pattern[_position + 1]))
+                            {
+                                return false;
+                            }
+
+                            value = 0;
+                            break;
+                        default:
+                            if ((escaped >= 'a' && escaped <= 'z') || (escaped >= 'A' && escaped <= 'Z') || (escaped >= '0' && escaped <= '9'))
+                            {
+                                return false;
+                            }
+
+                            if (escaped > 127)
+                            {
+                                return false;
+                            }
+
+                            value = escaped;
+                            break;
+                    }
+
+                    _position++;
+                    translatedChar = true;
+                }
+                else
+                {
+                    if (character > 127)
+                    {
+                        return false;
+                    }
+
+                    value = character;
+                }
+
+                if (inRange)
+                {
+                    inRange = false;
+                    if (value == '[' && !translatedChar && !firstChar)
+                    {
+                        return false;
+                    }
+
+                    if (lowerBound > value)
+                    {
+                        return false;
+                    }
+
+                    for (var member = lowerBound; member <= value; member++)
+                    {
+                        bits[member] = true;
+                    }
+
+                    lowerBound = -1;
+                }
+                else if (_position + 1 < _pattern.Length && _pattern[_position] == '-' && _pattern[_position + 1] != ']')
+                {
+                    lowerBound = value;
+                    inRange = true;
+                    _position++;
+                }
+                else if (value == '-' && !translatedChar && !AtEnd && _pattern[_position] == '[' && !firstChar)
+                {
+                    return false;
+                }
+                else
+                {
+                    if (value == '[' && !translatedChar && !AtEnd &&
+                        (_pattern[_position] == ':' || _pattern[_position] == '.' || _pattern[_position] == '='))
+                    {
+                        return false;
+                    }
+
+                    bits[value] = true;
+                }
+            }
+
+            if (!closed)
+            {
+                return false;
+            }
+
+            var mask = new byte[16];
+            for (var member = 0; member < 128; member++)
+            {
+                if (bits[member])
+                {
+                    mask[member >> 3] |= (byte)(1 << (member & 7));
+                }
+            }
+
+            node = new Utf8SliceNode.SetNode(mask, negated);
+            return true;
         }
 
         private bool AtEnd => _position >= _pattern.Length;
