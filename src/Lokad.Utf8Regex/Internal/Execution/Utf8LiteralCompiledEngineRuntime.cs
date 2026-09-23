@@ -12,6 +12,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
     IUtf8AsciiWellFormedMatchRuntime,
+    IUtf8WellFormedMatchRuntime,
     IUtf8UnvalidatedMatchRuntime
 {
     private const int PreparedSearcherLiteralFamilyCountThresholdBytes = 4096;
@@ -78,8 +79,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
     public override Utf8CompiledRuntimeCapabilities Capabilities => new(
         SupportsAsciiWellFormedOnlyMatch: _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch,
-        SupportsWellFormedOnlyMatch: false,
-        WellFormedOnlyMatchMissIsDefinitive: _smallAsciiLiteralFamilyPrimitive is not null,
+        SupportsWellFormedOnlyMatch: CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
+        WellFormedOnlyMatchMissIsDefinitive: _smallAsciiLiteralFamilyPrimitive is not null || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
         SupportsWellFormedOnlyCount: true,
         SupportsThrowIfInvalidOnlyCount: true,
         PreferValidateOnlyCount: false,
@@ -295,6 +296,20 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
 
         match = Utf8ValueMatch.NoMatch;
         return false;
+    }
+
+    public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
+    {
+        if (!CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite))
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+
+        match = _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral
+            ? MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false, inputIsAscii: false)
+            : MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        return true;
     }
 
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
