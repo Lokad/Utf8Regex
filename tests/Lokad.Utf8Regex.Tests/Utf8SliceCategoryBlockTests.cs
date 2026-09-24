@@ -38,6 +38,10 @@ public sealed class Utf8SliceCategoryBlockTests
         yield return new object?[] { "[^\\p{IsCherokee}ab]+" };
         yield return new object?[] { "[\\p{IsBasicLatin}\\d]+" };
         yield return new object?[] { "[\\p{IsBasicLatin}-x]+" };
+        yield return new object?[] { "\\p{_xmlC}+" };
+        yield return new object?[] { "\\P{_xmlC}+" };
+        yield return new object?[] { "\\p{_xmlD}+" };
+        yield return new object?[] { "[\\p{_xmlC}a]+" };
         yield return new object?[] { "(?i:\\p{IsBasicLatin}+)" };
     }
 
@@ -111,6 +115,16 @@ public sealed class Utf8SliceCategoryBlockTests
         yield return new object?[] { "[\\p{IsBasicLatin}]+", "a", ic, true };
         yield return new object?[] { "[^\\p{IsBasicLatin}]+", "k", ic, false };
         yield return new object?[] { "[\\P{IsBasicLatin}]+", "k", ic, true };
+        yield return new object?[] { "\\p{_xmlC}+", "a", ic, true };
+        yield return new object?[] { "\\p{_xmlC}+", "-", ic, true };
+        yield return new object?[] { "\\p{_xmlC}+", "\u212A", ic, true };
+        yield return new object?[] { "\\p{_xmlC}+", "\u00E9", ic, true };
+        yield return new object?[] { "\\P{_xmlC}+", "\u212A", ic, false };
+        yield return new object?[] { "\\P{_xmlC}+", "a", ic, false };
+        yield return new object?[] { "[\\p{_xmlC}a]+", "\u212A", ic, true };
+        yield return new object?[] { "[\\p{_xmlC}a]+", "\u00E9", ic, true };
+        yield return new object?[] { "\\p{_xmlD}+", "5", ic, true };
+        yield return new object?[] { "\\p{_xmlD}+", "a", ic, false };
     }
 
     [Theory]

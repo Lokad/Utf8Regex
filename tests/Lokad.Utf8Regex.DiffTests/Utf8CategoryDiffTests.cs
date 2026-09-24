@@ -91,6 +91,8 @@ public sealed class Utf8CategoryDiffTests
         { "[^\\P{IsBasicLatin}]+", "1ak\u00E9" },
         { "[\\p{IsCherokee}ab]+", "xa\u13A0\uAB701" },
         { "(\\p{IsLatinExtended-A}+)", "x\u0131I\u0160" },
+        { "\\p{_xmlC}+", "a-K" },
+        { "[\\p{_xmlC}a]+", "1aK\u00E9" },
     };
 
     private const RegexOptions CategoryIgnoreCaseOptions =

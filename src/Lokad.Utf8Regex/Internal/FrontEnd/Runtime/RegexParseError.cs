@@ -13,4 +13,5 @@ internal enum RegexParseError
     ReversedCharacterRange = 8,
     UnterminatedBracket = 9,
     ExclusionGroupNotLast = 10,
+    ShorthandClassInCharacterRange = 11,
 }

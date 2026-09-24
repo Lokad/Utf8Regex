@@ -26,6 +26,9 @@ public sealed class Utf8SliceCategorySetTests
         yield return new object?[] { "[\\p{L}\\D]+" };
         yield return new object?[] { "[^\\p{L}\\d]+" };
         yield return new object?[] { "[\\p{L}a-z]+" };
+        yield return new object?[] { "[\\p{L}-a]+" };
+        yield return new object?[] { "[\\p{IsBasicLatin}-a]+" };
+        yield return new object?[] { "[\\d-\\p{L}]+" };
         yield return new object?[] { "[]\\p{L}]+" };
         yield return new object?[] { "([\\p{L}\\p{Nd}_]+)" };
         yield return new object?[] { "[\\p{L}-\\d]+" };
@@ -80,9 +83,8 @@ public sealed class Utf8SliceCategorySetTests
     public static IEnumerable<object?[]> ParserDeclines()
     {
         // Range-bound categories decline the slice (the vendored front end
-        // keeps its pre-existing shorthand-in-range leniency here, logged
-        // R03 debt alongside [a-\db], instead of the BCL construction
-        // throw; legacy-exact behavior is preserved either way).
+        // throws ShorthandClassInCharacterRange, so construction fails
+        // BCL-exactly; see RangeBoundEscapesFailConstructionLikeRuntime).
         yield return new object?[] { "[a-\\p{L}]" };
         yield return new object?[] { "[a-\\P{L}]" };
     }
@@ -102,6 +104,27 @@ public sealed class Utf8SliceCategorySetTests
         yield return new object?[] { "([\\p{L}\\p{Nd}_]+)", 1 };
         yield return new object?[] { "[\\p{L}-\\d]+", 0 };
         yield return new object?[] { "[^\\p{IsGreek}a]+", 0 };
+    }
+
+    public static IEnumerable<object?[]> RangeBoundConstructionThrows()
+    {
+        // A shorthand or category escape in upper-bound position throws
+        // BCL-exactly at construction (the vendored gatekeeper records
+        // ShorthandClassInCharacterRange, closing the leniency debt).
+        yield return new object?[] { "[a-\\p{L}]" };
+        yield return new object?[] { "[a-\\P{L}]" };
+        yield return new object?[] { "[a-\\p{IsBasicLatin}]" };
+        yield return new object?[] { "[a-\\d]" };
+        yield return new object?[] { "[a-\\w]" };
+        yield return new object?[] { "[a-\\s]" };
+    }
+
+    [Theory]
+    [MemberData(nameof(RangeBoundConstructionThrows))]
+    public void RangeBoundEscapesFailConstructionLikeRuntime(string pattern)
+    {
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
     [Theory]
@@ -130,6 +153,11 @@ public sealed class Utf8SliceCategorySetTests
         yield return new object?[] { "[\\p{IsGreek}a]+", "a\u03B1b1", true };
         yield return new object?[] { "[^\\p{IsGreek}a]+", "ab\u03B1", true };
         yield return new object?[] { "[\\p{L}a-z]+", "aM1", true };
+        yield return new object?[] { "[\\p{L}-a]+", "a", true };
+        yield return new object?[] { "[\\p{IsBasicLatin}-a]+", "a", true };
+        yield return new object?[] { "[\\d-\\p{L}]+", "5", true };
+        yield return new object?[] { "[\\d-\\p{L}]+", "-", true };
+        yield return new object?[] { "[\\d-\\p{L}]+", "a", true };
     }
 
     [Theory]
@@ -184,6 +212,7 @@ public sealed class Utf8SliceCategorySetTests
         yield return new object?[] { "[^\\p{L}\\d]+", "a1 ", 1 };
         yield return new object?[] { "[\\p{IsGreek}a]+", "a\u03B1b1", 1 };
         yield return new object?[] { "[^\\p{IsGreek}a]+", "a\u03B1b1", 1 };
+        yield return new object?[] { "[\\d-\\p{L}]+", "5-a", 1 };
     }
 
     [Theory]

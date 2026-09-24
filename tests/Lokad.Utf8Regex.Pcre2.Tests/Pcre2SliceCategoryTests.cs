@@ -32,6 +32,8 @@ public sealed class Pcre2SliceCategoryTests
     [InlineData(@"[\p{IsBasicLatin}a]+")]
     [InlineData(@"[^\p{IsBasicLatin}a]+")]
     [InlineData(@"\p{IsCherokee}+")]
+    [InlineData(@"\p{_xmlC}+")]
+    [InlineData(@"\p{_xmlD}+")]
     public void CaselessBlockShapesDelegateToCore(string pattern)
     {
         // Blocks match through invariant case equivalents on the core slice,
@@ -167,6 +169,10 @@ public sealed class Pcre2SliceCategoryTests
         yield return new object?[] { @"\P{IsBasicLatin}+", "k", true };
         yield return new object?[] { @"\P{IsBasicLatin}+", "abc", false };
         yield return new object?[] { @"\p{IsCherokee}+", "x\uAB70y", true };
+        yield return new object?[] { @"\p{_xmlC}+", "a-", true };
+        yield return new object?[] { @"\p{_xmlC}+", "\u212A\u00E9", true };
+        yield return new object?[] { @"\P{_xmlC}+", "a", false };
+        yield return new object?[] { @"\p{_xmlD}+", "5a", true };
         yield return new object?[] { @"\p{IsCherokee}+", "abc", false };
         yield return new object?[] { @"[\p{IsBasicLatin}a]+", "\u212A", true };
         yield return new object?[] { @"[^\p{IsBasicLatin}a]+", "k", false };
@@ -189,6 +195,7 @@ public sealed class Pcre2SliceCategoryTests
         yield return new object?[] { @"[\p{IsBasicLatin}a]+", "1aKB\u00E9", 1 };
         yield return new object?[] { @"[^\p{IsBasicLatin}a]+", "aKB\u00E9", 1 };
         yield return new object?[] { @"\p{IsCherokee}+", "x\u13A0\uAB70y", 1 };
+        yield return new object?[] { @"\p{_xmlC}+", "a-1\u00E9", 1 };
     }
 
     [Theory]

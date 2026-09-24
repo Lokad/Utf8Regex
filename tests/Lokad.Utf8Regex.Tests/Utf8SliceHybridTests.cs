@@ -61,14 +61,6 @@ public sealed class Utf8SliceHybridTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
-    [Theory]
-    [InlineData("[a-\\d]")]
-    [InlineData("[a-\\w]")]
-    public void NonHybridClassShapesDecline(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-    }
 
 
     public static IEnumerable<object?[]> IsMatchCases()
