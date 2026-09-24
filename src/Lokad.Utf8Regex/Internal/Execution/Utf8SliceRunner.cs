@@ -1548,41 +1548,51 @@ internal static class Utf8SliceRunner
                         // Unicode property atoms test one BMP scalar against
                         // the table mask (general categories/groups) or the
                         // half-open block ranges. The IgnoreCase fold bit
-                        // only widens Ll/Lu/Lt to their cased union (every
-                        // other category is already case-complete; blocks
-                        // never carry the bit since they decline under
-                        // IgnoreCase at parse). Astral leads fail closed:
+                        // widens Ll/Lu/Lt to their cased union (every other
+                        // category is already case-complete) and matches block
+                        // ranges through invariant case equivalents (BCL
+                        // AddCaseEquivalenceRange, candidate-side lookup, so
+                        // the negated test keeps the BCL overlap instead of
+                        // a plain complement). Astral leads fail closed:
                         // routing declines astral inputs for category
                         // programs, so any astral attempt is unreachable and
                         // failing keeps byte-stepping drivers aligned.
                         // Continuation bytes fail like every consuming arm.
                         // Inputs are validated before execution, hence lead
                         // widths stay in bounds without revalidation here.
-                        static bool MatchesCategory(Utf8SliceCategoryTable table, char scalar, bool fold)
+                        static bool MatchesCategory(Utf8SliceCategoryTable table, char scalar, bool fold, bool negated)
                         {
                             var category = char.GetUnicodeCategory(scalar);
+                            bool maskHit;
                             if (fold &&
                                 (category == UnicodeCategory.LowercaseLetter ||
                                  category == UnicodeCategory.UppercaseLetter ||
                                  category == UnicodeCategory.TitlecaseLetter))
                             {
-                                return (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
+                                maskHit = (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
                             }
-
-                            if (((table.Mask >> (int)category) & 1u) != 0)
+                            else
                             {
-                                return true;
+                                maskHit = ((table.Mask >> (int)category) & 1u) != 0;
                             }
 
-                            for (var range = 0; range + 1 < table.Ranges.Length; range += 2)
+                            if (maskHit)
                             {
-                                if (scalar >= table.Ranges[range] && scalar < table.Ranges[range + 1])
-                                {
-                                    return true;
-                                }
+                                return !negated;
                             }
 
-                            return (table.Ranges.Length & 1) != 0 && scalar >= table.Ranges[table.Ranges.Length - 1];
+                            var inRanges = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar);
+                            if (!fold || table.Ranges.Length == 0)
+                            {
+                                return inRanges != negated;
+                            }
+
+                            if (!negated)
+                            {
+                                return inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: false);
+                            }
+
+                            return !inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: true);
                         }
 
                         // Mirrored categories test the scalar ending at the
@@ -1598,12 +1608,12 @@ internal static class Utf8SliceRunner
                                 bool rtlInClass;
                                 if (rtlCategoryLead < 0x80)
                                 {
-                                    rtlInClass = MatchesCategory(rtlCategoryTable, (char)rtlCategoryLead, rtlCategoryFold) != rtlCategoryNegated;
+                                    rtlInClass = MatchesCategory(rtlCategoryTable, (char)rtlCategoryLead, rtlCategoryFold, rtlCategoryNegated);
                                 }
                                 else if (rtlCategoryLead < 0xF0 &&
                                     TryDecodeBmpScalar(input, inputIndex - rtlCategoryWidth, out var rtlCategoryScalar))
                                 {
-                                    rtlInClass = MatchesCategory(rtlCategoryTable, rtlCategoryScalar, rtlCategoryFold) != rtlCategoryNegated;
+                                    rtlInClass = MatchesCategory(rtlCategoryTable, rtlCategoryScalar, rtlCategoryFold, rtlCategoryNegated);
                                 }
                                 else
                                 {
@@ -1638,12 +1648,12 @@ internal static class Utf8SliceRunner
                             bool inClass;
                             if (candidate < 0x80)
                             {
-                                inClass = MatchesCategory(categoryTable, (char)candidate, categoryFold) != categoryNegated;
+                                inClass = MatchesCategory(categoryTable, (char)candidate, categoryFold, categoryNegated);
                             }
                             else if (candidate < 0xF0 &&
                                 TryDecodeBmpScalar(input, inputIndex, out var scalar))
                             {
-                                inClass = MatchesCategory(categoryTable, scalar, categoryFold) != categoryNegated;
+                                inClass = MatchesCategory(categoryTable, scalar, categoryFold, categoryNegated);
                             }
                             else
                             {
@@ -1676,7 +1686,8 @@ internal static class Utf8SliceRunner
                         // categories need member tests here); BMP scalars
                         // consult shorthand members with full Unicode
                         // categories plus category members with the same
-                        // Ll/Lu/Lt-only fold rule as single categories.
+                        // fold rule as single categories (cased-union masks,
+                        // invariant equivalents for block ranges).
                         // BMP units agree with the oracle; astral follows the
                         // halves mirror (routing declines astral inputs for
                         // every category-set program) and continuation bytes
@@ -1702,31 +1713,39 @@ internal static class Utf8SliceRunner
                             };
                         }
 
-                        static bool MatchesCategorySetTable(Utf8SliceCategoryTable table, char scalar, bool fold)
+                        static bool MatchesCategorySetTable(Utf8SliceCategoryTable table, char scalar, bool fold, bool negated)
                         {
                             var category = char.GetUnicodeCategory(scalar);
+                            bool maskHit;
                             if (fold &&
                                 (category == UnicodeCategory.LowercaseLetter ||
                                  category == UnicodeCategory.UppercaseLetter ||
                                  category == UnicodeCategory.TitlecaseLetter))
                             {
-                                return (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
+                                maskHit = (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
                             }
-
-                            if (((table.Mask >> (int)category) & 1u) != 0)
+                            else
                             {
-                                return true;
+                                maskHit = ((table.Mask >> (int)category) & 1u) != 0;
                             }
 
-                            for (var range = 0; range + 1 < table.Ranges.Length; range += 2)
+                            if (maskHit)
                             {
-                                if (scalar >= table.Ranges[range] && scalar < table.Ranges[range + 1])
-                                {
-                                    return true;
-                                }
+                                return !negated;
                             }
 
-                            return (table.Ranges.Length & 1) != 0 && scalar >= table.Ranges[table.Ranges.Length - 1];
+                            var inRanges = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar);
+                            if (!fold || table.Ranges.Length == 0)
+                            {
+                                return inRanges != negated;
+                            }
+
+                            if (!negated)
+                            {
+                                return inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: false);
+                            }
+
+                            return !inRanges || Utf8SliceCaseEquivalences.EquivalentsHitRanges(scalar, table.Ranges, miss: true);
                         }
 
                         static bool CategorySetBmpMatches(Utf8SliceProgram program, Utf8SliceInstruction instruction, char scalar)
@@ -1752,7 +1771,7 @@ internal static class Utf8SliceRunner
 
                             foreach (var member in program.CategorySetMembers[instruction.D])
                             {
-                                if (MatchesCategorySetTable(member.Table, scalar, fold) != member.Negated)
+                                if (MatchesCategorySetTable(member.Table, scalar, fold, member.Negated))
                                 {
                                     return !negated;
                                 }
@@ -1776,7 +1795,7 @@ internal static class Utf8SliceRunner
                                     var rtlMemberHit = false;
                                     foreach (var member in program.CategorySetMembers[instruction.D])
                                     {
-                                        if (MatchesCategorySetTable(member.Table, (char)rtlCategorySetLead, (instruction.B & 2) != 0) != member.Negated)
+                                        if (MatchesCategorySetTable(member.Table, (char)rtlCategorySetLead, (instruction.B & 2) != 0, member.Negated))
                                         {
                                             rtlMemberHit = true;
                                             break;
@@ -1824,7 +1843,7 @@ internal static class Utf8SliceRunner
                                 var memberHit = false;
                                 foreach (var member in program.CategorySetMembers[instruction.D])
                                 {
-                                    if (MatchesCategorySetTable(member.Table, (char)candidate, (instruction.B & 2) != 0) != member.Negated)
+                                    if (MatchesCategorySetTable(member.Table, (char)candidate, (instruction.B & 2) != 0, member.Negated))
                                     {
                                         memberHit = true;
                                         break;

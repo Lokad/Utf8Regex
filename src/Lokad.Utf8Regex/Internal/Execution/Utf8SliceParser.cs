@@ -17,8 +17,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// decline astral inputs at routing). IgnoreCase folds per-scalar BCL-invariant
 /// case (Turkic instances keep legacy routing through the construction gate).
 /// Unicode property escapes (general categories/groups and named blocks as
-/// bare atoms or single-category classes; mixed category classes and blocks
-/// under IgnoreCase stay legacy-exact). Anything else (duplicate or
+/// bare atoms or single-category classes, including blocks under IgnoreCase
+/// (matched through invariant case equivalents, verbatim port). Anything else
+/// (duplicate or
 /// explicitly-numbered names, backreferences and conditionals inside
 /// lookbehind bodies, lookbehind bodies of balancing shapes) declines to
 /// <c>null</c> so the existing
@@ -646,8 +647,9 @@ internal static class Utf8SliceParser
     // Unicode property escapes (BCL ParseProperty shapes: braces required,
     // word-char/dash names, unknown names decline). General categories and
     // groups resolve to masks, Is*/_xml* blocks to half-open range strings;
-    // blocks decline under IgnoreCase since case-equivalent range expansion
-    // lives in legacy. Shared by bare atoms and single-category classes (two
+    // blocks carry the fold bit under IgnoreCase and match through the invariant
+    // case-equivalence table at run time (candidate-side lookup, no parse
+    // expansion). Shared by bare atoms and single-category classes (two
     // callers, so the single-caller debt ceiling does not apply).
     private static bool TryParseCategoryAtom(string pattern, int backslashIndex, bool negated, bool foldCase, out Utf8SliceNode? node, out int nextIndex)
     {
@@ -668,8 +670,7 @@ internal static class Utf8SliceParser
         }
 
         if (nameEnd == nameStart || nameEnd >= pattern.Length || pattern[nameEnd] != '}' ||
-            !Utf8SliceCategories.TryResolve(pattern.Substring(nameStart, nameEnd - nameStart), out var mask, out var ranges, out var isBlock) ||
-            (isBlock && foldCase))
+            !Utf8SliceCategories.TryResolve(pattern.Substring(nameStart, nameEnd - nameStart), out var mask, out var ranges, out _))
         {
             return false;
         }
@@ -1778,9 +1779,22 @@ internal static class Utf8SliceParser
                 TryParseCategoryAtom(_pattern, _position + categoryOffset, (categoryOffset == 1) != (_pattern[_position + categoryOffset + 1] == 'P'), _matchIgnoreCase, out var categoryNode, out var categoryNext) &&
                 categoryNext < _pattern.Length && _pattern[categoryNext] == ']')
             {
-                _position = categoryNext + 1;
-                node = categoryNode;
-                return true;
+                // Class-negated blocks under IgnoreCase cannot fold to one atom:
+                // BCL expands the positive ranges before the class negation
+                // ([^\\p{IsBasicLatin}]+IC misses 'k'), while a member negation
+                // bakes the complement first and overlaps the positive test
+                // ([^\\P{IsBasicLatin}]+IC misses 'k' but \\P{IsBasicLatin}+IC
+                // hits it). One atom bit cannot keep both apart, so every
+                // class-negated block atom falls through to the general class
+                // path, which keeps both negations; general categories
+                // negate cleanly, so they still fold.
+                if (!(categoryNode is Utf8SliceNode.CategoryNode foldedBlock &&
+                    foldedBlock.Ranges.Length != 0 && foldedBlock.FoldCase && categoryOffset == 1))
+                {
+                    _position = categoryNext + 1;
+                    node = categoryNode;
+                    return true;
+                }
             }
 
             var negated = false;
@@ -1902,8 +1916,8 @@ internal static class Utf8SliceParser
                         // Categories are always members, never bounds (BCL
                         // uniform rule, mirroring shorthands); in
                         // upper-bound position BCL throws, so decline to
-                        // legacy-exact. The shared helper also declines
-                        // blocks under IgnoreCase.
+                        // legacy-exact. Block members carry the fold bit and
+                        // match through invariant case equivalents.
                         if (inRange)
                         {
                             return false;

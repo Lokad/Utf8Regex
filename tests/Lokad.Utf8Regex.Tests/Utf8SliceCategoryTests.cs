@@ -83,8 +83,6 @@ public sealed class Utf8SliceCategoryTests
 
     public static IEnumerable<object?[]> DeclinedCategoryShapes()
     {
-        yield return new object?[] { "\\p{IsGreek}+", "a", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
-        yield return new object?[] { "[\\p{IsGreek}]+", "a", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
         yield return new object?[] { "\\p{L}}", "a}", RegexOptions.CultureInvariant };
     }
 

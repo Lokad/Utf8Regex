@@ -79,6 +79,70 @@ public sealed class Utf8CategoryDiffTests
         }
     }
 
+    public static TheoryData<string, string> CategoryIgnoreCaseCases => new()
+    {
+        { "\\p{IsBasicLatin}+", "a\u212A1" },
+        { "\\P{IsBasicLatin}+", "a\u212AK B" },
+        { "\\p{IsCherokee}+", "x\u13A0\uAB70y" },
+        { "\\P{IsCherokee}+", "x\u13A0\uAB70y" },
+        { "[\\p{IsBasicLatin}a]+", "1aKB\u00E9" },
+        { "[^\\p{IsBasicLatin}a]+", "aKB\u00E9" },
+        { "[\\P{IsBasicLatin}a]+", "1\u00E9" },
+        { "[^\\P{IsBasicLatin}]+", "1ak\u00E9" },
+        { "[\\p{IsCherokee}ab]+", "xa\u13A0\uAB701" },
+        { "(\\p{IsLatinExtended-A}+)", "x\u0131I\u0160" },
+    };
+
+    private const RegexOptions CategoryIgnoreCaseOptions =
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    [Theory]
+    [MemberData(nameof(CategoryIgnoreCaseCases))]
+    public void CategoryIgnoreCaseCountMatchesRuntime(string pattern, string input)
+    {
+        RegexParityContext.Create(pattern, input, CategoryIgnoreCaseOptions).AssertCountParity();
+    }
+
+    [Theory]
+    [MemberData(nameof(CategoryIgnoreCaseCases))]
+    public void CategoryIgnoreCaseMatchGroupsMatchRuntime(string pattern, string input)
+    {
+        RegexParityContext.Create(pattern, input, CategoryIgnoreCaseOptions).AssertDetailedMatchGroupParity();
+    }
+
+    [Theory]
+    [MemberData(nameof(CategoryIgnoreCaseCases))]
+    public void CategoryIgnoreCaseReplaceMatchesRuntime(string pattern, string input)
+    {
+        RegexParityContext.Create(pattern, input, CategoryIgnoreCaseOptions).AssertReplaceParity("<$0>");
+    }
+
+    [Theory]
+    [MemberData(nameof(CategoryIgnoreCaseCases))]
+    public void CategoryIgnoreCaseEnumerateGroupsMatchRuntime(string pattern, string input)
+    {
+        var bytes = Encoding.UTF8.GetBytes(input);
+        var expected = new List<string>();
+        foreach (Match match in new Regex(pattern, CategoryIgnoreCaseOptions, Regex.InfiniteMatchTimeout).Matches(input))
+        {
+            expected.Add(DescribeGroups(match));
+        }
+
+        foreach (var compiled in new[] { false, true })
+        {
+            var options = CategoryIgnoreCaseOptions |
+                (compiled ? RegexOptions.Compiled : RegexOptions.None);
+            var regex = new Utf8Regex(pattern, options);
+            var actual = new List<string>();
+            foreach (var match in regex.EnumerateMatches(bytes))
+            {
+                actual.Add(DescribeGroups(regex.MatchDetailedFromUtf16Offset(bytes, match.IndexInUtf16)));
+            }
+
+            Assert.Equal(expected, actual);
+        }
+    }
+
     private static string DescribeGroups(Match match)
     {
         var sb = new StringBuilder();

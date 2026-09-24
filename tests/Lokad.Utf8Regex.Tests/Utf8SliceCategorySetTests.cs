@@ -9,10 +9,11 @@ namespace Lokad.Utf8Regex.Tests;
 // programs (BCL uniform rule: a category is always a member, never a bound;
 // a following dash stays literal; categories in upper-bound position throw).
 // Single-category classes keep folding to bare atoms; negated classes
-// complement the whole union. Blocks decline under IgnoreCase (inside the
-// shared atom helper); general members fold Ll/Lu/Lt per member exactly
-// like atoms. Astral inputs decline to fallback (halves mirror); ASCII and
-// BMP inputs stay owned.
+// complement the whole union. Block members match under IgnoreCase through
+// invariant case equivalents (candidate-side lookup, no parse expansion);
+// general members fold Ll/Lu/Lt per member exactly like atoms. Class-negated
+// block atoms ride the general class path so both negations survive. Astral
+// inputs decline to fallback (halves mirror); ASCII and BMP inputs stay owned.
 public sealed class Utf8SliceCategorySetTests
 {
     public static IEnumerable<object?[]> SliceCategorySetShapes()
@@ -40,6 +41,8 @@ public sealed class Utf8SliceCategorySetTests
             RegexOptions.CultureInvariant,
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         })
         {
             var regex = new Utf8Regex(pattern, options);
@@ -63,6 +66,8 @@ public sealed class Utf8SliceCategorySetTests
             RegexOptions.None,
             RegexOptions.CultureInvariant,
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         })
         {
             var regex = new Utf8Regex(pattern, options);
@@ -71,17 +76,6 @@ public sealed class Utf8SliceCategorySetTests
         }
     }
 
-    [Theory]
-    [InlineData("[\\p{IsGreek}a]+", "a", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    public void BlockSetsDeclineUnderIgnoreCase(string pattern, string inputText, RegexOptions options)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-    }
 
     public static IEnumerable<object?[]> ParserDeclines()
     {
