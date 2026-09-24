@@ -988,6 +988,11 @@ internal static class Utf8OwnedTreeParser
 
         static RuntimeFrontEnd.RegexNode Quantify(ParserState state, RuntimeFrontEnd.RegexNode atom, int minimum, int maximum, bool lazy)
         {
+            if (minimum == 1 && maximum == 1)
+            {
+                return atom;
+            }
+
             if (maximum == 0)
             {
                 return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, state.Options);

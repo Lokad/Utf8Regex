@@ -25,6 +25,10 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "a+" };
         yield return new object?[] { "a?" };
         yield return new object?[] { "a{2}" };
+        yield return new object?[] { "a{1}" };
+        yield return new object?[] { "(a){1}" };
+        yield return new object?[] { "a{1,1}" };
+        yield return new object?[] { "a{1}?" };
         yield return new object?[] { "a{2,4}" };
         yield return new object?[] { "a{2,}" };
         yield return new object?[] { "(a+)(b+)" };
