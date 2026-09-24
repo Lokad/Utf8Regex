@@ -1150,6 +1150,32 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 case-insensitive slice: CPython IGNORECASE folds sigma/final-sigma
+    // and dotted-I where BCL-invariant folding does not, so translated IGNORECASE
+    // shapes decline owned-slice execution with managed parity. ASCII-scope shapes
+    // forward no flag (pairs pre-expanded) and route owned with exact semantics.
+    // Ground truths are CPython 3.13.2.
+    [Theory]
+    [InlineData("(a)+")]
+    [InlineData("[a-z]+")]
+    [InlineData("(?:a)+")]
+    public void IgnoreCaseShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(a)+", "aA", true)]
+    [InlineData("[a-z]+", "AB cD", true)]
+    public void AsciiScopeIgnoreCaseRoutesOwned(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase | PythonReCompileOptions.Ascii);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        Assert.Equal(expected, regex.Search(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("(?:a)+", "aa", true)]
     [InlineData("a(?#x)b", "ab", true)]

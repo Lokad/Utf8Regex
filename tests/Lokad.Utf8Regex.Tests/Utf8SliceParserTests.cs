@@ -164,7 +164,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData(RegexOptions.IgnoreCase)]
     [InlineData(RegexOptions.RightToLeft)]
     [InlineData(RegexOptions.ECMAScript)]
     [InlineData(RegexOptions.NonBacktracking)]

@@ -39,7 +39,6 @@ public sealed class Utf8SliceWiringTests
     [InlineData("a{2,3}b")]
     [InlineData("([0-9]){1,3}?x", RegexOptions.Compiled | RegexOptions.CultureInvariant)]
     [InlineData("a.c")]
-    [InlineData("(a+)(b+)", RegexOptions.IgnoreCase)]
     public void DeclinedShapesKeepLegacyRouting(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
     {
         Assert.False(new Utf8Regex(pattern, options).Inspection.DebugUsesOwnedSliceProgram);

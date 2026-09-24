@@ -10,9 +10,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// edges, ASCII character classes (literals, ranges, supported escapes, and
 /// shorthand members), word boundaries, shorthand classes, backreferences,
 /// and zero-width lookarounds (dots, negated classes, and negated shorthands
-/// decline astral inputs at routing).
+/// decline astral inputs at routing). IgnoreCase folds per-scalar BCL-invariant
+/// case (Turkic instances keep legacy routing through the construction gate).
 /// Anything else (conditionals, duplicate or explicitly-numbered names,
-/// categories, case/direction-sensitive options, captures or pops inside
+/// categories, direction-sensitive options, captures or pops inside
 /// lookbehind bodies of balancing shapes) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
@@ -31,7 +32,6 @@ internal static class Utf8SliceParser
     internal const int MaxPatternLength = 65536;
 
     private const RegexOptions RejectedOptions =
-        RegexOptions.IgnoreCase |
         RegexOptions.RightToLeft |
         RegexOptions.ECMAScript |
         RegexOptions.NonBacktracking |
@@ -63,7 +63,7 @@ internal static class Utf8SliceParser
             }
         }
 
-        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0);
+        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0);
         if (!parser.TryParseAlternation(0, out var root) || parser.Position != pattern.Length)
         {
             return null;
@@ -177,7 +177,7 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing);
+        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase);
     }
 
     private sealed class Parser
@@ -185,6 +185,7 @@ internal static class Utf8SliceParser
         private readonly string _pattern;
         private readonly bool _matchNewline;
         private readonly bool _matchMultiline;
+        private readonly bool _matchIgnoreCase;
         private int _position;
         private int _groups;
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
@@ -194,17 +195,19 @@ internal static class Utf8SliceParser
         private int _lookbehindDepth;
         private bool _sawLookbehindGroupWrite;
 
-        internal Parser(string pattern, bool matchNewline, bool matchMultiline)
+        internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase)
         {
             _pattern = pattern;
             _matchNewline = matchNewline;
             _matchMultiline = matchMultiline;
+            _matchIgnoreCase = matchIgnoreCase;
         }
 
         internal int Position => _position;
         internal int GroupCount => _groups;
         internal List<(int Slot, string? Name)> GroupDecls => _groupDecls;
         internal bool SawBalancing => _sawBalancing;
+        internal bool MatchIgnoreCase => _matchIgnoreCase;
         internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
         internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
 
@@ -1061,6 +1064,19 @@ internal static class Utf8SliceParser
             if (!closed)
             {
                 return false;
+            }
+
+            // Case-insensitive classes carry both cases (input scalars fold
+            // before the mask test, so folded members must be present too).
+            if (_matchIgnoreCase)
+            {
+                for (var member = 0; member < 128; member++)
+                {
+                    if (bits[member] && ((member >= 65 && member <= 90) || (member >= 97 && member <= 122)))
+                    {
+                        bits[member ^ 32] = true;
+                    }
+                }
             }
 
             var mask = new byte[16];

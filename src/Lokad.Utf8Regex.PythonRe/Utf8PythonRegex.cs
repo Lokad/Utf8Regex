@@ -442,7 +442,15 @@ public sealed partial class Utf8PythonRegex
 
     internal string? DebugUtf8ExecutionKind => _utf8Regex?.Inspection.ExecutionKind.ToString();
 
-    internal bool DebugUsesOwnedSlice => _utf8Regex?.Inspection.DebugUsesOwnedSliceProgram == true;
+    // CPython IGNORECASE folds sigma/final-sigma and dotted-I where BCL-invariant
+    // folding does not, so translated IGNORECASE shapes keep managed execution even
+    // when the core slice would serve them (ASCII-scope shapes forward no flag and
+    // stay eligible).
+    private bool Utf8SliceExecutionApplies =>
+        _utf8Regex?.Inspection.DebugUsesOwnedSliceProgram == true &&
+        (_translation.RegexOptions & RegexOptions.IgnoreCase) == 0;
+
+    internal bool DebugUsesOwnedSlice => Utf8SliceExecutionApplies;
 
     internal bool DebugUsesZeroOffsetUtf8ValueFastPath => _canUseZeroOffsetUtf8ValueFastPath;
 

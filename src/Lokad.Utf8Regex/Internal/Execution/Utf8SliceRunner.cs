@@ -234,6 +234,20 @@ internal static class Utf8SliceRunner
     // any index, so unaligned byte-stepping attempts stay fail-closed.
     // Decodes the BMP scalar starting at index: ASCII, continuation,
     // invalid, astral, truncated, and out-of-range positions fail closed.
+    // BCL-invariant case folding is per-scalar ToLowerInvariant, except U+0130
+    // whose lowercase expands to two chars and never equals a single scalar.
+    private static bool TryFoldBmpScalarForCaseInsensitiveMatch(char scalar, out char folded)
+    {
+        if (scalar == '\u0130')
+        {
+            folded = scalar;
+            return false;
+        }
+
+        folded = char.ToLowerInvariant(scalar);
+        return true;
+    }
+
     // Callers pass validated scalar starts; the guards keep byte-stepping
     // attempts fail-closed without revalidating the input.
     private static bool TryDecodeBmpScalar(ReadOnlySpan<byte> input, int index, out char scalar)
@@ -602,10 +616,51 @@ internal static class Utf8SliceRunner
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    if (inputIndex < input.Length && input[inputIndex] == (byte)instruction.A)
+                    if (!program.IgnoreCase)
                     {
-                        inputIndex++;
-                        programIndex++;
+                        if (inputIndex < input.Length && input[inputIndex] == (byte)instruction.A)
+                        {
+                            inputIndex++;
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
+                    // Case-insensitive literals fold the input scalar BCL-invariant
+                    // style (ASCII pairs plus single-char ToLowerInvariant; U+0130 never
+                    // folds to one char) and consume its whole width on a hit.
+                    if (inputIndex < input.Length)
+                    {
+                        var lead = input[inputIndex];
+                        if (lead < 0x80)
+                        {
+                            if (Internal.Search.AsciiSearch.FoldCase(lead) == Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
+                            {
+                                inputIndex++;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else if (lead < 0xF0 &&
+                            TryDecodeBmpScalar(input, inputIndex, out var literalScalar) &&
+                            TryFoldBmpScalarForCaseInsensitiveMatch(literalScalar, out var foldedScalar) &&
+                            foldedScalar == (char)Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
+                        {
+                            inputIndex += lead < 0xE0 ? 2 : 3;
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
                     }
                     else
                     {
@@ -625,8 +680,23 @@ internal static class Utf8SliceRunner
                         (input[inputIndex] & 0xC0) != 0x80)
                     {
                         var candidate = input[inputIndex];
-                        var inMask = candidate < 128 &&
-                            (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
+                        // Case-insensitive classes fold the candidate before the mask
+                        // test, so non-ASCII scalars with ASCII folds (U+212A) hit exactly
+                        // like the BCL oracle; anything else keeps the raw membership.
+                        var inMask = false;
+                        if (candidate < 0x80)
+                        {
+                            var test = program.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(candidate) : candidate;
+                            inMask = (program.SetMasks[instruction.A][test >> 3] & (byte)(1 << (test & 7))) != 0;
+                        }
+                        else if (program.IgnoreCase &&
+                            candidate < 0xF0 &&
+                            TryDecodeBmpScalar(input, inputIndex, out var setScalar) &&
+                            TryFoldBmpScalarForCaseInsensitiveMatch(setScalar, out var foldedSet) &&
+                            foldedSet < 0x80)
+                        {
+                            inMask = (program.SetMasks[instruction.A][foldedSet >> 3] & (byte)(1 << (foldedSet & 7))) != 0;
+                        }
                         if (inMask != (instruction.B != 0))
                         {
                             if (candidate < 0x80)
@@ -1074,6 +1144,17 @@ internal static class Utf8SliceRunner
                             {
                                 width = candidate < 0xE0 ? 2 : 3;
                                 var hit = false;
+                                // Case-insensitive hybrids test folded ASCII scalars
+                                // against the mask (shorthand members stay
+                                // case-irrelevant); anything else consults categories.
+                                if (program.IgnoreCase &&
+                                    TryFoldBmpScalarForCaseInsensitiveMatch(scalar, out var foldedMember) &&
+                                    foldedMember < 0x80)
+                                {
+                                    hit = (program.SetMasks[instruction.A][foldedMember >> 3] & (byte)(1 << (foldedMember & 7))) != 0;
+                                }
+                                else
+                                {
                                 for (var bit = 0; bit < 6; bit++)
                                 {
                                     if ((instruction.C & (1 << bit)) != 0 &&
@@ -1082,6 +1163,7 @@ internal static class Utf8SliceRunner
                                         hit = true;
                                         break;
                                     }
+                                }
                                 }
 
                                 inClass = hit != (instruction.B != 0);
@@ -1128,6 +1210,120 @@ internal static class Utf8SliceRunner
                     {
                         var referEnd = captureEnds[instruction.A];
                         var referLength = referEnd - captureStarts[instruction.A];
+                        if (program.IgnoreCase)
+                        {
+                            // Case-insensitive backreferences compare per-scalar BCL-invariant
+                            // folds (ASCII pairs plus single-char ToLowerInvariant; U+0130 and
+                            // astral halves compare raw and only ever equal themselves). The input
+                            // advances by its own scalar widths, which may differ from the
+                            // captured widths on fold hits (k versus U+212A).
+                            var capIndex = captureStarts[instruction.A];
+                            var backIndex = inputIndex;
+                            var backFailed = false;
+                            while (capIndex < referEnd)
+                            {
+                                var backCharge = invocation.Budget.TryChargeStep();
+                                if (backCharge != Utf8ExecutionLimitKind.None)
+                                {
+                                    return new Utf8SliceMatchOutcome(false, -1, backCharge, null, null);
+                                }
+
+                                if (backIndex >= input.Length)
+                                {
+                                    backFailed = true;
+                                    break;
+                                }
+
+                                var captureLead = input[capIndex];
+                                var inputLead = input[backIndex];
+                                int capWidth;
+                                int inWidth;
+                                bool backEqual;
+                                if (captureLead < 0x80 && inputLead < 0x80)
+                                {
+                                    backEqual = Internal.Search.AsciiSearch.FoldCase(captureLead) == Internal.Search.AsciiSearch.FoldCase(inputLead);
+                                    capWidth = 1;
+                                    inWidth = 1;
+                                }
+                                else if ((captureLead & 0xC0) == 0x80 || (inputLead & 0xC0) == 0x80 || captureLead >= 0xF0 || inputLead >= 0xF0)
+                                {
+                                    // Continuation bytes (mid-astral walks) and astral
+                                    // leads (halves never fold) compare raw.
+                                    backEqual = captureLead == inputLead;
+                                    capWidth = 1;
+                                    inWidth = 1;
+                                }
+                                else
+                                {
+                                    // Both sides fold (ASCII pairs inline, BMP via
+                                    // ToLowerInvariant with U+0130 comparing raw);
+                                    // undecodable leads fail closed.
+                                    char captureScalar;
+                                    if (captureLead < 0x80)
+                                    {
+                                        captureScalar = (char)Internal.Search.AsciiSearch.FoldCase(captureLead);
+                                    }
+                                    else if (!TryDecodeBmpScalar(input, capIndex, out var decodedCapture))
+                                    {
+                                        backFailed = true;
+                                        break;
+                                    }
+                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(decodedCapture, out var foldedCapture))
+                                    {
+                                        captureScalar = decodedCapture;
+                                    }
+                                    else
+                                    {
+                                        captureScalar = foldedCapture;
+                                    }
+
+                                    char inputScalar;
+                                    if (inputLead < 0x80)
+                                    {
+                                        inputScalar = (char)Internal.Search.AsciiSearch.FoldCase(inputLead);
+                                    }
+                                    else if (!TryDecodeBmpScalar(input, backIndex, out var decodedInput))
+                                    {
+                                        backFailed = true;
+                                        break;
+                                    }
+                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(decodedInput, out var foldedInput))
+                                    {
+                                        inputScalar = decodedInput;
+                                    }
+                                    else
+                                    {
+                                        inputScalar = foldedInput;
+                                    }
+
+                                    backEqual = captureScalar == inputScalar;
+                                    capWidth = captureLead < 0x80 ? 1 : captureLead < 0xE0 ? 2 : 3;
+                                    inWidth = inputLead < 0x80 ? 1 : inputLead < 0xE0 ? 2 : 3;
+                                }
+
+                                if (!backEqual)
+                                {
+                                    backFailed = true;
+                                    break;
+                                }
+
+                                capIndex += capWidth;
+                                backIndex += inWidth;
+                            }
+
+                            if (backFailed)
+                            {
+                                failed = true;
+                            }
+                            else
+                            {
+                                inputIndex = backIndex;
+                                programIndex++;
+                            }
+
+                            break;
+                        }
+
                         if (referLength > input.Length - inputIndex)
                         {
                             failed = true;

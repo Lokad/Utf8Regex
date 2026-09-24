@@ -152,7 +152,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -166,6 +166,7 @@ internal sealed class Utf8SliceProgram
         GroupNames = groupNames;
         HasMixedNamedGroups = hasMixedNamedGroups;
         HasBalancing = hasBalancing;
+        IgnoreCase = ignoreCase;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -182,6 +183,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasNonFixedLookbehind { get; }
     internal bool HasMixedNamedGroups { get; }
     internal bool HasBalancing { get; }
+    internal bool IgnoreCase { get; }
     internal int[] OrdinalGroupNumbers { get; }
     internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
@@ -226,9 +228,9 @@ internal static class Utf8SliceLowerer
     // to null and callers keep legacy routing.
     internal const int MaxInstructions = 1048576;
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive)
     {
-        var lowerer = new Lowering(groupNames, maintainBalance);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive);
         if (!lowerer.EmitNode(root))
         {
             return null;
@@ -350,7 +352,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive);
     }
 
     private sealed class Lowering
@@ -362,11 +364,13 @@ internal static class Utf8SliceLowerer
         internal readonly List<Utf8SliceAssertion> Assertions = new();
         internal readonly string[]? GroupNames;
         internal readonly bool MaintainBalance;
+        internal readonly bool MatchCaseInsensitive;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive)
         {
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
+            MatchCaseInsensitive = matchCaseInsensitive;
         }
 
         internal void Emit(Utf8SliceInstruction instruction)
@@ -650,7 +654,7 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     {
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance);
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive);
                         if (body is null)
                         {
                             return false;

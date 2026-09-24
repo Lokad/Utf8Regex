@@ -832,7 +832,9 @@ internal static class Pcre2CompiledProgramOverlay
     // while the shared runner would match (fixed-length lookbehind agrees
     // on case-sensitive ASCII shapes). Mixed named/unnamed shapes decline
     // because native PCRE2 numbers captures positionally while BCL numbers
-    // unnamed groups first (all-named shapes agree). Extended and ExtendedMore
+    // unnamed groups first (all-named shapes agree). Case-insensitive programs
+    // decline because native caseless folds UCP-wide (sigma matches final sigma)
+    // while the shared runner applies BCL-invariant per-scalar folding. Extended and ExtendedMore
     // decline through the core parser, which rejects
     // IgnorePatternWhitespace.
     internal static Pcre2CompiledProgram WithSlice(
@@ -845,6 +847,7 @@ internal static class Pcre2CompiledProgramOverlay
              program.Request.Settings.Newline is not Pcre2NewlineConvention.Lf) ||
             sliceProgram.RequiresUnicodeWordBoundary ||
             sliceProgram.RequiresUnicodeShorthand ||
+            sliceProgram.IgnoreCase ||
             sliceProgram.HasNonFixedLookbehind ||
             sliceProgram.HasMixedNamedGroups ||
             sliceProgram.HasBalancing)
