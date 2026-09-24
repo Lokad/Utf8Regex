@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -346,6 +347,36 @@ public sealed class Utf8SliceEscapeTests
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
             Assert.True(regex.IsMatch(input), "pattern=" + pattern);
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        }
+    }
+
+    public static IEnumerable<object?[]> TurkicControlShapes()
+    {
+        // Slice IgnoreCase folds invariantly, so Turkic-style construction
+        // cultures stay on legacy routing with oracle-exact behavior.
+        yield return new object?[] { "\\t+", "\tA\t" };
+        yield return new object?[] { "\\cA+", "\u0001A" };
+    }
+
+    [Theory]
+    [MemberData(nameof(TurkicControlShapes))]
+    public void TurkicControlShapesDeclineToLegacy(string pattern, string inputText)
+    {
+        var savedCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+            var options = RegexOptions.IgnoreCase;
+            var input = Encoding.UTF8.GetBytes(inputText);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+            Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = savedCulture;
         }
     }
 
