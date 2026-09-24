@@ -153,6 +153,7 @@ public sealed class Utf8SliceCategorySetTests
         yield return new object?[] { "[\\p{IsGreek}a]+", "a\u03B1b1", true };
         yield return new object?[] { "[^\\p{IsGreek}a]+", "ab\u03B1", true };
         yield return new object?[] { "[\\p{L}a-z]+", "aM1", true };
+        yield return new object?[] { "([\\p{L}a]+?)x", "aabx", true };
         yield return new object?[] { "[\\p{L}-a]+", "a", true };
         yield return new object?[] { "[\\p{IsBasicLatin}-a]+", "a", true };
         yield return new object?[] { "[\\d-\\p{L}]+", "5", true };

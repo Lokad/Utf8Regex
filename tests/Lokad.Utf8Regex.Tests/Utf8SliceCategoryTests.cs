@@ -220,6 +220,9 @@ public sealed class Utf8SliceCategoryTests
         yield return new object?[] { "[\\p{L}]+", "aα", true };
         yield return new object?[] { "[^\\p{L}]+", "a1", true };
         yield return new object?[] { "[^\\p{L}]+", "ab", false };
+        yield return new object?[] { "(\\p{L}+?)x", "aabx", true };
+        yield return new object?[] { "(\\p{L}*?)x", "aabx", true };
+        yield return new object?[] { "(\\p{IsBasicLatin}+?)1", "ab1", true };
     }
 
     public static IEnumerable<object?[]> IsMatchIgnoreCaseCases()

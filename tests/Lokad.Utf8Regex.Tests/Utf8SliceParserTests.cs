@@ -148,6 +148,7 @@ public sealed class Utf8SliceParserTests
     [InlineData("a{2,4}?a")]
     [InlineData("([0-9]){1,3}?x")]
     [InlineData("a??")]
+    [InlineData(@"(\p{L}??)x")]
     public void FiniteMaximumLazyRepeatDeclinesCompiledLane(string pattern)
     {
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
