@@ -42,15 +42,6 @@ public sealed class Utf8SliceBoundaryTests
         }
     }
 
-    [Theory]
-    [InlineData("\\G")]
-    [InlineData("\\Gab")]
-    [InlineData("\\G\\w+")]
-    public void UnsupportedBoundaryShapesDecline(string pattern)
-    {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-    }
 
     public static IEnumerable<object?[]> IsMatchCases()
     {

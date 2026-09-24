@@ -103,6 +103,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     internal bool MoveNext()
     {
+        // Each MoveNext call is one scan: pin \\G to the entry position.
+        _invocation.AnchorOriginByte = _position;
         var slots = Pcre2SliceDriver.RentProgramSlots(_program, ref _invocation);
         try
         {
@@ -259,6 +261,7 @@ internal static class Pcre2SliceDriver
         try
         {
             var bytes = input.Bytes;
+            invocation.AnchorOriginByte = start.Value;
             for (var position = start.Value; position <= bytes.Length; position++)
             {
                 Array.Fill(slots.Starts, -1);

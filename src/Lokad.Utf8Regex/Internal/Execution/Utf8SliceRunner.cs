@@ -465,6 +465,7 @@ internal static class Utf8SliceRunner
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
+
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
             var outcome = TryMatchFromUnit(program, input, map, unit, captureStarts, captureEnds, ref invocation);
@@ -506,6 +507,42 @@ internal static class Utf8SliceRunner
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
+        if (program.HasContiguousAnchor)
+        {
+            // Contiguous matches chain from the search start: each scan pins
+            // \\G to its own start (BCL startat), stops at the first scan miss, and
+            // advances past empty matches by one unit (later positions all miss
+            // the pin, so an empty match ends the chain).
+            var scanCount = 0;
+            var scanUnit = fromUnit;
+            var pinByte = fromUnit >= 0 && fromUnit <= map.Utf16Length ? map.Resolve(fromUnit).ByteOffset : -1;
+            while (true)
+            {
+                invocation.AnchorOriginByte = pinByte;
+                var scan = TryFindFirst(program, input, map, scanUnit, captureStarts, captureEnds, ref invocation);
+                if (scan.Breach != Utf8ExecutionLimitKind.None)
+                {
+                    return new Utf8SliceCountOutcome(scanCount, scan.Breach);
+                }
+
+                if (!scan.Found)
+                {
+                    break;
+                }
+
+                scanCount++;
+                pinByte = scan.EndByte;
+                scanUnit = scan.EndUnit > scan.StartUnit ? scan.EndUnit : scan.StartUnit + 1;
+            }
+
+            return new Utf8SliceCountOutcome(scanCount, Utf8ExecutionLimitKind.None);
+        }
+
+        if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
+        {
+            invocation.AnchorOriginByte = map.Resolve(fromUnit).ByteOffset;
+        }
+
         var count = 0;
         var unit = fromUnit;
         while (unit <= map.Utf16Length)
@@ -524,6 +561,12 @@ internal static class Utf8SliceRunner
 
             count++;
             unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+            // Contiguous matches chain BCL startat (nested lookbehind \\G reads
+            // the advanced origin); misses keep their scan start.
+            if (outcome.EndUnit >= 0 && outcome.EndUnit <= map.Utf16Length)
+            {
+                invocation.AnchorOriginByte = map.Resolve(outcome.EndUnit).ByteOffset;
+            }
         }
 
         return new Utf8SliceCountOutcome(count, Utf8ExecutionLimitKind.None);
@@ -550,6 +593,7 @@ internal static class Utf8SliceRunner
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
+
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
             var startBoundary = map.Resolve(unit);
@@ -942,6 +986,13 @@ internal static class Utf8SliceRunner
                     else if (instruction.A == 2)
                     {
                         anchorHolds = inputIndex == input.Length;
+                    }
+                    else if (instruction.A == 3)
+                    {
+                        // Contiguous matches pin to the scan start (BCL startat),
+                        // defaulting to the attempt start when no driver set an origin.
+                        var origin = invocation.AnchorOriginByte;
+                        anchorHolds = inputIndex == (origin < 0 ? start : origin);
                     }
                     else if (inputIndex == input.Length)
                     {

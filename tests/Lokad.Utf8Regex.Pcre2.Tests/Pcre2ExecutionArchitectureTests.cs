@@ -471,7 +471,8 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    [InlineData(@"\G(a+)+b$", true)]
+    // The contiguous shape now rides the slice (its behavior stays pinned by
+    // InitialPositionRestrictionPreservesOffsetAndMultilineSemantics below).
     [InlineData("(?:^a|^b)c", true)]
     [InlineData("(?m)^(a+)+b$", false)]
     public void BacktrackingPlanProvesOnlyMandatoryInitialPositionAnchors(

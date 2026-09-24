@@ -521,6 +521,11 @@ public sealed partial class Utf8Regex
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
+        {
+            invocation.AnchorOriginByte = map.Resolve(fromUnit).ByteOffset;
+        }
+
         int[][]? byteStarts = null;
         int[][]? byteLengths = null;
         int[]? groupStarts = null;
@@ -844,6 +849,11 @@ public sealed partial class Utf8Regex
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        if (startUnit >= 0 && startUnit <= map.Utf16Length)
+        {
+            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
+        }
+
         try
         {
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
@@ -1386,6 +1396,11 @@ public sealed partial class Utf8Regex
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+        if (startUnit >= 0 && startUnit <= map.Utf16Length)
+        {
+            invocation.AnchorOriginByte = map.Resolve(startUnit).ByteOffset;
+        }
+
         try
         {
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, map, startUnit, slots.Starts, slots.Ends, ref invocation);
@@ -1943,10 +1958,14 @@ public sealed partial class Utf8Regex
 
         var unit = 0;
         var lastEndByte = 0;
+        // Contiguous matches chain BCL startat across scans (advancing to each
+        // match end, including past empty matches whose positions all miss).
+        var scanByte = 0;
         try
         {
             while (unit <= map.Utf16Length)
             {
+                invocation.AnchorOriginByte = scanByte;
                 var outcome = Utf8SliceRunner.TryFindFirstDetailed(program, input, map, unit, slots.Starts, slots.Ends, ref invocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 {
@@ -1967,6 +1986,7 @@ public sealed partial class Utf8Regex
                 Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);
                 lastEndByte = outcome.EndByte;
                 unit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                scanByte = outcome.EndByte;
             }
 
             if (!writer.Append(input.Slice(lastEndByte), ref invocation))

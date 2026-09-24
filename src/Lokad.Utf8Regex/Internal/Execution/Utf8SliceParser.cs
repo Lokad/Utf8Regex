@@ -810,6 +810,14 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
+                    if (escaped == 'G')
+                    {
+                        // Contiguous matches pin to the search start (BCL startat).
+                        _position += 2;
+                        node = new Utf8SliceNode.AnchorNode(Utf8SliceAnchorKind.Contiguous, false);
+                        return true;
+                    }
+
                     Utf8SliceShorthand? shorthand = escaped switch
                     {
                         'd' => Utf8SliceShorthand.Digit,

@@ -305,6 +305,9 @@ public sealed class Utf8PythonRegexCpythonParityTests
         {
             AssertPatternError(@"\" + c, $@"bad escape \{c}", 0);
         }
+
+        // Contiguous matches have no Python counterpart (CPython 3.13.2 rejects them identically).
+        AssertPatternError(@"\G", @"bad escape \G", 0);
     }
 
     [Fact]

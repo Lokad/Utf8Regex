@@ -43,6 +43,7 @@ internal enum Utf8SliceAnchorKind : byte
     Beginning = 0,
     End = 1,
     VeryEnd = 2,
+    Contiguous = 3,
 }
 
 /// <summary>Immutable tree node for the owned R02a slice.</summary>
@@ -155,7 +156,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -170,6 +171,7 @@ internal sealed class Utf8SliceProgram
         HasMixedNamedGroups = hasMixedNamedGroups;
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
+        HasContiguousAnchor = hasContiguousAnchor;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -187,6 +189,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasMixedNamedGroups { get; }
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
+    internal bool HasContiguousAnchor { get; }
     internal int[] OrdinalGroupNumbers { get; }
     internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
@@ -355,7 +358,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor);
     }
 
     private sealed class Lowering
@@ -364,6 +367,7 @@ internal static class Utf8SliceLowerer
         internal readonly List<byte[]> SetMasks = new();
         internal int RepeatCount;
         internal int GroupCount;
+        internal bool SawContiguousAnchor;
         internal readonly List<Utf8SliceAssertion> Assertions = new();
         internal readonly string[]? GroupNames;
         internal readonly bool MaintainBalance;
@@ -581,6 +585,11 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.AnchorNode anchor:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Anchor, (int)anchor.Anchor, anchor.MatchMultiline ? 1 : 0, 0, 0));
+                    if (anchor.Anchor == Utf8SliceAnchorKind.Contiguous)
+                    {
+                        SawContiguousAnchor = true;
+                    }
+
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Boundary, boundary.IsWordBoundary ? 1 : 0, 0, 0, 0));

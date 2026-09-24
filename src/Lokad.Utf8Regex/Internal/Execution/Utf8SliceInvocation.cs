@@ -13,11 +13,15 @@ internal struct Utf8SliceInvocation
         Budget = new Utf8ExecutionBudget(limits, timeout, token);
         Ledger = new Utf8StorageLedger(limits.MaxWorkingBytes);
         CheckpointHook = null;
+        AnchorOriginByte = -1;
     }
 
     internal Utf8ExecutionBudget Budget;
     internal Utf8StorageLedger Ledger;
     internal Action<ulong>? CheckpointHook;
+    // Contiguous-anchor origin in bytes (-1 selects the attempt start): set anew
+    // by every scan driver, so nested lookbehind runs read the outer origin.
+    internal int AnchorOriginByte;
 
     internal bool IsUnmetered => Budget.IsUnmetered && Ledger.IsUnlimited;
 }

@@ -54,6 +54,7 @@ internal ref struct Utf8OperationMatchCursor
     private Utf8SliceProgram? _sliceProgram;
     private Utf8SliceInvocation _sliceInvocation;
     private int _sliceUnit;
+    private int _sliceOriginUnit;
 
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
     {
@@ -261,6 +262,7 @@ internal ref struct Utf8OperationMatchCursor
         _sliceProgram = program;
         _sliceInvocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token);
         _sliceUnit = 0;
+        _sliceOriginUnit = -1;
         _mode = EnumeratorMode.OwnedSlice;
     }
 
@@ -272,6 +274,19 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         var map = _boundaryMap.Value;
+        // Contiguous matches chain BCL startat: a fresh scan pins \\G to its
+        // start, a non-empty match advances the pin to its end, and an empty
+        // match keeps the pin (later positions all miss it, ending the chain).
+        if (_sliceOriginUnit < 0)
+        {
+            _sliceOriginUnit = _sliceUnit;
+        }
+
+        if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
+        {
+            _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
+        }
+
         var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
         try
         {
@@ -292,6 +307,11 @@ internal ref struct Utf8OperationMatchCursor
 
                 _current = Utf8SliceRunner.ProjectMatch(map, outcome);
                 _sliceUnit = outcome.EndUnit > outcome.StartUnit ? outcome.EndUnit : outcome.StartUnit + 1;
+                if (outcome.EndUnit > outcome.StartUnit)
+                {
+                    _sliceOriginUnit = outcome.EndUnit;
+                }
+
                 return true;
             }
 
