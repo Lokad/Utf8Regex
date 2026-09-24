@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// Unicode ToLower fibers by the GenerateRegexCasingTable tool): the BCL expands named
 /// blocks with per-character case equivalents under IgnoreCase, so the slice tests
 /// the candidate plus its equivalents
-/// against the verbatim block ranges instead of expanding every range at parse.
+/// against the owned block ranges instead of expanding every range at parse.
 /// Only the invariant i-branch applies: slice IgnoreCase folds invariantly and
 /// Turkic-style cultures stay on legacy routing (RequiresCultureSensitiveFallback).
 /// </summary>
@@ -848,10 +848,10 @@ internal static class Utf8SliceCaseEquivalences
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
         ];
     /// <summary>Tests one scalar against half-open block ranges (consecutive
-    /// characters form [first, last) pairs, a trailing lone char spans to
+    /// endpoints form [first, last) pairs, a trailing lone endpoint spans to
     /// char.MaxValue), mirroring the owned category range walk.
     /// </summary>
-    internal static bool RangesHit(string ranges, char scalar)
+    internal static bool RangesHit(ushort[] ranges, char scalar)
     {
         for (var range = 0; range + 1 < ranges.Length; range += 2)
         {
@@ -867,9 +867,9 @@ internal static class Utf8SliceCaseEquivalences
     /// <summary>Scans the invariant equivalents of one scalar for a range hit
     /// (miss=false) or a range miss (miss=true, for negated blocks whose BCL
     /// expansion overlaps the positive test). Empty when the table and the
-    /// invariant i-branch know no equivalents, reducing to the verbatim test.
+    /// invariant i-branch know no equivalents, reducing to the direct test.
     /// </summary>
-    internal static bool EquivalentsHitRanges(char scalar, string ranges, bool miss)
+    internal static bool EquivalentsHitRanges(char scalar, ushort[] ranges, bool miss)
     {
         foreach (var equivalent in GetInvariantEquivalents(scalar))
         {

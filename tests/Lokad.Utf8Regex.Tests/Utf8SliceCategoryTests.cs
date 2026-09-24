@@ -561,4 +561,48 @@ public sealed class Utf8SliceCategoryTests
         Assert.Equal(expected.Index, found.IndexInUtf16);
         Assert.Equal(expected.Length, found.LengthInUtf16);
     }
+
+    [Fact]
+    public void AllBlockBoundariesMatchOracle()
+    {
+        // Equivalence gate for the owned block tables: every boundary edge
+        // of every named set must agree with the runtime oracle pointwise.
+        // Lone surrogates are skipped (unpaired halves encode to U+FFFD, so
+        // BCL half semantics and UTF-8 bytes cannot share the probe; astral
+        // divert is pinned by the dedicated astral tests).
+        Assert.NotEmpty(Utf8SliceCategories.BlockNames);
+        foreach (var name in Utf8SliceCategories.BlockNames)
+        {
+            Assert.True(Utf8SliceCategories.TryResolve(name, out _, out var ranges, out var isBlock));
+            Assert.True(isBlock);
+            var probes = new HashSet<int> { 0, 0xFFFF };
+            for (var range = 0; range + 1 < ranges.Length; range += 2)
+            {
+                foreach (var edge in new[] { ranges[range] - 1, ranges[range], ranges[range + 1] - 1, ranges[range + 1] })
+                {
+                    if (edge >= 0 && edge <= 0xFFFF && (edge < 0xD800 || edge > 0xDFFF))
+                    {
+                        probes.Add(edge);
+                    }
+                }
+            }
+
+            if ((ranges.Length & 1) != 0)
+            {
+                probes.Add(ranges[ranges.Length - 1]);
+            }
+
+            var oracle = new Regex("\\p{" + name + "}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex("\\p{" + name + "}+", RegexOptions.CultureInvariant);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + name);
+            foreach (var probe in probes)
+            {
+                var text = ((char)probe).ToString();
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.True(oracle.IsMatch(text) == regex.IsMatch(input), "pattern=" + name + " probe=" + probe.ToString("X4"));
+            }
+
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + name);
+        }
+    }
 }

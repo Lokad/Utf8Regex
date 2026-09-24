@@ -137,9 +137,9 @@ internal sealed class RegexCharClass
         {
             // Named blocks (Is*/_xml*) resolve through the shared slice
             // property table and land as closed ranges; anything else keeps
-            // the unknown-category throw. The shared strings encode
-            // half-open pairs (with a trailing lone char spanning to
-            // char.MaxValue) exactly like the pinned runtime table.
+            // the unknown-category throw. The shared arrays encode
+            // half-open endpoint pairs (with a trailing lone endpoint spanning to
+            // char.MaxValue) per the owned table contract.
             if (!Execution.Utf8SliceCategories.TryResolve(categoryName, out _, out var blockRanges, out var isBlock) || !isBlock)
             {
                 throw new ArgumentException($"Unknown category '{categoryName}' at index {currentPos} in '{pattern}'.", nameof(categoryName));

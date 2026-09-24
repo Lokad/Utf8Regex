@@ -82,7 +82,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
-    internal sealed record CategoryNode(uint Mask, string Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
+    internal sealed record CategoryNode(uint Mask, ushort[] Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record CategorySetMember(Utf8SliceCategoryTable Table, bool Negated);
     internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
@@ -131,11 +131,11 @@ internal static class Utf8SliceHybridMembers
 
 /// <summary>Unicode property table for one owned category atom: a
 /// UnicodeCategory bit mask for general categories/groups plus half-open
-/// range pairs (with a trailing lone char spanning to char.MaxValue) for
-/// named blocks, mirroring the pinned runtime property encoding.</summary>
+/// range endpoint pairs (with a trailing lone endpoint spanning to char.MaxValue) for
+/// named blocks.</summary>
 internal sealed class Utf8SliceCategoryTable
 {
-    internal Utf8SliceCategoryTable(uint mask, string ranges)
+    internal Utf8SliceCategoryTable(uint mask, ushort[] ranges)
     {
         Mask = mask;
         Ranges = ranges;
@@ -143,7 +143,7 @@ internal sealed class Utf8SliceCategoryTable
 
     internal uint Mask { get; }
 
-    internal string Ranges { get; }
+    internal ushort[] Ranges { get; }
 }
 
 internal readonly struct Utf8SliceInstruction
