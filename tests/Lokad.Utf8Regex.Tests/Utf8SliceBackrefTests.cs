@@ -71,6 +71,11 @@ public sealed class Utf8SliceBackrefTests
         yield return new object?[] { "([a-z]+)\\1", "abcabc", true };
         yield return new object?[] { "(a+)\\1", "aaabaaa", true };
         yield return new object?[] { "(a?)\\1b", "b", true };
+        yield return new object?[] { "(\\p{L}+)\\1", "abab", true };
+        yield return new object?[] { "(\\p{L}+)\\1", "ab ab", false };
+        yield return new object?[] { "(\\p{IsBasicLatin}+)\\1", "HiHi", true };
+        yield return new object?[] { "([^\\p{L}]+)\\1", "11", true };
+        yield return new object?[] { "([\\p{L}a]+)\\1", "aBaB", true };
     }
 
     [Theory]

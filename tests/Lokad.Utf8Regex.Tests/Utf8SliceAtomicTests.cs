@@ -16,6 +16,7 @@ public sealed class Utf8SliceAtomicTests
         yield return new object?[] { "(?>a|ab)+c" };
         yield return new object?[] { "x(?>y|y)z" };
         yield return new object?[] { "(?>(a+))b" };
+        yield return new object?[] { "(?>\\p{L}+)1" };
     }
 
     [Theory]
@@ -47,6 +48,8 @@ public sealed class Utf8SliceAtomicTests
         yield return new object?[] { "(?>ab|a)+z", "abababz", true };
         yield return new object?[] { "(?>a)?b", "ab", true };
         yield return new object?[] { "(?>a)?b", "b", true };
+        yield return new object?[] { "(?>\\p{L}+)1", "aa1", true };
+        yield return new object?[] { "(?>\\p{L}+)b", "ab", false };
     }
 
     [Theory]
