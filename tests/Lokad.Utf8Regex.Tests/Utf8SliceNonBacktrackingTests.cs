@@ -27,6 +27,8 @@ public sealed class Utf8SliceNonBacktrackingTests
         yield return new object?[] { "\\d+" };
         yield return new object?[] { "(?:ab)+" };
         yield return new object?[] { "(?<n>a)+" };
+        yield return new object?[] { "\\t+" };
+        yield return new object?[] { "\\cA+" };
     }
 
     [Theory]
@@ -55,6 +57,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         yield return new object?[] { "(a)\\1" };
         yield return new object?[] { "(?<n>a)\\k<n>" };
         yield return new object?[] { "(?<=a)b" };
+        yield return new object?[] { "(?<=\\n)x" };
         yield return new object?[] { "(?<!a)b" };
         yield return new object?[] { "a(?=b)" };
         yield return new object?[] { "a(?!b)" };
