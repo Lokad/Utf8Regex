@@ -22,6 +22,7 @@ public sealed class Utf8SliceBoundaryTests
         yield return new object?[] { "\\A.*\\Z" };
         yield return new object?[] { "(\\by\\b)" };
         yield return new object?[] { "(\\B.+\\B)" };
+        yield return new object?[] { "\\b\\p{L}+\\b" };
     }
 
     [Theory]
@@ -35,6 +36,7 @@ public sealed class Utf8SliceBoundaryTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
             RegexOptions.Singleline | RegexOptions.CultureInvariant,
             RegexOptions.Multiline | RegexOptions.CultureInvariant,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
         })
         {
             var regex = new Utf8Regex(pattern, options);
@@ -55,6 +57,8 @@ public sealed class Utf8SliceBoundaryTests
         yield return new object?[] { "\\A.*\\Z", "ab\n", true };
         yield return new object?[] { "\\b", "a\u2060b", true };
         yield return new object?[] { "\\b", "a\u200Db", true };
+        yield return new object?[] { "\\b\\p{L}+\\b", "\u00E9x", true };
+        yield return new object?[] { "\\b\\w+\\b", "caf\u00E9", true };
     }
 
     [Theory]
@@ -78,6 +82,29 @@ public sealed class Utf8SliceBoundaryTests
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         }
+    }
+
+    public static IEnumerable<object?[]> IgnoreCaseBoundaryCases()
+    {
+        // Word boundaries are case-transparent; the folded category inside
+        // still matches through the cased union (Ll/Lu/Lt) or directly.
+        yield return new object?[] { "\\b\\p{Ll}+\\b", "AB", true };
+        yield return new object?[] { "(?i:\\b\\p{Ll}+\\b)", "AB", true };
+        yield return new object?[] { "\\b\\p{L}+\\b", "\u00C9X", true };
+    }
+
+    [Theory]
+    [MemberData(nameof(IgnoreCaseBoundaryCases))]
+    public void OwnedIgnoreCaseBoundaryMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> CountCases()
