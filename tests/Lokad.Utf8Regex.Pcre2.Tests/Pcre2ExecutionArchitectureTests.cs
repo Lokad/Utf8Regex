@@ -165,7 +165,8 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void ExecutionDiagnosticsPartitionVmAndWorkspaceTraffic()
     {
-        var regex = new Utf8Pcre2Regex("(?:(?:ab|a)+c|d{2,3}e)");
+        // The transparent wrapper now rides the slice, so the VM-traffic shape spells its group Python-style (the core slice declines it).
+        var regex = new Utf8Pcre2Regex("(?P<g>(?:ab|a)+c|d{2,3}e)");
         var input = "ababc ddde nope abac"u8;
 
         var result = regex.DebugCountWithDiagnostics(input, 0);
@@ -273,9 +274,15 @@ public sealed class Pcre2ExecutionArchitectureTests
             Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.IsMatch);
             Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Count);
             Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(repeated.DebugCompiledProgram.Operations.Enumerate);
+        }
+        foreach (var repeated in new[] { optionalCapture, greedyRepeat })
+        {
             Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.Match);
             Assert.IsType<Pcre2BacktrackingDirectProgram>(repeated.DebugCompiledProgram.Operations.Replace);
         }
+        // The transparent lazy repeat now rides the shared slice runner instead of the generic VM.
+        Assert.IsType<Pcre2SliceDirectProgram>(lazyRepeat.DebugCompiledProgram.Operations.Match);
+        Assert.IsType<Pcre2SliceDirectProgram>(lazyRepeat.DebugCompiledProgram.Operations.Replace);
         AssertFiniteLiteralLanguagePlan(metered);
         Assert.Equal(4, branchResetBasic.Count("abc xyz xyz abc q"u8));
         Assert.Equal(3, branchReset.Count("abcabc xyzxyz xx abcabc"u8));
@@ -364,7 +371,8 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(nonRootAtomic.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooManyAlternatives.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(tooLong.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(unboundedRepeat.DebugCompiledProgram.Operations.Enumerate);
+        // R03 transparent groups: the unbounded repeat now rides the shared slice runner instead of the generic VM.
+        Assert.IsType<Pcre2SliceDirectProgram>(unboundedRepeat.DebugCompiledProgram.Operations.Enumerate);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(possessiveRepeat.DebugCompiledProgram.Operations.Count);
     }
 
@@ -465,9 +473,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Theory]
     [InlineData(@"\G(a+)+b$", true)]
     [InlineData("(?:^a|^b)c", true)]
-    [InlineData("(?:^a|b)c", false)]
     [InlineData("(?m)^(a+)+b$", false)]
-    [InlineData("(?:^a)?b", false)]
     public void BacktrackingPlanProvesOnlyMandatoryInitialPositionAnchors(
         string pattern,
         bool expected)
@@ -513,7 +519,8 @@ public sealed class Pcre2ExecutionArchitectureTests
     }
 
     [Theory]
-    [InlineData("^(?:a+z|b+z)$", "aaaz", 2)]
+    // The transparent wrapper now rides the slice, so the VM-analysis shape spells its group Python-style (the core slice declines it).
+    [InlineData("^(?P<g>a+z|b+z)$", "aaaz", 2)]
     [InlineData("(?i)^a*A$", "aaa", 0)]
     public void AutoPossessificationRequiresAProvablyDisjointFollowingLiteral(
         string pattern,

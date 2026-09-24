@@ -2945,6 +2945,29 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
+        // The slice overlay claims Enumerate while Count stays on a native
+        // program without a metered vehicle: count through the slice shell's
+        // backtracking fallback, the exact vehicle the overlay kept, so finite
+        // heap limits keep breaching instead of reporting unsupported.
+        if (compiledProgram.Operations.Enumerate is Pcre2SliceDirectProgram enumerateSlice)
+        {
+            var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+                enumerateSlice.Fallback,
+                compiledProgram.CandidateSearchPlan,
+                input,
+                start,
+                matchOptions,
+                compiledProgram.Request,
+                collectDiagnostics: false);
+            result = 0;
+            while (fallbackCursor.MoveNext())
+            {
+                result = checked(result + 1);
+            }
+
+            return true;
+        }
+
         result = 0;
         return false;
     }

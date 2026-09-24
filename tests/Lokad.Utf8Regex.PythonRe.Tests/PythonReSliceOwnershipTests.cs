@@ -294,21 +294,29 @@ public sealed class PythonReSliceOwnershipTests
     // 3.13.2 ground truth with UTF-16 offsets. `[\\n-\\r]`-style escape
     // ranges are excluded: the translator currently drops those backslashes
     // (pre-existing translator gap, out of slice scope).
-    // The translator wraps every class in a non-capturing group the
-    // core slice declines, and rewrites complements scalar-exact, so all
-    // class shapes decline the owned slice (like dots) while keeping
-    // parity through the translated pattern.
+    // The translator wraps every class in a non-capturing group (now
+    // transparent on the core slice) and rewrites complements scalar-exact:
+    // quantified member shapes route owned while negated shapes still
+    // decline, all with parity through the translated pattern.
+    [Theory]
+    [InlineData("[^a-z]+")]
+    public void ClassShapesDeclineOwnedSlice(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("[a-z]+")]
     [InlineData("[abc]+")]
     [InlineData("[a-c-e]+")]
     [InlineData("[A-z]+")]
-    [InlineData("[^a-z]+")]
     [InlineData("[\\d]+")]
-    public void ClassShapesDeclineOwnedSlice(string pattern)
+    public void ClassQuantifiedShapesRouteOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> ClassSearchCases()
@@ -886,19 +894,29 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
     // R03 mixed-class shorthands: member shorthands are rewritten
-    // scalar-exact by the translator (like bare shorthands), so mixed
-    // classes decline the owned slice with translated-oracle parity.
+    // scalar-exact by the translator (like bare shorthands). Bare, negated,
+    // and category shapes decline the owned slice with translated-oracle
+    // parity; quantified member shapes route owned now that the translator's
+    // (?:...) wrapper lowers transparently on the core slice.
     // Expectations mix translated-oracle agreement with CPython 3.13.2
     // ground truths (CPython classes are Unicode, matching the rewrite).
     [Theory]
     [InlineData("[\\da]")]
     [InlineData("[^\\da]")]
     [InlineData("[\\w-]")]
-    [InlineData("[\\da]+")]
     public void HybridShapesDeclineOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("[\\da]+")]
+    public void HybridQuantifiedShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
     public static IEnumerable<object?[]> HybridSearchCases()
@@ -1060,6 +1078,82 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(?P<w>a)+", "aa", true)]
     [InlineData("(?P<w>a)(b)", "ab", true)]
     public void NamedFullMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    // R03 transparent groups: (?:sub) passes the translator through verbatim
+    // and the owned core slice lowers it with no slot; (?#comment) vanishes
+    // the same way. Expectations are CPython 3.13.2 ground truths.
+    // Bare shapes keep native precedence (like named captures); only
+    // quantified shapes route the owned slice.
+    [Theory]
+    [InlineData("(?:a)+")]
+    [InlineData("(?:a|b)+c")]
+    public void TransparentShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> TransparentSearchCases()
+    {
+        yield return new object?[] { "(?:a)+", "xaa", 0, true, 1, 3 };
+        yield return new object?[] { "(?:a|b)+c", "abac", 0, true, 0, 4 };
+        yield return new object?[] { "(a)(?:b)(c)", "abc", 0, true, 0, 3 };
+        yield return new object?[] { "a(?#x)b", "ab", 0, true, 0, 2 };
+        yield return new object?[] { "(?#lead)a", "a", 0, true, 0, 1 };
+    }
+
+    [Theory]
+    [MemberData(nameof(TransparentSearchCases))]
+    public void TransparentSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?:a)+", "aa aa", 2)]
+    [InlineData("a(?#x)b", "ab ab", 2)]
+    public void TransparentCountMatchesCpython(string pattern, string inputText, int expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?:a)+", "aa", true)]
+    [InlineData("a(?#x)b", "ab", true)]
+    public void TransparentMatchMatchesCpython(string pattern, string inputText, bool expected)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("(?:a)+", "aa", true)]
+    [InlineData("a(?#x)b", "ab", true)]
+    public void TransparentFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);

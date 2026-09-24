@@ -12,7 +12,8 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
         var input = Encoding.UTF8.GetBytes("az abz aabz ababaz abax éababaz夏");
 
         Assert.Equal(
-            "IsMatch=Pcre2Backtracking, Count=Pcre2AsciiLiteralAlternationRepeat, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+        // The core slice owns transparent groups, so every op except the prepared Count rides the slice overlay now.
+            "IsMatch=Pcre2Slice, Count=Pcre2AsciiLiteralAlternationRepeat, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.Equal(5, regex.Count(input));
 
@@ -31,7 +32,8 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
     public void LiteralAlternationRepeatMatchesEquivalentVmAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("(?:ab|a)+z");
-        var vm = new Utf8Pcre2Regex("(?:(ab)|(a))+z");
+        // The capturing comparison shape now rides the slice, so the VM side spells its group Python-style (the core slice declines it): identical language, generic-VM vehicle.
+        var vm = new Utf8Pcre2Regex("(?P<x>(?:ab|a))+z");
         Assert.IsType<Pcre2BacktrackingDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
 
         foreach (var inputText in new[]
@@ -58,10 +60,10 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
     }
 
     [Theory]
-    [InlineData("(?:a|aa)+a", "(?:(a)|(aa))+a")]
-    [InlineData("(?:aa|a)+a", "(?:(aa)|(a))+a")]
-    [InlineData("(?:ab|a)+ab", "(?:(ab)|(a))+ab")]
-    [InlineData("(?:foo|f|bar)+baz", "(?:(foo)|(f)|(bar))+baz")]
+    [InlineData("(?:a|aa)+a", "(?P<x>(?:a|aa))+a")]
+    [InlineData("(?:aa|a)+a", "(?P<x>(?:aa|a))+a")]
+    [InlineData("(?:ab|a)+ab", "(?P<x>(?:ab|a))+ab")]
+    [InlineData("(?:foo|f|bar)+baz", "(?P<x>(?:foo|f|bar))+baz")]
     public void LiteralAlternationRepeatPreservesGreedyAlternativeOrdering(
         string directPattern,
         string vmPattern)
@@ -131,18 +133,19 @@ public sealed class Pcre2AsciiLiteralAlternationRepeatCompilerTests
             Assert.Throws<Pcre2MatchException>(() => metered.Count("ababaz"u8)).ErrorKind);
     }
 
+    // The analyzer still rejects lazy, star, and capturing branches, but the slice overlay now serves them.
     [Fact]
     public void LiteralAlternationRepeatAnalyzerRejectsDifferentSemantics()
     {
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("(?:ab|a)+?z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("(?:ab|a)*z").DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("(?:ab|a)++z").DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("(?:áb|a)+z").DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("(?:(ab)|a)+z").DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("(?:ab|a)+z", Pcre2CompileOptions.Caseless)

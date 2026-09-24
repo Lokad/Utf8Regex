@@ -45,7 +45,6 @@ public sealed class Utf8SliceLookaroundTests
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData("(?'name'a)")]
-    [InlineData("(?#comment)")]
     [InlineData("(?>a)")]
     public void NonLookaroundGroupShapesDecline(string pattern)
     {

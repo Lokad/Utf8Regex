@@ -562,7 +562,8 @@ public sealed class Pcre2SliceOwnershipTests
     {
         var input = Utf8(inputText);
         var sliced = new Utf8Pcre2Regex("x*|y", Pcre2CompileOptions.None);
-        var backtracked = new Utf8Pcre2Regex("(?:x*|y)", Pcre2CompileOptions.None);
+        // The transparent wrapper now rides the slice, so the backtracking side spells its group Python-style (the core slice declines it).
+        var backtracked = new Utf8Pcre2Regex("(?P<g>x*|y)", Pcre2CompileOptions.None);
         Assert.DoesNotContain(
             "Pcre2Slice",
             backtracked.DebugDescribeExecutionPlan());

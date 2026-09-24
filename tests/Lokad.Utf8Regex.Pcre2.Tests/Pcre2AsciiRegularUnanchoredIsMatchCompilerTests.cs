@@ -21,7 +21,8 @@ public sealed class Pcre2AsciiRegularUnanchoredIsMatchCompilerTests
             Utf8FallbackDirectFamilyKind.AsciiDottedDecimalQuadCount,
             program.Regex.Inspection.PreparedRegex.FallbackDirectFamily.Kind);
         Assert.Equal(
-            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Backtracking, Enumerate=Pcre2Backtracking, Match=Pcre2Backtracking, Replace=Pcre2Backtracking",
+            // The core slice owns transparent groups, so every op except the prepared IsMatch rides the slice overlay now.
+            "IsMatch=Pcre2AsciiRegularIsMatch, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch("prefix 192.168.001.001 suffix"u8));
         Assert.False(regex.IsMatch("prefix 999.999.999.999 suffix"u8));

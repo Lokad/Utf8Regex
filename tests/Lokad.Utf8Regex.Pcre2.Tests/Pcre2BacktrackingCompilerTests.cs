@@ -29,9 +29,7 @@ public sealed class Pcre2BacktrackingCompilerTests
 
     [Theory]
     [InlineData("a{2,4}a", "aaaaa", "aaaaa")]
-    [InlineData("(?:ab){2,}c", "xabababc", "abababc")]
     [InlineData("(?:ab)?b", "abb", "abb")]
-    [InlineData("(?:ab)??b", "babb", "b")]
     public void OrdinaryQuantifiersComposeAndBacktrack(
         string pattern,
         string inputText,
@@ -44,6 +42,24 @@ public sealed class Pcre2BacktrackingCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expected, match.GetValueString());
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    // R03 transparent groups: quantified transparent shapes run first-match Match on the shared slice runner with identical PCRE2-ordered results.
+    [Theory]
+    [InlineData("(?:ab){2,}c", "xabababc", "abababc")]
+    [InlineData("(?:ab)??b", "babb", "b")]
+    public void TransparentQuantifiersComposeOnSlice(
+        string pattern,
+        string inputText,
+        string expected)
+    {
+        var regex = new Utf8Pcre2Regex(pattern);
+
+        var match = regex.Match(Encoding.UTF8.GetBytes(inputText));
+
+        Assert.True(match.Success);
+        Assert.Equal(expected, match.GetValueString());
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     // R03 dot slice: greedy/lazy dot-star quantifier shapes run first-match
@@ -161,7 +177,8 @@ public sealed class Pcre2BacktrackingCompilerTests
     [Fact]
     public void WarmedOneShotBacktrackingDoesNotAllocate()
     {
-        var regex = new Utf8Pcre2Regex("(?:ab|a)+z");
+        // The transparent shape now rides the slice (which rents slots), so the warmed zero-allocation pin uses the Python-spelled twin that stays on the generic VM.
+        var regex = new Utf8Pcre2Regex("(?P<x>(?:ab|a))+z");
         var input = "ababababaz"u8;
         for (var i = 0; i < 32; i++)
         {

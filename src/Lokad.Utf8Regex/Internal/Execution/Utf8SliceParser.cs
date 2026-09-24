@@ -4,15 +4,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
-/// numbered and named groups (BCL unnamed-first numbering), (R03) dots with
-/// Singleline-scoped newline matching, anchors with Multiline-scoped line
+/// numbered and named groups (BCL unnamed-first numbering), balancing
+/// captures, transparent non-capturing groups and inline comments, (R03) dots
+/// with Singleline-scoped newline matching, anchors with Multiline-scoped line
 /// edges, ASCII character classes (literals, ranges, supported escapes, and
 /// shorthand members), word boundaries, shorthand classes, backreferences,
 /// and zero-width lookarounds (dots, negated classes, and negated shorthands
 /// decline astral inputs at routing).
-/// Anything else (non-capturing groups, conditionals, balancing captures,
-/// duplicate or explicitly-numbered names, categories,
-/// case/direction-sensitive options) declines to <c>null</c> so the existing
+/// Anything else (conditionals, duplicate or explicitly-numbered names,
+/// categories, case/direction-sensitive options, captures or pops inside
+/// lookbehind bodies of balancing shapes) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
 /// admission: patterns longer than <see cref="MaxPatternLength"/> decline before any
@@ -427,6 +428,37 @@ internal static class Utf8SliceParser
 
                             _position++;
                             node = new Utf8SliceNode.LookbehindNode(lookbehind ?? new Utf8SliceNode.EmptyNode(), behindPositive);
+                            return true;
+                        }
+
+                        if (marker == ':')
+                        {
+                            // Non-capturing groups are transparent: the body
+                            // lowers as-is with no slot and no group number.
+                            _position += 3;
+                            if (!TryParseAlternation(depth + 1, out var plainBody) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            node = plainBody ?? new Utf8SliceNode.EmptyNode();
+                            return true;
+                        }
+
+                        if (marker == '#')
+                        {
+                            // Inline comments run to the next closing paren;
+                            // an unterminated comment declines so legacy
+                            // routing preserves the construction failure.
+                            var commentEnd = _pattern.IndexOf(')', _position + 3);
+                            if (commentEnd < 0)
+                            {
+                                return false;
+                            }
+
+                            _position = commentEnd + 1;
+                            node = new Utf8SliceNode.EmptyNode();
                             return true;
                         }
 

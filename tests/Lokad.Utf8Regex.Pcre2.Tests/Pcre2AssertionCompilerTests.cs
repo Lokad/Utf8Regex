@@ -26,10 +26,11 @@ public sealed class Pcre2AssertionCompilerTests
 
     [Theory]
     [InlineData("foo(?=bar)", "xxfoobar", "foo")]
-    [InlineData("(?=(?:ab|a))a", "xxab", "a")]
+    // The transparent lookahead body now rides the slice, so the VM-routing row spells its group Python-style (the core slice declines it).
+    [InlineData("(?=(?P<g>ab|a))a", "xxab", "a")]
     public void NonSliceLookaroundsStayInTheGenericProgram(string pattern, string input, string expected)
     {
-        // Positive lookahead behind a leading literal keeps native precedence, and non-capturing bodies decline the core slice: both stay on the generic VM.
+        // Positive lookahead behind a leading literal keeps native precedence, and the Python-spelled body declines the core slice: both stay on the generic VM.
         var regex = new Utf8Pcre2Regex(pattern);
 
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
@@ -157,7 +158,7 @@ public sealed class Pcre2AssertionCompilerTests
     public void WarmedCaptureFreeLookaheadIsMatchDoesNotAllocate()
     {
         // R03 lookaround slice: "(?=ab|ac)ab" IsMatch now rides the shared slice runner (which rents ledger-charged slots per call), so the warmed zero-allocation pin moves to a lookahead shape that stays on the generic backtracking VM (non-capturing bodies decline the slice).
-        var regex = new Utf8Pcre2Regex("(?=(?:ab|ac))a");
+        var regex = new Utf8Pcre2Regex("(?=(?>ab|ac))a");
         var input = "xxab"u8;
         for (var index = 0; index < 32; index++)
         {
