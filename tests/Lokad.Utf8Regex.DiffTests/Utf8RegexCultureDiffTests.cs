@@ -10,6 +10,11 @@ public sealed class Utf8RegexCultureDiffTests
     [InlineData("^aa$", "aA", "da-DK", RegexOptions.None)]
     [InlineData("^aa$", "aA", "da-DK", RegexOptions.IgnoreCase)]
     [InlineData("^aA$", "aA", "da-DK", RegexOptions.IgnoreCase)]
+    [InlineData("\\p{Ll}+", "ABC", "tr-TR", RegexOptions.IgnoreCase)]
+    [InlineData("\\p{L}+", "ABC", "tr-TR", RegexOptions.IgnoreCase)]
+    [InlineData("[\\p{L}a]+", "ABC", "tr-TR", RegexOptions.IgnoreCase)]
+    [InlineData("\\p{IsBasicLatin}+", "abc", "tr-TR", RegexOptions.IgnoreCase)]
+    [InlineData("\\p{Ll}+", "ABC", "de-DE", RegexOptions.IgnoreCase)]
     public void IsMatchMatchesRuntimeForMirroredCultureCases(string pattern, string input, string cultureName, RegexOptions options)
     {
         // Mirrored and adapted from (research checkout external/runtime @ 9ffface2f3f):
