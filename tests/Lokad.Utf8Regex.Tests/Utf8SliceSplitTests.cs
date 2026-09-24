@@ -55,6 +55,11 @@ public sealed class Utf8SliceSplitTests
         yield return new object?[] { "\\d+", "a1b22c", int.MaxValue };
         yield return new object?[] { "(a)(?:b)(c)", "xabcxabc", int.MaxValue };
         yield return new object?[] { "a+", "axyza", int.MaxValue };
+        yield return new object?[] { "\\p{L}*", "123", int.MaxValue };
+        yield return new object?[] { "[\\p{L}a]*", "1a", int.MaxValue };
+        yield return new object?[] { "\\P{L}*", "ab", int.MaxValue };
+        yield return new object?[] { "x*|\\p{L}", "ax", int.MaxValue };
+        yield return new object?[] { "(?:\\p{L}|)*", "ab", int.MaxValue };
     }
 
     [Theory]
