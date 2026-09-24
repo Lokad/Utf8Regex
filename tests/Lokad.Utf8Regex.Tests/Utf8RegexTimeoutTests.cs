@@ -32,6 +32,20 @@ public sealed class Utf8RegexTimeoutTests
     }
 
     [Fact]
+    public void NativeControlExecutionRespectsMatchTimeout()
+    {
+        // Control-literal arms run the same per-visit budget steps as every other
+        // arm: a catastrophic control shape times out with the same identity.
+        var regex = new Utf8Regex(@"(\t+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var input = new byte[50_000];
+        Array.Fill(input, (byte)9);
+        input[^1] = (byte)33;
+
+        var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
+        Assert.Equal(input.Length, exception.Input.Length);
+    }
+
+    [Fact]
     public void NativeMatchEnumerationRespectsMatchTimeout()
     {
         var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
