@@ -103,7 +103,6 @@ public sealed class Utf8SliceParserTests
     [InlineData("[z-a]")]
     [InlineData("[a-[b]]")]
     [InlineData("[[:alpha:]]")]
-    [InlineData("[\\x41]")]
     [InlineData("[a-\\d]")]
     [InlineData("[\\p{L}]")]
     [InlineData("[]")]

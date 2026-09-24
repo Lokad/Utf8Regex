@@ -490,13 +490,25 @@ public sealed class PythonReSliceOwnershipTests
         Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
     }
 
+    // R03 numeric escapes: the space rewrite is a plain class with hex members
+    // that the core slice now parses, so bare \s shapes route owned with
+    // translated-oracle parity; the other shorthands keep scalar-exact rewrites
+    // that still decline.
+    [Theory]
+    [InlineData("(\\s+)")]
+    [InlineData("\\s+")]
+    public void BareSpaceShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("(\\w+)")]
-    [InlineData("(\\s+)")]
     [InlineData("\\D+")]
     [InlineData("\\w+")]
     [InlineData("\\W+")]
-    [InlineData("\\s+")]
     [InlineData("\\S+")]
     [InlineData("[\\d]")]
     public void BareShorthandShapesDeclineOwnedSlice(string pattern)
@@ -1219,6 +1231,47 @@ public sealed class PythonReSliceOwnershipTests
 
     // R03 atomic groups: the translator passes (?>...) through verbatim and the
     // owned core slice commits possessively. Ground truths are CPython 3.13.2.
+    // R03 numeric escapes: the translator resolves hex/unicode/octal escapes
+    // before the core sees them (astral resolutions stay declined), so ASCII
+    // results route owned with identical semantics. Ground truths are CPython 3.13.2.
+    [Theory]
+    [InlineData("\\x41+")]
+    [InlineData("\\u0041+")]
+    public void EscapeShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> EscapeSearchCases()
+    {
+        yield return new object?[] { "\\x41+", "xAA", 0, true, 1, 3 };
+        yield return new object?[] { "\\u004A", "xJ", 0, true, 1, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(EscapeSearchCases))]
+    public void EscapeSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("(?>a+)+b")]
     [InlineData("(?>(a+))b")]

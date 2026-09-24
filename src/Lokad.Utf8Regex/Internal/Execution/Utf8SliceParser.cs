@@ -193,6 +193,92 @@ internal static class Utf8SliceParser
         return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase);
     }
 
+    // Hex, unicode, and octal escapes with ASCII results (BCL-exact shapes:
+    // exactly-2-hex, exactly-4-hex, and up to 3 octal digits; malformed or
+    // non-ASCII results decline). Shared by literal and class positions (two
+    // callers, so the single-caller debt ceiling does not apply).
+    private static bool TryParseAsciiNumericEscape(string pattern, int start, bool bareOctal, out int value, out int next)
+    {
+        static int HexValue(char digit)
+        {
+            return digit <= '9' ? digit - '0' : (digit & ~32) - 'A' + 10;
+        }
+
+        value = 0;
+        next = start;
+        if (start >= pattern.Length)
+        {
+            return false;
+        }
+
+        var marker = pattern[start];
+        if (marker == 'x')
+        {
+            if (start + 2 >= pattern.Length || !char.IsAsciiHexDigit(pattern[start + 1]) || !char.IsAsciiHexDigit(pattern[start + 2]))
+            {
+                return false;
+            }
+
+            value = HexValue(pattern[start + 1]) * 16 + HexValue(pattern[start + 2]);
+            if (value > 127)
+            {
+                return false;
+            }
+
+            next = start + 3;
+            return true;
+        }
+
+        if (marker == 'u')
+        {
+            if (start + 4 >= pattern.Length)
+            {
+                return false;
+            }
+
+            value = 0;
+            for (var digit = 1; digit <= 4; digit++)
+            {
+                if (!char.IsAsciiHexDigit(pattern[start + digit]))
+                {
+                    return false;
+                }
+
+                value = value * 16 + HexValue(pattern[start + digit]);
+            }
+
+            if (value > 127)
+            {
+                return false;
+            }
+
+            next = start + 5;
+            return true;
+        }
+
+        if (marker >= '0' && marker <= '7' && (bareOctal || marker == '0'))
+        {
+            value = 0;
+            var end = start;
+            while (end < pattern.Length && end - start < 3 && pattern[end] >= '0' && pattern[end] <= '7')
+            {
+                value = value * 8 + (pattern[end] - '0');
+                end++;
+            }
+
+            if (value > 127)
+            {
+                return false;
+            }
+
+            next = end;
+            return true;
+        }
+
+        return false;
+    }
+
+
     static string StripInsignificantPatternWhitespace(string source)
     {
         var filtered = new StringBuilder(source.Length);
@@ -848,6 +934,21 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
+                    // Hex, unicode, and NUL-led octal escapes with ASCII results
+                    // lower to literals; malformed or non-ASCII results decline to
+                    // legacy-exact routing (BCL throws on the former).
+                    if (escaped == 'x' || escaped == 'u' || escaped == '0')
+                    {
+                        if (!TryParseAsciiNumericEscape(_pattern, _position + 1, false, out var number, out var next))
+                        {
+                            return false;
+                        }
+
+                        _position = next;
+                        node = new Utf8SliceNode.LiteralNode((byte)number);
+                        return true;
+                    }
+
                     if (!IsEscapablePunctuation(escaped))
                     {
                         return false;
@@ -1112,13 +1213,27 @@ internal static class Utf8SliceParser
                         case 'v':
                             value = 11;
                             break;
+                        case 'x':
+                        case 'u':
                         case '0':
-                            if (_position + 1 < _pattern.Length && char.IsAsciiDigit(_pattern[_position + 1]))
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                            // Hex, unicode, and octal escapes (bare octal included)
+                            // resolve here; the value flows into member/range logic
+                            // below. Anything unusable declines to legacy-exact.
+                            if (!TryParseAsciiNumericEscape(_pattern, _position, true, out value, out var next))
                             {
                                 return false;
                             }
 
-                            value = 0;
+                            // The shared tail advances past one escape char, so step
+                            // back to land after multi-char escapes.
+                            _position = next - 1;
                             break;
                         default:
                             if ((escaped >= 'a' && escaped <= 'z') || (escaped >= 'A' && escaped <= 'Z') || (escaped >= '0' && escaped <= '9'))
