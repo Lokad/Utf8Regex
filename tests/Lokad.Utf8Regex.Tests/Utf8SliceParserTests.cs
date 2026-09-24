@@ -175,6 +175,16 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
+    [InlineData("\\p{L}+")]
+    [InlineData("[\\p{L}a]+")]
+    [InlineData("(?<=\\p{L})x")]
+    public void SensitiveCategoryOptionsDecline(string pattern)
+    {
+        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.ECMAScript));
+        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.NonBacktracking));
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.CultureInvariant)]
     [InlineData(RegexOptions.Compiled)]
