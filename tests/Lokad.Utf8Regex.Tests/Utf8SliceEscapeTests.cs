@@ -212,6 +212,8 @@ public sealed class Utf8SliceEscapeTests
         yield return new object?[] { "\\cA+", "\u0001\u0001", true };
         yield return new object?[] { "(?<=\\n)x", "\nx", true };
         yield return new object?[] { "(?<=\\n)x", "ax", false };
+        yield return new object?[] { "\\cM", "M", false };
+        yield return new object?[] { "\\cm", "m", false };
     }
 
     [Theory]
@@ -268,11 +270,78 @@ public sealed class Utf8SliceEscapeTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
+    public static IEnumerable<object?[]> ControlLetterCodeCases()
+    {
+        yield return new object?[] { "@", "\u0000" };
+        yield return new object?[] { "A", "\u0001" };
+        yield return new object?[] { "B", "\u0002" };
+        yield return new object?[] { "C", "\u0003" };
+        yield return new object?[] { "D", "\u0004" };
+        yield return new object?[] { "E", "\u0005" };
+        yield return new object?[] { "F", "\u0006" };
+        yield return new object?[] { "G", "\u0007" };
+        yield return new object?[] { "H", "\u0008" };
+        yield return new object?[] { "I", "\u0009" };
+        yield return new object?[] { "J", "\u000A" };
+        yield return new object?[] { "K", "\u000B" };
+        yield return new object?[] { "L", "\u000C" };
+        yield return new object?[] { "M", "\u000D" };
+        yield return new object?[] { "N", "\u000E" };
+        yield return new object?[] { "O", "\u000F" };
+        yield return new object?[] { "P", "\u0010" };
+        yield return new object?[] { "Q", "\u0011" };
+        yield return new object?[] { "R", "\u0012" };
+        yield return new object?[] { "S", "\u0013" };
+        yield return new object?[] { "T", "\u0014" };
+        yield return new object?[] { "U", "\u0015" };
+        yield return new object?[] { "V", "\u0016" };
+        yield return new object?[] { "W", "\u0017" };
+        yield return new object?[] { "X", "\u0018" };
+        yield return new object?[] { "Y", "\u0019" };
+        yield return new object?[] { "Z", "\u001A" };
+        yield return new object?[] { "[", "\u001B" };
+        yield return new object?[] { "\\", "\u001C" };
+        yield return new object?[] { "]", "\u001D" };
+        yield return new object?[] { "^", "\u001E" };
+        yield return new object?[] { "_", "\u001F" };
+        yield return new object?[] { "a", "\u0001" };
+        yield return new object?[] { "m", "\u000D" };
+        yield return new object?[] { "z", "\u001A" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ControlLetterCodeCases))]
+    public void OwnedControlLetterMatchesCode(string letter, string inputText)
+    {
+        // Bare single literals keep native precedence, so the range sweep
+        // quantifies: quantified control letters route owned like \cA+.
+        var pattern = "\\c" + letter + "+";
+        var doubledText = inputText + inputText;
+        var input = Encoding.UTF8.GetBytes(doubledText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.True(oracle.IsMatch(doubledText), "pattern=" + pattern);
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
+            Assert.True(regex.IsMatch(input), "pattern=" + pattern);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        }
+    }
+
     public static IEnumerable<object?[]> InvalidControlShapes()
     {
         yield return new object?[] { "\\c " };
         yield return new object?[] { "\\c" };
         yield return new object?[] { "\\c?" };
+        yield return new object?[] { "\\c`" };
+        yield return new object?[] { "\\c~" };
+        yield return new object?[] { "\\C" };
     }
 
     [Theory]
