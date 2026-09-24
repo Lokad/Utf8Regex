@@ -74,6 +74,30 @@ public ref struct Utf8ValueSplitEnumerator
 
     internal Utf8ValueSplitEnumerator(
         ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8OperationMatchCursor matchCursor,
+        Utf8BoundaryMap map,
+        int count,
+        int totalUtf16Length)
+    {
+        _sourceKind = SplitSourceKind.OwnedSlice;
+        _input = input;
+        _decoded = decoded;
+        _boundaryMap = map;
+        _totalUtf16Length = totalUtf16Length;
+        _fallbackEnumerator = default;
+        _matchCursor = matchCursor;
+        _segmentStartBytes = 0;
+        _segmentStartUtf16 = 0;
+        _remainingCount = count;
+        _completed = false;
+        _timeoutPattern = null;
+        _timeout = default;
+        Current = default;
+    }
+
+    internal Utf8ValueSplitEnumerator(
+        ReadOnlySpan<byte> input,
         Utf8OperationMatchCursor matchCursor,
         int count,
         int totalUtf16Length)
@@ -110,6 +134,7 @@ public ref struct Utf8ValueSplitEnumerator
             return _sourceKind switch
             {
                 SplitSourceKind.NativeMatchCursor => MoveNextNative(),
+                SplitSourceKind.OwnedSlice => MoveNextNative(),
                 SplitSourceKind.SmallAsciiLiteralFamily => MoveNextSmallAsciiLiteralFamily(),
                 _ => MoveNextFallback(),
             };
@@ -166,6 +191,40 @@ public ref struct Utf8ValueSplitEnumerator
         if (_completed || _remainingCount <= 0)
         {
             return false;
+        }
+
+        if (_sourceKind == SplitSourceKind.OwnedSlice)
+        {
+            // Unit-space shaping: mid-scalar empty matches have no valid byte
+            // range, so segments project lazily through the map with UTF-16
+            // indexes exactly like the BCL oracle.
+            if (_boundaryMap is not { } ownedMap)
+            {
+                throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");
+            }
+
+            if (_remainingCount == 1 || !_matchCursor.MoveNext())
+            {
+                Current = new Utf8ValueSplit(
+                    _input,
+                    _decoded,
+                    _segmentStartUtf16,
+                    _totalUtf16Length - _segmentStartUtf16,
+                    ownedMap);
+                _completed = true;
+                return true;
+            }
+
+            var ownedMatch = _matchCursor.Current;
+            Current = new Utf8ValueSplit(
+                _input,
+                _decoded,
+                _segmentStartUtf16,
+                ownedMatch.IndexInUtf16 - _segmentStartUtf16,
+                ownedMap);
+            _segmentStartUtf16 = ownedMatch.IndexInUtf16 + ownedMatch.LengthInUtf16;
+            _remainingCount--;
+            return true;
         }
 
         if (_remainingCount == 1 || !_matchCursor.MoveNext())
@@ -226,10 +285,50 @@ public ref struct Utf8ValueSplitEnumerator
         return true;
     }
 
+    private bool MoveNextOwnedSlice()
+    {
+        // Unit-space twin of MoveNextNative: mid-scalar empty matches have no
+        // valid byte range, so segments project lazily through the map while
+        // indexes stay in UTF-16 units exactly like the BCL oracle.
+        if (_completed || _remainingCount <= 0)
+        {
+            return false;
+        }
+
+        if (_boundaryMap is not { } map)
+        {
+            throw new InvalidOperationException("Owned slice split enumeration requires prepared UTF-16 projection.");
+        }
+
+        if (_remainingCount == 1 || !_matchCursor.MoveNext())
+        {
+            Current = new Utf8ValueSplit(
+                _input,
+                _decoded,
+                _segmentStartUtf16,
+                _totalUtf16Length - _segmentStartUtf16,
+                map);
+            _completed = true;
+            return true;
+        }
+
+        var match = _matchCursor.Current;
+        Current = new Utf8ValueSplit(
+            _input,
+            _decoded,
+            _segmentStartUtf16,
+            match.IndexInUtf16 - _segmentStartUtf16,
+            map);
+        _segmentStartUtf16 = match.IndexInUtf16 + match.LengthInUtf16;
+        _remainingCount--;
+        return true;
+    }
+
     private enum SplitSourceKind : byte
     {
         FallbackRegex = 0,
         NativeMatchCursor = 1,
         SmallAsciiLiteralFamily = 2,
+        OwnedSlice = 3,
     }
 }

@@ -1844,6 +1844,24 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(Pattern, MatchTimeout);
         }
 
+        // R03: split segments project the owned match cursor, whose empty-match
+        // advancement already follows the BCL search order. Counts below 2 keep the
+        // BCL tail below with identical behavior (count 0 means unlimited there,
+        // while count 1 throws inside its first MoveNext).
+        if (count > 1 && _sliceProgram is not null && _sliceProgram.ServesInput(input))
+        {
+            var analysis = Utf8InputAnalyzer.Analyze(input);
+            var decoded = analysis.GetDecodedString();
+            return new Utf8ValueSplitEnumerator(
+                input,
+                decoded,
+                new Utf8OperationMatchCursor(_sliceProgram, input, analysis.BoundaryMap, MatchTimeout, CancellationToken.None),
+                analysis.BoundaryMap,
+                count,
+                decoded.Length)
+                .WithTimeoutMapping(Pattern, MatchTimeout);
+        }
+
         var fallbackSubject = Utf8InputAnalyzer.Analyze(input);
         return new Utf8ValueSplitEnumerator(input, fallbackSubject.GetDecodedString(), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, fallbackSubject.BoundaryMap)
             .WithTimeoutMapping(Pattern, MatchTimeout);
