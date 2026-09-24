@@ -21,6 +21,9 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<=a)b" };
         yield return new object?[] { "(?<!a)b" };
         yield return new object?[] { "((?=a)a)" };
+        yield return new object?[] { "x(?=a*)" };
+        yield return new object?[] { "x(?=[a-z]*)" };
+        yield return new object?[] { "x(?=\\p{L}*)" };
         yield return new object?[] { "(?=(a)(b))" };
     }
 
@@ -53,6 +56,9 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<=[a-z]*)x", "axb" };
         yield return new object?[] { "(?<=\\p{L}*)x", "axb" };
         yield return new object?[] { "(?<=\\p{L}+)x", "axb" };
+        yield return new object?[] { "(?<!x*)x", "xx" };
+        yield return new object?[] { "(?<![a-z]*)x", "axb" };
+        yield return new object?[] { "(?<!\\p{L}+)x", "axb" };
     }
 
     [Theory]
@@ -97,6 +103,11 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<!a)b", "cb", true };
         yield return new object?[] { "(?<!a)b", "ab", false };
         yield return new object?[] { "((?=a)a)\\1", "aaa", true };
+        yield return new object?[] { "x(?=a*)", "xa", true };
+        yield return new object?[] { "x(?=a+)", "xa", true };
+        yield return new object?[] { "x(?=a+)", "xx", false };
+        yield return new object?[] { "x(?=[a-z]*)", "xa", true };
+        yield return new object?[] { "x(?=\\p{L}*)", "xa", true };
         yield return new object?[] { "a(?<=a)b", "ab", true };
         yield return new object?[] { "(?<=^a)b", "ab", true };
         yield return new object?[] { "(?<=a$)b", "ab", false };
