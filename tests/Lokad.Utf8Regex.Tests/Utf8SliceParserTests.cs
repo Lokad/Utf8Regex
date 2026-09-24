@@ -100,16 +100,30 @@ public sealed class Utf8SliceParserTests
     [InlineData("(a")]
     [InlineData("a)")]
     [InlineData("a**")]
+    [InlineData("*a")]
+    [InlineData("+a")]
+    [InlineData("(?i)+")]
+    [InlineData("(?#c)*")]
     [InlineData("a{3,2}")]
     [InlineData("[z-a]")]
     [InlineData("[a-[b]]")]
     [InlineData("[[:alpha:]]")]
     [InlineData("[a-\\d]")]
+    [InlineData("[a-\\w]")]
+    [InlineData("[a-\\s]")]
+    [InlineData("[a-\\p{L}]")]
     [InlineData("[]")]
     [InlineData("[^]")]
     [InlineData("a)[a-z]+")]
     [InlineData("(?(1)[a-z]+|c)")]
     [InlineData("\\1(a)")]
+    [InlineData("(a)\\2")]
+    [InlineData("\\c ")]
+    [InlineData("\\c")]
+    [InlineData("\\c?")]
+    [InlineData("\\x4")]
+    [InlineData("\\u41")]
+    [InlineData("\\8")]
     [InlineData("a\\12b")]
     [InlineData("(a)\\10")]
     [InlineData("(?|a)")]
@@ -135,6 +149,20 @@ public sealed class Utf8SliceParserTests
     public void UnsupportedShapesDecline(string pattern)
     {
         Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [InlineData("[a-\\w]")]
+    [InlineData("[a-\\s]")]
+    [InlineData("[a-\\p{L}]")]
+    [InlineData("(?i)+")]
+    [InlineData("(?#c)*")]
+    [InlineData("*a")]
+    [InlineData("+a")]
+    public void MalformedShapesFailConstructionLikeRuntime(string pattern)
+    {
+        Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
+        Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Utf8Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
     }
 
     [Fact]
