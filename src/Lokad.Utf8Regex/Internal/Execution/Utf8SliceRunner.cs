@@ -896,7 +896,7 @@ internal static class Utf8SliceRunner
                         if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlLiteralWidth))
                         {
                             var literalLead = input[inputIndex - rtlLiteralWidth];
-                            if (!program.IgnoreCase)
+                            if (instruction.B == 0)
                             {
                                 if (literalLead == (byte)instruction.A)
                                 {
@@ -941,7 +941,7 @@ internal static class Utf8SliceRunner
                         break;
                     }
 
-                    if (!program.IgnoreCase)
+                    if (instruction.B == 0)
                     {
                         if (inputIndex < input.Length && input[inputIndex] == (byte)instruction.A)
                         {
@@ -1004,10 +1004,10 @@ internal static class Utf8SliceRunner
                             var setInMask = false;
                             if (setCandidate < 0x80)
                             {
-                                var setTest = program.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(setCandidate) : setCandidate;
+                                var setTest = instruction.C != 0 ? Internal.Search.AsciiSearch.FoldCase(setCandidate) : setCandidate;
                                 setInMask = (program.SetMasks[instruction.A][setTest >> 3] & (byte)(1 << (setTest & 7))) != 0;
                             }
-                            else if (program.IgnoreCase &&
+                            else if (instruction.C != 0 &&
                                 setCandidate < 0xF0 &&
                                 TryDecodeBmpScalar(input, inputIndex - rtlSetWidth, out var rtlSetScalar) &&
                                 TryFoldBmpScalarForCaseInsensitiveMatch(rtlSetScalar, out var rtlSetFolded) &&
@@ -1051,10 +1051,10 @@ internal static class Utf8SliceRunner
                         var inMask = false;
                         if (candidate < 0x80)
                         {
-                            var test = program.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(candidate) : candidate;
+                            var test = instruction.C != 0 ? Internal.Search.AsciiSearch.FoldCase(candidate) : candidate;
                             inMask = (program.SetMasks[instruction.A][test >> 3] & (byte)(1 << (test & 7))) != 0;
                         }
-                        else if (program.IgnoreCase &&
+                        else if (instruction.C != 0 &&
                             candidate < 0xF0 &&
                             TryDecodeBmpScalar(input, inputIndex, out var setScalar) &&
                             TryFoldBmpScalarForCaseInsensitiveMatch(setScalar, out var foldedSet) &&
@@ -1592,7 +1592,7 @@ internal static class Utf8SliceRunner
                                     TryDecodeBmpScalar(input, inputIndex - rtlHybridWidth, out var rtlHybridScalar))
                                 {
                                     var hybridHit = false;
-                                    if (program.IgnoreCase &&
+                                    if (instruction.D != 0 &&
                                         TryFoldBmpScalarForCaseInsensitiveMatch(rtlHybridScalar, out var rtlHybridFolded) &&
                                         rtlHybridFolded < 0x80)
                                     {
@@ -1656,7 +1656,7 @@ internal static class Utf8SliceRunner
                                 // Case-insensitive hybrids test folded ASCII scalars
                                 // against the mask (shorthand members stay
                                 // case-irrelevant); anything else consults categories.
-                                if (program.IgnoreCase &&
+                                if (instruction.D != 0 &&
                                     TryFoldBmpScalarForCaseInsensitiveMatch(scalar, out var foldedMember) &&
                                     foldedMember < 0x80)
                                 {
@@ -1721,7 +1721,7 @@ internal static class Utf8SliceRunner
                         var rtlReferStart = captureEnds[instruction.A];
                         var rtlReferEnd = captureStarts[instruction.A];
                         var rtlReferLength = rtlReferEnd - rtlReferStart;
-                        if (program.IgnoreCase)
+                        if (instruction.B != 0)
                         {
                             var rtlCapIndex = rtlReferEnd;
                             var rtlBackIndex = inputIndex;
@@ -1888,7 +1888,7 @@ internal static class Utf8SliceRunner
                     {
                         var referEnd = captureEnds[instruction.A];
                         var referLength = referEnd - captureStarts[instruction.A];
-                        if (program.IgnoreCase)
+                        if (instruction.B != 0)
                         {
                             // Case-insensitive backreferences compare per-scalar BCL-invariant
                             // folds (ASCII pairs plus single-char ToLowerInvariant; U+0130 and

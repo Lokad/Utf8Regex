@@ -473,8 +473,9 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Theory]
     // The contiguous shape now rides the slice (its behavior stays pinned by
     // InitialPositionRestrictionPreservesOffsetAndMultilineSemantics below).
+    // Inline-option shapes (e.g. (?m)^(a+)+b$) now ride the shared slice too;
+    // their behavior is pinned by Pcre2SliceInlineTests.
     [InlineData("(?:^a|^b)c", true)]
-    [InlineData("(?m)^(a+)+b$", false)]
     public void BacktrackingPlanProvesOnlyMandatoryInitialPositionAnchors(
         string pattern,
         bool expected)

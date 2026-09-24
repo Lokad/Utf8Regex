@@ -15,8 +15,8 @@ public sealed class Utf8SliceBoundsTests
     private static Utf8SliceProgram PlusProgram()
     {
         var program = Utf8SliceLowerer.Lower(new Utf8SliceNode.ConcatNode([
-            new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97), 1, int.MaxValue, false)),
-            new Utf8SliceNode.CaptureNode(1, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(98), 1, int.MaxValue, false)),
+            new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97, false), 1, int.MaxValue, false)),
+            new Utf8SliceNode.CaptureNode(1, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(98, false), 1, int.MaxValue, false)),
         ]), null, false, false, false);
         Assert.NotNull(program);
         return program;
@@ -90,7 +90,7 @@ public sealed class Utf8SliceBoundsTests
     [Fact]
     public void MidRunCancellationAbortsWithCleanup()
     {
-        var program = Lower(new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97), 1, int.MaxValue, false));
+        var program = Lower(new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97, false), 1, int.MaxValue, false));
         var input = Encoding.ASCII.GetBytes(new string((char)97, 5000));
         using var source = new CancellationTokenSource();
         var invocation = Invoke(0, 0, 0, source.Token);

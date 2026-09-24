@@ -74,7 +74,7 @@ internal static class Utf8SliceParser
             }
         }
 
-        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0, (options & RegexOptions.ExplicitCapture) != 0);
+        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0, (options & RegexOptions.ExplicitCapture) != 0, (options & RegexOptions.IgnorePatternWhitespace) != 0);
         if (!parser.TryParseAlternation(0, out var root) || parser.Position != pattern.Length)
         {
             return null;
@@ -552,7 +552,7 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase, rightToLeft);
+        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase || parser.SawFold, rightToLeft);
     }
 
     // Hex, unicode, and octal escapes with ASCII results (BCL-exact shapes:
@@ -720,10 +720,13 @@ internal static class Utf8SliceParser
     private sealed class Parser
     {
         private readonly string _pattern;
-        private readonly bool _matchNewline;
-        private readonly bool _matchMultiline;
-        private readonly bool _matchIgnoreCase;
-        private readonly bool _explicitCapture;
+        private bool _matchNewline;
+        private bool _matchMultiline;
+        private bool _matchIgnoreCase;
+        private bool _explicitCapture;
+        private bool _sawFold;
+        private int _expressionBranchDepth = -1;
+        private bool _whitespaceStripped;
         private int _position;
         private int _groups;
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
@@ -733,13 +736,14 @@ internal static class Utf8SliceParser
         private int _lookbehindDepth;
         private bool _sawLookbehindGroupWrite;
 
-        internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase, bool explicitCapture)
+        internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase, bool explicitCapture, bool whitespaceStripped)
         {
             _pattern = pattern;
             _matchNewline = matchNewline;
             _matchMultiline = matchMultiline;
             _matchIgnoreCase = matchIgnoreCase;
             _explicitCapture = explicitCapture;
+            _whitespaceStripped = whitespaceStripped;
         }
 
         internal int Position => _position;
@@ -747,6 +751,7 @@ internal static class Utf8SliceParser
         internal List<(int Slot, string? Name)> GroupDecls => _groupDecls;
         internal bool SawBalancing => _sawBalancing;
         internal bool MatchIgnoreCase => _matchIgnoreCase;
+        internal bool SawFold => _sawFold;
         internal bool SawLookbehindGroupWrite => _sawLookbehindGroupWrite;
         internal bool SawFiniteMaximumLazyRepeat => _sawFiniteMaximumLazyRepeat;
 
@@ -945,12 +950,14 @@ internal static class Utf8SliceParser
                         {
                             var positive = marker == '=';
                             _position += 3;
+                            var savedLookahead = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             if (!TryParseAlternation(depth + 1, out var lookahead) || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
                             }
 
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedLookahead;
                             node = new Utf8SliceNode.LookaheadNode(lookahead ?? new Utf8SliceNode.EmptyNode(), positive);
                             return true;
                         }
@@ -960,6 +967,7 @@ internal static class Utf8SliceParser
                         {
                             var behindPositive = _pattern[_position + 3] == '=';
                             _position += 4;
+                            var savedBehind = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             _lookbehindDepth++;
                             var parsedBehind = TryParseAlternation(depth + 1, out var lookbehind);
                             _lookbehindDepth--;
@@ -969,7 +977,119 @@ internal static class Utf8SliceParser
                             }
 
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedBehind;
                             node = new Utf8SliceNode.LookbehindNode(lookbehind ?? new Utf8SliceNode.EmptyNode(), behindPositive);
+                            return true;
+                        }
+
+                        if (marker == 'i' || marker == 'I' || marker == 'm' || marker == 'M' ||
+                            marker == 'n' || marker == 'N' || marker == 's' || marker == 'S' ||
+                            marker == 'x' || marker == 'X' || marker == '-' || marker == '+')
+                        {
+                            // Inline options (BCL ScanOptions): letters apply case-insensitively
+                            // with -/+ prefixes; an unknown letter stops the scan and anything
+                            // but ) or : declines. Option constructs directly inside
+                            // expression-conditional branches decline (BCL throws there). x-forms
+                            // decline unless they only switch whitespace off with global
+                            // stripping already off (regional lexing lives in legacy).
+                            if (_expressionBranchDepth == depth)
+                            {
+                                return false;
+                            }
+
+                            var scan = _position + 2;
+                            var off = false;
+                            var nextIgnoreCase = _matchIgnoreCase;
+                            var nextMultiline = _matchMultiline;
+                            var nextNewline = _matchNewline;
+                            var nextExplicit = _explicitCapture;
+                            var sawX = false;
+                            var xValue = false;
+                            while (scan < _pattern.Length)
+                            {
+                                var optionChar = _pattern[scan];
+                                if (optionChar == '-')
+                                {
+                                    off = true;
+                                    scan++;
+                                }
+                                else if (optionChar == '+')
+                                {
+                                    off = false;
+                                    scan++;
+                                }
+                                else if ((optionChar | 0x20) == 'i')
+                                {
+                                    nextIgnoreCase = !off;
+                                    scan++;
+                                }
+                                else if ((optionChar | 0x20) == 'm')
+                                {
+                                    nextMultiline = !off;
+                                    scan++;
+                                }
+                                else if ((optionChar | 0x20) == 'n')
+                                {
+                                    nextExplicit = !off;
+                                    scan++;
+                                }
+                                else if ((optionChar | 0x20) == 's')
+                                {
+                                    nextNewline = !off;
+                                    scan++;
+                                }
+                                else if ((optionChar | 0x20) == 'x')
+                                {
+                                    sawX = true;
+                                    xValue = !off;
+                                    scan++;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (scan >= _pattern.Length || (_pattern[scan] != ')' && _pattern[scan] != ':'))
+                            {
+                                return false;
+                            }
+
+                            if (sawX && (_whitespaceStripped || xValue))
+                            {
+                                return false;
+                            }
+
+                            if (_pattern[scan] == ')')
+                            {
+                                _position = scan + 1;
+                                if (!AtEnd && (_pattern[_position] == '*' || _pattern[_position] == '+' || _pattern[_position] == '?' || _pattern[_position] == '{'))
+                                {
+                                    return false;
+                                }
+
+                                _matchIgnoreCase = nextIgnoreCase;
+                                _matchMultiline = nextMultiline;
+                                _matchNewline = nextNewline;
+                                _explicitCapture = nextExplicit;
+                                node = new Utf8SliceNode.EmptyNode();
+                                return true;
+                            }
+
+                            var savedOptions = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
+                            _position = scan + 1;
+                            _matchIgnoreCase = nextIgnoreCase;
+                            _matchMultiline = nextMultiline;
+                            _matchNewline = nextNewline;
+                            _explicitCapture = nextExplicit;
+                            if (!TryParseAlternation(depth + 1, out var scopedBody) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedOptions;
+                            node = scopedBody ?? new Utf8SliceNode.EmptyNode();
                             return true;
                         }
 
@@ -978,12 +1098,14 @@ internal static class Utf8SliceParser
                             // Atomic (possessive) groups bind their bodies without
                             // consuming a group number.
                             _position += 3;
+                            var savedAtomic = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             if (!TryParseAlternation(depth + 1, out var atomicBody) || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
                             }
 
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedAtomic;
                             node = new Utf8SliceNode.AtomicNode(atomicBody ?? new Utf8SliceNode.EmptyNode());
                             return true;
                         }
@@ -993,12 +1115,14 @@ internal static class Utf8SliceParser
                             // Non-capturing groups are transparent: the body
                             // lowers as-is with no slot and no group number.
                             _position += 3;
+                            var savedTransparent = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             if (!TryParseAlternation(depth + 1, out var plainBody) || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
                             }
 
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedTransparent;
                             node = plainBody ?? new Utf8SliceNode.EmptyNode();
                             return true;
                         }
@@ -1012,6 +1136,7 @@ internal static class Utf8SliceParser
                             // to a lookahead-guarded alternation. A second | declines (BCL throws
                             // AlternationHasTooManyConditions); a named capture or comment opening
                             // the test declines (BCL throws).
+                            var savedConditional = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             var testStart = _position + 3;
                             var testChar = testStart < _pattern.Length ? _pattern[testStart] : '\0';
                             int testSlot = int.MinValue;
@@ -1097,6 +1222,12 @@ internal static class Utf8SliceParser
                                     }
                                 }
                             }
+                            var savedExprDepth = _expressionBranchDepth;
+                            if (testBody is not null)
+                            {
+                                _expressionBranchDepth = depth + 1;
+                            }
+
                             var yesChildren = new List<Utf8SliceNode>();
                             if (!TryParseConcatenation(depth + 1, yesChildren))
                             {
@@ -1123,6 +1254,8 @@ internal static class Utf8SliceParser
                                 return false;
                             }
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedConditional;
+                            _expressionBranchDepth = savedExprDepth;
                             if (testBody is not null)
                             {
                                 // Expression tests stay on the node (desugared at lowering so
@@ -1149,6 +1282,11 @@ internal static class Utf8SliceParser
                             }
 
                             _position = commentEnd + 1;
+                            if (!AtEnd && (_pattern[_position] == '*' || _pattern[_position] == '+' || _pattern[_position] == '?' || _pattern[_position] == '{'))
+                            {
+                                return false;
+                            }
+
                             node = new Utf8SliceNode.EmptyNode();
                             return true;
                         }
@@ -1258,12 +1396,14 @@ internal static class Utf8SliceParser
                                 }
 
                                 _position = popEnd + 1;
+                                var savedBalance = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                                 if (!TryParseAlternation(depth + 1, out var balanceBody) || AtEnd || _pattern[_position] != ')')
                                 {
                                     return false;
                                 }
 
                                 _position++;
+                                (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedBalance;
                                 node = new Utf8SliceNode.BalanceNode(popTemp, captureTemp, balanceBody ?? new Utf8SliceNode.EmptyNode());
                                 _sawBalancing = true;
                                 if (_lookbehindDepth > 0)
@@ -1316,12 +1456,14 @@ internal static class Utf8SliceParser
                             {
                                 _sawLookbehindGroupWrite = true;
                             }
+                            var savedNamed = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                             if (!TryParseAlternation(depth + 1, out var namedBody) || AtEnd || _pattern[_position] != ')')
                             {
                                 return false;
                             }
 
                             _position++;
+                            (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedNamed;
                             node = new Utf8SliceNode.CaptureNode(namedSlot, namedBody ?? new Utf8SliceNode.EmptyNode());
                             return true;
                         }
@@ -1333,12 +1475,14 @@ internal static class Utf8SliceParser
                         // ExplicitCapture leaves unnamed groups unnumbered, exactly
                         // like non-capturing groups (backreference digits still denote
                         // final numbers, so unbound digits decline as usual).
+                        var savedExplicitBody = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                         if (!TryParseAlternation(depth + 1, out var plainBody) || AtEnd || _pattern[_position] != ')')
                         {
                             return false;
                         }
 
                         _position++;
+                        (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedExplicitBody;
                         node = plainBody ?? new Utf8SliceNode.EmptyNode();
                         return true;
                     }
@@ -1349,12 +1493,14 @@ internal static class Utf8SliceParser
                     {
                         _sawLookbehindGroupWrite = true;
                     }
+                    var savedPlain = (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture);
                     if (!TryParseAlternation(depth + 1, out var body) || AtEnd || _pattern[_position] != ')')
                     {
                         return false;
                     }
 
                     _position++;
+                    (_matchNewline, _matchMultiline, _matchIgnoreCase, _explicitCapture) = savedPlain;
                     node = new Utf8SliceNode.CaptureNode(slot, body ?? new Utf8SliceNode.EmptyNode());
                     return true;
                 case '\\':
@@ -1426,7 +1572,8 @@ internal static class Utf8SliceParser
                         escaped - '0' <= _groups)
                     {
                         _position += 2;
-                        node = new Utf8SliceNode.BackrefNode(escaped - '0' - 1);
+                        _sawFold |= _matchIgnoreCase;
+                        node = new Utf8SliceNode.BackrefNode(escaped - '0' - 1, _matchIgnoreCase);
                         return true;
                     }
 
@@ -1441,7 +1588,8 @@ internal static class Utf8SliceParser
                         }
 
                         _position = next;
-                        node = new Utf8SliceNode.LiteralNode((byte)number);
+                        _sawFold |= _matchIgnoreCase;
+                        node = new Utf8SliceNode.LiteralNode((byte)number, _matchIgnoreCase);
                         return true;
                     }
 
@@ -1451,7 +1599,8 @@ internal static class Utf8SliceParser
                     }
 
                     _position += 2;
-                    node = new Utf8SliceNode.LiteralNode((byte)escaped);
+                    _sawFold |= _matchIgnoreCase;
+                    node = new Utf8SliceNode.LiteralNode((byte)escaped, _matchIgnoreCase);
                     return true;
                 case ')':
                 case '|':
@@ -1478,7 +1627,8 @@ internal static class Utf8SliceParser
                     return true;
                 default:
                     _position++;
-                    node = new Utf8SliceNode.LiteralNode((byte)character);
+                    _sawFold |= _matchIgnoreCase;
+                    node = new Utf8SliceNode.LiteralNode((byte)character, _matchIgnoreCase);
                     return true;
             }
         }
@@ -1810,6 +1960,7 @@ internal static class Utf8SliceParser
             // before the mask test, so folded members must be present too).
             if (_matchIgnoreCase)
             {
+                _sawFold = true;
                 for (var member = 0; member < 128; member++)
                 {
                     if (bits[member] && ((member >= 65 && member <= 90) || (member >= 97 && member <= 122)))
@@ -1848,7 +1999,7 @@ internal static class Utf8SliceParser
                 members = collected[..collectedCount];
             }
 
-            node = new Utf8SliceNode.SetNode(mask, negated, members);
+            node = new Utf8SliceNode.SetNode(mask, negated, members, _matchIgnoreCase);
             return true;
         }
 

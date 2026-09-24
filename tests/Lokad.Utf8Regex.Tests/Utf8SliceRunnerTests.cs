@@ -19,7 +19,7 @@ public sealed class Utf8SliceRunnerTests
 
     private static Utf8SliceNode Lit(byte value)
     {
-        return new Utf8SliceNode.LiteralNode(value);
+        return new Utf8SliceNode.LiteralNode(value, false);
     }
 
     private static Utf8SliceNode Lit(string text)
@@ -44,7 +44,7 @@ public sealed class Utf8SliceRunnerTests
             }
         }
 
-        return new Utf8SliceNode.SetNode(mask, false, []);
+        return new Utf8SliceNode.SetNode(mask, false, [], false);
     }
 
     private static Utf8SliceNode Plus(Utf8SliceNode body)

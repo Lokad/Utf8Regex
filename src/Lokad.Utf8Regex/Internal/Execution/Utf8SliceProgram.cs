@@ -52,9 +52,9 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 {
     internal sealed record EmptyNode() : Utf8SliceNode(Utf8SliceNodeKind.Empty);
 
-    internal sealed record LiteralNode(byte Value) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
+    internal sealed record LiteralNode(byte Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
 
-    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members) : Utf8SliceNode(Utf8SliceNodeKind.Set)
+    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set)
     {
         internal bool Matches(byte value)
         {
@@ -78,7 +78,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
-    internal sealed record BackrefNode(int Slot) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
     internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
     internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
@@ -502,7 +502,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.EmptyNode:
                     break;
                 case Utf8SliceNode.LiteralNode literal:
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, literal.FoldCase ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.SetNode set:
                     if (set.Mask16.Length != 16)
@@ -514,7 +514,7 @@ internal static class Utf8SliceLowerer
                     SetMasks.Add(set.Mask16);
                     if (set.Members.Length == 0)
                     {
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, 0, 0));
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Set, maskIndex, set.Negated ? 1 : 0, set.FoldCase ? 1 : 0, 0));
                     }
                     else
                     {
@@ -528,7 +528,7 @@ internal static class Utf8SliceLowerer
                             memberMask |= 1 << (int)member;
                         }
 
-                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Hybrid, maskIndex, set.Negated ? 1 : 0, memberMask, 0));
+                        Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Hybrid, maskIndex, set.Negated ? 1 : 0, memberMask, set.FoldCase ? 1 : 0));
                     }
 
                     break;
@@ -628,7 +628,7 @@ internal static class Utf8SliceLowerer
                         throw new ArgumentOutOfRangeException(nameof(node), "Slice backreferences bind earlier groups.");
                     }
 
-                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, 0, 0, 0));
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Backref, backref.Slot, backref.FoldCase ? 1 : 0, 0, 0));
                     break;
                 case Utf8SliceNode.BalanceNode balance:
                     if (balance.PopSlot < 0 || (balance.CaptureSlot < -1))

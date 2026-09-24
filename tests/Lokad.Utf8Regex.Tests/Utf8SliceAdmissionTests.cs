@@ -44,7 +44,7 @@ public sealed class Utf8SliceAdmissionTests
     [Fact]
     public void OverInstructionSyntheticTreeDeclines()
     {
-        var shared = new Utf8SliceNode.LiteralNode(97);
+        var shared = new Utf8SliceNode.LiteralNode(97, false);
         var branches = new Utf8SliceNode[400000][];
         for (var index = 0; index < branches.Length; index++)
         {
@@ -57,7 +57,7 @@ public sealed class Utf8SliceAdmissionTests
     [Fact]
     public void UnderInstructionSyntheticTreeLowers()
     {
-        var shared = new Utf8SliceNode.LiteralNode(97);
+        var shared = new Utf8SliceNode.LiteralNode(97, false);
         var branches = new Utf8SliceNode[100000][];
         for (var index = 0; index < branches.Length; index++)
         {
