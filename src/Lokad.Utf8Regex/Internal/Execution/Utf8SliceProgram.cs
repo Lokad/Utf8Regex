@@ -21,6 +21,7 @@ internal enum Utf8SliceNodeKind : byte
     Lookahead = 12,
     Lookbehind = 13,
     Balance = 14,
+    Atomic = 15,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -79,6 +80,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
     internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
     internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
+    internal sealed record AtomicNode(Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Atomic);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -105,6 +107,7 @@ internal enum Utf8SliceInstructionKind : byte
     Commit = 18,
     Hybrid = 19,
     BalancePop = 20,
+    AtomicCommit = 21,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
@@ -414,6 +417,8 @@ internal static class Utf8SliceLowerer
                         return Measure(capture.Body);
                     case Utf8SliceNode.BalanceNode balance:
                         return Measure(balance.Body);
+                    case Utf8SliceNode.AtomicNode atomic:
+                        return Measure(atomic.Body);
                     case Utf8SliceNode.ConcatNode concat:
                         var totalMinimum = 0L;
                         var totalMaximum = 0L;
@@ -613,6 +618,26 @@ internal static class Utf8SliceLowerer
                         return false;
                     }
 
+                    break;
+                case Utf8SliceNode.AtomicNode atomic:
+                    // Possessive groups: a surviving body commits (popping to the
+                    // atomic fork and keeping captures, input, and repeat state)
+                    // while any failing path unwinds to the fork and fails through
+                    // the Fail branch.
+                    var atomicFork = Instructions.Count;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fork, 0, 2, 0, 0));
+                    if (!EmitNode(atomic.Body))
+                    {
+                        return false;
+                    }
+
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.AtomicCommit, 0, 0, 0, 0));
+                    var atomicJump = Instructions.Count;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                    var atomicFail = Instructions.Count;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
+                    Patch(atomicFork, atomicFail);
+                    Patch(atomicJump, Instructions.Count);
                     break;
                 case Utf8SliceNode.LookaheadNode lookahead:
                     // Atomic first-success assertions on the shared trail:

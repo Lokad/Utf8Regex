@@ -6,7 +6,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Recognizes the owned R02a slice: ASCII-only patterns built from
 /// literals, concatenation, ordered alternation, greedy/lazy repetition,
 /// numbered and named groups (BCL unnamed-first numbering), balancing
-/// captures, transparent non-capturing groups and inline comments, (R03) dots
+/// captures, atomic groups, transparent non-capturing groups and inline comments,
+/// (R03) dots
 /// with Singleline-scoped newline matching, anchors with Multiline-scoped line
 /// edges, ASCII character classes (literals, ranges, supported escapes, and
 /// shorthand members), word boundaries, shorthand classes, backreferences,
@@ -141,6 +142,9 @@ internal static class Utf8SliceParser
                     return new Utf8SliceNode.LookbehindNode(
                         RenumberCaptures(lookbehind.Body, finals),
                         lookbehind.Positive);
+                case Utf8SliceNode.AtomicNode atomic:
+                    return new Utf8SliceNode.AtomicNode(
+                        RenumberCaptures(atomic.Body, finals));
                 case Utf8SliceNode.BalanceNode balance:
                     return new Utf8SliceNode.BalanceNode(
                         finals[balance.PopSlot] - 1,
@@ -518,6 +522,21 @@ internal static class Utf8SliceParser
 
                             _position++;
                             node = new Utf8SliceNode.LookbehindNode(lookbehind ?? new Utf8SliceNode.EmptyNode(), behindPositive);
+                            return true;
+                        }
+
+                        if (marker == '>')
+                        {
+                            // Atomic (possessive) groups bind their bodies without
+                            // consuming a group number.
+                            _position += 3;
+                            if (!TryParseAlternation(depth + 1, out var atomicBody) || AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+
+                            _position++;
+                            node = new Utf8SliceNode.AtomicNode(atomicBody ?? new Utf8SliceNode.EmptyNode());
                             return true;
                         }
 

@@ -7,7 +7,6 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2BacktrackingControlCompilerTests
 {
     [Theory]
-    [InlineData("^(?>ab|a)b$", "ab", false)]
     [InlineData("^(*atomic:ab|a)b$", "ab", false)]
     [InlineData("^(?:ab|a)b$", "ab", true)]
     [InlineData("^a*+a$", "aaa", false)]
@@ -22,6 +21,17 @@ public sealed class Pcre2BacktrackingControlCompilerTests
 
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+    }
+
+    // R03 atomic slice: the core slice owns possessive groups, so the atomic
+    // corner rides the shared slice runner with identical discarding behavior.
+    [Fact]
+    public void AtomicGroupsDiscardInternalChoicesOnSlice()
+    {
+        var regex = new Utf8Pcre2Regex("^(?>ab|a)b$");
+
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("ab")));
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     // R03 anchor slice: the plain greedy-star control row keeps its

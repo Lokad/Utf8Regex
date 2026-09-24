@@ -11,6 +11,7 @@ internal enum Utf8SliceResumeKind : byte
     RepeatUnwind = 1,
     RepeatContinue = 2,
     Assertion = 3,
+    Atomic = 4,
 }
 
 internal struct Utf8SliceFrame
@@ -733,7 +734,7 @@ internal static class Utf8SliceRunner
                     if (!stacks.PushFrame(
                         new Utf8SliceFrame
                         {
-                            ResumeKind = instruction.B != 0 ? Utf8SliceResumeKind.Assertion : Utf8SliceResumeKind.Alternation,
+                            ResumeKind = instruction.B == 0 ? Utf8SliceResumeKind.Alternation : instruction.B == 1 ? Utf8SliceResumeKind.Assertion : Utf8SliceResumeKind.Atomic,
                             Target = instruction.A,
                             InputIndex = inputIndex,
                             TrailCount = stacks.TrailCount,
@@ -1362,6 +1363,31 @@ internal static class Utf8SliceRunner
                 case Utf8SliceInstructionKind.Fail:
                     failed = true;
                     break;
+                case Utf8SliceInstructionKind.AtomicCommit:
+                    {
+                        // Possessive commit: discard every frame up to and
+                        // including the atomic fork (a surviving body must not
+                        // resume its alternatives), keeping input, captures,
+                        // and repeat state.
+                        var foundAtomic = false;
+                        while (stacks.PopFrame(out var committed))
+                        {
+                            if (committed.ResumeKind == Utf8SliceResumeKind.Atomic)
+                            {
+                                foundAtomic = true;
+                                break;
+                            }
+                        }
+
+                        if (!foundAtomic)
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        programIndex++;
+                        break;
+                    }
                 case Utf8SliceInstructionKind.Commit:
                     {
                         // Assertion commit: discard every frame up to and
@@ -1616,6 +1642,7 @@ internal static class Utf8SliceRunner
                 {
                     case Utf8SliceResumeKind.Alternation:
                     case Utf8SliceResumeKind.Assertion:
+                    case Utf8SliceResumeKind.Atomic:
                         inputIndex = popped.InputIndex;
                         programIndex = popped.Target;
                         break;

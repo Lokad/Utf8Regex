@@ -61,7 +61,6 @@ public sealed class Utf8SliceNamedTests
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData("(?'name'a)")]
-    [InlineData("(?>a)")]
     [InlineData("(?<a>b)(?<a>c)")]
     [InlineData("(?<1>a)")]
     public void NonSliceNamedShapesStayOffSlice(string pattern)

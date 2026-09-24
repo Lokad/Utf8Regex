@@ -45,7 +45,6 @@ public sealed class Utf8SliceLookaroundTests
     [InlineData("(?:a)")]
     [InlineData("(?<name>a)")]
     [InlineData("(?'name'a)")]
-    [InlineData("(?>a)")]
     public void NonLookaroundGroupShapesDecline(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

@@ -157,8 +157,8 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void WarmedCaptureFreeLookaheadIsMatchDoesNotAllocate()
     {
-        // R03 lookaround slice: "(?=ab|ac)ab" IsMatch now rides the shared slice runner (which rents ledger-charged slots per call), so the warmed zero-allocation pin moves to a lookahead shape that stays on the generic backtracking VM (non-capturing bodies decline the slice).
-        var regex = new Utf8Pcre2Regex("(?=(?>ab|ac))a");
+        // R03 lookaround slice: "(?=ab|ac)ab" IsMatch now rides the shared slice runner (which rents ledger-charged slots per call), so the warmed zero-allocation pin moves to a lookahead shape that stays on the generic backtracking VM (possessive bodies decline the slice; atomic and named bodies would route owned or allocate).
+        var regex = new Utf8Pcre2Regex("(?=(?:ab|ac)++)a");
         var input = "xxab"u8;
         for (var index = 0; index < 32; index++)
         {
