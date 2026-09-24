@@ -605,4 +605,44 @@ public sealed class Utf8SliceCategoryTests
             Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + name);
         }
     }
+
+    [Fact]
+    public void InvariantFibersMatchAuditedSets()
+    {
+        // Spot guard for the regenerated fiber tables: triples, 16.0-era
+        // pairs, dotted/dotless-I empties, the i/I pair, and
+        // singleton/unknown empties. Full 65,536-char equivalence against the
+        // runtime oracle was verified during the rewrite audit (see PLAN.md);
+        // these rows lock the edges.
+        var cases = new (int Value, string Expected)[]
+        {
+            (0x004B, "004B,006B,212A,"),
+            (0x212A, "004B,006B,212A,"),
+            (0x00C5, "00C5,00E5,212B,"),
+            (0x00DF, "00DF,1E9E,"),
+            (0x1E9E, "00DF,1E9E,"),
+            (0xAB70, "13A0,AB70,"),
+            (0xA7DC, "019B,A7DC,"),
+            (0x03A3, "03A3,03C3,"),
+            (0x03C2, ""),
+            (0x0049, "0049,0069,"),
+            (0x0069, "0049,0069,"),
+            (0x0130, ""),
+            (0x0131, ""),
+            (0x0041, "0041,0061,"),
+            (0x0020, ""),
+            (0xD800, ""),
+        };
+        foreach (var (value, expected) in cases)
+        {
+            var actual = new StringBuilder();
+            foreach (var equivalent in Utf8SliceCaseEquivalences.GetInvariantEquivalents((char)value))
+            {
+                actual.Append(((int)equivalent).ToString("X4"));
+                actual.Append(",");
+            }
+
+            Assert.Equal(expected, actual.ToString());
+        }
+    }
 }
