@@ -2,20 +2,25 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-// Stage 1 of the owned parser strangler: literals, concatenation,
-// alternation, numbered groups, and quantifiers lower to runtime tree nodes.
-// Anything else declines (returns null) so the vendored parser keeps exact
-// behavior, including construction throws. Output nodes intentionally mirror
-// the runtime tree shapes the differential battery pins; later stages widen
-// the subset and shrink the vendored caller. Recursion is depth-capped and
-// brace numbers saturate at 32 bits; over-deep or overflowing shapes decline
-// to legacy routing. Parent links are wired exactly like children.
+// Owned parser strangler: literals, escapes, concatenation, alternation,
+// numbered groups, quantifiers, dot, and anchors lower to runtime tree nodes.
+// Anything else declines (returns null) so the provider keeps exact behavior,
+// including construction throws. Output nodes intentionally mirror the runtime
+// tree shapes the differential battery pins; later stages widen the subset and
+// shrink the provider caller. Recursion is depth-capped and brace numbers
+// saturate at 32 bits; over-deep or overflowing shapes decline to legacy
+// routing. Parent links are wired exactly like children. Dot declines under
+// Singleline and ^/$ decline under Multiline, where the provider shape
+// demonstrably differs; the differential battery pins the stable shapes.
 // Parsing lives in static locals over an explicit state record, so the debt
 // ceiling sees a single entry point.
 internal static class Utf8OwnedTreeParser
 {
     private const int MaxNestingDepth = 64;
     private const int Infinite = 2147483647;
+
+    // Provider dot payload probed under option-stable shapes (Singleline differs).
+    private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
 
     public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
     {
@@ -90,6 +95,19 @@ internal static class Utf8OwnedTreeParser
 
                 if (character == '\\')
                 {
+                    if (TryAnchorEscape(ref state, out var anchor) && anchor is not null)
+                    {
+                        FlushRun(state, children, run);
+                        var anchorAtom = anchor;
+                        if (!ParseQuantifier(ref state, ref anchorAtom))
+                        {
+                            return false;
+                        }
+
+                        children.Add(anchorAtom);
+                        continue;
+                    }
+
                     if (!DecodeEscape(ref state, out var escaped))
                     {
                         return false;
@@ -122,12 +140,32 @@ internal static class Utf8OwnedTreeParser
                 }
 
                 FlushRun(state, children, run);
-                if (!ParseGroup(ref state, depth, out var group) || group is null)
+                RuntimeFrontEnd.RegexNode atom;
+                if (character == '^' && (state.Options & RegexOptions.Multiline) == 0)
                 {
-                    return false;
+                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Beginning, state.Options);
+                    state.Position++;
+                }
+                else if (character == '$' && (state.Options & RegexOptions.Multiline) == 0)
+                {
+                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.EndZ, state.Options);
+                    state.Position++;
+                }
+                else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
+                {
+                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, DotText);
+                    state.Position++;
+                }
+                else
+                {
+                    if (!ParseGroup(ref state, depth, out var group) || group is null)
+                    {
+                        return false;
+                    }
+
+                    atom = group;
                 }
 
-                var atom = group;
                 if (!ParseQuantifier(ref state, ref atom))
                 {
                     return false;
@@ -270,6 +308,44 @@ internal static class Utf8OwnedTreeParser
                 default:
                     return false;
             }
+        }
+
+        static bool TryAnchorEscape(ref ParserState state, out RuntimeFrontEnd.RegexNode? anchor)
+        {
+            anchor = null;
+            if (state.Position + 1 >= state.Pattern.Length)
+            {
+                return false;
+            }
+
+            RuntimeFrontEnd.RegexNodeKind kind;
+            switch (state.Pattern[state.Position + 1])
+            {
+                case 'b':
+                    kind = RuntimeFrontEnd.RegexNodeKind.Boundary;
+                    break;
+                case 'B':
+                    kind = RuntimeFrontEnd.RegexNodeKind.NonBoundary;
+                    break;
+                case 'A':
+                    kind = RuntimeFrontEnd.RegexNodeKind.Beginning;
+                    break;
+                case 'G':
+                    kind = RuntimeFrontEnd.RegexNodeKind.Start;
+                    break;
+                case 'Z':
+                    kind = RuntimeFrontEnd.RegexNodeKind.EndZ;
+                    break;
+                case 'z':
+                    kind = RuntimeFrontEnd.RegexNodeKind.End;
+                    break;
+                default:
+                    return false;
+            }
+
+            anchor = new RuntimeFrontEnd.RegexNode(kind, state.Options);
+            state.Position += 2;
+            return true;
         }
 
         static bool TakeHex(ref ParserState state, int count, out int value)
@@ -526,6 +602,18 @@ internal static class Utf8OwnedTreeParser
                     lazy ? RuntimeFrontEnd.RegexNodeKind.Onelazy : RuntimeFrontEnd.RegexNodeKind.Oneloop,
                     state.Options,
                     atom.Ch)
+                {
+                    M = minimum,
+                    N = maximum,
+                };
+            }
+
+            if (atom.Kind == RuntimeFrontEnd.RegexNodeKind.Set)
+            {
+                return new RuntimeFrontEnd.RegexNode(
+                    lazy ? RuntimeFrontEnd.RegexNodeKind.Setlazy : RuntimeFrontEnd.RegexNodeKind.Setloop,
+                    state.Options,
+                    atom.Str)
                 {
                     M = minimum,
                     N = maximum,

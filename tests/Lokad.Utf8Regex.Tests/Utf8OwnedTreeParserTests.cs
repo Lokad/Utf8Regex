@@ -4,11 +4,12 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser strangler, stage 1: the differential battery pins owned trees
-// identical to vendored trees (kinds, options, payloads, children, capture
-// accounting) for the literal/concatenation/alternation/group/quantifier
-// subset. Parent links, source positions, and find optimizations are
-// construction details outside the comparison.
+// Owned parser strangler: the differential battery pins owned trees
+// identical to provider trees (kinds, options, payloads, children, capture
+// accounting) for the literal/escape/concatenation/alternation/group/
+// quantifier/dot/anchor subset, plus option-gated declines where the provider
+// shape demonstrably differs. Parent links, source positions, and find
+// optimizations are construction details outside the comparison.
 public sealed class Utf8OwnedTreeParserTests
 {
     public static IEnumerable<object?[]> AcceptCases()
@@ -72,6 +73,39 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "a\\nb" };
         yield return new object?[] { "\\cA\\cZ" };
         yield return new object?[] { "\\08" };
+        yield return new object?[] { "." };
+        yield return new object?[] { "^" };
+        yield return new object?[] { "$" };
+        yield return new object?[] { "^a" };
+        yield return new object?[] { "a$" };
+        yield return new object?[] { "\\b" };
+        yield return new object?[] { "\\A" };
+        yield return new object?[] { "a.b" };
+        yield return new object?[] { "a.*b" };
+        yield return new object?[] { ".+" };
+        yield return new object?[] { ".?" };
+        yield return new object?[] { "(a.b)" };
+        yield return new object?[] { "(.)+" };
+        yield return new object?[] { "(.)*?" };
+        yield return new object?[] { "(.){2}" };
+        yield return new object?[] { "(^)+" };
+        yield return new object?[] { "(?:.)+" };
+        yield return new object?[] { "^$" };
+        yield return new object?[] { "$^" };
+        yield return new object?[] { "(^a)+" };
+        yield return new object?[] { ".." };
+        yield return new object?[] { "^*" };
+        yield return new object?[] { "^*?" };
+        yield return new object?[] { "\\b+" };
+        yield return new object?[] { "\\B" };
+        yield return new object?[] { "\\G" };
+        yield return new object?[] { "\\Z" };
+        yield return new object?[] { "\\z" };
+        yield return new object?[] { "\\bhi\\B" };
+        yield return new object?[] { "(^a)" };
+        yield return new object?[] { "a^b" };
+        yield return new object?[] { "a$b" };
+        yield return new object?[] { "^a|b$" };
         yield return new object?[] { "é" };
         yield return new object?[] { "aéb" };
     }
@@ -108,9 +142,6 @@ public sealed class Utf8OwnedTreeParserTests
     {
         yield return new object?[] { "(?<x>a)" };
         yield return new object?[] { "\\d" };
-        yield return new object?[] { "." };
-        yield return new object?[] { "^a" };
-        yield return new object?[] { "a$" };
         yield return new object?[] { "a{,3}" };
         yield return new object?[] { "a{2,1}" };
         yield return new object?[] { "a**" };
@@ -126,17 +157,13 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "\\p{L}" };
         yield return new object?[] { "a{10000000000}" };
         yield return new object?[] { "{2}" };
-        yield return new object?[] { "$" };
-        yield return new object?[] { "^" };
         yield return new object?[] { "\\c " };
         yield return new object?[] { "\\c" };
         yield return new object?[] { "\\x4" };
         yield return new object?[] { "\\u41" };
         yield return new object?[] { "\\8" };
-        yield return new object?[] { "\\b" };
         yield return new object?[] { "\\k<w>" };
         yield return new object?[] { "\\1" };
-        yield return new object?[] { "\\A" };
         yield return new object?[] { "\\01" };
     }
 
@@ -146,4 +173,19 @@ public sealed class Utf8OwnedTreeParserTests
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
     }
+
+    public static IEnumerable<object?[]> OptionDeclineCases()
+    {
+        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline };
+        yield return new object?[] { "$", RegexOptions.CultureInvariant | RegexOptions.Multiline };
+        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline };
+    }
+
+    [Theory]
+    [MemberData(nameof(OptionDeclineCases))]
+    public void OwnedParserDeclinesOptionGatedShapes(string pattern, RegexOptions options)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
+    }
+
 }
