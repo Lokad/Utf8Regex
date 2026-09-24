@@ -130,6 +130,12 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "(?(?=a)b|c)", "c", true };
         yield return new object?[] { "(?(?!a)b|c)", "cb", true };
         yield return new object?[] { "(?<n>a)?(?(n)b|c)", "ab", true };
+        yield return new object?[] { "(?(DEFINE)a)", "a", true };
+        yield return new object?[] { "(?(DEFINE)a)", "b", true };
+        yield return new object?[] { "(?(R)a|b)", "a", false };
+        yield return new object?[] { "(?(R)a|b)", "b", true };
+        yield return new object?[] { "(?(R1)a|b)", "a", false };
+        yield return new object?[] { "(?(R1)a|b)", "b", true };
         yield return new object?[] { "(a)(?(1)b|c)(d)", "abd", true };
         yield return new object?[] { "(a)(?(1)b|c)(d)", "acd", false };
         yield return new object?[] { "(?(1)(a)|(b))", "a", false };
