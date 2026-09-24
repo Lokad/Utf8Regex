@@ -20,6 +20,10 @@ public sealed class Utf8EvaluatorDiffTests
         yield return new object?[] { "\\bword\\b", RegexOptions.CultureInvariant, "a word or wordy words" };
         yield return new object?[] { "a|b", RegexOptions.CultureInvariant, "xxaxxb" };
         yield return new object?[] { "\\d+", RegexOptions.CultureInvariant, "ab12cd34" };
+        yield return new object?[] { "\\p{L}+", RegexOptions.CultureInvariant, "a1B" };
+        yield return new object?[] { "[\\p{L}a]+", RegexOptions.CultureInvariant, "a1B" };
+        yield return new object?[] { "\\p{IsBasicLatin}+", RegexOptions.CultureInvariant, "a1B" };
+        yield return new object?[] { "(?<=a)b", RegexOptions.CultureInvariant, "aab" };
         yield return new object?[] { "a*", RegexOptions.CultureInvariant, "bba" };
         yield return new object?[] { string.Empty, RegexOptions.CultureInvariant, "ab" };
         yield return new object?[] { "Шерлок", RegexOptions.None, "аШерлокбШерлок" };
@@ -32,6 +36,7 @@ public sealed class Utf8EvaluatorDiffTests
     public static IEnumerable<object?[]> GroupedCases()
     {
         yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant, "xxabxx" };
+        yield return new object?[] { "(\\p{L}+)", RegexOptions.CultureInvariant, "a1B" };
         yield return new object?[] { "(?<w>\\w+)@(?<d>\\w+)", RegexOptions.CultureInvariant, "mail a@b.cd ok" };
         yield return new object?[] { "(a)+", RegexOptions.CultureInvariant, "aaabaaa" };
     }
@@ -127,6 +132,7 @@ public sealed class Utf8EvaluatorDiffTests
         yield return new object?[] { "(cat)|(horse)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "cat horse" };
         yield return new object?[] { "\\b(cat)|(horse)\\b", RegexOptions.CultureInvariant, "acat horsecatx" };
         yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant, "xxabxx" };
+        yield return new object?[] { "(\\p{L}+)", RegexOptions.CultureInvariant, "a1B" };
         yield return new object?[] { "(a)+", RegexOptions.CultureInvariant, "aaabaaa" };
     }
 
