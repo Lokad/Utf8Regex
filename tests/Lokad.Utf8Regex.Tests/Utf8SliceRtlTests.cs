@@ -130,6 +130,29 @@ public sealed class Utf8SliceRtlTests
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.RightToLeft | RegexOptions.CultureInvariant));
     }
 
+    public static IEnumerable<object?[]> ControlRtlShapes()
+    {
+        yield return new object?[] { "\\t+" };
+        yield return new object?[] { "\\cA+" };
+        yield return new object?[] { "(?<=\\n)x" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ControlRtlShapes))]
+    public void ControlRtlShapesRouteOwned(string pattern)
+    {
+        foreach (var options in new[]
+        {
+            RegexOptions.RightToLeft,
+            RegexOptions.RightToLeft | RegexOptions.CultureInvariant,
+            RegexOptions.RightToLeft | RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
+        }
+    }
+
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "abc", "xxabcxxabcxx", true };
@@ -195,6 +218,11 @@ public sealed class Utf8SliceRtlTests
         yield return new object?[] { "(?<=a*)b", "aaab", true };
         yield return new object?[] { "(?<=a+)b", "aaab", true };
         yield return new object?[] { "(?<=a+?)b", "aaab", true };
+        yield return new object?[] { "\\t+", "\ta\t", true };
+        yield return new object?[] { "\\t+", "abc", false };
+        yield return new object?[] { "\\cA+", "\u0001x\u0001", true };
+        yield return new object?[] { "(?<=\\n)x", "a\nx", true };
+        yield return new object?[] { "(?<=\\n)x", "ax", false };
     }
 
     [Theory]
