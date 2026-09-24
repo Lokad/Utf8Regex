@@ -274,6 +274,60 @@ internal ref struct Utf8OperationMatchCursor
         }
 
         var map = _boundaryMap.Value;
+        var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
+        try
+        {
+            // Right-to-left enumeration descends closing edges from the search
+            // bound (BCL runtextstart): non-empty matches chain the bound to
+            // their start while empty matches step one unit left, mirroring the
+            // ascending advance above. The pin only moves on non-empty matches,
+            // so an empty match ends a contiguous chain exactly like forward.
+            if (_sliceProgram.RightToLeft)
+            {
+                if (_sliceOriginUnit < 0)
+                {
+                    _sliceUnit = map.Utf16Length;
+                    _sliceOriginUnit = _sliceUnit;
+                }
+
+                if (_sliceOriginUnit >= 0 && _sliceOriginUnit <= map.Utf16Length)
+                {
+                    _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
+                }
+
+                while (_sliceUnit >= 0)
+                {
+                    var rtlOutcome = Utf8SliceRunner.TryMatchAtRightEdgeUnit(
+                        _sliceProgram, _input, map, _sliceUnit, slots.Starts, slots.Ends, ref _sliceInvocation);
+                    if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
+                    {
+                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                    }
+
+                    if (!rtlOutcome.Found)
+                    {
+                        _sliceUnit--;
+                        continue;
+                    }
+
+                    _current = Utf8SliceRunner.ProjectMatch(map, rtlOutcome);
+                    _sliceUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
+                    if (rtlOutcome.EndUnit > rtlOutcome.StartUnit)
+                    {
+                        _sliceOriginUnit = rtlOutcome.StartUnit;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+        }
+        finally
+        {
+            Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
+        }
+
         // Contiguous matches chain BCL startat: a fresh scan pins \\G to its
         // start, a non-empty match advances the pin to its end, and an empty
         // match keeps the pin (later positions all miss it, ending the chain).
@@ -287,9 +341,6 @@ internal ref struct Utf8OperationMatchCursor
             _sliceInvocation.AnchorOriginByte = map.Resolve(_sliceOriginUnit).ByteOffset;
         }
 
-        var slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
-        try
-        {
             while (_sliceUnit <= map.Utf16Length)
             {
                 var outcome = Utf8SliceRunner.TryMatchFromUnit(
@@ -316,11 +367,6 @@ internal ref struct Utf8OperationMatchCursor
             }
 
             return false;
-        }
-        finally
-        {
-            Utf8SliceRunner.ReleaseSlots(slots, ref _sliceInvocation);
-        }
     }
 
     public bool MoveNext()

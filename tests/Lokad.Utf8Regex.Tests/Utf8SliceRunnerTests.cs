@@ -59,7 +59,7 @@ public sealed class Utf8SliceRunnerTests
 
     private static Utf8SliceProgram Lower(Utf8SliceNode root)
     {
-        var program = Utf8SliceLowerer.Lower(root, null, false, false);
+        var program = Utf8SliceLowerer.Lower(root, null, false, false, false);
         Assert.NotNull(program);
         return program;
     }

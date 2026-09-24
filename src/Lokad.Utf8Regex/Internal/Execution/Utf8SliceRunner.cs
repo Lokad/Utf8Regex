@@ -287,6 +287,48 @@ internal static class Utf8SliceRunner
         return true;
     }
 
+    // Width of the scalar ending at rightEdge (validated input): ASCII is
+    // one byte, longer scalars measure back from their lead. Mid-scalar
+    // edges and out-of-range positions fail closed so mirrored right-to-left
+    // attempts cannot report unaligned starts. Shared by every mirrored
+    // consuming arm (six callers, so the single-caller debt ceiling does
+    // not apply).
+    private static bool TryGetScalarWidthEndingAt(ReadOnlySpan<byte> input, int rightEdge, out int width)
+    {
+        width = 0;
+        if (rightEdge <= 0 || rightEdge > input.Length)
+        {
+            return false;
+        }
+
+        var leadIndex = rightEdge - 1;
+        if (input[leadIndex] < 0x80)
+        {
+            width = 1;
+            return true;
+        }
+
+        var steps = 0;
+        while ((input[leadIndex] & 0xC0) == 0x80)
+        {
+            leadIndex--;
+            steps++;
+            if (leadIndex < 0 || steps > 3)
+            {
+                return false;
+            }
+        }
+
+        var lead = input[leadIndex];
+        if (lead < 0xC2 || lead >= 0xF5)
+        {
+            return false;
+        }
+
+        width = lead < 0xE0 ? 2 : lead < 0xF0 ? 3 : 4;
+        return leadIndex + width == rightEdge;
+    }
+
     private static bool IsWordScalarStartingAt(ReadOnlySpan<byte> input, int index, bool includeJoiners)
     {
         if ((uint)index >= (uint)input.Length)
@@ -399,7 +441,24 @@ internal static class Utf8SliceRunner
         var stacks = new ChunkedStacks();
         try
         {
-            return RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
+            var attempt = RunFrom(program, input, start, captureStarts, captureEnds, counts, positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref stacks, ref invocation);
+            if (attempt.IsMatch && program.RightToLeft)
+            {
+                // Mirrored runs record right edges at capture starts and left
+                // edges at capture ends; projection and backreferences read
+                // normalized spans while the trail stays raw and consistent.
+                for (var slot = 0; slot < captureStarts.Length; slot++)
+                {
+                    if (captureStarts[slot] >= 0 && captureEnds[slot] >= 0 && captureEnds[slot] < captureStarts[slot])
+                    {
+                        var normalizedStart = captureEnds[slot];
+                        captureEnds[slot] = captureStarts[slot];
+                        captureStarts[slot] = normalizedStart;
+                    }
+                }
+            }
+
+            return attempt;
         }
         finally
         {
@@ -455,6 +514,44 @@ internal static class Utf8SliceRunner
             found.EndByte - found.StartByte);
     }
 
+    // Right-edge attempt for right-to-left scans: runs the mirrored program
+    // from the byte edge closing endUnit and reports the hit in unit space.
+    // Zero-width hits report (endUnit, endUnit) without byte mapping so
+    // unaligned edges stay exact; other hits map their left edge, which mirrored
+    // consumption leaves on scalar starts for served programs. Shared by the
+    // three scan drivers plus the operation cursor (four callers, so the
+    // single-caller debt ceiling does not apply).
+    internal static Utf8SliceUnitOutcome TryMatchAtRightEdgeUnit(
+        Utf8SliceProgram program,
+        ReadOnlySpan<byte> input,
+        Utf8BoundaryMap map,
+        int endUnit,
+        int[] captureStarts,
+        int[] captureEnds,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (endUnit < 0 || endUnit > map.Utf16Length)
+        {
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
+        }
+
+        var edgeByte = endUnit >= map.Utf16Length ? input.Length : map.Resolve(endUnit).ByteOffset;
+        var edgeClean = endUnit >= map.Utf16Length || endUnit <= 0 || map.Resolve(endUnit).IsScalarBoundary;
+        var outcome = TryMatchAt(program, input, edgeByte, captureStarts, captureEnds, edgeClean, ref invocation);
+        if (outcome.Breach != Utf8ExecutionLimitKind.None || !outcome.IsMatch)
+        {
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, outcome.Breach);
+        }
+
+        if (outcome.EndIndex == edgeByte)
+        {
+            return new Utf8SliceUnitOutcome(true, endUnit, endUnit, edgeByte, edgeByte, Utf8ExecutionLimitKind.None);
+        }
+
+        var startUnit = map.GetUtf16OffsetForByteOffset(outcome.EndIndex);
+        return new Utf8SliceUnitOutcome(true, startUnit, endUnit, outcome.EndIndex, edgeByte, Utf8ExecutionLimitKind.None);
+    }
+
     internal static Utf8SliceUnitOutcome TryFindFirst(
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
@@ -465,6 +562,22 @@ internal static class Utf8SliceRunner
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
+
+        // Right-to-left scans enumerate closing edges from the search bound
+        // down (BCL runtextstart), so the rightmost match wins like the oracle.
+        if (program.RightToLeft)
+        {
+            for (var unit = Math.Min(fromUnit, map.Utf16Length); unit >= 0; unit--)
+            {
+                var outcome = TryMatchAtRightEdgeUnit(program, input, map, unit, captureStarts, captureEnds, ref invocation);
+                if (outcome.Breach != Utf8ExecutionLimitKind.None || outcome.Found)
+                {
+                    return outcome;
+                }
+            }
+
+            return new Utf8SliceUnitOutcome(false, -1, -1, -1, -1, Utf8ExecutionLimitKind.None);
+        }
 
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
@@ -507,6 +620,73 @@ internal static class Utf8SliceRunner
         ref Utf8SliceInvocation invocation)
     {
         invocation.Budget.ThrowIfCancellationRequested();
+        // Right-to-left counting chains closing edges down from the search
+        // bound; contiguous matches pin \\G to each scan start, stop at the
+        // first scan miss, and step past empty matches by one unit (later edges
+        // all miss the pin, so an empty match ends the chain).
+        if (program.RightToLeft)
+        {
+            if (program.HasContiguousAnchor)
+            {
+                var contiguousCount = 0;
+                var contiguousUnit = Math.Min(fromUnit, map.Utf16Length);
+                var contiguousPin = contiguousUnit >= 0 && contiguousUnit <= map.Utf16Length ? map.Resolve(contiguousUnit).ByteOffset : -1;
+                while (contiguousUnit >= 0)
+                {
+                    invocation.AnchorOriginByte = contiguousPin;
+                    var contiguousScan = TryMatchAtRightEdgeUnit(program, input, map, contiguousUnit, captureStarts, captureEnds, ref invocation);
+                    if (contiguousScan.Breach != Utf8ExecutionLimitKind.None)
+                    {
+                        return new Utf8SliceCountOutcome(contiguousCount, contiguousScan.Breach);
+                    }
+
+                    if (!contiguousScan.Found)
+                    {
+                        break;
+                    }
+
+                    contiguousCount++;
+                    contiguousPin = contiguousScan.StartByte;
+                    contiguousUnit = contiguousScan.EndUnit > contiguousScan.StartUnit ? contiguousScan.StartUnit : contiguousScan.StartUnit - 1;
+                }
+
+                return new Utf8SliceCountOutcome(contiguousCount, Utf8ExecutionLimitKind.None);
+            }
+
+            if (fromUnit >= 0 && fromUnit <= map.Utf16Length)
+            {
+                invocation.AnchorOriginByte = map.Resolve(Math.Min(fromUnit, map.Utf16Length)).ByteOffset;
+            }
+
+            var rtlCount = 0;
+            var rtlUnit = Math.Min(fromUnit, map.Utf16Length);
+            while (rtlUnit >= 0)
+            {
+                var rtlOutcome = TryMatchAtRightEdgeUnit(program, input, map, rtlUnit, captureStarts, captureEnds, ref invocation);
+                if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
+                {
+                    return new Utf8SliceCountOutcome(rtlCount, rtlOutcome.Breach);
+                }
+
+                if (!rtlOutcome.Found)
+                {
+                    rtlUnit--;
+                    continue;
+                }
+
+                rtlCount++;
+                rtlUnit = rtlOutcome.EndUnit > rtlOutcome.StartUnit ? rtlOutcome.StartUnit : rtlOutcome.EndUnit - 1;
+                // Contiguous chains read the advanced origin on nested runs;
+                // misses keep their scan start.
+                if (rtlOutcome.StartUnit >= 0 && rtlOutcome.StartUnit <= map.Utf16Length)
+                {
+                    invocation.AnchorOriginByte = map.Resolve(rtlOutcome.StartUnit).ByteOffset;
+                }
+            }
+
+            return new Utf8SliceCountOutcome(rtlCount, Utf8ExecutionLimitKind.None);
+        }
+
         if (program.HasContiguousAnchor)
         {
             // Contiguous matches chain from the search start: each scan pins
@@ -594,6 +774,53 @@ internal static class Utf8SliceRunner
     {
         invocation.Budget.ThrowIfCancellationRequested();
 
+        // Right-to-left detailed search mirrors the unit scan above through
+        // closing edges; histories materialize normalized at Accept.
+        if (program.RightToLeft)
+        {
+            return TryFindFirstDetailedRtl(program, input, map, fromUnit, captureStarts, captureEnds, ref invocation);
+
+            static Utf8SliceDetailedOutcome TryFindFirstDetailedRtl(
+                Utf8SliceProgram rtlProgram,
+                ReadOnlySpan<byte> rtlInput,
+                Utf8BoundaryMap rtlMap,
+                int rtlFromUnit,
+                int[] rtlStarts,
+                int[] rtlEnds,
+                ref Utf8SliceInvocation rtlInvocation)
+            {
+                for (var rtlUnit = Math.Min(rtlFromUnit, rtlMap.Utf16Length); rtlUnit >= 0; rtlUnit--)
+                {
+                    var rtlEdgeByte = rtlUnit >= rtlMap.Utf16Length ? rtlInput.Length : rtlMap.Resolve(rtlUnit).ByteOffset;
+                    var rtlEdgeClean = rtlUnit >= rtlMap.Utf16Length || rtlUnit <= 0 || rtlMap.Resolve(rtlUnit).IsScalarBoundary;
+                    var rtlOutcome = TryMatchAt(rtlProgram, rtlInput, rtlEdgeByte, rtlStarts, rtlEnds, true, rtlEdgeClean, ref rtlInvocation);
+                    if (rtlOutcome.Breach != Utf8ExecutionLimitKind.None)
+                    {
+                        return new Utf8SliceDetailedOutcome(false, -1, -1, -1, -1, null, null, rtlOutcome.Breach);
+                    }
+
+                    if (!rtlOutcome.IsMatch)
+                    {
+                        continue;
+                    }
+
+                    if (rtlOutcome.EndIndex == rtlEdgeByte)
+                    {
+                        return new Utf8SliceDetailedOutcome(
+                            true, rtlUnit, rtlUnit, rtlEdgeByte, rtlEdgeByte,
+                            rtlOutcome.CaptureStarts, rtlOutcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+                    }
+
+                    var rtlStartUnit = rtlMap.GetUtf16OffsetForByteOffset(rtlOutcome.EndIndex);
+                    return new Utf8SliceDetailedOutcome(
+                        true, rtlStartUnit, rtlUnit, rtlOutcome.EndIndex, rtlEdgeByte,
+                        rtlOutcome.CaptureStarts, rtlOutcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+                }
+
+                return new Utf8SliceDetailedOutcome(false, -1, -1, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+            }
+        }
+
         for (var unit = fromUnit; unit <= map.Utf16Length; unit++)
         {
             var startBoundary = map.Resolve(unit);
@@ -661,6 +888,59 @@ internal static class Utf8SliceRunner
             switch (instruction.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
+                    // Mirrored literals consume the byte ending at the attempt edge;
+                    // case-insensitive literals fold the scalar ending there exactly
+                    // like the forward arm.
+                    if (program.RightToLeft)
+                    {
+                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlLiteralWidth))
+                        {
+                            var literalLead = input[inputIndex - rtlLiteralWidth];
+                            if (!program.IgnoreCase)
+                            {
+                                if (literalLead == (byte)instruction.A)
+                                {
+                                    inputIndex -= rtlLiteralWidth;
+                                    programIndex++;
+                                }
+                                else
+                                {
+                                    failed = true;
+                                }
+                            }
+                            else if (literalLead < 0x80)
+                            {
+                                if (Internal.Search.AsciiSearch.FoldCase(literalLead) == Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
+                                {
+                                    inputIndex--;
+                                    programIndex++;
+                                }
+                                else
+                                {
+                                    failed = true;
+                                }
+                            }
+                            else if (literalLead < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex - rtlLiteralWidth, out var rtlLiteralScalar) &&
+                                TryFoldBmpScalarForCaseInsensitiveMatch(rtlLiteralScalar, out var rtlLiteralFolded) &&
+                                rtlLiteralFolded == (char)Internal.Search.AsciiSearch.FoldCase((byte)instruction.A))
+                            {
+                                inputIndex -= rtlLiteralWidth;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                     if (!program.IgnoreCase)
                     {
                         if (inputIndex < input.Length && input[inputIndex] == (byte)instruction.A)
@@ -714,6 +994,46 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Set:
+                    // Mirrored classes test the scalar ending at the attempt edge with
+                    // the same mask and fold rules as the forward arm.
+                    if (program.RightToLeft)
+                    {
+                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlSetWidth))
+                        {
+                            var setCandidate = input[inputIndex - rtlSetWidth];
+                            var setInMask = false;
+                            if (setCandidate < 0x80)
+                            {
+                                var setTest = program.IgnoreCase ? Internal.Search.AsciiSearch.FoldCase(setCandidate) : setCandidate;
+                                setInMask = (program.SetMasks[instruction.A][setTest >> 3] & (byte)(1 << (setTest & 7))) != 0;
+                            }
+                            else if (program.IgnoreCase &&
+                                setCandidate < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex - rtlSetWidth, out var rtlSetScalar) &&
+                                TryFoldBmpScalarForCaseInsensitiveMatch(rtlSetScalar, out var rtlSetFolded) &&
+                                rtlSetFolded < 0x80)
+                            {
+                                setInMask = (program.SetMasks[instruction.A][rtlSetFolded >> 3] & (byte)(1 << (rtlSetFolded & 7))) != 0;
+                            }
+
+                            if (setInMask != (instruction.B != 0))
+                            {
+                                inputIndex -= rtlSetWidth;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                     // Positive classes match one ASCII member byte. Negated
                     // classes match one ASCII non-member byte or one whole
                     // non-ASCII scalar (BMP units agree; astral inputs are
@@ -926,6 +1246,23 @@ internal static class Utf8SliceRunner
                     programIndex++;
                     break;
                 case Utf8SliceInstructionKind.Dot:
+                    // Mirrored dots consume the scalar ending at the attempt edge.
+                    if (program.RightToLeft)
+                    {
+                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlDotWidth) &&
+                            (instruction.A != 0 || input[inputIndex - 1] != (byte)'\n'))
+                        {
+                            inputIndex -= rtlDotWidth;
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                     // Dots consume one scalar: ASCII and BMP leads take
                     // their scalar, astral leads take all four bytes.
                     // Continuation bytes fail the attempt, so byte-stepping
@@ -1070,6 +1407,64 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Shorthand:
+                    // Mirrored shorthands test the scalar ending at the attempt edge
+                    // with the same category rules as the forward arm.
+                    if (program.RightToLeft)
+                    {
+                        if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlShortWidth))
+                        {
+                            var shortCandidate = input[inputIndex - rtlShortWidth];
+                            var shortNegated = (instruction.A & 1) != 0;
+                            bool shortPositive;
+                            bool shortInClass;
+                            if (shortCandidate < 0x80)
+                            {
+                                shortPositive = instruction.A switch
+                                {
+                                    0 or 1 => shortCandidate >= (byte)'0' && shortCandidate <= (byte)'9',
+                                    2 or 3 => IsWordScalarStartingAt(input, inputIndex - rtlShortWidth, false),
+                                    _ => shortCandidate == (byte)'\t' || shortCandidate == (byte)'\n' || shortCandidate == (byte)'\v' ||
+                                        shortCandidate == (byte)'\f' || shortCandidate == (byte)'\r' || shortCandidate == (byte)' ',
+                                };
+                                shortInClass = shortPositive != shortNegated;
+                            }
+                            else if (shortCandidate < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex - rtlShortWidth, out var rtlShortMember))
+                            {
+                                var shortCategory = char.GetUnicodeCategory(rtlShortMember);
+                                shortPositive = instruction.A switch
+                                {
+                                    0 or 1 => shortCategory == UnicodeCategory.DecimalDigitNumber,
+                                    2 or 3 => (WordUnicodeCategoriesMask & (1 << (int)shortCategory)) != 0,
+                                    _ => rtlShortMember == '\u0085' || shortCategory == UnicodeCategory.SpaceSeparator ||
+                                        shortCategory == UnicodeCategory.LineSeparator ||
+                                        shortCategory == UnicodeCategory.ParagraphSeparator,
+                                };
+                                shortInClass = shortPositive != shortNegated;
+                            }
+                            else
+                            {
+                                shortInClass = shortNegated && shortCandidate >= 0xF0;
+                            }
+
+                            if (shortInClass)
+                            {
+                                inputIndex -= rtlShortWidth;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                     // Unicode shorthand classes: positive members match one
                     // scalar (astral leads fail, as the oracle tests halves
                     // that never match). Negated members match one ASCII
@@ -1180,6 +1575,68 @@ internal static class Utf8SliceRunner
                             };
                         }
 
+                        // Mirrored hybrids test the scalar ending at the attempt edge
+                        // with the same mask and member rules as the forward arm.
+                        if (program.RightToLeft)
+                        {
+                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlHybridWidth))
+                            {
+                                var hybridCandidate = input[inputIndex - rtlHybridWidth];
+                                bool hybridInClass;
+                                if (hybridCandidate < 0x80)
+                                {
+                                    var hybridInMask = (program.SetMasks[instruction.A][hybridCandidate >> 3] & (byte)(1 << (hybridCandidate & 7))) != 0;
+                                    hybridInClass = hybridInMask != (instruction.B != 0);
+                                }
+                                else if (hybridCandidate < 0xF0 &&
+                                    TryDecodeBmpScalar(input, inputIndex - rtlHybridWidth, out var rtlHybridScalar))
+                                {
+                                    var hybridHit = false;
+                                    if (program.IgnoreCase &&
+                                        TryFoldBmpScalarForCaseInsensitiveMatch(rtlHybridScalar, out var rtlHybridFolded) &&
+                                        rtlHybridFolded < 0x80)
+                                    {
+                                        hybridHit = (program.SetMasks[instruction.A][rtlHybridFolded >> 3] & (byte)(1 << (rtlHybridFolded & 7))) != 0;
+                                    }
+                                    else
+                                    {
+                                        for (var bit = 0; bit < 6; bit++)
+                                        {
+                                            if ((instruction.C & (1 << bit)) != 0 &&
+                                                MatchesMember(rtlHybridScalar, (Utf8SliceShorthand)bit))
+                                            {
+                                                hybridHit = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    hybridInClass = hybridHit != (instruction.B != 0);
+                                }
+                                else
+                                {
+                                    var hybridHit = hybridCandidate >= 0xF0 && (instruction.C & Utf8SliceHybridMembers.NegatedBits) != 0;
+                                    hybridInClass = hybridHit != (instruction.B != 0);
+                                }
+
+                                if (hybridInClass)
+                                {
+                                    inputIndex -= rtlHybridWidth;
+                                    programIndex++;
+                                }
+                                else
+                                {
+                                    failed = true;
+                                }
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+
+                            break;
+                        }
+
                         if (inputIndex < input.Length &&
                             (input[inputIndex] & 0xC0) != 0x80)
                         {
@@ -1245,6 +1702,175 @@ internal static class Utf8SliceRunner
 
                     break;
                 case Utf8SliceInstructionKind.Backref:
+                    // Mirrored backreferences compare the captured span backward: the
+                    // run records right edges at capture starts and left edges at
+                    // capture ends, so an unmatched (or in-progress) group fails on
+                    // the mirrored guard and surviving spans compare from their ends.
+                    // Byte comparison stays encoding-indifferent; the
+                    // case-insensitive walk folds both sides with backward scalar
+                    // widths like the forward arm.
+                    if (program.RightToLeft)
+                    {
+                        if (captureEnds[instruction.A] < 0 ||
+                            captureStarts[instruction.A] < captureEnds[instruction.A])
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        var rtlReferStart = captureEnds[instruction.A];
+                        var rtlReferEnd = captureStarts[instruction.A];
+                        var rtlReferLength = rtlReferEnd - rtlReferStart;
+                        if (program.IgnoreCase)
+                        {
+                            var rtlCapIndex = rtlReferEnd;
+                            var rtlBackIndex = inputIndex;
+                            var rtlBackFailed = false;
+                            while (rtlCapIndex > rtlReferStart)
+                            {
+                                var rtlBackCharge = invocation.Budget.TryChargeStep();
+                                if (rtlBackCharge != Utf8ExecutionLimitKind.None)
+                                {
+                                    return new Utf8SliceMatchOutcome(false, -1, rtlBackCharge, null, null);
+                                }
+
+                                if (rtlBackIndex <= 0)
+                                {
+                                    rtlBackFailed = true;
+                                    break;
+                                }
+
+                                var rtlCapEndByte = input[rtlCapIndex - 1];
+                                var rtlBackEndByte = input[rtlBackIndex - 1];
+                                int rtlCapStep;
+                                int rtlInStep;
+                                bool rtlBackEqual;
+                                if (rtlCapEndByte < 0x80 && rtlBackEndByte < 0x80)
+                                {
+                                    rtlBackEqual = Internal.Search.AsciiSearch.FoldCase(rtlCapEndByte) == Internal.Search.AsciiSearch.FoldCase(rtlBackEndByte);
+                                    rtlCapStep = 1;
+                                    rtlInStep = 1;
+                                }
+                                else if (!TryGetScalarWidthEndingAt(input, rtlCapIndex, out var rtlCapWidth) ||
+                                    !TryGetScalarWidthEndingAt(input, rtlBackIndex, out var rtlInWidth))
+                                {
+                                    rtlBackFailed = true;
+                                    break;
+                                }
+                                else if ((input[rtlCapIndex - rtlCapWidth] & 0xC0) == 0x80 || (input[rtlBackIndex - rtlInWidth] & 0xC0) == 0x80 || input[rtlCapIndex - rtlCapWidth] >= 0xF0 || input[rtlBackIndex - rtlInWidth] >= 0xF0)
+                                {
+                                    // Continuation bytes and astral leads compare raw
+                                    // byte-by-byte exactly like the forward arm.
+                                    rtlBackEqual = rtlCapEndByte == rtlBackEndByte;
+                                    rtlCapStep = 1;
+                                    rtlInStep = 1;
+                                }
+                                else
+                                {
+                                    var rtlCaptureLead = input[rtlCapIndex - rtlCapWidth];
+                                    var rtlInputLead = input[rtlBackIndex - rtlInWidth];
+                                    char rtlCaptureScalar;
+                                    if (rtlCaptureLead < 0x80)
+                                    {
+                                        rtlCaptureScalar = (char)Internal.Search.AsciiSearch.FoldCase(rtlCaptureLead);
+                                    }
+                                    else if (!TryDecodeBmpScalar(input, rtlCapIndex - rtlCapWidth, out var rtlDecodedCapture))
+                                    {
+                                        rtlBackFailed = true;
+                                        break;
+                                    }
+                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(rtlDecodedCapture, out var rtlFoldedCapture))
+                                    {
+                                        rtlCaptureScalar = rtlDecodedCapture;
+                                    }
+                                    else
+                                    {
+                                        rtlCaptureScalar = rtlFoldedCapture;
+                                    }
+
+                                    char rtlInputScalar;
+                                    if (rtlInputLead < 0x80)
+                                    {
+                                        rtlInputScalar = (char)Internal.Search.AsciiSearch.FoldCase(rtlInputLead);
+                                    }
+                                    else if (!TryDecodeBmpScalar(input, rtlBackIndex - rtlInWidth, out var rtlDecodedInput))
+                                    {
+                                        rtlBackFailed = true;
+                                        break;
+                                    }
+                                    else if (!TryFoldBmpScalarForCaseInsensitiveMatch(rtlDecodedInput, out var rtlFoldedInput))
+                                    {
+                                        rtlInputScalar = rtlDecodedInput;
+                                    }
+                                    else
+                                    {
+                                        rtlInputScalar = rtlFoldedInput;
+                                    }
+
+                                    rtlBackEqual = rtlCaptureScalar == rtlInputScalar;
+                                    rtlCapStep = rtlCapWidth;
+                                    rtlInStep = rtlInWidth;
+                                }
+
+                                if (!rtlBackEqual)
+                                {
+                                    rtlBackFailed = true;
+                                    break;
+                                }
+
+                                rtlCapIndex -= rtlCapStep;
+                                rtlBackIndex -= rtlInStep;
+                            }
+
+                            if (rtlBackFailed)
+                            {
+                                failed = true;
+                            }
+                            else
+                            {
+                                inputIndex = rtlBackIndex;
+                                programIndex++;
+                            }
+
+                            break;
+                        }
+
+                        if (rtlReferLength > inputIndex)
+                        {
+                            failed = true;
+                            break;
+                        }
+
+                        var rtlCompared = 0;
+                        while (rtlCompared < rtlReferLength)
+                        {
+                            var rtlCharge = invocation.Budget.TryChargeStep();
+                            if (rtlCharge != Utf8ExecutionLimitKind.None)
+                            {
+                                return new Utf8SliceMatchOutcome(false, -1, rtlCharge, null, null);
+                            }
+
+                            if (input[rtlReferEnd - 1 - rtlCompared] != input[inputIndex - 1 - rtlCompared])
+                            {
+                                break;
+                            }
+
+                            rtlCompared++;
+                        }
+
+                        if (rtlCompared < rtlReferLength)
+                        {
+                            failed = true;
+                        }
+                        else
+                        {
+                            inputIndex -= rtlReferLength;
+                            programIndex++;
+                        }
+
+                        break;
+                    }
+
                     // Ordinal backreference: an unmatched (or in-progress)
                     // group fails, otherwise the captured bytes must repeat
                     // verbatim at the current position. Byte comparison is
@@ -1593,6 +2219,111 @@ internal static class Utf8SliceRunner
 
                         ReleaseSlots(saved, ref invocation);
                         if (assertionMatched == lookbehindPositive)
+                        {
+                            programIndex++;
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+                    }
+
+                    break;
+                case Utf8SliceInstructionKind.Lookahead:
+                    {
+                        // Zero-width lookahead over assertion A at the current
+                        // position: the body runs left-to-right from here (BCL parses
+                        // lookahead bodies without RightToLeft even inside
+                        // right-to-left programs). Captures behave like lookbehind
+                        // bodies: a surviving positive body keeps them through a
+                        // trail merge while every other path restores the entry
+                        // snapshot, and the position restores since the nested run
+                        // owns its input index.
+                        var lookaheadAssertion = program.Assertions[instruction.A];
+                        var lookaheadPositive = instruction.B != 0;
+                        var lookaheadGroups = program.GroupCount;
+                        Utf8SliceSlots lookaheadSaved;
+                        try
+                        {
+                            lookaheadSaved = RentSlots(lookaheadGroups, ref invocation);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.WorkingBytes, null, null);
+                        }
+
+                        Array.Copy(captureStarts, lookaheadSaved.Starts, lookaheadGroups);
+                        Array.Copy(captureEnds, lookaheadSaved.Ends, lookaheadGroups);
+                        var lookaheadCounts = RentIntArray(lookaheadAssertion.Body.RepeatCount, ref invocation, out var lookaheadBreach);
+                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
+                        {
+                            ReleaseSlots(lookaheadSaved, ref invocation);
+                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
+                        }
+
+                        var lookaheadPositions = RentIntArray(lookaheadAssertion.Body.RepeatCount, ref invocation, out lookaheadBreach);
+                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
+                        {
+                            ReleaseIntArray(lookaheadCounts, ref invocation);
+                            ReleaseSlots(lookaheadSaved, ref invocation);
+                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
+                        }
+
+                        Array.Fill(lookaheadCounts, -1);
+                        Array.Fill(lookaheadPositions, -1);
+                        var lookaheadAligned = (uint)inputIndex >= (uint)input.Length || (input[inputIndex] & 0xC0) != 0x80;
+                        var lookaheadStacks = new ChunkedStacks();
+                        Utf8SliceMatchOutcome lookaheadNested;
+                        try
+                        {
+                            lookaheadNested = RunFrom(
+                                lookaheadAssertion.Body,
+                                input,
+                                inputIndex,
+                                captureStarts,
+                                captureEnds,
+                                lookaheadCounts,
+                                lookaheadPositions,
+                                balanceHeads,
+                                false,
+                                false,
+                                lookaheadAligned,
+                                ref lookaheadStacks,
+                                ref invocation);
+                            if (lookaheadNested.IsMatch && lookaheadPositive)
+                            {
+                                for (var lookaheadEntry = 0; lookaheadEntry < lookaheadStacks.TrailCount; lookaheadEntry++)
+                                {
+                                    var lookaheadRecorded = lookaheadStacks.TrailEntryAt(lookaheadEntry);
+                                    if (!stacks.PushTrail(lookaheadRecorded.Slot, lookaheadRecorded.OldValue, lookaheadRecorded.NewValue, lookaheadRecorded.IsStart, ref invocation))
+                                    {
+                                        lookaheadBreach = Utf8ExecutionLimitKind.WorkingBytes;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            lookaheadStacks.ReleaseAll(ref invocation);
+                        }
+
+                        ReleaseIntArray(lookaheadPositions, ref invocation);
+                        ReleaseIntArray(lookaheadCounts, ref invocation);
+                        var keepLookaheadCaptures = lookaheadPositive && lookaheadNested.IsMatch;
+                        if (!keepLookaheadCaptures)
+                        {
+                            Array.Copy(lookaheadSaved.Starts, captureStarts, lookaheadGroups);
+                            Array.Copy(lookaheadSaved.Ends, captureEnds, lookaheadGroups);
+                        }
+
+                        ReleaseSlots(lookaheadSaved, ref invocation);
+                        if (lookaheadBreach != Utf8ExecutionLimitKind.None)
+                        {
+                            return new Utf8SliceMatchOutcome(false, -1, lookaheadBreach, null, null);
+                        }
+
+                        if (lookaheadNested.IsMatch == lookaheadPositive)
                         {
                             programIndex++;
                         }
@@ -1986,8 +2717,13 @@ internal static class Utf8SliceRunner
                     }
                     else
                     {
-                        captureStarts[item.Slot][counts[item.Slot]] = open[item.Slot];
-                        captureLengths[item.Slot][counts[item.Slot]] = item.NewValue - open[item.Slot];
+                        // Mirrored runs record the right edge at the start entry and
+                        // the left edge at the end entry; histories always carry
+                        // normalized spans (forward runs already satisfy the order).
+                        var historyOpen = open[item.Slot];
+                        var historyClose = item.NewValue;
+                        captureStarts[item.Slot][counts[item.Slot]] = historyOpen < historyClose ? historyOpen : historyClose;
+                        captureLengths[item.Slot][counts[item.Slot]] = historyOpen < historyClose ? historyClose - historyOpen : historyOpen - historyClose;
                         counts[item.Slot]++;
                     }
                 }

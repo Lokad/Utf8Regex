@@ -496,19 +496,19 @@ public sealed partial class Utf8Regex
     private bool OwnedSliceIsMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceIsMatchFromUnit(input, program, map, 0, token);
+        return OwnedSliceIsMatchFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
     }
 
     private Utf8ValueMatch OwnedSliceMatch(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceMatchFromUnit(input, program, map, 0, token);
+        return OwnedSliceMatchFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
     }
 
     private Utf8MatchContext OwnedSliceMatchDetailed(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
-        return OwnedSliceMatchDetailedFromUnit(input, program, analysis.GetDecodedString(), analysis.BoundaryMap, 0, token);
+        return OwnedSliceMatchDetailedFromUnit(input, program, analysis.GetDecodedString(), analysis.BoundaryMap, program.RightToLeft ? analysis.BoundaryMap.Utf16Length : 0, token);
     }
 
     private Utf8MatchContext OwnedSliceMatchDetailedFromUnit(
@@ -684,7 +684,7 @@ public sealed partial class Utf8Regex
     private int OwnedSliceCount(ReadOnlySpan<byte> input, Utf8SliceProgram program, CancellationToken token)
     {
         var map = Utf8BoundaryMap.Create(input);
-        return OwnedSliceCountFromUnit(input, program, map, 0, token);
+        return OwnedSliceCountFromUnit(input, program, map, program.RightToLeft ? map.Utf16Length : 0, token);
     }
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
@@ -1862,8 +1862,10 @@ public sealed partial class Utf8Regex
         // R03: split segments project the owned match cursor, whose empty-match
         // advancement already follows the BCL search order. Counts below 2 keep the
         // BCL tail below with identical behavior (count 0 means unlimited there,
-        // while count 1 throws inside its first MoveNext).
-        if (count > 1 && _sliceProgram is not null && _sliceProgram.ServesInput(input))
+        // while count 1 throws inside its first MoveNext). Right-to-left splits keep
+        // legacy routing until the enumerator stages buffered right-to-left ranges
+        // (segments stay positional while discovery runs right-to-left).
+        if (count > 1 && _sliceProgram is not null && !_sliceProgram.RightToLeft && _sliceProgram.ServesInput(input))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             var decoded = analysis.GetDecodedString();
@@ -1956,6 +1958,38 @@ public sealed partial class Utf8Regex
             throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
         }
 
+        // Right-to-left replacement discovers the right-to-left tiling (which can
+        // differ from the left-to-right tiling) through the shared cursor, then emits
+        // left-to-right with one deterministic single-attempt detailed re-query per
+        // match. Ranges stage as unit pairs in a ledger-charged buffer; capture
+        // histories materialize per emitted match exactly like the forward loop.
+        static void AppendRtlReplaceRange(ref int[] ranges, ref int rangeCount, int startUnit, int endUnit, ref Utf8SliceInvocation rangeInvocation)
+        {
+            if (rangeCount * 2 + 2 > ranges.Length)
+            {
+                var grownLength = ranges.Length == 0 ? 16 : ranges.Length * 2;
+                if (!rangeInvocation.Ledger.TryReserve((ulong)grownLength * 4))
+                {
+                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+                }
+
+                var grown = new int[grownLength];
+                Array.Copy(ranges, grown, ranges.Length);
+                if (ranges.Length != 0)
+                {
+                    rangeInvocation.Ledger.Release((ulong)ranges.Length * 4);
+                }
+
+                ranges = grown;
+            }
+
+            ranges[rangeCount * 2] = startUnit;
+            ranges[rangeCount * 2 + 1] = endUnit;
+            rangeCount++;
+        }
+
+        var rtlRanges = Array.Empty<int>();
+        var rtlRangeCount = 0;
         var unit = 0;
         var lastEndByte = 0;
         // Contiguous matches chain BCL startat across scans (advancing to each
@@ -1963,6 +1997,59 @@ public sealed partial class Utf8Regex
         var scanByte = 0;
         try
         {
+            if (program.RightToLeft)
+            {
+                var rtlCursor = new Utf8OperationMatchCursor(program, input, map, MatchTimeout, token);
+                while (rtlCursor.MoveNext())
+                {
+                    var rtlCurrent = rtlCursor.Current;
+                    AppendRtlReplaceRange(ref rtlRanges, ref rtlRangeCount, rtlCurrent.IndexInUtf16, rtlCurrent.IndexInUtf16 + rtlCurrent.LengthInUtf16, ref invocation);
+                }
+
+                var rtlEmitByte = 0;
+                for (var rtlMatch = rtlRangeCount - 1; rtlMatch >= 0; rtlMatch--)
+                {
+                    var rtlStartUnit = rtlRanges[rtlMatch * 2];
+                    var rtlEndUnit = rtlRanges[rtlMatch * 2 + 1];
+                    var rtlStartByte = rtlStartUnit >= map.Utf16Length ? input.Length : map.Resolve(rtlStartUnit).ByteOffset;
+                    var rtlEdgeByte = rtlEndUnit >= map.Utf16Length ? input.Length : map.Resolve(rtlEndUnit).ByteOffset;
+                    // The re-query reproduces its discovery attempt exactly (same
+                    // edge, same edge alignment, same chain pin), so the detailed
+                    // outcome always agrees; anything else fails closed.
+                    invocation.AnchorOriginByte = rtlMatch == 0 ? input.Length : map.Resolve(rtlRanges[(rtlMatch - 1) * 2]).ByteOffset;
+                    var rtlEdgeClean = rtlEndUnit >= map.Utf16Length || rtlEndUnit <= 0 || map.Resolve(rtlEndUnit).IsScalarBoundary;
+                    var rtlDetail = Utf8SliceRunner.TryMatchAt(program, input, rtlEdgeByte, slots.Starts, slots.Ends, true, rtlEdgeClean, ref invocation);
+                    if (rtlDetail.Breach != Utf8ExecutionLimitKind.None)
+                    {
+                        throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");
+                    }
+
+                    if (!rtlDetail.IsMatch || rtlDetail.EndIndex != rtlStartByte || rtlDetail.CaptureStarts is null || rtlDetail.CaptureLengths is null)
+                    {
+                        throw new InvalidOperationException("Owned slice detailed re-query missed its discovered match.");
+                    }
+
+                    var rtlOutcome = new Utf8SliceDetailedOutcome(
+                        true, rtlStartUnit, rtlEndUnit, rtlStartByte, rtlEdgeByte,
+                        rtlDetail.CaptureStarts, rtlDetail.CaptureLengths, Utf8ExecutionLimitKind.None);
+                    if (!writer.Append(input.Slice(rtlEmitByte, rtlStartByte - rtlEmitByte), ref invocation) ||
+                        !ExpandOwnedSliceTemplate(ref writer, replacement, input, rtlOutcome, program.GroupCount, ref invocation))
+                    {
+                        throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+                    }
+
+                    Utf8SliceRunner.ReleaseHistory(rtlDetail.CaptureStarts, rtlDetail.CaptureLengths, ref invocation);
+                    rtlEmitByte = rtlEdgeByte;
+                }
+
+                if (!writer.Append(input.Slice(rtlEmitByte), ref invocation))
+                {
+                    throw new InvalidOperationException("Owned slice output storage breached an unlimited invocation budget.");
+                }
+
+                return writer.ToArrayAndRelease(ref invocation);
+            }
+
             while (unit <= map.Utf16Length)
             {
                 invocation.AnchorOriginByte = scanByte;
@@ -1998,6 +2085,11 @@ public sealed partial class Utf8Regex
         }
         finally
         {
+            if (rtlRanges.Length != 0)
+            {
+                invocation.Ledger.Release((ulong)rtlRanges.Length * 4);
+            }
+
             writer.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }

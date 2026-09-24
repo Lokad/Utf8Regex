@@ -17,7 +17,7 @@ public sealed class Utf8SliceBoundsTests
         var program = Utf8SliceLowerer.Lower(new Utf8SliceNode.ConcatNode([
             new Utf8SliceNode.CaptureNode(0, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(97), 1, int.MaxValue, false)),
             new Utf8SliceNode.CaptureNode(1, new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(98), 1, int.MaxValue, false)),
-        ]), null, false, false);
+        ]), null, false, false, false);
         Assert.NotNull(program);
         return program;
     }
@@ -103,7 +103,7 @@ public sealed class Utf8SliceBoundsTests
 
         static Utf8SliceProgram Lower(Utf8SliceNode root)
         {
-            var program = Utf8SliceLowerer.Lower(root, null, false, false);
+            var program = Utf8SliceLowerer.Lower(root, null, false, false, false);
             Assert.NotNull(program);
             return program;
         }

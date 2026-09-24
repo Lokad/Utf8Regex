@@ -166,7 +166,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData(RegexOptions.RightToLeft)]
     [InlineData(RegexOptions.ECMAScript)]
     [InlineData(RegexOptions.NonBacktracking)]
     public void SensitiveOptionsDecline(RegexOptions options)

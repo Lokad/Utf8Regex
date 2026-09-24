@@ -34,7 +34,6 @@ internal static class Utf8SliceParser
     internal const int MaxPatternLength = 65536;
 
     private const RegexOptions RejectedOptions =
-        RegexOptions.RightToLeft |
         RegexOptions.ECMAScript |
         RegexOptions.NonBacktracking;
 
@@ -155,6 +154,156 @@ internal static class Utf8SliceParser
             }
         }
 
+        // Single-caller tree walks stay static-local: reversal mirrors BCL
+        // RightToLeft parsing (main-stream concatenations back-to-front,
+        // assertion bodies untouched), and the decline walk keeps exotic
+        // direction-sensitive mixes on legacy-exact routing.
+        static Utf8SliceNode ReverseRtlMainStream(Utf8SliceNode node, bool inAssertion)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.ConcatNode concat:
+                    var children = new Utf8SliceNode[concat.Children.Length];
+                    for (var child = 0; child < children.Length; child++)
+                    {
+                        children[child] = ReverseRtlMainStream(concat.Children[child], inAssertion);
+                    }
+
+                    if (!inAssertion)
+                    {
+                        Array.Reverse(children);
+                    }
+
+                    return new Utf8SliceNode.ConcatNode(children);
+                case Utf8SliceNode.AlternationNode alternation:
+                    var branches = new Utf8SliceNode[alternation.Branches.Length][];
+                    for (var branch = 0; branch < branches.Length; branch++)
+                    {
+                        var source = alternation.Branches[branch];
+                        var rewritten = new Utf8SliceNode[source.Length];
+                        for (var child = 0; child < rewritten.Length; child++)
+                        {
+                            rewritten[child] = ReverseRtlMainStream(source[child], inAssertion);
+                        }
+
+                        if (!inAssertion)
+                        {
+                            Array.Reverse(rewritten);
+                        }
+
+                        branches[branch] = rewritten;
+                    }
+
+                    return new Utf8SliceNode.AlternationNode(branches);
+                case Utf8SliceNode.RepeatNode repeat:
+                    return new Utf8SliceNode.RepeatNode(
+                        ReverseRtlMainStream(repeat.Body, inAssertion),
+                        repeat.Minimum,
+                        repeat.Maximum,
+                        repeat.Lazy);
+                case Utf8SliceNode.CaptureNode capture:
+                    return new Utf8SliceNode.CaptureNode(
+                        capture.Slot,
+                        ReverseRtlMainStream(capture.Body, inAssertion));
+                case Utf8SliceNode.AtomicNode atomic:
+                    return new Utf8SliceNode.AtomicNode(
+                        ReverseRtlMainStream(atomic.Body, inAssertion));
+                case Utf8SliceNode.BalanceNode balance:
+                    return new Utf8SliceNode.BalanceNode(
+                        balance.PopSlot,
+                        balance.CaptureSlot,
+                        ReverseRtlMainStream(balance.Body, inAssertion));
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    return new Utf8SliceNode.LookaheadNode(
+                        ReverseRtlMainStream(lookahead.Body, true),
+                        lookahead.Positive);
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    return new Utf8SliceNode.LookbehindNode(
+                        ReverseRtlMainStream(lookbehind.Body, true),
+                        lookbehind.Positive);
+                default:
+                    return node;
+            }
+        }
+
+        static bool RtlTreeDeclines(Utf8SliceNode node, bool inLookbehindBody, bool inLookaheadBody)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    if (inLookbehindBody)
+                    {
+                        return true;
+                    }
+
+                    return RtlTreeDeclines(lookahead.Body, false, true);
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    if (inLookbehindBody || inLookaheadBody)
+                    {
+                        return true;
+                    }
+
+                    return RtlTreeDeclines(lookbehind.Body, true, false);
+                case Utf8SliceNode.BackrefNode:
+                    if (inLookbehindBody || inLookaheadBody)
+                    {
+                        return true;
+                    }
+
+                    break;
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                    {
+                        if (RtlTreeDeclines(child, inLookbehindBody, inLookaheadBody))
+                        {
+                            return true;
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.AlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        foreach (var child in branch)
+                        {
+                            if (RtlTreeDeclines(child, inLookbehindBody, inLookaheadBody))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.RepeatNode repeat:
+                    if (RtlTreeDeclines(repeat.Body, inLookbehindBody, inLookaheadBody))
+                    {
+                        return true;
+                    }
+
+                    break;
+                case Utf8SliceNode.CaptureNode capture:
+                    if (RtlTreeDeclines(capture.Body, inLookbehindBody, inLookaheadBody))
+                    {
+                        return true;
+                    }
+
+                    break;
+                case Utf8SliceNode.AtomicNode atomic:
+                    if (RtlTreeDeclines(atomic.Body, inLookbehindBody, inLookaheadBody))
+                    {
+                        return true;
+                    }
+
+                    break;
+                case Utf8SliceNode.BalanceNode balance:
+                    return true;
+                default:
+                    break;
+            }
+
+            return false;
+        }
+
         var finals = new int[parser.GroupCount];
         var final = 1;
         foreach (var decl in parser.GroupDecls)
@@ -180,6 +329,25 @@ internal static class Utf8SliceParser
             groupNames[finals[decl.Slot]] = decl.Name ?? ((uint)finals[decl.Slot]).ToString();
         }
 
+        // Right-to-left programs run the main stream mirrored: every main-stream
+        // concatenation reverses (BCL parses concatenations back-to-front in
+        // RightToLeft mode) while assertion bodies keep left-to-right order and
+        // execute through their own machinery. Balancing intervals assume
+        // forward positions, lookbehind bodies with nested assertions,
+        // backreferences, or possessive bodies stay legacy, and lookahead bodies
+        // with backreferences, balancing, or nested lookbehinds stay legacy,
+        // all with identical behavior through the existing fallback routes.
+        var rightToLeft = (options & RegexOptions.RightToLeft) != 0;
+        if (rightToLeft)
+        {
+            if (RtlTreeDeclines(root, false, false))
+            {
+                return null;
+            }
+
+            root = ReverseRtlMainStream(root, false);
+        }
+
         // Balancing stacks live in attempt-local chunks while nested
         // lookbehind runs share live slots and heads: a capture or pop
         // inside a lookbehind body would alias shared balance heads through
@@ -190,7 +358,7 @@ internal static class Utf8SliceParser
             return null;
         }
 
-        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase);
+        return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase, rightToLeft);
     }
 
     // Hex, unicode, and octal escapes with ASCII results (BCL-exact shapes:

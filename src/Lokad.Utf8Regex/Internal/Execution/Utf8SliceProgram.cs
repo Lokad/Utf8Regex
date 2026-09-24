@@ -109,6 +109,7 @@ internal enum Utf8SliceInstructionKind : byte
     Hybrid = 19,
     BalancePop = 20,
     AtomicCommit = 21,
+    Lookahead = 22,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
@@ -142,21 +143,23 @@ internal readonly struct Utf8SliceInstruction
 /// The body shares the parent capture slots at run time.</summary>
 internal sealed class Utf8SliceAssertion
 {
-    internal Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes)
+    internal Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
     {
         Body = body;
         MinLengthBytes = minLengthBytes;
         MaxLengthBytes = maxLengthBytes;
+        IsLookbehind = isLookbehind;
     }
 
     internal Utf8SliceProgram Body { get; }
     internal int MinLengthBytes { get; }
     internal int MaxLengthBytes { get; }
+    internal bool IsLookbehind { get; }
 }
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool rightToLeft)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -172,6 +175,7 @@ internal sealed class Utf8SliceProgram
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
         HasContiguousAnchor = hasContiguousAnchor;
+        RightToLeft = rightToLeft;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -190,6 +194,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
     internal bool HasContiguousAnchor { get; }
+    internal bool RightToLeft { get; }
     internal int[] OrdinalGroupNumbers { get; }
     internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
@@ -234,9 +239,17 @@ internal static class Utf8SliceLowerer
     // to null and callers keep legacy routing.
     internal const int MaxInstructions = 1048576;
 
-    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive)
+    internal static Utf8SliceProgram? Lower(Utf8SliceNode root, string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool rightToLeft)
     {
-        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive);
+        var lowerer = new Lowering(groupNames, maintainBalance, matchCaseInsensitive, rightToLeft);
+        // Right-to-left programs execute backreferences before their groups in
+        // reversed order, so seed the slot count from the final group tally
+        // (parser-validated digits always land inside it); forward programs grow
+        // it in encounter order exactly as before.
+        if (groupNames is not null)
+        {
+            lowerer.GroupCount = groupNames.Length - 1;
+        }
         if (!lowerer.EmitNode(root))
         {
             return null;
@@ -302,7 +315,7 @@ internal static class Utf8SliceLowerer
         var hasNonFixedLookbehind = false;
         foreach (var assertion in assertions)
         {
-            if (assertion.MinLengthBytes != assertion.MaxLengthBytes)
+            if (assertion.IsLookbehind && assertion.MinLengthBytes != assertion.MaxLengthBytes)
             {
                 hasNonFixedLookbehind = true;
             }
@@ -358,7 +371,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, rightToLeft);
     }
 
     private sealed class Lowering
@@ -372,12 +385,14 @@ internal static class Utf8SliceLowerer
         internal readonly string[]? GroupNames;
         internal readonly bool MaintainBalance;
         internal readonly bool MatchCaseInsensitive;
+        internal readonly bool MirrorExecute;
 
-        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive)
+        internal Lowering(string[]? groupNames, bool maintainBalance, bool matchCaseInsensitive, bool mirrorExecute)
         {
             GroupNames = groupNames;
             MaintainBalance = maintainBalance;
             MatchCaseInsensitive = matchCaseInsensitive;
+            MirrorExecute = mirrorExecute;
         }
 
         internal void Emit(Utf8SliceInstruction instruction)
@@ -649,6 +664,36 @@ internal static class Utf8SliceLowerer
                     Patch(atomicJump, Instructions.Count);
                     break;
                 case Utf8SliceNode.LookaheadNode lookahead:
+                    // Right-to-left programs run the main stream mirrored while BCL
+                    // parses lookahead bodies left-to-right, so mirrored mains serve
+                    // lookahead bodies as left-to-right sub-programs (shared slots,
+                    // zero width, captures persisting on positive survival exactly
+                    // like lookbehind bodies).
+                    if (MirrorExecute)
+                    {
+                        var lookaheadBody = Utf8SliceLowerer.Lower(lookahead.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false);
+                        if (lookaheadBody is null)
+                        {
+                            return false;
+                        }
+
+                        if (lookaheadBody.GroupCount > GroupCount)
+                        {
+                            GroupCount = lookaheadBody.GroupCount;
+                        }
+
+                        var (lookaheadMinimum, lookaheadMaximum) = Measure(lookahead.Body);
+                        var lookaheadAssertionIndex = Assertions.Count;
+                        Assertions.Add(new Utf8SliceAssertion(lookaheadBody, lookaheadMinimum, lookaheadMaximum, false));
+                        Emit(new Utf8SliceInstruction(
+                            Utf8SliceInstructionKind.Lookahead,
+                            lookaheadAssertionIndex,
+                            lookahead.Positive ? 1 : 0,
+                            0,
+                            0));
+                        break;
+                    }
+
                     // Atomic first-success assertions on the shared trail:
                     // a surviving body commits (popping to the assertion
                     // fork, restoring repeat state, keeping captures) while
@@ -688,7 +733,7 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     {
-                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive);
+                        var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false);
                         if (body is null)
                         {
                             return false;
@@ -701,7 +746,7 @@ internal static class Utf8SliceLowerer
 
                         var (minimum, maximum) = Measure(lookbehind.Body);
                         var assertionIndex = Assertions.Count;
-                        Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum));
+                        Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum, true));
                         Emit(new Utf8SliceInstruction(
                             Utf8SliceInstructionKind.Lookbehind,
                             assertionIndex,
