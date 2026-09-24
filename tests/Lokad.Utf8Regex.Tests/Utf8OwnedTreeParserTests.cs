@@ -7,7 +7,8 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser strangler: the differential battery pins owned trees
 // identical to provider trees (kinds, options, payloads, children, capture
 // accounting) for the literal/escape/concatenation/alternation/group/
-// quantifier/dot/anchor/class subset, plus option-gated declines where the provider
+// quantifier/dot/anchor/class/scoped-option/comment subset, plus option-gated
+// declines where the provider
 // shape demonstrably differs. Parent links, source positions, and find
 // optimizations are construction details outside the comparison.
 public sealed class Utf8OwnedTreeParserTests
@@ -158,6 +159,29 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "[)]" };
         yield return new object?[] { "[a^b]" };
         yield return new object?[] { "[(a)]" };
+        yield return new object?[] { "(?m:^a)" };
+        yield return new object?[] { "(?s:.)" };
+        yield return new object?[] { "(?x:a)" };
+        yield return new object?[] { "(?-m:a)" };
+        yield return new object?[] { "(?m-:a)" };
+        yield return new object?[] { "(?i-i:a)" };
+        yield return new object?[] { "(?s-i:.)" };
+        yield return new object?[] { "(?m:^$)" };
+        yield return new object?[] { "(?i:^$)" };
+        yield return new object?[] { "(?i:^)" };
+        yield return new object?[] { "(?i:.)" };
+        yield return new object?[] { "(?i:.+)" };
+        yield return new object?[] { "(?i:\\b)" };
+        yield return new object?[] { "(?i:)" };
+        yield return new object?[] { "(?m:(a))" };
+        yield return new object?[] { "(?m:a+)" };
+        yield return new object?[] { "(?s:.+)" };
+        yield return new object?[] { "(?m:^a+)" };
+        yield return new object?[] { "(?i:(.+))" };
+        yield return new object?[] { "(?i:(?m:^))" };
+        yield return new object?[] { "(?#c)a" };
+        yield return new object?[] { "(?#c)" };
+        yield return new object?[] { "(?#a)b" };
         yield return new object?[] { "é" };
         yield return new object?[] { "aéb" };
     }
@@ -175,19 +199,6 @@ public sealed class Utf8OwnedTreeParserTests
         Assert.Equal(expected.Options, actual.Options);
         Assert.Equal(expected.Culture, actual.Culture);
         Assert.True(TreesEqual(expected.Root, actual.Root));
-
-        static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
-        {
-            return right.Kind == left.Kind &&
-                right.Options == left.Options &&
-                right.Ch == left.Ch &&
-                right.Str == left.Str &&
-                right.Str2 == left.Str2 &&
-                right.M == left.M &&
-                right.N == left.N &&
-                right.ChildCount == left.ChildCount &&
-                Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
-        }
     }
 
     public static IEnumerable<object?[]> DeclineCases()
@@ -201,7 +212,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(a" };
         yield return new object?[] { "a)" };
         yield return new object?[] { "(?i)a" };
-        yield return new object?[] { "(?#c)a" };
         yield return new object?[] { "\\q" };
         yield return new object?[] { "(?=a)a" };
         yield return new object?[] { "(a)\\1" };
@@ -230,6 +240,25 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "*a)" };
         yield return new object?[] { "}a)" };
         yield return new object?[] { "]a)" };
+        yield return new object?[] { "(?i--m:a)" };
+        yield return new object?[] { "(?-:a)" };
+        yield return new object?[] { "(?z:a)" };
+        yield return new object?[] { "(?I:a)" };
+        yield return new object?[] { "(?n:a)" };
+        yield return new object?[] { "(?n:(a))" };
+        yield return new object?[] { "(?i)" };
+        yield return new object?[] { "(?i-i)" };
+        yield return new object?[] { "(a(?i)b)c" };
+        yield return new object?[] { "((?i)a)b" };
+        yield return new object?[] { "(?i)a|b" };
+        yield return new object?[] { "(?i:AB)" };
+        yield return new object?[] { "(?i:(a))" };
+        yield return new object?[] { "((?i)a)" };
+        yield return new object?[] { "(?i:(?m:a))" };
+        yield return new object?[] { "(?x:a b)" };
+        yield return new object?[] { "(?x:a#b)" };
+        yield return new object?[] { "(?ii:a)" };
+        yield return new object?[] { "(?im-s:a)" };
     }
 
     [Theory]
@@ -241,9 +270,6 @@ public sealed class Utf8OwnedTreeParserTests
 
     public static IEnumerable<object?[]> OptionDeclineCases()
     {
-        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline };
-        yield return new object?[] { "$", RegexOptions.CultureInvariant | RegexOptions.Multiline };
-        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline };
         yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
     }
 
@@ -254,4 +280,40 @@ public sealed class Utf8OwnedTreeParserTests
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
     }
 
+    public static IEnumerable<object?[]> OptionAcceptCases()
+    {
+        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline };
+        yield return new object?[] { "$", RegexOptions.CultureInvariant | RegexOptions.Multiline };
+        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline };
+        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
+        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
+    }
+
+    [Theory]
+    [MemberData(nameof(OptionAcceptCases))]
+    public void OwnedParseMatchesVendoredTreeWithOptions(string pattern, RegexOptions options)
+    {
+        var expected = Utf8RuntimeTreeProvider.TryParse(pattern, options);
+        Assert.NotNull(expected);
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, options);
+        Assert.NotNull(actual);
+        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
+        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
+        Assert.Equal(expected.Options, actual.Options);
+        Assert.Equal(expected.Culture, actual.Culture);
+        Assert.True(TreesEqual(expected.Root, actual.Root));
+    }
+
+    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
+    {
+        return right.Kind == left.Kind &&
+            right.Options == left.Options &&
+            right.Ch == left.Ch &&
+            right.Str == left.Str &&
+            right.Str2 == left.Str2 &&
+            right.M == left.M &&
+            right.N == left.N &&
+            right.ChildCount == left.ChildCount &&
+            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+    }
 }

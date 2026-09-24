@@ -3,8 +3,8 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned parser strangler: literals, escapes, concatenation, alternation,
-// numbered groups, quantifiers, dot, anchors, and character classes lower to
-// runtime tree nodes.
+// numbered groups, quantifiers, dot, anchors, character classes, scoped option
+// groups, and comments lower to runtime tree nodes.
 // Anything else declines (returns null) so the provider keeps exact behavior,
 // including construction throws. Output nodes intentionally mirror the runtime
 // tree shapes the differential battery pins; later stages widen the subset and
@@ -20,8 +20,9 @@ internal static class Utf8OwnedTreeParser
     private const int MaxNestingDepth = 64;
     private const int Infinite = 2147483647;
 
-    // Provider dot payload probed under option-stable shapes (Singleline differs).
+    // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
     private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
+    private const string SinglelineDotText = "\u0000\u0001\u0000\u0000";
 
     public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
     {
@@ -31,7 +32,8 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
-        var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, options);
+        var treeOptions = options | state.TreeSeen;
+        var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
         tree.M = 0;
         tree.N = -1;
         tree.Children = root;
@@ -48,7 +50,7 @@ internal static class Utf8OwnedTreeParser
             captureNames,
             null,
             null,
-            options,
+            treeOptions,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(options),
             null);
 
@@ -109,6 +111,11 @@ internal static class Utf8OwnedTreeParser
                         continue;
                     }
 
+                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
+                    {
+                        return false;
+                    }
+
                     if (!DecodeEscape(ref state, out var escaped))
                     {
                         return false;
@@ -120,6 +127,17 @@ internal static class Utf8OwnedTreeParser
 
                 if (IsLiteralChar(character))
                 {
+                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
+                    {
+                        return false;
+                    }
+
+                    if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0 &&
+                        (character == '#' || char.IsWhiteSpace(character)))
+                    {
+                        return false;
+                    }
+
                     run.Append(character);
                     state.Position++;
                     continue;
@@ -140,21 +158,42 @@ internal static class Utf8OwnedTreeParser
                     continue;
                 }
 
+                if (character == '(' && IsCommentAhead(state))
+                {
+                    if (!SkipComment(ref state))
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
                 FlushRun(state, children, run);
                 RuntimeFrontEnd.RegexNode atom;
-                if (character == '^' && (state.Options & RegexOptions.Multiline) == 0)
+                if (character == '^')
                 {
-                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Beginning, state.Options);
+                    var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
+                        RuntimeFrontEnd.RegexNodeKind.Beginning :
+                        RuntimeFrontEnd.RegexNodeKind.Bol;
+                    atom = new RuntimeFrontEnd.RegexNode(anchorKind, state.Options);
                     state.Position++;
                 }
-                else if (character == '$' && (state.Options & RegexOptions.Multiline) == 0)
+                else if (character == '$')
                 {
-                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.EndZ, state.Options);
+                    var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
+                        RuntimeFrontEnd.RegexNodeKind.EndZ :
+                        RuntimeFrontEnd.RegexNodeKind.Eol;
+                    atom = new RuntimeFrontEnd.RegexNode(anchorKind, state.Options);
                     state.Position++;
                 }
                 else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
                 {
-                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, DotText);
+                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
+                    state.Position++;
+                }
+                else if (character == '.')
+                {
+                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
                     state.Position++;
                 }
                 else if (character == '[' && (state.Options & RegexOptions.IgnoreCase) == 0)
@@ -592,6 +631,96 @@ internal static class Utf8OwnedTreeParser
         {
             return (value >= (char)0xD800 && value <= (char)0xDFFF) || value == (char)0xFFFF;
         }
+        static bool TryTakeOptionScope(ref ParserState state, out RegexOptions scoped, out RegexOptions contribution)
+        {
+            scoped = state.Options;
+            contribution = RegexOptions.None;
+            var on = RegexOptions.None;
+            var off = RegexOptions.None;
+            var dashed = false;
+            while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+            {
+                on |= ScopeFlag(state.Pattern[state.Position]);
+                state.Position++;
+            }
+            if (!state.AtEnd && state.Pattern[state.Position] == '-')
+            {
+                dashed = true;
+                state.Position++;
+                while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+                {
+                    off |= ScopeFlag(state.Pattern[state.Position]);
+                    state.Position++;
+                }
+                if (!state.AtEnd && state.Pattern[state.Position] == '-')
+                {
+                    return false;
+                }
+            }
+            if (state.AtEnd || state.Pattern[state.Position] != ':')
+            {
+                return false;
+            }
+            if (dashed && on == RegexOptions.None && off == RegexOptions.None)
+            {
+                return false;
+            }
+            if (((on | off) & RegexOptions.ExplicitCapture) != RegexOptions.None)
+            {
+                return false;
+            }
+            state.Position++;
+            scoped = (state.Options | on) & ~off;
+            contribution = on & ~off;
+            if (off != RegexOptions.None)
+            {
+                contribution &= ~RegexOptions.IgnoreCase;
+            }
+
+            return true;
+        }
+        static bool IsScopeFlag(char character)
+        {
+            return character == 'i' ||
+                character == 'm' ||
+                character == 'n' ||
+                character == 's' ||
+                character == 'x';
+        }
+        static RegexOptions ScopeFlag(char character)
+        {
+            switch (character)
+            {
+                case 'i':
+                    return RegexOptions.IgnoreCase;
+                case 'm':
+                    return RegexOptions.Multiline;
+                case 'n':
+                    return RegexOptions.ExplicitCapture;
+                case 's':
+                    return RegexOptions.Singleline;
+                case 'x':
+                    return RegexOptions.IgnorePatternWhitespace;
+                default:
+                    return RegexOptions.None;
+            }
+        }
+        static bool IsCommentAhead(ParserState state)
+        {
+            return state.Position + 2 < state.Pattern.Length &&
+                state.Pattern[state.Position + 1] == '?' &&
+                state.Pattern[state.Position + 2] == '#';
+        }
+        static bool SkipComment(ref ParserState state)
+        {
+            var end = state.Pattern.IndexOf(')', state.Position + 3);
+            if (end < 0)
+            {
+                return false;
+            }
+            state.Position = end + 1;
+            return true;
+        }
         static bool TakeHex(ref ParserState state, int count, out int value)
         {
             value = 0;
@@ -694,13 +823,35 @@ internal static class Utf8OwnedTreeParser
             if (!state.AtEnd && state.Pattern[state.Position] == '?')
             {
                 state.Position++;
-                if (state.AtEnd || state.Pattern[state.Position] != ':')
+                if (!TryTakeOptionScope(ref state, out var scopedOptions, out var contribution))
+                {
+                    return false;
+                }
+
+                if (depth == 0)
+                {
+                    state.TreeSeen |= contribution;
+                }
+
+                var savedOptions = state.Options;
+                state.Options = scopedOptions;
+                if (!ParseAlternation(ref state, depth + 1, out var scopeBody) || scopeBody is null)
+                {
+                    return false;
+                }
+
+                if (state.AtEnd || state.Pattern[state.Position] != ')')
                 {
                     return false;
                 }
 
                 state.Position++;
-                kind = RuntimeFrontEnd.RegexNodeKind.Group;
+                var scopeGroup = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Group, scopedOptions);
+                scopeGroup.Children = scopeBody;
+                scopeBody.Parent = scopeGroup;
+                node = scopeGroup;
+                state.Options = savedOptions;
+                return true;
             }
             else
             {
@@ -858,7 +1009,7 @@ internal static class Utf8OwnedTreeParser
             {
                 return new RuntimeFrontEnd.RegexNode(
                     lazy ? RuntimeFrontEnd.RegexNodeKind.Setlazy : RuntimeFrontEnd.RegexNodeKind.Setloop,
-                    state.Options,
+                    state.Options & ~RegexOptions.IgnoreCase,
                     atom.Str)
                 {
                     M = minimum,
@@ -900,6 +1051,7 @@ internal static class Utf8OwnedTreeParser
         public RegexOptions Options;
         public int Position;
         public int Groups;
+        public RegexOptions TreeSeen;
 
         public ParserState(string pattern, RegexOptions options)
         {
@@ -907,6 +1059,7 @@ internal static class Utf8OwnedTreeParser
             Options = options;
             Position = 0;
             Groups = 0;
+            TreeSeen = RegexOptions.None;
         }
 
         public bool AtEnd => Position >= Pattern.Length;
