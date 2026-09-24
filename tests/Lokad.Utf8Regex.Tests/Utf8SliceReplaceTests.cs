@@ -40,6 +40,9 @@ public sealed class Utf8SliceReplaceTests
     [InlineData("a*", "bb", "[Z]")]
     [InlineData("(a+)(b+)", "éaaabbé", "[$1|$2]")]
     [InlineData("(a+)(b+)", "xxaaabbyy zz", "Z $&")]
+    [InlineData("\\t+", "a\tb", "-")]
+    [InlineData("\\n+", "a\nb", "-")]
+    [InlineData("\\cA+", "a\u0001b", "-")]
     public void OwnedReplaceMatchesOracle(string pattern, string inputText, string replacement)
     {
         AssertReplaceParity(pattern, inputText, replacement);
