@@ -14,6 +14,8 @@ public sealed class Utf8SliceExplicitCaptureTests
         yield return new object?[] { "(a)+(?<x>b)+" };
         yield return new object?[] { "(?:a)+(?<x>b)+" };
         yield return new object?[] { "(a)(?<x>b)\\1" };
+        yield return new object?[] { "(\\p{L}+)(?<x>y)" };
+        yield return new object?[] { "([\\p{L}a]+)(?<x>y)" };
     }
 
     [Theory]
@@ -39,6 +41,10 @@ public sealed class Utf8SliceExplicitCaptureTests
         yield return new object?[] { "(a)+(?<x>b)+", "aabb", true };
         yield return new object?[] { "(a)(?<x>b)\\1", "abb", true };
         yield return new object?[] { "(a)(?<x>b)\\1", "aba", false };
+        yield return new object?[] { "(\\p{L}+)(?<x>y)", "aby", true };
+        yield return new object?[] { "(\\p{L}+)(?<x>y)", "ab", false };
+        yield return new object?[] { "([\\p{L}a]+)(?<x>y)", "aBy", true };
+        yield return new object?[] { "(\\p{L}+)(x)", "abx", true };
     }
 
     [Theory]
@@ -76,6 +82,22 @@ public sealed class Utf8SliceExplicitCaptureTests
         var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("ab"));
         Assert.True(detailed.Success);
         Assert.Equal("b", detailed.GetGroup(1).GetValueString());
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void OwnedCategoryGroupApisSkipUnnamedGroups()
+    {
+        var regex = new Utf8Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
+        var oracle = new Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
+        Assert.Equal(new[] { 0, 1 }, regex.GetGroupNumbers());
+        var detailed = regex.MatchDetailed(Encoding.UTF8.GetBytes("aby"));
+        Assert.True(detailed.Success);
+        Assert.Equal("y", detailed.GetGroup(1).GetValueString());
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
