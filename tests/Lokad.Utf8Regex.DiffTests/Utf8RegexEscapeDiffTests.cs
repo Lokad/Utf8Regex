@@ -15,6 +15,10 @@ public sealed class Utf8RegexEscapeDiffTests
         { "[\\101-\\132]+", "STs" },
         { "(\\x41)(\\x42)", "AB ab" },
         { "a\\0b", "a\0b" },
+        { "\\n+", "a\n\nb" },
+        { "\\t+", "a\tb\t" },
+        { "\\cA+", "a\u0001\u0001b" },
+        { "\\e+", "a\u001Bb" },
     };
 
     [Theory]
