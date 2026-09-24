@@ -59,6 +59,9 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<!x*)x", "xx" };
         yield return new object?[] { "(?<![a-z]*)x", "axb" };
         yield return new object?[] { "(?<!\\p{L}+)x", "axb" };
+        yield return new object?[] { "(?<=\\p{L}{2,3})x", "abcx" };
+        yield return new object?[] { "(?<=a{2,3})x", "aaax" };
+        yield return new object?[] { "(?<![a-z]{1,2})x", "12x" };
     }
 
     public static IEnumerable<object?[]> IgnoreCaseLookbehindCases()
@@ -145,6 +148,9 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<!\\p{Nd})x", "ax", true };
         yield return new object?[] { "(?<=\\b\\p{L})x", "axb", true };
         yield return new object?[] { "(?<=\\B\\p{L})x", "axb", false };
+        yield return new object?[] { "(?<=\\p{L}{2})x", "abx", true };
+        yield return new object?[] { "(?<=\\p{L}{2})x", "axb", false };
+        yield return new object?[] { "(?<=a{2})x", "aax", true };
         yield return new object?[] { "((?=a)a)(b)", "ab", true };
     }
 
@@ -176,6 +182,8 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?=a)a", "aaa", 3 };
         yield return new object?[] { "(?<=a)b", "aab ab", 2 };
         yield return new object?[] { "(?!b)a", "ba ba", 2 };
+        yield return new object?[] { "(?<=\\p{L}{2})x", "abxabx", 2 };
+        yield return new object?[] { "(?<=a{2})x", "aaxaa", 1 };
     }
 
     [Theory]
