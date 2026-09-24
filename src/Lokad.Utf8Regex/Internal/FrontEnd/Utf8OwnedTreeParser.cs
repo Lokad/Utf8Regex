@@ -79,7 +79,7 @@ internal static class Utf8OwnedTreeParser
         {
             node = null;
             var children = new List<RuntimeFrontEnd.RegexNode>();
-            var runStart = -1;
+            var run = new StringBuilder();
             while (!state.AtEnd)
             {
                 var character = state.Pattern[state.Position];
@@ -88,42 +88,55 @@ internal static class Utf8OwnedTreeParser
                     break;
                 }
 
-                RuntimeFrontEnd.RegexNode unit;
-                if (IsQuantifierStart(character) && runStart >= 0)
+                if (character == '\\')
                 {
-                    unit = SplitLastChar(ref state, ref runStart, children);
-                }
-                else
-                {
-                    if (IsLiteralChar(character))
-                    {
-                        if (runStart < 0)
-                        {
-                            runStart = state.Position;
-                        }
-
-                        state.Position++;
-                        continue;
-                    }
-
-                    FlushRun(ref state, children, ref runStart);
-                    if (!ParseGroup(ref state, depth, out var group) || group is null)
+                    if (!DecodeEscape(ref state, out var escaped))
                     {
                         return false;
                     }
 
-                    unit = group;
+                    run.Append(escaped);
+                    continue;
                 }
 
-                if (!ParseQuantifier(ref state, ref unit))
+                if (IsLiteralChar(character))
+                {
+                    run.Append(character);
+                    state.Position++;
+                    continue;
+                }
+
+                if (IsQuantifierStart(character) && run.Length != 0)
+                {
+                    var last = run[run.Length - 1];
+                    run.Length--;
+                    FlushRun(state, children, run);
+                    var unit = One(state, last);
+                    if (!ParseQuantifier(ref state, ref unit))
+                    {
+                        return false;
+                    }
+
+                    children.Add(unit);
+                    continue;
+                }
+
+                FlushRun(state, children, run);
+                if (!ParseGroup(ref state, depth, out var group) || group is null)
                 {
                     return false;
                 }
 
-                children.Add(unit);
+                var atom = group;
+                if (!ParseQuantifier(ref state, ref atom))
+                {
+                    return false;
+                }
+
+                children.Add(atom);
             }
 
-            FlushRun(ref state, children, ref runStart);
+            FlushRun(state, children, run);
             if (children.Count == 0)
             {
                 node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, state.Options);
@@ -133,32 +146,166 @@ internal static class Utf8OwnedTreeParser
             node = children.Count == 1 ? children[0] : Concatenate(state, children);
             return true;
         }
-        static void FlushRun(ref ParserState state, List<RuntimeFrontEnd.RegexNode> children, ref int runStart)
+
+        static void FlushRun(ParserState state, List<RuntimeFrontEnd.RegexNode> children, StringBuilder run)
         {
-            if (runStart < 0)
+            if (run.Length == 0)
             {
                 return;
             }
 
-            children.Add(Run(state, state.Pattern.Substring(runStart, state.Position - runStart)));
-            runStart = -1;
+            children.Add(run.Length == 1 ? One(state, run[0]) : Multi(state, run.ToString()));
+            run.Clear();
         }
 
-        static RuntimeFrontEnd.RegexNode SplitLastChar(ref ParserState state, ref int runStart, List<RuntimeFrontEnd.RegexNode> children)
+        static bool DecodeEscape(ref ParserState state, out char value)
         {
-            var last = state.Pattern[state.Position - 1];
-            if (state.Position - runStart > 1)
+            value = '\0';
+            state.Position++;
+            if (state.AtEnd)
             {
-                children.Add(Run(state, state.Pattern.Substring(runStart, state.Position - runStart - 1)));
+                return false;
             }
 
-            runStart = -1;
-            return One(state, last);
+            var escaped = state.Pattern[state.Position];
+            switch (escaped)
+            {
+                case 'a':
+                    value = '\a';
+                    state.Position++;
+                    return true;
+                case 'e':
+                    value = (char)27;
+                    state.Position++;
+                    return true;
+                case 'f':
+                    value = '\f';
+                    state.Position++;
+                    return true;
+                case 'n':
+                    value = '\n';
+                    state.Position++;
+                    return true;
+                case 'r':
+                    value = '\r';
+                    state.Position++;
+                    return true;
+                case 't':
+                    value = '\t';
+                    state.Position++;
+                    return true;
+                case 'v':
+                    value = '\v';
+                    state.Position++;
+                    return true;
+                case 'c':
+                    state.Position++;
+                    if (state.AtEnd)
+                    {
+                        return false;
+                    }
+
+                    var letter = state.Pattern[state.Position];
+                    if (letter >= 'a' && letter <= 'z')
+                    {
+                        letter = (char)(letter - ('a' - 'A'));
+                    }
+
+                    if (letter < '@' || letter > '_')
+                    {
+                        return false;
+                    }
+
+                    value = (char)(letter - '@');
+                    state.Position++;
+                    return true;
+                case 'x':
+                    state.Position++;
+                    if (!TakeHex(ref state, 2, out var hex))
+                    {
+                        return false;
+                    }
+
+                    value = (char)hex;
+                    return true;
+                case 'u':
+                    state.Position++;
+                    if (!TakeHex(ref state, 4, out var unicode))
+                    {
+                        return false;
+                    }
+
+                    value = (char)unicode;
+                    return true;
+                case '0':
+                    if (state.Position + 1 < state.Pattern.Length)
+                    {
+                        var follow = state.Pattern[state.Position + 1];
+                        if (follow >= '0' && follow <= '7')
+                        {
+                            return false;
+                        }
+                    }
+
+                    value = '\0';
+                    state.Position++;
+                    return true;
+                case '.':
+                case '$':
+                case '^':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '(':
+                case ')':
+                case '|':
+                case '*':
+                case '+':
+                case '?':
+                case '\\':
+                    value = escaped;
+                    state.Position++;
+                    return true;
+                default:
+                    return false;
+            }
         }
 
-        static RuntimeFrontEnd.RegexNode Run(ParserState state, string text)
+        static bool TakeHex(ref ParserState state, int count, out int value)
         {
-            return text.Length == 1 ? One(state, text[0]) : Multi(state, text);
+            value = 0;
+            for (var i = 0; i < count; i++)
+            {
+                if (state.AtEnd)
+                {
+                    return false;
+                }
+
+                var digit = state.Pattern[state.Position];
+                int nibble;
+                if (digit >= '0' && digit <= '9')
+                {
+                    nibble = digit - '0';
+                }
+                else if (digit >= 'a' && digit <= 'f')
+                {
+                    nibble = digit - 'a' + 10;
+                }
+                else if (digit >= 'A' && digit <= 'F')
+                {
+                    nibble = digit - 'A' + 10;
+                }
+                else
+                {
+                    return false;
+                }
+
+                value = value * 16 + nibble;
+                state.Position++;
+            }
+
+            return true;
         }
 
         static bool IsLiteralChar(char character)

@@ -54,6 +54,24 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(ab){0}" };
         yield return new object?[] { "(a){0}" };
         yield return new object?[] { "x" };
+        yield return new object?[] { "\\t" };
+        yield return new object?[] { "\\a" };
+        yield return new object?[] { "\\e" };
+        yield return new object?[] { "\\n" };
+        yield return new object?[] { "\\r" };
+        yield return new object?[] { "\\f" };
+        yield return new object?[] { "\\v" };
+        yield return new object?[] { "\\cA" };
+        yield return new object?[] { "\\cZ" };
+        yield return new object?[] { "\\x41" };
+        yield return new object?[] { "\\u0041" };
+        yield return new object?[] { "\\0" };
+        yield return new object?[] { "\\." };
+        yield return new object?[] { "\\\\" };
+        yield return new object?[] { "\\n+" };
+        yield return new object?[] { "a\\nb" };
+        yield return new object?[] { "\\cA\\cZ" };
+        yield return new object?[] { "\\08" };
         yield return new object?[] { "é" };
         yield return new object?[] { "aéb" };
     }
@@ -93,7 +111,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "." };
         yield return new object?[] { "^a" };
         yield return new object?[] { "a$" };
-        yield return new object?[] { "\\n" };
         yield return new object?[] { "a{,3}" };
         yield return new object?[] { "a{2,1}" };
         yield return new object?[] { "a**" };
@@ -111,6 +128,16 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "{2}" };
         yield return new object?[] { "$" };
         yield return new object?[] { "^" };
+        yield return new object?[] { "\\c " };
+        yield return new object?[] { "\\c" };
+        yield return new object?[] { "\\x4" };
+        yield return new object?[] { "\\u41" };
+        yield return new object?[] { "\\8" };
+        yield return new object?[] { "\\b" };
+        yield return new object?[] { "\\k<w>" };
+        yield return new object?[] { "\\1" };
+        yield return new object?[] { "\\A" };
+        yield return new object?[] { "\\01" };
     }
 
     [Theory]
