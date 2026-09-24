@@ -569,6 +569,85 @@ internal static class Utf8SliceLowerer
                         return (0, int.MaxValue);
                 }
             }
+            // Scalar-width bounds for the lookbehind soundness gate below:
+            // forward greedy evaluation can overshoot the lookbehind edge when
+            // the body admits several scalar widths on a byte-variable span (a
+            // shorter end would hit, which BCL finds by evaluating backward),
+            // so only byte-fixed or scalar-fixed bodies stay owned. Zero-width
+            // nodes measure zero, every consuming atom one scalar, backreferences
+            // stay unbounded.
+            static (int Minimum, int Maximum) MeasureScalarWidth(Utf8SliceNode measured)
+            {
+                switch (measured)
+                {
+                    case Utf8SliceNode.EmptyNode:
+                    case Utf8SliceNode.AnchorNode:
+                    case Utf8SliceNode.BoundaryNode:
+                    case Utf8SliceNode.LookaheadNode:
+                    case Utf8SliceNode.LookbehindNode:
+                        return (0, 0);
+                    case Utf8SliceNode.LiteralNode:
+                    case Utf8SliceNode.SetNode:
+                    case Utf8SliceNode.DotNode:
+                    case Utf8SliceNode.ShorthandNode:
+                    case Utf8SliceNode.CategorySetNode:
+                    case Utf8SliceNode.CategoryNode:
+                        return (1, 1);
+                    case Utf8SliceNode.BackrefNode:
+                        return (0, int.MaxValue);
+                    case Utf8SliceNode.CaptureNode capture:
+                        return MeasureScalarWidth(capture.Body);
+                    case Utf8SliceNode.BalanceNode balance:
+                        return MeasureScalarWidth(balance.Body);
+                    case Utf8SliceNode.AtomicNode atomic:
+                        return MeasureScalarWidth(atomic.Body);
+                    case Utf8SliceNode.ConditionalNode conditional:
+                        var (conditionalYesMinimum, conditionalYesMaximum) = MeasureScalarWidth(conditional.YesBody);
+                        var (conditionalNoMinimum, conditionalNoMaximum) = MeasureScalarWidth(conditional.NoBody);
+                        return (Math.Min(conditionalYesMinimum, conditionalNoMinimum), Math.Max(conditionalYesMaximum, conditionalNoMaximum));
+                    case Utf8SliceNode.ConcatNode concat:
+                        var totalMinimum = 0L;
+                        var totalMaximum = 0L;
+                        foreach (var child in concat.Children)
+                        {
+                            var (childMinimum, childMaximum) = MeasureScalarWidth(child);
+                            totalMinimum += childMinimum;
+                            totalMaximum += childMaximum;
+                        }
+
+                        return (Saturate(totalMinimum), Saturate(totalMaximum));
+                    case Utf8SliceNode.AlternationNode alternation:
+                        var branchMinimum = int.MaxValue;
+                        var branchMaximum = 0;
+                        foreach (var branch in alternation.Branches)
+                        {
+                            var totalBranchMinimum = 0L;
+                            var totalBranchMaximum = 0L;
+                            foreach (var child in branch)
+                            {
+                                var (childMinimum, childMaximum) = MeasureScalarWidth(child);
+                                totalBranchMinimum += childMinimum;
+                                totalBranchMaximum += childMaximum;
+                            }
+
+                            branchMinimum = Math.Min(branchMinimum, Saturate(totalBranchMinimum));
+                            branchMaximum = Math.Max(branchMaximum, Saturate(totalBranchMaximum));
+                        }
+
+                        return alternation.Branches.Length == 0
+                            ? (0, 0)
+                            : (branchMinimum, branchMaximum);
+                    case Utf8SliceNode.RepeatNode repeat:
+                        var (bodyMinimum, bodyMaximum) = MeasureScalarWidth(repeat.Body);
+                        var repeatMinimum = Saturate((long)bodyMinimum * repeat.Minimum);
+                        var repeatMaximum = repeat.Maximum == int.MaxValue || bodyMaximum == int.MaxValue
+                            ? int.MaxValue
+                            : Saturate((long)bodyMaximum * repeat.Maximum);
+                        return (repeatMinimum, repeatMaximum);
+                    default:
+                        return (0, int.MaxValue);
+                }
+            }
 
             if (Instructions.Count >= Utf8SliceLowerer.MaxInstructions)
             {
@@ -903,6 +982,17 @@ internal static class Utf8SliceLowerer
                         }
 
                         var (minimum, maximum) = Measure(lookbehind.Body);
+                        // Greedy forward evaluation overshoots the lookbehind edge
+                        // when the body admits several scalar widths on a
+                        // byte-variable span, while a shorter end would hit (BCL
+                        // evaluates the body backward and finds it): only
+                        // byte-fixed or scalar-fixed bodies stay owned.
+                        var (scalarMinimum, scalarMaximum) = MeasureScalarWidth(lookbehind.Body);
+                        if (minimum != maximum && scalarMinimum != scalarMaximum)
+                        {
+                            return false;
+                        }
+
                         var assertionIndex = Assertions.Count;
                         Assertions.Add(new Utf8SliceAssertion(body, minimum, maximum, true));
                         Emit(new Utf8SliceInstruction(

@@ -10,7 +10,8 @@ namespace Lokad.Utf8Regex.Tests;
 // Captures run on the shared slots with entry snapshots, so surviving
 // positive bodies keep their groups and every other path restores them.
 // Atomic, comment, branch-reset, conditional, named, and unclosed group
-// forms decline to legacy-exact routing.
+// forms decline to legacy-exact routing, as do variable-scalar-width
+// lookbehind bodies (greedy forward evaluation would overshoot the edge).
 public sealed class Utf8SliceLookaroundTests
 {
     public static IEnumerable<object?[]> SliceLookaroundShapes()
@@ -20,9 +21,7 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<=a)b" };
         yield return new object?[] { "(?<!a)b" };
         yield return new object?[] { "((?=a)a)" };
-        yield return new object?[] { "(?<=(a|ab))" };
         yield return new object?[] { "(?=(a)(b))" };
-        yield return new object?[] { "(?<=a+)b" };
     }
 
     [Theory]
@@ -39,6 +38,33 @@ public sealed class Utf8SliceLookaroundTests
             var regex = new Utf8Regex(pattern, options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
+    }
+
+    public static IEnumerable<object?[]> VariableLookbehindDeclines()
+    {
+        // Greedy forward evaluation overshoots the lookbehind edge when the
+        // body admits several scalar widths on a byte-variable span, while a
+        // shorter end would hit (BCL evaluates the body backward and finds
+        // it): those bodies ride legacy-exact instead of staying owned.
+        yield return new object?[] { "(?<=(a|ab))", "xab" };
+        yield return new object?[] { "(?<=a+)b", "aaab" };
+        yield return new object?[] { "(?<=a+)b", "aaac" };
+        yield return new object?[] { "(?<=x*)x", "xx" };
+        yield return new object?[] { "(?<=[a-z]*)x", "axb" };
+        yield return new object?[] { "(?<=\\p{L}*)x", "axb" };
+        yield return new object?[] { "(?<=\\p{L}+)x", "axb" };
+    }
+
+    [Theory]
+    [MemberData(nameof(VariableLookbehindDeclines))]
+    public void VariableWidthLookbehindDeclinesToLegacy(string pattern, string inputText)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
     }
 
     [Theory]
@@ -70,9 +96,6 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<=a)b", "cb", false };
         yield return new object?[] { "(?<!a)b", "cb", true };
         yield return new object?[] { "(?<!a)b", "ab", false };
-        yield return new object?[] { "(?<=(a|ab))", "xab", true };
-        yield return new object?[] { "(?<=a+)b", "aaab", true };
-        yield return new object?[] { "(?<=a+)b", "aaac", false };
         yield return new object?[] { "((?=a)a)\\1", "aaa", true };
         yield return new object?[] { "a(?<=a)b", "ab", true };
         yield return new object?[] { "(?<=^a)b", "ab", true };
@@ -113,7 +136,6 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?=a)a", "aaa", 3 };
         yield return new object?[] { "(?<=a)b", "aab ab", 2 };
         yield return new object?[] { "(?!b)a", "ba ba", 2 };
-        yield return new object?[] { "(?<=a+)b", "aaab", 1 };
     }
 
     [Theory]
@@ -130,7 +152,6 @@ public sealed class Utf8SliceLookaroundTests
     }
 
     [Theory]
-    [InlineData("(?<=(a|ab))", "xab", 2, 0, "a")]
     [InlineData("(?<=(a))b", "xxab", 3, 1, "a")]
     [InlineData("((?=a)a)\\1", "xaaayy", 1, 2, "a")]
     public void OwnedMatchProjectsCoordinates(

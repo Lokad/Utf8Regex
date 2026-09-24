@@ -53,7 +53,6 @@ public sealed class Utf8SliceParserTests
     [InlineData("(?!a)b", 0)]
     [InlineData("(?<=a)b", 0)]
     [InlineData("(?<!a)b", 0)]
-    [InlineData("(?<=(a|ab))", 1)]
     [InlineData("(?=(a)(b))", 2)]
     [InlineData("(?<word>a)", 1)]
     [InlineData("(?'word'a)", 1)]

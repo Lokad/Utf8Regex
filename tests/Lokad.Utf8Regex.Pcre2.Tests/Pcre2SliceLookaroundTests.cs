@@ -44,6 +44,7 @@ public sealed class Pcre2SliceLookaroundTests
 
     [Theory]
     [InlineData("(?<=a+)b")]
+    [InlineData("(?<=(a|ab))")]
     [InlineData("(?<!a+)b")]
     [InlineData("(?<=(a|b)+)c")]
     [InlineData("(?=(?<w>a))\\k<w>")]
@@ -65,7 +66,6 @@ public sealed class Pcre2SliceLookaroundTests
         yield return new object?[] { "(?=(?=ab))ab", "xxab", true };
         yield return new object?[] { "(?<=abc)def", "xxabcdef", true };
         yield return new object?[] { "(?<!abc)def", "xxzzzdef", true };
-        yield return new object?[] { "(?<=(a|ab))", "xab", true };
         yield return new object?[] { "(?<=a|ab)c", "xabc", true };
     }
 
@@ -99,7 +99,6 @@ public sealed class Pcre2SliceLookaroundTests
 
     [Theory]
     [InlineData("foo(?!bar)", "xxfoobaz", 0, true, 2, 5)]
-    [InlineData("(?<=(a|ab))", "xab", 0, true, 2, 2)]
     [InlineData("(?<=abc)(|def)", "abcdefabc", 0, true, 3, 3)]
     public void OwnedFirstMatchProjectsBytes(
         string pattern, string inputText, int startOffsetInBytes, bool expectedSuccess, int expectedStart, int expectedEnd)
@@ -140,7 +139,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void OwnedDetailedProjectsLookaroundGroups()
     {
-        var regex = new Utf8Pcre2Regex("(?<=(a|ab))", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<=(a|b))", Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", detailed.GetGroup(1).GetValueString());
