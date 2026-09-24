@@ -20,6 +20,8 @@ public sealed class Utf8SliceBackrefTests
         yield return new object?[] { "(a*)\\1" };
         yield return new object?[] { "(x)?b\\1" };
         yield return new object?[] { "([a-z]+)\\1" };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8" };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9" };
     }
 
     [Theory]
@@ -76,6 +78,10 @@ public sealed class Utf8SliceBackrefTests
         yield return new object?[] { "(\\p{IsBasicLatin}+)\\1", "HiHi", true };
         yield return new object?[] { "([^\\p{L}]+)\\1", "11", true };
         yield return new object?[] { "([\\p{L}a]+)\\1", "aBaB", true };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefghh", true };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefgha", false };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghii", true };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghia", false };
     }
 
     [Theory]
@@ -256,5 +262,40 @@ public sealed class Utf8SliceBackrefTests
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(input));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> MultiDigitDigitEscapeCases()
+    {
+        yield return new object?[] { "(a)\\10", "a\x08", true };
+        yield return new object?[] { "(a)\\10", "a0", false };
+        yield return new object?[] { "(a)(b)\\12", "ab\n", true };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\\10", "abcdefghijj", true };
+        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\\10", "abcdefghijk", false };
+    }
+
+    [Theory]
+    [MemberData(nameof(MultiDigitDigitEscapeCases))]
+    public void MultiDigitDigitEscapesDeclineWithLegacyAgreement(string pattern, string inputText, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        Assert.Equal(expected, regex.IsMatch(input));
+    }
+
+    public static IEnumerable<object?[]> InsufficientGroupDigitCases()
+    {
+        yield return new object?[] { "(a)\\8" };
+        yield return new object?[] { "(a)\\9" };
+    }
+
+    [Theory]
+    [MemberData(nameof(InsufficientGroupDigitCases))]
+    public void InsufficientGroupDigitsFailConstruction(string pattern)
+    {
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 }
