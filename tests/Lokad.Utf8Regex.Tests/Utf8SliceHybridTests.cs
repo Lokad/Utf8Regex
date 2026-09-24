@@ -64,7 +64,6 @@ public sealed class Utf8SliceHybridTests
     [Theory]
     [InlineData("[a-\\d]")]
     [InlineData("[a-\\w]")]
-    [InlineData("[\\p{L}]")]
     public void NonHybridClassShapesDecline(string pattern)
     {
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);

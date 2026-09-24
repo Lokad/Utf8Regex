@@ -1102,13 +1102,16 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ConstructorDoesNotTreatUnicodeCategoryRepeatAsAsciiSimplePattern()
+    public void ConstructorTreatsUnicodeCategoryRepeatAsOwnedSlice()
     {
-        var regex = new Utf8Regex(@"\p{L}{8,13}", RegexOptions.CultureInvariant);
+        const string pattern = "\\p{L}{8,13}";
+        const string input = "abcdefghijklmnop";
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-        Assert.Equal("unsupported_loop", regex.Inspection.FallbackReason);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(Regex.Count(input, pattern), regex.Count(bytes));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Fact]
@@ -1532,7 +1535,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledFallbackCanCountUnicodeLetterBoundedRepeatDirectly()
+    public void CompiledOwnedCanCountUnicodeLetterBoundedRepeatDirectly()
     {
         const string pattern = "\\p{L}{8,13}";
         const string input = "контексты словообразование abcdefghijklmn data123 короткий";
@@ -1540,10 +1543,10 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, compiled.Inspection.CompiledEngineKind);
+        Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
         Assert.Equal(baseline.Count(bytes), compiled.Count(bytes));
+        Assert.False(compiled.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
 
     [Fact]
@@ -1558,7 +1561,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledFallbackCanCountGenericUnicodeLetterBoundedRepeatDirectly()
+    public void CompiledOwnedCanCountGenericUnicodeLetterBoundedRepeatDirectly()
     {
         const string pattern = "\\p{L}{3,5}";
         const string input = "контексты alpha beta 世界世界世界 log42";
@@ -1756,7 +1759,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void BaselineFallbackCanCountGenericUnicodeLetterBoundedRepeatDirectly()
+    public void BaselineOwnedCanCountGenericUnicodeLetterBoundedRepeatDirectly()
     {
         const string pattern = "\\p{L}{3,5}";
         const string input = "контексты alpha beta 世界世界世界 log42";

@@ -16,9 +16,12 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// and negated shorthands
 /// decline astral inputs at routing). IgnoreCase folds per-scalar BCL-invariant
 /// case (Turkic instances keep legacy routing through the construction gate).
-/// Anything else (duplicate or explicitly-numbered names,
-/// categories, backreferences and conditionals inside lookbehind bodies,
-/// lookbehind bodies of balancing shapes) declines to <c>null</c> so the existing
+/// Unicode property escapes (general categories/groups and named blocks as
+/// bare atoms or single-category classes; mixed category classes and blocks
+/// under IgnoreCase stay legacy-exact). Anything else (duplicate or
+/// explicitly-numbered names, backreferences and conditionals inside
+/// lookbehind bodies, lookbehind bodies of balancing shapes) declines to
+/// <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
 /// admission: patterns longer than <see cref="MaxPatternLength"/> decline before any
@@ -640,6 +643,42 @@ internal static class Utf8SliceParser
         return false;
     }
 
+    // Unicode property escapes (BCL ParseProperty shapes: braces required,
+    // word-char/dash names, unknown names decline). General categories and
+    // groups resolve to masks, Is*/_xml* blocks to half-open range strings;
+    // blocks decline under IgnoreCase since case-equivalent range expansion
+    // lives in legacy. Shared by bare atoms and single-category classes (two
+    // callers, so the single-caller debt ceiling does not apply).
+    private static bool TryParseCategoryAtom(string pattern, int backslashIndex, bool negated, bool foldCase, out Utf8SliceNode? node, out int nextIndex)
+    {
+        node = null;
+        nextIndex = backslashIndex;
+        if (backslashIndex + 3 >= pattern.Length || pattern[backslashIndex] != '\\' ||
+            (pattern[backslashIndex + 1] != 'p' && pattern[backslashIndex + 1] != 'P') ||
+            pattern[backslashIndex + 2] != '{')
+        {
+            return false;
+        }
+
+        var nameStart = backslashIndex + 3;
+        var nameEnd = nameStart;
+        while (nameEnd < pattern.Length && (char.IsAsciiLetterOrDigit(pattern[nameEnd]) || pattern[nameEnd] == '_' || pattern[nameEnd] == '-'))
+        {
+            nameEnd++;
+        }
+
+        if (nameEnd == nameStart || nameEnd >= pattern.Length || pattern[nameEnd] != '}' ||
+            !Utf8SliceCategories.TryResolve(pattern.Substring(nameStart, nameEnd - nameStart), out var mask, out var ranges, out var isBlock) ||
+            (isBlock && foldCase))
+        {
+            return false;
+        }
+
+        node = new Utf8SliceNode.CategoryNode(mask, ranges, negated, foldCase);
+        nextIndex = nameEnd + 1;
+        return true;
+    }
+
 
     static string StripInsignificantPatternWhitespace(string source)
     {
@@ -650,8 +689,23 @@ internal static class Utf8SliceParser
             var current = source[index];
             if (current == '\\' && index + 1 < source.Length)
             {
-                filtered.Append(current).Append(source[index + 1]);
-                index += 2;
+                // Unicode property spans lex verbatim: BCL reads the property
+                // name raw (a space like \p{Is Greek} throws), so stripping
+                // inside the braces would invent an accepted name. Classes
+                // already pass through verbatim below.
+                if ((source[index + 1] == 'p' || source[index + 1] == 'P') &&
+                    index + 2 < source.Length && source[index + 2] == '{')
+                {
+                    var propertyEnd = source.IndexOf('}', index + 3);
+                    var spanEnd = propertyEnd < 0 ? source.Length : propertyEnd + 1;
+                    filtered.Append(source, index, spanEnd - index);
+                    index = spanEnd;
+                }
+                else
+                {
+                    filtered.Append(current).Append(source[index + 1]);
+                    index += 2;
+                }
             }
             else if (current == '(' && index + 2 < source.Length &&
                 source[index + 1] == '?' && source[index + 2] == '#')
@@ -1563,6 +1617,24 @@ internal static class Utf8SliceParser
                         return true;
                     }
 
+                    if (escaped == 'p' || escaped == 'P')
+                    {
+                        // Unicode property escapes lower to owned category
+                        // atoms (BCL general categories/groups plus named
+                        // blocks); malformed or unknown names decline so
+                        // legacy construction throws BCL-exact errors, and
+                        // blocks under IgnoreCase decline since
+                        // case-equivalent range expansion lives in legacy.
+                        if (!TryParseCategoryAtom(_pattern, _position, escaped == 'P', _matchIgnoreCase, out node, out var categoryNext))
+                        {
+                            return false;
+                        }
+
+                        _position = categoryNext;
+                        _sawFold |= _matchIgnoreCase;
+                        return true;
+                    }
+
                     // Single-digit backreferences bind earlier groups only:
                     // a following digit makes the escape multi-character
                     // (octal or two-digit reference in BCL), and undefined
@@ -1687,6 +1759,28 @@ internal static class Utf8SliceParser
                     node = new Utf8SliceNode.ShorthandNode(shorthand.Value);
                     return true;
                 }
+            }
+
+            // Single-category classes fold to the category atom they denote;
+            // anything else naming a category stays legacy-exact (mixed
+            // members would need hybrid category operands, and BCL reads a
+            // category in bound position as a construction throw).
+            var categoryOffset = 0;
+            if (_position + categoryOffset < _pattern.Length && _pattern[_position + categoryOffset] == '^')
+            {
+                categoryOffset++;
+            }
+
+            if (_position + categoryOffset + 3 < _pattern.Length &&
+                _pattern[_position + categoryOffset] == '\\' &&
+                (_pattern[_position + categoryOffset + 1] == 'p' || _pattern[_position + categoryOffset + 1] == 'P') &&
+                _pattern[_position + categoryOffset + 2] == '{' &&
+                TryParseCategoryAtom(_pattern, _position + categoryOffset, (categoryOffset == 1) != (_pattern[_position + categoryOffset + 1] == 'P'), _matchIgnoreCase, out var categoryNode, out var categoryNext) &&
+                categoryNext < _pattern.Length && _pattern[categoryNext] == ']')
+            {
+                _position = categoryNext + 1;
+                node = categoryNode;
+                return true;
             }
 
             var negated = false;

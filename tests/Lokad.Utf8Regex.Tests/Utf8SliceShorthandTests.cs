@@ -48,7 +48,6 @@ public sealed class Utf8SliceShorthandTests
     {
         yield return new object?[] { "a\\db" };
         yield return new object?[] { "\\w" };
-        yield return new object?[] { "\\p{L}" };
         yield return new object?[] { "\\x41" };
         yield return new object?[] { "[a-[\\b]]" };
         yield return new object?[] { "[[:alpha:]]" };

@@ -1543,6 +1543,131 @@ internal static class Utf8SliceRunner
                     }
 
                     break;
+                case Utf8SliceInstructionKind.Category:
+                    {
+                        // Unicode property atoms test one BMP scalar against
+                        // the table mask (general categories/groups) or the
+                        // half-open block ranges. The IgnoreCase fold bit
+                        // only widens Ll/Lu/Lt to their cased union (every
+                        // other category is already case-complete; blocks
+                        // never carry the bit since they decline under
+                        // IgnoreCase at parse). Astral leads fail closed:
+                        // routing declines astral inputs for category
+                        // programs, so any astral attempt is unreachable and
+                        // failing keeps byte-stepping drivers aligned.
+                        // Continuation bytes fail like every consuming arm.
+                        // Inputs are validated before execution, hence lead
+                        // widths stay in bounds without revalidation here.
+                        static bool MatchesCategory(Utf8SliceCategoryTable table, char scalar, bool fold)
+                        {
+                            var category = char.GetUnicodeCategory(scalar);
+                            if (fold &&
+                                (category == UnicodeCategory.LowercaseLetter ||
+                                 category == UnicodeCategory.UppercaseLetter ||
+                                 category == UnicodeCategory.TitlecaseLetter))
+                            {
+                                return (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
+                            }
+
+                            if (((table.Mask >> (int)category) & 1u) != 0)
+                            {
+                                return true;
+                            }
+
+                            for (var range = 0; range + 1 < table.Ranges.Length; range += 2)
+                            {
+                                if (scalar >= table.Ranges[range] && scalar < table.Ranges[range + 1])
+                                {
+                                    return true;
+                                }
+                            }
+
+                            return (table.Ranges.Length & 1) != 0 && scalar >= table.Ranges[table.Ranges.Length - 1];
+                        }
+
+                        // Mirrored categories test the scalar ending at the
+                        // attempt edge with the same table rules.
+                        if (program.RightToLeft)
+                        {
+                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlCategoryWidth))
+                            {
+                                var rtlCategoryLead = input[inputIndex - rtlCategoryWidth];
+                                var rtlCategoryTable = program.CategoryTables[instruction.A];
+                                var rtlCategoryFold = (instruction.B & 2) != 0;
+                                var rtlCategoryNegated = (instruction.B & 1) != 0;
+                                bool rtlInClass;
+                                if (rtlCategoryLead < 0x80)
+                                {
+                                    rtlInClass = MatchesCategory(rtlCategoryTable, (char)rtlCategoryLead, rtlCategoryFold) != rtlCategoryNegated;
+                                }
+                                else if (rtlCategoryLead < 0xF0 &&
+                                    TryDecodeBmpScalar(input, inputIndex - rtlCategoryWidth, out var rtlCategoryScalar))
+                                {
+                                    rtlInClass = MatchesCategory(rtlCategoryTable, rtlCategoryScalar, rtlCategoryFold) != rtlCategoryNegated;
+                                }
+                                else
+                                {
+                                    rtlInClass = false;
+                                }
+
+                                if (rtlInClass)
+                                {
+                                    inputIndex -= rtlCategoryWidth;
+                                    programIndex++;
+                                }
+                                else
+                                {
+                                    failed = true;
+                                }
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+
+                            break;
+                        }
+
+                        if (inputIndex < input.Length &&
+                            (input[inputIndex] & 0xC0) != 0x80)
+                        {
+                            var categoryTable = program.CategoryTables[instruction.A];
+                            var categoryFold = (instruction.B & 2) != 0;
+                            var categoryNegated = (instruction.B & 1) != 0;
+                            var candidate = input[inputIndex];
+                            bool inClass;
+                            if (candidate < 0x80)
+                            {
+                                inClass = MatchesCategory(categoryTable, (char)candidate, categoryFold) != categoryNegated;
+                            }
+                            else if (candidate < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
+                            {
+                                inClass = MatchesCategory(categoryTable, scalar, categoryFold) != categoryNegated;
+                            }
+                            else
+                            {
+                                inClass = false;
+                            }
+
+                            if (inClass)
+                            {
+                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : 3;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                 case Utf8SliceInstructionKind.Hybrid:
                     {
                         // Mixed ASCII/Unicode classes: ASCII bytes decide by

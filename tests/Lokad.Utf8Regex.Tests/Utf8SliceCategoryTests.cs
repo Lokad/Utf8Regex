@@ -1,0 +1,534 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+
+namespace Lokad.Utf8Regex.Tests;
+
+// R03 Unicode property slice: \p{...}/\P{...} general categories and groups
+// resolve to UnicodeCategory masks while Is*/_xml* blocks resolve to the
+// pinned half-open ranges; both lower to owned Category programs with BCL
+// oracle parity and zero fallback-engine construction. Single-category
+// classes fold to their atom; mixed category classes decline (hybrid
+// category operands are future work) as do blocks under IgnoreCase
+// (case-equivalent range expansion lives in legacy). Categories consume
+// whole BMP scalars while the oracle tests astral halves, so astral inputs
+// decline to fallback; ASCII and BMP inputs stay owned. Bare shapes keep
+// the fallback execution kind with fallback-free general behavior.
+public sealed class Utf8SliceCategoryTests
+{
+    public static IEnumerable<object?[]> SliceCategoryShapes()
+    {
+        yield return new object?[] { "\\p{L}+" };
+        yield return new object?[] { "\\p{Lu}+" };
+        yield return new object?[] { "\\p{Nd}+" };
+        yield return new object?[] { "\\P{L}+" };
+        yield return new object?[] { "\\p{Ll}+" };
+        yield return new object?[] { "\\p{M}+" };
+        yield return new object?[] { "\\p{Zs}+" };
+        yield return new object?[] { "\\p{Cc}+" };
+        yield return new object?[] { "\\p{Cn}+" };
+        yield return new object?[] { "\\p{Cs}+" };
+        yield return new object?[] { "\\p{Po}+" };
+        yield return new object?[] { "(\\p{L}+)" };
+        yield return new object?[] { "[\\p{L}]+" };
+        yield return new object?[] { "[^\\p{L}]+" };
+        yield return new object?[] { "\\p{L}+\\s*\\p{Nd}+" };
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceCategoryShapes))]
+    public void CategoryShapesRouteOwned(string pattern)
+    {
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+        }
+    }
+
+    public static IEnumerable<object?[]> SliceBlockShapes()
+    {
+        yield return new object?[] { "\\p{IsGreek}+" };
+        yield return new object?[] { "\\p{IsBasicLatin}+" };
+        yield return new object?[] { "\\p{IsLatin-1Supplement}+" };
+        yield return new object?[] { "\\p{IsSpecials}+" };
+        yield return new object?[] { "\\p{_xmlC}+" };
+        yield return new object?[] { "[\\p{IsGreek}]+" };
+        yield return new object?[] { "(\\p{IsGreek}+)" };
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceBlockShapes))]
+    public void BlockShapesRouteOwned(string pattern)
+    {
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+        }
+    }
+
+    public static IEnumerable<object?[]> DeclinedCategoryShapes()
+    {
+        yield return new object?[] { "[\\p{L}a]+", "a", RegexOptions.CultureInvariant };
+        yield return new object?[] { "[\\p{L}\\d]+", "a", RegexOptions.CultureInvariant };
+        yield return new object?[] { "[a\\p{L}]+", "a", RegexOptions.CultureInvariant };
+        yield return new object?[] { "\\p{IsGreek}+", "a", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
+        yield return new object?[] { "[\\p{IsGreek}]+", "a", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
+        yield return new object?[] { "\\p{L}}", "a}", RegexOptions.CultureInvariant };
+    }
+
+    [Theory]
+    [MemberData(nameof(DeclinedCategoryShapes))]
+    public void UnsupportedCategoryShapesDeclineToLegacy(string pattern, string inputText, RegexOptions options)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.False(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+    }
+
+    [Theory]
+    [InlineData("\\p{L}", "a", true)]
+    [InlineData("\\p{L}", "1", false)]
+    [InlineData("\\p{IsGreek}", "\u03B1", true)]
+    [InlineData("\\p{IsGreek}", "a", false)]
+    public void BareCategoryShapesKeepFallbackKind(string pattern, string inputText, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal("FallbackRegex", regex.Inspection.ExecutionKind.ToString());
+        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+    }
+
+    public static IEnumerable<object?[]> ParserDeclines()
+    {
+        yield return new object?[] { "\\p" };
+        yield return new object?[] { "\\pL" };
+        yield return new object?[] { "\\p{" };
+        yield return new object?[] { "\\p}" };
+        yield return new object?[] { "\\p{}" };
+        yield return new object?[] { "\\p{L" };
+        yield return new object?[] { "\\p{xx}" };
+        yield return new object?[] { "\\p{lu}" };
+        yield return new object?[] { "\\p{Greek}" };
+        yield return new object?[] { "\\p{Is Greek}" };
+        yield return new object?[] { "\\p{IsGreek" };
+        yield return new object?[] { "[\\p{L}" };
+
+        yield return new object?[] { "[\\p{L}-x]" };
+        yield return new object?[] { "\\P" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ParserDeclines))]
+    public void InvalidCategoryShapesDeclineAtParse(string pattern)
+    {
+        Assert.Null(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
+    }
+
+    public static IEnumerable<object?[]> ConstructionThrows()
+    {
+        yield return new object?[] { "\\p" };
+        yield return new object?[] { "\\pL" };
+        yield return new object?[] { "\\p{}" };
+        yield return new object?[] { "\\p{xx}" };
+        yield return new object?[] { "\\p{lu}" };
+        yield return new object?[] { "\\p{Greek}" };
+        yield return new object?[] { "\\p{Is Greek}" };
+        yield return new object?[] { "[\\p{L}" };
+
+    }
+
+    [Theory]
+    [MemberData(nameof(ConstructionThrows))]
+    public void InvalidCategoryShapesFailConstructionLikeRuntime(string pattern)
+    {
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [InlineData("\\p{Is Greek}+")]
+    public void SpacedPropertyNamesFailConstructionLikeRuntime(string pattern)
+    {
+        // The whitespace stripper keeps \p{...} spans verbatim so the raw
+        // name still throws; stripping inside the braces would invent an
+        // accepted name.
+        var options = RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant;
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
+        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, options));
+    }
+
+    public static IEnumerable<object?[]> ParserShapes()
+    {
+        yield return new object?[] { "\\p{L}+", 0 };
+        yield return new object?[] { "[\\p{L}]", 0 };
+        yield return new object?[] { "(\\p{IsGreek}+)", 1 };
+
+        yield return new object?[] { "\\P{C}+", 0 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ParserShapes))]
+    public void CategoryShapesParse(string pattern, int expectedGroups)
+    {
+        var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(program);
+        Assert.Equal(expectedGroups, program.GroupCount);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(oracle.GetGroupNumbers().Length - 1, program.GroupCount);
+    }
+
+    public static IEnumerable<object?[]> IsMatchCases()
+    {
+        yield return new object?[] { "\\p{L}+", "abc", true };
+        yield return new object?[] { "\\p{L}+", "a1", true };
+        yield return new object?[] { "\\p{L}+", "123", false };
+        yield return new object?[] { "\\p{Nd}+", "12", true };
+        yield return new object?[] { "\\p{Nd}+", "a", false };
+        yield return new object?[] { "\\P{L}+", "a1 ", true };
+        yield return new object?[] { "\\P{L}+", "abc", false };
+        yield return new object?[] { "\\p{Ll}+", "abc", true };
+        yield return new object?[] { "\\p{Ll}+", "ABC", false };
+        yield return new object?[] { "\\p{Lu}+", "ABC", true };
+        yield return new object?[] { "\\p{M}+", "a\u0301b", true };
+        yield return new object?[] { "\\p{Zs}+", "a b", true };
+        yield return new object?[] { "\\p{Cc}+", "a\0b", true };
+        yield return new object?[] { "\\p{Cn}+", "a\u0378b", true };
+        yield return new object?[] { "\\p{C}+", "a\u0378b", true };
+        yield return new object?[] { "\\p{Po}+", "a,b", true };
+        yield return new object?[] { "\\p{Po}+", "ab", false };
+        yield return new object?[] { "\\p{IsGreek}+", "\u03B1\u03B2", true };
+        yield return new object?[] { "\\p{IsGreek}+", "ab", false };
+        yield return new object?[] { "\\p{IsBasicLatin}+", "AB", true };
+        yield return new object?[] { "\\p{IsBasicLatin}+", "\u00C9", false };
+        yield return new object?[] { "\\p{IsLatin-1Supplement}+", "\u00C9", true };
+        yield return new object?[] { "\\p{IsSpecials}+", "\uFFF0", true };
+        yield return new object?[] { "[\\p{L}]+", "aα", true };
+        yield return new object?[] { "[^\\p{L}]+", "a1", true };
+        yield return new object?[] { "[^\\p{L}]+", "ab", false };
+    }
+
+    public static IEnumerable<object?[]> IsMatchIgnoreCaseCases()
+    {
+        // BCL maps Ll/Lu/Lt onto their cased union under IgnoreCase; every
+        // other general category is already case-complete on its own.
+        yield return new object?[] { "\\p{Ll}+", "ABC", true };
+        yield return new object?[] { "\\p{Lu}+", "abc", true };
+        yield return new object?[] { "\\p{Lt}+", "abcABC", true };
+        yield return new object?[] { "\\P{Ll}+", "A", false };
+        yield return new object?[] { "\\P{Ll}+", "5", true };
+        yield return new object?[] { "\\p{L}+", "ABC", true };
+        yield return new object?[] { "\\p{Nd}+", "12", true };
+    }
+
+    [Theory]
+    [MemberData(nameof(IsMatchCases))]
+    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        OwnedIsMatchMatchesOptions(pattern, inputText, expected, RegexOptions.CultureInvariant);
+    }
+
+    [Theory]
+    [MemberData(nameof(IsMatchIgnoreCaseCases))]
+    public void OwnedIgnoreCaseIsMatchMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        OwnedIsMatchMatchesOptions(pattern, inputText, expected, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private void OwnedIsMatchMatchesOptions(string pattern, string inputText, bool expected, RegexOptions options)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        foreach (var candidate in new[]
+        {
+            options,
+            options | RegexOptions.Compiled,
+        })
+        {
+            var regex = new Utf8Regex(pattern, candidate);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, candidate.ToString() + " pattern=" + pattern);
+            Assert.Equal(expected, regex.IsMatch(input));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(expected, regex.IsMatch(input, source.Token));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, candidate.ToString() + " pattern=" + pattern);
+        }
+    }
+    public static IEnumerable<object?[]> CountCases()
+    {
+        yield return new object?[] { "\\p{L}+", "a1b22", 2 };
+        yield return new object?[] { "\\p{Nd}+", "a12b345", 2 };
+        yield return new object?[] { "\\p{IsGreek}+", "a\u03B1\u03B2b", 1 };
+        yield return new object?[] { "(\\p{L}+)", "a1b", 2 };
+        yield return new object?[] { "\\p{Ll}+", "aAbB", 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(CountCases))]
+    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Matches(inputText).Count);
+        foreach (var options in new[]
+        {
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
+            Assert.Equal(expected, regex.Count(input));
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, options.ToString() + " pattern=" + pattern);
+        }
+    }
+
+    public static IEnumerable<object?[]> FirstMatchCases()
+    {
+        yield return new object?[] { "\\p{L}+", "1ab", 1, 2 };
+        yield return new object?[] { "\\p{IsGreek}+", "x\u03B1y", 1, 1 };
+        yield return new object?[] { "(\\p{Nd}+)", "ab12", 2, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(FirstMatchCases))]
+    public void OwnedMatchMatchesOracle(string pattern, string inputText, int expectedStart, int expectedLength)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Match(inputText);
+        Assert.True(expected.Success);
+        Assert.Equal(expectedStart, expected.Index);
+        Assert.Equal(expectedLength, expected.Length);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var found = regex.Match(input);
+        Assert.True(found.Success);
+        Assert.Equal(expectedStart, found.IndexInUtf16);
+        Assert.Equal(expectedLength, found.LengthInUtf16);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> DetailedCases()
+    {
+        yield return new object?[] { "(\\p{L}+)", "a1", 0, 1, new int[] { 0 }, new int[] { 1 } };
+        yield return new object?[] { "(\\p{IsGreek}+)", "x\u03B1", 1, 1, new int[] { 1 }, new int[] { 1 } };
+        yield return new object?[] { "(\\p{Ll}+)", "aB", 0, 1, new int[] { 0 }, new int[] { 1 } };
+    }
+
+    [Theory]
+    [MemberData(nameof(DetailedCases))]
+    public void OwnedDetailedMatchesOracle(string pattern, string inputText, int expectedStart, int expectedLength, int[] groupStarts, int[] groupLengths)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Match(inputText);
+        Assert.True(expected.Success);
+        Assert.Equal(expected.Groups.Count - 1, groupStarts.Length);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var detailed = regex.MatchDetailed(input);
+        Assert.True(detailed.Success);
+        Assert.Equal(expectedStart, detailed.IndexInUtf16);
+        Assert.Equal(expectedLength, detailed.LengthInUtf16);
+        Assert.Equal(groupStarts.Length, detailed.GroupCount - 1);
+        for (var group = 1; group <= groupStarts.Length; group++)
+        {
+            var actual = detailed.GetGroup(group);
+            var wanted = expected.Groups[group];
+            Assert.Equal(wanted.Success, actual.Success);
+            Assert.Equal(groupStarts[group - 1], actual.IndexInUtf16);
+            Assert.Equal(groupLengths[group - 1], actual.LengthInUtf16);
+            Assert.Equal(wanted.Value, actual.GetValueString());
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> EnumerateCases()
+    {
+        yield return new object?[] { "\\p{Ll}+", "aAbB", new int[] { 0, 1, 2, 1 } };
+        yield return new object?[] { "\\p{Nd}+", "a1b22", new int[] { 1, 1, 3, 2 } };
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumerateCases))]
+    public void OwnedEnumerateMatchesOracle(string pattern, string inputText, int[] expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var wanted = new List<string>();
+        foreach (Match match in oracle.Matches(inputText))
+        {
+            wanted.Add(match.Index + ":" + match.Length);
+        }
+
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var actual = new List<string>();
+        foreach (var match in regex.EnumerateMatches(input))
+        {
+            actual.Add(match.IndexInUtf16 + ":" + match.LengthInUtf16);
+        }
+
+        Assert.Equal(wanted, actual);
+        var flat = new List<int>();
+        foreach (var item in actual)
+        {
+            var parts = item.Split((char)58);
+            flat.Add(int.Parse(parts[0]));
+            flat.Add(int.Parse(parts[1]));
+        }
+
+        Assert.Equal(expected, flat.ToArray());
+    }
+
+    public static IEnumerable<object?[]> ReplaceCases()
+    {
+        yield return new object?[] { "\\p{L}+", "a1b", "a", "<a>1<b>" };
+        yield return new object?[] { "\\p{IsGreek}+", "x\u03B1y", "\u03B1", "x<\u03B1>y" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ReplaceCases))]
+    public void OwnedReplaceMatchesOracle(string pattern, string inputText, string matchText, string expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(matchText, oracle.Match(inputText).Value);
+        Assert.Equal(expected, oracle.Replace(inputText, "<$&>"));
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> SplitCases()
+    {
+        yield return new object?[] { "\\p{Nd}+", "a1b22c", 0, new string[] { "a", "b", "c" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(SplitCases))]
+    public void OwnedSplitMatchesOracle(string pattern, string inputText, int count, string[] expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Split(inputText, count));
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var actual = new List<string>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add(split.GetValueString());
+        }
+
+        Assert.Equal(expected, actual.ToArray());
+    }
+
+    [Theory]
+    [InlineData("\\p{L}+", "xa1b", 1, true, 1, 1)]
+    [InlineData("\\p{IsGreek}+", "x\u03B1y", 1, true, 1, 1)]
+    public void OwnedFromOffsetMatchesOracle(string pattern, string inputText, int startAt, bool expectedSuccess, int expectedStart, int expectedLength)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var wanted = oracle.Match(inputText, startAt);
+        Assert.Equal(expectedSuccess, wanted.Success);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var found = regex.MatchFromUtf16Offset(input, startAt);
+        Assert.Equal(expectedSuccess, found.Success);
+        Assert.Equal(oracle.IsMatch(inputText, startAt), regex.IsMatchFromUtf16Offset(input, startAt));
+        Assert.Equal(oracle.Matches(inputText, startAt).Count, regex.CountFromUtf16Offset(input, startAt));
+        if (expectedSuccess)
+        {
+            Assert.Equal(expectedStart, wanted.Index);
+            Assert.Equal(expectedLength, wanted.Length);
+            Assert.Equal(expectedStart, found.IndexInUtf16);
+            Assert.Equal(expectedLength, found.LengthInUtf16);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> RtlCases()
+    {
+        yield return new object?[] { "\\p{L}+", "ab12", true, 0, 2 };
+        yield return new object?[] { "\\p{Nd}+", "ab12", true, 2, 2 };
+        yield return new object?[] { "\\p{IsGreek}+", "x\u03B1", true, 1, 1 };
+        yield return new object?[] { "\\P{L}+", "ab12", true, 2, 2 };
+    }
+
+    [Theory]
+    [MemberData(nameof(RtlCases))]
+    public void OwnedRightToLeftMatchesOracle(string pattern, string inputText, bool expectedSuccess, int expectedStart, int expectedLength)
+    {
+        var options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var wanted = oracle.Match(inputText);
+        Assert.Equal(expectedSuccess, wanted.Success);
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        var found = regex.Match(input);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expectedStart, wanted.Index);
+            Assert.Equal(expectedLength, wanted.Length);
+            Assert.Equal(expectedStart, found.IndexInUtf16);
+            Assert.Equal(expectedLength, found.LengthInUtf16);
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> AstralDeclineCases()
+    {
+        yield return new object?[] { "\\p{L}+", "a\U00010400b" };
+        yield return new object?[] { "\\P{L}+", "\U00010400" };
+        yield return new object?[] { "\\p{IsGreek}+", "\u03B1\U00010400" };
+        yield return new object?[] { "\\p{IsHighSurrogates}+", "\U00010400" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralDeclineCases))]
+    public void AstralInputsDeclineToLegacy(string pattern, string inputText)
+    {
+        // The oracle tests astral halves while the shared runner consumes
+        // whole scalars, so category programs decline astral inputs and the
+        // fallback answers with unit-exact behavior.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        var expected = oracle.Match(inputText);
+        var found = regex.Match(input);
+        Assert.Equal(expected.Success, found.Success);
+        Assert.Equal(expected.Index, found.IndexInUtf16);
+        Assert.Equal(expected.Length, found.LengthInUtf16);
+    }
+}

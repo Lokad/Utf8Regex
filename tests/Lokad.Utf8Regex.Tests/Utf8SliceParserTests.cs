@@ -81,6 +81,9 @@ public sealed class Utf8SliceParserTests
     [InlineData("[^\\da]", 0)]
     [InlineData("[\\d\\s]", 0)]
     [InlineData("[\\w-]", 0)]
+    [InlineData("\\p{L}+", 0)]
+    [InlineData("[\\p{L}]", 0)]
+    [InlineData("(\\p{IsGreek}+)", 1)]
     [InlineData("[\\d-e]", 0)]
     [InlineData("\\bword", 0)]
     public void SupportedShapesLower(string pattern, int expectedGroups)
@@ -103,7 +106,6 @@ public sealed class Utf8SliceParserTests
     [InlineData("[a-[b]]")]
     [InlineData("[[:alpha:]]")]
     [InlineData("[a-\\d]")]
-    [InlineData("[\\p{L}]")]
     [InlineData("[]")]
     [InlineData("[^]")]
     [InlineData("a)[a-z]+")]

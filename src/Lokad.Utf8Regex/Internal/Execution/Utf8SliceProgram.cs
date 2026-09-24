@@ -2,7 +2,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 /// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
 /// ordered alternation, greedy/lazy repetition, captures, single bytes, ASCII
-/// sets, dots, anchors, word boundaries, shorthand classes, backreferences, lookarounds,
+/// sets, dots, anchors, word boundaries, shorthand classes, Unicode property
+/// escapes, backreferences, lookarounds,
 /// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
 internal enum Utf8SliceNodeKind : byte
 {
@@ -23,6 +24,7 @@ internal enum Utf8SliceNodeKind : byte
     Balance = 14,
     Atomic = 15,
     Conditional = 16,
+    Category = 17,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -79,6 +81,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
 
     internal sealed record BackrefNode(int Slot, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Backref);
+    internal sealed record CategoryNode(uint Mask, string Ranges, bool Negated, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Category);
     internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
     internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
     internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
@@ -113,12 +116,30 @@ internal enum Utf8SliceInstructionKind : byte
     AtomicCommit = 21,
     Lookahead = 22,
     TestGroup = 23,
+    Category = 24,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
 internal static class Utf8SliceHybridMembers
 {
     internal const int NegatedBits = 42;
+}
+
+/// <summary>Unicode property table for one owned category atom: a
+/// UnicodeCategory bit mask for general categories/groups plus half-open
+/// range pairs (with a trailing lone char spanning to char.MaxValue) for
+/// named blocks, mirroring the pinned runtime property encoding.</summary>
+internal sealed class Utf8SliceCategoryTable
+{
+    internal Utf8SliceCategoryTable(uint mask, string ranges)
+    {
+        Mask = mask;
+        Ranges = ranges;
+    }
+
+    internal uint Mask { get; }
+
+    internal string Ranges { get; }
 }
 
 internal readonly struct Utf8SliceInstruction
@@ -162,15 +183,17 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft)
     {
         Instructions = instructions;
         SetMasks = setMasks;
+        CategoryTables = categoryTables;
         RepeatCount = repeatCount;
         GroupCount = groupCount;
         RequiresAstralFreeInput = requiresAstralFreeInput;
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
+        RequiresUnicodeCategory = requiresUnicodeCategory;
         Assertions = assertions;
         HasNonFixedLookbehind = hasNonFixedLookbehind;
         GroupNames = groupNames;
@@ -190,6 +213,8 @@ internal sealed class Utf8SliceProgram
 
     internal Utf8SliceInstruction[] Instructions { get; }
     internal byte[][] SetMasks { get; }
+
+    internal Utf8SliceCategoryTable[] CategoryTables { get; }
     internal int RepeatCount { get; }
     internal int GroupCount { get; }
     internal Utf8SliceAssertion[] Assertions { get; }
@@ -224,6 +249,12 @@ internal sealed class Utf8SliceProgram
     // Consumers whose native shorthands are ASCII-scoped decline marked
     // programs.
     internal bool RequiresUnicodeShorthand { get; }
+
+    // R03 category marker: the shared runner applies Unicode property
+    // semantics (general categories/groups and named blocks beyond ASCII).
+    // Consumers whose native properties are ASCII-scoped or unsupported
+    // decline marked programs.
+    internal bool RequiresUnicodeCategory { get; }
 
     // Routing gate: true unless this program needs astral-free input and
     // the subject carries astral lead bytes (which validated inputs hold only
@@ -264,11 +295,13 @@ internal static class Utf8SliceLowerer
         var requiresAstralFreeInput = false;
         var requiresUnicodeWordBoundary = false;
         var requiresUnicodeShorthand = false;
+        var requiresUnicodeCategory = false;
         static void Classify(
             Utf8SliceInstruction instruction,
             ref bool astral,
             ref bool word,
-            ref bool shorthand)
+            ref bool shorthand,
+            ref bool category)
         {
             if (instruction.Kind == Utf8SliceInstructionKind.Dot ||
                 (instruction.Kind == Utf8SliceInstructionKind.Set && instruction.B != 0) ||
@@ -300,12 +333,23 @@ internal static class Utf8SliceLowerer
                     astral = true;
                 }
             }
+
+            // Categories always carry Unicode property semantics (even ASCII
+            // members match through categories), so they decline
+            // ASCII-scoped consumers. The shared runner tests BMP scalars
+            // while the oracle tests astral halves, so every category
+            // program needs astral-free input.
+            if (instruction.Kind == Utf8SliceInstructionKind.Category)
+            {
+                astral = true;
+                category = true;
+            }
         }
 
         foreach (var instruction in lowerer.Instructions)
         {
-            Classify(instruction, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand);
-            if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand)
+            Classify(instruction, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
+            if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
             {
                 break;
             }
@@ -327,8 +371,8 @@ internal static class Utf8SliceLowerer
 
             foreach (var nested in assertion.Body.Instructions)
             {
-                Classify(nested, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand);
-                if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand)
+                Classify(nested, ref requiresAstralFreeInput, ref requiresUnicodeWordBoundary, ref requiresUnicodeShorthand, ref requiresUnicodeCategory);
+                if (requiresAstralFreeInput && requiresUnicodeWordBoundary && requiresUnicodeShorthand && requiresUnicodeCategory)
                 {
                     break;
                 }
@@ -370,11 +414,13 @@ internal static class Utf8SliceLowerer
         return new Utf8SliceProgram(
             lowerer.Instructions.ToArray(),
             lowerer.SetMasks.ToArray(),
+            lowerer.CategoryTables.ToArray(),
             lowerer.RepeatCount,
             lowerer.GroupCount,
             requiresAstralFreeInput,
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
+            requiresUnicodeCategory,
             assertions,
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft);
     }
@@ -383,6 +429,7 @@ internal static class Utf8SliceLowerer
     {
         internal readonly List<Utf8SliceInstruction> Instructions = new();
         internal readonly List<byte[]> SetMasks = new();
+        internal readonly List<Utf8SliceCategoryTable> CategoryTables = new();
         internal int RepeatCount;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
@@ -436,6 +483,11 @@ internal static class Utf8SliceLowerer
                         return (1, 4);
                     case Utf8SliceNode.ShorthandNode shorthand:
                         return (int)shorthand.Shorthand % 2 == 1 ? (1, 4) : (1, 3);
+                    case Utf8SliceNode.CategoryNode:
+                        // Served inputs hold no astral scalars (routing
+                        // declines them), so every category atom spans one
+                        // to three bytes; astral shapes keep legacy routing.
+                        return (1, 3);
                     case Utf8SliceNode.BackrefNode:
                         return (0, int.MaxValue);
                     case Utf8SliceNode.CaptureNode capture:
@@ -621,6 +673,19 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.ShorthandNode shorthand:
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Shorthand, (int)shorthand.Shorthand, 0, 0, 0));
+                    break;
+                case Utf8SliceNode.CategoryNode category:
+                    // One table per atom (B holds the negated bit plus the
+                    // IgnoreCase fold bit, which only widens Ll/Lu/Lt to
+                    // their union at match time).
+                    var categoryIndex = CategoryTables.Count;
+                    CategoryTables.Add(new Utf8SliceCategoryTable(category.Mask, category.Ranges));
+                    Emit(new Utf8SliceInstruction(
+                        Utf8SliceInstructionKind.Category,
+                        categoryIndex,
+                        (category.Negated ? 1 : 0) | (category.FoldCase ? 2 : 0),
+                        0,
+                        0));
                     break;
                 case Utf8SliceNode.BackrefNode backref:
                     if (backref.Slot < 0 || backref.Slot >= GroupCount)

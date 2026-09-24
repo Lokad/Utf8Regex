@@ -1459,7 +1459,19 @@ internal sealed partial class RegexParser
         }
 
         var charClass = new RegexCharClass();
-        charClass.AddCategoryFromName(categoryName, negate, caseInsensitive: false, _scanPattern, _pos);
+        // Unknown names decline instead of throwing raw: the scan aborts
+        // above and the provider maps the failure to RegexParseException,
+        // matching the BCL construction-throw vocabulary (the shared slice
+        // parser already declined these shapes for the same reason).
+        try
+        {
+            charClass.AddCategoryFromName(categoryName, negate, caseInsensitive: false, _scanPattern, _pos);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+
         node = new RegexNode(RegexNodeKind.Set, currentOptions & ~RegexOptions.IgnoreCase, charClass.ToStringClass());
         return true;
     }
