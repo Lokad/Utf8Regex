@@ -159,6 +159,8 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "(\\d)(?(1)\\p{L}|x)", "1a", true };
         yield return new object?[] { "(?(\\p{L}+)a|b)", "ab", true };
         yield return new object?[] { "((\\p{L}+))\\1", "abab", true };
+        yield return new object?[] { "(?i:(\\p{Ll})(?(1)a|b))", "xA", true };
+        yield return new object?[] { "(?i:(\\p{Ll})(?(1)a|b))", "xb", false };
     }
 
     [Theory]

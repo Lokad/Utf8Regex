@@ -23,6 +23,7 @@ public sealed class Utf8SliceBalanceTests
         yield return new object?[] { "(?<o>a)(?<-o>b)?b" };
         yield return new object?[] { "(?<a>x)(?'b-a'y)" };
         yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)" };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\p{Nd}+)" };
     }
 
     [Theory]
@@ -80,6 +81,8 @@ public sealed class Utf8SliceBalanceTests
         yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab12", true };
         yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab1", true };
         yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab", false };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\p{Nd}+)", "ab12", true };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\p{Nd}+)", "ab", false };
     }
 
     [Theory]

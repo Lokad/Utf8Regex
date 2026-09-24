@@ -143,6 +143,8 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<=a)+b", "ab", true };
         yield return new object?[] { "(?<=(?=\\p{L})\\p{L})x", "axb", true };
         yield return new object?[] { "(?<!\\p{Nd})x", "ax", true };
+        yield return new object?[] { "(?<=\\b\\p{L})x", "axb", true };
+        yield return new object?[] { "(?<=\\B\\p{L})x", "axb", false };
         yield return new object?[] { "((?=a)a)(b)", "ab", true };
     }
 
