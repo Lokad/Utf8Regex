@@ -8,9 +8,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 // their native single-token programs (UCP semantics agree with BCL on the
 // pinned shapes) while named blocks delegate to the core library with BCL
 // parity (native PCRE2 leaves them uncompilable; unknown names keep the
-// explicit None/NotSupported vocabulary). The shared slice never serves
-// PCRE2 categories: RequiresUnicodeCategory declines every category program
-// in the slice overlay.
+// explicit None/NotSupported vocabulary). Mixed category classes decline
+// slice routing through the Unicode-shorthand marker (like hybrids) and
+// keep their native programs; a negated category before a dash throws at
+// native construction (pre-existing divergence, verified at HEAD). The
+// shared slice never serves PCRE2 categories.
 public sealed class Pcre2SliceCategoryTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
@@ -51,6 +53,27 @@ public sealed class Pcre2SliceCategoryTests
     }
 
     [Theory]
+    [InlineData(@"[\p{L}a]+")]
+    [InlineData(@"[^\p{L}a]+")]
+    [InlineData(@"[\p{L}\p{Nd}_]+")]
+    [InlineData(@"[\p{IsGreek}a]+")]
+    [InlineData(@"[\p{L}\D]+")]
+    public void MixedCategoryShapesDeclineSliceRouting(string pattern)
+    {
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
+    }
+
+    [Fact]
+    public void NegatedCategoryDashShapeThrowsNative()
+    {
+        // Pre-existing native divergence (verified at HEAD): PCRE2 rejects
+        // a dash after \P in a class while BCL reads it literally; the
+        // adapter surfaces the native construction throw.
+        Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(@"[\P{L}-x]+", Pcre2CompileOptions.None));
+    }
+
+    [Theory]
     [InlineData(@"\p{Greek}+")]
     [InlineData(@"\p{xx}")]
     public void UnknownNamesKeepNoneProgramVocabulary(string pattern)
@@ -72,6 +95,11 @@ public sealed class Pcre2SliceCategoryTests
 
     public static IEnumerable<object?[]> IsMatchCases()
     {
+        yield return new object?[] { @"[\p{L}a]+", "1aA", true };
+        yield return new object?[] { @"[^\p{L}a]+", "a1 b", true };
+        yield return new object?[] { @"[\p{L}\p{Nd}_]+", "a1_", true };
+        yield return new object?[] { @"[\p{L}\D]+", "a1", true };
+        yield return new object?[] { @"[\p{L}a]+", "129", false };
         yield return new object?[] { @"\p{L}+", "a\u03B1", true };
         yield return new object?[] { @"\p{L}+", "a1", true };
         yield return new object?[] { @"\p{Ll}+", "ABC", false };
@@ -96,6 +124,8 @@ public sealed class Pcre2SliceCategoryTests
 
     public static IEnumerable<object?[]> CountCases()
     {
+        yield return new object?[] { @"[\p{L}a]+", "1aA", 1 };
+        yield return new object?[] { @"[\p{IsGreek}a]+", "aAb", 1 };
         yield return new object?[] { @"\p{L}+", "a\u03B1", 1 };
         yield return new object?[] { @"\p{Lu}+", "aAB", 1 };
         yield return new object?[] { @"\P{L}+", "a1 ", 1 };

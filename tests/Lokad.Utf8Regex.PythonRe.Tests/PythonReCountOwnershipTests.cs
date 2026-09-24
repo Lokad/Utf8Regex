@@ -43,7 +43,21 @@ public sealed class PythonReCountOwnershipTests
     {
         var none = PythonReCompileOptions.None;
         yield return new object?[] { "(?P<word>foo)-(?P=word)", none, "xx foo-foo yy foo-foo", 3, 2 };
-        yield return new object?[] { "\\b|\\w+", none, "\u00E9 skip y", 8, 3 };
+    }
+
+    [Fact]
+    public void SplitBackendCountAgreesWithFindAll()
+    {
+        // `\b|\w+` counts on the owned slice (word-boundary guards now
+        // lower on the shared runner) while FindAll keeps its managed
+        // backend; both agree with each other and the pinned count.
+        var regex = new Utf8PythonRegex("\\b|\\w+", PythonReCompileOptions.None);
+        var input = Encoding.UTF8.GetBytes("\u00E9 skip y");
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + regex.Pattern);
+        Assert.Equal(PythonReDirectBackendKind.Utf8Regex, regex.DebugCountBackend);
+        Assert.Equal(PythonReDirectBackendKind.ManagedRegex, regex.DebugFindAllBackend);
+        Assert.Equal(3, regex.Count(input, 8));
+        Assert.Equal(3, regex.FindAll(input, 8).Length);
     }
 
     [Theory]

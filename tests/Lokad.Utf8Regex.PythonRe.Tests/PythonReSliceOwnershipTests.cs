@@ -385,8 +385,9 @@ public sealed class PythonReSliceOwnershipTests
 
     // R03 boundaries: the translator rewrites `\b`/`\B` into
     // lookaround plus `[\p{L}\p{N}_]` guards (and anchors into forms) the
-    // core slice declines, so all boundary shapes decline the owned slice
-    // while keeping parity through the translated pattern. Expectations mix
+    // core slice declines, so anchor shapes decline the owned slice while
+    // keeping parity through the translated pattern. Word-boundary shapes
+    // route owned now that the guard categories lower on the shared slice. Expectations mix
     // translated-oracle agreement with CPython 3.13.2 ground truths (UTF-16
     // offsets); the Mn/ZWJ-adjacent translator model stays R04 verification
     // debt and is not pinned beyond the ZWJ row below.
@@ -395,6 +396,14 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("\\b")]
     [InlineData("\\B")]
     [InlineData("\\bx\\b")]
+    public void WordBoundaryShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
     [InlineData("\\Aab")]
     [InlineData("ab\\Z")]
     public void BoundaryShapesDeclineOwnedSlice(string pattern)
@@ -444,12 +453,14 @@ public sealed class PythonReSliceOwnershipTests
     }
 
     [Fact]
-    public void EmptyCapableBoundaryCountUsesManagedBackend()
+    public void EmptyCapableBoundaryCountMatchesExpected()
     {
-        // Like `.*`: empty-capable declined shapes count through the managed
-        // engine with identical results.
+        // Like `.*`: empty-capable shapes count identically on either
+        // backend; word boundaries now ride the owned slice.
         var regex = new Utf8PythonRegex("\\b", PythonReCompileOptions.None);
+        Assert.True(regex.DebugUsesOwnedSlice, "pattern=" + regex.Pattern);
         Assert.Equal(6, regex.Count(Utf8("a word here"), 0));
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + regex.Pattern);
     }
 
     [Theory]
@@ -504,10 +515,22 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 mixed category classes: the translator emits [\p{L}\p{N}_]
+    // categories for \w, which the core slice now serves, so bare word
+    // shapes route owned with translated-oracle parity; the other bare
+    // shorthands keep scalar-exact rewrites that still decline.
     [Theory]
     [InlineData("(\\w+)")]
-    [InlineData("\\D+")]
     [InlineData("\\w+")]
+    public void WordShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("\\D+")]
     [InlineData("\\W+")]
     [InlineData("\\S+")]
     [InlineData("[\\d]")]
@@ -720,6 +743,7 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(a)(b)\\2\\1")]
     [InlineData("(a|b)+\\1")]
     [InlineData("(\\d+)\\1")]
+    [InlineData("(\\w+)\\1")]
     [InlineData("(x)?b\\1")]
     public void BackrefShapesRouteOwned(string pattern)
     {
@@ -730,7 +754,6 @@ public sealed class PythonReSliceOwnershipTests
 
     [Theory]
     [InlineData("(?P<x>a)(?P=x)")]
-    [InlineData("(\\w+)\\1")]
     public void BackrefShapesDeclineOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
@@ -817,19 +840,12 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(?<=a)b")]
     [InlineData("(?<!a)b")]
     [InlineData("a(?<=a)b")]
+    [InlineData("(?=\\w+)a")]
     public void LookaroundShapesRouteOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         AssertOwnedBackends(regex);
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
-    }
-
-    [Theory]
-    [InlineData("(?=\\w+)a")]
-    public void LookaroundShapesDeclineOwnedSlice(string pattern)
-    {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
     [Theory]
@@ -906,25 +922,30 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
     // R03 mixed-class shorthands: member shorthands are rewritten
-    // scalar-exact by the translator (like bare shorthands). Bare, negated,
-    // and category shapes decline the owned slice with translated-oracle
-    // parity; quantified member shapes route owned now that the translator's
-    // (?:...) wrapper lowers transparently on the core slice.
+    // scalar-exact by the translator (like bare shorthands). Bare digit,
+    // negated, and category shapes decline the owned slice with
+    // translated-oracle parity; quantified member shapes route owned now
+    // that the translator's (?:...) wrapper lowers transparently on the
+    // core slice, as do bare word hybrids (an alternation of a literal
+    // dash with a category set).
     // Expectations mix translated-oracle agreement with CPython 3.13.2
     // ground truths (CPython classes are Unicode, matching the rewrite).
     [Theory]
     [InlineData("[\\da]")]
     [InlineData("[^\\da]")]
-    [InlineData("[\\w-]")]
     public void HybridShapesDeclineOwnedSlice(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         Assert.False(regex.DebugUsesOwnedSlice, "pattern=" + pattern);
     }
 
+    // Bare word hybrids route owned too: the translator splits [\w-]
+    // into an alternation of a literal dash and [\p{L}\p{N}_], and both
+    // alternatives lower on the shared slice.
     [Theory]
     [InlineData("[\\da]+")]
-    public void HybridQuantifiedShapesRouteOwned(string pattern)
+    [InlineData("[\\w-]")]
+    public void HybridOwnedShapesRouteOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         AssertOwnedBackends(regex);

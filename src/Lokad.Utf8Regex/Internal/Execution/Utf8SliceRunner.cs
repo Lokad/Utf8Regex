@@ -1668,6 +1668,199 @@ internal static class Utf8SliceRunner
                         break;
                     }
 
+                case Utf8SliceInstructionKind.CategorySet:
+                    {
+                        // Mixed category classes: ASCII bytes decide by mask
+                        // plus recorded category members (shorthand ASCII
+                        // parts ride the mask exactly like hybrids, so only
+                        // categories need member tests here); BMP scalars
+                        // consult shorthand members with full Unicode
+                        // categories plus category members with the same
+                        // Ll/Lu/Lt-only fold rule as single categories.
+                        // BMP units agree with the oracle; astral follows the
+                        // halves mirror (routing declines astral inputs for
+                        // every category-set program) and continuation bytes
+                        // fail, so byte-stepping drivers cannot report
+                        // unaligned starts. Inputs are validated before
+                        // execution, hence lead widths stay in bounds without
+                        // revalidation here.
+                        static bool MatchesCategorySetShorthand(char scalar, Utf8SliceShorthand shorthand)
+                        {
+                            var category = char.GetUnicodeCategory(scalar);
+                            return ((int)shorthand) switch
+                            {
+                                0 => category == UnicodeCategory.DecimalDigitNumber,
+                                1 => category != UnicodeCategory.DecimalDigitNumber,
+                                2 => (WordUnicodeCategoriesMask & (1 << (int)category)) != 0,
+                                3 => (WordUnicodeCategoriesMask & (1 << (int)category)) == 0,
+                                4 => scalar == '\u0085' || category == UnicodeCategory.SpaceSeparator ||
+                                    category == UnicodeCategory.LineSeparator ||
+                                    category == UnicodeCategory.ParagraphSeparator,
+                                _ => scalar != '\u0085' && category != UnicodeCategory.SpaceSeparator &&
+                                    category != UnicodeCategory.LineSeparator &&
+                                    category != UnicodeCategory.ParagraphSeparator,
+                            };
+                        }
+
+                        static bool MatchesCategorySetTable(Utf8SliceCategoryTable table, char scalar, bool fold)
+                        {
+                            var category = char.GetUnicodeCategory(scalar);
+                            if (fold &&
+                                (category == UnicodeCategory.LowercaseLetter ||
+                                 category == UnicodeCategory.UppercaseLetter ||
+                                 category == UnicodeCategory.TitlecaseLetter))
+                            {
+                                return (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0;
+                            }
+
+                            if (((table.Mask >> (int)category) & 1u) != 0)
+                            {
+                                return true;
+                            }
+
+                            for (var range = 0; range + 1 < table.Ranges.Length; range += 2)
+                            {
+                                if (scalar >= table.Ranges[range] && scalar < table.Ranges[range + 1])
+                                {
+                                    return true;
+                                }
+                            }
+
+                            return (table.Ranges.Length & 1) != 0 && scalar >= table.Ranges[table.Ranges.Length - 1];
+                        }
+
+                        static bool CategorySetBmpMatches(Utf8SliceProgram program, Utf8SliceInstruction instruction, char scalar)
+                        {
+                            var fold = (instruction.B & 2) != 0;
+                            var negated = (instruction.B & 1) != 0;
+                            if (fold &&
+                                TryFoldBmpScalarForCaseInsensitiveMatch(scalar, out var folded) &&
+                                folded < 0x80 &&
+                                (program.SetMasks[instruction.A][folded >> 3] & (byte)(1 << (folded & 7))) != 0)
+                            {
+                                return !negated;
+                            }
+
+                            for (var bit = 0; bit < 6; bit++)
+                            {
+                                if ((instruction.C & (1 << bit)) != 0 &&
+                                    MatchesCategorySetShorthand(scalar, (Utf8SliceShorthand)bit))
+                                {
+                                    return !negated;
+                                }
+                            }
+
+                            foreach (var member in program.CategorySetMembers[instruction.D])
+                            {
+                                if (MatchesCategorySetTable(member.Table, scalar, fold) != member.Negated)
+                                {
+                                    return !negated;
+                                }
+                            }
+
+                            return negated;
+                        }
+
+                        // Mirrored category sets test the scalar ending at
+                        // the attempt edge with the same mask and member
+                        // rules as the forward arm.
+                        if (program.RightToLeft)
+                        {
+                            if (TryGetScalarWidthEndingAt(input, inputIndex, out var rtlCategorySetWidth))
+                            {
+                                var rtlCategorySetLead = input[inputIndex - rtlCategorySetWidth];
+                                bool rtlInClass;
+                                if (rtlCategorySetLead < 0x80)
+                                {
+                                    var rtlMaskHit = (program.SetMasks[instruction.A][rtlCategorySetLead >> 3] & (byte)(1 << (rtlCategorySetLead & 7))) != 0;
+                                    var rtlMemberHit = false;
+                                    foreach (var member in program.CategorySetMembers[instruction.D])
+                                    {
+                                        if (MatchesCategorySetTable(member.Table, (char)rtlCategorySetLead, (instruction.B & 2) != 0) != member.Negated)
+                                        {
+                                            rtlMemberHit = true;
+                                            break;
+                                        }
+                                    }
+
+                                    rtlInClass = (rtlMaskHit || rtlMemberHit) != ((instruction.B & 1) != 0);
+                                }
+                                else if (rtlCategorySetLead < 0xF0 &&
+                                    TryDecodeBmpScalar(input, inputIndex - rtlCategorySetWidth, out var rtlCategorySetScalar))
+                                {
+                                    rtlInClass = CategorySetBmpMatches(program, instruction, rtlCategorySetScalar);
+                                }
+                                else
+                                {
+                                    rtlInClass = false;
+                                }
+
+                                if (rtlInClass)
+                                {
+                                    inputIndex -= rtlCategorySetWidth;
+                                    programIndex++;
+                                }
+                                else
+                                {
+                                    failed = true;
+                                }
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+
+                            break;
+                        }
+
+                        if (inputIndex < input.Length &&
+                            (input[inputIndex] & 0xC0) != 0x80)
+                        {
+                            var candidate = input[inputIndex];
+                            bool inClass;
+                            if (candidate < 0x80)
+                            {
+                                var maskHit = (program.SetMasks[instruction.A][candidate >> 3] & (byte)(1 << (candidate & 7))) != 0;
+                                var memberHit = false;
+                                foreach (var member in program.CategorySetMembers[instruction.D])
+                                {
+                                    if (MatchesCategorySetTable(member.Table, (char)candidate, (instruction.B & 2) != 0) != member.Negated)
+                                    {
+                                        memberHit = true;
+                                        break;
+                                    }
+                                }
+
+                                inClass = (maskHit || memberHit) != ((instruction.B & 1) != 0);
+                            }
+                            else if (candidate < 0xF0 &&
+                                TryDecodeBmpScalar(input, inputIndex, out var scalar))
+                            {
+                                inClass = CategorySetBmpMatches(program, instruction, scalar);
+                            }
+                            else
+                            {
+                                inClass = false;
+                            }
+
+                            if (inClass)
+                            {
+                                inputIndex += candidate < 0x80 ? 1 : candidate < 0xE0 ? 2 : 3;
+                                programIndex++;
+                            }
+                            else
+                            {
+                                failed = true;
+                            }
+                        }
+                        else
+                        {
+                            failed = true;
+                        }
+
+                        break;
+                    }
+
                 case Utf8SliceInstructionKind.Hybrid:
                     {
                         // Mixed ASCII/Unicode classes: ASCII bytes decide by

@@ -1792,6 +1792,7 @@ internal static class Utf8SliceParser
 
             var bits = new bool[128];
             var memberBits = 0;
+            var categoryMembers = new List<Utf8SliceNode.CategorySetMember>();
             var lowerBound = -1;
             var inRange = false;
             var firstChar = true;
@@ -1898,7 +1899,27 @@ internal static class Utf8SliceParser
 
                     if (escaped is 'p' or 'P')
                     {
-                        return false;
+                        // Categories are always members, never bounds (BCL
+                        // uniform rule, mirroring shorthands); in
+                        // upper-bound position BCL throws, so decline to
+                        // legacy-exact. The shared helper also declines
+                        // blocks under IgnoreCase.
+                        if (inRange)
+                        {
+                            return false;
+                        }
+
+                        if (!TryParseCategoryAtom(_pattern, _position - 1, escaped == 'P', _matchIgnoreCase, out var categoryAtom, out var categoryMemberNext) ||
+                            categoryAtom is not Utf8SliceNode.CategoryNode categoryMember)
+                        {
+                            return false;
+                        }
+
+                        categoryMembers.Add(new Utf8SliceNode.CategorySetMember(
+                            new Utf8SliceCategoryTable(categoryMember.Mask, categoryMember.Ranges),
+                            escaped == 'P'));
+                        _position = categoryMemberNext;
+                        continue;
                     }
 
                     if (escaped == '-')
@@ -2093,7 +2114,15 @@ internal static class Utf8SliceParser
                 members = collected[..collectedCount];
             }
 
-            node = new Utf8SliceNode.SetNode(mask, negated, members, _matchIgnoreCase);
+            if (categoryMembers.Count == 0)
+            {
+                node = new Utf8SliceNode.SetNode(mask, negated, members, _matchIgnoreCase);
+            }
+            else
+            {
+                node = new Utf8SliceNode.CategorySetNode(mask, negated, members, categoryMembers.ToArray(), _matchIgnoreCase);
+            }
+
             return true;
         }
 
