@@ -828,6 +828,10 @@ internal static class Pcre2CompiledProgramOverlay
     // future work). Shorthand classes decline for the same reason: the
     // shared runner applies Unicode digits, word chars, and separators
     // while the native shorthands stay ASCII-scoped. Variable-length
+    // Conditional expression tests decline because native PCRE2 flows assertion
+    // captures (even from negative tests) while the shared runner follows BCL
+    // (failed negatives leak nothing; group tests commit once). Group-test
+    // conditionals keep shared execution (captures flow identically).
     // lookbehind declines because native PCRE2 rejects it at compile time
     // while the shared runner would match (fixed-length lookbehind agrees
     // on case-sensitive ASCII shapes). Mixed named/unnamed shapes decline
@@ -850,7 +854,8 @@ internal static class Pcre2CompiledProgramOverlay
             sliceProgram.IgnoreCase ||
             sliceProgram.HasNonFixedLookbehind ||
             sliceProgram.HasMixedNamedGroups ||
-            sliceProgram.HasBalancing)
+            sliceProgram.HasBalancing ||
+            sliceProgram.HasConditionalTest)
         {
             return program;
         }

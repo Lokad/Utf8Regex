@@ -93,7 +93,6 @@ public sealed class Utf8SliceParserTests
     }
 
     [Theory]
-    [InlineData("(a)(?(1)b|c)")]
     [InlineData(@"\q")]
     [InlineData("é")]
     [InlineData("(a")]

@@ -2037,6 +2037,23 @@ internal static class Utf8SliceRunner
                     }
 
                     break;
+                case Utf8SliceInstructionKind.TestGroup:
+                    // One-shot group test (BCL IsMatched: participated, even empty;
+                    // in-progress and unset groups test false, group zero never matches):
+                    // jump to the no-branch on false, fall into yes on true. Downstream
+                    // failure never retries the other branch (BCL commits to the test).
+                    // Direction-free: mirrored runs record inverted spans, but both ends
+                    // stay non-negative exactly when the group participated.
+                    if (instruction.A < 0 || captureStarts[instruction.A] < 0 || captureEnds[instruction.A] < 0)
+                    {
+                        programIndex = instruction.B;
+                    }
+                    else
+                    {
+                        programIndex++;
+                    }
+
+                    break;
                 case Utf8SliceInstructionKind.Fail:
                     failed = true;
                     break;

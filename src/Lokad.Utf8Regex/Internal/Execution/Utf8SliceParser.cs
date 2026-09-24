@@ -11,11 +11,13 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// with Singleline-scoped newline matching, anchors with Multiline-scoped line
 /// edges, ASCII character classes (literals, ranges, supported escapes, and
 /// shorthand members), word boundaries, shorthand classes, backreferences,
-/// and zero-width lookarounds (dots, negated classes, and negated shorthands
+/// conditional alternations (group tests with committed branches, expression
+/// tests via lookahead desugar), and zero-width lookarounds (dots, negated classes,
+/// and negated shorthands
 /// decline astral inputs at routing). IgnoreCase folds per-scalar BCL-invariant
 /// case (Turkic instances keep legacy routing through the construction gate).
-/// Anything else (conditionals, duplicate or explicitly-numbered names,
-/// categories, direction-sensitive options, captures or pops inside
+/// Anything else (duplicate or explicitly-numbered names,
+/// categories, backreferences and conditionals inside lookbehind bodies,
 /// lookbehind bodies of balancing shapes) declines to <c>null</c> so the existing
 /// routes preserve their behavior, including construction failures. Group
 /// nesting beyond <see cref="MaxNestingDepth"/> also declines. R02b construction
@@ -149,6 +151,18 @@ internal static class Utf8SliceParser
                         finals[balance.PopSlot] - 1,
                         balance.CaptureSlot < 0 ? -1 : finals[balance.CaptureSlot] - 1,
                         RenumberCaptures(balance.Body, finals));
+                case Utf8SliceNode.ConditionalNode conditional:
+                    // Template slots renumber like captures; raw digits already denote
+                    // final numbers (validated range above), so they shift to zero-based
+                    // slots directly, and group zero stays always-false.
+                    var resolvedTest = conditional.TestSlot >= 0
+                        ? finals[conditional.TestSlot] - 1
+                        : conditional.TestSlot == -1 ? -1 : -conditional.TestSlot - 3;
+                    return new Utf8SliceNode.ConditionalNode(
+                        resolvedTest,
+                        RenumberCaptures(conditional.YesBody, finals),
+                        RenumberCaptures(conditional.NoBody, finals),
+                        conditional.TestBody is null ? null : RenumberCaptures(conditional.TestBody, finals));
                 default:
                     return node;
             }
@@ -208,6 +222,12 @@ internal static class Utf8SliceParser
                 case Utf8SliceNode.AtomicNode atomic:
                     return new Utf8SliceNode.AtomicNode(
                         ReverseRtlMainStream(atomic.Body, inAssertion));
+                case Utf8SliceNode.ConditionalNode conditional:
+                    return new Utf8SliceNode.ConditionalNode(
+                        conditional.TestSlot,
+                        ReverseRtlMainStream(conditional.YesBody, inAssertion),
+                        ReverseRtlMainStream(conditional.NoBody, inAssertion),
+                        conditional.TestBody is null ? null : ReverseRtlMainStream(conditional.TestBody, true));
                 case Utf8SliceNode.BalanceNode balance:
                     return new Utf8SliceNode.BalanceNode(
                         balance.PopSlot,
@@ -295,8 +315,172 @@ internal static class Utf8SliceParser
                     }
 
                     break;
+                case Utf8SliceNode.ConditionalNode conditional:
+                    if (RtlTreeDeclines(conditional.YesBody, inLookbehindBody, inLookaheadBody)
+                        || RtlTreeDeclines(conditional.NoBody, inLookbehindBody, inLookaheadBody)
+                        || (conditional.TestBody is not null && RtlTreeDeclines(conditional.TestBody, inLookbehindBody, true)))
+                    {
+                        return true;
+                    }
+
+                    break;
                 case Utf8SliceNode.BalanceNode balance:
                     return true;
+                default:
+                    break;
+            }
+
+            return false;
+        }
+
+        // Conditional number tests denote final groups, so out-of-range digits
+        // decline exactly like the BCL construction throw (forward references read
+        // groups defined anywhere). Group tests inside lookbehind bodies also
+        // decline: BCL evaluates bodies back-to-front in one shot while the shared
+        // machinery enumerates starts forward, which diverges on order-sensitive
+        // tests (and on backreferences, for the same reason).
+        static bool ConditionalTestsValidate(Utf8SliceNode node, int groupCount)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                    {
+                        if (!ConditionalTestsValidate(child, groupCount))
+                        {
+                            return false;
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.AlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        foreach (var child in branch)
+                        {
+                            if (!ConditionalTestsValidate(child, groupCount))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.RepeatNode repeat:
+                    if (!ConditionalTestsValidate(repeat.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.CaptureNode capture:
+                    if (!ConditionalTestsValidate(capture.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.AtomicNode atomic:
+                    if (!ConditionalTestsValidate(atomic.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.BalanceNode balance:
+                    if (!ConditionalTestsValidate(balance.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    if (!ConditionalTestsValidate(lookahead.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    if (!ConditionalTestsValidate(lookbehind.Body, groupCount))
+                    {
+                        return false;
+                    }
+
+                    break;
+                case Utf8SliceNode.ConditionalNode conditional:
+                    if (conditional.TestSlot <= -2)
+                    {
+                        var rawNumber = -conditional.TestSlot - 2;
+                        if (rawNumber < 1 || rawNumber > groupCount)
+                        {
+                            return false;
+                        }
+                    }
+
+                    if (!ConditionalTestsValidate(conditional.YesBody, groupCount)
+                        || !ConditionalTestsValidate(conditional.NoBody, groupCount)
+                        || (conditional.TestBody is not null && !ConditionalTestsValidate(conditional.TestBody, groupCount)))
+                    {
+                        return false;
+                    }
+
+                    break;
+                default:
+                    break;
+            }
+
+            return true;
+        }
+
+        static bool LookbehindBodyDeclines(Utf8SliceNode node, bool inBody)
+        {
+            switch (node)
+            {
+                case Utf8SliceNode.BackrefNode when inBody:
+                case Utf8SliceNode.ConditionalNode when inBody:
+                    return true;
+                case Utf8SliceNode.LookbehindNode lookbehind:
+                    return LookbehindBodyDeclines(lookbehind.Body, true);
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                    {
+                        if (LookbehindBodyDeclines(child, inBody))
+                        {
+                            return true;
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.AlternationNode alternation:
+                    foreach (var branch in alternation.Branches)
+                    {
+                        foreach (var child in branch)
+                        {
+                            if (LookbehindBodyDeclines(child, inBody))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    break;
+                case Utf8SliceNode.RepeatNode repeat:
+                    return LookbehindBodyDeclines(repeat.Body, inBody);
+                case Utf8SliceNode.CaptureNode capture:
+                    return LookbehindBodyDeclines(capture.Body, inBody);
+                case Utf8SliceNode.AtomicNode atomic:
+                    return LookbehindBodyDeclines(atomic.Body, inBody);
+                case Utf8SliceNode.BalanceNode balance:
+                    return LookbehindBodyDeclines(balance.Body, inBody);
+                case Utf8SliceNode.LookaheadNode lookahead:
+                    return LookbehindBodyDeclines(lookahead.Body, inBody);
+                case Utf8SliceNode.ConditionalNode conditional when inBody:
+                    return true;
+                case Utf8SliceNode.ConditionalNode conditionalOut:
+                    return LookbehindBodyDeclines(conditionalOut.YesBody, inBody)
+                        || LookbehindBodyDeclines(conditionalOut.NoBody, inBody)
+                        || (conditionalOut.TestBody is not null && LookbehindBodyDeclines(conditionalOut.TestBody, inBody));
                 default:
                     break;
             }
@@ -327,6 +511,16 @@ internal static class Utf8SliceParser
         foreach (var decl in parser.GroupDecls)
         {
             groupNames[finals[decl.Slot]] = decl.Name ?? ((uint)finals[decl.Slot]).ToString();
+        }
+
+        // Conditional number tests validate against the full group tally here
+        // (out-of-range digits decline like the BCL construction throw), and
+        // lookbehind bodies with backreferences or conditionals decline: BCL
+        // evaluates bodies back-to-front in one shot while the shared machinery
+        // enumerates starts forward.
+        if (!ConditionalTestsValidate(root, parser.GroupCount) || LookbehindBodyDeclines(root, false))
+        {
+            return null;
         }
 
         // Right-to-left programs run the main stream mirrored: every main-stream
@@ -806,6 +1000,140 @@ internal static class Utf8SliceParser
 
                             _position++;
                             node = plainBody ?? new Utf8SliceNode.EmptyNode();
+                            return true;
+                        }
+
+                        if (marker == '(')
+                        {
+                            // Conditional alternation (?(test)yes|no): number tests bind final
+                            // group numbers (validated post-parse since forward references read
+                            // groups defined anywhere), backward-defined names bind template slots,
+                            // and every other test parses as an expression subpattern that desugars
+                            // to a lookahead-guarded alternation. A second | declines (BCL throws
+                            // AlternationHasTooManyConditions); a named capture or comment opening
+                            // the test declines (BCL throws).
+                            var testStart = _position + 3;
+                            var testChar = testStart < _pattern.Length ? _pattern[testStart] : '\0';
+                            int testSlot = int.MinValue;
+                            Utf8SliceNode? testBody = null;
+                            if (testChar >= '0' && testChar <= '9')
+                            {
+                                var testEnd = testStart;
+                                var rawNumber = 0L;
+                                while (testEnd < _pattern.Length && _pattern[testEnd] >= '0' && _pattern[testEnd] <= '9')
+                                {
+                                    rawNumber = rawNumber * 10 + (_pattern[testEnd] - '0');
+                                    if (rawNumber > int.MaxValue)
+                                    {
+                                        return false;
+                                    }
+                                    testEnd++;
+                                }
+                                if (testEnd >= _pattern.Length || _pattern[testEnd] != ')')
+                                {
+                                    return false;
+                                }
+                                testSlot = rawNumber == 0 ? -1 : -(int)rawNumber - 2;
+                                _position = testEnd + 1;
+                            }
+                            else
+                            {
+                                var nameEnd = testStart;
+                                while (nameEnd < _pattern.Length && (( _pattern[nameEnd] >= '0' && _pattern[nameEnd] <= '9') || (_pattern[nameEnd] >= 'A' && _pattern[nameEnd] <= 'Z') || _pattern[nameEnd] == '_' || (_pattern[nameEnd] >= 'a' && _pattern[nameEnd] <= 'z')))
+                                {
+                                    nameEnd++;
+                                }
+                                if (nameEnd > testStart && nameEnd < _pattern.Length && _pattern[nameEnd] == ')' && _groupSlots.TryGetValue(_pattern.Substring(testStart, nameEnd - testStart), out var testTemp))
+                                {
+                                    testSlot = testTemp;
+                                    _position = nameEnd + 1;
+                                }
+                                else
+                                {
+                                    // The expression test starts at its own paren. A (?-form parses
+                                    // as one atom (those forms never capture, so no phantom group
+                                    // arises); a named capture or comment opener declines exactly
+                                    // like the BCL construction throw. A plain group parses with its
+                                    // parens stripped (BCL ignores the test paren while inner groups
+                                    // bind normally).
+                                    var testParen = _position + 2;
+                                    if (testParen + 1 < _pattern.Length && _pattern[testParen + 1] == '?')
+                                    {
+                                        if (testParen + 2 < _pattern.Length)
+                                        {
+                                            var testMarker = _pattern[testParen + 2];
+                                            if (testMarker == '#'
+                                                || testMarker == '\''
+                                                || (testMarker == '<' && testParen + 3 < _pattern.Length && _pattern[testParen + 3] != '=' && _pattern[testParen + 3] != '!'))
+                                            {
+                                                return false;
+                                            }
+                                        }
+
+                                        _position = testParen;
+                                        if (!TryParseAtom(depth + 1, out testBody) || testBody is null)
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var innerStart = testParen + 1;
+                                        if (innerStart < _pattern.Length && _pattern[innerStart] == ')')
+                                        {
+                                            testBody = new Utf8SliceNode.EmptyNode();
+                                            _position = innerStart + 1;
+                                        }
+                                        else
+                                        {
+                                            _position = innerStart;
+                                            if (!TryParseAlternation(depth + 1, out testBody) || testBody is null || AtEnd || _pattern[_position] != ')')
+                                            {
+                                                return false;
+                                            }
+
+                                            _position++;
+                                        }
+                                    }
+                                }
+                            }
+                            var yesChildren = new List<Utf8SliceNode>();
+                            if (!TryParseConcatenation(depth + 1, yesChildren))
+                            {
+                                return false;
+                            }
+                            var yesBranch = yesChildren.Count == 0 ? (Utf8SliceNode)new Utf8SliceNode.EmptyNode() : yesChildren.Count == 1 ? yesChildren[0] : new Utf8SliceNode.AlternationNode(new[] { yesChildren.ToArray() });
+                            var noBranch = (Utf8SliceNode)new Utf8SliceNode.EmptyNode();
+                            if (!AtEnd && _pattern[_position] == '|')
+                            {
+                                _position++;
+                                var noChildren = new List<Utf8SliceNode>();
+                                if (!TryParseConcatenation(depth + 1, noChildren))
+                                {
+                                    return false;
+                                }
+                                noBranch = noChildren.Count == 0 ? (Utf8SliceNode)new Utf8SliceNode.EmptyNode() : noChildren.Count == 1 ? noChildren[0] : new Utf8SliceNode.AlternationNode(new[] { noChildren.ToArray() });
+                                if (!AtEnd && _pattern[_position] == '|')
+                                {
+                                    return false;
+                                }
+                            }
+                            if (AtEnd || _pattern[_position] != ')')
+                            {
+                                return false;
+                            }
+                            _position++;
+                            if (testBody is not null)
+                            {
+                                // Expression tests stay on the node (desugared at lowering so
+                                // consumers can distinguish assertion capture flow); group tests
+                                // carry a null test body.
+                                node = new Utf8SliceNode.ConditionalNode(-1, yesBranch, noBranch, testBody);
+                            }
+                            else
+                            {
+                                node = new Utf8SliceNode.ConditionalNode(testSlot, yesBranch, noBranch, null);
+                            }
                             return true;
                         }
 

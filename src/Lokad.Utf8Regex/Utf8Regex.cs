@@ -160,6 +160,17 @@ public sealed partial class Utf8Regex
             _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
         }
 
+        // Declined conditionals validate the same way: BCL rejects malformed
+        // conditionals (extra branches, undefined numbers) at construction while
+        // lazy fallback would defer the failure to first use. The substring gate
+        // is intentionally heuristic (whitespace-split (? ( slips through); only
+        // declined shapes pay the early build, and owned conditionals keep lazy
+        // construction. Malformed patterns already failed above through the front end.
+        if (_sliceProgram is null && pattern.Contains("(?(", StringComparison.Ordinal))
+        {
+            _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
+        }
+
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
             Utf8PreparedRegex preparedRegex,

@@ -22,6 +22,7 @@ internal enum Utf8SliceNodeKind : byte
     Lookbehind = 13,
     Balance = 14,
     Atomic = 15,
+    Conditional = 16,
 }
 
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
@@ -82,6 +83,7 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
     internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind);
     internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
     internal sealed record AtomicNode(Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Atomic);
+    internal sealed record ConditionalNode(int TestSlot, Utf8SliceNode YesBody, Utf8SliceNode NoBody, Utf8SliceNode? TestBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -110,6 +112,7 @@ internal enum Utf8SliceInstructionKind : byte
     BalancePop = 20,
     AtomicCommit = 21,
     Lookahead = 22,
+    TestGroup = 23,
 }
 
 /// <summary>Hybrid member bits for the negated shorthands (NonDigit, NonWord, NonSpace).</summary>
@@ -159,7 +162,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool rightToLeft)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -175,6 +178,7 @@ internal sealed class Utf8SliceProgram
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
         HasContiguousAnchor = hasContiguousAnchor;
+        HasConditionalTest = hasConditionalTest;
         RightToLeft = rightToLeft;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
@@ -194,6 +198,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasBalancing { get; }
     internal bool IgnoreCase { get; }
     internal bool HasContiguousAnchor { get; }
+    internal bool HasConditionalTest { get; }
     internal bool RightToLeft { get; }
     internal int[] OrdinalGroupNumbers { get; }
     internal string[] GroupNames { get; }
@@ -371,7 +376,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, rightToLeft);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft);
     }
 
     private sealed class Lowering
@@ -381,6 +386,7 @@ internal static class Utf8SliceLowerer
         internal int RepeatCount;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
+        internal bool HasConditionalTest;
         internal readonly List<Utf8SliceAssertion> Assertions = new();
         internal readonly string[]? GroupNames;
         internal readonly bool MaintainBalance;
@@ -438,6 +444,10 @@ internal static class Utf8SliceLowerer
                         return Measure(balance.Body);
                     case Utf8SliceNode.AtomicNode atomic:
                         return Measure(atomic.Body);
+                    case Utf8SliceNode.ConditionalNode conditional:
+                        var (conditionalYesMinimum, conditionalYesMaximum) = Measure(conditional.YesBody);
+                        var (conditionalNoMinimum, conditionalNoMaximum) = Measure(conditional.NoBody);
+                        return (Math.Min(conditionalYesMinimum, conditionalNoMinimum), Math.Max(conditionalYesMaximum, conditionalNoMaximum));
                     case Utf8SliceNode.ConcatNode concat:
                         var totalMinimum = 0L;
                         var totalMaximum = 0L;
@@ -662,6 +672,45 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     Patch(atomicFork, atomicFail);
                     Patch(atomicJump, Instructions.Count);
+                    break;
+                case Utf8SliceNode.ConditionalNode conditional:
+                    if (conditional.TestBody is not null)
+                    {
+                        // Expression tests desugar to lookahead-guarded branches (the test
+                        // is a positive lookaround per BCL); the marker preserves the
+                        // distinction for consumers with different assertion capture flow.
+                        HasConditionalTest = true;
+                        if (!EmitNode(new Utf8SliceNode.AlternationNode(new[]
+                        {
+                            new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, true), conditional.YesBody },
+                            new Utf8SliceNode[] { new Utf8SliceNode.LookaheadNode(conditional.TestBody, false), conditional.NoBody },
+                        })))
+                        {
+                            return false;
+                        }
+
+                        break;
+                    }
+
+                    // One-shot group test with committed branches: the test reads current
+                    // capture state and jumps to the no-branch on false; downstream
+                    // failure never retries the other branch (BCL commits to the test).
+                    var testIndex = Instructions.Count;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, 0, 0, 0));
+                    if (!EmitNode(conditional.YesBody))
+                    {
+                        return false;
+                    }
+
+                    var noJump = Instructions.Count;
+                    Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Jump, 0, 0, 0, 0));
+                    Instructions[testIndex] = new Utf8SliceInstruction(Utf8SliceInstructionKind.TestGroup, conditional.TestSlot, Instructions.Count, 0, 0);
+                    if (!EmitNode(conditional.NoBody))
+                    {
+                        return false;
+                    }
+
+                    Patch(noJump, Instructions.Count);
                     break;
                 case Utf8SliceNode.LookaheadNode lookahead:
                     // Right-to-left programs run the main stream mirrored while BCL
