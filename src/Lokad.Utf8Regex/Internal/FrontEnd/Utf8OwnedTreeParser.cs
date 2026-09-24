@@ -3,7 +3,8 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned parser strangler: literals, escapes, concatenation, alternation,
-// numbered groups, quantifiers, dot, and anchors lower to runtime tree nodes.
+// numbered groups, quantifiers, dot, anchors, and character classes lower to
+// runtime tree nodes.
 // Anything else declines (returns null) so the provider keeps exact behavior,
 // including construction throws. Output nodes intentionally mirror the runtime
 // tree shapes the differential battery pins; later stages widen the subset and
@@ -155,6 +156,19 @@ internal static class Utf8OwnedTreeParser
                 {
                     atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, DotText);
                     state.Position++;
+                }
+                else if (character == '[' && (state.Options & RegexOptions.IgnoreCase) == 0)
+                {
+                    if (!ParseClass(ref state, out var classNode) || classNode is null)
+                    {
+                        return false;
+                    }
+
+                    atom = classNode;
+                }
+                else if (character != '(')
+                {
+                    return false;
                 }
                 else
                 {
@@ -348,6 +362,236 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
+        static bool ParseClass(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
+        {
+            node = null;
+            state.Position++;
+            if (state.AtEnd)
+            {
+                return false;
+            }
+            var negated = false;
+            if (state.Pattern[state.Position] == '^')
+            {
+                negated = true;
+                state.Position++;
+                if (state.AtEnd)
+                {
+                    return false;
+                }
+            }
+            var units = new List<char>();
+            var pending = (char)0;
+            var hasPending = false;
+            var first = true;
+            while (true)
+            {
+                if (state.AtEnd)
+                {
+                    return false;
+                }
+                var character = state.Pattern[state.Position];
+                if (character == ']' && !first)
+                {
+                    state.Position++;
+                    break;
+                }
+                if (character == '-')
+                {
+                    if (hasPending &&
+                        state.Position + 1 < state.Pattern.Length &&
+                        state.Pattern[state.Position + 1] != ']' &&
+                        state.Pattern[state.Position + 1] != '[')
+                    {
+                        if (!TryTakeRangeEnd(ref state, pending, units))
+                        {
+                            return false;
+                        }
+
+                        hasPending = false;
+                        first = false;
+                        continue;
+                    }
+
+                    if (hasPending &&
+                        state.Position + 1 < state.Pattern.Length &&
+                        state.Pattern[state.Position + 1] == '[')
+                    {
+                        return false;
+                    }
+
+                    if (!hasPending &&
+                        state.Position + 1 < state.Pattern.Length &&
+                        state.Pattern[state.Position + 1] == '-' &&
+                        IsRangeEndAhead(state, 2))
+                    {
+                        pending = '-';
+                        hasPending = true;
+                        state.Position++;
+                        first = false;
+                        continue;
+                    }
+                    if (!AddClassUnit(units, '-'))
+                    {
+                        return false;
+                    }
+                    pending = '-';
+                    hasPending = true;
+                    state.Position++;
+                    first = false;
+                    continue;
+                }
+                char atom;
+                if (character == '\\')
+                {
+                    if (!DecodeClassEscape(ref state, out atom))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    atom = character;
+                    if (IsRejectedClassChar(atom))
+                    {
+                        return false;
+                    }
+                    state.Position++;
+                }
+                if (state.Position < state.Pattern.Length &&
+                    state.Pattern[state.Position] == '-' &&
+                    IsRangeEndAhead(state, 1))
+                {
+                    pending = atom;
+                    hasPending = true;
+                }
+                else
+                {
+                    if (!AddClassUnit(units, atom))
+                    {
+                        return false;
+                    }
+                    pending = atom;
+                    hasPending = true;
+                }
+                first = false;
+            }
+            var text = new char[units.Count + 3];
+            text[0] = negated ? (char)1 : (char)0;
+            text[1] = (char)units.Count;
+            text[2] = (char)0;
+            for (var i = 0; i < units.Count; i++)
+            {
+                text[i + 3] = units[i];
+            }
+            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, new string(text));
+            return true;
+        }
+        static bool TryTakeRangeEnd(ref ParserState state, char start, List<char> units)
+        {
+            if (state.Position + 1 >= state.Pattern.Length)
+            {
+                return false;
+            }
+            var next = state.Pattern[state.Position + 1];
+            if (next == ']' || next == '[')
+            {
+                return false;
+            }
+            char end;
+            int consumed;
+            if (next == '\\')
+            {
+                var probe = state;
+                probe.Position++;
+                if (!DecodeClassEscape(ref probe, out end))
+                {
+                    return false;
+                }
+                consumed = probe.Position - state.Position;
+            }
+            else
+            {
+                end = next;
+                if (IsRejectedClassChar(end))
+                {
+                    return false;
+                }
+                consumed = 2;
+            }
+            if (end < start)
+            {
+                return false;
+            }
+            units.Add(start);
+            units.Add((char)(end + 1));
+            state.Position += consumed;
+            return true;
+        }
+        static bool IsRangeEndAhead(ParserState state, int offset)
+        {
+            var index = state.Position + offset;
+            if (index >= state.Pattern.Length)
+            {
+                return false;
+            }
+            var candidate = state.Pattern[index];
+            if (candidate == ']' || candidate == '[')
+            {
+                return false;
+            }
+            if (candidate == '\\')
+            {
+                var probe = state;
+                probe.Position = index;
+                return DecodeClassEscape(ref probe, out _);
+            }
+            return !IsRejectedClassChar(candidate);
+        }
+        static bool DecodeClassEscape(ref ParserState state, out char value)
+        {
+            if (state.Position + 1 < state.Pattern.Length)
+            {
+                var letter = state.Pattern[state.Position + 1];
+                if (letter == 'b')
+                {
+                    value = (char)8;
+                    state.Position += 2;
+                    return true;
+                }
+                if (letter == 'A')
+                {
+                    value = 'A';
+                    state.Position += 2;
+                    return true;
+                }
+                if (letter == '-')
+                {
+                    value = '-';
+                    state.Position += 2;
+                    return true;
+                }
+            }
+            if (!DecodeEscape(ref state, out value))
+            {
+                return false;
+            }
+            return !IsRejectedClassChar(value);
+        }
+        static bool AddClassUnit(List<char> units, char value)
+        {
+            if (IsRejectedClassChar(value))
+            {
+                return false;
+            }
+            units.Add(value);
+            units.Add((char)(value + 1));
+            return true;
+        }
+        static bool IsRejectedClassChar(char value)
+        {
+            return (value >= (char)0xD800 && value <= (char)0xDFFF) || value == (char)0xFFFF;
+        }
         static bool TakeHex(ref ParserState state, int count, out int value)
         {
             value = 0;
@@ -397,7 +641,9 @@ internal static class Utf8OwnedTreeParser
                 character != '+' &&
                 character != '?' &&
                 character != '^' &&
-                character != '$';
+                character != '$' &&
+                character != ']' &&
+                character != '}';
         }
 
         static bool IsQuantifierStart(char character)

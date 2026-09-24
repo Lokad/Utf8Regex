@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser strangler: the differential battery pins owned trees
 // identical to provider trees (kinds, options, payloads, children, capture
 // accounting) for the literal/escape/concatenation/alternation/group/
-// quantifier/dot/anchor subset, plus option-gated declines where the provider
+// quantifier/dot/anchor/class subset, plus option-gated declines where the provider
 // shape demonstrably differs. Parent links, source positions, and find
 // optimizations are construction details outside the comparison.
 public sealed class Utf8OwnedTreeParserTests
@@ -106,6 +106,58 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "a^b" };
         yield return new object?[] { "a$b" };
         yield return new object?[] { "^a|b$" };
+        yield return new object?[] { "[a]" };
+        yield return new object?[] { "[ab]" };
+        yield return new object?[] { "[a-z]" };
+        yield return new object?[] { "[^a]" };
+        yield return new object?[] { "[^ab]" };
+        yield return new object?[] { "[a-z0-9_]" };
+        yield return new object?[] { "[-a]" };
+        yield return new object?[] { "[a-]" };
+        yield return new object?[] { "[a\\-z]" };
+        yield return new object?[] { "[\\n]" };
+        yield return new object?[] { "[a]+" };
+        yield return new object?[] { "[a]{2}" };
+        yield return new object?[] { "([ab])+" };
+        yield return new object?[] { "[^a]+" };
+        yield return new object?[] { "[.]" };
+        yield return new object?[] { "[\\b]" };
+        yield return new object?[] { "[\\A]" };
+        yield return new object?[] { "[a[b]" };
+        yield return new object?[] { "[ab-]+" };
+        yield return new object?[] { "x[yz]" };
+        yield return new object?[] { "[\\0]" };
+        yield return new object?[] { "[\\x41]" };
+        yield return new object?[] { "[\\cA]" };
+        yield return new object?[] { "[é]" };
+        yield return new object?[] { "[aé]" };
+        yield return new object?[] { "[\\u0041-\\u0043]" };
+        yield return new object?[] { "[A-z]" };
+        yield return new object?[] { "[\\n-z]" };
+        yield return new object?[] { "[aa]" };
+        yield return new object?[] { "[ba]" };
+        yield return new object?[] { "[a-a]" };
+        yield return new object?[] { "[a-c-e]" };
+        yield return new object?[] { "[a-b-c]" };
+        yield return new object?[] { "[a-b-c-d]" };
+        yield return new object?[] { "[-a-b]" };
+        yield return new object?[] { "[a-b-]" };
+        yield return new object?[] { "[---]" };
+        yield return new object?[] { "[\\]]" };
+        yield return new object?[] { "[a\\]]" };
+        yield return new object?[] { "[--]" };
+        yield return new object?[] { "[--0]" };
+        yield return new object?[] { "[\\--0]" };
+        yield return new object?[] { "[-]" };
+        yield return new object?[] { "[ab-]" };
+        yield return new object?[] { "[!-/]" };
+        yield return new object?[] { "[ -~]" };
+        yield return new object?[] { "[]a]" };
+        yield return new object?[] { "[^]a]" };
+        yield return new object?[] { "[(]" };
+        yield return new object?[] { "[)]" };
+        yield return new object?[] { "[a^b]" };
+        yield return new object?[] { "[(a)]" };
         yield return new object?[] { "é" };
         yield return new object?[] { "aéb" };
     }
@@ -151,7 +203,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(?i)a" };
         yield return new object?[] { "(?#c)a" };
         yield return new object?[] { "\\q" };
-        yield return new object?[] { "[a]" };
         yield return new object?[] { "(?=a)a" };
         yield return new object?[] { "(a)\\1" };
         yield return new object?[] { "\\p{L}" };
@@ -165,6 +216,20 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "\\k<w>" };
         yield return new object?[] { "\\1" };
         yield return new object?[] { "\\01" };
+        yield return new object?[] { "[z-a]" };
+        yield return new object?[] { "[b-a]" };
+        yield return new object?[] { "[a" };
+        yield return new object?[] { "[^]" };
+        yield return new object?[] { "[\\q]" };
+        yield return new object?[] { "[\\d]" };
+        yield return new object?[] { "[\\p{L}]" };
+        yield return new object?[] { "[a-[b]]" };
+        yield return new object?[] { "]" };
+        yield return new object?[] { "a]" };
+        yield return new object?[] { "a}" };
+        yield return new object?[] { "*a)" };
+        yield return new object?[] { "}a)" };
+        yield return new object?[] { "]a)" };
     }
 
     [Theory]
@@ -179,6 +244,7 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline };
         yield return new object?[] { "$", RegexOptions.CultureInvariant | RegexOptions.Multiline };
         yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline };
+        yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
     }
 
     [Theory]
