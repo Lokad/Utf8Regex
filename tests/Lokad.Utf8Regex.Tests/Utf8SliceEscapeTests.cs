@@ -150,6 +150,21 @@ public sealed class Utf8SliceEscapeTests
     }
 
     [Theory]
+    [InlineData("\\t+", "\ta\t", "\t")]
+    [InlineData("\\cA+", "x\u0001\u0001", "\u0001\u0001")]
+    [InlineData("(?<=\\n)x", "a\nx", "x")]
+    public void OwnedIgnoreCaseFoldsControlLiterals(string pattern, string inputText, string expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Match(inputText).Value);
+        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
     [InlineData("\\x41+", "aa", "aa")]
     public void OwnedIgnoreCaseFoldsEscapeLiterals(string pattern, string inputText, string expected)
     {
