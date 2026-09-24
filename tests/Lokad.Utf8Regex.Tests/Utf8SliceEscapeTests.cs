@@ -9,6 +9,9 @@ namespace Lokad.Utf8Regex.Tests;
 // spellings decline to legacy-exact construction throws, and non-ASCII
 // results decline with legacy-exact behavior. Bare shapes keep native
 // precedence; quantified shapes route owned.
+// Bare C0 control escapes (\a \e \f \n \r \t \v plus \c@..\c_ letters)
+// lower to literals with BCL-probed control codes; invalid \c shapes
+// decline with legacy-exact construction failures.
 public sealed class Utf8SliceEscapeTests
 {
     public static IEnumerable<object?[]> SliceEscapeShapes()
@@ -157,5 +160,126 @@ public sealed class Utf8SliceEscapeTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> SliceControlShapes()
+    {
+        yield return new object?[] { "\\n+" };
+        yield return new object?[] { "\\t+" };
+        yield return new object?[] { "\\r+" };
+        yield return new object?[] { "\\a+" };
+        yield return new object?[] { "\\f+" };
+        yield return new object?[] { "\\v+" };
+        yield return new object?[] { "\\e+" };
+        yield return new object?[] { "\\cA+" };
+        yield return new object?[] { "\\cZ+" };
+        yield return new object?[] { "(?<=\\n)x" };
+    }
+
+    [Theory]
+    [MemberData(nameof(SliceControlShapes))]
+    public void ControlShapesRouteOwned(string pattern)
+    {
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
+        }
+    }
+
+    public static IEnumerable<object?[]> ControlIsMatchCases()
+    {
+        yield return new object?[] { "\\n", "\n", true };
+        yield return new object?[] { "\\n", "n", false };
+        yield return new object?[] { "\\t", "\t", true };
+        yield return new object?[] { "\\r", "\r", true };
+        yield return new object?[] { "\\a", "\u0007", true };
+        yield return new object?[] { "\\a", "a", false };
+        yield return new object?[] { "\\f", "\f", true };
+        yield return new object?[] { "\\v", "\v", true };
+        yield return new object?[] { "\\e", "\u001B", true };
+        yield return new object?[] { "\\e", "e", false };
+        yield return new object?[] { "\\cA", "\u0001", true };
+        yield return new object?[] { "\\cA", "A", false };
+        yield return new object?[] { "\\cZ", "\u001A", true };
+        yield return new object?[] { "\\c@", "\u0000", true };
+        yield return new object?[] { "\\n+", "\n\n\n", true };
+        yield return new object?[] { "\\cA+", "\u0001\u0001", true };
+        yield return new object?[] { "(?<=\\n)x", "\nx", true };
+        yield return new object?[] { "(?<=\\n)x", "ax", false };
+    }
+
+    [Theory]
+    [MemberData(nameof(ControlIsMatchCases))]
+    public void OwnedControlIsMatchMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options);
+            Assert.Equal(expected, regex.IsMatch(input));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(expected, regex.IsMatch(input, source.Token));
+            if (regex.Inspection.DebugUsesOwnedSliceProgram)
+            {
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("\\t+", "\ta\t", 2)]
+    [InlineData("\\cA+", "\u0001x\u0001", 2)]
+    [InlineData("(?<=\\n)x", "ax\nx", 1)]
+    public void OwnedControlCountMatchesOracle(string pattern, string inputText, int expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Matches(inputText).Count);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData("\\n+", "\n\n", "\n\n")]
+    [InlineData("\\cZ+", "a\u001A\u001A", "\u001A\u001A")]
+    public void OwnedControlMatchMatchesOracle(string pattern, string inputText, string expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Match(inputText).Value);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.MatchDetailed(input).GetGroup(0).GetValueString());
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> InvalidControlShapes()
+    {
+        yield return new object?[] { "\\c " };
+        yield return new object?[] { "\\c" };
+        yield return new object?[] { "\\c?" };
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidControlShapes))]
+    public void InvalidControlEscapesFailConstruction(string pattern)
+    {
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 }

@@ -1622,10 +1622,9 @@ internal static class Utf8SliceParser
                     {
                         // Unicode property escapes lower to owned category
                         // atoms (BCL general categories/groups plus named
-                        // blocks); malformed or unknown names decline so
-                        // legacy construction throws BCL-exact errors, and
-                        // blocks under IgnoreCase decline since
-                        // case-equivalent range expansion lives in legacy.
+                        // blocks, including blocks under IgnoreCase through
+                        // invariant case equivalents); malformed or unknown names
+                        // decline so legacy construction throws BCL-exact errors.
                         if (!TryParseCategoryAtom(_pattern, _position, escaped == 'P', _matchIgnoreCase, out node, out var categoryNext))
                         {
                             return false;
@@ -1648,6 +1647,43 @@ internal static class Utf8SliceParser
                         _sawFold |= _matchIgnoreCase;
                         node = new Utf8SliceNode.BackrefNode(escaped - '0' - 1, _matchIgnoreCase);
                         return true;
+                    }
+
+                    // C control escapes lower to ASCII literals (single-char escapes
+                    // with BCL-probed control-code values); control-letter escapes fold
+                    // to upper case and mask to 0..31. Anything else stays legacy-exact.
+                    if (escaped is 'a' or 'e' or 'f' or 'n' or 'r' or 't' or 'v')
+                    {
+                        _position += 2;
+                        _sawFold |= _matchIgnoreCase;
+                        node = new Utf8SliceNode.LiteralNode(escaped switch
+                        {
+                            'a' => 7,
+                            'e' => 27,
+                            'f' => 12,
+                            'n' => 10,
+                            'r' => 13,
+                            't' => 9,
+                            _ => 11, // 'v' by the outer check
+                        }, _matchIgnoreCase);
+                        return true;
+                    }
+
+                    if (escaped == 'c' && _position + 2 < _pattern.Length)
+                    {
+                        var controlLetter = _pattern[_position + 2];
+                        if (controlLetter >= 'a' && controlLetter <= 'z')
+                        {
+                            controlLetter = (char)(controlLetter - ('a' - 'A'));
+                        }
+
+                        if (controlLetter >= '@' && controlLetter <= '_')
+                        {
+                            _position += 3;
+                            _sawFold |= _matchIgnoreCase;
+                            node = new Utf8SliceNode.LiteralNode((byte)(controlLetter - '@'), _matchIgnoreCase);
+                            return true;
+                        }
                     }
 
                     // Hex, unicode, and NUL-led octal escapes with ASCII results

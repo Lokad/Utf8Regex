@@ -140,7 +140,10 @@ public sealed class Pcre2MultilinePrefixCompilerTests
         Assert.IsType<Pcre2BacktrackingDirectProgram>(
             new Utf8Pcre2Regex("^ÉCHEC: .+$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(
+        // The explicit-LF shape joins the slice set now that bare C0
+        // control escapes route owned (core IsMatch/Count parity is
+        // pinned by ExplicitLfLineShapeMatchesOracleOnSlice below).
+        Assert.IsType<Pcre2SliceDirectProgram>(
             new Utf8Pcre2Regex("^ERROR\\n.+$", Pcre2CompileOptions.Multiline)
                 .DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2SliceDirectProgram>(
@@ -148,5 +151,28 @@ public sealed class Pcre2MultilinePrefixCompilerTests
                 "^ERROR: .+$",
                 Pcre2CompileOptions.Multiline | Pcre2CompileOptions.DotAll)
                 .DebugCompiledProgram.Operations.Count);
+    }
+
+    [Fact]
+    public void ExplicitLfLineShapeMatchesOracleOnSlice()
+    {
+        var regex = new Utf8Pcre2Regex("^ERROR\\n.+$", Pcre2CompileOptions.Multiline);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        var oracle = new Regex(
+            "^ERROR\\n.+$",
+            RegexOptions.Multiline | RegexOptions.CultureInvariant,
+            Regex.InfiniteMatchTimeout);
+        foreach (var inputText in new[]
+                 {
+                     "ERROR\nabc\nERROR\ndef",
+                     "INFO\nERROR\nabc",
+                     "ERROR\n",
+                     "xERROR\nabc",
+                 })
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        }
     }
 }
