@@ -15,6 +15,7 @@ public sealed class Utf8SliceClassTests
     {
         yield return new object?[] { "[a-z]+" };
         yield return new object?[] { "[^a-z]+" };
+        yield return new object?[] { "[]-a]+" };
         yield return new object?[] { "[abc]+" };
         yield return new object?[] { "[a-c-e]+" };
         yield return new object?[] { "[A-z]+" };
@@ -73,6 +74,24 @@ public sealed class Utf8SliceClassTests
             () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
     }
 
+    public static IEnumerable<object?[]> UnrecognizedClassEscapes()
+    {
+        // BCL rejects anchor escapes inside classes at construction; the lazy
+        // legacy route surfaces the same RegexParseException on first use.
+        yield return new object?[] { "[\\A]+" };
+        yield return new object?[] { "[\\z]+" };
+        yield return new object?[] { "[\\B]+" };
+    }
+
+    [Theory]
+    [MemberData(nameof(UnrecognizedClassEscapes))]
+    public void UnrecognizedClassEscapesFailLikeRuntime(string pattern)
+    {
+        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Throws<RegexParseException>(() => regex.IsMatch(Encoding.UTF8.GetBytes("a")));
+    }
+
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "[a-z]+", "xxabyy", true };
@@ -104,6 +123,9 @@ public sealed class Utf8SliceClassTests
         yield return new object?[] { "[\\--0]+", "xx-yy", true };
         yield return new object?[] { "[^]a]+", "xxyy", true };
         yield return new object?[] { "[^]a]+", "]]aa", false };
+        yield return new object?[] { "[]-a]+", "xx]yy", true };
+        yield return new object?[] { "[]-a]+", "xx_yy", true };
+        yield return new object?[] { "[]-a]+", "xxAyy", false };
     }
 
     [Theory]
