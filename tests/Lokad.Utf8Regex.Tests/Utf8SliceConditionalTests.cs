@@ -24,6 +24,9 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "(a)(?(1)b|c)(d)" };
         yield return new object?[] { "(a)?(?(1)(b)|(c))" };
         yield return new object?[] { "(?(1)(a)|(b))" };
+        yield return new object?[] { "(\\p{L})(?(1)a|b)" };
+        yield return new object?[] { "(\\d)(?(1)\\p{L}|x)" };
+        yield return new object?[] { "(?(\\p{L}+)a|b)" };
     }
 
     [Theory]
@@ -101,6 +104,9 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "(?(0)a|b)" };
         yield return new object?[] { "(?<n>a)?(?(n)b|c)" };
         yield return new object?[] { "(?(1)(a)|(b))" };
+        yield return new object?[] { "(\\p{L})(?(1)a|b)" };
+        yield return new object?[] { "(\\d)(?(1)\\p{L}|x)" };
+        yield return new object?[] { "(?(\\p{L}+)a|b)" };
         yield return new object?[] { "((?(1)a|b))" };
         yield return new object?[] { "(?((?<n>a))b|c)" };
         yield return new object?[] { "(?((?#c)a)b|d)" };
@@ -148,6 +154,11 @@ public sealed class Utf8SliceConditionalTests
         yield return new object?[] { "(?<n>(?(1)a|b))", "b", true };
         yield return new object?[] { "(?(0)a|b)", "b", true };
         yield return new object?[] { "(?(0)a|b)", "a", false };
+        yield return new object?[] { "(\\p{L})(?(1)a|b)", "xa", true };
+        yield return new object?[] { "(\\p{L})(?(1)a|b)", "xb", false };
+        yield return new object?[] { "(\\d)(?(1)\\p{L}|x)", "1a", true };
+        yield return new object?[] { "(?(\\p{L}+)a|b)", "ab", true };
+        yield return new object?[] { "((\\p{L}+))\\1", "abab", true };
     }
 
     [Theory]
