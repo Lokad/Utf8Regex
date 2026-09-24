@@ -49,6 +49,12 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData(@"\p{Lu}", "A", RegexOptions.CultureInvariant)]
     [InlineData(@"\P{Nd}", "A", RegexOptions.CultureInvariant)]
     [InlineData("a(?#comment)b", "xxabyy", RegexOptions.CultureInvariant)]
+    [InlineData("\U0001F600+", "\U0001F600", RegexOptions.CultureInvariant)]
+    [InlineData("x\U0001F600+y", "x\U0001F600y", RegexOptions.CultureInvariant)]
+    [InlineData("\U0001F600+a", "\U0001F600a", RegexOptions.CultureInvariant)]
+    [InlineData("^\U0001F600+$", "\U0001F600", RegexOptions.CultureInvariant)]
+    [InlineData("\U0001F600{1,2}", "\U0001F600", RegexOptions.CultureInvariant)]
+    [InlineData("\U0001F600?", "\U0001F600", RegexOptions.CultureInvariant)]
     public void IsMatchFallsBackAndStillMatchesRuntime(string pattern, string input, RegexOptions options)
     {
         var utf8Regex = new Utf8Regex(pattern, options);

@@ -9,6 +9,7 @@ public sealed class Utf8RegexCountDiffTests
     [InlineData(@"\b\w+\b", "abc def ghi jkl", RegexOptions.None, 7)]
     [InlineData(@"A", "aAaA", RegexOptions.IgnoreCase, 0)]
     [InlineData(@".", "\n\n\n", RegexOptions.Singleline, 0)]
+    [InlineData("\U0001F600+", "\U0001F600", RegexOptions.CultureInvariant, 0)]
     public void CountMatchesRuntimeForCuratedSurfaceCases(string pattern, string input, RegexOptions options, int startAt)
     {
         RegexParityContext.Create(pattern, input, options).AssertCountParity(startAt);

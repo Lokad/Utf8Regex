@@ -1503,6 +1503,30 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
+        // A lone surrogate UTF-8-encodes to the replacement character, which can
+        // never witness the intended literal in well-formed input (and collides
+        // with a genuine U+FFFD): only well-formed literals may arm byte search,
+        // e.g. BCL extracts the lone high half from an ungrouped astral repeat.
+        foreach (var candidate in requiredFamily)
+        {
+            for (var i = 0; i < candidate.Length; i++)
+            {
+                if (char.IsHighSurrogate(candidate, i))
+                {
+                    if (i + 1 >= candidate.Length || !char.IsLowSurrogate(candidate, i + 1))
+                    {
+                        return false;
+                    }
+
+                    i++;
+                }
+                else if (char.IsLowSurrogate(candidate, i))
+                {
+                    return false;
+                }
+            }
+        }
+
         if (requiredFamily.Length == 1)
         {
             literalUtf8 = Encoding.UTF8.GetBytes(requiredFamily[0]);
