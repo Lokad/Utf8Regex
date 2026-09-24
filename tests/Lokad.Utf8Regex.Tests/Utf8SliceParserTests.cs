@@ -167,8 +167,6 @@ public sealed class Utf8SliceParserTests
     [InlineData(RegexOptions.RightToLeft)]
     [InlineData(RegexOptions.ECMAScript)]
     [InlineData(RegexOptions.NonBacktracking)]
-    [InlineData(RegexOptions.IgnorePatternWhitespace)]
-    [InlineData(RegexOptions.ExplicitCapture)]
     public void SensitiveOptionsDecline(RegexOptions options)
     {
         Assert.Null(Utf8SliceParser.TryParse("(a+)(b+)", options));

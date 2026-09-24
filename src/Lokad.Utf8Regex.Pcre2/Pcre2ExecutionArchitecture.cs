@@ -917,8 +917,13 @@ internal static class Pcre2CompiledProgramOverlay
             program.NameEntries);
     }
 
+    // Extended and ExtendedMore decline: native extended skips vertical tab while
+    // BCL IgnorePatternWhitespace keeps it significant (probed), so the shared
+    // runner would disagree on such patterns.
     private const Pcre2CompileOptions SliceIncompatibleOptions =
         Pcre2CompileOptions.Caseless |
+        Pcre2CompileOptions.Extended |
+        Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.Anchored |
         Pcre2CompileOptions.EndAnchored |
         Pcre2CompileOptions.Ungreedy |

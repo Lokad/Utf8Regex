@@ -1176,6 +1176,47 @@ public sealed class PythonReSliceOwnershipTests
         Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
     }
 
+    // R03 front ends: the translator strips verbose whitespace itself, so the
+    // translated pattern reaches the core clean and quantified shapes route owned
+    // with identical semantics. Ground truths are CPython 3.13.2.
+    [Theory]
+    [InlineData("(a)+ (b)+")]
+    [InlineData("[a-z]+ #c")]
+    public void VerboseShapesRouteOwned(string pattern)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Verbose);
+        AssertOwnedBackends(regex);
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
+    public static IEnumerable<object?[]> VerboseSearchCases()
+    {
+        yield return new object?[] { "(a)+ (b)+", "aabb", 0, true, 0, 4 };
+        yield return new object?[] { "[a-z]+ #c", "abc", 0, true, 0, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(VerboseSearchCases))]
+    public void VerboseSearchMatchesTranslatedOracle(
+        string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
+    {
+        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Verbose);
+        var input = Utf8(inputText);
+        var expected = Bcl(regex).Match(inputText, 0);
+        var found = regex.Search(input, startByte);
+        Assert.Equal(expectedSuccess, expected.Success);
+        Assert.Equal(expectedSuccess, found.Success);
+        if (expectedSuccess)
+        {
+            Assert.Equal(expected.Index, found.StartOffsetInUtf16);
+            Assert.Equal(expected.Index + expected.Length, found.EndOffsetInUtf16);
+            Assert.Equal(expectedStart, found.StartOffsetInUtf16);
+            Assert.Equal(expectedEnd, found.EndOffsetInUtf16);
+        }
+
+        Assert.False(regex.DebugIsManagedRegexValueCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [InlineData("(?:a)+", "aa", true)]
     [InlineData("a(?#x)b", "ab", true)]

@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -34,9 +35,7 @@ internal static class Utf8SliceParser
     private const RegexOptions RejectedOptions =
         RegexOptions.RightToLeft |
         RegexOptions.ECMAScript |
-        RegexOptions.NonBacktracking |
-        RegexOptions.IgnorePatternWhitespace |
-        RegexOptions.ExplicitCapture;
+        RegexOptions.NonBacktracking;
 
     internal static Utf8SliceProgram? TryParse(string pattern, RegexOptions options)
     {
@@ -55,6 +54,16 @@ internal static class Utf8SliceParser
             return null;
         }
 
+        // IgnorePatternWhitespace strips insignificant pattern whitespace and
+        // #-to-newline comments before parsing (escapes, classes, and (?#)
+        // comments pass through verbatim). Only the ASCII insignificance set
+        // matters: slice patterns are ASCII-only by the gate below, and BCL skips
+        // exactly space/tab/LF/FF/CR (vertical tab stays significant, probed).
+        if ((options & RegexOptions.IgnorePatternWhitespace) != 0)
+        {
+            pattern = StripInsignificantPatternWhitespace(pattern);
+        }
+
         foreach (var character in pattern)
         {
             if (character > 127)
@@ -63,7 +72,7 @@ internal static class Utf8SliceParser
             }
         }
 
-        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0);
+        var parser = new Parser(pattern, (options & RegexOptions.Singleline) != 0, (options & RegexOptions.Multiline) != 0, (options & RegexOptions.IgnoreCase) != 0, (options & RegexOptions.ExplicitCapture) != 0);
         if (!parser.TryParseAlternation(0, out var root) || parser.Position != pattern.Length)
         {
             return null;
@@ -180,12 +189,89 @@ internal static class Utf8SliceParser
         return Utf8SliceLowerer.Lower(RenumberCaptures(root, finals), groupNames, parser.SawBalancing, parser.MatchIgnoreCase);
     }
 
+    static string StripInsignificantPatternWhitespace(string source)
+    {
+        var filtered = new StringBuilder(source.Length);
+        var index = 0;
+        while (index < source.Length)
+        {
+            var current = source[index];
+            if (current == '\\' && index + 1 < source.Length)
+            {
+                filtered.Append(current).Append(source[index + 1]);
+                index += 2;
+            }
+            else if (current == '(' && index + 2 < source.Length &&
+                source[index + 1] == '?' && source[index + 2] == '#')
+            {
+                var commentEnd = source.IndexOf(')', index + 3);
+                if (commentEnd < 0)
+                {
+                    filtered.Append(source, index, source.Length - index);
+                    break;
+                }
+
+                filtered.Append(source, index, commentEnd - index + 1);
+                index = commentEnd + 1;
+            }
+            else if (current == '[')
+            {
+                filtered.Append(current);
+                index++;
+                if (index < source.Length && source[index] == ']')
+                {
+                    filtered.Append(']');
+                    index++;
+                }
+
+                while (index < source.Length && source[index] != ']')
+                {
+                    if (source[index] == '\\' && index + 1 < source.Length)
+                    {
+                        filtered.Append(source[index]).Append(source[index + 1]);
+                        index += 2;
+                    }
+                    else
+                    {
+                        filtered.Append(source[index]);
+                        index++;
+                    }
+                }
+
+                if (index < source.Length)
+                {
+                    filtered.Append(']');
+                    index++;
+                }
+            }
+            else if (current == '#')
+            {
+                while (index < source.Length && source[index] != '\n' && source[index] != '\r')
+                {
+                    index++;
+                }
+            }
+            else if (current == ' ' || current == '\t' || current == '\n' || current == '\f' || current == '\r')
+            {
+                index++;
+            }
+            else
+            {
+                filtered.Append(current);
+                index++;
+            }
+        }
+
+        return filtered.ToString();
+    }
+
     private sealed class Parser
     {
         private readonly string _pattern;
         private readonly bool _matchNewline;
         private readonly bool _matchMultiline;
         private readonly bool _matchIgnoreCase;
+        private readonly bool _explicitCapture;
         private int _position;
         private int _groups;
         private readonly List<(int Slot, string? Name)> _groupDecls = new();
@@ -195,12 +281,13 @@ internal static class Utf8SliceParser
         private int _lookbehindDepth;
         private bool _sawLookbehindGroupWrite;
 
-        internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase)
+        internal Parser(string pattern, bool matchNewline, bool matchMultiline, bool matchIgnoreCase, bool explicitCapture)
         {
             _pattern = pattern;
             _matchNewline = matchNewline;
             _matchMultiline = matchMultiline;
             _matchIgnoreCase = matchIgnoreCase;
+            _explicitCapture = explicitCapture;
         }
 
         internal int Position => _position;
@@ -640,6 +727,21 @@ internal static class Utf8SliceParser
                     }
 
                     _position++;
+                    if (_explicitCapture)
+                    {
+                        // ExplicitCapture leaves unnamed groups unnumbered, exactly
+                        // like non-capturing groups (backreference digits still denote
+                        // final numbers, so unbound digits decline as usual).
+                        if (!TryParseAlternation(depth + 1, out var plainBody) || AtEnd || _pattern[_position] != ')')
+                        {
+                            return false;
+                        }
+
+                        _position++;
+                        node = plainBody ?? new Utf8SliceNode.EmptyNode();
+                        return true;
+                    }
+
                     var slot = _groups++;
                     _groupDecls.Add((slot, null));
                     if (_lookbehindDepth > 0)
