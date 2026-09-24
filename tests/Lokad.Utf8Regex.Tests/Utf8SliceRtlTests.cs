@@ -144,6 +144,8 @@ public sealed class Utf8SliceRtlTests
         yield return new object?[] { "^b", "ab", false };
         yield return new object?[] { "b$", "ab", true };
         yield return new object?[] { "b$", "ba", false };
+        yield return new object?[] { "(?<=\\p{L})x", "axb", true };
+        yield return new object?[] { "(?<=\\p{IsBasicLatin})x", "axb", true };
         yield return new object?[] { "a$", "aaa", true };
         yield return new object?[] { "^a", "abx", true };
         yield return new object?[] { "\\Aabc", "abc", true };
@@ -330,6 +332,8 @@ public sealed class Utf8SliceRtlOperationTests
         yield return new object?[] { "(a+)(b+)", "aab", 0, 3 };
         yield return new object?[] { "a(?=b)", "ab", 0, 1 };
         yield return new object?[] { "(?<=a)b", "aab", 2, 1 };
+        yield return new object?[] { "(?<=\\p{L})x", "axb", 1, 1 };
+        yield return new object?[] { "(?<=\\p{IsBasicLatin})x", "axb", 1, 1 };
         yield return new object?[] { "a\\G", "aa", 1, 1 };
         yield return new object?[] { "\\Ga*", "aa", 2, 0 };
         yield return new object?[] { "^b", "ba", 0, 1 };

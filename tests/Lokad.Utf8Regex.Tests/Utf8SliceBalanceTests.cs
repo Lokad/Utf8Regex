@@ -22,6 +22,7 @@ public sealed class Utf8SliceBalanceTests
         yield return new object?[] { "((?<o>a)+(?<-o>b)+)" };
         yield return new object?[] { "(?<o>a)(?<-o>b)?b" };
         yield return new object?[] { "(?<a>x)(?'b-a'y)" };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)" };
     }
 
     [Theory]
@@ -76,6 +77,9 @@ public sealed class Utf8SliceBalanceTests
         yield return new object?[] { "((?<o>a)+(?<-o>b)+)", "aab", true };
         yield return new object?[] { "(?<o>a)+(?<-o>b)+\\1", "aabaa", true };
         yield return new object?[] { "(?<a>x)(?'b-a'y)", "xy", true };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab12", true };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab1", true };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab", false };
     }
 
     [Theory]
@@ -105,6 +109,7 @@ public sealed class Utf8SliceBalanceTests
     {
         yield return new object?[] { "(?<open>a)+(?<-open>b)+", "aab aab", 2 };
         yield return new object?[] { "(?<o>a)(?<-o>b)", "ab ab", 2 };
+        yield return new object?[] { "(?<o>\\p{L}+)(?<-o>\\d+)", "ab12 cd34", 2 };
     }
 
     [Theory]
