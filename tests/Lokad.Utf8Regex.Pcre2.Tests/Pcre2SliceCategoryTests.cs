@@ -160,6 +160,33 @@ public sealed class Pcre2SliceCategoryTests
         yield return new object?[] { @"\p{IsGreek}+", "\u03B11\u03B2", 2 };
     }
 
+    public static IEnumerable<object?[]> AstralScalarSemanticsCases()
+    {
+        // PCRE2 matches astral scalars whole (UCP scalar semantics) while the
+        // .NET oracle tests UTF-16 halves (surrogates are Cs): the profile keeps
+        // native scalar behavior here, exactly like astral dots (OwnedIsMatch
+        // ServesAstralDotScalar). Each row pins both verdicts so the split is
+        // deliberate, not drift.
+        yield return new object?[] { @"\p{Lu}+", "\U00010400", false, true };
+        yield return new object?[] { @"\p{L}+", "\U00010400", false, true };
+        yield return new object?[] { @"\p{Nd}+", "\U0001D7CE", false, true };
+        yield return new object?[] { @"\p{Cs}+", "\U0001D11E", true, false };
+        yield return new object?[] { @"\P{Cs}+", "\U0001D11E", false, true };
+        yield return new object?[] { @"[\p{Lu}a]+", "\U00010400", false, true };
+        yield return new object?[] { @"\P{L}+", "\U00010400", true, false };
+        yield return new object?[] { @"\P{L}+", "a\U00010400", true, false };
+    }
+
+    [Theory]
+    [MemberData(nameof(AstralScalarSemanticsCases))]
+    public void AstralCategoriesFollowNativeScalarSemantics(string pattern, string inputText, bool bclExpected, bool nativeExpected)
+    {
+        Assert.Equal(bclExpected, Bcl(pattern).IsMatch(inputText));
+        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        Assert.Equal(nativeExpected, regex.IsMatch(Utf8(inputText)));
+        Assert.False(regex.DebugFoundationCoreFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
     public static IEnumerable<object?[]> CaselessIsMatchCases()
     {
         yield return new object?[] { @"\p{IsBasicLatin}+", "\u212A", true };
