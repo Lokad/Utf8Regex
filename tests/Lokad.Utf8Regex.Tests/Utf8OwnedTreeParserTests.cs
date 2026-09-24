@@ -190,7 +190,7 @@ public sealed class Utf8OwnedTreeParserTests
     [MemberData(nameof(AcceptCases))]
     public void OwnedParseMatchesVendoredTree(string pattern)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParse(pattern, RegexOptions.CultureInvariant);
+        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(actual);
@@ -293,7 +293,7 @@ public sealed class Utf8OwnedTreeParserTests
     [MemberData(nameof(OptionAcceptCases))]
     public void OwnedParseMatchesVendoredTreeWithOptions(string pattern, RegexOptions options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParse(pattern, options);
+        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(actual);
