@@ -61,6 +61,31 @@ public sealed class Utf8SliceLookaroundTests
         yield return new object?[] { "(?<!\\p{L}+)x", "axb" };
     }
 
+    public static IEnumerable<object?[]> IgnoreCaseLookbehindCases()
+    {
+        // IgnoreCase folds inside lookbehind bodies exactly like the main
+        // stream (cased-union masks, invariant block equivalents).
+        yield return new object?[] { "(?<=\\p{Ll})X", "aX", true };
+        yield return new object?[] { "(?<=\\p{Ll})X", "AXB", true };
+        yield return new object?[] { "(?<=\\p{IsBasicLatin})X", "aX", true };
+        yield return new object?[] { "(?<!\\p{Lu})x", "ax", false };
+        yield return new object?[] { "(?<=[\\p{L}a])X", "1X", false };
+    }
+
+    [Theory]
+    [MemberData(nameof(IgnoreCaseLookbehindCases))]
+    public void OwnedIgnoreCaseLookbehindMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        var regex = new Utf8Regex(pattern, options);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+    }
+
     [Theory]
     [MemberData(nameof(VariableLookbehindDeclines))]
     public void VariableWidthLookbehindDeclinesToLegacy(string pattern, string inputText)
