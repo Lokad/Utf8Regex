@@ -27,6 +27,7 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(a+)(b+)")]
     [InlineData("(ab|cd)+")]
     [InlineData("(a|ab)+c")]
+    [InlineData("\\t+")]
     public void SliceShapesRouteOwned(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
@@ -40,6 +41,8 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(a+)(b+)", "xxaaayy", 0)]
     [InlineData("(a|ab)+c", "xxabcabccyy", 0)]
     [InlineData("(a+)(b+)", "éaaabbé", 0)]
+    [InlineData("\\t+", "x\ty\t", 0)]
+    [InlineData("\\t+", "xyz", 0)]
     public void OwnedSearchMatchesTranslatedBcl(string pattern, string inputText, int start)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
@@ -60,6 +63,7 @@ public sealed class PythonReSliceOwnershipTests
     [InlineData("(a+)(b+)", "xxaaabbyy", 0)]
     [InlineData("(a+)(b+)", "xxaaabbyy", 2)]
     [InlineData("(a+)(b+)", "xxaaabbyy", 3)]
+    [InlineData("\\t+", "\t\t", 0)]
     public void OwnedMatchMatchesTranslatedBcl(string pattern, string inputText, int start)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);

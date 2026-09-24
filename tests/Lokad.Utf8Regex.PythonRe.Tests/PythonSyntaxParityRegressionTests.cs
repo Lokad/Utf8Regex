@@ -83,6 +83,17 @@ public sealed class PythonSyntaxParityRegressionTests
     }
 
     [Theory]
+    [InlineData("\\e", "bad escape \\e")]
+    [InlineData("\\e+", "bad escape \\e")]
+    [InlineData("\\cA", "bad escape \\c")]
+    [InlineData("\\cA+", "bad escape \\c")]
+    public void UnsupportedControlEscapesStayRejected(string pattern, string expectedMessage)
+    {
+        var exception = Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(pattern));
+        Assert.Contains(expectedMessage, exception.Message);
+    }
+
+    [Theory]
     [InlineData("\\z")]
     [InlineData("[\\z]")]
     public void LoneLowercaseZStaysRejected(string pattern)
