@@ -149,6 +149,17 @@ public sealed partial class Utf8Regex
             _ = _program.GroupNumbers.Value;
         }
 
+        // NonBacktracking construction validates through the fallback engine: BCL
+        // throws NotSupportedException at construction for unsupported features
+        // (backreferences, lookarounds, balancing, conditionals, atomics, \G),
+        // so the fallback regex builds eagerly here to preserve failure timing.
+        // Supported shapes pay one early build they would incur on first use;
+        // malformed patterns already failed above through the front end.
+        if ((options & RegexOptions.NonBacktracking) != 0)
+        {
+            _ = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex;
+        }
+
         static bool CanPrioritizePlainAsciiLiteralCount(
             string pattern,
             Utf8PreparedRegex preparedRegex,
