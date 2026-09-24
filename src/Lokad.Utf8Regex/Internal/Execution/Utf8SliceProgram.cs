@@ -187,7 +187,7 @@ internal sealed class Utf8SliceAssertion
 
 internal sealed class Utf8SliceProgram
 {
-    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft)
+    internal Utf8SliceProgram(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceCategoryTable[] categoryTables, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresAstralFreeInput, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind)
     {
         Instructions = instructions;
         SetMasks = setMasks;
@@ -208,6 +208,8 @@ internal sealed class Utf8SliceProgram
         HasContiguousAnchor = hasContiguousAnchor;
         HasConditionalTest = hasConditionalTest;
         RightToLeft = rightToLeft;
+        SawLookaround = sawLookaround;
+        SawCapturingLookbehind = sawCapturingLookbehind;
         OrdinalGroupNumbers = new int[groupCount + 1];
         for (var group = 0; group <= groupCount; group++)
         {
@@ -231,7 +233,82 @@ internal sealed class Utf8SliceProgram
     internal bool IgnoreCase { get; }
     internal bool HasContiguousAnchor { get; }
     internal bool HasConditionalTest { get; }
+    internal bool SawLookaround { get; }
+    internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
+
+    // Legacy fallback taxonomy, probed: a capturing lookbehind forces the
+    // residual, overriding backreference and loop; otherwise backreference
+    // outranks conditional, conditional outranks lookaround, lookaround
+    // outranks atomic, atomic outranks loop, and balance-only or degenerate
+    // shapes report the residual. Lookarounds mark lowering flags (they
+    // lower inline or to assertion bodies depending on position, so neither
+    // instructions nor assertions see them all); bare Commit rides lookahead
+    // arms, so only AtomicCommit marks atomicity.
+    internal string LegacyFallbackReason
+    {
+        get
+        {
+            if (SawCapturingLookbehind)
+            {
+                return "unsupported_pattern";
+            }
+
+            var loop = false;
+            var atomic = false;
+            var lookaround = SawLookaround;
+            var conditional = HasConditionalTest;
+            var backreference = false;
+            foreach (var instruction in Instructions)
+            {
+                switch (instruction.Kind)
+                {
+                    case Utf8SliceInstructionKind.Backref:
+                        backreference = true;
+                        break;
+                    case Utf8SliceInstructionKind.TestGroup:
+                        conditional = true;
+                        break;
+                    case Utf8SliceInstructionKind.AtomicCommit:
+                        atomic = true;
+                        break;
+                    case Utf8SliceInstructionKind.RepeatGreedy:
+                    case Utf8SliceInstructionKind.RepeatLazy:
+                        loop = true;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (backreference)
+            {
+                return "unsupported_backreference";
+            }
+
+            if (conditional)
+            {
+                return "unsupported_conditional";
+            }
+
+            if (lookaround)
+            {
+                return "unsupported_lookaround";
+            }
+
+            if (atomic)
+            {
+                return "unsupported_atomic";
+            }
+
+            if (loop)
+            {
+                return "unsupported_loop";
+            }
+
+            return "unsupported_pattern";
+        }
+    }
     internal int[] OrdinalGroupNumbers { get; }
     internal string[] GroupNames { get; }
     // R03 astral-divergence marker: the shared runner consumes one whole
@@ -441,7 +518,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft);
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, maintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, rightToLeft, lowerer.SawLookaround, lowerer.SawCapturingLookbehind);
     }
 
     private sealed class Lowering
@@ -454,6 +531,8 @@ internal static class Utf8SliceLowerer
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
+        internal bool SawLookaround;
+        internal bool SawCapturingLookbehind;
         internal readonly List<Utf8SliceAssertion> Assertions = new();
         internal readonly string[]? GroupNames;
         internal readonly bool MaintainBalance;
@@ -483,6 +562,59 @@ internal static class Utf8SliceLowerer
             static int Saturate(long value)
             {
                 return value > int.MaxValue ? int.MaxValue : (int)value;
+            }
+
+            // Capturing lookbehinds force the residual legacy reason, so the
+            // lookbehind arm detects group writes in the body tree. Balance
+            // pops cannot reach owned bodies (they decline at parse), but
+            // counting them keeps the predicate sound if that ever relaxes.
+            static bool BodyWritesGroup(Utf8SliceNode candidate)
+            {
+                switch (candidate)
+                {
+                    case Utf8SliceNode.CaptureNode:
+                    case Utf8SliceNode.BalanceNode:
+                        return true;
+                    case Utf8SliceNode.ConcatNode concat:
+                        foreach (var child in concat.Children)
+                        {
+                            if (BodyWritesGroup(child))
+                            {
+                                return true;
+                            }
+                        }
+
+                        break;
+                    case Utf8SliceNode.AlternationNode alternation:
+                        foreach (var branch in alternation.Branches)
+                        {
+                            foreach (var child in branch)
+                            {
+                                if (BodyWritesGroup(child))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        break;
+                    case Utf8SliceNode.RepeatNode repeat:
+                        return BodyWritesGroup(repeat.Body);
+                    case Utf8SliceNode.AtomicNode atomic:
+                        return BodyWritesGroup(atomic.Body);
+                    case Utf8SliceNode.LookaheadNode lookaheadBody:
+                        return BodyWritesGroup(lookaheadBody.Body);
+                    case Utf8SliceNode.LookbehindNode lookbehindBody:
+                        return BodyWritesGroup(lookbehindBody.Body);
+                    case Utf8SliceNode.ConditionalNode conditional:
+                        return BodyWritesGroup(conditional.YesBody) ||
+                            BodyWritesGroup(conditional.NoBody) ||
+                            (conditional.TestBody is not null && BodyWritesGroup(conditional.TestBody));
+                    default:
+                        break;
+                }
+
+                return false;
             }
 
             static (int Minimum, int Maximum) Measure(Utf8SliceNode measured)
@@ -901,6 +1033,7 @@ internal static class Utf8SliceLowerer
                     Patch(noJump, Instructions.Count);
                     break;
                 case Utf8SliceNode.LookaheadNode lookahead:
+                    SawLookaround = true;
                     // Right-to-left programs run the main stream mirrored while BCL
                     // parses lookahead bodies left-to-right, so mirrored mains serve
                     // lookahead bodies as left-to-right sub-programs (shared slots,
@@ -970,6 +1103,11 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.LookbehindNode lookbehind:
                     {
+                        SawLookaround = true;
+                        if (BodyWritesGroup(lookbehind.Body))
+                        {
+                            SawCapturingLookbehind = true;
+                        }
                         var body = Utf8SliceLowerer.Lower(lookbehind.Body, GroupNames, MaintainBalance, MatchCaseInsensitive, false);
                         if (body is null)
                         {
