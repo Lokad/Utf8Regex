@@ -1,0 +1,122 @@
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.FrontEnd;
+using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
+
+namespace Lokad.Utf8Regex.Tests;
+
+// Owned parser strangler, stage 1: the differential battery pins owned trees
+// identical to vendored trees (kinds, options, payloads, children, capture
+// accounting) for the literal/concatenation/alternation/group/quantifier
+// subset. Parent links, source positions, and find optimizations are
+// construction details outside the comparison.
+public sealed class Utf8OwnedTreeParserTests
+{
+    public static IEnumerable<object?[]> AcceptCases()
+    {
+        yield return new object?[] { "" };
+        yield return new object?[] { "a" };
+        yield return new object?[] { "abc" };
+        yield return new object?[] { "a|b" };
+        yield return new object?[] { "(a)" };
+        yield return new object?[] { "(?:ab)" };
+        yield return new object?[] { "a*" };
+        yield return new object?[] { "a+" };
+        yield return new object?[] { "a?" };
+        yield return new object?[] { "a{2}" };
+        yield return new object?[] { "a{2,4}" };
+        yield return new object?[] { "a{2,}" };
+        yield return new object?[] { "(a+)(b+)" };
+        yield return new object?[] { "()" };
+        yield return new object?[] { "(a|)" };
+        yield return new object?[] { "|" };
+        yield return new object?[] { "ab|cd" };
+        yield return new object?[] { "(ab)+" };
+        yield return new object?[] { "(ab)" };
+        yield return new object?[] { "a+?" };
+        yield return new object?[] { "a*?" };
+        yield return new object?[] { "a??" };
+        yield return new object?[] { "a{2,4}?" };
+        yield return new object?[] { "a{0}" };
+        yield return new object?[] { "((a))" };
+        yield return new object?[] { "(a)(b)" };
+        yield return new object?[] { "aabaa" };
+        yield return new object?[] { "ab+" };
+        yield return new object?[] { "(a+)+" };
+        yield return new object?[] { "(ab)+?" };
+        yield return new object?[] { "(?:)" };
+        yield return new object?[] { "(ab|cd)" };
+        yield return new object?[] { "a|(b|c)" };
+        yield return new object?[] { "((a))+" };
+        yield return new object?[] { "(?:a)+" };
+        yield return new object?[] { "()+" };
+        yield return new object?[] { "a{007}" };
+        yield return new object?[] { "(a)(b)(c)" };
+        yield return new object?[] { "(ab){0}" };
+        yield return new object?[] { "(a){0}" };
+        yield return new object?[] { "x" };
+        yield return new object?[] { "é" };
+        yield return new object?[] { "aéb" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AcceptCases))]
+    public void OwnedParseMatchesVendoredTree(string pattern)
+    {
+        var expected = Utf8RuntimeTreeProvider.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(expected);
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(actual);
+        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
+        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
+        Assert.Equal(expected.Options, actual.Options);
+        Assert.Equal(expected.Culture, actual.Culture);
+        Assert.True(TreesEqual(expected.Root, actual.Root));
+
+        static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
+        {
+            return right.Kind == left.Kind &&
+                right.Options == left.Options &&
+                right.Ch == left.Ch &&
+                right.Str == left.Str &&
+                right.Str2 == left.Str2 &&
+                right.M == left.M &&
+                right.N == left.N &&
+                right.ChildCount == left.ChildCount &&
+                Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        }
+    }
+
+    public static IEnumerable<object?[]> DeclineCases()
+    {
+        yield return new object?[] { "(?<x>a)" };
+        yield return new object?[] { "\\d" };
+        yield return new object?[] { "." };
+        yield return new object?[] { "^a" };
+        yield return new object?[] { "a$" };
+        yield return new object?[] { "\\n" };
+        yield return new object?[] { "a{,3}" };
+        yield return new object?[] { "a{2,1}" };
+        yield return new object?[] { "a**" };
+        yield return new object?[] { "*a" };
+        yield return new object?[] { "(a" };
+        yield return new object?[] { "a)" };
+        yield return new object?[] { "(?i)a" };
+        yield return new object?[] { "(?#c)a" };
+        yield return new object?[] { "\\q" };
+        yield return new object?[] { "[a]" };
+        yield return new object?[] { "(?=a)a" };
+        yield return new object?[] { "(a)\\1" };
+        yield return new object?[] { "\\p{L}" };
+        yield return new object?[] { "a{10000000000}" };
+        yield return new object?[] { "{2}" };
+        yield return new object?[] { "$" };
+        yield return new object?[] { "^" };
+    }
+
+    [Theory]
+    [MemberData(nameof(DeclineCases))]
+    public void OwnedParserDeclinesBeyondSubset(string pattern)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+    }
+}
