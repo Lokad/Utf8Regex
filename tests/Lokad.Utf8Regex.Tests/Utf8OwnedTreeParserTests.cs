@@ -237,7 +237,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "[a" };
         yield return new object?[] { "[^]" };
         yield return new object?[] { "[\\q]" };
-        yield return new object?[] { "[a-[b]]" };
         yield return new object?[] { "]" };
         yield return new object?[] { "a]" };
         yield return new object?[] { "a}" };

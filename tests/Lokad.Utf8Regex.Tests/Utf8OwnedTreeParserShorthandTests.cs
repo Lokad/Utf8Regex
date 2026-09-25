@@ -400,13 +400,6 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\p{isgreek}" };
     }
 
-    public static IEnumerable<object?[]> ShorthandResidualCases()
-    {
-        yield return new object?[] { "[a-[b]]" };
-        yield return new object?[] { "[\\da-[b]]" };
-        yield return new object?[] { "[a-[\\d]]" };
-    }
-
     [Theory]
     [MemberData(nameof(ShorthandAcceptCases))]
     [MemberData(nameof(BlockSweepCases))]
@@ -432,14 +425,6 @@ public sealed class Utf8OwnedTreeParserShorthandTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandResidualCases))]
-    public void OwnedShorthandDeclinesSubtraction(string pattern)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)

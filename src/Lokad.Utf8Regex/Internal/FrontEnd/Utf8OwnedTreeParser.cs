@@ -519,6 +519,18 @@ internal static class Utf8OwnedTreeParser
         static bool ParseClass(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
         {
             node = null;
+            var wire = new StringBuilder();
+            if (!ParseClassLevel(ref state, wire))
+            {
+                return false;
+            }
+
+            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, wire.ToString());
+            return true;
+        }
+
+        static bool ParseClassLevel(ref ParserState state, StringBuilder wire)
+        {
             state.Position++;
             if (state.AtEnd)
             {
@@ -541,6 +553,7 @@ internal static class Utf8OwnedTreeParser
             var pendingIsPlain = false;
             var pendingAdded = false;
             var first = true;
+            var subtracted = false;
             while (true)
             {
                 if (state.AtEnd)
@@ -590,10 +603,41 @@ internal static class Utf8OwnedTreeParser
                         continue;
                     }
 
-                    if (hasPending &&
-                        state.Position + 1 < state.Pattern.Length &&
+                    if (state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] == '[')
                     {
+                        if (!subtracted && (hasPending || units.Count + categories.Count > 0))
+                        {
+                            if (hasPending && !pendingAdded)
+                            {
+                                if (!AddClassUnit(units, pending))
+                                {
+                                    return false;
+                                }
+                            }
+
+                            AppendSegment(wire, negated, units, categories);
+                            subtracted = true;
+                            state.Position++;
+                            if (state.AtEnd || state.Pattern[state.Position] != '[')
+                            {
+                                return false;
+                            }
+
+                            if (!ParseClassLevel(ref state, wire))
+                            {
+                                return false;
+                            }
+
+                            if (state.AtEnd || state.Pattern[state.Position] != ']')
+                            {
+                                return false;
+                            }
+
+                            state.Position++;
+                            return true;
+                        }
+
                         return false;
                     }
 
@@ -679,21 +723,24 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            var text = new char[units.Count + categories.Count + 3];
-            text[0] = negated ? (char)1 : (char)0;
-            text[1] = (char)units.Count;
-            text[2] = (char)categories.Count;
+            AppendSegment(wire, negated, units, categories);
+            return true;
+        }
+
+        static void AppendSegment(StringBuilder wire, bool negated, List<char> units, List<char> categories)
+        {
+            wire.Append(negated ? (char)1 : (char)0);
+            wire.Append((char)units.Count);
+            wire.Append((char)categories.Count);
             for (var i = 0; i < units.Count; i++)
             {
-                text[i + 3] = units[i];
+                wire.Append(units[i]);
             }
 
             for (var i = 0; i < categories.Count; i++)
             {
-                text[i + 3 + units.Count] = categories[i];
+                wire.Append(categories[i]);
             }
-            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, new string(text));
-            return true;
         }
         static bool ShorthandRangeEndAhead(ref ParserState state)
         {
