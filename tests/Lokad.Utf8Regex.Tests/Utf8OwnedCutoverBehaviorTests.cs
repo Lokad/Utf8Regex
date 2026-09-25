@@ -17,9 +17,11 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         "k", "K", "kK", "Kk", "aa", "AA", "aA", "Aa", "aab", "aba", "abba",
         "axxb", "1", "12", "a1", "1a", " ", "a b", "aBcDe", "AaBb", "x",
         "ax", "xa", "ababa", "aabbaa", ">", "a>", "a>b", "(a)", "(a)(b)",
+        "\n", "a\nb", "ab\ncd", "\n\n", "a\rb", "\r\n", "a\n", "\nb",
     };
 
-    // Machine-derived divergent rows (from the first differential run: 11 of 52).
+    // Machine-derived divergent rows (11 from the first run, 7 from the metadata
+    // and newline extension: 18 of 52).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -27,6 +29,12 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   (balance pop under explicit capture; invalid group name inside lookbehind).
     //   The flip turns serving into construction failure: blocked on an explicit
     //   compatibility decision, never flipped silently.
+    // - Cross-scope numbering family (4): groups after an n-establishment lose their
+    //   numbers in fork metadata while BCL numbers them. The flip changes the group
+    //   APIs; match outcomes already agree.
+    // - Phantom-name family (3): lookbehind phantom numbering leaks garbage names
+    //   (=(?<, =a)b\], =(?<1) into the public group APIs while BCL reports just 0.
+    //   The flip cleans the group APIs.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
         ("(?i:k)K", 512),
@@ -40,6 +48,13 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?i-m:a)b", 512),
         ("(?n:(?<-x>a))", 512),
         ("(?<=(?<1a>b))c", 512),
+        ("(?n:(a))(b)", 512),
+        ("(?n:(a))(b)", 528),
+        ("(?n:(?<x>a))(b)", 512),
+        ("(?n:(a)(?<y>b))(c)", 512),
+        ("(?<=(?<-0>a)b)", 512),
+        ("(?<=a)b\\>", 512),
+        ("(?<=(?<1>a))b", 512),
     };
 
     [Theory]
@@ -135,6 +150,20 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
         if (bcl is Regex b && product is Utf8Regex p)
         {
+            var expectedNames = b.GetGroupNames();
+            var actualNames = p.GetGroupNames();
+            if (!expectedNames.SequenceEqual(actualNames))
+            {
+                return "metadata:names bcl=[" + string.Join(",", expectedNames) + "]/product=[" + string.Join(",", actualNames) + "]";
+            }
+
+            var expectedNumbers = b.GetGroupNumbers();
+            var actualNumbers = p.GetGroupNumbers();
+            if (!expectedNumbers.SequenceEqual(actualNumbers))
+            {
+                return "metadata:numbers bcl=[" + string.Join(",", expectedNumbers) + "]/product=[" + string.Join(",", actualNumbers) + "]";
+            }
+
             foreach (var input in ProbeCorpus)
             {
                 var bytes = Encoding.UTF8.GetBytes(input);
