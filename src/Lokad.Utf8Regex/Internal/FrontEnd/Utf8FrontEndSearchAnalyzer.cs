@@ -262,7 +262,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectQuotedAsciiRunPrefilter(Runtime.RegexNode root, out string? asciiSet, out int runLength)
+    private static bool TrySelectQuotedAsciiRunPrefilter(Utf8TreeNode root, out string? asciiSet, out int runLength)
     {
         asciiSet = null;
         runLength = 0;
@@ -270,7 +270,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static void TrySelectRequiredWindowPrefilters(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         byte[][]? requiredPrefilterAlternateLiteralsUtf8,
         Utf8SearchAsciiSet quotedAsciiSet,
         int quotedAsciiLength,
@@ -288,7 +288,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         root = UnwrapStructuralNode(root) ?? root;
         var maxLines = TryGetFiniteLineBreakCount(root, out var totalLineBreaks) && totalLineBreaks > 0
             ? totalLineBreaks + 1
-            : root.Kind == Runtime.RegexNodeKind.Alternate && root.ChildCount > 1 ? 5 : 0;
+            : root.Kind == Utf8TreeNodeKind.Alternate && root.ChildCount > 1 ? 5 : 0;
 
         if (maxLines > 0)
         {
@@ -302,7 +302,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
     }
 
-    private static bool TryExtractWindowAnchor(Runtime.RegexNode node, out Utf8PreparedSearcherInfo searcherInfo)
+    private static bool TryExtractWindowAnchor(Utf8TreeNode node, out Utf8PreparedSearcherInfo searcherInfo)
     {
         node = UnwrapStructuralNode(node) ?? node;
         searcherInfo = default;
@@ -325,13 +325,13 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TryFindQuotedAsciiRun(Runtime.RegexNode node, out string? asciiSet, out int runLength)
+    private static bool TryFindQuotedAsciiRun(Utf8TreeNode node, out string? asciiSet, out int runLength)
     {
         node = UnwrapStructuralNode(node) ?? node;
         asciiSet = null;
         runLength = 0;
 
-        if (node.Kind == Runtime.RegexNodeKind.Concatenate &&
+        if (node.Kind == Utf8TreeNodeKind.Concatenate &&
             node.ChildCount >= 3)
         {
             for (var i = 0; i <= node.ChildCount - 3; i++)
@@ -377,7 +377,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return result;
     }
 
-    private static bool IsQuoteNode(Runtime.RegexNode node)
+    private static bool IsQuoteNode(Utf8TreeNode node)
     {
         node = UnwrapStructuralNode(node) ?? node;
         if (TryGetLiteralText(node, out var literal))
@@ -385,7 +385,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return literal is "\"" or "'";
         }
 
-        if (node.Kind == Runtime.RegexNodeKind.Alternate)
+        if (node.Kind == Utf8TreeNodeKind.Alternate)
         {
             for (var i = 0; i < node.ChildCount; i++)
             {
@@ -401,13 +401,13 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TryGetExactAsciiSetLength(Runtime.RegexNode node, out string? asciiSet, out int runLength)
+    private static bool TryGetExactAsciiSetLength(Utf8TreeNode node, out string? asciiSet, out int runLength)
     {
         node = UnwrapStructuralNode(node) ?? node;
         asciiSet = null;
         runLength = 0;
 
-        if (node.Kind is Runtime.RegexNodeKind.Setloop or Runtime.RegexNodeKind.Setloopatomic &&
+        if (node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setloopatomic &&
             node.Str is { Length: > 0 } set &&
             node.M > 0 &&
             node.M == node.N &&
@@ -418,13 +418,13 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        if (node.Kind is Runtime.RegexNodeKind.Loop or Runtime.RegexNodeKind.Lazyloop &&
+        if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
             node.ChildCount == 1 &&
             node.M > 0 &&
             node.M == node.N)
         {
             var child = UnwrapStructuralNode(node.Child(0)) ?? node.Child(0);
-            if (child.Kind == Runtime.RegexNodeKind.Set &&
+            if (child.Kind == Utf8TreeNodeKind.Set &&
                 child.Str is { Length: > 0 } childSet &&
                 Runtime.RegexCharClass.IsAscii(childSet))
             {
@@ -667,7 +667,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static void TrySelectBoundaryRequirements(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         out Utf8BoundaryRequirement leadingBoundary,
         out Utf8BoundaryRequirement trailingBoundary)
     {
@@ -687,7 +687,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return;
         }
 
-        if (body.Kind != Runtime.RegexNodeKind.Concatenate || body.ChildCount == 0)
+        if (body.Kind != Utf8TreeNodeKind.Concatenate || body.ChildCount == 0)
         {
             return;
         }
@@ -710,32 +710,32 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
     }
 
-    private static bool TryGetBoundaryRequirement(Runtime.RegexNodeKind kind, out Utf8BoundaryRequirement requirement)
+    private static bool TryGetBoundaryRequirement(Utf8TreeNodeKind kind, out Utf8BoundaryRequirement requirement)
     {
         requirement = kind switch
         {
-            Runtime.RegexNodeKind.Boundary => Utf8BoundaryRequirement.Boundary,
-            Runtime.RegexNodeKind.NonBoundary => Utf8BoundaryRequirement.NonBoundary,
+            Utf8TreeNodeKind.Boundary => Utf8BoundaryRequirement.Boundary,
+            Utf8TreeNodeKind.NonBoundary => Utf8BoundaryRequirement.NonBoundary,
             _ => Utf8BoundaryRequirement.None,
         };
 
         return requirement != Utf8BoundaryRequirement.None;
     }
 
-    private static int FindLeadingBoundaryChildIndex(Runtime.RegexNode node)
+    private static int FindLeadingBoundaryChildIndex(Utf8TreeNode node)
     {
         for (var i = 0; i < node.ChildCount; i++)
         {
             var kind = node.Child(i).Kind;
-            if (kind is Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary)
+            if (kind is Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
                 return i;
             }
 
-            if (kind is not Runtime.RegexNodeKind.Bol and
-                not Runtime.RegexNodeKind.Eol and
-                not Runtime.RegexNodeKind.Beginning and
-                not Runtime.RegexNodeKind.Start)
+            if (kind is not Utf8TreeNodeKind.Bol and
+                not Utf8TreeNodeKind.Eol and
+                not Utf8TreeNodeKind.Beginning and
+                not Utf8TreeNodeKind.Start)
             {
                 break;
             }
@@ -744,20 +744,20 @@ internal static class Utf8FrontEndSearchAnalyzer
         return -1;
     }
 
-    private static int FindTrailingBoundaryChildIndex(Runtime.RegexNode node)
+    private static int FindTrailingBoundaryChildIndex(Utf8TreeNode node)
     {
         for (var i = node.ChildCount - 1; i >= 0; i--)
         {
             var kind = node.Child(i).Kind;
-            if (kind is Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary)
+            if (kind is Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
                 return i;
             }
 
-            if (kind is not Runtime.RegexNodeKind.Bol and
-                not Runtime.RegexNodeKind.Eol and
-                not Runtime.RegexNodeKind.End and
-                not Runtime.RegexNodeKind.EndZ)
+            if (kind is not Utf8TreeNodeKind.Bol and
+                not Utf8TreeNodeKind.Eol and
+                not Utf8TreeNodeKind.End and
+                not Utf8TreeNodeKind.EndZ)
             {
                 break;
             }
@@ -766,7 +766,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return -1;
     }
 
-    private static bool TrySelectFallbackStartTransform(Runtime.RegexNode root, out Utf8FallbackStartTransform transform)
+    private static bool TrySelectFallbackStartTransform(Utf8TreeNode root, out Utf8FallbackStartTransform transform)
     {
         var leading = GetLeadingWindowNode(root);
         if (leading is not null && IsLeadingAsciiWhitespaceNode(leading))
@@ -780,7 +780,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectOrderedAsciiWindow(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         Utf8OwnedFindFacts findOptimizations,
         bool ignoreCase,
         out byte[][] leadingLiteralsUtf8,
@@ -827,7 +827,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static void TrySelectOrderedWindowConstraints(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         out int? maxGap,
         out bool sameLine)
     {
@@ -835,7 +835,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         sameLine = false;
 
         var ordered = UnwrapStructuralNode(root);
-        if (ordered is null || ordered.Kind != Runtime.RegexNodeKind.Concatenate)
+        if (ordered is null || ordered.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return;
         }
@@ -891,7 +891,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TryExtractLeadingWindowPhrases(Runtime.RegexNode root, out string[] phrases)
+    private static bool TryExtractLeadingWindowPhrases(Utf8TreeNode root, out string[] phrases)
     {
         var leading = GetLeadingWindowNode(root);
         if (leading is null)
@@ -900,12 +900,12 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
-        while (leading.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic && leading.ChildCount == 1)
+        while (leading.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && leading.ChildCount == 1)
         {
             leading = leading.Child(0);
         }
 
-        if (leading.Kind == Runtime.RegexNodeKind.Alternate)
+        if (leading.Kind == Utf8TreeNodeKind.Alternate)
         {
             var values = new string[leading.ChildCount];
             for (var i = 0; i < leading.ChildCount; i++)
@@ -934,14 +934,14 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static Runtime.RegexNode? GetLeadingWindowNode(Runtime.RegexNode node)
+    private static Utf8TreeNode? GetLeadingWindowNode(Utf8TreeNode node)
     {
-        while (node.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic && node.ChildCount == 1)
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
         }
 
-        if (node.Kind != Runtime.RegexNodeKind.Concatenate)
+        if (node.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return node;
         }
@@ -949,7 +949,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         for (var i = 0; i < node.ChildCount; i++)
         {
             var child = node.Child(i);
-            if (child.Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary)
+            if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
                 continue;
             }
@@ -960,11 +960,11 @@ internal static class Utf8FrontEndSearchAnalyzer
         return null;
     }
 
-    private static bool TryExtractAsciiWindowPhrase(Runtime.RegexNode node, out string phrase)
+    private static bool TryExtractAsciiWindowPhrase(Utf8TreeNode node, out string phrase)
     {
         phrase = string.Empty;
 
-        while (node.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic && node.ChildCount == 1)
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
         }
@@ -981,7 +981,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        if (node.Kind != Runtime.RegexNodeKind.Concatenate)
+        if (node.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return false;
         }
@@ -990,7 +990,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         for (var i = 0; i < node.ChildCount; i++)
         {
             var child = node.Child(i);
-            if (child.Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary)
+            if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
                 continue;
             }
@@ -1007,9 +1007,9 @@ internal static class Utf8FrontEndSearchAnalyzer
         return phrase.Length > 0;
     }
 
-    private static bool IsWhitespaceLoop(Runtime.RegexNode node)
+    private static bool IsWhitespaceLoop(Utf8TreeNode node)
     {
-        if (node.Kind is not (Runtime.RegexNodeKind.Setloop or Runtime.RegexNodeKind.Setlazy or Runtime.RegexNodeKind.Setloopatomic or Runtime.RegexNodeKind.Set))
+        if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic or Utf8TreeNodeKind.Set))
         {
             return false;
         }
@@ -1017,7 +1017,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return node.Str is Runtime.RegexCharClass.SpaceClass or Runtime.RegexCharClass.ECMASpaceClass;
     }
 
-    private static int FindFirstSignificantChildIndex(Runtime.RegexNode node)
+    private static int FindFirstSignificantChildIndex(Utf8TreeNode node)
     {
         for (var i = 0; i < node.ChildCount; i++)
         {
@@ -1030,7 +1030,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return -1;
     }
 
-    private static int FindLastSignificantChildIndex(Runtime.RegexNode node)
+    private static int FindLastSignificantChildIndex(Utf8TreeNode node)
     {
         for (var i = node.ChildCount - 1; i >= 0; i--)
         {
@@ -1043,12 +1043,12 @@ internal static class Utf8FrontEndSearchAnalyzer
         return -1;
     }
 
-    private static bool IsStructuralAnchor(Runtime.RegexNode node)
+    private static bool IsStructuralAnchor(Utf8TreeNode node)
     {
-        return node.Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary or Runtime.RegexNodeKind.Beginning or Runtime.RegexNodeKind.Start or Runtime.RegexNodeKind.End or Runtime.RegexNodeKind.EndZ;
+        return node.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ;
     }
 
-    private static bool TryGetFiniteAsciiWindowWidth(Runtime.RegexNode node, out int maxWidth, out bool excludesNewlines)
+    private static bool TryGetFiniteAsciiWindowWidth(Utf8TreeNode node, out int maxWidth, out bool excludesNewlines)
     {
         var unwrapped = UnwrapStructuralNode(node);
         if (unwrapped is null)
@@ -1062,30 +1062,30 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         switch (node.Kind)
         {
-            case Runtime.RegexNodeKind.Empty:
-            case Runtime.RegexNodeKind.Bol:
-            case Runtime.RegexNodeKind.Beginning:
-            case Runtime.RegexNodeKind.Start:
-            case Runtime.RegexNodeKind.Eol:
-            case Runtime.RegexNodeKind.End:
-            case Runtime.RegexNodeKind.EndZ:
-            case Runtime.RegexNodeKind.Boundary:
-            case Runtime.RegexNodeKind.NonBoundary:
+            case Utf8TreeNodeKind.Empty:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Start:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.End:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.Boundary:
+            case Utf8TreeNodeKind.NonBoundary:
                 maxWidth = 0;
                 excludesNewlines = true;
                 return true;
 
-            case Runtime.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 maxWidth = Encoding.UTF8.GetByteCount([node.Ch]);
                 excludesNewlines = node.Ch is not ('\r' or '\n');
                 return true;
 
-            case Runtime.RegexNodeKind.Multi when node.Str is { Length: > 0 } literal:
+            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
                 maxWidth = Encoding.UTF8.GetByteCount(literal);
                 excludesNewlines = literal.IndexOfAny(['\r', '\n']) < 0;
                 return true;
 
-            case Runtime.RegexNodeKind.Set when node.Str is { Length: > 0 } set:
+            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set:
                 if (!TryGetAsciiSetWidthAndLineSafety(set, out var setWidth, out var setExcludesNewlines))
                 {
                     break;
@@ -1095,10 +1095,10 @@ internal static class Utf8FrontEndSearchAnalyzer
                 excludesNewlines = setExcludesNewlines;
                 return true;
 
-            case Runtime.RegexNodeKind.Oneloop or Runtime.RegexNodeKind.Onelazy or Runtime.RegexNodeKind.Oneloopatomic:
+            case Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Oneloopatomic:
                 return TryGetFiniteRepeatedWidth(node.N, Encoding.UTF8.GetByteCount([node.Ch]), node.Ch is not ('\r' or '\n'), out maxWidth, out excludesNewlines);
 
-            case Runtime.RegexNodeKind.Setloop or Runtime.RegexNodeKind.Setlazy or Runtime.RegexNodeKind.Setloopatomic:
+            case Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Setloopatomic:
                 if (node.Str is not { Length: > 0 } repeatedSet ||
                     !TryGetAsciiSetWidthAndLineSafety(repeatedSet, out var repeatedSetWidth, out var repeatedSetExcludesNewlines))
                 {
@@ -1112,7 +1112,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                     out maxWidth,
                     out excludesNewlines);
 
-            case Runtime.RegexNodeKind.Loop or Runtime.RegexNodeKind.Lazyloop:
+            case Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop:
                 if (node.ChildCount != 1 ||
                     !TryGetFiniteAsciiWindowWidth(node.Child(0), out var childLoopWidth, out var childLoopExcludesNewlines))
                 {
@@ -1121,7 +1121,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 return TryGetFiniteRepeatedWidth(node.N, childLoopWidth, childLoopExcludesNewlines, out maxWidth, out excludesNewlines);
 
-            case Runtime.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 {
                     var total = 0;
                     var allExcludeNewlines = true;
@@ -1145,7 +1145,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                 }
                 break;
 
-            case Runtime.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 {
                     var max = 0;
                     var allExcludeNewlines = true;
@@ -1175,7 +1175,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TryGetFiniteLineBreakCount(Runtime.RegexNode node, out int maxLineBreaks)
+    private static bool TryGetFiniteLineBreakCount(Utf8TreeNode node, out int maxLineBreaks)
     {
         var unwrapped = UnwrapStructuralNode(node);
         if (unwrapped is null)
@@ -1188,27 +1188,27 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         switch (node.Kind)
         {
-            case Runtime.RegexNodeKind.Empty:
-            case Runtime.RegexNodeKind.Bol:
-            case Runtime.RegexNodeKind.Beginning:
-            case Runtime.RegexNodeKind.Start:
-            case Runtime.RegexNodeKind.Eol:
-            case Runtime.RegexNodeKind.End:
-            case Runtime.RegexNodeKind.EndZ:
-            case Runtime.RegexNodeKind.Boundary:
-            case Runtime.RegexNodeKind.NonBoundary:
+            case Utf8TreeNodeKind.Empty:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Start:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.End:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.Boundary:
+            case Utf8TreeNodeKind.NonBoundary:
                 maxLineBreaks = 0;
                 return true;
 
-            case Runtime.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 maxLineBreaks = node.Ch is '\r' or '\n' ? 1 : 0;
                 return true;
 
-            case Runtime.RegexNodeKind.Multi when node.Str is { Length: > 0 } literal:
+            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
                 maxLineBreaks = literal.Count(static ch => ch is '\r' or '\n');
                 return true;
 
-            case Runtime.RegexNodeKind.Set:
+            case Utf8TreeNodeKind.Set:
                 if (node.Str is { Length: > 0 } set &&
                     !Runtime.RegexCharClass.CharInClass('\r', set) &&
                     !Runtime.RegexCharClass.CharInClass('\n', set))
@@ -1219,9 +1219,9 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 break;
 
-            case Runtime.RegexNodeKind.Oneloop:
-            case Runtime.RegexNodeKind.Onelazy:
-            case Runtime.RegexNodeKind.Oneloopatomic:
+            case Utf8TreeNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Onelazy:
+            case Utf8TreeNodeKind.Oneloopatomic:
                 if (node.N >= 0 && node.N != int.MaxValue)
                 {
                     maxLineBreaks = node.Ch is '\r' or '\n' ? node.N : 0;
@@ -1230,9 +1230,9 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 break;
 
-            case Runtime.RegexNodeKind.Setloop:
-            case Runtime.RegexNodeKind.Setlazy:
-            case Runtime.RegexNodeKind.Setloopatomic:
+            case Utf8TreeNodeKind.Setloop:
+            case Utf8TreeNodeKind.Setlazy:
+            case Utf8TreeNodeKind.Setloopatomic:
                 if (node.N >= 0 &&
                     node.N != int.MaxValue &&
                     node.Str is { Length: > 0 } repeatedSet &&
@@ -1245,8 +1245,8 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 break;
 
-            case Runtime.RegexNodeKind.Loop:
-            case Runtime.RegexNodeKind.Lazyloop:
+            case Utf8TreeNodeKind.Loop:
+            case Utf8TreeNodeKind.Lazyloop:
                 if (node.ChildCount == 1 &&
                     node.N >= 0 &&
                     node.N != int.MaxValue &&
@@ -1258,7 +1258,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 break;
 
-            case Runtime.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 {
                     var total = 0;
                     for (var i = 0; i < node.ChildCount; i++)
@@ -1279,7 +1279,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 break;
 
-            case Runtime.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 {
                     var max = 0;
                     for (var i = 0; i < node.ChildCount; i++)
@@ -1363,9 +1363,9 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static bool ContainsNewlineRange(char first, char last) =>
         (first <= '\r' && '\r' <= last) || (first <= '\n' && '\n' <= last);
 
-    private static bool IsLeadingAsciiWhitespaceNode(Runtime.RegexNode node)
+    private static bool IsLeadingAsciiWhitespaceNode(Utf8TreeNode node)
     {
-        while (node.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic && node.ChildCount == 1)
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
         }
@@ -1373,9 +1373,9 @@ internal static class Utf8FrontEndSearchAnalyzer
         return IsWhitespaceLoop(node);
     }
 
-    private static bool TryExtractTrailingLiteral(Runtime.RegexNode node, out string literal)
+    private static bool TryExtractTrailingLiteral(Utf8TreeNode node, out string literal)
     {
-        while (node.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic && node.ChildCount == 1)
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
         {
             node = node.Child(0);
         }
@@ -1385,7 +1385,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        if (node.Kind != Runtime.RegexNodeKind.Concatenate)
+        if (node.Kind != Utf8TreeNodeKind.Concatenate)
         {
             literal = string.Empty;
             return false;
@@ -1399,7 +1399,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                 return true;
             }
 
-            if (child.Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.End or Runtime.RegexNodeKind.EndZ or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary)
+            if (child.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary)
             {
                 continue;
             }
@@ -1414,14 +1414,14 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TryGetLiteralText(Runtime.RegexNode node, out string literal)
+    private static bool TryGetLiteralText(Utf8TreeNode node, out string literal)
     {
         switch (node.Kind)
         {
-            case Runtime.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 literal = node.Ch.ToString();
                 return true;
-            case Runtime.RegexNodeKind.Multi when !string.IsNullOrEmpty(node.Str):
+            case Utf8TreeNodeKind.Multi when !string.IsNullOrEmpty(node.Str):
                 literal = node.Str;
                 return true;
             default:
@@ -1453,8 +1453,8 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         kind = findOptimizations.TrailingAnchor switch
         {
-            Runtime.RegexNodeKind.End => Utf8SearchKind.TrailingAnchorFixedLengthEnd,
-            Runtime.RegexNodeKind.EndZ => Utf8SearchKind.TrailingAnchorFixedLengthEndZ,
+            Utf8TreeNodeKind.End => Utf8SearchKind.TrailingAnchorFixedLengthEnd,
+            Utf8TreeNodeKind.EndZ => Utf8SearchKind.TrailingAnchorFixedLengthEndZ,
             _ => Utf8SearchKind.None,
         };
         if (kind == Utf8SearchKind.None)
@@ -1491,7 +1491,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectRequiredLiteralPrefilter(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         out byte[]? literalUtf8,
         out byte[][]? alternateLiteralsUtf8)
     {
@@ -1549,7 +1549,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectDeterministicPrefixSets(
-        Runtime.RegexNode root,
+        Utf8TreeNode root,
         int minRequiredLength,
         Utf8FallbackStartTransform fallbackStartTransform,
         out Utf8FixedDistanceSet[] fixedDistanceSets,
@@ -1646,10 +1646,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         return true;
     }
 
-    private static Runtime.RegexNode? SkipLeadingAsciiWhitespacePrefix(Runtime.RegexNode node)
+    private static Utf8TreeNode? SkipLeadingAsciiWhitespacePrefix(Utf8TreeNode node)
     {
         var unwrapped = UnwrapStructuralNode(node);
-        if (unwrapped is null || unwrapped.Kind != Runtime.RegexNodeKind.Concatenate)
+        if (unwrapped is null || unwrapped.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return unwrapped;
         }
@@ -1657,7 +1657,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         node = unwrapped;
         var startIndex = 0;
         while (startIndex < node.ChildCount &&
-               node.Child(startIndex).Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary or Runtime.RegexNodeKind.Beginning or Runtime.RegexNodeKind.Start)
+               node.Child(startIndex).Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start)
         {
             startIndex++;
         }
@@ -1670,7 +1670,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         startIndex++;
         while (startIndex < node.ChildCount &&
-               node.Child(startIndex).Kind is Runtime.RegexNodeKind.Bol or Runtime.RegexNodeKind.Eol or Runtime.RegexNodeKind.Boundary or Runtime.RegexNodeKind.NonBoundary or Runtime.RegexNodeKind.Beginning or Runtime.RegexNodeKind.Start)
+               node.Child(startIndex).Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start)
         {
             startIndex++;
         }
@@ -1685,13 +1685,13 @@ internal static class Utf8FrontEndSearchAnalyzer
             return node.Child(startIndex);
         }
 
-        var children = new Runtime.RegexNode[node.ChildCount - startIndex];
+        var children = new Utf8TreeNode[node.ChildCount - startIndex];
         for (var i = startIndex; i < node.ChildCount; i++)
         {
             children[i - startIndex] = node.Child(i);
         }
 
-        var concatenation = new Runtime.RegexNode(Runtime.RegexNodeKind.Concatenate, node.Options);
+        var concatenation = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, node.Options);
         foreach (var child in children)
         {
             concatenation.AddChild(child);
@@ -1700,7 +1700,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return concatenation;
     }
 
-    private static bool TryExtractDeterministicPrefixSets(Runtime.RegexNode node, out Utf8FixedDistanceSet[] fixedDistanceSets)
+    private static bool TryExtractDeterministicPrefixSets(Utf8TreeNode node, out Utf8FixedDistanceSet[] fixedDistanceSets)
     {
         var collectedSets = new List<Utf8FixedDistanceSet>();
         var offset = 0;
@@ -1714,7 +1714,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return true;
     }
 
-    private static bool TryAppendDeterministicPrefixSets(Runtime.RegexNode node, List<Utf8FixedDistanceSet> fixedDistanceSets, ref int offset)
+    private static bool TryAppendDeterministicPrefixSets(Utf8TreeNode node, List<Utf8FixedDistanceSet> fixedDistanceSets, ref int offset)
     {
         var unwrapped = UnwrapStructuralNode(node);
         if (unwrapped is null)
@@ -1726,21 +1726,21 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         switch (node.Kind)
         {
-            case Runtime.RegexNodeKind.Empty:
-            case Runtime.RegexNodeKind.Bol:
-            case Runtime.RegexNodeKind.Beginning:
-            case Runtime.RegexNodeKind.Start:
-            case Runtime.RegexNodeKind.Eol:
-            case Runtime.RegexNodeKind.End:
-            case Runtime.RegexNodeKind.EndZ:
-            case Runtime.RegexNodeKind.Boundary:
-            case Runtime.RegexNodeKind.NonBoundary:
+            case Utf8TreeNodeKind.Empty:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Start:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.End:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.Boundary:
+            case Utf8TreeNodeKind.NonBoundary:
                 return true;
 
-            case Runtime.RegexNodeKind.One when node.Ch <= 0x7F:
+            case Utf8TreeNodeKind.One when node.Ch <= 0x7F:
                 return TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)node.Ch], negated: false));
 
-            case Runtime.RegexNodeKind.Multi when node.Str is { Length: > 0 } literal:
+            case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
                 foreach (var ch in literal)
                 {
                     if (ch > 0x7F || !TryAddDeterministicPrefixSet(fixedDistanceSets, Utf8FixedDistanceSet.FromBytes(offset++, [(byte)ch], negated: false)))
@@ -1751,11 +1751,11 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 return true;
 
-            case Runtime.RegexNodeKind.Set when node.Str is { Length: > 0 } set && Runtime.RegexCharClass.IsAscii(set):
+            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Runtime.RegexCharClass.IsAscii(set):
                 return TryCreateAsciiSet(set, offset++, out var fixedDistanceSet) &&
                     TryAddDeterministicPrefixSet(fixedDistanceSets, fixedDistanceSet);
 
-            case Runtime.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 for (var i = 0; i < node.ChildCount; i++)
                 {
                     if (!TryAppendDeterministicPrefixSets(node.Child(i), fixedDistanceSets, ref offset))
@@ -1893,10 +1893,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         return true;
     }
 
-    private static Runtime.RegexNode? UnwrapStructuralNode(Runtime.RegexNode? node)
+    private static Utf8TreeNode? UnwrapStructuralNode(Utf8TreeNode? node)
     {
         while (node is not null &&
-               node.Kind is Runtime.RegexNodeKind.Capture or Runtime.RegexNodeKind.Group or Runtime.RegexNodeKind.Atomic &&
+               node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic &&
                node.ChildCount == 1)
         {
             node = node.Child(0);

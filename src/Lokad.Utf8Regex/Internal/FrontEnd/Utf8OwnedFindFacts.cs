@@ -1,6 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 // Owned find-optimization facts for one runtime tree, computed once per analysis
 // pass from the owned hub. This container replaces the legacy find
@@ -35,7 +34,7 @@ internal sealed class Utf8OwnedFindFacts
         return new Utf8OwnedFindFacts(tree);
     }
 
-    public RuntimeFrontEnd.RegexNode Root { get; }
+    public Utf8TreeNode Root { get; }
 
     public bool IsFixedLength { get; }
 
@@ -43,9 +42,9 @@ internal sealed class Utf8OwnedFindFacts
 
     public int? MaxPossibleLength { get; }
 
-    public RuntimeFrontEnd.RegexNodeKind LeadingAnchor { get; }
+    public Utf8TreeNodeKind LeadingAnchor { get; }
 
-    public RuntimeFrontEnd.RegexNodeKind TrailingAnchor { get; }
+    public Utf8TreeNodeKind TrailingAnchor { get; }
 
     public string? LeadingLiteral { get; }
 

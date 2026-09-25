@@ -1,6 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 // Owned required-literal families, pinned against legacy instances over the probe
 // catalog. Concatenations collect one family per literal position while
@@ -15,15 +14,15 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 // ties going to the first family. Every rule above was read off probe behavior.
 internal static class Utf8OwnedRequiredLiterals
 {
-    public static string[]? FindBestRequiredLiteralFamily(RuntimeFrontEnd.RegexNode node)
+    public static string[]? FindBestRequiredLiteralFamily(Utf8TreeNode node)
     {
         var top = node;
-        while ((top.Kind is RuntimeFrontEnd.RegexNodeKind.Capture or RuntimeFrontEnd.RegexNodeKind.Group or RuntimeFrontEnd.RegexNodeKind.Atomic) && top.ChildCount == 1)
+        while ((top.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) && top.ChildCount == 1)
         {
             top = top.Child(0);
         }
 
-        if (top.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate)
+        if (top.Kind == Utf8TreeNodeKind.Alternate)
         {
             var clean = UnionCleanBranches(top);
             if (clean is not null)
@@ -71,31 +70,31 @@ internal static class Utf8OwnedRequiredLiterals
             return total;
         }
 
-        static void CollectInto(RuntimeFrontEnd.RegexNode node, FamilyCollector collector, bool branch)
+        static void CollectInto(Utf8TreeNode node, FamilyCollector collector, bool branch)
         {
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     collector.Families.Add(new string[] { node.Ch.ToString() });
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     if (!string.IsNullOrEmpty(node.Str))
                     {
                         collector.Families.Add(new string[] { node.Str });
                     }
 
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
-                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
                     for (var i = 0; i < node.ChildCount; i++)
                     {
                         CollectInto(node.Child(i), collector, branch);
                     }
 
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Alternate:
+                case Utf8TreeNodeKind.Alternate:
                     var union = UnionCleanBranches(node);
                     if (union is not null)
                     {
@@ -103,23 +102,23 @@ internal static class Utf8OwnedRequiredLiterals
                     }
 
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Loop:
-                case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
                     if (node.M > 0 && node.ChildCount == 1)
                     {
                         CollectInto(node.Child(0), collector, branch);
                     }
 
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Setloop:
-                case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-                case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
                     if (!branch && node.N > 1 && (node.N != int.MaxValue || node.M > 1))
                     {
                         collector.Families.Clear();
@@ -131,7 +130,7 @@ internal static class Utf8OwnedRequiredLiterals
             }
         }
 
-        static List<string>? UnionCleanBranches(RuntimeFrontEnd.RegexNode node)
+        static List<string>? UnionCleanBranches(Utf8TreeNode node)
         {
             var result = new List<string>();
             for (var i = 0; i < node.ChildCount; i++)
@@ -149,7 +148,7 @@ internal static class Utf8OwnedRequiredLiterals
             return result;
         }
 
-        static string[]? BestCommonFamily(RuntimeFrontEnd.RegexNode node)
+        static string[]? BestCommonFamily(Utf8TreeNode node)
         {
             var members = new List<HashSet<string>>();
             for (var i = 0; i < node.ChildCount; i++)
@@ -200,17 +199,17 @@ internal static class Utf8OwnedRequiredLiterals
             common.Sort(static (left, right) => string.CompareOrdinal(left, right));
             return common.ToArray();
         }
-        static string? BranchText(RuntimeFrontEnd.RegexNode node)
+        static string? BranchText(Utf8TreeNode node)
         {
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     return node.Ch.ToString();
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
                     return node.ChildCount == 1 ? BranchText(node.Child(0)) : null;
                 default:
                     return null;

@@ -2,7 +2,6 @@ using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 // Owned per-node tree facts over runtime-shaped regex trees of either
 // provenance: tree-wide case/direction flags, atomic-by-ancestor,
@@ -18,7 +17,7 @@ internal static class Utf8OwnedTreeAnalyzer
     }
 
     private static bool TryAnalyze(
-        RuntimeFrontEnd.RegexNode node,
+        Utf8TreeNode node,
         Utf8OwnedTreeAnalysis results,
         bool isAtomicByAncestor,
         bool isInLoop)
@@ -40,7 +39,7 @@ internal static class Utf8OwnedTreeAnalyzer
 
         if (isInLoop)
         {
-            (results.InLoops ??= new HashSet<RuntimeFrontEnd.RegexNode>()).Add(node);
+            (results.InLoops ??= new HashSet<Utf8TreeNode>()).Add(node);
         }
 
         if (isAtomicByAncestor)
@@ -49,18 +48,18 @@ internal static class Utf8OwnedTreeAnalyzer
         }
         else if (node.IsBacktrackingConstruct)
         {
-            (results.MayBacktrackSet ??= new HashSet<RuntimeFrontEnd.RegexNode>()).Add(node);
+            (results.MayBacktrackSet ??= new HashSet<Utf8TreeNode>()).Add(node);
         }
 
-        var isAtomicBySelf = node.Kind is RuntimeFrontEnd.RegexNodeKind.Atomic
-            or RuntimeFrontEnd.RegexNodeKind.NegativeLookaround
-            or RuntimeFrontEnd.RegexNodeKind.PositiveLookaround;
-        if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Capture)
+        var isAtomicBySelf = node.Kind is Utf8TreeNodeKind.Atomic
+            or Utf8TreeNodeKind.NegativeLookaround
+            or Utf8TreeNodeKind.PositiveLookaround;
+        if (node.Kind == Utf8TreeNodeKind.Capture)
         {
             results.ContainsCaptureSet.Add(node);
         }
 
-        if (node.Kind is RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop)
+        if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop)
         {
             isInLoop = true;
         }
@@ -70,15 +69,15 @@ internal static class Utf8OwnedTreeAnalyzer
             var child = node.Child(i);
             var treatChildAsAtomic = (isAtomicByAncestor || isAtomicBySelf) && node.Kind switch
             {
-                RuntimeFrontEnd.RegexNodeKind.Atomic
-                    or RuntimeFrontEnd.RegexNodeKind.NegativeLookaround
-                    or RuntimeFrontEnd.RegexNodeKind.PositiveLookaround => true,
-                RuntimeFrontEnd.RegexNodeKind.Alternate
-                    or RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional
-                    or RuntimeFrontEnd.RegexNodeKind.ExpressionConditional => true,
-                RuntimeFrontEnd.RegexNodeKind.Capture => true,
-                RuntimeFrontEnd.RegexNodeKind.Concatenate => i == node.ChildCount - 1,
-                RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop when node.N == 1 => true,
+                Utf8TreeNodeKind.Atomic
+                    or Utf8TreeNodeKind.NegativeLookaround
+                    or Utf8TreeNodeKind.PositiveLookaround => true,
+                Utf8TreeNodeKind.Alternate
+                    or Utf8TreeNodeKind.BackreferenceConditional
+                    or Utf8TreeNodeKind.ExpressionConditional => true,
+                Utf8TreeNodeKind.Capture => true,
+                Utf8TreeNodeKind.Concatenate => i == node.ChildCount - 1,
+                Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop when node.N == 1 => true,
                 _ => false,
             };
             if (!TryAnalyze(child, results, treatChildAsAtomic, isInLoop))
@@ -93,7 +92,7 @@ internal static class Utf8OwnedTreeAnalyzer
 
             if (!isAtomicBySelf && results.MayBacktrackSet?.Contains(child) == true)
             {
-                (results.MayBacktrackSet ??= new HashSet<RuntimeFrontEnd.RegexNode>()).Add(node);
+                (results.MayBacktrackSet ??= new HashSet<Utf8TreeNode>()).Add(node);
             }
         }
 
@@ -116,19 +115,19 @@ internal sealed class Utf8OwnedTreeAnalysis
 
     public bool HasRightToLeft { get; internal set; }
 
-    internal HashSet<RuntimeFrontEnd.RegexNode> IsAtomicByAncestorSet { get; } = new();
+    internal HashSet<Utf8TreeNode> IsAtomicByAncestorSet { get; } = new();
 
-    internal HashSet<RuntimeFrontEnd.RegexNode> ContainsCaptureSet { get; } = new();
+    internal HashSet<Utf8TreeNode> ContainsCaptureSet { get; } = new();
 
-    internal HashSet<RuntimeFrontEnd.RegexNode>? MayBacktrackSet { get; set; }
+    internal HashSet<Utf8TreeNode>? MayBacktrackSet { get; set; }
 
-    internal HashSet<RuntimeFrontEnd.RegexNode>? InLoops { get; set; }
+    internal HashSet<Utf8TreeNode>? InLoops { get; set; }
 
-    public bool IsAtomicByAncestor(RuntimeFrontEnd.RegexNode node) => Complete && IsAtomicByAncestorSet.Contains(node);
+    public bool IsAtomicByAncestor(Utf8TreeNode node) => Complete && IsAtomicByAncestorSet.Contains(node);
 
-    public bool MayContainCapture(RuntimeFrontEnd.RegexNode node) => !Complete || ContainsCaptureSet.Contains(node);
+    public bool MayContainCapture(Utf8TreeNode node) => !Complete || ContainsCaptureSet.Contains(node);
 
-    public bool MayBacktrack(RuntimeFrontEnd.RegexNode node) => !Complete || (MayBacktrackSet?.Contains(node) ?? false);
+    public bool MayBacktrack(Utf8TreeNode node) => !Complete || (MayBacktrackSet?.Contains(node) ?? false);
 
-    public bool IsInLoop(RuntimeFrontEnd.RegexNode node) => !Complete || (InLoops?.Contains(node) ?? false);
+    public bool IsInLoop(Utf8TreeNode node) => !Complete || (InLoops?.Contains(node) ?? false);
 }

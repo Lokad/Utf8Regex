@@ -6,14 +6,14 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 // Owned parse-tree container: root plus capture accounting, options, and culture.
-// Nodes stay fork-shaped until the node migration lands; the legacy analysis
-// instance is already dead (no production reader), so it is not carried over.
-// FromLegacy wraps a fallback tree without copying, so the provider seam keeps
-// returning one container type for trees of either provenance.
+// Nodes are owned throughout; FromLegacy deep-copies fallback trees field by
+// field (verified by the tree batteries), so the provider seam returns one
+// container type for trees of either provenance. The legacy analysis instance
+// is dead (no production reader) and is not carried over.
 internal sealed class Utf8OwnedRegexTree
 {
     public Utf8OwnedRegexTree(
-        RuntimeFrontEnd.RegexNode root,
+        Utf8TreeNode root,
         int captureCount,
         string[]? captureNames,
         Hashtable? captureNameToNumberMapping,
@@ -30,7 +30,7 @@ internal sealed class Utf8OwnedRegexTree
         Culture = culture;
     }
 
-    public RuntimeFrontEnd.RegexNode Root { get; }
+    public Utf8TreeNode Root { get; }
 
     public int CaptureCount { get; }
 
@@ -46,15 +46,51 @@ internal sealed class Utf8OwnedRegexTree
 
     public static Utf8OwnedRegexTree? FromLegacy(RuntimeFrontEnd.RegexTree? tree)
     {
-        return tree is null
-            ? null
-            : new Utf8OwnedRegexTree(
-                tree.Root,
-                tree.CaptureCount,
-                tree.CaptureNames,
-                tree.CaptureNameToNumberMapping,
-                tree.CaptureNumberSparseMapping,
-                tree.Options,
-                tree.Culture);
+        if (tree is null || tree.Root is null)
+        {
+            return null;
+        }
+
+        return new Utf8OwnedRegexTree(
+            CopyNode(tree.Root),
+            tree.CaptureCount,
+            tree.CaptureNames,
+            tree.CaptureNameToNumberMapping,
+            tree.CaptureNumberSparseMapping,
+            tree.Options,
+            tree.Culture);
+
+        static Utf8TreeNode CopyNode(RuntimeFrontEnd.RegexNode node)
+        {
+            var copy = new Utf8TreeNode((Utf8TreeNodeKind)(int)node.Kind, node.Options)
+            {
+                Str = node.Str,
+                Str2 = node.Str2,
+                Ch = node.Ch,
+                M = node.M,
+                N = node.N,
+            };
+
+            if (node.Children is RuntimeFrontEnd.RegexNode single)
+            {
+                var singleCopy = CopyNode(single);
+                copy.Children = singleCopy;
+                singleCopy.Parent = copy;
+            }
+            else if (node.Children is List<RuntimeFrontEnd.RegexNode> children)
+            {
+                var copies = new List<Utf8TreeNode>(children.Count);
+                foreach (var child in children)
+                {
+                    var childCopy = CopyNode(child);
+                    childCopy.Parent = copy;
+                    copies.Add(childCopy);
+                }
+
+                copy.Children = copies;
+            }
+
+            return copy;
+        }
     }
 }

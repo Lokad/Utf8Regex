@@ -5,7 +5,7 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerBranches(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
+    private static bool TryLowerBranches(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
         if (depth > MaxLoweringDepth)
         {
@@ -14,8 +14,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
                 if (node.ChildCount != 1)
                 {
                     branches = [];
@@ -24,23 +24,23 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
                 return TryLowerBranches(node.Child(0), budget, depth + 1, out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Empty:
+            case Utf8TreeNodeKind.Empty:
                 branches = [new LoweredBranch([], [], false, false)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.Bol:
-            case RuntimeFrontEnd.RegexNodeKind.Beginning:
-            case RuntimeFrontEnd.RegexNodeKind.Start:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Start:
                 branches = [new LoweredBranch([], [], true, false)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.Eol:
-            case RuntimeFrontEnd.RegexNodeKind.EndZ:
-            case RuntimeFrontEnd.RegexNodeKind.End:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.End:
                 branches = [new LoweredBranch([], [], false, true)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 if (!TryLowerLiteral(node.Ch, out var literalToken))
                 {
                     branches = [];
@@ -50,7 +50,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 branches = [new LoweredBranch([literalToken], [], false, false)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.Multi:
+            case Utf8TreeNodeKind.Multi:
                 if (!TryLowerLiteralText(node.Str, out var literalTokens))
                 {
                     branches = [];
@@ -60,7 +60,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 branches = [new LoweredBranch(literalTokens, [], false, false)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.Set:
+            case Utf8TreeNodeKind.Set:
                 if (!TryLowerSet(node.Str, out var setToken))
                 {
                     branches = [];
@@ -70,16 +70,16 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 branches = [new LoweredBranch([setToken], [], false, false)];
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
+            case Utf8TreeNodeKind.PositiveLookaround:
                 return TryLowerPositiveLookaround(node, budget, depth + 1, out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 return TryLowerConcatenation(node, budget, depth + 1, out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 return TryLowerAlternation(node, budget, depth + 1, out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Oneloop:
                 if (!TryLowerLiteral(node.Ch, out var repeatedLiteral))
                 {
                     branches = [];
@@ -93,7 +93,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     budget,
                     out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Setloop:
+            case Utf8TreeNodeKind.Setloop:
                 if (!TryLowerSet(node.Str, out var repeatedSet))
                 {
                     branches = [];
@@ -107,7 +107,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     budget,
                     out branches);
 
-            case RuntimeFrontEnd.RegexNodeKind.Loop:
+            case Utf8TreeNodeKind.Loop:
                 if (node.ChildCount != 1 || node.N == int.MaxValue || node.N < node.M)
                 {
                     branches = [];
@@ -128,22 +128,22 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static bool AllowsTrailingNewlineBeforeEnd(RuntimeFrontEnd.RegexNode node)
+    private static bool AllowsTrailingNewlineBeforeEnd(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.Eol:
-            case RuntimeFrontEnd.RegexNodeKind.EndZ:
+            case Utf8TreeNodeKind.Eol:
+            case Utf8TreeNodeKind.EndZ:
                 return true;
 
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
                 return node.ChildCount == 1 && AllowsTrailingNewlineBeforeEnd(node.Child(0));
 
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 return node.ChildCount > 0 && AllowsTrailingNewlineBeforeEnd(node.Child(node.ChildCount - 1));
 
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 if (node.ChildCount == 0)
                 {
                     return false;
@@ -164,7 +164,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
     }
 
-    private static bool TryLowerConcatenation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
+    private static bool TryLowerConcatenation(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
         if (depth > MaxLoweringDepth)
         {
@@ -208,7 +208,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerAlternation(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
+    private static bool TryLowerAlternation(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
         if (depth > MaxLoweringDepth)
         {
@@ -360,7 +360,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
-    private static bool TryLowerPositiveLookaround(RuntimeFrontEnd.RegexNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
+    private static bool TryLowerPositiveLookaround(Utf8TreeNode node, Utf8PreparationBudget budget, int depth, out LoweredBranch[] branches)
     {
         if (depth > MaxLoweringDepth)
         {

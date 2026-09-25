@@ -177,11 +177,20 @@ public sealed class Utf8OwnedTreeAnalysisTests
         return builder.ToString();
     }
 
+    private static void CollectOwnedNodes(Utf8TreeNode node, List<Utf8TreeNode> nodes)
+    {
+        nodes.Add(node);
+        for (var i = 0; i < node.ChildCount; i++)
+        {
+            CollectOwnedNodes(node.Child(i), nodes);
+        }
+    }
+
     private static string DumpOwnedNodes(Utf8OwnedRegexTree tree, Utf8OwnedTreeAnalysis analysis)
     {
         Assert.NotNull(tree.Root);
-        var nodes = new List<RuntimeFrontEnd.RegexNode>();
-        CollectNodes(tree.Root, nodes);
+        var nodes = new List<Utf8TreeNode>();
+        CollectOwnedNodes(tree.Root, nodes);
         var builder = new StringBuilder();
         var first = true;
         foreach (var node in nodes)

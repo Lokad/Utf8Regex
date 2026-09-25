@@ -1,6 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static class Utf8RuntimeTreeFeatureAnalyzer
 {
@@ -34,7 +33,7 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             state.HasLookbehind);
     }
 
-    private static void Visit(RuntimeFrontEnd.RegexNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
+    private static void Visit(Utf8TreeNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
     {
         if (runtimeAnalysis?.IsInLoop(node) == true)
         {
@@ -43,12 +42,12 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
 
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.Backreference:
+            case Utf8TreeNodeKind.Backreference:
                 state.HasBackreferences = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.PositiveLookaround:
-            case RuntimeFrontEnd.RegexNodeKind.NegativeLookaround:
+            case Utf8TreeNodeKind.PositiveLookaround:
+            case Utf8TreeNodeKind.NegativeLookaround:
                 state.HasLookarounds = true;
                 if ((node.Options & RegexOptions.RightToLeft) != 0)
                 {
@@ -57,42 +56,42 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
 
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.Atomic:
+            case Utf8TreeNodeKind.Atomic:
                 state.HasAtomicGroups = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional:
-            case RuntimeFrontEnd.RegexNodeKind.ExpressionConditional:
+            case Utf8TreeNodeKind.BackreferenceConditional:
+            case Utf8TreeNodeKind.ExpressionConditional:
                 state.HasConditionals = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.Loop:
-            case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
-            case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Setloop:
-            case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-            case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+            case Utf8TreeNodeKind.Loop:
+            case Utf8TreeNodeKind.Lazyloop:
+            case Utf8TreeNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Notoneloop:
+            case Utf8TreeNodeKind.Setloop:
+            case Utf8TreeNodeKind.Onelazy:
+            case Utf8TreeNodeKind.Notonelazy:
+            case Utf8TreeNodeKind.Setlazy:
+            case Utf8TreeNodeKind.Oneloopatomic:
+            case Utf8TreeNodeKind.Notoneloopatomic:
+            case Utf8TreeNodeKind.Setloopatomic:
                 state.HasLoops = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 state.HasAlternation = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.Bol:
-            case RuntimeFrontEnd.RegexNodeKind.Beginning:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Beginning:
                 state.HasAbsoluteStartAnchor = true;
                 break;
 
-            case RuntimeFrontEnd.RegexNodeKind.Boundary:
-            case RuntimeFrontEnd.RegexNodeKind.NonBoundary:
-            case RuntimeFrontEnd.RegexNodeKind.ECMABoundary:
-            case RuntimeFrontEnd.RegexNodeKind.NonECMABoundary:
+            case Utf8TreeNodeKind.Boundary:
+            case Utf8TreeNodeKind.NonBoundary:
+            case Utf8TreeNodeKind.ECMABoundary:
+            case Utf8TreeNodeKind.NonECMABoundary:
                 state.HasWordBoundary = true;
                 break;
         }

@@ -132,15 +132,17 @@ public sealed class Utf8OwnedFindOptimizationsTests
         var expectedTrail = (RuntimeFrontEnd.RegexNodeKind)trail;
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
         Assert.Equal(min, expected.MinRequiredLength);
         Assert.Equal(max, expected.MaxPossibleLength);
         Assert.Equal(expectedLead, expected.LeadingAnchor);
         Assert.Equal(expectedTrail, expected.TrailingAnchor);
-        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(tree.Root));
-        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(tree.Root));
-        Assert.Equal(expectedLead, Utf8OwnedFindOptimizations.FindLeadingAnchor(tree.Root));
-        Assert.Equal(expectedTrail, Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root));
+        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(ownedTree.Root));
+        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(ownedTree.Root));
+        Assert.Equal((int)expectedLead, (int)Utf8OwnedFindOptimizations.FindLeadingAnchor(ownedTree.Root));
+        Assert.Equal((int)expectedTrail, (int)Utf8OwnedFindOptimizations.FindTrailingAnchor(ownedTree.Root));
     }
 
     public static IEnumerable<object?[]> SaturationCases()
@@ -159,8 +161,10 @@ public sealed class Utf8OwnedFindOptimizationsTests
         // saturates like the BCL-observed formulas, so these rows pin owned values only.
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
-        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(tree.Root));
-        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(tree.Root));
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
+        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(ownedTree.Root));
+        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(ownedTree.Root));
     }
 
     public static IEnumerable<object?[]> LiteralCases()
@@ -361,11 +365,13 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, RegexOptions.CultureInvariant, tree.Culture);
         Assert.Equal(leading, expected.LeadingLiteral);
         Assert.Equal(longest, expected.LongestLiteral);
-        Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root));
-        Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root));
+        Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(ownedTree.Root));
+        Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(ownedTree.Root));
     }
     public static IEnumerable<object?[]> OptionLiteralCases()
     {
@@ -380,11 +386,13 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
         Assert.Equal(leading, expected.LeadingLiteral);
         Assert.Equal(longest, expected.LongestLiteral);
-        Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(tree.Root));
-        Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(tree.Root));
+        Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(ownedTree.Root));
+        Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(ownedTree.Root));
     }
     public static IEnumerable<object?[]> PrefixCases()
     {
@@ -577,9 +585,11 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
         Assert.Equal(expected, legacy.AlternatePrefixes);
-        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options));
+        Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(ownedTree.Root, options));
     }
 
     public static IEnumerable<object?[]> FdlCases()
@@ -773,6 +783,8 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture).FixedDistanceLiteral;
         if (literal is null)
         {
@@ -785,7 +797,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
             Assert.Equal(distance, legacy.Value.Distance);
         }
 
-        var owned = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(tree.Root);
+        var owned = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(ownedTree.Root);
         if (literal is null)
         {
             Assert.Null(owned);
@@ -1076,9 +1088,11 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
         Assert.NotNull(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
         var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture).FixedDistanceSets;
         Assert.Equal(expected, ToExpectationsLegacy(legacy));
-        var owned = Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root);
+        var owned = Utf8OwnedFindOptimizations.FindFixedDistanceSets(ownedTree.Root);
         Assert.Equal(expected, ToExpectationsOwned(owned));
     }
 

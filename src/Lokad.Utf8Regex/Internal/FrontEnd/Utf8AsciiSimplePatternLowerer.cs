@@ -24,7 +24,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         var preparationBudget = new Utf8PreparationBudget(MaxPreparationWork, MaxPreparationOutput);
         if (semanticRegex.RuntimeTree?.Root is not { } root ||
-            root.Kind != RuntimeFrontEnd.RegexNodeKind.Capture ||
+            root.Kind != Utf8TreeNodeKind.Capture ||
             root.ChildCount != 1 ||
             !TryLowerBranches(root.Child(0), preparationBudget, 0, out var loweredBranches))
         {

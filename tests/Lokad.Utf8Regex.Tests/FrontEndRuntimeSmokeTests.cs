@@ -507,9 +507,9 @@ public sealed class FrontEndRuntimeSmokeTests
         var literal = Utf8FrontEnd.Compile("abc", RegexOptions.None);
 
         Assert.NotNull(literal.SemanticRegex.RuntimeTree);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, literal.SemanticRegex.RuntimeTree!.Root.Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, literal.SemanticRegex.RuntimeTree!.Root.Kind);
         Assert.Equal(1, literal.SemanticRegex.RuntimeTree.Root.ChildCount);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Multi, literal.SemanticRegex.RuntimeTree.Root.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Multi, literal.SemanticRegex.RuntimeTree.Root.Child(0).Kind);
         Assert.Equal("abc", literal.SemanticRegex.RuntimeTree.Root.Child(0).Str);
     }
 
@@ -520,15 +520,15 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.NotNull(simple.SemanticRegex.RuntimeTree);
         var body = simple.SemanticRegex.RuntimeTree!.Root.Child(0);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Concatenate, body.Kind);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Beginning, body.Child(0).Kind);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Multi, body.Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Concatenate, body.Kind);
+        Assert.Equal(Utf8TreeNodeKind.Beginning, body.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Multi, body.Child(1).Kind);
         Assert.Equal("ab", body.Child(1).Str);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Set, body.Child(2).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Set, body.Child(2).Kind);
         Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotNewLineClass, body.Child(2).Str);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.One, body.Child(3).Kind);
+        Assert.Equal(Utf8TreeNodeKind.One, body.Child(3).Kind);
         Assert.Equal('c', body.Child(3).Ch);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.EndZ, body.Child(4).Kind);
+        Assert.Equal(Utf8TreeNodeKind.EndZ, body.Child(4).Kind);
     }
 
     [Fact]
@@ -538,12 +538,12 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.NotNull(simple.SemanticRegex.RuntimeTree);
         var body = simple.SemanticRegex.RuntimeTree!.Root.Child(0);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Concatenate, body.Kind);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.One, body.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Concatenate, body.Kind);
+        Assert.Equal(Utf8TreeNodeKind.One, body.Child(0).Kind);
         Assert.Equal('a', body.Child(0).Ch);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Set, body.Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Set, body.Child(1).Kind);
         Assert.Equal("\0\u0002\0\u0030\u003A", body.Child(1).Str);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.One, body.Child(2).Kind);
+        Assert.Equal(Utf8TreeNodeKind.One, body.Child(2).Kind);
         Assert.Equal('c', body.Child(2).Ch);
     }
 
@@ -1263,7 +1263,7 @@ public sealed class FrontEndRuntimeSmokeTests
         Assert.Equal(2, analysis.Features.CaptureCount);
         Assert.True(analysis.Features.HasNamedCaptures);
         Assert.True(analysis.Features.HasBackreferences);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Backreference, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Backreference, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Child(1).Kind);
     }
 
     [Fact]
@@ -1351,7 +1351,7 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.True(analysis.Features.HasConditionals);
         Assert.Equal("unsupported_conditional", analysis.FallbackReason);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.BackreferenceConditional, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Child(1).Kind);
     }
 
     [Fact]
@@ -1361,7 +1361,7 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.True(analysis.Features.HasConditionals);
         Assert.Equal("unsupported_conditional", analysis.FallbackReason);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.ExpressionConditional, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.ExpressionConditional, analysis.SemanticRegex.RuntimeTree!.Root.Child(0).Kind);
     }
 
     [Fact]
@@ -1798,11 +1798,11 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile("(?<name>a)(b)", RegexOptions.CultureInvariant);
         var body = analysis.SemanticRegex.RuntimeTree!.Root.Child(0);
 
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Concatenate, body.Kind);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, body.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Concatenate, body.Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, body.Child(0).Kind);
         Assert.Equal("name", body.Child(0).Str);
         Assert.Equal(2, body.Child(0).M);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, body.Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, body.Child(1).Kind);
         Assert.Equal(1, body.Child(1).M);
         Assert.NotNull(analysis.SemanticRegex.RuntimeTree.CaptureNames);
         Assert.Equal(["0", "1", "name"], analysis.SemanticRegex.RuntimeTree.CaptureNames!);
@@ -1815,7 +1815,7 @@ public sealed class FrontEndRuntimeSmokeTests
         var analysis = Utf8FrontEnd.Compile("(?<name>a)(b)\\k<name>", RegexOptions.CultureInvariant);
         var body = analysis.SemanticRegex.RuntimeTree!.Root.Child(0);
 
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Backreference, body.Child(2).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Backreference, body.Child(2).Kind);
         Assert.Equal("name", body.Child(2).Str);
         Assert.Equal(2, body.Child(2).M);
     }
@@ -1870,11 +1870,11 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.Equal(2, analysis.Features.CaptureCount);
         Assert.True(analysis.Features.HasNamedCaptures);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, body.Child(0).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, body.Child(0).Kind);
         Assert.Equal(1, body.Child(0).M);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, body.Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, body.Child(1).Kind);
         Assert.Equal(1, body.Child(1).M);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Backreference, body.Child(2).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Backreference, body.Child(2).Kind);
         Assert.Equal(1, body.Child(2).M);
     }
 
@@ -1931,7 +1931,7 @@ public sealed class FrontEndRuntimeSmokeTests
 
         Assert.Equal(Utf8ExecutionBackend.FallbackRegex, analysis.ExecutionBackend);
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
-        Assert.Equal(RuntimeFrontEnd.RegexNodeKind.Capture, body.Child(1).Kind);
+        Assert.Equal(Utf8TreeNodeKind.Capture, body.Child(1).Kind);
         Assert.Equal(1, body.Child(1).N);
         Assert.Null(body.Child(1).Str2);
     }

@@ -280,9 +280,9 @@ public sealed class Utf8OwnedTreeParserGroupTests
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
+    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
     {
-        return right.Kind == left.Kind &&
+        return (int)right.Kind == (int)left.Kind &&
             right.Options == left.Options &&
             right.Ch == left.Ch &&
             right.Str == left.Str &&

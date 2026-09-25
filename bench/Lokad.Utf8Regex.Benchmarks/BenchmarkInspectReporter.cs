@@ -5835,7 +5835,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static string FormatMax(int max) => max < 0 || max == int.MaxValue ? "open" : max.ToString();
 
-    private static string DumpNode(RegexNode node, int depth = 0)
+    private static string DumpNode(Utf8TreeNode node, int depth = 0)
     {
         var indent = new string(' ', depth * 2);
         var line = $"{indent}{node.Kind} ch={node.Ch} str={node.Str ?? "<null>"} m={node.M} n={node.N} children={node.ChildCount}";

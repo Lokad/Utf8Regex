@@ -187,7 +187,7 @@ public sealed class Utf8SearchPlanTests
     {
         const string pattern = "(?:foo((?:ASIA|AKIA|AROA|AIDA)[A-Z0-7]{16}).*?[a-zA-Z0-9+/]{40}|[a-zA-Z0-9+/]{40}.*?bar((?:ASIA|AKIA|AROA|AIDA)[A-Z0-7]{16}))";
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var family = RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
+        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
         Assert.True(family is { Length: > 0 }, DumpNode(analysis.SemanticRegex.RuntimeTree.Root));
 
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
@@ -534,8 +534,11 @@ public sealed class Utf8SearchPlanTests
         Assert.Null(parserException);
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
         Assert.NotNull(analysis.SemanticRegex.RuntimeTree);
-        var family = RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
-        Assert.True(family is { Length: > 0 }, DumpNode(analysis.SemanticRegex.RuntimeTree.Root));
+        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
+        Assert.Null(family);
+        // No single literal family spans this alternation, and none is needed:
+        // the asserts below prove the quoted-relation route classifies and serves it
+        // with no required-prefilter searcher.
 
         var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
 
@@ -1115,7 +1118,7 @@ public sealed class Utf8SearchPlanTests
         Assert.Null(searchFacts.OrderedWindowMaxGap);
     }
 
-    private static string DumpNode(RegexNode node, int depth = 0)
+    private static string DumpNode(Utf8TreeNode node, int depth = 0)
     {
         var indent = new string(' ', depth * 2);
         var line = $"{indent}{node.Kind} ch={node.Ch} str={node.Str ?? "<null>"} m={node.M} n={node.N} children={node.ChildCount}";

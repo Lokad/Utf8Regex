@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -12,7 +11,7 @@ internal static class Utf8ExecutionTreeLowerer
             : null;
     }
 
-    private static Utf8ExecutionNode LowerNode(RuntimeFrontEnd.RegexNode node)
+    private static Utf8ExecutionNode LowerNode(Utf8TreeNode node)
     {
         var children = node.ChildCount == 0
             ? []
@@ -29,47 +28,47 @@ internal static class Utf8ExecutionTreeLowerer
             node.N);
     }
 
-    private static int GetCaptureNumber(RuntimeFrontEnd.RegexNode node)
+    private static int GetCaptureNumber(Utf8TreeNode node)
     {
         return node.Kind switch
         {
-            RuntimeFrontEnd.RegexNodeKind.Capture or RuntimeFrontEnd.RegexNodeKind.Backreference => node.M,
+            Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Backreference => node.M,
             _ => 0,
         };
     }
 
-    private static Utf8ExecutionNodeKind MapKind(RuntimeFrontEnd.RegexNodeKind kind)
+    private static Utf8ExecutionNodeKind MapKind(Utf8TreeNodeKind kind)
     {
         return kind switch
         {
-            RuntimeFrontEnd.RegexNodeKind.Empty => Utf8ExecutionNodeKind.Empty,
-            RuntimeFrontEnd.RegexNodeKind.One => Utf8ExecutionNodeKind.One,
-            RuntimeFrontEnd.RegexNodeKind.Multi => Utf8ExecutionNodeKind.Multi,
-            RuntimeFrontEnd.RegexNodeKind.Set => Utf8ExecutionNodeKind.Set,
-            RuntimeFrontEnd.RegexNodeKind.Concatenate => Utf8ExecutionNodeKind.Concatenate,
-            RuntimeFrontEnd.RegexNodeKind.Alternate => Utf8ExecutionNodeKind.Alternate,
-            RuntimeFrontEnd.RegexNodeKind.Capture => Utf8ExecutionNodeKind.Capture,
-            RuntimeFrontEnd.RegexNodeKind.Group => Utf8ExecutionNodeKind.Group,
-            RuntimeFrontEnd.RegexNodeKind.Oneloop or
-            RuntimeFrontEnd.RegexNodeKind.Setloop or
-            RuntimeFrontEnd.RegexNodeKind.Loop => Utf8ExecutionNodeKind.Loop,
-            RuntimeFrontEnd.RegexNodeKind.Onelazy or
-            RuntimeFrontEnd.RegexNodeKind.Setlazy or
-            RuntimeFrontEnd.RegexNodeKind.Lazyloop => Utf8ExecutionNodeKind.LazyLoop,
-            RuntimeFrontEnd.RegexNodeKind.Bol => Utf8ExecutionNodeKind.Bol,
-            RuntimeFrontEnd.RegexNodeKind.Eol => Utf8ExecutionNodeKind.Eol,
-            RuntimeFrontEnd.RegexNodeKind.Boundary => Utf8ExecutionNodeKind.Boundary,
-            RuntimeFrontEnd.RegexNodeKind.NonBoundary => Utf8ExecutionNodeKind.NonBoundary,
-            RuntimeFrontEnd.RegexNodeKind.ECMABoundary => Utf8ExecutionNodeKind.ECMABoundary,
-            RuntimeFrontEnd.RegexNodeKind.NonECMABoundary => Utf8ExecutionNodeKind.NonECMABoundary,
-            RuntimeFrontEnd.RegexNodeKind.Beginning => Utf8ExecutionNodeKind.Beginning,
-            RuntimeFrontEnd.RegexNodeKind.Start => Utf8ExecutionNodeKind.Start,
-            RuntimeFrontEnd.RegexNodeKind.EndZ => Utf8ExecutionNodeKind.EndZ,
-            RuntimeFrontEnd.RegexNodeKind.End => Utf8ExecutionNodeKind.End,
-            RuntimeFrontEnd.RegexNodeKind.PositiveLookaround => Utf8ExecutionNodeKind.PositiveLookaround,
-            RuntimeFrontEnd.RegexNodeKind.NegativeLookaround => Utf8ExecutionNodeKind.NegativeLookaround,
-            RuntimeFrontEnd.RegexNodeKind.Atomic => Utf8ExecutionNodeKind.Atomic,
-            RuntimeFrontEnd.RegexNodeKind.Backreference => Utf8ExecutionNodeKind.Backreference,
+            Utf8TreeNodeKind.Empty => Utf8ExecutionNodeKind.Empty,
+            Utf8TreeNodeKind.One => Utf8ExecutionNodeKind.One,
+            Utf8TreeNodeKind.Multi => Utf8ExecutionNodeKind.Multi,
+            Utf8TreeNodeKind.Set => Utf8ExecutionNodeKind.Set,
+            Utf8TreeNodeKind.Concatenate => Utf8ExecutionNodeKind.Concatenate,
+            Utf8TreeNodeKind.Alternate => Utf8ExecutionNodeKind.Alternate,
+            Utf8TreeNodeKind.Capture => Utf8ExecutionNodeKind.Capture,
+            Utf8TreeNodeKind.Group => Utf8ExecutionNodeKind.Group,
+            Utf8TreeNodeKind.Oneloop or
+            Utf8TreeNodeKind.Setloop or
+            Utf8TreeNodeKind.Loop => Utf8ExecutionNodeKind.Loop,
+            Utf8TreeNodeKind.Onelazy or
+            Utf8TreeNodeKind.Setlazy or
+            Utf8TreeNodeKind.Lazyloop => Utf8ExecutionNodeKind.LazyLoop,
+            Utf8TreeNodeKind.Bol => Utf8ExecutionNodeKind.Bol,
+            Utf8TreeNodeKind.Eol => Utf8ExecutionNodeKind.Eol,
+            Utf8TreeNodeKind.Boundary => Utf8ExecutionNodeKind.Boundary,
+            Utf8TreeNodeKind.NonBoundary => Utf8ExecutionNodeKind.NonBoundary,
+            Utf8TreeNodeKind.ECMABoundary => Utf8ExecutionNodeKind.ECMABoundary,
+            Utf8TreeNodeKind.NonECMABoundary => Utf8ExecutionNodeKind.NonECMABoundary,
+            Utf8TreeNodeKind.Beginning => Utf8ExecutionNodeKind.Beginning,
+            Utf8TreeNodeKind.Start => Utf8ExecutionNodeKind.Start,
+            Utf8TreeNodeKind.EndZ => Utf8ExecutionNodeKind.EndZ,
+            Utf8TreeNodeKind.End => Utf8ExecutionNodeKind.End,
+            Utf8TreeNodeKind.PositiveLookaround => Utf8ExecutionNodeKind.PositiveLookaround,
+            Utf8TreeNodeKind.NegativeLookaround => Utf8ExecutionNodeKind.NegativeLookaround,
+            Utf8TreeNodeKind.Atomic => Utf8ExecutionNodeKind.Atomic,
+            Utf8TreeNodeKind.Backreference => Utf8ExecutionNodeKind.Backreference,
             _ => Utf8ExecutionNodeKind.Unsupported,
         };
     }

@@ -152,6 +152,8 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         Assert.NotNull(tree);
         var legacy = RuntimeFrontEnd.RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(tree.Root);
         Assert.Equal(expected, legacy);
-        Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(tree.Root));
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
+        Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(ownedTree.Root));
     }
 }

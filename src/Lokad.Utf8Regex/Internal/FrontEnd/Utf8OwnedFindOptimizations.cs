@@ -10,48 +10,48 @@ using System.Text.RegularExpressions;
 // int.MaxValue - 1 past int.MaxValue, maximums turn null, lone bounds stay put.
 internal static class Utf8OwnedFindOptimizations
 {
-    public static int ComputeMinLength(RuntimeFrontEnd.RegexNode node)
+    public static int ComputeMinLength(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.One:
-            case RuntimeFrontEnd.RegexNodeKind.Notone:
-            case RuntimeFrontEnd.RegexNodeKind.Set:
+            case Utf8TreeNodeKind.One:
+            case Utf8TreeNodeKind.Notone:
+            case Utf8TreeNodeKind.Set:
                 return 1;
-            case RuntimeFrontEnd.RegexNodeKind.Multi:
+            case Utf8TreeNodeKind.Multi:
                 return node.Str?.Length ?? 1;
-            case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Setloop:
-            case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-            case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+            case Utf8TreeNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Notoneloop:
+            case Utf8TreeNodeKind.Setloop:
+            case Utf8TreeNodeKind.Onelazy:
+            case Utf8TreeNodeKind.Notonelazy:
+            case Utf8TreeNodeKind.Setlazy:
+            case Utf8TreeNodeKind.Oneloopatomic:
+            case Utf8TreeNodeKind.Notoneloopatomic:
+            case Utf8TreeNodeKind.Setloopatomic:
                 return node.M;
-            case RuntimeFrontEnd.RegexNodeKind.Loop:
-            case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
+            case Utf8TreeNodeKind.Loop:
+            case Utf8TreeNodeKind.Lazyloop:
                 return CapMin((long)node.M * ChildMinLength(node));
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
-            case RuntimeFrontEnd.RegexNodeKind.Atomic:
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
+            case Utf8TreeNodeKind.Atomic:
+            case Utf8TreeNodeKind.Concatenate:
                 return SumMinLength(node);
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
-            case RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional:
-            case RuntimeFrontEnd.RegexNodeKind.ExpressionConditional:
+            case Utf8TreeNodeKind.Alternate:
+            case Utf8TreeNodeKind.BackreferenceConditional:
+            case Utf8TreeNodeKind.ExpressionConditional:
                 return AlternateMinLength(node);
             default:
                 return 0;
         }
 
-        static int ChildMinLength(RuntimeFrontEnd.RegexNode parent)
+        static int ChildMinLength(Utf8TreeNode parent)
         {
             return parent.ChildCount == 0 ? 0 : ComputeMinLength(parent.Child(0));
         }
 
-        static int SumMinLength(RuntimeFrontEnd.RegexNode parent)
+        static int SumMinLength(Utf8TreeNode parent)
         {
             long total = 0;
             for (var i = 0; i < parent.ChildCount; i++)
@@ -66,7 +66,7 @@ internal static class Utf8OwnedFindOptimizations
             return CapMin(total);
         }
 
-        static int AlternateMinLength(RuntimeFrontEnd.RegexNode parent)
+        static int AlternateMinLength(Utf8TreeNode parent)
         {
             var minimum = int.MaxValue;
             for (var i = 0; i < parent.ChildCount; i++)
@@ -87,43 +87,43 @@ internal static class Utf8OwnedFindOptimizations
         }
     }
 
-    public static int? ComputeMaxLength(RuntimeFrontEnd.RegexNode node)
+    public static int? ComputeMaxLength(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.One:
-            case RuntimeFrontEnd.RegexNodeKind.Notone:
-            case RuntimeFrontEnd.RegexNodeKind.Set:
+            case Utf8TreeNodeKind.One:
+            case Utf8TreeNodeKind.Notone:
+            case Utf8TreeNodeKind.Set:
                 return 1;
-            case RuntimeFrontEnd.RegexNodeKind.Multi:
+            case Utf8TreeNodeKind.Multi:
                 return node.Str?.Length ?? 1;
-            case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-            case RuntimeFrontEnd.RegexNodeKind.Setloop:
-            case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-            case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-            case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-            case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+            case Utf8TreeNodeKind.Oneloop:
+            case Utf8TreeNodeKind.Notoneloop:
+            case Utf8TreeNodeKind.Setloop:
+            case Utf8TreeNodeKind.Onelazy:
+            case Utf8TreeNodeKind.Notonelazy:
+            case Utf8TreeNodeKind.Setlazy:
+            case Utf8TreeNodeKind.Oneloopatomic:
+            case Utf8TreeNodeKind.Notoneloopatomic:
+            case Utf8TreeNodeKind.Setloopatomic:
                 return node.N == int.MaxValue ? null : node.N;
-            case RuntimeFrontEnd.RegexNodeKind.Loop:
-            case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
+            case Utf8TreeNodeKind.Loop:
+            case Utf8TreeNodeKind.Lazyloop:
                 return RepeatMaxLength(node);
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
-            case RuntimeFrontEnd.RegexNodeKind.Atomic:
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
+            case Utf8TreeNodeKind.Atomic:
+            case Utf8TreeNodeKind.Concatenate:
                 return SumMaxLength(node);
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
-            case RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional:
-            case RuntimeFrontEnd.RegexNodeKind.ExpressionConditional:
+            case Utf8TreeNodeKind.Alternate:
+            case Utf8TreeNodeKind.BackreferenceConditional:
+            case Utf8TreeNodeKind.ExpressionConditional:
                 return AlternateMaxLength(node);
             default:
                 return 0;
         }
 
-        static int? RepeatMaxLength(RuntimeFrontEnd.RegexNode parent)
+        static int? RepeatMaxLength(Utf8TreeNode parent)
         {
             var child = parent.ChildCount == 0 ? 0 : ComputeMaxLength(parent.Child(0));
             if (parent.N == int.MaxValue || child is null)
@@ -134,7 +134,7 @@ internal static class Utf8OwnedFindOptimizations
             return CapMax((long)parent.N * child.Value);
         }
 
-        static int? SumMaxLength(RuntimeFrontEnd.RegexNode parent)
+        static int? SumMaxLength(Utf8TreeNode parent)
         {
             long total = 0;
             for (var i = 0; i < parent.ChildCount; i++)
@@ -155,7 +155,7 @@ internal static class Utf8OwnedFindOptimizations
             return CapMax(total);
         }
 
-        static int? AlternateMaxLength(RuntimeFrontEnd.RegexNode parent)
+        static int? AlternateMaxLength(Utf8TreeNode parent)
         {
             int? maximum = 0;
             for (var i = 0; i < parent.ChildCount; i++)
@@ -181,80 +181,80 @@ internal static class Utf8OwnedFindOptimizations
         }
     }
 
-    public static RuntimeFrontEnd.RegexNodeKind FindLeadingAnchor(RuntimeFrontEnd.RegexNode node)
+    public static Utf8TreeNodeKind FindLeadingAnchor(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
-            case RuntimeFrontEnd.RegexNodeKind.Atomic:
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
-                return node.ChildCount == 0 ? RuntimeFrontEnd.RegexNodeKind.Unknown : FindLeadingAnchor(node.Child(0));
-            case RuntimeFrontEnd.RegexNodeKind.Beginning:
-            case RuntimeFrontEnd.RegexNodeKind.Bol:
-            case RuntimeFrontEnd.RegexNodeKind.Start:
-            case RuntimeFrontEnd.RegexNodeKind.EndZ:
-            case RuntimeFrontEnd.RegexNodeKind.End:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
+            case Utf8TreeNodeKind.Atomic:
+            case Utf8TreeNodeKind.Concatenate:
+                return node.ChildCount == 0 ? Utf8TreeNodeKind.Unknown : FindLeadingAnchor(node.Child(0));
+            case Utf8TreeNodeKind.Beginning:
+            case Utf8TreeNodeKind.Bol:
+            case Utf8TreeNodeKind.Start:
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.End:
                 return node.Kind;
             default:
-                return RuntimeFrontEnd.RegexNodeKind.Unknown;
+                return Utf8TreeNodeKind.Unknown;
         }
     }
 
-    public static RuntimeFrontEnd.RegexNodeKind FindTrailingAnchor(RuntimeFrontEnd.RegexNode node)
+    public static Utf8TreeNodeKind FindTrailingAnchor(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
-            case RuntimeFrontEnd.RegexNodeKind.Atomic:
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
-                return node.ChildCount == 0 ? RuntimeFrontEnd.RegexNodeKind.Unknown : FindTrailingAnchor(node.Child(node.ChildCount - 1));
-            case RuntimeFrontEnd.RegexNodeKind.EndZ:
-            case RuntimeFrontEnd.RegexNodeKind.End:
-            case RuntimeFrontEnd.RegexNodeKind.Eol:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
+            case Utf8TreeNodeKind.Atomic:
+            case Utf8TreeNodeKind.Concatenate:
+                return node.ChildCount == 0 ? Utf8TreeNodeKind.Unknown : FindTrailingAnchor(node.Child(node.ChildCount - 1));
+            case Utf8TreeNodeKind.EndZ:
+            case Utf8TreeNodeKind.End:
+            case Utf8TreeNodeKind.Eol:
                 return node.Kind;
             default:
-                return RuntimeFrontEnd.RegexNodeKind.Unknown;
+                return Utf8TreeNodeKind.Unknown;
         }
     }
-    public static string? TryExtractLeadingLiteral(RuntimeFrontEnd.RegexNode node)
+    public static string? TryExtractLeadingLiteral(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 return node.Ch.ToString();
-            case RuntimeFrontEnd.RegexNodeKind.Multi:
+            case Utf8TreeNodeKind.Multi:
                 return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
                 return node.ChildCount == 1 ? TryExtractLeadingLiteral(node.Child(0)) : null;
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 return LeadingRun(node);
             default:
                 return null;
         }
 
-        static string? LeadingRun(RuntimeFrontEnd.RegexNode parent)
+        static string? LeadingRun(Utf8TreeNode parent)
         {
             var run = new StringBuilder();
             for (var i = 0; i < parent.ChildCount; i++)
             {
                 var child = parent.Child(i);
-                if (child.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                if (child.Kind == Utf8TreeNodeKind.One)
                 {
                     run.Append(child.Ch);
                 }
-                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
                 {
                     run.Append(child.Str);
                 }
-                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                else if (child.Kind == Utf8TreeNodeKind.Empty)
                 {
                     continue;
                 }
                 else if (run.Length == 0 &&
-                    (child.Kind == RuntimeFrontEnd.RegexNodeKind.Bol || child.Kind == RuntimeFrontEnd.RegexNodeKind.Eol))
+                    (child.Kind == Utf8TreeNodeKind.Bol || child.Kind == Utf8TreeNodeKind.Eol))
                 {
                     continue;
                 }
@@ -268,41 +268,41 @@ internal static class Utf8OwnedFindOptimizations
         }
     }
 
-    public static string? TryExtractLongestLiteral(RuntimeFrontEnd.RegexNode node)
+    public static string? TryExtractLongestLiteral(Utf8TreeNode node)
     {
         switch (node.Kind)
         {
-            case RuntimeFrontEnd.RegexNodeKind.One:
+            case Utf8TreeNodeKind.One:
                 return node.Ch.ToString();
-            case RuntimeFrontEnd.RegexNodeKind.Multi:
+            case Utf8TreeNodeKind.Multi:
                 return string.IsNullOrEmpty(node.Str) ? null : node.Str;
-            case RuntimeFrontEnd.RegexNodeKind.Capture:
-            case RuntimeFrontEnd.RegexNodeKind.Group:
+            case Utf8TreeNodeKind.Capture:
+            case Utf8TreeNodeKind.Group:
                 return node.ChildCount == 1 ? TryExtractLongestLiteral(node.Child(0)) : null;
-            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+            case Utf8TreeNodeKind.Concatenate:
                 return LongestRun(node);
-            case RuntimeFrontEnd.RegexNodeKind.Alternate:
+            case Utf8TreeNodeKind.Alternate:
                 return LongestBranch(node);
             default:
                 return null;
         }
 
-        static string? LongestRun(RuntimeFrontEnd.RegexNode parent)
+        static string? LongestRun(Utf8TreeNode parent)
         {
             string? best = null;
             var run = new StringBuilder();
             for (var i = 0; i < parent.ChildCount; i++)
             {
                 var child = parent.Child(i);
-                if (child.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                if (child.Kind == Utf8TreeNodeKind.One)
                 {
                     run.Append(child.Ch);
                 }
-                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                else if (child.Kind == Utf8TreeNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
                 {
                     run.Append(child.Str);
                 }
-                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                else if (child.Kind == Utf8TreeNodeKind.Empty)
                 {
                     continue;
                 }
@@ -316,7 +316,7 @@ internal static class Utf8OwnedFindOptimizations
             return Longer(best, run.ToString());
         }
 
-        static string? LongestBranch(RuntimeFrontEnd.RegexNode parent)
+        static string? LongestBranch(Utf8TreeNode parent)
         {
             string? best = null;
             for (var i = 0; i < parent.ChildCount; i++)
@@ -371,16 +371,16 @@ internal static class Utf8OwnedFindOptimizations
     // lowercase head under top level IgnoreCase, read from the explicit options
     // because the tree root strips that flag, and expand wire order otherwise.
     // Every rule above was read off probe behavior.
-    public static string[]? FindAlternatePrefixes(RuntimeFrontEnd.RegexNode node, RegexOptions options)
+    public static string[]? FindAlternatePrefixes(Utf8TreeNode node, RegexOptions options)
     {
         var topIgnoreCase = (options & RegexOptions.IgnoreCase) != 0;
         var unwrapped = node;
-        while ((unwrapped.Kind is RuntimeFrontEnd.RegexNodeKind.Capture or RuntimeFrontEnd.RegexNodeKind.Group or RuntimeFrontEnd.RegexNodeKind.Atomic) && unwrapped.ChildCount == 1)
+        while ((unwrapped.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) && unwrapped.ChildCount == 1)
         {
             unwrapped = unwrapped.Child(0);
         }
 
-        if (unwrapped.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate)
+        if (unwrapped.Kind == Utf8TreeNodeKind.Alternate)
         {
             var union = ExpandFallbackAlternation(unwrapped, topIgnoreCase);
             if (union is null)
@@ -424,23 +424,23 @@ internal static class Utf8OwnedFindOptimizations
 
         return walker.Families.ToArray();
 
-        static bool HasRegexOption(RuntimeFrontEnd.RegexNode target, RegexOptions option)
+        static bool HasRegexOption(Utf8TreeNode target, RegexOptions option)
         {
             return (target.Options & option) != 0;
         }
 
-        static bool UnwrapsToAlternate(RuntimeFrontEnd.RegexNode target)
+        static bool UnwrapsToAlternate(Utf8TreeNode target)
         {
             var current = target;
-            while ((current.Kind is RuntimeFrontEnd.RegexNodeKind.Capture or RuntimeFrontEnd.RegexNodeKind.Group or RuntimeFrontEnd.RegexNodeKind.Atomic) && current.ChildCount == 1)
+            while ((current.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic) && current.ChildCount == 1)
             {
                 current = current.Child(0);
             }
 
-            return current.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate;
+            return current.Kind == Utf8TreeNodeKind.Alternate;
         }
 
-        static void WalkPrimary(RuntimeFrontEnd.RegexNode node, PrefixWalker walker, bool topIgnoreCase)
+        static void WalkPrimary(Utf8TreeNode node, PrefixWalker walker, bool topIgnoreCase)
         {
             if (walker.Failed || walker.Stopped)
             {
@@ -449,9 +449,9 @@ internal static class Utf8OwnedFindOptimizations
 
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
                     if (node.ChildCount == 1)
                     {
                         WalkPrimary(node.Child(0), walker, topIgnoreCase);
@@ -460,16 +460,16 @@ internal static class Utf8OwnedFindOptimizations
 
                     WalkPrimaryChildren(node, walker, topIgnoreCase);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Concatenate:
                     WalkPrimaryChildren(node, walker, topIgnoreCase);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Alternate:
+                case Utf8TreeNodeKind.Alternate:
                     walker.Failed = true;
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     AppendPrefixText(walker, node.Ch.ToString());
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     if (string.IsNullOrEmpty(node.Str))
                     {
                         walker.Stopped = true;
@@ -478,28 +478,28 @@ internal static class Utf8OwnedFindOptimizations
 
                     AppendPrefixText(walker, node.Str);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Set:
+                case Utf8TreeNodeKind.Set:
                     ApplyPrimarySet(walker, node, topIgnoreCase);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
                     ApplyPrimarySingleLoop(walker, node.Ch, node.M, node.N);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Setloop:
-                case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-                case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
                     ApplyPrimarySetLoop(walker, node, topIgnoreCase);
                     return;
-                case RuntimeFrontEnd.RegexNodeKind.Loop:
-                case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notone:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Backreference:
-                case RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional:
-                case RuntimeFrontEnd.RegexNodeKind.ExpressionConditional:
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Notone:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Backreference:
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
                     walker.Stopped = true;
                     return;
                 default:
@@ -507,7 +507,7 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
 
-        static void WalkPrimaryChildren(RuntimeFrontEnd.RegexNode parent, PrefixWalker walker, bool topIgnoreCase)
+        static void WalkPrimaryChildren(Utf8TreeNode parent, PrefixWalker walker, bool topIgnoreCase)
         {
             for (var i = 0; i < parent.ChildCount; i++)
             {
@@ -653,7 +653,7 @@ internal static class Utf8OwnedFindOptimizations
             original = head;
             return true;
         }
-        static void ApplyPrimarySet(PrefixWalker walker, RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static void ApplyPrimarySet(PrefixWalker walker, Utf8TreeNode node, bool topIgnoreCase)
         {
             if (SetIsOpaque(node.Str))
             {
@@ -705,7 +705,7 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
 
-        static void ApplyPrimarySetLoop(PrefixWalker walker, RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static void ApplyPrimarySetLoop(PrefixWalker walker, Utf8TreeNode node, bool topIgnoreCase)
         {
             if (SetIsOpaque(node.Str))
             {
@@ -749,7 +749,7 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
 
-        static List<string>? ExpandFallbackRoot(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static List<string>? ExpandFallbackRoot(Utf8TreeNode node, bool topIgnoreCase)
         {
             var result = ExpandFallback(node, topIgnoreCase);
             if (result.Families is null || result.Families.Count == 0)
@@ -768,7 +768,7 @@ internal static class Utf8OwnedFindOptimizations
             return result.Families;
         }
 
-        static List<string>? ExpandFallbackAlternation(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static List<string>? ExpandFallbackAlternation(Utf8TreeNode node, bool topIgnoreCase)
         {
             var result = ExpandFallback(node, topIgnoreCase);
             if (result.Families is null)
@@ -779,17 +779,17 @@ internal static class Utf8OwnedFindOptimizations
             return result.Families;
         }
 
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallback(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static (List<string>? Families, bool Done, bool Anchored) ExpandFallback(Utf8TreeNode node, bool topIgnoreCase)
         {
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.Alternate:
+                case Utf8TreeNodeKind.Alternate:
                     return ExpandFallbackUnion(node, topIgnoreCase);
-                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Concatenate:
                     return ExpandFallbackSequence(node, topIgnoreCase);
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
                     if (node.ChildCount == 1)
                     {
                         return ExpandFallback(node.Child(0), topIgnoreCase);
@@ -801,7 +801,7 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
 
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSequence(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSequence(Utf8TreeNode node, bool topIgnoreCase)
         {
             var families = new List<string> { "" };
             var anchored = false;
@@ -830,7 +830,7 @@ internal static class Utf8OwnedFindOptimizations
             return (families, true, anchored);
         }
 
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackUnion(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackUnion(Utf8TreeNode node, bool topIgnoreCase)
         {
             var result = new List<string>();
             var anchored = false;
@@ -879,20 +879,20 @@ internal static class Utf8OwnedFindOptimizations
             return (result, true, anchored);
         }
 
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSingle(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSingle(Utf8TreeNode node, bool topIgnoreCase)
         {
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     return (new List<string> { node.Ch.ToString() }, true, false);
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     if (string.IsNullOrEmpty(node.Str))
                     {
                         return (new List<string> { "" }, true, false);
                     }
 
                     return (new List<string> { node.Str }, true, false);
-                case RuntimeFrontEnd.RegexNodeKind.Set:
+                case Utf8TreeNodeKind.Set:
                     if (SetIsOpaque(node.Str))
                     {
                         return (new List<string> { "" }, false, false);
@@ -920,30 +920,30 @@ internal static class Utf8OwnedFindOptimizations
                     }
 
                     return (chars, true, false);
-                case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
                     return ExpandFallbackSingleLoop(node.Ch, node.M, node.N);
-                case RuntimeFrontEnd.RegexNodeKind.Setloop:
-                case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-                case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
                     return ExpandFallbackSetLoop(node, topIgnoreCase);
-                case RuntimeFrontEnd.RegexNodeKind.Beginning:
-                case RuntimeFrontEnd.RegexNodeKind.Bol:
-                case RuntimeFrontEnd.RegexNodeKind.Start:
-                case RuntimeFrontEnd.RegexNodeKind.End:
-                case RuntimeFrontEnd.RegexNodeKind.EndZ:
-                case RuntimeFrontEnd.RegexNodeKind.Eol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Eol:
                     return (new List<string> { "" }, true, true);
-                case RuntimeFrontEnd.RegexNodeKind.Loop:
-                case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notone:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Backreference:
-                case RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional:
-                case RuntimeFrontEnd.RegexNodeKind.ExpressionConditional:
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Notone:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Backreference:
+                case Utf8TreeNodeKind.BackreferenceConditional:
+                case Utf8TreeNodeKind.ExpressionConditional:
                     return (new List<string> { "" }, false, false);
                 default:
                     return (new List<string> { "" }, true, false);
@@ -962,7 +962,7 @@ internal static class Utf8OwnedFindOptimizations
             return (families, true, false);
         }
 
-        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSetLoop(RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
+        static (List<string>? Families, bool Done, bool Anchored) ExpandFallbackSetLoop(Utf8TreeNode node, bool topIgnoreCase)
         {
             if (SetIsOpaque(node.Str))
             {
@@ -1016,7 +1016,7 @@ internal static class Utf8OwnedFindOptimizations
     // Case folded trees carry sets instead of literals and yield nothing, and
     // RightToLeft needs no special handling. Distances use unchecked integer
     // arithmetic exactly like the surrounding runtime formulas.
-    public static (string Literal, int Distance)? TryExtractFixedDistanceLiteral(RuntimeFrontEnd.RegexNode node)
+    public static (string Literal, int Distance)? TryExtractFixedDistanceLiteral(Utf8TreeNode node)
     {
         var holder = new LiteralHolder();
         WalkLiteral(node, 0, holder);
@@ -1038,27 +1038,27 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
 
-        static int WalkLiteral(RuntimeFrontEnd.RegexNode node, int distance, LiteralHolder holder)
+        static int WalkLiteral(Utf8TreeNode node, int distance, LiteralHolder holder)
         {
             switch (node.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     ConsiderLiteral(holder, node.Ch.ToString(), distance);
                     return distance + 1;
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     if (!string.IsNullOrEmpty(node.Str))
                     {
                         ConsiderLiteral(holder, node.Str, distance);
                     }
 
                     return distance + (node.Str is null ? 1 : node.Str.Length);
-                case RuntimeFrontEnd.RegexNodeKind.Notone:
-                case RuntimeFrontEnd.RegexNodeKind.Set:
+                case Utf8TreeNodeKind.Notone:
+                case Utf8TreeNodeKind.Set:
                     return distance + 1;
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
-                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
                     var running = distance;
                     for (var i = 0; i < node.ChildCount; i++)
                     {
@@ -1066,20 +1066,20 @@ internal static class Utf8OwnedFindOptimizations
                     }
 
                     return running;
-                case RuntimeFrontEnd.RegexNodeKind.Alternate:
+                case Utf8TreeNodeKind.Alternate:
                     return distance + ComputeMinLength(node);
-                case RuntimeFrontEnd.RegexNodeKind.Oneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Onelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Oneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloop:
-                case RuntimeFrontEnd.RegexNodeKind.Notonelazy:
-                case RuntimeFrontEnd.RegexNodeKind.Notoneloopatomic:
-                case RuntimeFrontEnd.RegexNodeKind.Setloop:
-                case RuntimeFrontEnd.RegexNodeKind.Setlazy:
-                case RuntimeFrontEnd.RegexNodeKind.Setloopatomic:
+                case Utf8TreeNodeKind.Oneloop:
+                case Utf8TreeNodeKind.Onelazy:
+                case Utf8TreeNodeKind.Oneloopatomic:
+                case Utf8TreeNodeKind.Notoneloop:
+                case Utf8TreeNodeKind.Notonelazy:
+                case Utf8TreeNodeKind.Notoneloopatomic:
+                case Utf8TreeNodeKind.Setloop:
+                case Utf8TreeNodeKind.Setlazy:
+                case Utf8TreeNodeKind.Setloopatomic:
                     return distance + node.M;
-                case RuntimeFrontEnd.RegexNodeKind.Loop:
-                case RuntimeFrontEnd.RegexNodeKind.Lazyloop:
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
                     var body = node.ChildCount == 0 ? 0 : ComputeMinLength(node.Child(0));
                     return unchecked(distance + node.M * body);
                 default:
@@ -1102,7 +1102,7 @@ internal static class Utf8OwnedFindOptimizations
     // ascending characters with the wire payload reused verbatim. No options
     // take part: folded payloads already carry their bytes. Every rule above
     // was read off probe behavior.
-    public static OwnedSet[]? FindFixedDistanceSets(RuntimeFrontEnd.RegexNode node)
+    public static OwnedSet[]? FindFixedDistanceSets(Utf8TreeNode node)
     {
         var sets = new List<OwnedSet>();
         var result = WalkSets(node, 0, sets);
@@ -1113,25 +1113,25 @@ internal static class Utf8OwnedFindOptimizations
 
         return sets.ToArray();
 
-        static (int Distance, bool Ok) WalkSets(RuntimeFrontEnd.RegexNode current, int distance, List<OwnedSet> sets)
+        static (int Distance, bool Ok) WalkSets(Utf8TreeNode current, int distance, List<OwnedSet> sets)
         {
             switch (current.Kind)
             {
-                case RuntimeFrontEnd.RegexNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     return (distance + 1, true);
-                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                case Utf8TreeNodeKind.Multi:
                     return (distance + (current.Str is null ? 1 : current.Str.Length), true);
-                case RuntimeFrontEnd.RegexNodeKind.Set:
+                case Utf8TreeNodeKind.Set:
                     if (!TryAddSet(current.Str, distance, sets))
                     {
                         return (distance, false);
                     }
 
                     return (distance + 1, true);
-                case RuntimeFrontEnd.RegexNodeKind.Capture:
-                case RuntimeFrontEnd.RegexNodeKind.Group:
-                case RuntimeFrontEnd.RegexNodeKind.Atomic:
-                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                case Utf8TreeNodeKind.Capture:
+                case Utf8TreeNodeKind.Group:
+                case Utf8TreeNodeKind.Atomic:
+                case Utf8TreeNodeKind.Concatenate:
                     var running = distance;
                     for (var i = 0; i < current.ChildCount; i++)
                     {
@@ -1145,13 +1145,13 @@ internal static class Utf8OwnedFindOptimizations
                     }
 
                     return (running, true);
-                case RuntimeFrontEnd.RegexNodeKind.Beginning:
-                case RuntimeFrontEnd.RegexNodeKind.Bol:
-                case RuntimeFrontEnd.RegexNodeKind.Start:
-                case RuntimeFrontEnd.RegexNodeKind.End:
-                case RuntimeFrontEnd.RegexNodeKind.EndZ:
-                case RuntimeFrontEnd.RegexNodeKind.Eol:
-                case RuntimeFrontEnd.RegexNodeKind.Empty:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.End:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.Empty:
                     return (distance, true);
                 default:
                     return (distance, false);

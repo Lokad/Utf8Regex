@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections;
 using System.Globalization;
 using Lokad.Utf8Regex.Internal.Execution;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -61,16 +60,16 @@ internal static class Utf8OwnedTreeParser
         }
 
         var treeOptions = options | state.TreeSeen;
-        if (root.Kind is RuntimeFrontEnd.RegexNodeKind.Concatenate or RuntimeFrontEnd.RegexNodeKind.Alternate)
+        if (root.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate)
         {
-            var top = new RuntimeFrontEnd.RegexNode(root.Kind, treeOptions);
+            var top = new Utf8TreeNode(root.Kind, treeOptions);
             top.Ch = root.Ch;
             top.Str = root.Str;
             top.Str2 = root.Str2;
             top.M = root.M;
             top.N = root.N;
             top.Children = root.Children;
-            if (top.Children is List<RuntimeFrontEnd.RegexNode> topChildren)
+            if (top.Children is List<Utf8TreeNode> topChildren)
             {
                 foreach (var topChild in topChildren)
                 {
@@ -92,7 +91,7 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
-        var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
+        var tree = new Utf8TreeNode(Utf8TreeNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
         tree.M = 0;
         tree.N = -1;
         tree.Children = root;
@@ -109,7 +108,7 @@ internal static class Utf8OwnedTreeParser
             treeOptions,
             culture);
 
-        static bool ParseAlternation(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? root)
+        static bool ParseAlternation(ref ParserState state, int depth, out Utf8TreeNode? root)
         {
             root = null;
             if (depth > MaxNestingDepth)
@@ -117,7 +116,7 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            var branches = new List<RuntimeFrontEnd.RegexNode>();
+            var branches = new List<Utf8TreeNode>();
             var alternationEntryOptions = state.Options;
             while (true)
             {
@@ -144,10 +143,10 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseConcatenation(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        static bool ParseConcatenation(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
-            var children = new List<RuntimeFrontEnd.RegexNode>();
+            var children = new List<Utf8TreeNode>();
             var run = new StringBuilder();
             var concatenationEntryOptions = state.Options;
             while (!state.AtEnd)
@@ -215,7 +214,7 @@ internal static class Utf8OwnedTreeParser
                     if (backrefDigits is not null)
                     {
                         FlushRun(state, children, run);
-                        var tentative = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Backreference, state.Options);
+                        var tentative = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
                         tentative.N = -1;
                         var backrefAtom = tentative;
                         if (!ParseQuantifier(ref state, ref backrefAtom))
@@ -223,7 +222,7 @@ internal static class Utf8OwnedTreeParser
                             return false;
                         }
 
-                        if (backrefAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
                         {
                             state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits });
                         }
@@ -231,7 +230,7 @@ internal static class Utf8OwnedTreeParser
                         {
                             state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits });
                         }
-                        else if (backrefAtom.Kind is RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop &&
+                        else if (backrefAtom.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
                             backrefAtom.ChildCount == 1 &&
                             ReferenceEquals(backrefAtom.Child(0), tentative))
                         {
@@ -246,7 +245,7 @@ internal static class Utf8OwnedTreeParser
                     if (backrefName is not null)
                     {
                         FlushRun(state, children, run);
-                        var namedBackref = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Backreference, state.Options);
+                        var namedBackref = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
                         namedBackref.Str = backrefName;
                         namedBackref.N = 0;
                         var namedAtom = namedBackref;
@@ -255,7 +254,7 @@ internal static class Utf8OwnedTreeParser
                             return false;
                         }
 
-                        if (namedAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        if (namedAtom.Kind == Utf8TreeNodeKind.Empty)
                         {
                             state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedAtom, Name = backrefName });
                             children.Add(namedAtom);
@@ -352,31 +351,31 @@ internal static class Utf8OwnedTreeParser
                 }
 
                 FlushRun(state, children, run);
-                RuntimeFrontEnd.RegexNode atom;
+                Utf8TreeNode atom;
                 if (character == '^')
                 {
                     var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
-                        RuntimeFrontEnd.RegexNodeKind.Beginning :
-                        RuntimeFrontEnd.RegexNodeKind.Bol;
-                    atom = new RuntimeFrontEnd.RegexNode(anchorKind, state.Options);
+                        Utf8TreeNodeKind.Beginning :
+                        Utf8TreeNodeKind.Bol;
+                    atom = new Utf8TreeNode(anchorKind, state.Options);
                     state.Position++;
                 }
                 else if (character == '$')
                 {
                     var anchorKind = (state.Options & RegexOptions.Multiline) == 0 ?
-                        RuntimeFrontEnd.RegexNodeKind.EndZ :
-                        RuntimeFrontEnd.RegexNodeKind.Eol;
-                    atom = new RuntimeFrontEnd.RegexNode(anchorKind, state.Options);
+                        Utf8TreeNodeKind.EndZ :
+                        Utf8TreeNodeKind.Eol;
+                    atom = new Utf8TreeNode(anchorKind, state.Options);
                     state.Position++;
                 }
                 else if (character == '.' && (state.Options & RegexOptions.Singleline) == 0)
                 {
-                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
+                    atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, DotText);
                     state.Position++;
                 }
                 else if (character == '.')
                 {
-                    atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
+                    atom = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
                     state.Position++;
                 }
                 else if (character == '[')
@@ -413,7 +412,7 @@ internal static class Utf8OwnedTreeParser
             FlushRun(state, children, run);
             if (children.Count == 0)
             {
-                node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, concatenationEntryOptions);
+                node = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, concatenationEntryOptions);
                 return true;
             }
 
@@ -421,7 +420,7 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static void FlushRun(ParserState state, List<RuntimeFrontEnd.RegexNode> children, StringBuilder run)
+        static void FlushRun(ParserState state, List<Utf8TreeNode> children, StringBuilder run)
         {
             if (run.Length == 0)
             {
@@ -560,7 +559,7 @@ internal static class Utf8OwnedTreeParser
             }
         }
 
-        static bool TryAnchorEscape(ref ParserState state, out RuntimeFrontEnd.RegexNode? anchor)
+        static bool TryAnchorEscape(ref ParserState state, out Utf8TreeNode? anchor)
         {
             anchor = null;
             if (state.Position + 1 >= state.Pattern.Length)
@@ -568,37 +567,37 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            RuntimeFrontEnd.RegexNodeKind kind;
+            Utf8TreeNodeKind kind;
             switch (state.Pattern[state.Position + 1])
             {
                 case 'b':
-                    kind = RuntimeFrontEnd.RegexNodeKind.Boundary;
+                    kind = Utf8TreeNodeKind.Boundary;
                     break;
                 case 'B':
-                    kind = RuntimeFrontEnd.RegexNodeKind.NonBoundary;
+                    kind = Utf8TreeNodeKind.NonBoundary;
                     break;
                 case 'A':
-                    kind = RuntimeFrontEnd.RegexNodeKind.Beginning;
+                    kind = Utf8TreeNodeKind.Beginning;
                     break;
                 case 'G':
-                    kind = RuntimeFrontEnd.RegexNodeKind.Start;
+                    kind = Utf8TreeNodeKind.Start;
                     break;
                 case 'Z':
-                    kind = RuntimeFrontEnd.RegexNodeKind.EndZ;
+                    kind = Utf8TreeNodeKind.EndZ;
                     break;
                 case 'z':
-                    kind = RuntimeFrontEnd.RegexNodeKind.End;
+                    kind = Utf8TreeNodeKind.End;
                     break;
                 default:
                     return false;
             }
 
-            anchor = new RuntimeFrontEnd.RegexNode(kind, state.Options);
+            anchor = new Utf8TreeNode(kind, state.Options);
             state.Position += 2;
             return true;
         }
 
-        static bool ParseClass(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
+        static bool ParseClass(ref ParserState state, out Utf8TreeNode? node)
         {
             node = null;
             var wire = new StringBuilder();
@@ -607,7 +606,7 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, wire.ToString());
+            node = new Utf8TreeNode(Utf8TreeNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, wire.ToString());
             return true;
         }
 
@@ -1062,7 +1061,7 @@ internal static class Utf8OwnedTreeParser
             // punctuation resolutions that break ranges.
             return letter is '0' or 'x' or 'u' or 'c' or 'a' or 'e' or 'n' or 'r' or 't' or 'f' or 'v' || (letter >= '0' && letter <= '7');
         }
-        static bool TryTakeShorthandAtom(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
+        static bool TryTakeShorthandAtom(ref ParserState state, out Utf8TreeNode? node)
         {
             node = null;
             var units = new List<char>();
@@ -1076,7 +1075,7 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static RuntimeFrontEnd.RegexNode BuildSetNode(RegexOptions options, bool negated, List<char> units, List<char> categories)
+        static Utf8TreeNode BuildSetNode(RegexOptions options, bool negated, List<char> units, List<char> categories)
         {
             var text = new char[units.Count + categories.Count + 3];
             text[0] = negated ? (char)1 : (char)0;
@@ -1092,7 +1091,7 @@ internal static class Utf8OwnedTreeParser
                 text[i + 3 + units.Count] = categories[i];
             }
 
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, options, new string(text));
+            return new Utf8TreeNode(Utf8TreeNodeKind.Set, options, new string(text));
         }
 
         static bool TryTakeShorthandMembers(ref ParserState state, List<char> units, List<char> categories)
@@ -1305,7 +1304,7 @@ internal static class Utf8OwnedTreeParser
                 units.Add(unchecked((char)(0xFFFF + 1)));
             }
         }
-        static bool ParseNamedGroup(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        static bool ParseNamedGroup(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
             var open = state.Pattern[state.Position];
@@ -1361,7 +1360,7 @@ internal static class Utf8OwnedTreeParser
 
             state.Position++;
             state.Options = namedEntryOptions;
-            var group = new RuntimeFrontEnd.RegexNode(underExplicit ? RuntimeFrontEnd.RegexNodeKind.Group : RuntimeFrontEnd.RegexNodeKind.Capture, namedEntryOptions);
+            var group = new Utf8TreeNode(underExplicit ? Utf8TreeNodeKind.Group : Utf8TreeNodeKind.Capture, namedEntryOptions);
             group.Children = body;
             body.Parent = group;
             node = group;
@@ -1548,7 +1547,7 @@ internal static class Utf8OwnedTreeParser
 
         static bool FinishNumbering(
             ref ParserState state,
-            ref RuntimeFrontEnd.RegexNode root,
+            ref Utf8TreeNode root,
             out int captureCount,
             out string[] captureNames,
             out Hashtable? captureNameToNumber,
@@ -1706,9 +1705,9 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
+        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root, ref bool morphed)
         {
-            if (fixup.Node.Kind == RuntimeFrontEnd.RegexNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
+            if (fixup.Node.Kind == Utf8TreeNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
             {
                 return ResolveEmptyFixup(fixup, slots, slotByName, ref root);
             }
@@ -1769,7 +1768,7 @@ internal static class Utf8OwnedTreeParser
             return ResolveOctalFallback(fixup, ref root, ref morphed);
         }
 
-        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref RuntimeFrontEnd.RegexNode root)
+        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref Utf8TreeNode root)
         {
             if (fixup.Name is not null)
             {
@@ -1819,7 +1818,7 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            RuntimeFrontEnd.RegexNode morphedLeaf;
+            Utf8TreeNode morphedLeaf;
             if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
                 Utf8OwnedCaseFold.TryGetFold((char)value, out var emptyLower, out var emptyUpper))
             {
@@ -1827,7 +1826,7 @@ internal static class Utf8OwnedTreeParser
             }
             else
             {
-                morphedLeaf = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                morphedLeaf = new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
                 morphedLeaf.M = 0;
                 morphedLeaf.N = 0;
             }
@@ -1836,16 +1835,16 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static void StripEmptyOptions(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode node)
+        static void StripEmptyOptions(ref Utf8TreeNode root, Utf8TreeNode node)
         {
             if ((node.Options & RegexOptions.IgnoreCase) != 0)
             {
-                var stripped = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options & ~RegexOptions.IgnoreCase);
+                var stripped = new Utf8TreeNode(Utf8TreeNodeKind.Empty, node.Options & ~RegexOptions.IgnoreCase);
                 ReplaceNodeInParent(ref root, node, stripped);
             }
         }
 
-        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
+        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed)
         {
             // Single non-zero digits never spell octal; longer runs without a
             // matching slot fall back to up to three octal digits with no rest.
@@ -1890,14 +1889,14 @@ internal static class Utf8OwnedTreeParser
 
                 if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    var stripped = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                    var stripped = new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
                     stripped.M = 0;
                     stripped.N = 0;
                     ReplaceNodeInParent(ref root, fixup.Node, stripped);
                     return true;
                 }
 
-                fixup.Node.Kind = RuntimeFrontEnd.RegexNodeKind.One;
+                fixup.Node.Kind = Utf8TreeNodeKind.One;
                 fixup.Node.Ch = (char)value;
                 fixup.Node.M = 0;
                 fixup.Node.N = 0;
@@ -1914,9 +1913,9 @@ internal static class Utf8OwnedTreeParser
                 Utf8OwnedCaseFold.TryGetFold((char)value, out var wrapperLower, out var wrapperUpper))
             {
                 var foldedLoop = FoldedSet(wrapper.Options, wrapperLower, wrapperUpper);
-                foldedLoop.Kind = wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
-                    ? RuntimeFrontEnd.RegexNodeKind.Setlazy
-                    : RuntimeFrontEnd.RegexNodeKind.Setloop;
+                foldedLoop.Kind = wrapper.Kind == Utf8TreeNodeKind.Lazyloop
+                    ? Utf8TreeNodeKind.Setlazy
+                    : Utf8TreeNodeKind.Setloop;
                 foldedLoop.M = wrapper.M;
                 foldedLoop.N = wrapper.N;
                 ReplaceNodeInParent(ref root, wrapper, foldedLoop);
@@ -1925,10 +1924,10 @@ internal static class Utf8OwnedTreeParser
 
             if ((wrapper.Options & RegexOptions.IgnoreCase) != 0)
             {
-                var strippedWrapper = new RuntimeFrontEnd.RegexNode(
-                    wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
-                        ? RuntimeFrontEnd.RegexNodeKind.Onelazy
-                        : RuntimeFrontEnd.RegexNodeKind.Oneloop,
+                var strippedWrapper = new Utf8TreeNode(
+                    wrapper.Kind == Utf8TreeNodeKind.Lazyloop
+                        ? Utf8TreeNodeKind.Onelazy
+                        : Utf8TreeNodeKind.Oneloop,
                     wrapper.Options & ~RegexOptions.IgnoreCase,
                     (char)value);
                 strippedWrapper.M = wrapper.M;
@@ -1937,17 +1936,17 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            wrapper.Kind = wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
-                ? RuntimeFrontEnd.RegexNodeKind.Onelazy
-                : RuntimeFrontEnd.RegexNodeKind.Oneloop;
+            wrapper.Kind = wrapper.Kind == Utf8TreeNodeKind.Lazyloop
+                ? Utf8TreeNodeKind.Onelazy
+                : Utf8TreeNodeKind.Oneloop;
             wrapper.Ch = (char)value;
             wrapper.Children = null;
             return true;
         }
 
-        static bool ResolveOctalRest(OwnedBackrefFixup fixup, ref RuntimeFrontEnd.RegexNode root, ref bool morphed, int prefixLength, int value)
+        static bool ResolveOctalRest(OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed, int prefixLength, int value)
         {
-            RuntimeFrontEnd.RegexNode morphedLeaf;
+            Utf8TreeNode morphedLeaf;
             if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
                 Utf8OwnedCaseFold.TryGetFold((char)value, out var restLower, out var restUpper))
             {
@@ -1955,22 +1954,22 @@ internal static class Utf8OwnedTreeParser
             }
             else
             {
-                morphedLeaf = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                morphedLeaf = new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
                 morphedLeaf.M = 0;
                 morphedLeaf.N = 0;
             }
 
             var restText = fixup.Digits.Substring(prefixLength);
-            var beforeAnchor = new List<RuntimeFrontEnd.RegexNode>(restText.Length);
+            var beforeAnchor = new List<Utf8TreeNode>(restText.Length);
             beforeAnchor.Add(morphedLeaf);
             for (var i = 0; i + 1 < restText.Length; i++)
             {
-                beforeAnchor.Add(new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[i]));
+                beforeAnchor.Add(new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[i]));
             }
 
             if (fixup.Wrapper is null)
             {
-                beforeAnchor.Add(new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[restText.Length - 1]));
+                beforeAnchor.Add(new Utf8TreeNode(Utf8TreeNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[restText.Length - 1]));
                 ReplaceNodeWithMany(ref root, fixup.Node, beforeAnchor, null);
                 morphed = true;
                 return true;
@@ -1983,13 +1982,13 @@ internal static class Utf8OwnedTreeParser
             }
 
             var loopChar = restText[restText.Length - 1];
-            var loopKind = restWrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
-                ? RuntimeFrontEnd.RegexNodeKind.Onelazy
-                : RuntimeFrontEnd.RegexNodeKind.Oneloop;
+            var loopKind = restWrapper.Kind == Utf8TreeNodeKind.Lazyloop
+                ? Utf8TreeNodeKind.Onelazy
+                : Utf8TreeNodeKind.Oneloop;
             var loopOptions = (restWrapper.Options & RegexOptions.IgnoreCase) != 0
                 ? restWrapper.Options & ~RegexOptions.IgnoreCase
                 : restWrapper.Options;
-            var loopBody = new RuntimeFrontEnd.RegexNode(loopKind, loopOptions, loopChar);
+            var loopBody = new Utf8TreeNode(loopKind, loopOptions, loopChar);
             loopBody.M = restWrapper.M;
             loopBody.N = restWrapper.N;
             ReplaceNodeWithMany(ref root, restWrapper, beforeAnchor, loopBody);
@@ -1997,10 +1996,10 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static void ReplaceNodeWithMany(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode oldNode, List<RuntimeFrontEnd.RegexNode> fresh, RuntimeFrontEnd.RegexNode? trailing)
+        static void ReplaceNodeWithMany(ref Utf8TreeNode root, Utf8TreeNode oldNode, List<Utf8TreeNode> fresh, Utf8TreeNode? trailing)
         {
             var parent = oldNode.Parent;
-            var sequence = new List<RuntimeFrontEnd.RegexNode>(fresh.Count + 1);
+            var sequence = new List<Utf8TreeNode>(fresh.Count + 1);
             sequence.AddRange(fresh);
             if (trailing is not null)
             {
@@ -2020,13 +2019,13 @@ internal static class Utf8OwnedTreeParser
                     return;
                 }
 
-                var top = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, oldNode.Options);
+                var top = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, oldNode.Options);
                 top.Children = sequence;
                 root = top;
                 return;
             }
 
-            if (parent.Children is List<RuntimeFrontEnd.RegexNode> siblings)
+            if (parent.Children is List<Utf8TreeNode> siblings)
             {
                 for (var i = 0; i < siblings.Count; i++)
                 {
@@ -2041,19 +2040,19 @@ internal static class Utf8OwnedTreeParser
                 return;
             }
 
-            parent.Children = new List<RuntimeFrontEnd.RegexNode>(sequence);
+            parent.Children = new List<Utf8TreeNode>(sequence);
         }
 
-        static RuntimeFrontEnd.RegexNode MergeLiteralRuns(RuntimeFrontEnd.RegexNode node)
+        static Utf8TreeNode MergeLiteralRuns(Utf8TreeNode node)
         {
-            if (node.Kind is RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop or RuntimeFrontEnd.RegexNodeKind.Oneloop or RuntimeFrontEnd.RegexNodeKind.Onelazy or RuntimeFrontEnd.RegexNodeKind.Setloop or RuntimeFrontEnd.RegexNodeKind.Setlazy &&
+            if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop or Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy or Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy &&
                 node.M == 0 &&
                 node.N == 0)
             {
-                return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options);
+                return new Utf8TreeNode(Utf8TreeNodeKind.Empty, node.Options);
             }
 
-            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate && node.Children is List<RuntimeFrontEnd.RegexNode> branches)
+            if (node.Kind == Utf8TreeNodeKind.Alternate && node.Children is List<Utf8TreeNode> branches)
             {
                 for (var i = 0; i < branches.Count; i++)
                 {
@@ -2068,7 +2067,7 @@ internal static class Utf8OwnedTreeParser
                 return node;
             }
 
-            if (node.Children is List<RuntimeFrontEnd.RegexNode> children)
+            if (node.Children is List<Utf8TreeNode> children)
             {
                 for (var i = 0; i < children.Count; i++)
                 {
@@ -2080,12 +2079,12 @@ internal static class Utf8OwnedTreeParser
                     }
                 }
 
-                if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Concatenate && children.Count > 0)
+                if (node.Kind == Utf8TreeNodeKind.Concatenate && children.Count > 0)
                 {
                     var removed = 0;
                     for (var i = 0; i < children.Count;)
                     {
-                        if (children[i].Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        if (children[i].Kind == Utf8TreeNodeKind.Empty)
                         {
                             children.RemoveAt(i);
                             removed++;
@@ -2100,7 +2099,7 @@ internal static class Utf8OwnedTreeParser
                     {
                         if (children.Count == 0)
                         {
-                            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options);
+                            return new Utf8TreeNode(Utf8TreeNodeKind.Empty, node.Options);
                         }
 
                         if (children.Count == 1)
@@ -2112,13 +2111,13 @@ internal static class Utf8OwnedTreeParser
 
                 // Conditional branches stay unfused: the provider keeps yes/no as
                 // parsed, so fusing them would invent Multi nodes it never builds.
-                if (node.Kind == RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional)
+                if (node.Kind == Utf8TreeNodeKind.BackreferenceConditional)
                 {
                     return node;
                 }
 
-                var fused = new List<RuntimeFrontEnd.RegexNode>(children.Count);
-                var pending = new List<RuntimeFrontEnd.RegexNode>();
+                var fused = new List<Utf8TreeNode>(children.Count);
+                var pending = new List<Utf8TreeNode>();
                 var pendingOptions = RegexOptions.None;
                 foreach (var child in children)
                 {
@@ -2149,7 +2148,7 @@ internal static class Utf8OwnedTreeParser
                     child.Parent = node;
                 }
 
-                if (node.Kind != RuntimeFrontEnd.RegexNodeKind.Concatenate)
+                if (node.Kind != Utf8TreeNodeKind.Concatenate)
                 {
                     return node;
                 }
@@ -2157,7 +2156,7 @@ internal static class Utf8OwnedTreeParser
                 return fused.Count == 1 ? fused[0] : node;
             }
 
-            if (node.Children is RuntimeFrontEnd.RegexNode single)
+            if (node.Children is Utf8TreeNode single)
             {
                 var merged = MergeLiteralRuns(single);
                 if (!ReferenceEquals(merged, single))
@@ -2170,17 +2169,17 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
-        static bool TryMergeableText(RuntimeFrontEnd.RegexNode node, out char single, out string? text)
+        static bool TryMergeableText(Utf8TreeNode node, out char single, out string? text)
         {
             single = '\0';
             text = null;
-            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.One && node.Str is null)
+            if (node.Kind == Utf8TreeNodeKind.One && node.Str is null)
             {
                 single = node.Ch;
                 return true;
             }
 
-            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && node.Str2 is null && node.Str is not null)
+            if (node.Kind == Utf8TreeNodeKind.Multi && node.Str2 is null && node.Str is not null)
             {
                 text = node.Str;
                 return true;
@@ -2189,7 +2188,7 @@ internal static class Utf8OwnedTreeParser
             return false;
         }
 
-        static void FlushMergePending(RuntimeFrontEnd.RegexNode parent, List<RuntimeFrontEnd.RegexNode> fused, List<RuntimeFrontEnd.RegexNode> pending)
+        static void FlushMergePending(Utf8TreeNode parent, List<Utf8TreeNode> fused, List<Utf8TreeNode> pending)
         {
             if (pending.Count == 0)
             {
@@ -2206,7 +2205,7 @@ internal static class Utf8OwnedTreeParser
             var run = new StringBuilder();
             foreach (var literal in pending)
             {
-                if (literal.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                if (literal.Kind == Utf8TreeNodeKind.One)
                 {
                     run.Append(literal.Ch);
                 }
@@ -2216,14 +2215,14 @@ internal static class Utf8OwnedTreeParser
                 }
             }
 
-            var merged = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, pending[0].Options, run.ToString());
+            var merged = new Utf8TreeNode(Utf8TreeNodeKind.Multi, pending[0].Options, run.ToString());
             merged.Parent = parent;
             fused.Add(merged);
             pending.Clear();
         }
-        static bool TryTakeLookaroundKind(ParserState state, out RuntimeFrontEnd.RegexNodeKind kind, out bool isLookbehind)
+        static bool TryTakeLookaroundKind(ParserState state, out Utf8TreeNodeKind kind, out bool isLookbehind)
         {
-            kind = RuntimeFrontEnd.RegexNodeKind.Concatenate;
+            kind = Utf8TreeNodeKind.Concatenate;
             isLookbehind = false;
             if (state.AtEnd)
             {
@@ -2233,19 +2232,19 @@ internal static class Utf8OwnedTreeParser
             var marker = state.Pattern[state.Position];
             if (marker == '=')
             {
-                kind = RuntimeFrontEnd.RegexNodeKind.PositiveLookaround;
+                kind = Utf8TreeNodeKind.PositiveLookaround;
                 return true;
             }
 
             if (marker == '!')
             {
-                kind = RuntimeFrontEnd.RegexNodeKind.NegativeLookaround;
+                kind = Utf8TreeNodeKind.NegativeLookaround;
                 return true;
             }
 
             if (marker == '>')
             {
-                kind = RuntimeFrontEnd.RegexNodeKind.Atomic;
+                kind = Utf8TreeNodeKind.Atomic;
                 return true;
             }
 
@@ -2254,14 +2253,14 @@ internal static class Utf8OwnedTreeParser
                 var direction = state.Pattern[state.Position + 1];
                 if (direction == '=')
                 {
-                    kind = RuntimeFrontEnd.RegexNodeKind.PositiveLookaround;
+                    kind = Utf8TreeNodeKind.PositiveLookaround;
                     isLookbehind = true;
                     return true;
                 }
 
                 if (direction == '!')
                 {
-                    kind = RuntimeFrontEnd.RegexNodeKind.NegativeLookaround;
+                    kind = Utf8TreeNodeKind.NegativeLookaround;
                     isLookbehind = true;
                     return true;
                 }
@@ -2270,7 +2269,7 @@ internal static class Utf8OwnedTreeParser
             return false;
         }
 
-        static bool ParseLookaround(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node, RuntimeFrontEnd.RegexNodeKind kind, bool isLookbehind)
+        static bool ParseLookaround(ref ParserState state, int depth, out Utf8TreeNode? node, Utf8TreeNodeKind kind, bool isLookbehind)
         {
             node = null;
             // state.Position is at the opener marker after "(?". Lookbehind
@@ -2282,7 +2281,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             var savedOptions = state.Options;
-            var bodyOptions = kind == RuntimeFrontEnd.RegexNodeKind.Atomic
+            var bodyOptions = kind == Utf8TreeNodeKind.Atomic
                 ? savedOptions
                 : isLookbehind
                     ? savedOptions | RegexOptions.RightToLeft
@@ -2309,7 +2308,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             var options = bodyOptions;
-            var assertion = new RuntimeFrontEnd.RegexNode(kind, options);
+            var assertion = new Utf8TreeNode(kind, options);
             assertion.Children = body;
             body.Parent = assertion;
             node = assertion;
@@ -2317,10 +2316,10 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ContainsCaptureOrBackreference(RuntimeFrontEnd.RegexNode node)
+        static bool ContainsCaptureOrBackreference(Utf8TreeNode node)
         {
-            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Capture ||
-                node.Kind == RuntimeFrontEnd.RegexNodeKind.Backreference)
+            if (node.Kind == Utf8TreeNodeKind.Capture ||
+                node.Kind == Utf8TreeNodeKind.Backreference)
             {
                 return true;
             }
@@ -2558,31 +2557,31 @@ internal static class Utf8OwnedTreeParser
             return character == '*' || character == '+' || character == '?' || character == '{';
         }
 
-        static RuntimeFrontEnd.RegexNode One(ParserState state, char character)
+        static Utf8TreeNode One(ParserState state, char character)
         {
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, state.Options & ~RegexOptions.IgnoreCase, character);
+            return new Utf8TreeNode(Utf8TreeNodeKind.One, state.Options & ~RegexOptions.IgnoreCase, character);
         }
 
-        static RuntimeFrontEnd.RegexNode Multi(ParserState state, string text)
+        static Utf8TreeNode Multi(ParserState state, string text)
         {
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, state.Options & ~RegexOptions.IgnoreCase, text);
+            return new Utf8TreeNode(Utf8TreeNodeKind.Multi, state.Options & ~RegexOptions.IgnoreCase, text);
         }
 
-        static RuntimeFrontEnd.RegexNode FoldedSet(RegexOptions options, char lower, char upper)
+        static Utf8TreeNode FoldedSet(RegexOptions options, char lower, char upper)
         {
             var wire = new string(new char[]
             {
                 (char)0, (char)4, (char)0, lower, (char)(lower + 1), upper, (char)(upper + 1),
             });
 
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, wire)
+            return new Utf8TreeNode(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, wire)
             {
                 M = 0,
                 N = 0,
             };
         }
 
-        static void ReplaceNodeInParent(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode oldNode, RuntimeFrontEnd.RegexNode fresh)
+        static void ReplaceNodeInParent(ref Utf8TreeNode root, Utf8TreeNode oldNode, Utf8TreeNode fresh)
         {
             var parent = oldNode.Parent;
             fresh.Parent = parent;
@@ -2592,7 +2591,7 @@ internal static class Utf8OwnedTreeParser
                 return;
             }
 
-            if (parent.Children is List<RuntimeFrontEnd.RegexNode> siblings)
+            if (parent.Children is List<Utf8TreeNode> siblings)
             {
                 for (var i = 0; i < siblings.Count; i++)
                 {
@@ -2609,9 +2608,9 @@ internal static class Utf8OwnedTreeParser
             parent.Children = fresh;
         }
 
-        static RuntimeFrontEnd.RegexNode Concatenate(RegexOptions options, List<RuntimeFrontEnd.RegexNode> children)
+        static Utf8TreeNode Concatenate(RegexOptions options, List<Utf8TreeNode> children)
         {
-            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, options);
+            var node = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, options);
             node.Children = children;
             foreach (var child in children)
             {
@@ -2621,9 +2620,9 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
-        static RuntimeFrontEnd.RegexNode Alternate(RegexOptions options, List<RuntimeFrontEnd.RegexNode> branches)
+        static Utf8TreeNode Alternate(RegexOptions options, List<Utf8TreeNode> branches)
         {
-            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Alternate, options);
+            var node = new Utf8TreeNode(Utf8TreeNodeKind.Alternate, options);
             node.Children = branches;
             foreach (var branch in branches)
             {
@@ -2633,7 +2632,7 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
-        static bool TryTakeConditional(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        static bool TryTakeConditional(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
             // state.Position is at '(' after "(?".
@@ -2683,10 +2682,10 @@ internal static class Utf8OwnedTreeParser
             var conditionalOptions = state.Options;
             var yesIsEmpty = !state.AtEnd && (state.Pattern[state.Position] == '|' || state.Pattern[state.Position] == ')');
 
-            RuntimeFrontEnd.RegexNode yesBranch;
+            Utf8TreeNode yesBranch;
             if (yesIsEmpty)
             {
-                yesBranch = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, conditionalOptions);
+                yesBranch = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions);
             }
             else
             {
@@ -2698,14 +2697,14 @@ internal static class Utf8OwnedTreeParser
                 yesBranch = parsedYes;
             }
 
-            List<RuntimeFrontEnd.RegexNode>? branches = null;
+            List<Utf8TreeNode>? branches = null;
             if (!state.AtEnd && state.Pattern[state.Position] == '|')
             {
                 state.Position++;
-                RuntimeFrontEnd.RegexNode noBranch;
+                Utf8TreeNode noBranch;
                 if (!state.AtEnd && state.Pattern[state.Position] == ')')
                 {
-                    noBranch = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, conditionalOptions);
+                    noBranch = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions);
                 }
                 else
                 {
@@ -2723,19 +2722,19 @@ internal static class Utf8OwnedTreeParser
                 }
 
                 state.Position++;
-                branches = new List<RuntimeFrontEnd.RegexNode> { yesBranch, noBranch };
+                branches = new List<Utf8TreeNode> { yesBranch, noBranch };
             }
             else if (yesIsEmpty && !state.AtEnd && state.Pattern[state.Position] == ')')
             {
                 state.Position++;
-                branches = new List<RuntimeFrontEnd.RegexNode> { yesBranch };
+                branches = new List<Utf8TreeNode> { yesBranch };
             }
             else
             {
                 return false;
             }
 
-            var conditional = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional, conditionalOptions);
+            var conditional = new Utf8TreeNode(Utf8TreeNodeKind.BackreferenceConditional, conditionalOptions);
             if (name is not null)
             {
                 conditional.Str = name;
@@ -2770,11 +2769,11 @@ internal static class Utf8OwnedTreeParser
             return IsAsciiConditionNameStart(character) || (character >= '0' && character <= '9');
         }
 
-        static bool ParseGroup(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        static bool ParseGroup(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
             state.Position++;
-            var kind = RuntimeFrontEnd.RegexNodeKind.Capture;
+            var kind = Utf8TreeNodeKind.Capture;
             var slot = 0;
             if (!state.AtEnd && state.Pattern[state.Position] == '?')
             {
@@ -2825,7 +2824,7 @@ internal static class Utf8OwnedTreeParser
                 }
 
                 state.Position++;
-                var scopeGroup = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Group, scopedOptions);
+                var scopeGroup = new Utf8TreeNode(Utf8TreeNodeKind.Group, scopedOptions);
                 scopeGroup.Children = scopeBody;
                 scopeBody.Parent = scopeGroup;
                 node = scopeGroup;
@@ -2842,10 +2841,10 @@ internal static class Utf8OwnedTreeParser
                 state.Options = savedOptions;
                 return true;
             }
-            else if (kind == RuntimeFrontEnd.RegexNodeKind.Capture &&
+            else if (kind == Utf8TreeNodeKind.Capture &&
                 (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None)
             {
-                kind = RuntimeFrontEnd.RegexNodeKind.Group;
+                kind = Utf8TreeNodeKind.Group;
             }
             else
             {
@@ -2866,8 +2865,8 @@ internal static class Utf8OwnedTreeParser
 
             state.Position++;
             state.Options = groupEntryOptions;
-            var group = new RuntimeFrontEnd.RegexNode(kind, groupEntryOptions);
-            if (kind == RuntimeFrontEnd.RegexNodeKind.Capture)
+            var group = new Utf8TreeNode(kind, groupEntryOptions);
+            if (kind == Utf8TreeNodeKind.Capture)
             {
                 group.M = slot;
                 group.N = -1;
@@ -2879,7 +2878,7 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseQuantifier(ref ParserState state, ref RuntimeFrontEnd.RegexNode atom)
+        static bool ParseQuantifier(ref ParserState state, ref Utf8TreeNode atom)
         {
             if (state.AtEnd)
             {
@@ -2983,7 +2982,7 @@ internal static class Utf8OwnedTreeParser
             return digits != 0;
         }
 
-        static RuntimeFrontEnd.RegexNode Quantify(ParserState state, RuntimeFrontEnd.RegexNode atom, int minimum, int maximum, bool lazy)
+        static Utf8TreeNode Quantify(ParserState state, Utf8TreeNode atom, int minimum, int maximum, bool lazy)
         {
             if (minimum == 1 && maximum == 1)
             {
@@ -2992,13 +2991,13 @@ internal static class Utf8OwnedTreeParser
 
             if (maximum == 0)
             {
-                return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, atom.Options);
+                return new Utf8TreeNode(Utf8TreeNodeKind.Empty, atom.Options);
             }
 
-            if (atom.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+            if (atom.Kind == Utf8TreeNodeKind.One)
             {
-                return new RuntimeFrontEnd.RegexNode(
-                    lazy ? RuntimeFrontEnd.RegexNodeKind.Onelazy : RuntimeFrontEnd.RegexNodeKind.Oneloop,
+                return new Utf8TreeNode(
+                    lazy ? Utf8TreeNodeKind.Onelazy : Utf8TreeNodeKind.Oneloop,
                     state.Options & ~RegexOptions.IgnoreCase,
                     atom.Ch)
                 {
@@ -3007,10 +3006,10 @@ internal static class Utf8OwnedTreeParser
                 };
             }
 
-            if (atom.Kind == RuntimeFrontEnd.RegexNodeKind.Set)
+            if (atom.Kind == Utf8TreeNodeKind.Set)
             {
-                return new RuntimeFrontEnd.RegexNode(
-                    lazy ? RuntimeFrontEnd.RegexNodeKind.Setlazy : RuntimeFrontEnd.RegexNodeKind.Setloop,
+                return new Utf8TreeNode(
+                    lazy ? Utf8TreeNodeKind.Setlazy : Utf8TreeNodeKind.Setloop,
                     state.Options & ~RegexOptions.IgnoreCase,
                     atom.Str)
                 {
@@ -3022,8 +3021,8 @@ internal static class Utf8OwnedTreeParser
             // Loop wrappers carry the atom options, not the site options: a directly
             // wrapped scope marks the loop with its scoped options in the provider shape.
             // All other atoms carry entry options identical to the site options.
-            var loop = new RuntimeFrontEnd.RegexNode(
-                lazy ? RuntimeFrontEnd.RegexNodeKind.Lazyloop : RuntimeFrontEnd.RegexNodeKind.Loop,
+            var loop = new Utf8TreeNode(
+                lazy ? Utf8TreeNodeKind.Lazyloop : Utf8TreeNodeKind.Loop,
                 atom.Options,
                 minimum,
                 maximum);
@@ -3043,7 +3042,7 @@ internal static class Utf8OwnedTreeParser
         public int Depth0Branch;
         public int Depth0Atom;
         public RegexOptions LeadingContribution;
-        public RuntimeFrontEnd.RegexNode? LeadingGroup;
+        public Utf8TreeNode? LeadingGroup;
         public int ExplicitDepth;
         public bool NamedUnderExplicit;
         public List<OwnedGroupDefinition> GroupDefinitions;
@@ -3073,7 +3072,7 @@ internal static class Utf8OwnedTreeParser
     // numbers claim their literal slot (zero is a pure alias and is not recorded).
     private sealed class OwnedGroupDefinition
     {
-        public required RuntimeFrontEnd.RegexNode Node { get; init; }
+        public required Utf8TreeNode Node { get; init; }
         public string Name = string.Empty;
         public int Declared = -1;
         public bool IsAuto;
@@ -3086,11 +3085,11 @@ internal static class Utf8OwnedTreeParser
     // optional quantified wrapper for the octal outcome.
     private sealed class OwnedBackrefFixup
     {
-        public required RuntimeFrontEnd.RegexNode Node { get; init; }
+        public required Utf8TreeNode Node { get; init; }
         public string? Digits;
         public string? Name;
         public bool IsPop;
         public bool IsConditional;
-        public RuntimeFrontEnd.RegexNode? Wrapper;
+        public Utf8TreeNode? Wrapper;
     }
 }
