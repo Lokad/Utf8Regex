@@ -131,9 +131,11 @@ public sealed class Utf8OwnedTreeAnalysisTests
         var legacy = RuntimeFrontEnd.RegexTreeAnalyzer.Analyze(tree);
         Assert.Equal(expectedFlags, DumpFlags(legacy.Complete, legacy.HasIgnoreCase, legacy.HasRightToLeft));
         Assert.Equal(expectedNodes, DumpLegacyNodes(tree, legacy));
-        var owned = Utf8OwnedTreeAnalyzer.Analyze(tree);
+        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        Assert.NotNull(ownedTree);
+        var owned = Utf8OwnedTreeAnalyzer.Analyze(ownedTree);
         Assert.Equal(expectedFlags, DumpFlags(owned.Complete, owned.HasIgnoreCase, owned.HasRightToLeft));
-        Assert.Equal(expectedNodes, DumpOwnedNodes(tree, owned));
+        Assert.Equal(expectedNodes, DumpOwnedNodes(ownedTree, owned));
     }
 
     private static string DumpFlags(bool complete, bool hasIgnoreCase, bool hasRightToLeft)
@@ -175,7 +177,7 @@ public sealed class Utf8OwnedTreeAnalysisTests
         return builder.ToString();
     }
 
-    private static string DumpOwnedNodes(RuntimeFrontEnd.RegexTree tree, Utf8OwnedTreeAnalysis analysis)
+    private static string DumpOwnedNodes(Utf8OwnedRegexTree tree, Utf8OwnedTreeAnalysis analysis)
     {
         Assert.NotNull(tree.Root);
         var nodes = new List<RuntimeFrontEnd.RegexNode>();

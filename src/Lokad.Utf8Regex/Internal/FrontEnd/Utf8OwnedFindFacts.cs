@@ -10,7 +10,7 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 // before the provider cutover instead of with it.
 internal sealed class Utf8OwnedFindFacts
 {
-    private Utf8OwnedFindFacts(RuntimeFrontEnd.RegexTree tree)
+    private Utf8OwnedFindFacts(Utf8OwnedRegexTree tree)
     {
         Root = tree.Root;
         MinRequiredLength = Utf8OwnedFindOptimizations.ComputeMinLength(tree.Root);
@@ -25,7 +25,7 @@ internal sealed class Utf8OwnedFindFacts
         FixedDistanceSets = Utf8OwnedFindOptimizations.FindFixedDistanceSets(tree.Root);
     }
 
-    public static Utf8OwnedFindFacts? FromTree(RuntimeFrontEnd.RegexTree? tree)
+    public static Utf8OwnedFindFacts? FromTree(Utf8OwnedRegexTree? tree)
     {
         if (tree is null)
         {

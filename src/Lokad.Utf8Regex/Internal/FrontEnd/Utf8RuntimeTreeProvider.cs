@@ -22,7 +22,7 @@ internal static class Utf8RuntimeTreeProvider
     //   to a decline routes those to the same BCL-exact failure.
     private const int MaxLegacyNestingDepth = 256;
 
-    public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
+    public static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options)
     {
         if (Utf8OwnedTreeParser.TryParse(pattern, options) is { } owned)
         {
@@ -35,7 +35,7 @@ internal static class Utf8RuntimeTreeProvider
             return null;
         }
 
-        return TryParseLegacy(pattern, options);
+        return Utf8OwnedRegexTree.FromLegacy(TryParseLegacy(pattern, options));
     }
 
     public static RuntimeFrontEnd.RegexTree? TryParseLegacy(string pattern, RegexOptions options)

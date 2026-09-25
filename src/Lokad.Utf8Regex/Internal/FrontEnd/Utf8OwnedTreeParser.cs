@@ -40,7 +40,7 @@ internal static class Utf8OwnedTreeParser
     private const string ShorthandSpaceCats = "d";
     private const string ShorthandNotSpaceCats = "\uFF9C";
 
-    public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
+    public static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options)
     {
         if ((options & RegexOptions.ExplicitCapture) != 0)
         {
@@ -105,15 +105,14 @@ internal static class Utf8OwnedTreeParser
         var culture = (options & RegexOptions.CultureInvariant) != 0
             ? Utf8OwnedOptionPrelude.GetTargetCulture(options)
             : null;
-        return new RuntimeFrontEnd.RegexTree(
+        return new Utf8OwnedRegexTree(
             tree,
             captureCount,
             captureNames,
             captureNameToNumber,
             captureSparseMapping,
             treeOptions,
-            culture,
-            null);
+            culture);
 
         static bool ParseAlternation(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? root)
         {

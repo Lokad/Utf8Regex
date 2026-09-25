@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Globalization;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -35,7 +34,7 @@ internal sealed class Utf8GroupMetadata
 
     private int Capsize { get; }
 
-    public static bool TryCreate(RuntimeFrontEnd.RegexTree? tree, out Utf8GroupMetadata? metadata)
+    public static bool TryCreate(Utf8OwnedRegexTree? tree, out Utf8GroupMetadata? metadata)
     {
         if (tree is null)
         {

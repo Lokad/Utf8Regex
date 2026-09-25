@@ -10,7 +10,7 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 // degrade to conservative answers, matching the legacy contract.
 internal static class Utf8OwnedTreeAnalyzer
 {
-    public static Utf8OwnedTreeAnalysis Analyze(RuntimeFrontEnd.RegexTree regexTree)
+    public static Utf8OwnedTreeAnalysis Analyze(Utf8OwnedRegexTree regexTree)
     {
         var results = new Utf8OwnedTreeAnalysis(regexTree);
         results.Complete = TryAnalyze(regexTree.Root, results, isAtomicByAncestor: true, isInLoop: false);
@@ -103,14 +103,14 @@ internal static class Utf8OwnedTreeAnalyzer
 
 internal sealed class Utf8OwnedTreeAnalysis
 {
-    internal Utf8OwnedTreeAnalysis(RuntimeFrontEnd.RegexTree regexTree)
+    internal Utf8OwnedTreeAnalysis(Utf8OwnedRegexTree regexTree)
     {
         RegexTree = regexTree;
     }
 
     internal bool Complete { get; set; }
 
-    public RuntimeFrontEnd.RegexTree RegexTree { get; }
+    public Utf8OwnedRegexTree RegexTree { get; }
 
     public bool HasIgnoreCase { get; internal set; }
 
