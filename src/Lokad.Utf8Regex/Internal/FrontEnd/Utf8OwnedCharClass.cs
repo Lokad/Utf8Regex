@@ -17,15 +17,27 @@ internal static class Utf8OwnedCharClass
 
     public const string AnyClass = "\x00\x01\x00\x00";
 
-    // Probe 2026-09-26: the fork reports backslash-s as the exact four-char payload
-    // 0,0,1,100 and backslash-S as 0,0,1,65436, identically under default and
-    // ECMAScript options. The equality checks below mirror the fork switch, which only
-    // fires on those full payloads: negated bracket forms and subtraction wires whose
-    // first segment is a space payload both fall through to the generic category
-    // decode, exactly like the fork.
-    private static readonly string SpaceClassPayload = new string(new char[] { (char)0, (char)0, (char)1, (char)100 });
+    // Character-class wire payloads shared with the fork encoding, transcribed
+    // codepoint by codepoint and verified exact by the PayloadConstantsMatchFork
+    // battery: backslash-s 0,0,1,100 and backslash-S 0,0,1,65436 were additionally
+    // confirmed by a runtime probe under default and ECMAScript options.
+    public static readonly string SpaceClass = new string(new char[] { (char)0, (char)0, (char)1, (char)100 });
 
-    private static readonly string NotSpaceClassPayload = new string(new char[] { (char)0, (char)0, (char)1, (char)65436 });
+    public static readonly string NotSpaceClass = new string(new char[] { (char)0, (char)0, (char)1, (char)65436 });
+
+    public static readonly string ECMASpaceClass = new string(new char[] { (char)0, (char)4, (char)0, (char)9, (char)14, (char)32, (char)33 });
+
+    public static readonly string NotECMASpaceClass = new string(new char[] { (char)1, (char)4, (char)0, (char)9, (char)14, (char)32, (char)33 });
+
+    public static readonly string DigitClass = new string(new char[] { (char)0, (char)0, (char)1, (char)9 });
+
+    public static readonly string NotDigitClass = new string(new char[] { (char)0, (char)0, (char)1, (char)65527 });
+
+    public static readonly string WordClass = new string(new char[] { (char)0, (char)0, (char)10, (char)0, (char)2, (char)4, (char)5, (char)3, (char)1, (char)6, (char)9, (char)19, (char)0 });
+
+    public static readonly string NotWordClass = new string(new char[] { (char)0, (char)0, (char)10, (char)0, (char)65534, (char)65532, (char)65531, (char)65533, (char)65535, (char)65530, (char)65527, (char)65517, (char)0 });
+
+    public static readonly string NotNewLineClass = new string(new char[] { (char)1, (char)2, (char)0, (char)10, (char)11 });
 
     public static bool IsNegated(string set) => set.Length > FlagsIndex && set[FlagsIndex] != 0;
 
@@ -252,12 +264,12 @@ internal static class Utf8OwnedCharClass
             return true;
         }
 
-        if (set == SpaceClassPayload)
+        if (set == SpaceClass)
         {
             return ch is (char)32 or (char)9 or (char)13 or (char)10 or (char)12 or (char)11;
         }
 
-        if (set == NotSpaceClassPayload)
+        if (set == NotSpaceClass)
         {
             return ch is not ((char)32 or (char)9 or (char)13 or (char)10 or (char)12 or (char)11);
         }

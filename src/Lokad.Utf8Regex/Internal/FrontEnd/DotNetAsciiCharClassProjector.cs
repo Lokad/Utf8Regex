@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Execution;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -17,7 +16,7 @@ internal static class DotNetAsciiCharClassProjector
             return false;
         }
 
-        if (RuntimeFrontEnd.RegexCharClass.IsSubtraction(runtimeSet))
+        if (Utf8OwnedCharClass.IsSubtraction(runtimeSet))
         {
             byteSet = AsciiCharClass.Empty;
             return false;
@@ -28,7 +27,7 @@ internal static class DotNetAsciiCharClassProjector
             return true;
         }
 
-        if (!RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
+        if (!Utf8OwnedCharClass.IsAscii(runtimeSet))
         {
             byteSet = AsciiCharClass.Empty;
             return false;
@@ -46,7 +45,7 @@ internal static class DotNetAsciiCharClassProjector
         }
 
         if (runtimeSet is null ||
-            RuntimeFrontEnd.RegexCharClass.IsSubtraction(runtimeSet) ||
+            Utf8OwnedCharClass.IsSubtraction(runtimeSet) ||
             !TryGetCategoryPayload(runtimeSet, out var categoryPayload))
         {
             byteSet = AsciiCharClass.Empty;
@@ -69,9 +68,9 @@ internal static class DotNetAsciiCharClassProjector
             }
         }
 
-        var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
-        var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
-        for (var index = RuntimeFrontEnd.RegexCharClass.SetStartIndex; index < setEnd; index += 2)
+        var setLength = runtimeSet[Utf8OwnedCharClass.SetLengthIndex];
+        var setEnd = Utf8OwnedCharClass.SetStartIndex + setLength;
+        for (var index = Utf8OwnedCharClass.SetStartIndex; index < setEnd; index += 2)
         {
             var range = CreateInclusiveRange(runtimeSet[index], runtimeSet[index + 1]);
             if (range is not { } asciiRange)
@@ -85,14 +84,14 @@ internal static class DotNetAsciiCharClassProjector
             }
         }
 
-        byteSet = new AsciiCharClass(low, high, RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet));
+        byteSet = new AsciiCharClass(low, high, Utf8OwnedCharClass.IsNegated(runtimeSet));
         return true;
     }
 
     public static bool RequiresAsciiInput(string? runtimeSet)
     {
-        if (runtimeSet == RuntimeFrontEnd.RegexCharClass.AnyClass ||
-            (runtimeSet is not null && RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet)))
+        if (runtimeSet == Utf8OwnedCharClass.AnyClass ||
+            (runtimeSet is not null && Utf8OwnedCharClass.IsNegated(runtimeSet)))
         {
             return true;
         }
@@ -114,51 +113,51 @@ internal static class DotNetAsciiCharClassProjector
             }
         }
 
-        return new AsciiCharClass(low, high, RuntimeFrontEnd.RegexCharClass.IsNegated(runtimeSet));
+        return new AsciiCharClass(low, high, Utf8OwnedCharClass.IsNegated(runtimeSet));
     }
 
     private static bool TryProjectKnownAsciiWhitespace(string runtimeSet, out AsciiCharClass byteSet)
     {
-        switch (runtimeSet)
+        if (runtimeSet == Utf8OwnedCharClass.SpaceClass ||
+            runtimeSet == Utf8OwnedCharClass.ECMASpaceClass)
         {
-            case RuntimeFrontEnd.RegexCharClass.SpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.ECMASpaceClass:
-                byteSet = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsSixByteWhitespace);
-                return true;
-
-            case RuntimeFrontEnd.RegexCharClass.NotSpaceClass:
-            case RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass:
-                byteSet = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsSixByteWhitespace, negated: true);
-                return true;
-
-            default:
-                byteSet = AsciiCharClass.Empty;
-                return false;
+            byteSet = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsSixByteWhitespace);
+            return true;
         }
+
+        if (runtimeSet == Utf8OwnedCharClass.NotSpaceClass ||
+            runtimeSet == Utf8OwnedCharClass.NotECMASpaceClass)
+        {
+            byteSet = AsciiCharClass.FromPredicate(Utf8AsciiBytePredicates.IsSixByteWhitespace, negated: true);
+            return true;
+        }
+
+        byteSet = AsciiCharClass.Empty;
+        return false;
     }
 
     private static bool TryGetCategoryPayload(string runtimeSet, out string categoryPayload)
     {
         categoryPayload = string.Empty;
-        if (runtimeSet.Length < RuntimeFrontEnd.RegexCharClass.SetStartIndex)
+        if (runtimeSet.Length < Utf8OwnedCharClass.SetStartIndex)
         {
             return false;
         }
 
-        var setLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.SetLengthIndex];
-        var categoryLength = runtimeSet[RuntimeFrontEnd.RegexCharClass.CategoryLengthIndex];
+        var setLength = runtimeSet[Utf8OwnedCharClass.SetLengthIndex];
+        var categoryLength = runtimeSet[Utf8OwnedCharClass.CategoryLengthIndex];
         if ((setLength & 1) != 0)
         {
             return false;
         }
 
-        var setEnd = RuntimeFrontEnd.RegexCharClass.SetStartIndex + setLength;
+        var setEnd = Utf8OwnedCharClass.SetStartIndex + setLength;
         if (runtimeSet.Length < setEnd + categoryLength)
         {
             return false;
         }
 
-        for (var index = RuntimeFrontEnd.RegexCharClass.SetStartIndex; index < setEnd; index += 2)
+        for (var index = Utf8OwnedCharClass.SetStartIndex; index < setEnd; index += 2)
         {
             if (runtimeSet[index + 1] > 0x80)
             {
@@ -173,36 +172,36 @@ internal static class DotNetAsciiCharClassProjector
     }
 
     private static bool IsKnownProjectedCategory(string categoryPayload) =>
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.DigitClass) ||
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.NotDigitClass) ||
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.SpaceClass) ||
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.NotSpaceClass) ||
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.WordClass) ||
-        CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.NotWordClass);
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.DigitClass) ||
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass) ||
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.SpaceClass) ||
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass) ||
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.WordClass) ||
+        CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotWordClass);
 
     private static bool MatchesKnownProjectedCategory(char value, string categoryPayload)
     {
-        if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.DigitClass))
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.DigitClass))
         {
             return Utf8AsciiBytePredicates.IsDigit((byte)value);
         }
 
-        if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.NotDigitClass))
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotDigitClass))
         {
             return !Utf8AsciiBytePredicates.IsDigit((byte)value);
         }
 
-        if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.SpaceClass))
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.SpaceClass))
         {
             return Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
         }
 
-        if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.NotSpaceClass))
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.NotSpaceClass))
         {
             return !Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value);
         }
 
-        if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.WordClass))
+        if (CategoryEquals(categoryPayload, Utf8OwnedCharClass.WordClass))
         {
             return Utf8OwnedCharClass.IsBoundaryWordChar(value);
         }

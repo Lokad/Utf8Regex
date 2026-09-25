@@ -2223,8 +2223,8 @@ internal static class Utf8NativeExecutionAnalyzer
     private static bool TryGetAsciiSeparatorSet(string runtimeSet, out string separatorSet)
     {
         separatorSet = string.Empty;
-        if (runtimeSet == RuntimeFrontEnd.RegexCharClass.SpaceClass ||
-            runtimeSet == RuntimeFrontEnd.RegexCharClass.ECMASpaceClass)
+        if (runtimeSet == Utf8OwnedCharClass.SpaceClass ||
+            runtimeSet == Utf8OwnedCharClass.ECMASpaceClass)
         {
             separatorSet = runtimeSet;
             return true;
@@ -2316,8 +2316,8 @@ internal static class Utf8NativeExecutionAnalyzer
             return false;
         }
 
-        if (setNode.Str == RuntimeFrontEnd.RegexCharClass.SpaceClass ||
-            setNode.Str == RuntimeFrontEnd.RegexCharClass.ECMASpaceClass)
+        if (setNode.Str == Utf8OwnedCharClass.SpaceClass ||
+            setNode.Str == Utf8OwnedCharClass.ECMASpaceClass)
         {
             runtimeSet = setNode.Str;
             minCount = min;

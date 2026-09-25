@@ -333,5 +333,14 @@ public sealed class Utf8OwnedCharClassTests
     public void PayloadConstantsMatchFork()
     {
         Assert.Equal(RuntimeFrontEnd.RegexCharClass.AnyClass, Utf8OwnedCharClass.AnyClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotNewLineClass, Utf8OwnedCharClass.NotNewLineClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.SpaceClass, Utf8OwnedCharClass.SpaceClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotSpaceClass, Utf8OwnedCharClass.NotSpaceClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass, Utf8OwnedCharClass.ECMASpaceClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass, Utf8OwnedCharClass.NotECMASpaceClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.DigitClass, Utf8OwnedCharClass.DigitClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotDigitClass, Utf8OwnedCharClass.NotDigitClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.WordClass, Utf8OwnedCharClass.WordClass);
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotWordClass, Utf8OwnedCharClass.NotWordClass);
     }
 }

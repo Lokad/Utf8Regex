@@ -1014,7 +1014,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return false;
         }
 
-        return node.Str is Runtime.RegexCharClass.SpaceClass or Runtime.RegexCharClass.ECMASpaceClass;
+        return node.Str == Utf8OwnedCharClass.SpaceClass || node.Str == Utf8OwnedCharClass.ECMASpaceClass;
     }
 
     private static int FindFirstSignificantChildIndex(Utf8TreeNode node)

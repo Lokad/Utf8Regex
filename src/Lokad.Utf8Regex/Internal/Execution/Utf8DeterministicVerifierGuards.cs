@@ -264,7 +264,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
         if (node.Kind is Utf8ExecutionNodeKind.Set or Utf8ExecutionNodeKind.Loop or Utf8ExecutionNodeKind.LazyLoop)
         {
-            if (node.Text is Internal.FrontEnd.Runtime.RegexCharClass.SpaceClass or Internal.FrontEnd.Runtime.RegexCharClass.ECMASpaceClass)
+            if (node.Text == Internal.FrontEnd.Utf8OwnedCharClass.SpaceClass || node.Text == Internal.FrontEnd.Utf8OwnedCharClass.ECMASpaceClass)
             {
                 return true;
             }

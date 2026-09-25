@@ -1,7 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
@@ -13,7 +12,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        if (set == RuntimeFrontEnd.RegexCharClass.NotNewLineClass)
+        if (set == Utf8OwnedCharClass.NotNewLineClass)
         {
             token = AsciiSimplePatternToken.Dot;
             return true;
@@ -24,7 +23,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             token = new AsciiSimplePatternToken(
                 charClass,
                 DotNetAsciiCharClassProjector.RequiresAsciiInput(set),
-                set == RuntimeFrontEnd.RegexCharClass.SpaceClass
+                set == Utf8OwnedCharClass.SpaceClass
                     ? Utf8SimplePatternScalarClassKind.UnicodeWhitespace
                     : Utf8SimplePatternScalarClassKind.None);
             return true;
