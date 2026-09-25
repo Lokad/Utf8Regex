@@ -159,6 +159,25 @@ internal static class Utf8OwnedTreeParser
                     break;
                 }
 
+                if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0)
+                {
+                    if (character == '#')
+                    {
+                        while (!state.AtEnd && state.Pattern[state.Position] != (char)10 && state.Pattern[state.Position] != (char)13)
+                        {
+                            state.Position++;
+                        }
+
+                        continue;
+                    }
+
+                    if (IsIgnoredWhitespace(character))
+                    {
+                        state.Position++;
+                        continue;
+                    }
+                }
+
                 if (depth == 0)
                 {
                     state.Depth0Atom = children.Count + (run.Length > 0 ? 1 : 0);
@@ -286,12 +305,6 @@ internal static class Utf8OwnedTreeParser
 
                         children.Add(foldedAtom);
                         continue;
-                    }
-
-                    if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0 &&
-                        (character == '#' || char.IsWhiteSpace(character)))
-                    {
-                        return false;
                     }
 
                     run.Append(character);
@@ -2115,6 +2128,21 @@ internal static class Utf8OwnedTreeParser
 
             return true;
         }
+        static bool IsIgnoredWhitespace(char character)
+        {
+            return (character >= (char)9 && character <= (char)13) ||
+                character == (char)32 ||
+                character == (char)133 ||
+                character == (char)160 ||
+                character == (char)5760 ||
+                (character >= (char)8192 && character <= (char)8202) ||
+                character == (char)8232 ||
+                character == (char)8233 ||
+                character == (char)8239 ||
+                character == (char)8287 ||
+                character == (char)12288;
+        }
+
         static bool IsScopeFlag(char character)
         {
             return character == 'i' ||

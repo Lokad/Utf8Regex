@@ -251,7 +251,6 @@ public sealed class Utf8OwnedTreeParserTests
     public static IEnumerable<object?[]> OptionResidualCases()
     {
         yield return new object?[] { "(?i--m:a)" };
-        yield return new object?[] { "(?x:a b)" };
     }
 
     [Theory]
