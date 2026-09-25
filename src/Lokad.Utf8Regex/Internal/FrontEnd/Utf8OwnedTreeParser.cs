@@ -465,7 +465,16 @@ internal static class Utf8OwnedTreeParser
                     state.Position++;
                     return true;
                 default:
-                    return false;
+                    // Other characters spell themselves; only ASCII letters
+                    // and digits without an escape meaning keep declining.
+                    if ((escaped >= 'a' && escaped <= 'z') || (escaped >= 'A' && escaped <= 'Z') || (escaped >= '0' && escaped <= '9'))
+                    {
+                        return false;
+                    }
+
+                    value = escaped;
+                    state.Position++;
+                    return true;
             }
         }
 
@@ -529,6 +538,8 @@ internal static class Utf8OwnedTreeParser
             var categories = new List<char>();
             var pending = (char)0;
             var hasPending = false;
+            var pendingIsPlain = false;
+            var pendingAdded = false;
             var first = true;
             while (true)
             {
@@ -545,16 +556,36 @@ internal static class Utf8OwnedTreeParser
                 if (character == '-')
                 {
                     if (hasPending &&
+                        pendingIsPlain &&
                         state.Position + 1 < state.Pattern.Length &&
                         state.Pattern[state.Position + 1] != ']' &&
                         state.Pattern[state.Position + 1] != '[')
                     {
+                        if (ShorthandRangeEndAhead(ref state))
+                        {
+                            return false;
+                        }
+
+                        if (TryTakeComplexRangeEnd(ref state, units))
+                        {
+                            hasPending = false;
+                            pendingAdded = false;
+                            first = false;
+                            if (state.AtEnd || state.Pattern[state.Position] != ']')
+                            {
+                                return false;
+                            }
+
+                            continue;
+                        }
+
                         if (!TryTakeRangeEnd(ref state, pending, units))
                         {
                             return false;
                         }
 
                         hasPending = false;
+                        pendingAdded = false;
                         first = false;
                         continue;
                     }
@@ -573,16 +604,28 @@ internal static class Utf8OwnedTreeParser
                     {
                         pending = '-';
                         hasPending = true;
+                        pendingIsPlain = true;
+                        pendingAdded = false;
                         state.Position++;
                         first = false;
                         continue;
                     }
+                    if (hasPending && !pendingAdded)
+                    {
+                        if (!AddClassUnit(units, pending))
+                        {
+                            return false;
+                        }
+                    }
+
                     if (!AddClassUnit(units, '-'))
                     {
                         return false;
                     }
                     pending = '-';
                     hasPending = true;
+                    pendingIsPlain = true;
+                    pendingAdded = true;
                     state.Position++;
                     first = false;
                     continue;
@@ -593,14 +636,18 @@ internal static class Utf8OwnedTreeParser
                     if (TryTakeShorthandMembers(ref state, units, categories))
                     {
                         hasPending = false;
+                        pendingIsPlain = false;
+                        pendingAdded = false;
                         first = false;
                         continue;
                     }
 
-                    if (!DecodeClassEscape(ref state, out atom))
+                    if (!DecodeClassEscape(ref state, out atom, out var atomIsPlain))
                     {
                         return false;
                     }
+
+                    pendingIsPlain = atomIsPlain;
                 }
                 else
                 {
@@ -610,6 +657,7 @@ internal static class Utf8OwnedTreeParser
                         return false;
                     }
                     state.Position++;
+                    pendingIsPlain = true;
                 }
                 if (state.Position < state.Pattern.Length &&
                     state.Pattern[state.Position] == '-' &&
@@ -617,6 +665,7 @@ internal static class Utf8OwnedTreeParser
                 {
                     pending = atom;
                     hasPending = true;
+                    pendingAdded = false;
                 }
                 else
                 {
@@ -626,6 +675,7 @@ internal static class Utf8OwnedTreeParser
                     }
                     pending = atom;
                     hasPending = true;
+                    pendingAdded = true;
                 }
                 first = false;
             }
@@ -645,6 +695,46 @@ internal static class Utf8OwnedTreeParser
             node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, new string(text));
             return true;
         }
+        static bool ShorthandRangeEndAhead(ref ParserState state)
+        {
+            // state.Position is at '-'; true when a set or category escape
+            // follows, which the provider rejects in upper-bound position.
+            if (state.Position + 1 >= state.Pattern.Length || state.Pattern[state.Position + 1] != '\\')
+            {
+                return false;
+            }
+
+            var probe = state;
+            probe.Position++;
+            return TryTakeShorthandMembers(ref probe, new List<char>(), new List<char>());
+        }
+
+        static bool TryTakeComplexRangeEnd(ref ParserState state, List<char> units)
+        {
+            // state.Position is at '-'; consumes a complex-decodable end
+            // (punctuation resolution) as a single, discarding the pending start
+            // exactly like the provider, whose range never starts there.
+            if (state.Position + 1 >= state.Pattern.Length || state.Pattern[state.Position + 1] != '\\')
+            {
+                return false;
+            }
+
+            var probe = state;
+            probe.Position++;
+            if (!DecodeClassEscape(ref probe, out var end, out var isPlain) || isPlain)
+            {
+                return false;
+            }
+
+            state.Position = probe.Position;
+            if (!AddClassUnit(units, end))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         static bool TryTakeRangeEnd(ref ParserState state, char start, List<char> units)
         {
             if (state.Position + 1 >= state.Pattern.Length)
@@ -662,7 +752,7 @@ internal static class Utf8OwnedTreeParser
             {
                 var probe = state;
                 probe.Position++;
-                if (!DecodeClassEscape(ref probe, out end))
+                if (!DecodeClassEscape(ref probe, out end, out _))
                 {
                     return false;
                 }
@@ -702,12 +792,13 @@ internal static class Utf8OwnedTreeParser
             {
                 var probe = state;
                 probe.Position = index;
-                return DecodeClassEscape(ref probe, out _);
+                return DecodeClassEscape(ref probe, out _, out _);
             }
             return !IsRejectedClassChar(candidate);
         }
-        static bool DecodeClassEscape(ref ParserState state, out char value)
+        static bool DecodeClassEscape(ref ParserState state, out char value, out bool isPlain)
         {
+            isPlain = false;
             if (state.Position + 1 < state.Pattern.Length)
             {
                 var letter = state.Pattern[state.Position + 1];
@@ -715,26 +806,46 @@ internal static class Utf8OwnedTreeParser
                 {
                     value = (char)8;
                     state.Position += 2;
+                    isPlain = true;
+                    return true;
+                }
+                if (letter is 'B' or 'G' or 'Z' or 'z')
+                {
+                    value = letter;
+                    state.Position += 2;
+                    isPlain = true;
                     return true;
                 }
                 if (letter == 'A')
                 {
                     value = 'A';
                     state.Position += 2;
+                    isPlain = true;
                     return true;
                 }
                 if (letter == '-')
                 {
                     value = '-';
                     state.Position += 2;
+                    isPlain = true;
                     return true;
                 }
+
+                isPlain = IsLimitedClassEscapeHead(letter);
             }
             if (!DecodeEscape(ref state, out value))
             {
                 return false;
             }
             return !IsRejectedClassChar(value);
+        }
+
+        static bool IsLimitedClassEscapeHead(char letter)
+        {
+            // Subset TryScanCharClassLiteralEscape heads beyond the arms above:
+            // single-char escapes with full range behavior, unlike shorthand or
+            // punctuation resolutions that break ranges.
+            return letter is '0' or 'x' or 'u' or 'c' or 'a' or 'e' or 'n' or 'r' or 't' or 'f' or 'v' || (letter >= '0' && letter <= '7');
         }
         static bool TryTakeShorthandAtom(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
         {
@@ -1557,6 +1668,120 @@ internal static class Utf8OwnedTreeParser
             fused.Add(merged);
             pending.Clear();
         }
+        static bool TryTakeLookaroundKind(ParserState state, out RuntimeFrontEnd.RegexNodeKind kind, out bool isLookbehind)
+        {
+            kind = RuntimeFrontEnd.RegexNodeKind.Concatenate;
+            isLookbehind = false;
+            if (state.AtEnd)
+            {
+                return false;
+            }
+
+            var marker = state.Pattern[state.Position];
+            if (marker == '=')
+            {
+                kind = RuntimeFrontEnd.RegexNodeKind.PositiveLookaround;
+                return true;
+            }
+
+            if (marker == '!')
+            {
+                kind = RuntimeFrontEnd.RegexNodeKind.NegativeLookaround;
+                return true;
+            }
+
+            if (marker == '>')
+            {
+                kind = RuntimeFrontEnd.RegexNodeKind.Atomic;
+                return true;
+            }
+
+            if (marker == '<' && state.Position + 1 < state.Pattern.Length)
+            {
+                var direction = state.Pattern[state.Position + 1];
+                if (direction == '=')
+                {
+                    kind = RuntimeFrontEnd.RegexNodeKind.PositiveLookaround;
+                    isLookbehind = true;
+                    return true;
+                }
+
+                if (direction == '!')
+                {
+                    kind = RuntimeFrontEnd.RegexNodeKind.NegativeLookaround;
+                    isLookbehind = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool ParseLookaround(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node, RuntimeFrontEnd.RegexNodeKind kind, bool isLookbehind)
+        {
+            node = null;
+            // state.Position is at the opener marker after "(?". Lookbehind
+            // consumes its direction marker too and forces RightToLeft below.
+            state.Position += isLookbehind ? 2 : 1;
+            if (isLookbehind && state.Pattern.IndexOf('>', state.Position) >= 0)
+            {
+                return false;
+            }
+
+            var savedOptions = state.Options;
+            var bodyOptions = kind == RuntimeFrontEnd.RegexNodeKind.Atomic
+                ? savedOptions
+                : isLookbehind
+                    ? savedOptions | RegexOptions.RightToLeft
+                    : savedOptions & ~RegexOptions.RightToLeft;
+            state.Options = bodyOptions;
+
+            if (!ParseAlternation(ref state, depth + 1, out var body) || body is null)
+            {
+                state.Options = savedOptions;
+                return false;
+            }
+
+            if (state.AtEnd || state.Pattern[state.Position] != ')')
+            {
+                state.Options = savedOptions;
+                return false;
+            }
+
+            state.Position++;
+            if (isLookbehind && ContainsCaptureOrBackreference(body))
+            {
+                state.Options = savedOptions;
+                return false;
+            }
+
+            var options = bodyOptions;
+            var assertion = new RuntimeFrontEnd.RegexNode(kind, options);
+            assertion.Children = body;
+            body.Parent = assertion;
+            node = assertion;
+            state.Options = savedOptions;
+            return true;
+        }
+
+        static bool ContainsCaptureOrBackreference(RuntimeFrontEnd.RegexNode node)
+        {
+            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Capture ||
+                node.Kind == RuntimeFrontEnd.RegexNodeKind.Backreference)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < node.ChildCount; i++)
+            {
+                if (ContainsCaptureOrBackreference(node.Child(i)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
         static bool AddClassUnit(List<char> units, char value)
         {
             if (IsRejectedClassChar(value))
@@ -1766,6 +1991,11 @@ internal static class Utf8OwnedTreeParser
                 if (IsNamedGroupAhead(state))
                 {
                     return ParseNamedGroup(ref state, depth, out node);
+                }
+
+                if (TryTakeLookaroundKind(state, out var lookaroundKind, out var isLookbehind))
+                {
+                    return ParseLookaround(ref state, depth, out node, lookaroundKind, isLookbehind);
                 }
 
                 if (!TryTakeOptionScope(ref state, out var scopedOptions, out var contribution))
