@@ -2,7 +2,6 @@ using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 internal static class Utf8ExecutionInterpreter
 {

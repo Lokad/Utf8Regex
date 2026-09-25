@@ -15,7 +15,7 @@ internal static class Utf8OwnedCharClass
 
     public const int SetStartIndex = 3;
 
-    private const string AnyClass = "\x00\x01\x00\x00";
+    public const string AnyClass = "\x00\x01\x00\x00";
 
     // Probe 2026-09-26: the fork reports backslash-s as the exact four-char payload
     // 0,0,1,100 and backslash-S as 0,0,1,65436, identically under default and
@@ -318,4 +318,52 @@ internal static class Utf8OwnedCharClass
         return false;
     }
 
+
+    public static bool IsECMAWordChar(char ch) =>
+        (uint)ch < 128 && (char.IsAsciiLetterOrDigit(ch) || ch == (char)95);
+
+    public static bool IsWordChar(char ch) =>
+        (uint)ch < (uint)s_wordCharAsciiLookup.Length ?
+            s_wordCharAsciiLookup[ch] != 0 :
+            IsWordCategory(System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch));
+
+    public static bool IsBoundaryWordChar(char ch)
+    {
+        const char ZeroWidthNonJoiner = (char)8204;
+        const char ZeroWidthJoiner = (char)8205;
+        return (uint)ch < (uint)s_wordCharAsciiLookup.Length ?
+            s_wordCharAsciiLookup[ch] != 0 :
+            (IsWordCategory(System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch)) ||
+                ch == ZeroWidthJoiner ||
+                ch == ZeroWidthNonJoiner);
+    }
+
+    public static ReadOnlySpan<byte> WordCharAsciiLookup => s_wordCharAsciiLookup;
+
+    private static readonly byte[] s_wordCharAsciiLookup = new byte[128];
+
+    private const int WordCategoriesMask =
+        1 << (int)System.Globalization.UnicodeCategory.UppercaseLetter |
+        1 << (int)System.Globalization.UnicodeCategory.LowercaseLetter |
+        1 << (int)System.Globalization.UnicodeCategory.TitlecaseLetter |
+        1 << (int)System.Globalization.UnicodeCategory.ModifierLetter |
+        1 << (int)System.Globalization.UnicodeCategory.OtherLetter |
+        1 << (int)System.Globalization.UnicodeCategory.NonSpacingMark |
+        1 << (int)System.Globalization.UnicodeCategory.DecimalDigitNumber |
+        1 << (int)System.Globalization.UnicodeCategory.ConnectorPunctuation;
+
+    static Utf8OwnedCharClass()
+    {
+        for (var i = 0; i < s_wordCharAsciiLookup.Length; i++)
+        {
+            var ch = (char)i;
+            if (char.IsAsciiLetterOrDigit(ch) || ch == (char)95)
+            {
+                s_wordCharAsciiLookup[i] = 1;
+            }
+        }
+    }
+
+    private static bool IsWordCategory(System.Globalization.UnicodeCategory category) =>
+        (WordCategoriesMask & (1 << (int)category)) != 0;
 }

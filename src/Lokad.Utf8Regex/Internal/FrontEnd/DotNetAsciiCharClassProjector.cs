@@ -204,10 +204,10 @@ internal static class DotNetAsciiCharClassProjector
 
         if (CategoryEquals(categoryPayload, RuntimeFrontEnd.RegexCharClass.WordClass))
         {
-            return RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(value);
+            return Utf8OwnedCharClass.IsBoundaryWordChar(value);
         }
 
-        return !RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(value);
+        return !Utf8OwnedCharClass.IsBoundaryWordChar(value);
     }
 
     private static bool CategoryEquals(string categoryPayload, string runtimeSet) =>

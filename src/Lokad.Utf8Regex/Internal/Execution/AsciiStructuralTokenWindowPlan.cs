@@ -1,5 +1,3 @@
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
-
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal readonly struct AsciiStructuralTokenWindowPlan

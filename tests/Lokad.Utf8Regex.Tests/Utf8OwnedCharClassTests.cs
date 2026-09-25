@@ -302,4 +302,36 @@ public sealed class Utf8OwnedCharClassTests
 
         return corpus.ToArray();
     }
+
+    [Fact]
+    public void WordTablesMatchFork()
+    {
+        var ownedLookup = Utf8OwnedCharClass.WordCharAsciiLookup;
+        var forkLookup = RuntimeFrontEnd.RegexCharClass.WordCharAsciiLookup;
+        Assert.Equal(forkLookup.Length, ownedLookup.Length);
+        for (var i = 0; i < forkLookup.Length; i++)
+        {
+            Assert.Equal(forkLookup[i], ownedLookup[i]);
+        }
+
+        for (var i = 0; i <= char.MaxValue; i++)
+        {
+            var ch = (char)i;
+            Assert.Equal(
+                RuntimeFrontEnd.RegexCharClass.IsWordChar(ch),
+                Utf8OwnedCharClass.IsWordChar(ch));
+            Assert.Equal(
+                RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(ch),
+                Utf8OwnedCharClass.IsBoundaryWordChar(ch));
+            Assert.Equal(
+                RuntimeFrontEnd.RegexCharClass.IsECMAWordChar(ch),
+                Utf8OwnedCharClass.IsECMAWordChar(ch));
+        }
+    }
+
+    [Fact]
+    public void PayloadConstantsMatchFork()
+    {
+        Assert.Equal(RuntimeFrontEnd.RegexCharClass.AnyClass, Utf8OwnedCharClass.AnyClass);
+    }
 }

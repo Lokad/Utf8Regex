@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -56,7 +55,7 @@ internal static class DotNetUtf8WordChar
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsWord(Rune scalar) =>
-        scalar.IsBmp && RuntimeFrontEnd.RegexCharClass.IsWordChar((char)scalar.Value);
+        scalar.IsBmp && Internal.FrontEnd.Utf8OwnedCharClass.IsWordChar((char)scalar.Value);
 }
 
 internal static class DotNetUtf8WordBoundary
@@ -122,7 +121,7 @@ internal static class DotNetUtf8WordBoundary
     }
 
     private static bool IsWord(Rune scalar) =>
-        scalar.IsBmp && RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar((char)scalar.Value);
+        scalar.IsBmp && Internal.FrontEnd.Utf8OwnedCharClass.IsBoundaryWordChar((char)scalar.Value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowOffsetOutOfRange() => throw new ArgumentOutOfRangeException("byteOffset");

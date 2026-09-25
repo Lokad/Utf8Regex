@@ -234,7 +234,10 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         ulong high = _highMask;
         for (var value = 0; value < 128; value++)
         {
-            if (!ContainsPositive((byte)value))
+            var isPositive = value < 64
+                ? (_lowMask & (1UL << value)) != 0
+                : (_highMask & (1UL << (value - 64))) != 0;
+            if (!isPositive)
             {
                 continue;
             }
@@ -250,51 +253,12 @@ internal readonly struct AsciiCharClass : IEquatable<AsciiCharClass>
         return new AsciiCharClass(low, high, Negated);
     }
 
-    public string ToRuntimeCharClassString()
-    {
-        var runtime = new Internal.FrontEnd.Runtime.RegexCharClass
-        {
-            Negate = Negated,
-        };
-
-        var start = -1;
-        for (var value = 0; value <= 0x7F; value++)
-        {
-            if (ContainsPositive((byte)value))
-            {
-                if (start < 0)
-                {
-                    start = value;
-                }
-
-                continue;
-            }
-
-            if (start >= 0)
-            {
-                runtime.AddRange((char)start, (char)(value - 1));
-                start = -1;
-            }
-        }
-
-        if (start >= 0)
-        {
-            runtime.AddRange((char)start, (char)0x7F);
-        }
-
-        return runtime.ToStringClass();
-    }
-
     public bool TryGetKnownPredicateKind(out AsciiCharClassPredicateKind predicateKind)
     {
         predicateKind = KnownPredicateKind;
         return predicateKind != AsciiCharClassPredicateKind.None;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool ContainsPositive(byte value) => value < 64
-        ? (_lowMask & (1UL << value)) != 0
-        : (_highMask & (1UL << (value - 64))) != 0;
 
     private static AsciiCharClassPredicateKind Classify(ulong low, ulong high, bool negated)
     {
