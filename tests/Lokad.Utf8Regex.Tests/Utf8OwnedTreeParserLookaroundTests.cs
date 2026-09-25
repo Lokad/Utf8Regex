@@ -114,6 +114,22 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "[\\d-z]", 512 };
         yield return new object?[] { "[\\w-_]", 512 };
         yield return new object?[] { "[]-a]", 512 };
+        yield return new object?[] { "(?<=a)b", 512 };
+        yield return new object?[] { "((?<=a)b)", 512 };
+        yield return new object?[] { "(?<=a{2})b", 512 };
+        yield return new object?[] { "(?<=a*)b", 512 };
+        yield return new object?[] { "(?<=ab+)c", 512 };
+        yield return new object?[] { "a>(?<=b)c", 512 };
+        yield return new object?[] { "(?<=(?i:a))b", 512 };
+        yield return new object?[] { "(?<=ab|cd)e", 512 };
+        yield return new object?[] { "(?<=(?:a)(?:b))c", 512 };
+        yield return new object?[] { "(?<=a|b|c)d", 512 };
+        yield return new object?[] { "(?<=(?i:a)(?m:b))c", 512 };
+        yield return new object?[] { "(?<=a?)b", 512 };
+        yield return new object?[] { "(?<=(?:a)+)b", 512 };
+        yield return new object?[] { "(?<=^a)b", 512 };
+        yield return new object?[] { "(?<=a$)b", 512 };
+        yield return new object?[] { "(?<=\\ba)b", 512 };
     }
 
     public static IEnumerable<object?[]> LookaroundDeclineCases()
@@ -124,6 +140,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?=a))" };
         yield return new object?[] { "(?<=(a))b" };
         yield return new object?[] { "(?<=(a)(b))c" };
+        yield return new object?[] { "(?<=(a|b))c" };
         yield return new object?[] { "(?<=((a)))b" };
         yield return new object?[] { "(?<=\\1)a" };
         yield return new object?[] { "(?<=(?:(a)))b" };
