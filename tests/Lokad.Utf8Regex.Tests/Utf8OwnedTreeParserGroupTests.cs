@@ -231,21 +231,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<->b)" };
     }
 
-
-    public static IEnumerable<object?[]> GroupResidualCases()
-    {
-        yield return new object?[] { "(a)\\1{0}", 512 };
-        yield return new object?[] { "(\\k<x>{0})", 512 };
-        yield return new object?[] { "(?<x>a)\\k<y>{0}", 512 };
-        yield return new object?[] { "\\k<undefined>{0}", 512 };
-        yield return new object?[] { "\\178x", 512 };
-        yield return new object?[] { "\\19+", 512 };
-        yield return new object?[] { "\\19", 512 };
-        yield return new object?[] { "\\1998", 512 };
-        yield return new object?[] { "\\1000", 512 };
-        yield return new object?[] { "[\\10]", 512 };
-    }
-
     [Theory]
     [MemberData(nameof(GroupAcceptCases))]
     public void OwnedGroupsMatchProviderTree(string pattern, int options)
@@ -272,14 +257,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
-    }
-
-    [Theory]
-    [MemberData(nameof(GroupResidualCases))]
-    public void OwnedGroupsDeclineResidual(string pattern, int options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     private static void AssertHashtableEqual(Hashtable? expected, Hashtable? actual)

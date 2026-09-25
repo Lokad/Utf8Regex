@@ -162,6 +162,7 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
         yield return new object?[] { "(?i:a)+?", 512 };
         yield return new object?[] { "(?i:ab){2}", 512 };
         yield return new object?[] { "(?i:a)?", 512 };
+        yield return new object?[] { "(?i:a){0}", 512 };
         yield return new object?[] { "(?i:a)(b(?m)c)", 512 };
     }
 

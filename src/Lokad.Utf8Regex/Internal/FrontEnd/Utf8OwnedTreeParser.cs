@@ -60,17 +60,6 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
-        if (!FinishNumbering(
-            ref state,
-            ref root,
-            out var captureCount,
-            out var captureNames,
-            out var captureNameToNumber,
-            out var captureSparseMapping))
-        {
-            return null;
-        }
-
         var treeOptions = options | state.TreeSeen;
         if (root.Kind is RuntimeFrontEnd.RegexNodeKind.Concatenate or RuntimeFrontEnd.RegexNodeKind.Alternate)
         {
@@ -90,6 +79,17 @@ internal static class Utf8OwnedTreeParser
             }
 
             root = top;
+        }
+
+        if (!FinishNumbering(
+            ref state,
+            ref root,
+            out var captureCount,
+            out var captureNames,
+            out var captureNameToNumber,
+            out var captureSparseMapping))
+        {
+            return null;
         }
 
         var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
@@ -226,10 +226,9 @@ internal static class Utf8OwnedTreeParser
 
                         if (backrefAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
                         {
-                            return false;
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = backrefAtom, Digits = backrefDigits });
                         }
-
-                        if (ReferenceEquals(backrefAtom, tentative))
+                        else if (ReferenceEquals(backrefAtom, tentative))
                         {
                             state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits });
                         }
@@ -259,7 +258,9 @@ internal static class Utf8OwnedTreeParser
 
                         if (namedAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
                         {
-                            return false;
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedAtom, Name = backrefName });
+                            children.Add(namedAtom);
+                            continue;
                         }
 
                         state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedBackref, Name = backrefName });
@@ -768,12 +769,18 @@ internal static class Utf8OwnedTreeParser
                         continue;
                     }
 
-                    if (!DecodeClassEscape(ref state, out atom, out var atomIsPlain))
+                    if (TryTakeClassOctal(ref state, out atom))
+                    {
+                        pendingIsPlain = true;
+                    }
+                    else if (DecodeClassEscape(ref state, out atom, out var atomIsPlain))
+                    {
+                        pendingIsPlain = atomIsPlain;
+                    }
+                    else
                     {
                         return false;
                     }
-
-                    pendingIsPlain = atomIsPlain;
                 }
                 else
                 {
@@ -970,6 +977,41 @@ internal static class Utf8OwnedTreeParser
             }
             return !IsRejectedClassChar(candidate);
         }
+        static bool TryTakeClassOctal(ref ParserState state, out char value)
+        {
+            value = (char)0;
+            if (state.Position + 1 >= state.Pattern.Length)
+            {
+                return false;
+            }
+
+            var head = state.Pattern[state.Position + 1];
+            if (head < '1' || head > '9')
+            {
+                return false;
+            }
+
+            var length = 0;
+            var number = 0;
+            while (length < 3 &&
+                state.Position + 1 + length < state.Pattern.Length &&
+                state.Pattern[state.Position + 1 + length] >= '0' &&
+                state.Pattern[state.Position + 1 + length] <= '7')
+            {
+                number = number * 8 + (state.Pattern[state.Position + 1 + length] - '0');
+                length++;
+            }
+
+            if (length == 0)
+            {
+                return false;
+            }
+
+            value = (char)number;
+            state.Position += 1 + length;
+            return true;
+        }
+
         static bool DecodeClassEscape(ref ParserState state, out char value, out bool isPlain)
         {
             isPlain = false;
@@ -1624,16 +1666,18 @@ internal static class Utf8OwnedTreeParser
                 }
             }
 
-            if (morphed)
-            {
-                root = MergeLiteralRuns(root);
-            }
+            root = MergeLiteralRuns(root);
 
             return true;
         }
 
         static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
         {
+            if (fixup.Node.Kind == RuntimeFrontEnd.RegexNodeKind.Empty && (fixup.Digits is not null || fixup.Name is not null))
+            {
+                return ResolveEmptyFixup(fixup, slots, slotByName, ref root);
+            }
+
             if (fixup.IsPop)
             {
                 var popName = fixup.Name;
@@ -1685,6 +1729,82 @@ internal static class Utf8OwnedTreeParser
             return ResolveOctalFallback(fixup, ref root, ref morphed);
         }
 
+        static bool ResolveEmptyFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref RuntimeFrontEnd.RegexNode root)
+        {
+            if (fixup.Name is not null)
+            {
+                if (!slotByName.TryGetValue(fixup.Name, out _))
+                {
+                    return true;
+                }
+
+                return true;
+            }
+
+            if (fixup.Digits is not null &&
+                int.TryParse(fixup.Digits, out var backref) &&
+                backref >= 1 &&
+                slots.Contains(backref))
+            {
+                return true;
+            }
+
+            if (fixup.Digits is null || fixup.Digits.Length < 2)
+            {
+                return true;
+            }
+
+            var length = 0;
+            var value = 0;
+            while (length < 3 && length < fixup.Digits.Length)
+            {
+                var digit = fixup.Digits[length] - '0';
+                if (digit < 0 || digit > 7)
+                {
+                    break;
+                }
+
+                value = value * 8 + digit;
+                length++;
+            }
+
+            if (length == 0)
+            {
+                return false;
+            }
+
+            if (length == fixup.Digits.Length)
+            {
+                StripEmptyOptions(ref root, fixup.Node);
+                return true;
+            }
+
+            RuntimeFrontEnd.RegexNode morphedLeaf;
+            if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
+                Utf8OwnedCaseFold.TryGetFold((char)value, out var emptyLower, out var emptyUpper))
+            {
+                morphedLeaf = FoldedSet(fixup.Node.Options, emptyLower, emptyUpper);
+            }
+            else
+            {
+                morphedLeaf = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                morphedLeaf.M = 0;
+                morphedLeaf.N = 0;
+            }
+
+            ReplaceNodeInParent(ref root, fixup.Node, morphedLeaf);
+            return true;
+        }
+
+        static void StripEmptyOptions(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode node)
+        {
+            if ((node.Options & RegexOptions.IgnoreCase) != 0)
+            {
+                var stripped = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options & ~RegexOptions.IgnoreCase);
+                ReplaceNodeInParent(ref root, node, stripped);
+            }
+        }
+
         static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
         {
             // Single non-zero digits never spell octal; longer runs without a
@@ -1708,9 +1828,14 @@ internal static class Utf8OwnedTreeParser
                 length++;
             }
 
-            if (length == 0 || length != fixup.Digits.Length)
+            if (length == 0)
             {
                 return false;
+            }
+
+            if (length != fixup.Digits.Length)
+            {
+                return ResolveOctalRest(fixup, ref root, ref morphed, length, value);
             }
 
             morphed = true;
@@ -1780,8 +1905,114 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
+        static bool ResolveOctalRest(OwnedBackrefFixup fixup, ref RuntimeFrontEnd.RegexNode root, ref bool morphed, int prefixLength, int value)
+        {
+            RuntimeFrontEnd.RegexNode morphedLeaf;
+            if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
+                Utf8OwnedCaseFold.TryGetFold((char)value, out var restLower, out var restUpper))
+            {
+                morphedLeaf = FoldedSet(fixup.Node.Options, restLower, restUpper);
+            }
+            else
+            {
+                morphedLeaf = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                morphedLeaf.M = 0;
+                morphedLeaf.N = 0;
+            }
+
+            var restText = fixup.Digits.Substring(prefixLength);
+            var beforeAnchor = new List<RuntimeFrontEnd.RegexNode>(restText.Length);
+            beforeAnchor.Add(morphedLeaf);
+            for (var i = 0; i + 1 < restText.Length; i++)
+            {
+                beforeAnchor.Add(new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[i]));
+            }
+
+            if (fixup.Wrapper is null)
+            {
+                beforeAnchor.Add(new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, restText[restText.Length - 1]));
+                ReplaceNodeWithMany(ref root, fixup.Node, beforeAnchor, null);
+                morphed = true;
+                return true;
+            }
+
+            var restWrapper = fixup.Wrapper;
+            if (restWrapper.ChildCount != 1 || !ReferenceEquals(restWrapper.Child(0), fixup.Node))
+            {
+                return false;
+            }
+
+            var loopChar = restText[restText.Length - 1];
+            var loopKind = restWrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
+                ? RuntimeFrontEnd.RegexNodeKind.Onelazy
+                : RuntimeFrontEnd.RegexNodeKind.Oneloop;
+            var loopOptions = (restWrapper.Options & RegexOptions.IgnoreCase) != 0
+                ? restWrapper.Options & ~RegexOptions.IgnoreCase
+                : restWrapper.Options;
+            var loopBody = new RuntimeFrontEnd.RegexNode(loopKind, loopOptions, loopChar);
+            loopBody.M = restWrapper.M;
+            loopBody.N = restWrapper.N;
+            ReplaceNodeWithMany(ref root, restWrapper, beforeAnchor, loopBody);
+            morphed = true;
+            return true;
+        }
+
+        static void ReplaceNodeWithMany(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode oldNode, List<RuntimeFrontEnd.RegexNode> fresh, RuntimeFrontEnd.RegexNode? trailing)
+        {
+            var parent = oldNode.Parent;
+            var sequence = new List<RuntimeFrontEnd.RegexNode>(fresh.Count + 1);
+            sequence.AddRange(fresh);
+            if (trailing is not null)
+            {
+                sequence.Add(trailing);
+            }
+
+            foreach (var node in sequence)
+            {
+                node.Parent = parent;
+            }
+
+            if (parent is null)
+            {
+                if (sequence.Count == 1)
+                {
+                    root = sequence[0];
+                    return;
+                }
+
+                var top = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, oldNode.Options);
+                top.Children = sequence;
+                root = top;
+                return;
+            }
+
+            if (parent.Children is List<RuntimeFrontEnd.RegexNode> siblings)
+            {
+                for (var i = 0; i < siblings.Count; i++)
+                {
+                    if (ReferenceEquals(siblings[i], oldNode))
+                    {
+                        siblings.RemoveAt(i);
+                        siblings.InsertRange(i, sequence);
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            parent.Children = new List<RuntimeFrontEnd.RegexNode>(sequence);
+        }
+
         static RuntimeFrontEnd.RegexNode MergeLiteralRuns(RuntimeFrontEnd.RegexNode node)
         {
+            if (node.Kind is RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop or RuntimeFrontEnd.RegexNodeKind.Oneloop or RuntimeFrontEnd.RegexNodeKind.Onelazy or RuntimeFrontEnd.RegexNodeKind.Setloop or RuntimeFrontEnd.RegexNodeKind.Setlazy &&
+                node.M == 0 &&
+                node.N == 0)
+            {
+                return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options);
+            }
+
             if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate && node.Children is List<RuntimeFrontEnd.RegexNode> branches)
             {
                 for (var i = 0; i < branches.Count; i++)
@@ -1806,6 +2037,36 @@ internal static class Utf8OwnedTreeParser
                     {
                         children[i] = merged;
                         merged.Parent = node;
+                    }
+                }
+
+                if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Concatenate && children.Count > 0)
+                {
+                    var removed = 0;
+                    for (var i = 0; i < children.Count;)
+                    {
+                        if (children[i].Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        {
+                            children.RemoveAt(i);
+                            removed++;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+
+                    if (removed > 0)
+                    {
+                        if (children.Count == 0)
+                        {
+                            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, node.Options);
+                        }
+
+                        if (children.Count == 1)
+                        {
+                            return children[0];
+                        }
                     }
                 }
 
@@ -1839,6 +2100,11 @@ internal static class Utf8OwnedTreeParser
                 foreach (var child in fused)
                 {
                     child.Parent = node;
+                }
+
+                if (node.Kind != RuntimeFrontEnd.RegexNodeKind.Concatenate)
+                {
+                    return node;
                 }
 
                 return fused.Count == 1 ? fused[0] : node;
