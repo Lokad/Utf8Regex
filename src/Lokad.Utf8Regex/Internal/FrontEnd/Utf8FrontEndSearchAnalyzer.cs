@@ -313,7 +313,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        var family = Runtime.RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(node);
+        var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(node);
         if (family is { Length: > 0 } &&
             family.All(IsAscii) &&
             TryEncodeAlternates(family, out var alternateLiteralsUtf8))
@@ -1498,7 +1498,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         literalUtf8 = null;
         alternateLiteralsUtf8 = null;
 
-        var requiredFamily = Runtime.RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(root);
+        var requiredFamily = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(root);
         if (requiredFamily is not { Length: > 0 })
         {
             return false;
