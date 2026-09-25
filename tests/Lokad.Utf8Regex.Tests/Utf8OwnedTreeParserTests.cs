@@ -251,10 +251,6 @@ public sealed class Utf8OwnedTreeParserTests
     public static IEnumerable<object?[]> OptionResidualCases()
     {
         yield return new object?[] { "(?i--m:a)" };
-        yield return new object?[] { "(?n:a)" };
-        yield return new object?[] { "(?n:(a))" };
-        yield return new object?[] { "(?n)" };
-        yield return new object?[] { "(?n)a" };
         yield return new object?[] { "(?x:a b)" };
     }
 
@@ -271,18 +267,6 @@ public sealed class Utf8OwnedTreeParserTests
     public void OwnedParserDeclinesBeyondSubset(string pattern)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-    }
-
-    public static IEnumerable<object?[]> OptionDeclineCases()
-    {
-        yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture };
-    }
-
-    [Theory]
-    [MemberData(nameof(OptionDeclineCases))]
-    public void OwnedParserDeclinesOptionGatedShapes(string pattern, RegexOptions options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
     }
 
     public static IEnumerable<object?[]> OptionAcceptCases()

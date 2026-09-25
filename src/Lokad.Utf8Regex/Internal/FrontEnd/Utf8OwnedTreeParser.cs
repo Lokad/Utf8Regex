@@ -1287,6 +1287,11 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
+            if ((state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None)
+            {
+                return false;
+            }
+
             var namedEntryOptions = state.Options;
 
             if (!ParseAlternation(ref state, depth + 1, out var body) || body is null)
@@ -2054,13 +2059,16 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            if (((on | off) & RegexOptions.ExplicitCapture) != RegexOptions.None)
-            {
-                return false;
-            }
-
             state.Position++;
             state.Options = (state.Options | on) & ~off;
+            if ((on & RegexOptions.ExplicitCapture) != RegexOptions.None)
+            {
+                state.ExplicitDepth++;
+            }
+            else if ((off & RegexOptions.ExplicitCapture) != RegexOptions.None && state.ExplicitDepth > 0)
+            {
+                state.ExplicitDepth--;
+            }
             if (depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0)
             {
                 state.TreeSeen = (state.TreeSeen | on) & ~off;
@@ -2099,10 +2107,6 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
             if (dashed && scopeOn == RegexOptions.None && scopeOff == RegexOptions.None)
-            {
-                return false;
-            }
-            if (((scopeOn | scopeOff) & RegexOptions.ExplicitCapture) != RegexOptions.None)
             {
                 return false;
             }
@@ -2320,6 +2324,12 @@ internal static class Utf8OwnedTreeParser
 
                 var savedOptions = state.Options;
                 state.Options = scopedOptions;
+                var scopeEnteredExplicit = (scopedOptions & RegexOptions.ExplicitCapture) != RegexOptions.None;
+                if (scopeEnteredExplicit)
+                {
+                    state.ExplicitDepth++;
+                }
+
                 if (!ParseAlternation(ref state, depth + 1, out var scopeBody) || scopeBody is null)
                 {
                     return false;
@@ -2340,8 +2350,19 @@ internal static class Utf8OwnedTreeParser
                     state.LeadingGroup = scopeGroup;
                 }
 
+                if (scopeEnteredExplicit && state.ExplicitDepth > 0)
+                {
+                    state.ExplicitDepth--;
+                }
+
                 state.Options = savedOptions;
                 return true;
+            }
+            else if (kind == RuntimeFrontEnd.RegexNodeKind.Capture &&
+                (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None &&
+                state.ExplicitDepth > 0)
+            {
+                kind = RuntimeFrontEnd.RegexNodeKind.Group;
             }
             else
             {
@@ -2537,6 +2558,7 @@ internal static class Utf8OwnedTreeParser
         public int Depth0Atom;
         public RegexOptions LeadingContribution;
         public RuntimeFrontEnd.RegexNode? LeadingGroup;
+        public int ExplicitDepth;
         public List<OwnedGroupDefinition> GroupDefinitions;
         public List<OwnedBackrefFixup> BackrefFixups;
 
@@ -2551,6 +2573,7 @@ internal static class Utf8OwnedTreeParser
             Depth0Atom = 0;
             LeadingContribution = RegexOptions.None;
             LeadingGroup = null;
+            ExplicitDepth = 0;
             GroupDefinitions = new List<OwnedGroupDefinition>();
             BackrefFixups = new List<OwnedBackrefFixup>();
         }
