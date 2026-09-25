@@ -1,0 +1,173 @@
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace Lokad.Utf8Regex.Tests;
+
+// Cutover-readiness differential (choke-point evidence): every residual shape the
+// owned parser declines while the fork serves is compared behaviorally between the
+// current product route and the BCL oracle over a fixed probe corpus. Each row
+// either agrees (null witness: safe to flip to BCL fallback at the choke point)
+// or reproduces its documented divergence below (non-null witness). A vanished
+// witness or a new witness both fail, forcing re-triage before the flip.
+public sealed class Utf8OwnedCutoverBehaviorTests
+{
+    private static readonly string[] ProbeCorpus =
+    {
+        "", "a", "A", "b", "B", "ab", "aB", "Ab", "AB", "abc", "ABC", "aBc",
+        "k", "K", "kK", "Kk", "aa", "AA", "aA", "Aa", "aab", "aba", "abba",
+        "axxb", "1", "12", "a1", "1a", " ", "a b", "aBcDe", "AaBb", "x",
+        "ax", "xa", "ababa", "aabbaa", ">", "a>", "a>b", "(a)", "(a)(b)",
+    };
+
+    // Machine-derived divergent rows (from the first differential run: 11 of 53).
+    // - Forward-leak family (9): the fork folds trailing or wrapped content under a
+    //   scoped option and marks trailing nodes, so the product over-matches shapes
+    //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
+    // - Fork-widening family (2): the fork serves shapes BCL rejects at construction
+    //   (balance pop under explicit capture; invalid group name inside lookbehind).
+    //   The flip turns serving into construction failure: blocked on an explicit
+    //   compatibility decision, never flipped silently.
+    private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
+    {
+        ("(?i:k)K", 512),
+        ("(?i:ab)cd", 512),
+        ("(?i:a)(?-i:b)", 512),
+        ("(?i:a)b(?i:c)", 512),
+        ("(?i:a)|b", 512),
+        ("(?i:a)(?m:b)", 512),
+        ("(?i:a)(?m:b)c", 512),
+        ("(?i:a)(b(?m)c)", 512),
+        ("(?i-m:a)b", 512),
+        ("(?n:(?<-x>a))", 512),
+        ("(?<=(?<1a>b))c", 512),
+    };
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserLookaroundTests.LookaroundResidualCases), MemberType = typeof(Utf8OwnedTreeParserLookaroundTests))]
+    public void LookaroundResidualCutoverDisposition(string pattern, int options)
+    {
+        AssertCutoverDisposition(pattern, (RegexOptions)options);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserIgnoreCaseTests.IgnoreCaseResidualCases), MemberType = typeof(Utf8OwnedTreeParserIgnoreCaseTests))]
+    public void IgnoreCaseResidualCutoverDisposition(string pattern, int options)
+    {
+        AssertCutoverDisposition(pattern, (RegexOptions)options);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserExplicitTests.ExplicitResidualCases), MemberType = typeof(Utf8OwnedTreeParserExplicitTests))]
+    public void ExplicitResidualCutoverDisposition(string pattern, int options)
+    {
+        AssertCutoverDisposition(pattern, (RegexOptions)options);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserShorthandTests.ShorthandResidualCases), MemberType = typeof(Utf8OwnedTreeParserShorthandTests))]
+    public void ShorthandResidualCutoverDisposition(string pattern)
+    {
+        AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserSubtractionTests.SubtractionResidualCases), MemberType = typeof(Utf8OwnedTreeParserSubtractionTests))]
+    public void SubtractionResidualCutoverDisposition(string pattern)
+    {
+        AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserTests.OptionResidualCases), MemberType = typeof(Utf8OwnedTreeParserTests))]
+    public void OptionResidualCutoverDisposition(string pattern)
+    {
+        AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
+    }
+
+    private static void AssertCutoverDisposition(string pattern, RegexOptions options)
+    {
+        var witness = FindCutoverWitness(pattern, options);
+        if (CutoverDivergentShapes.Contains((pattern, (int)options)))
+        {
+            Assert.NotNull(witness);
+        }
+        else
+        {
+            Assert.Null(witness);
+        }
+    }
+
+    // Null when the current product route agrees with BCL over the whole corpus
+    // (construction verdicts plus first-match positions and counts), else a short
+    // machine-observed witness description.
+    private static string? FindCutoverWitness(string pattern, RegexOptions options)
+    {
+        Regex? bcl = null;
+        Utf8Regex? product = null;
+        Exception? bclError = null;
+        Exception? productError = null;
+        try
+        {
+            bcl = new Regex(pattern, options);
+        }
+        catch (Exception ex)
+        {
+            bclError = ex;
+        }
+
+        try
+        {
+            product = new Utf8Regex(pattern, options);
+        }
+        catch (Exception ex)
+        {
+            productError = ex;
+        }
+
+        if (bclError is not null || productError is not null)
+        {
+            if (bclError is null || productError is null)
+            {
+                return "construct:bcl-" + (bclError is null ? "serves" : "throws-" + bclError.GetType().Name)
+                    + "/product-" + (productError is null ? "serves" : "throws-" + productError.GetType().Name);
+            }
+
+            if (bclError.GetType() != productError.GetType())
+            {
+                return "construct:throw-type " + bclError.GetType().Name + " vs " + productError.GetType().Name;
+            }
+
+            return null;
+        }
+
+        if (bcl is Regex b && product is Utf8Regex p)
+        {
+            foreach (var input in ProbeCorpus)
+            {
+                var bytes = Encoding.UTF8.GetBytes(input);
+                var expected = b.Match(input);
+                var actual = p.Match(bytes);
+                if (expected.Success != actual.Success)
+                {
+                    return "input '" + input + "':bcl-" + expected.Success + "/product-" + actual.Success;
+                }
+
+                if (expected.Success && (expected.Index != actual.IndexInUtf16 || expected.Length != actual.LengthInUtf16))
+                {
+                    return "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.IndexInUtf16 + "," + actual.LengthInUtf16 + ")";
+                }
+
+                var expectedCount = b.Count(input);
+                var actualCount = p.Count(bytes);
+                if (expectedCount != actualCount)
+                {
+                    return "input '" + input + "':count bcl=" + expectedCount + "/product=" + actualCount;
+                }
+            }
+
+            return null;
+        }
+
+        return "unreachable:null-reference-after-successful-construction";
+    }
+}
