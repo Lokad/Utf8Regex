@@ -253,15 +253,9 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(?i--m:a)" };
         yield return new object?[] { "(?n:a)" };
         yield return new object?[] { "(?n:(a))" };
-        yield return new object?[] { "(?i)" };
-        yield return new object?[] { "(?i-i)" };
-        yield return new object?[] { "(?i-i)a" };
-        yield return new object?[] { "(a(?i)b)c" };
-        yield return new object?[] { "((?i)a)b" };
-        yield return new object?[] { "(?i)a|b" };
-        yield return new object?[] { "((?i)a)" };
+        yield return new object?[] { "(?n)" };
+        yield return new object?[] { "(?n)a" };
         yield return new object?[] { "(?x:a b)" };
-        yield return new object?[] { "(?i)a" };
     }
 
     [Theory]

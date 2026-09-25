@@ -72,6 +72,26 @@ internal static class Utf8OwnedTreeParser
         }
 
         var treeOptions = options | state.TreeSeen;
+        if (root.Kind is RuntimeFrontEnd.RegexNodeKind.Concatenate or RuntimeFrontEnd.RegexNodeKind.Alternate)
+        {
+            var top = new RuntimeFrontEnd.RegexNode(root.Kind, treeOptions);
+            top.Ch = root.Ch;
+            top.Str = root.Str;
+            top.Str2 = root.Str2;
+            top.M = root.M;
+            top.N = root.N;
+            top.Children = root.Children;
+            if (top.Children is List<RuntimeFrontEnd.RegexNode> topChildren)
+            {
+                foreach (var topChild in topChildren)
+                {
+                    topChild.Parent = top;
+                }
+            }
+
+            root = top;
+        }
+
         var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
         tree.M = 0;
         tree.N = -1;
@@ -99,6 +119,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             var branches = new List<RuntimeFrontEnd.RegexNode>();
+            var alternationEntryOptions = state.Options;
             while (true)
             {
                 if (depth == 0)
@@ -120,7 +141,7 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
             }
 
-            root = branches.Count == 1 ? branches[0] : Alternate(state, branches);
+            root = branches.Count == 1 ? branches[0] : Alternate(alternationEntryOptions, branches);
             return true;
         }
 
@@ -129,6 +150,7 @@ internal static class Utf8OwnedTreeParser
             node = null;
             var children = new List<RuntimeFrontEnd.RegexNode>();
             var run = new StringBuilder();
+            var concatenationEntryOptions = state.Options;
             while (!state.AtEnd)
             {
                 var character = state.Pattern[state.Position];
@@ -302,6 +324,20 @@ internal static class Utf8OwnedTreeParser
                     continue;
                 }
 
+                if (character == '(' &&
+                    state.Position + 2 < state.Pattern.Length &&
+                    state.Pattern[state.Position + 1] == '?'
+                    && (IsScopeFlag(state.Pattern[state.Position + 2]) || state.Pattern[state.Position + 2] == '-'))
+                {
+                    var toggleStart = state.Position;
+                    if (TryTakeToggle(ref state, depth))
+                    {
+                        continue;
+                    }
+
+                    state.Position = toggleStart;
+                }
+
                 FlushRun(state, children, run);
                 RuntimeFrontEnd.RegexNode atom;
                 if (character == '^')
@@ -364,11 +400,11 @@ internal static class Utf8OwnedTreeParser
             FlushRun(state, children, run);
             if (children.Count == 0)
             {
-                node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, state.Options);
+                node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, concatenationEntryOptions);
                 return true;
             }
 
-            node = children.Count == 1 ? children[0] : Concatenate(state, children);
+            node = children.Count == 1 ? children[0] : Concatenate(concatenationEntryOptions, children);
             return true;
         }
 
@@ -1251,6 +1287,8 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
+            var namedEntryOptions = state.Options;
+
             if (!ParseAlternation(ref state, depth + 1, out var body) || body is null)
             {
                 return false;
@@ -1262,7 +1300,8 @@ internal static class Utf8OwnedTreeParser
             }
 
             state.Position++;
-            var group = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, state.Options);
+            state.Options = namedEntryOptions;
+            var group = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, namedEntryOptions);
             group.Children = body;
             body.Parent = group;
             node = group;
@@ -1979,16 +2018,66 @@ internal static class Utf8OwnedTreeParser
         {
             return (value >= (char)0xD800 && value <= (char)0xDFFF) || value == (char)0xFFFF;
         }
-        static bool TryTakeOptionScope(ref ParserState state, out RegexOptions scoped, out RegexOptions contribution)
+        static bool TryTakeToggle(ref ParserState state, int depth)
         {
-            scoped = state.Options;
-            contribution = RegexOptions.None;
+            state.Position += 2;
             var on = RegexOptions.None;
             var off = RegexOptions.None;
-            var dashed = false;
             while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
             {
                 on |= ScopeFlag(state.Pattern[state.Position]);
+                state.Position++;
+            }
+
+            if (!state.AtEnd && state.Pattern[state.Position] == '-')
+            {
+                state.Position++;
+                while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+                {
+                    off |= ScopeFlag(state.Pattern[state.Position]);
+                    state.Position++;
+                }
+
+                if (!state.AtEnd && state.Pattern[state.Position] == '-')
+                {
+                    return false;
+                }
+            }
+
+            if (on == RegexOptions.None && off == RegexOptions.None)
+            {
+                return false;
+            }
+
+            if (state.AtEnd || state.Pattern[state.Position] != ')')
+            {
+                return false;
+            }
+
+            if (((on | off) & RegexOptions.ExplicitCapture) != RegexOptions.None)
+            {
+                return false;
+            }
+
+            state.Position++;
+            state.Options = (state.Options | on) & ~off;
+            if (depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0)
+            {
+                state.TreeSeen = (state.TreeSeen | on) & ~off;
+            }
+
+            return true;
+        }
+
+        static bool TryTakeOptionScope(ref ParserState state, out RegexOptions scoped, out RegexOptions scopeOn, out RegexOptions scopeOff)
+        {
+            scoped = state.Options;
+            scopeOn = RegexOptions.None;
+            scopeOff = RegexOptions.None;
+            var dashed = false;
+            while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+            {
+                scopeOn |= ScopeFlag(state.Pattern[state.Position]);
                 state.Position++;
             }
             if (!state.AtEnd && state.Pattern[state.Position] == '-')
@@ -1997,7 +2086,7 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
                 while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
                 {
-                    off |= ScopeFlag(state.Pattern[state.Position]);
+                    scopeOff |= ScopeFlag(state.Pattern[state.Position]);
                     state.Position++;
                 }
                 if (!state.AtEnd && state.Pattern[state.Position] == '-')
@@ -2009,17 +2098,16 @@ internal static class Utf8OwnedTreeParser
             {
                 return false;
             }
-            if (dashed && on == RegexOptions.None && off == RegexOptions.None)
+            if (dashed && scopeOn == RegexOptions.None && scopeOff == RegexOptions.None)
             {
                 return false;
             }
-            if (((on | off) & RegexOptions.ExplicitCapture) != RegexOptions.None)
+            if (((scopeOn | scopeOff) & RegexOptions.ExplicitCapture) != RegexOptions.None)
             {
                 return false;
             }
             state.Position++;
-            scoped = (state.Options | on) & ~off;
-            contribution = on & ~off;
+            scoped = (state.Options | scopeOn) & ~scopeOff;
 
             return true;
         }
@@ -2175,9 +2263,9 @@ internal static class Utf8OwnedTreeParser
             parent.Children = fresh;
         }
 
-        static RuntimeFrontEnd.RegexNode Concatenate(ParserState state, List<RuntimeFrontEnd.RegexNode> children)
+        static RuntimeFrontEnd.RegexNode Concatenate(RegexOptions options, List<RuntimeFrontEnd.RegexNode> children)
         {
-            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, state.Options);
+            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, options);
             node.Children = children;
             foreach (var child in children)
             {
@@ -2187,9 +2275,9 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
-        static RuntimeFrontEnd.RegexNode Alternate(ParserState state, List<RuntimeFrontEnd.RegexNode> branches)
+        static RuntimeFrontEnd.RegexNode Alternate(RegexOptions options, List<RuntimeFrontEnd.RegexNode> branches)
         {
-            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Alternate, state.Options);
+            var node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Alternate, options);
             node.Children = branches;
             foreach (var branch in branches)
             {
@@ -2218,7 +2306,7 @@ internal static class Utf8OwnedTreeParser
                     return ParseLookaround(ref state, depth, out node, lookaroundKind, isLookbehind);
                 }
 
-                if (!TryTakeOptionScope(ref state, out var scopedOptions, out var contribution))
+                if (!TryTakeOptionScope(ref state, out var scopedOptions, out var scopeOn, out var scopeOff))
                 {
                     return false;
                 }
@@ -2226,8 +2314,8 @@ internal static class Utf8OwnedTreeParser
                 var isLeadingScope = depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0;
                 if (isLeadingScope)
                 {
-                    state.TreeSeen |= contribution;
-                    state.LeadingContribution = contribution;
+                    state.TreeSeen = (state.TreeSeen | scopeOn) & ~scopeOff;
+                    state.LeadingContribution = scopeOn & ~scopeOff;
                 }
 
                 var savedOptions = state.Options;
@@ -2247,7 +2335,7 @@ internal static class Utf8OwnedTreeParser
                 scopeGroup.Children = scopeBody;
                 scopeBody.Parent = scopeGroup;
                 node = scopeGroup;
-                if (isLeadingScope && contribution != RegexOptions.None)
+                if (isLeadingScope && (scopeOn & ~scopeOff) != RegexOptions.None)
                 {
                     state.LeadingGroup = scopeGroup;
                 }
@@ -2260,6 +2348,8 @@ internal static class Utf8OwnedTreeParser
                 slot = ++state.Groups;
             }
 
+            var groupEntryOptions = state.Options;
+
             if (!ParseAlternation(ref state, depth + 1, out var body) || body is null)
             {
                 return false;
@@ -2271,7 +2361,8 @@ internal static class Utf8OwnedTreeParser
             }
 
             state.Position++;
-            var group = new RuntimeFrontEnd.RegexNode(kind, state.Options);
+            state.Options = groupEntryOptions;
+            var group = new RuntimeFrontEnd.RegexNode(kind, groupEntryOptions);
             if (kind == RuntimeFrontEnd.RegexNodeKind.Capture)
             {
                 group.M = slot;
