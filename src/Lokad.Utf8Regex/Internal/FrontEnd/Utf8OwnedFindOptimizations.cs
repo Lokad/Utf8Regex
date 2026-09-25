@@ -4,7 +4,7 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 // Owned find-optimization facts, first slice: lengths and anchors. Pure functions
 // over runtime trees of either provenance, differentially pinned against legacy
-// instances. Literals, prefixes, and fixed-distance facts arrive in later slices;
+// instances. Prefixes and fixed-distance facts arrive in later slices;
 // consumers migrate hub by hub. Length arithmetic saturates exactly like the
 // pinned formulas: minimums cap at int.MaxValue - 1 past int.MaxValue, maximums
 // turn null past int.MaxValue; a lone bound of int.MaxValue stays put.
@@ -216,6 +216,130 @@ internal static class Utf8OwnedFindOptimizations
                 return node.Kind;
             default:
                 return RuntimeFrontEnd.RegexNodeKind.Unknown;
+        }
+    }
+    public static string? TryExtractLeadingLiteral(RuntimeFrontEnd.RegexNode node)
+    {
+        switch (node.Kind)
+        {
+            case RuntimeFrontEnd.RegexNodeKind.One:
+                return node.Ch.ToString();
+            case RuntimeFrontEnd.RegexNodeKind.Multi:
+                return string.IsNullOrEmpty(node.Str) ? null : node.Str;
+            case RuntimeFrontEnd.RegexNodeKind.Capture:
+            case RuntimeFrontEnd.RegexNodeKind.Group:
+                return node.ChildCount == 1 ? TryExtractLeadingLiteral(node.Child(0)) : null;
+            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                return LeadingRun(node);
+            default:
+                return null;
+        }
+
+        static string? LeadingRun(RuntimeFrontEnd.RegexNode parent)
+        {
+            var run = new StringBuilder();
+            for (var i = 0; i < parent.ChildCount; i++)
+            {
+                var child = parent.Child(i);
+                if (child.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                {
+                    run.Append(child.Ch);
+                }
+                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                {
+                    run.Append(child.Str);
+                }
+                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                {
+                    continue;
+                }
+                else if (run.Length == 0 &&
+                    (child.Kind == RuntimeFrontEnd.RegexNodeKind.Bol || child.Kind == RuntimeFrontEnd.RegexNodeKind.Eol))
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return run.Length == 0 ? null : run.ToString();
+        }
+    }
+
+    public static string? TryExtractLongestLiteral(RuntimeFrontEnd.RegexNode node)
+    {
+        switch (node.Kind)
+        {
+            case RuntimeFrontEnd.RegexNodeKind.One:
+                return node.Ch.ToString();
+            case RuntimeFrontEnd.RegexNodeKind.Multi:
+                return string.IsNullOrEmpty(node.Str) ? null : node.Str;
+            case RuntimeFrontEnd.RegexNodeKind.Capture:
+            case RuntimeFrontEnd.RegexNodeKind.Group:
+                return node.ChildCount == 1 ? TryExtractLongestLiteral(node.Child(0)) : null;
+            case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                return LongestRun(node);
+            case RuntimeFrontEnd.RegexNodeKind.Alternate:
+                return LongestBranch(node);
+            default:
+                return null;
+        }
+
+        static string? LongestRun(RuntimeFrontEnd.RegexNode parent)
+        {
+            string? best = null;
+            var run = new StringBuilder();
+            for (var i = 0; i < parent.ChildCount; i++)
+            {
+                var child = parent.Child(i);
+                if (child.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                {
+                    run.Append(child.Ch);
+                }
+                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && !string.IsNullOrEmpty(child.Str))
+                {
+                    run.Append(child.Str);
+                }
+                else if (child.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                {
+                    continue;
+                }
+                else
+                {
+                    best = Longer(best, run.ToString());
+                    run.Clear();
+                }
+            }
+
+            return Longer(best, run.ToString());
+        }
+
+        static string? LongestBranch(RuntimeFrontEnd.RegexNode parent)
+        {
+            string? best = null;
+            for (var i = 0; i < parent.ChildCount; i++)
+            {
+                best = Longer(best, TryExtractLongestLiteral(parent.Child(i)));
+            }
+
+            return best;
+        }
+
+        static string? Longer(string? left, string? right)
+        {
+            if (string.IsNullOrEmpty(left))
+            {
+                return string.IsNullOrEmpty(right) ? null : right;
+            }
+
+            if (string.IsNullOrEmpty(right) || right.Length <= left.Length)
+            {
+                return left;
+            }
+
+            return right;
         }
     }
 }
