@@ -1761,6 +1761,11 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
+            if (fixup.IsConditional)
+            {
+                return false;
+            }
+
             return ResolveOctalFallback(fixup, ref root, ref morphed);
         }
 
@@ -2103,6 +2108,13 @@ internal static class Utf8OwnedTreeParser
                             return children[0];
                         }
                     }
+                }
+
+                // Conditional branches stay unfused: the provider keeps yes/no as
+                // parsed, so fusing them would invent Multi nodes it never builds.
+                if (node.Kind == RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional)
+                {
+                    return node;
                 }
 
                 var fused = new List<RuntimeFrontEnd.RegexNode>(children.Count);
@@ -2621,6 +2633,143 @@ internal static class Utf8OwnedTreeParser
             return node;
         }
 
+        static bool TryTakeConditional(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        {
+            node = null;
+            // state.Position is at '(' after "(?".
+            state.Position++;
+            string? digits = null;
+            string? name = null;
+            if (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
+            {
+                if (state.Pattern[state.Position] == '0')
+                {
+                    return false;
+                }
+
+                var digitsStart = state.Position;
+                while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
+                {
+                    state.Position++;
+                }
+
+                digits = state.Pattern.Substring(digitsStart, state.Position - digitsStart);
+                if (!TryParseGroupNumber(digits, out _))
+                {
+                    return false;
+                }
+            }
+            else if (!state.AtEnd && IsAsciiConditionNameStart(state.Pattern[state.Position]))
+            {
+                var nameStart = state.Position;
+                while (!state.AtEnd && IsAsciiConditionNameChar(state.Pattern[state.Position]))
+                {
+                    state.Position++;
+                }
+
+                name = state.Pattern.Substring(nameStart, state.Position - nameStart);
+            }
+            else
+            {
+                return false;
+            }
+
+            if (state.AtEnd || state.Pattern[state.Position] != ')')
+            {
+                return false;
+            }
+
+            state.Position++;
+            var conditionalOptions = state.Options;
+            var yesIsEmpty = !state.AtEnd && (state.Pattern[state.Position] == '|' || state.Pattern[state.Position] == ')');
+
+            RuntimeFrontEnd.RegexNode yesBranch;
+            if (yesIsEmpty)
+            {
+                yesBranch = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, conditionalOptions);
+            }
+            else
+            {
+                if (!ParseConcatenation(ref state, depth + 1, out var parsedYes) || parsedYes is null)
+                {
+                    return false;
+                }
+
+                yesBranch = parsedYes;
+            }
+
+            List<RuntimeFrontEnd.RegexNode>? branches = null;
+            if (!state.AtEnd && state.Pattern[state.Position] == '|')
+            {
+                state.Position++;
+                RuntimeFrontEnd.RegexNode noBranch;
+                if (!state.AtEnd && state.Pattern[state.Position] == ')')
+                {
+                    noBranch = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, conditionalOptions);
+                }
+                else
+                {
+                    if (!ParseConcatenation(ref state, depth + 1, out var parsedNo) || parsedNo is null)
+                    {
+                        return false;
+                    }
+
+                    noBranch = parsedNo;
+                }
+
+                if (state.AtEnd || state.Pattern[state.Position] != ')')
+                {
+                    return false;
+                }
+
+                state.Position++;
+                branches = new List<RuntimeFrontEnd.RegexNode> { yesBranch, noBranch };
+            }
+            else if (yesIsEmpty && !state.AtEnd && state.Pattern[state.Position] == ')')
+            {
+                state.Position++;
+                branches = new List<RuntimeFrontEnd.RegexNode> { yesBranch };
+            }
+            else
+            {
+                return false;
+            }
+
+            var conditional = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.BackreferenceConditional, conditionalOptions);
+            if (name is not null)
+            {
+                conditional.Str = name;
+                conditional.N = 0;
+            }
+            else
+            {
+                conditional.N = -1;
+            }
+
+            conditional.M = -1;
+            conditional.Children = branches;
+            foreach (var branch in branches)
+            {
+                branch.Parent = conditional;
+            }
+
+            node = conditional;
+            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = conditional, Digits = digits, Name = name, IsConditional = true });
+            return true;
+        }
+
+        static bool IsAsciiConditionNameStart(char character)
+        {
+            return (character >= 'a' && character <= 'z') ||
+                (character >= 'A' && character <= 'Z') ||
+                character == '_';
+        }
+
+        static bool IsAsciiConditionNameChar(char character)
+        {
+            return IsAsciiConditionNameStart(character) || (character >= '0' && character <= '9');
+        }
+
         static bool ParseGroup(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
         {
             node = null;
@@ -2638,6 +2787,11 @@ internal static class Utf8OwnedTreeParser
                 if (TryTakeLookaroundKind(state, out var lookaroundKind, out var isLookbehind))
                 {
                     return ParseLookaround(ref state, depth, out node, lookaroundKind, isLookbehind);
+                }
+
+                if (!state.AtEnd && state.Pattern[state.Position] == '(')
+                {
+                    return TryTakeConditional(ref state, depth, out node);
                 }
 
                 if (!TryTakeOptionScope(ref state, out var scopedOptions, out var scopeOn, out var scopeOff))
@@ -2933,6 +3087,7 @@ internal static class Utf8OwnedTreeParser
         public string? Digits;
         public string? Name;
         public bool IsPop;
+        public bool IsConditional;
         public RuntimeFrontEnd.RegexNode? Wrapper;
     }
 }

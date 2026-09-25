@@ -1,0 +1,89 @@
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.FrontEnd;
+using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
+
+namespace Lokad.Utf8Regex.Tests;
+
+// Owned parser conditional stage: the differential battery pins conditional
+// alternation identical to the provider trees (numeric and named conditions
+// resolving at the end pass with backreferences, empty branches lowering to
+// empty concatenations, single-kid form for bare defined closes), plus decline
+// agreement on undefined references, missing branches, and DEFINE/R conditions
+// the fork itself rejects while BCL serves through the fallback.
+public sealed class Utf8OwnedTreeParserConditionalTests
+{
+    public static IEnumerable<object?[]> ConditionalAcceptCases()
+    {
+        yield return new object?[] { "(?<x>a)(?(x)b|c)", 512 };
+        yield return new object?[] { "(a)(?(1)b|c)", 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|)", 512 };
+        yield return new object?[] { "(a)(?(1)b|)", 512 };
+        yield return new object?[] { "(?<x>a)(?(x))", 512 };
+        yield return new object?[] { "(a)(?(1)b|c)(d)", 512 };
+        yield return new object?[] { "(?(1)a|b)(c)", 512 };
+        yield return new object?[] { "(?(x)a|b)(?<x>c)", 512 };
+        yield return new object?[] { "(a)(?(1)|b)", 512 };
+        yield return new object?[] { "(a)(?(1)|)", 512 };
+        yield return new object?[] { "(a)(?(1))", 512 };
+        yield return new object?[] { "(a)(b)(?(1)(?(2)x|y)|z)", 512 };
+        yield return new object?[] { "(a(?(1)b|c))", 512 };
+        yield return new object?[] { "(?<x>a(?(x)b|c))", 512 };
+        yield return new object?[] { "(?i:(a)(?(1)b|c))", 512 };
+        yield return new object?[] { "(a)(?(1)b|c)+", 512 };
+        yield return new object?[] { "((a)(?(1)b|c))", 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|c)", 516 };
+    }
+
+    public static IEnumerable<object?[]> ConditionalDeclineCases()
+    {
+        yield return new object?[] { "(?(1)a|b)", 512 };
+        yield return new object?[] { "(?(x)a|b)", 512 };
+        yield return new object?[] { "(?(1)a)", 512 };
+        yield return new object?[] { "(?(1))", 512 };
+        yield return new object?[] { "(?(1)|b)", 512 };
+        yield return new object?[] { "(?(y))", 512 };
+        yield return new object?[] { "(?(DEFINE)a|b)", 512 };
+        yield return new object?[] { "(?(R)a|b)", 512 };
+        yield return new object?[] { "(?(R1)a|b)", 512 };
+        yield return new object?[] { "(a)(?(1)b|c)", 516 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ConditionalAcceptCases))]
+    public void OwnedConditionalMatchesProviderTree(string pattern, int options)
+    {
+        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
+        Assert.NotNull(expected);
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
+        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
+        Assert.Equal(expected.Options, actual.Options);
+        Assert.Equal(expected.Culture, actual.Culture);
+        Assert.True(TreesEqual(expected.Root, actual.Root));
+    }
+
+    [Theory]
+    [MemberData(nameof(ConditionalDeclineCases))]
+    public void OwnedConditionalDeclinesUnsupported(string pattern, int options)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            (RegexOptions)options,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+    }
+
+    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
+    {
+        return right.Kind == left.Kind &&
+            right.Options == left.Options &&
+            right.Ch == left.Ch &&
+            right.Str == left.Str &&
+            right.Str2 == left.Str2 &&
+            right.M == left.M &&
+            right.N == left.N &&
+            right.ChildCount == left.ChildCount &&
+            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+    }
+}
