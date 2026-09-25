@@ -3019,9 +3019,12 @@ internal static class Utf8OwnedTreeParser
                 };
             }
 
+            // Loop wrappers carry the atom options, not the site options: a directly
+            // wrapped scope marks the loop with its scoped options in the provider shape.
+            // All other atoms carry entry options identical to the site options.
             var loop = new RuntimeFrontEnd.RegexNode(
                 lazy ? RuntimeFrontEnd.RegexNodeKind.Lazyloop : RuntimeFrontEnd.RegexNodeKind.Loop,
-                state.Options,
+                atom.Options,
                 minimum,
                 maximum);
             loop.Children = atom;
