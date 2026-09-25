@@ -9,8 +9,9 @@ namespace Lokad.Utf8Regex.Tests;
 // the owned fold table, classes append per-unit expansions, shorthands and
 // categories pass through, groups and backreferences thread options, tree
 // contributions come from leading constructs only), plus decline agreement on
-// reversed ranges and astral escapes, and the leading-leak residuals where
-// the provider folds trailing content that correct scoping leaves alone.
+// reversed ranges and astral escapes, and the leading-leak residuals where the
+// provider carries scoped options onto trailing or wrapped content (folding for
+// IgnoreCase, marks for the other options) that correct scoping leaves alone.
 public sealed class Utf8OwnedTreeParserIgnoreCaseTests
 {
     public static IEnumerable<object?[]> IgnoreCaseAcceptCases()
@@ -164,6 +165,22 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
         yield return new object?[] { "(?i:a)?", 512 };
         yield return new object?[] { "(?i:a){0}", 512 };
         yield return new object?[] { "(?i:a)(b(?m)c)", 512 };
+        yield return new object?[] { "(?n:a)b", 512 };
+        yield return new object?[] { "(?m:a)$", 512 };
+        yield return new object?[] { "(?s:a).", 512 };
+        yield return new object?[] { "(?m:a)+", 512 };
+        yield return new object?[] { "(?s:a)+", 512 };
+        yield return new object?[] { "(?n:a)(b)", 512 };
+        yield return new object?[] { "(?m:a)(b)", 512 };
+        yield return new object?[] { "(?s:a)(b)", 512 };
+        yield return new object?[] { "(?i:a)(b)", 512 };
+        yield return new object?[] { "(?x:a)b", 512 };
+        yield return new object?[] { "(?x:a)+", 512 };
+        yield return new object?[] { "(?x:a)(b)", 512 };
+        yield return new object?[] { "(?m:)+", 512 };
+        yield return new object?[] { "(?i:a)$", 512 };
+        yield return new object?[] { "(?i:a).", 512 };
+        yield return new object?[] { "(?n:a).", 512 };
     }
 
     [Theory]

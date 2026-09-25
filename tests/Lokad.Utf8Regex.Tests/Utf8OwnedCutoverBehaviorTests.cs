@@ -21,7 +21,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     };
 
     // Machine-derived divergent rows (11 from the first run, 7 from the metadata
-    // and newline extension: 18 of 52).
+    // and newline extension, 5 from the leak-family sweep: 23 of 68).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -29,9 +29,12 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   (balance pop under explicit capture; invalid group name inside lookbehind).
     //   The flip turns serving into construction failure: blocked on an explicit
     //   compatibility decision, never flipped silently.
-    // - Cross-scope numbering family (4): groups after an n-establishment lose their
+    // - Cross-scope numbering family (5): groups after an n-establishment lose their
     //   numbers in fork metadata while BCL numbers them. The flip changes the group
-    //   APIs; match outcomes already agree.
+    //   APIs; match outcomes already agree. Includes the unscoped-outside case (?n:a)(b).
+    // - Trailing-dot family (3): a leaked option on a trailing dot makes it match a
+    //   newline (observed for s/i/n marks on input a-newline-b) while BCL dots do not.
+    //   The flip removes those matches.
     // - Phantom-name family (3): lookbehind phantom numbering leaks garbage names
     //   (=(?<, =a)b\], =(?<1) into the public group APIs while BCL reports just 0.
     //   The flip cleans the group APIs.
@@ -55,6 +58,11 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?<=(?<-0>a)b)", 512),
         ("(?<=a)b\\>", 512),
         ("(?<=(?<1>a))b", 512),
+        ("(?i:a)(b)", 512),
+        ("(?n:a)(b)", 512),
+        ("(?s:a).", 512),
+        ("(?i:a).", 512),
+        ("(?n:a).", 512),
     };
 
     [Theory]
