@@ -1342,7 +1342,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             var underExplicit = (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None;
-            if (underExplicit && (state.ExplicitDepth == 0 || isPop))
+            if (underExplicit && isPop)
             {
                 return false;
             }
