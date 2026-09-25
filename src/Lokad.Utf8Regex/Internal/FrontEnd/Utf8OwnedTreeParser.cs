@@ -53,6 +53,13 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
+        if ((options & RegexOptions.IgnoreCase) == 0 &&
+            state.LeadingContribution != RegexOptions.None &&
+            (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
+        {
+            return null;
+        }
+
         if (!FinishNumbering(
             ref state,
             ref root,
@@ -94,6 +101,11 @@ internal static class Utf8OwnedTreeParser
             var branches = new List<RuntimeFrontEnd.RegexNode>();
             while (true)
             {
+                if (depth == 0)
+                {
+                    state.Depth0Branch = branches.Count;
+                }
+
                 if (!ParseConcatenation(ref state, depth, out var branch) || branch is null)
                 {
                     return false;
@@ -125,6 +137,11 @@ internal static class Utf8OwnedTreeParser
                     break;
                 }
 
+                if (depth == 0)
+                {
+                    state.Depth0Atom = children.Count + (run.Length > 0 ? 1 : 0);
+                }
+
                 if (character == '\\')
                 {
                     if (TryAnchorEscape(ref state, out var anchor) && anchor is not null)
@@ -153,12 +170,6 @@ internal static class Utf8OwnedTreeParser
                         continue;
                     }
 
-                    // Numeric backreferences stay out of IgnoreCase: a later octal
-                    // outcome would carry unfolded options, and the provider folds.
-                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
-                    {
-                        return false;
-                    }
 
                     var backrefDigits = TryScanBackrefDigits(ref state);
                     if (backrefDigits is not null)
@@ -215,14 +226,23 @@ internal static class Utf8OwnedTreeParser
                         continue;
                     }
 
-                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
+                    if (!DecodeEscape(ref state, out var escaped))
                     {
                         return false;
                     }
 
-                    if (!DecodeEscape(ref state, out var escaped))
+                    if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
+                        Utf8OwnedCaseFold.TryGetFold(escaped, out var escapeLower, out var escapeUpper))
                     {
-                        return false;
+                        FlushRun(state, children, run);
+                        var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
+                        if (!ParseQuantifier(ref state, ref escapedAtom))
+                        {
+                            return false;
+                        }
+
+                        children.Add(escapedAtom);
+                        continue;
                     }
 
                     run.Append(escaped);
@@ -231,9 +251,19 @@ internal static class Utf8OwnedTreeParser
 
                 if (IsLiteralChar(character))
                 {
-                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
+                    if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
+                        Utf8OwnedCaseFold.TryGetFold(character, out var foldLower, out var foldUpper))
                     {
-                        return false;
+                        FlushRun(state, children, run);
+                        state.Position++;
+                        var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
+                        if (!ParseQuantifier(ref state, ref foldedAtom))
+                        {
+                            return false;
+                        }
+
+                        children.Add(foldedAtom);
+                        continue;
                     }
 
                     if ((state.Options & RegexOptions.IgnorePatternWhitespace) != 0 &&
@@ -300,7 +330,7 @@ internal static class Utf8OwnedTreeParser
                     atom = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, SinglelineDotText);
                     state.Position++;
                 }
-                else if (character == '[' && (state.Options & RegexOptions.IgnoreCase) == 0)
+                else if (character == '[')
                 {
                     if (!ParseClass(ref state, out var classNode) || classNode is null)
                     {
@@ -528,7 +558,7 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, wire.ToString());
+            node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options & ~RegexOptions.IgnoreCase, wire.ToString());
             return true;
         }
 
@@ -619,7 +649,7 @@ internal static class Utf8OwnedTreeParser
                                 }
                             }
 
-                            AppendSegment(wire, negated, units, categories);
+                            AppendSegment(wire, negated, units, categories, (state.Options & RegexOptions.IgnoreCase) != 0);
                             subtracted = true;
                             state.Position++;
                             if (state.AtEnd || state.Pattern[state.Position] != '[')
@@ -726,18 +756,63 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            AppendSegment(wire, negated, units, categories);
+            AppendSegment(wire, negated, units, categories, (state.Options & RegexOptions.IgnoreCase) != 0);
             return true;
         }
 
-        static void AppendSegment(StringBuilder wire, bool negated, List<char> units, List<char> categories)
+        static void AppendSegment(StringBuilder wire, bool negated, List<char> units, List<char> categories, bool fold)
         {
-            wire.Append(negated ? (char)1 : (char)0);
-            wire.Append((char)units.Count);
-            wire.Append((char)categories.Count);
-            for (var i = 0; i < units.Count; i++)
+            if (!fold)
             {
-                wire.Append(units[i]);
+                wire.Append(negated ? (char)1 : (char)0);
+                wire.Append((char)units.Count);
+                wire.Append((char)categories.Count);
+                for (var i = 0; i < units.Count; i++)
+                {
+                    wire.Append(units[i]);
+                }
+
+                for (var i = 0; i < categories.Count; i++)
+                {
+                    wire.Append(categories[i]);
+                }
+
+                return;
+            }
+
+            var folded = new List<char>(units.Count + 4);
+            folded.AddRange(units);
+            for (var i = 0; i + 1 < units.Count; i += 2)
+            {
+                var rangeLow = units[i];
+                var rangeHigh = units[i + 1];
+                folded.Add(rangeLow);
+                folded.Add(rangeHigh);
+                for (var current = rangeLow; current < rangeHigh; current++)
+                {
+                    if (Utf8OwnedCaseFold.TryGetFold(current, out var foldLower, out var foldUpper))
+                    {
+                        folded.Add(foldLower);
+                        folded.Add((char)(foldLower + 1));
+                        folded.Add(foldUpper);
+                        folded.Add((char)(foldUpper + 1));
+                    }
+                    else
+                    {
+                        folded.Add(current);
+                        folded.Add((char)(current + 1));
+                        folded.Add(current);
+                        folded.Add((char)(current + 1));
+                    }
+                }
+            }
+
+            wire.Append(negated ? (char)1 : (char)0);
+            wire.Append((char)folded.Count);
+            wire.Append((char)categories.Count);
+            for (var i = 0; i < folded.Count; i++)
+            {
+                wire.Append(folded[i]);
             }
 
             for (var i = 0; i < categories.Count; i++)
@@ -1486,7 +1561,7 @@ internal static class Utf8OwnedTreeParser
             var morphed = false;
             foreach (var fixup in state.BackrefFixups)
             {
-                if (!ResolveFixup(fixup, slots, slotByName, ref morphed))
+                if (!ResolveFixup(fixup, slots, slotByName, ref root, ref morphed))
                 {
                     return false;
                 }
@@ -1500,7 +1575,7 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref bool morphed)
+        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
         {
             if (fixup.IsPop)
             {
@@ -1550,10 +1625,10 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
 
-            return ResolveOctalFallback(fixup, ref morphed);
+            return ResolveOctalFallback(fixup, ref root, ref morphed);
         }
 
-        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref bool morphed)
+        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref RuntimeFrontEnd.RegexNode root, ref bool morphed)
         {
             // Single non-zero digits never spell octal; longer runs without a
             // matching slot fall back to up to three octal digits with no rest.
@@ -1584,6 +1659,22 @@ internal static class Utf8OwnedTreeParser
             morphed = true;
             if (fixup.Wrapper is null)
             {
+                if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
+                    Utf8OwnedCaseFold.TryGetFold((char)value, out var octalLower, out var octalUpper))
+                {
+                    ReplaceNodeInParent(ref root, fixup.Node, FoldedSet(fixup.Node.Options, octalLower, octalUpper));
+                    return true;
+                }
+
+                if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0)
+                {
+                    var stripped = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, fixup.Node.Options & ~RegexOptions.IgnoreCase, (char)value);
+                    stripped.M = 0;
+                    stripped.N = 0;
+                    ReplaceNodeInParent(ref root, fixup.Node, stripped);
+                    return true;
+                }
+
                 fixup.Node.Kind = RuntimeFrontEnd.RegexNodeKind.One;
                 fixup.Node.Ch = (char)value;
                 fixup.Node.M = 0;
@@ -1595,6 +1686,33 @@ internal static class Utf8OwnedTreeParser
             if (wrapper.ChildCount != 1 || !ReferenceEquals(wrapper.Child(0), fixup.Node))
             {
                 return false;
+            }
+
+            if ((wrapper.Options & RegexOptions.IgnoreCase) != 0 &&
+                Utf8OwnedCaseFold.TryGetFold((char)value, out var wrapperLower, out var wrapperUpper))
+            {
+                var foldedLoop = FoldedSet(wrapper.Options, wrapperLower, wrapperUpper);
+                foldedLoop.Kind = wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
+                    ? RuntimeFrontEnd.RegexNodeKind.Setlazy
+                    : RuntimeFrontEnd.RegexNodeKind.Setloop;
+                foldedLoop.M = wrapper.M;
+                foldedLoop.N = wrapper.N;
+                ReplaceNodeInParent(ref root, wrapper, foldedLoop);
+                return true;
+            }
+
+            if ((wrapper.Options & RegexOptions.IgnoreCase) != 0)
+            {
+                var strippedWrapper = new RuntimeFrontEnd.RegexNode(
+                    wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
+                        ? RuntimeFrontEnd.RegexNodeKind.Onelazy
+                        : RuntimeFrontEnd.RegexNodeKind.Oneloop,
+                    wrapper.Options & ~RegexOptions.IgnoreCase,
+                    (char)value);
+                strippedWrapper.M = wrapper.M;
+                strippedWrapper.N = wrapper.N;
+                ReplaceNodeInParent(ref root, wrapper, strippedWrapper);
+                return true;
             }
 
             wrapper.Kind = wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
@@ -1902,10 +2020,6 @@ internal static class Utf8OwnedTreeParser
             state.Position++;
             scoped = (state.Options | on) & ~off;
             contribution = on & ~off;
-            if (off != RegexOptions.None)
-            {
-                contribution &= ~RegexOptions.IgnoreCase;
-            }
 
             return true;
         }
@@ -2012,12 +2126,53 @@ internal static class Utf8OwnedTreeParser
 
         static RuntimeFrontEnd.RegexNode One(ParserState state, char character)
         {
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, state.Options, character);
+            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, state.Options & ~RegexOptions.IgnoreCase, character);
         }
 
         static RuntimeFrontEnd.RegexNode Multi(ParserState state, string text)
         {
-            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, state.Options, text);
+            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, state.Options & ~RegexOptions.IgnoreCase, text);
+        }
+
+        static RuntimeFrontEnd.RegexNode FoldedSet(RegexOptions options, char lower, char upper)
+        {
+            var wire = new string(new char[]
+            {
+                (char)0, (char)4, (char)0, lower, (char)(lower + 1), upper, (char)(upper + 1),
+            });
+
+            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, wire)
+            {
+                M = 0,
+                N = 0,
+            };
+        }
+
+        static void ReplaceNodeInParent(ref RuntimeFrontEnd.RegexNode root, RuntimeFrontEnd.RegexNode oldNode, RuntimeFrontEnd.RegexNode fresh)
+        {
+            var parent = oldNode.Parent;
+            fresh.Parent = parent;
+            if (parent is null)
+            {
+                root = fresh;
+                return;
+            }
+
+            if (parent.Children is List<RuntimeFrontEnd.RegexNode> siblings)
+            {
+                for (var i = 0; i < siblings.Count; i++)
+                {
+                    if (ReferenceEquals(siblings[i], oldNode))
+                    {
+                        siblings[i] = fresh;
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            parent.Children = fresh;
         }
 
         static RuntimeFrontEnd.RegexNode Concatenate(ParserState state, List<RuntimeFrontEnd.RegexNode> children)
@@ -2068,9 +2223,11 @@ internal static class Utf8OwnedTreeParser
                     return false;
                 }
 
-                if (depth == 0)
+                var isLeadingScope = depth == 0 && state.Depth0Branch == 0 && state.Depth0Atom == 0;
+                if (isLeadingScope)
                 {
                     state.TreeSeen |= contribution;
+                    state.LeadingContribution = contribution;
                 }
 
                 var savedOptions = state.Options;
@@ -2090,6 +2247,11 @@ internal static class Utf8OwnedTreeParser
                 scopeGroup.Children = scopeBody;
                 scopeBody.Parent = scopeGroup;
                 node = scopeGroup;
+                if (isLeadingScope && contribution != RegexOptions.None)
+                {
+                    state.LeadingGroup = scopeGroup;
+                }
+
                 state.Options = savedOptions;
                 return true;
             }
@@ -2235,14 +2397,14 @@ internal static class Utf8OwnedTreeParser
 
             if (maximum == 0)
             {
-                return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, state.Options);
+                return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Empty, atom.Options);
             }
 
             if (atom.Kind == RuntimeFrontEnd.RegexNodeKind.One)
             {
                 return new RuntimeFrontEnd.RegexNode(
                     lazy ? RuntimeFrontEnd.RegexNodeKind.Onelazy : RuntimeFrontEnd.RegexNodeKind.Oneloop,
-                    state.Options,
+                    state.Options & ~RegexOptions.IgnoreCase,
                     atom.Ch)
                 {
                     M = minimum,
@@ -2280,6 +2442,10 @@ internal static class Utf8OwnedTreeParser
         public int Position;
         public int Groups;
         public RegexOptions TreeSeen;
+        public int Depth0Branch;
+        public int Depth0Atom;
+        public RegexOptions LeadingContribution;
+        public RuntimeFrontEnd.RegexNode? LeadingGroup;
         public List<OwnedGroupDefinition> GroupDefinitions;
         public List<OwnedBackrefFixup> BackrefFixups;
 
@@ -2290,6 +2456,10 @@ internal static class Utf8OwnedTreeParser
             Position = 0;
             Groups = 0;
             TreeSeen = RegexOptions.None;
+            Depth0Branch = 0;
+            Depth0Atom = 0;
+            LeadingContribution = RegexOptions.None;
+            LeadingGroup = null;
             GroupDefinitions = new List<OwnedGroupDefinition>();
             BackrefFixups = new List<OwnedBackrefFixup>();
         }

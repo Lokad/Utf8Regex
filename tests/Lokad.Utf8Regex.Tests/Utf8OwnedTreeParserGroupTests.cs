@@ -243,15 +243,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "\\19", 512 };
         yield return new object?[] { "\\1998", 512 };
         yield return new object?[] { "\\1000", 512 };
-        yield return new object?[] { "(?<x>(?i:a))", 512 };
-        yield return new object?[] { "(a\\1(?i:b))", 512 };
-        yield return new object?[] { "(?<x>a)", 513 };
-        yield return new object?[] { "(a)\\1", 513 };
-        yield return new object?[] { "(?<x>a)\\k<x>", 513 };
-        yield return new object?[] { "\\01", 513 };
-        yield return new object?[] { "\\10", 513 };
-        yield return new object?[] { "(?<9>a)(b)", 513 };
-        yield return new object?[] { "(?<007>a)", 513 };
         yield return new object?[] { "[\\10]", 512 };
     }
 

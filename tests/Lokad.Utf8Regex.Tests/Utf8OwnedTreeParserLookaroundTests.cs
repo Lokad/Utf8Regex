@@ -153,8 +153,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?<=(?<-0>a)b)", 512 };
         yield return new object?[] { "(?<!>)", 512 };
         yield return new object?[] { "(?<!>a)b", 512 };
-        yield return new object?[] { "(?i:(?=a)b)", 512 };
-        yield return new object?[] { "(?i:(?<=a)b)", 512 };
         yield return new object?[] { "(?<=a>b)c", 512 };
         yield return new object?[] { "(?<=(?>a))b", 512 };
         yield return new object?[] { "(?<=(?=>a)b)c", 512 };

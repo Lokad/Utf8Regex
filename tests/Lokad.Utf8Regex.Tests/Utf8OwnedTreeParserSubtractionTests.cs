@@ -69,14 +69,6 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
         yield return new object?[] { "[a-[b-c]-[d]]" };
     }
 
-    public static IEnumerable<object?[]> SubtractionResidualCases()
-    {
-        yield return new object?[] { "[a-[b]]", 513 };
-        yield return new object?[] { "(?i:[a-[b]])", 512 };
-        yield return new object?[] { "[abc-[b]]", 513 };
-        yield return new object?[] { "[a-[b]]", 1 };
-    }
-
     [Theory]
     [MemberData(nameof(SubtractionAcceptCases))]
     public void OwnedSubtractionMatchesProviderTree(string pattern, int options)
@@ -101,14 +93,6 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
-    }
-
-    [Theory]
-    [MemberData(nameof(SubtractionResidualCases))]
-    public void OwnedSubtractionDeclinesResidual(string pattern, int options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)

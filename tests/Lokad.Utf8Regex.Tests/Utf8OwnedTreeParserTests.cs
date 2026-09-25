@@ -255,16 +255,12 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(?n:(a))" };
         yield return new object?[] { "(?i)" };
         yield return new object?[] { "(?i-i)" };
+        yield return new object?[] { "(?i-i)a" };
         yield return new object?[] { "(a(?i)b)c" };
         yield return new object?[] { "((?i)a)b" };
         yield return new object?[] { "(?i)a|b" };
-        yield return new object?[] { "(?i:AB)" };
-        yield return new object?[] { "(?i:(a))" };
         yield return new object?[] { "((?i)a)" };
-        yield return new object?[] { "(?i:(?m:a))" };
         yield return new object?[] { "(?x:a b)" };
-        yield return new object?[] { "(?ii:a)" };
-        yield return new object?[] { "(?im-s:a)" };
         yield return new object?[] { "(?i)a" };
     }
 
@@ -285,7 +281,6 @@ public sealed class Utf8OwnedTreeParserTests
 
     public static IEnumerable<object?[]> OptionDeclineCases()
     {
-        yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
         yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture };
     }
 
