@@ -34,7 +34,7 @@ internal static class Utf8RuntimeTreeFeatureAnalyzer
             state.HasLookbehind);
     }
 
-    private static void Visit(RuntimeFrontEnd.RegexNode node, RuntimeFrontEnd.AnalysisResults? runtimeAnalysis, ref FeatureState state)
+    private static void Visit(RuntimeFrontEnd.RegexNode node, Utf8OwnedTreeAnalysis? runtimeAnalysis, ref FeatureState state)
     {
         if (runtimeAnalysis?.IsInLoop(node) == true)
         {

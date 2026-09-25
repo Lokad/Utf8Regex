@@ -19,7 +19,7 @@ internal static class Utf8FrontEnd
         var effectiveOptions = options;
         var executionPattern = Runtime.RegexParser.NormalizeLeadingGlobalOptions(pattern, ref effectiveOptions);
         var runtimeTree = Utf8RuntimeTreeProvider.TryParse(pattern, options);
-        var runtimeAnalysis = runtimeTree is null ? null : Runtime.RegexTreeAnalyzer.Analyze(runtimeTree);
+        var runtimeAnalysis = runtimeTree is null ? null : Utf8OwnedTreeAnalyzer.Analyze(runtimeTree);
         var semanticRegex = new Utf8SemanticRegex(
             pattern,
             options,

@@ -10,7 +10,7 @@ internal readonly struct Utf8SemanticRegex
         string executionPattern,
         RegexOptions executionOptions,
         RuntimeFrontEnd.RegexTree? runtimeTree,
-        RuntimeFrontEnd.AnalysisResults? runtimeAnalysis)
+        Utf8OwnedTreeAnalysis? runtimeAnalysis)
     {
         Pattern = pattern;
         Options = options;
@@ -30,5 +30,5 @@ internal readonly struct Utf8SemanticRegex
 
     public RuntimeFrontEnd.RegexTree? RuntimeTree { get; }
 
-    public RuntimeFrontEnd.AnalysisResults? RuntimeAnalysis { get; }
+    public Utf8OwnedTreeAnalysis? RuntimeAnalysis { get; }
 }
