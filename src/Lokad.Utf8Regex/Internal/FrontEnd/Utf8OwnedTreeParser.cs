@@ -1,9 +1,12 @@
+using System.Globalization;
+using Lokad.Utf8Regex.Internal.Execution;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned parser strangler: literals, escapes, concatenation, alternation,
-// numbered groups, quantifiers, dot, anchors, character classes, scoped option
+// numbered groups, quantifiers, dot, anchors, character classes, predefined
+// shorthands, Unicode properties, scoped option
 // groups, and comments lower to runtime tree nodes.
 // Anything else declines (returns null) so the provider keeps exact behavior,
 // including construction throws. Output nodes intentionally mirror the runtime
@@ -23,6 +26,16 @@ internal static class Utf8OwnedTreeParser
     // Provider dot payloads probed per Singleline shape; set nodes never carry IgnoreCase.
     private const string DotText = "\u0001\u0002\u0000\u000a\u000b";
     private const string SinglelineDotText = "\u0000\u0001\u0000\u0000";
+
+    // Probe-observed predefined shorthand payloads, verbatim: the six ASCII
+    // shorthands land as category payloads, including the complement and
+    // framing quirks the differential battery pins.
+    private const string ShorthandDigitCats = "\u0009";
+    private const string ShorthandNotDigitCats = "\uFFF7";
+    private const string ShorthandWordCats = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+    private const string ShorthandNotWordCats = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
+    private const string ShorthandSpaceCats = "d";
+    private const string ShorthandNotSpaceCats = "\uFF9C";
 
     public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
     {
@@ -113,6 +126,19 @@ internal static class Utf8OwnedTreeParser
                         }
 
                         children.Add(anchorAtom);
+                        continue;
+                    }
+
+                    if (TryTakeShorthandAtom(ref state, out var shorthand) && shorthand is not null)
+                    {
+                        FlushRun(state, children, run);
+                        var shorthandAtom = shorthand;
+                        if (!ParseQuantifier(ref state, ref shorthandAtom))
+                        {
+                            return false;
+                        }
+
+                        children.Add(shorthandAtom);
                         continue;
                     }
 
@@ -425,6 +451,7 @@ internal static class Utf8OwnedTreeParser
                 }
             }
             var units = new List<char>();
+            var categories = new List<char>();
             var pending = (char)0;
             var hasPending = false;
             var first = true;
@@ -488,6 +515,13 @@ internal static class Utf8OwnedTreeParser
                 char atom;
                 if (character == '\\')
                 {
+                    if (TryTakeShorthandMembers(ref state, units, categories))
+                    {
+                        hasPending = false;
+                        first = false;
+                        continue;
+                    }
+
                     if (!DecodeClassEscape(ref state, out atom))
                     {
                         return false;
@@ -520,13 +554,18 @@ internal static class Utf8OwnedTreeParser
                 }
                 first = false;
             }
-            var text = new char[units.Count + 3];
+            var text = new char[units.Count + categories.Count + 3];
             text[0] = negated ? (char)1 : (char)0;
             text[1] = (char)units.Count;
-            text[2] = (char)0;
+            text[2] = (char)categories.Count;
             for (var i = 0; i < units.Count; i++)
             {
                 text[i + 3] = units[i];
+            }
+
+            for (var i = 0; i < categories.Count; i++)
+            {
+                text[i + 3 + units.Count] = categories[i];
             }
             node = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, state.Options, new string(text));
             return true;
@@ -621,6 +660,249 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
             return !IsRejectedClassChar(value);
+        }
+        static bool TryTakeShorthandAtom(ref ParserState state, out RuntimeFrontEnd.RegexNode? node)
+        {
+            node = null;
+            var units = new List<char>();
+            var categories = new List<char>();
+            if (!TryTakeShorthandMembers(ref state, units, categories))
+            {
+                return false;
+            }
+
+            node = BuildSetNode(state.Options & ~RegexOptions.IgnoreCase, negated: false, units, categories);
+            return true;
+        }
+
+        static RuntimeFrontEnd.RegexNode BuildSetNode(RegexOptions options, bool negated, List<char> units, List<char> categories)
+        {
+            var text = new char[units.Count + categories.Count + 3];
+            text[0] = negated ? (char)1 : (char)0;
+            text[1] = (char)units.Count;
+            text[2] = (char)categories.Count;
+            for (var i = 0; i < units.Count; i++)
+            {
+                text[i + 3] = units[i];
+            }
+
+            for (var i = 0; i < categories.Count; i++)
+            {
+                text[i + 3 + units.Count] = categories[i];
+            }
+
+            return new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Set, options, new string(text));
+        }
+
+        static bool TryTakeShorthandMembers(ref ParserState state, List<char> units, List<char> categories)
+        {
+            // state.Position is at the backslash; nothing is consumed on failure.
+            if (state.Position + 1 >= state.Pattern.Length)
+            {
+                return false;
+            }
+
+            switch (state.Pattern[state.Position + 1])
+            {
+                case 'd':
+                    categories.AddRange(ShorthandDigitCats);
+                    state.Position += 2;
+                    return true;
+                case 'D':
+                    categories.AddRange(ShorthandNotDigitCats);
+                    state.Position += 2;
+                    return true;
+                case 'w':
+                    categories.AddRange(ShorthandWordCats);
+                    state.Position += 2;
+                    return true;
+                case 'W':
+                    categories.AddRange(ShorthandNotWordCats);
+                    state.Position += 2;
+                    return true;
+                case 's':
+                    categories.AddRange(ShorthandSpaceCats);
+                    state.Position += 2;
+                    return true;
+                case 'S':
+                    categories.AddRange(ShorthandNotSpaceCats);
+                    state.Position += 2;
+                    return true;
+                case 'p':
+                    return TryTakeProperty(ref state, invert: false, units, categories);
+                case 'P':
+                    return TryTakeProperty(ref state, invert: true, units, categories);
+                default:
+                    return false;
+            }
+        }
+
+        static bool TryTakeProperty(ref ParserState state, bool invert, List<char> units, List<char> categories)
+        {
+            // state.Position is at the backslash of \p or \P.
+            var open = state.Position + 2;
+            if (open >= state.Pattern.Length || state.Pattern[open] != '{')
+            {
+                return false;
+            }
+
+            var close = state.Pattern.IndexOf('}', open + 1);
+            if (close < 0)
+            {
+                return false;
+            }
+
+            var name = state.Pattern.Substring(open + 1, close - open - 1);
+            if (!TryResolvePropertyMembers(name, invert, units, categories))
+            {
+                return false;
+            }
+
+            state.Position = close + 1;
+            return true;
+        }
+
+        static bool TryResolvePropertyMembers(string name, bool invert, List<char> units, List<char> categories)
+        {
+            if (TryResolveSingleCategory(name, out var single))
+            {
+                var encoded = (char)(single + 1);
+                categories.Add(invert ? ComplementCategory(encoded) : encoded);
+                return true;
+            }
+
+            if (TryResolveCategoryGroup(name, out var members))
+            {
+                categories.Add(invert ? (char)0xFFFF : (char)0);
+                foreach (var member in members)
+                {
+                    var encoded = (char)(member + 1);
+                    categories.Add(invert ? ComplementCategory(encoded) : encoded);
+                }
+
+                categories.Add(invert ? (char)0xFFFF : (char)0);
+                return true;
+            }
+
+            if (Utf8SliceCategories.TryResolve(name, out _, out var blockRanges, out var isBlock) && isBlock)
+            {
+                AddBlockRanges(units, blockRanges, invert);
+                return true;
+            }
+
+            return false;
+        }
+
+        static char ComplementCategory(char encoded)
+        {
+            return (char)~encoded;
+        }
+
+        static bool TryResolveSingleCategory(string name, out int category)
+        {
+            category = (int)(name switch
+            {
+                "Lu" => UnicodeCategory.UppercaseLetter,
+                "Ll" => UnicodeCategory.LowercaseLetter,
+                "Lt" => UnicodeCategory.TitlecaseLetter,
+                "Lm" => UnicodeCategory.ModifierLetter,
+                "Lo" => UnicodeCategory.OtherLetter,
+                "Mn" => UnicodeCategory.NonSpacingMark,
+                "Mc" => UnicodeCategory.SpacingCombiningMark,
+                "Me" => UnicodeCategory.EnclosingMark,
+                "Nd" => UnicodeCategory.DecimalDigitNumber,
+                "Nl" => UnicodeCategory.LetterNumber,
+                "No" => UnicodeCategory.OtherNumber,
+                "Zs" => UnicodeCategory.SpaceSeparator,
+                "Zl" => UnicodeCategory.LineSeparator,
+                "Zp" => UnicodeCategory.ParagraphSeparator,
+                "Cc" => UnicodeCategory.Control,
+                "Cf" => UnicodeCategory.Format,
+                "Cs" => UnicodeCategory.Surrogate,
+                "Co" => UnicodeCategory.PrivateUse,
+                "Cn" => UnicodeCategory.OtherNotAssigned,
+                "Pc" => UnicodeCategory.ConnectorPunctuation,
+                "Pd" => UnicodeCategory.DashPunctuation,
+                "Ps" => UnicodeCategory.OpenPunctuation,
+                "Pe" => UnicodeCategory.ClosePunctuation,
+                "Pi" => UnicodeCategory.InitialQuotePunctuation,
+                "Pf" => UnicodeCategory.FinalQuotePunctuation,
+                "Po" => UnicodeCategory.OtherPunctuation,
+                "Sm" => UnicodeCategory.MathSymbol,
+                "Sc" => UnicodeCategory.CurrencySymbol,
+                "Sk" => UnicodeCategory.ModifierSymbol,
+                "So" => UnicodeCategory.OtherSymbol,
+                _ => (UnicodeCategory)(-1),
+            });
+            return category >= 0;
+        }
+
+        static bool TryResolveCategoryGroup(string name, out int[] members)
+        {
+            // Member order is probe-observed, not declaration order.
+            switch (name)
+            {
+                case "L":
+                    members = [(int)UnicodeCategory.LowercaseLetter, (int)UnicodeCategory.ModifierLetter, (int)UnicodeCategory.OtherLetter, (int)UnicodeCategory.TitlecaseLetter, (int)UnicodeCategory.UppercaseLetter];
+                    return true;
+                case "M":
+                    members = [(int)UnicodeCategory.NonSpacingMark, (int)UnicodeCategory.SpacingCombiningMark, (int)UnicodeCategory.EnclosingMark];
+                    return true;
+                case "N":
+                    members = [(int)UnicodeCategory.DecimalDigitNumber, (int)UnicodeCategory.LetterNumber, (int)UnicodeCategory.OtherNumber];
+                    return true;
+                case "Z":
+                    members = [(int)UnicodeCategory.SpaceSeparator, (int)UnicodeCategory.LineSeparator, (int)UnicodeCategory.ParagraphSeparator];
+                    return true;
+                case "C":
+                    members = [(int)UnicodeCategory.Control, (int)UnicodeCategory.Format, (int)UnicodeCategory.Surrogate, (int)UnicodeCategory.PrivateUse, (int)UnicodeCategory.OtherNotAssigned];
+                    return true;
+                case "P":
+                    members = [(int)UnicodeCategory.ConnectorPunctuation, (int)UnicodeCategory.DashPunctuation, (int)UnicodeCategory.OpenPunctuation, (int)UnicodeCategory.ClosePunctuation, (int)UnicodeCategory.InitialQuotePunctuation, (int)UnicodeCategory.FinalQuotePunctuation, (int)UnicodeCategory.OtherPunctuation];
+                    return true;
+                case "S":
+                    members = [(int)UnicodeCategory.MathSymbol, (int)UnicodeCategory.CurrencySymbol, (int)UnicodeCategory.ModifierSymbol, (int)UnicodeCategory.OtherSymbol];
+                    return true;
+                default:
+                    members = [];
+                    return false;
+            }
+        }
+
+        static void AddBlockRanges(List<char> units, ushort[] blockRanges, bool invert)
+        {
+            if (!invert)
+            {
+                for (var i = 0; i < blockRanges.Length; i += 2)
+                {
+                    var first = blockRanges[i];
+                    var last = i + 1 < blockRanges.Length ? blockRanges[i + 1] - 1 : 0xFFFF;
+                    units.Add((char)first);
+                    units.Add((char)(last + 1));
+                }
+
+                return;
+            }
+
+            var uncovered = 0;
+            for (var i = 0; i < blockRanges.Length; i += 2)
+            {
+                var first = blockRanges[i];
+                var last = i + 1 < blockRanges.Length ? blockRanges[i + 1] - 1 : 0xFFFF;
+                if (uncovered < first)
+                {
+                    units.Add((char)uncovered);
+                    units.Add((char)first);
+                }
+
+                uncovered = last + 1;
+            }
+
+            if (uncovered <= 0xFFFF)
+            {
+                units.Add((char)uncovered);
+                units.Add(unchecked((char)(0xFFFF + 1)));
+            }
         }
         static bool AddClassUnit(List<char> units, char value)
         {

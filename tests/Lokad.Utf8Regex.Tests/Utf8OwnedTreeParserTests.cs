@@ -213,7 +213,6 @@ public sealed class Utf8OwnedTreeParserTests
     public static IEnumerable<object?[]> DeclineCases()
     {
         yield return new object?[] { "(?<x>a)" };
-        yield return new object?[] { "\\d" };
         yield return new object?[] { "a{,3}" };
         yield return new object?[] { "a{2,1}" };
         yield return new object?[] { "a**" };
@@ -224,7 +223,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "\\q" };
         yield return new object?[] { "(?=a)a" };
         yield return new object?[] { "(a)\\1" };
-        yield return new object?[] { "\\p{L}" };
         yield return new object?[] { "a{10000000000}" };
         yield return new object?[] { "{2}" };
         yield return new object?[] { "\\c " };
@@ -240,8 +238,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "[a" };
         yield return new object?[] { "[^]" };
         yield return new object?[] { "[\\q]" };
-        yield return new object?[] { "[\\d]" };
-        yield return new object?[] { "[\\p{L}]" };
         yield return new object?[] { "[a-[b]]" };
         yield return new object?[] { "]" };
         yield return new object?[] { "a]" };
