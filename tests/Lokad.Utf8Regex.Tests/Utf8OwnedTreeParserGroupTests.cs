@@ -187,6 +187,10 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<x>a)\\k<x>", 576 };
         yield return new object?[] { "\\01", 768 };
         yield return new object?[] { "(a)(b)\\2", 576 };
+        yield return new object?[] { "^a$", 64 };
+        yield return new object?[] { "a|b", 64 };
+        yield return new object?[] { "(a)(b)", 520 };
+        yield return new object?[] { "(a)(b)", 1088 };
     }
 
     public static IEnumerable<object?[]> GroupDeclineCases()

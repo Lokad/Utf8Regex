@@ -28,10 +28,11 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         yield return new object?[] { "(a)(b)(?(1)(?(2)x|y)|z)", 512 };
         yield return new object?[] { "(a(?(1)b|c))", 512 };
         yield return new object?[] { "(?<x>a(?(x)b|c))", 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|c)", 516 };
+        yield return new object?[] { "(a)(?(1)b|c)", 1024 };
         yield return new object?[] { "(?i:(a)(?(1)b|c))", 512 };
         yield return new object?[] { "(a)(?(1)b|c)+", 512 };
         yield return new object?[] { "((a)(?(1)b|c))", 512 };
-        yield return new object?[] { "(?<x>a)(?(x)b|c)", 516 };
     }
 
     public static IEnumerable<object?[]> ConditionalDeclineCases()
