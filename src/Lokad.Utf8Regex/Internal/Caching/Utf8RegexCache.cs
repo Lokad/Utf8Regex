@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Internal.Caching;
 
@@ -19,7 +18,7 @@ internal static class Utf8RegexCache
         // effective construction culture is part of the cache identity, so a
         // culture-sensitive instance is never reused under another culture.
         // Invariant requests keep sharing one entry: their culture is constant.
-        var culture = RuntimeFrontEnd.RegexParser.GetTargetCulture(normalizedOptions).ToString();
+        var culture = Utf8OwnedOptionPrelude.GetTargetCulture(normalizedOptions).ToString();
         // PLAN.md D07: Compiled is execution-mode identity, not a shareable semantic option. The prepared program is identical for both modes, but engine selection differs, so each mode keeps its own cache entry.
         var keyOptions = normalizedOptions | (options & RegexOptions.Compiled);
         var key = new Utf8RegexCacheKey(pattern, culture, keyOptions, matchTimeout);

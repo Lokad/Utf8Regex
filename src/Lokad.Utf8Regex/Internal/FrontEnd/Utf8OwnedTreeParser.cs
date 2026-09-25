@@ -98,7 +98,7 @@ internal static class Utf8OwnedTreeParser
         tree.Children = root;
         root.Parent = tree;
         var culture = (options & RegexOptions.CultureInvariant) != 0
-            ? RuntimeFrontEnd.RegexParser.GetTargetCulture(options)
+            ? Utf8OwnedOptionPrelude.GetTargetCulture(options)
             : null;
         return new RuntimeFrontEnd.RegexTree(
             tree,

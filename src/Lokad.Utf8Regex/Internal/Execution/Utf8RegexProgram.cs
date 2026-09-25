@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using System.Globalization;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -111,7 +110,7 @@ internal sealed class Utf8RegexProgram
             (effectiveOptions & RegexOptions.IgnoreCase) != 0 &&
             (effectiveOptions & RegexOptions.CultureInvariant) == 0;
         var requiresCultureSensitiveFallback = isCultureSensitiveIgnoreCase &&
-            !FoldsAsciiCaseInvariantly(RuntimeFrontEnd.RegexParser.GetTargetCulture(effectiveOptions));
+            !FoldsAsciiCaseInvariantly(Utf8OwnedOptionPrelude.GetTargetCulture(effectiveOptions));
         var asciiCultureInvariantStrategy = isCultureSensitiveIgnoreCase && !requiresCultureSensitiveFallback
                 ? new Utf8AsciiCultureInvariantStrategy(
                     pattern,
