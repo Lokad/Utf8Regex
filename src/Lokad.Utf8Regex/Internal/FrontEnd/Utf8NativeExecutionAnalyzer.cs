@@ -339,7 +339,7 @@ internal static class Utf8NativeExecutionAnalyzer
             !TryGetSetLoop(body.Child(2), out var tailSetNode, out var tailMin, out var tailMax) ||
             tailSetNode.Str is not { } tailSet ||
             tailMax != int.MaxValue ||
-            !RuntimeFrontEnd.RegexCharClass.IsAscii(tailSet) ||
+            !Utf8OwnedCharClass.IsAscii(tailSet) ||
             body.Child(3).Kind is not Utf8TreeNodeKind.EndZ and not Utf8TreeNodeKind.End)
         {
             return false;
@@ -423,7 +423,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 return true;
 
             case Utf8TreeNodeKind.Set:
-                return node.Str is not null && !RuntimeFrontEnd.RegexCharClass.IsSubtraction(node.Str);
+                return node.Str is not null && !Utf8OwnedCharClass.IsSubtraction(node.Str);
 
             case Utf8TreeNodeKind.Oneloop:
             case Utf8TreeNodeKind.Setloop:
@@ -1776,7 +1776,7 @@ internal static class Utf8NativeExecutionAnalyzer
             trailingSetNode.Str is null ||
             trailingMin <= 0 ||
             trailingMax != int.MaxValue ||
-            !RuntimeFrontEnd.RegexCharClass.IsAscii(trailingSetNode.Str) ||
+            !Utf8OwnedCharClass.IsAscii(trailingSetNode.Str) ||
             !TryGetSetLoop(segment.Child(2), out var separatorSetNode, out var separatorMin, out var separatorMax) ||
             separatorSetNode.Str is null ||
             separatorMin < 0 ||
@@ -2230,7 +2230,7 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet) &&
+        if (Utf8OwnedCharClass.IsAscii(runtimeSet) &&
             IsAsciiWhitespaceOnlySet(runtimeSet))
         {
             separatorSet = runtimeSet;
@@ -2275,7 +2275,7 @@ internal static class Utf8NativeExecutionAnalyzer
         runtimeSet = string.Empty;
         if (node.Kind != Utf8TreeNodeKind.Set ||
             node.Str is null ||
-            !RuntimeFrontEnd.RegexCharClass.IsAscii(node.Str))
+            !Utf8OwnedCharClass.IsAscii(node.Str))
         {
             return false;
         }
@@ -2292,7 +2292,7 @@ internal static class Utf8NativeExecutionAnalyzer
         maxCount = 0;
         if (node.Kind != Utf8TreeNodeKind.Setloop ||
             node.Str is null ||
-            !RuntimeFrontEnd.RegexCharClass.IsAscii(node.Str))
+            !Utf8OwnedCharClass.IsAscii(node.Str))
         {
             return false;
         }
@@ -2324,7 +2324,7 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(setNode.Str) &&
+        if (Utf8OwnedCharClass.IsAscii(setNode.Str) &&
             IsAsciiWhitespaceOnlySet(setNode.Str))
         {
             runtimeSet = setNode.Str;
@@ -2378,7 +2378,7 @@ internal static class Utf8NativeExecutionAnalyzer
             setNode.Str is null ||
             min <= 0 ||
             min != max ||
-            !RuntimeFrontEnd.RegexCharClass.IsAscii(setNode.Str))
+            !Utf8OwnedCharClass.IsAscii(setNode.Str))
         {
             return false;
         }
@@ -2396,7 +2396,7 @@ internal static class Utf8NativeExecutionAnalyzer
 
         if (node.Kind == Utf8TreeNodeKind.Set &&
             node.Str is { } set &&
-            RuntimeFrontEnd.RegexCharClass.IsAscii(set))
+            Utf8OwnedCharClass.IsAscii(set))
         {
             runtimeSet = set;
             length = 1;
@@ -2915,7 +2915,7 @@ internal static class Utf8NativeExecutionAnalyzer
     private static bool TryGetInvariantIgnoreCaseAsciiSetLiteral(string runtimeSet, out byte literal)
     {
         literal = 0;
-        if (!RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
+        if (!Utf8OwnedCharClass.IsAscii(runtimeSet))
         {
             return false;
         }

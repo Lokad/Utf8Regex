@@ -1,6 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using System.Text.RegularExpressions;
 // Owned find-optimization facts: lengths, anchors, alternate prefixes and
 // fixed-distance literals. Pure functions over runtime trees of either
@@ -562,14 +561,14 @@ internal static class Utf8OwnedFindOptimizations
                 return true;
             }
 
-            if (RuntimeFrontEnd.RegexCharClass.IsNegated(set) || RuntimeFrontEnd.RegexCharClass.IsSubtraction(set))
+            if (Utf8OwnedCharClass.IsNegated(set) || Utf8OwnedCharClass.IsSubtraction(set))
             {
                 return true;
             }
 
-            var setLength = set[1];
-            var categoryLength = set[2];
-            if (setLength < 2 || categoryLength != 0 || setLength % 2 != 0 || 3 + setLength > set.Length)
+            var setLength = set[Utf8OwnedCharClass.SetLengthIndex];
+            var categoryLength = set[Utf8OwnedCharClass.CategoryLengthIndex];
+            if (setLength < 2 || categoryLength != 0 || setLength % 2 != 0 || Utf8OwnedCharClass.SetStartIndex + setLength > set.Length)
             {
                 return true;
             }
@@ -584,13 +583,13 @@ internal static class Utf8OwnedFindOptimizations
                 return null;
             }
 
-            var setLength = set[1];
+            var setLength = set[Utf8OwnedCharClass.SetLengthIndex];
             var chars = new List<string>();
             var total = 0;
             for (var i = 0; i < setLength; i += 2)
             {
-                var low = set[3 + i];
-                var high = set[3 + i + 1];
+                var low = set[Utf8OwnedCharClass.SetStartIndex + i];
+                var high = set[Utf8OwnedCharClass.SetStartIndex + i + 1];
                 if (high <= low)
                 {
                     continue;
@@ -620,13 +619,13 @@ internal static class Utf8OwnedFindOptimizations
                 return false;
             }
 
-            var setLength = set[1];
+            var setLength = set[Utf8OwnedCharClass.SetLengthIndex];
             var minimum = (char)65535;
             var found = false;
             for (var i = 0; i < setLength; i += 2)
             {
-                var low = set[3 + i];
-                var high = set[3 + i + 1];
+                var low = set[Utf8OwnedCharClass.SetStartIndex + i];
+                var high = set[Utf8OwnedCharClass.SetStartIndex + i + 1];
                 if (high <= low)
                 {
                     continue;
@@ -1165,22 +1164,22 @@ internal static class Utf8OwnedFindOptimizations
                 return false;
             }
 
-            if (RuntimeFrontEnd.RegexCharClass.IsNegated(wire) || RuntimeFrontEnd.RegexCharClass.IsSubtraction(wire))
+            if (Utf8OwnedCharClass.IsNegated(wire) || Utf8OwnedCharClass.IsSubtraction(wire))
             {
                 return false;
             }
 
-            var setLength = wire[1];
-            var categoryLength = wire[2];
-            if (setLength < 2 || categoryLength != 0 || setLength % 2 != 0 || 3 + setLength > wire.Length)
+            var setLength = wire[Utf8OwnedCharClass.SetLengthIndex];
+            var categoryLength = wire[Utf8OwnedCharClass.CategoryLengthIndex];
+            if (setLength < 2 || categoryLength != 0 || setLength % 2 != 0 || Utf8OwnedCharClass.SetStartIndex + setLength > wire.Length)
             {
                 return false;
             }
 
             if (setLength == 2)
             {
-                var low = wire[3];
-                var high = wire[4];
+                var low = wire[Utf8OwnedCharClass.SetStartIndex];
+                var high = wire[Utf8OwnedCharClass.SetStartIndex + 1];
                 if (high <= low || high > 128)
                 {
                     return false;
@@ -1193,8 +1192,8 @@ internal static class Utf8OwnedFindOptimizations
             var chars = new SortedSet<char>();
             for (var i = 0; i < setLength; i += 2)
             {
-                var low = wire[3 + i];
-                var high = wire[3 + i + 1];
+                var low = wire[Utf8OwnedCharClass.SetStartIndex + i];
+                var high = wire[Utf8OwnedCharClass.SetStartIndex + i + 1];
                 if (high <= low)
                 {
                     continue;

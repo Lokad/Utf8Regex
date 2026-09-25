@@ -411,7 +411,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             node.Str is { Length: > 0 } set &&
             node.M > 0 &&
             node.M == node.N &&
-            Runtime.RegexCharClass.IsAscii(set))
+            Utf8OwnedCharClass.IsAscii(set))
         {
             asciiSet = set;
             runLength = node.M;
@@ -426,7 +426,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             var child = UnwrapStructuralNode(node.Child(0)) ?? node.Child(0);
             if (child.Kind == Utf8TreeNodeKind.Set &&
                 child.Str is { Length: > 0 } childSet &&
-                Runtime.RegexCharClass.IsAscii(childSet))
+                Utf8OwnedCharClass.IsAscii(childSet))
             {
                 asciiSet = childSet;
                 runLength = node.M;
@@ -1330,7 +1330,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TryGetAsciiSetWidthAndLineSafety(string set, out int width, out bool excludesNewlines)
     {
-        if (Runtime.RegexCharClass.IsAscii(set))
+        if (Utf8OwnedCharClass.IsAscii(set))
         {
             width = 1;
             excludesNewlines = !Runtime.RegexCharClass.CharInClass('\r', set) &&
@@ -1338,7 +1338,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        if (Runtime.RegexCharClass.TryGetSingleRange(set, out var first, out var last) &&
+        if (Utf8OwnedCharClass.TryGetSingleRange(set, out var first, out var last) &&
             last <= 0x7F)
         {
             width = 1;
@@ -1346,7 +1346,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             return true;
         }
 
-        if (Runtime.RegexCharClass.TryGetDoubleRange(set, out var firstRange, out var secondRange) &&
+        if (Utf8OwnedCharClass.TryGetDoubleRange(set, out var firstRange, out var secondRange) &&
             secondRange.Last <= 0x7F)
         {
             width = 1;
@@ -1751,7 +1751,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
                 return true;
 
-            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Runtime.RegexCharClass.IsAscii(set):
+            case Utf8TreeNodeKind.Set when node.Str is { Length: > 0 } set && Utf8OwnedCharClass.IsAscii(set):
                 return TryCreateAsciiSet(set, offset++, out var fixedDistanceSet) &&
                     TryAddDeterministicPrefixSet(fixedDistanceSets, fixedDistanceSet);
 
@@ -1867,12 +1867,12 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static bool TryCreateAsciiSet(string set, int distance, out Utf8FixedDistanceSet fixedDistanceSet)
     {
         fixedDistanceSet = default;
-        if (!Runtime.RegexCharClass.CanEasilyEnumerateSetContents(set))
+        if (!Utf8OwnedCharClass.CanEasilyEnumerateSetContents(set))
         {
             return false;
         }
 
-        var chars = Runtime.RegexCharClass.GetSetChars(set);
+        var chars = Utf8OwnedCharClass.GetSetChars(set);
         if (chars.Length == 0)
         {
             return false;

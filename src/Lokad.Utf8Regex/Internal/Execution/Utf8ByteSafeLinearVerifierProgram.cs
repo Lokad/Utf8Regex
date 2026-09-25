@@ -577,7 +577,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
             return true;
         }
 
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(runtimeSet))
+        if (Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(runtimeSet))
         {
             step = loop
                 ? Utf8ByteSafeLinearVerifierStep.LoopSet(runtimeSet, min, max)
@@ -961,7 +961,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
     private bool TryBuildByteSafeLeadingMask(string set, out ulong lowMask, out ulong highMask)
     {
-        if (RuntimeFrontEnd.RegexCharClass.IsAscii(set))
+        if (Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set))
         {
             return TryBuildAsciiSetMask(set, out lowMask, out highMask);
         }

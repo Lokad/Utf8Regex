@@ -235,7 +235,7 @@ internal readonly struct Utf8DeterministicVerifierGuards
 
                 return true;
 
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Runtime.RegexCharClass.IsAscii(set):
+            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
                 return TryAddGuard(guards, new Utf8DeterministicByteGuard(offset++, set));
 
             default:

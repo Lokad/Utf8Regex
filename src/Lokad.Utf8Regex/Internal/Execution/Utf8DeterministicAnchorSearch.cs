@@ -218,7 +218,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                 AddByteToMask(text[0], ref lowMask, ref highMask);
                 return true;
 
-            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && RegexCharClass.IsAscii(set):
+            case Utf8ExecutionNodeKind.Set when node.Text is { Length: > 0 } set && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(set):
                 return TryBuildAsciiSetMask(set, out lowMask, out highMask);
 
             case Utf8ExecutionNodeKind.Concatenate:
@@ -262,7 +262,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                     return true;
                 }
 
-                if (node.Text is { Length: > 0 } loopSet && RegexCharClass.IsAscii(loopSet))
+                if (node.Text is { Length: > 0 } loopSet && Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(loopSet))
                 {
                     return TryBuildAsciiSetMask(loopSet, out lowMask, out highMask);
                 }
@@ -358,7 +358,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
                 break;
 
             case Utf8ExecutionNodeKind.Set:
-                if (node.Text is null || !RegexCharClass.IsAscii(node.Text))
+                if (node.Text is null || !Internal.FrontEnd.Utf8OwnedCharClass.IsAscii(node.Text))
                 {
                     return false;
                 }
@@ -517,12 +517,12 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
     private static List<string>? TryExtractSetChoices(string set)
     {
-        if (!RegexCharClass.CanEasilyEnumerateSetContents(set))
+        if (!Internal.FrontEnd.Utf8OwnedCharClass.CanEasilyEnumerateSetContents(set))
         {
             return null;
         }
 
-        var chars = RegexCharClass.GetSetChars(set);
+        var chars = Internal.FrontEnd.Utf8OwnedCharClass.GetSetChars(set);
         if (chars.Length == 0 || chars.Length > MaxDeterministicSetChoices || chars.Any(static ch => ch > 0x7F))
         {
             return null;
