@@ -7,7 +7,8 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser ExplicitCapture stage: the differential battery pins scoped
 // and toggled n identical to the provider trees (unnamed groups in
 // parse-time n become slotless Group nodes with dense renumbering after
-// them, top-level n keeps slots, backreferences resolve surviving slots,
+// them, top-level n demotes unnamed groups the same way, backreferences
+// resolve surviving slots (unbound digits fail),
 // simple named definitions under scoped n stay slotless with mapped slots),
 // plus decline agreement on references into skipped slots; cross-scope named,
 // top-level n, pop, and loop-wrapped residuals still route to the provider.
@@ -54,6 +55,12 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(?n:(?<x>a)*)", 512 };
         yield return new object?[] { "(?n:(?m:(?<x>a)))", 512 };
         yield return new object?[] { "(?n)(?<x>a)", 512 };
+        yield return new object?[] { "(a)(b)", 516 };
+        yield return new object?[] { "(?n:a)", 516 };
+        yield return new object?[] { "(a)(?-n:(b))", 516 };
+        yield return new object?[] { "((a)(b))", 516 };
+        yield return new object?[] { "(a)+", 516 };
+        yield return new object?[] { "(a)|(b)", 516 };
     }
 
     public static IEnumerable<object?[]> ExplicitDeclineCases()
@@ -61,19 +68,20 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(?n)\\1", 512 };
         yield return new object?[] { "(a)\\1", 516 };
         yield return new object?[] { "(?n:(a)\\1)", 512 };
+        yield return new object?[] { "(?(1)a|b)", 516 };
     }
 
     public static IEnumerable<object?[]> ExplicitResidualCases()
     {
         yield return new object?[] { "(?n:(a))(b)", 512 };
         yield return new object?[] { "(?n:(a))(b)", 528 };
-        yield return new object?[] { "(a)(b)", 516 };
-        yield return new object?[] { "(?n:a)", 516 };
         yield return new object?[] { "(?n:(?<-x>a))", 512 };
         yield return new object?[] { "(?n:a)+", 512 };
         yield return new object?[] { "(?n:(?<x>a))(b)", 512 };
         yield return new object?[] { "(?n:(a)(?<y>b))(c)", 512 };
         yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?<x>a)", 516 };
+        yield return new object?[] { "(a)(?<x>b)", 516 };
     }
 
     [Theory]

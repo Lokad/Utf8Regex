@@ -42,11 +42,6 @@ internal static class Utf8OwnedTreeParser
 
     public static Utf8OwnedRegexTree? TryParse(string pattern, RegexOptions options)
     {
-        if ((options & RegexOptions.ExplicitCapture) != 0)
-        {
-            return null;
-        }
-
         var state = new ParserState(pattern, options);
         if (!ParseAlternation(ref state, 0, out var root) || root is null || state.Position != pattern.Length)
         {
@@ -2694,8 +2689,7 @@ internal static class Utf8OwnedTreeParser
                 return true;
             }
             else if (kind == RuntimeFrontEnd.RegexNodeKind.Capture &&
-                (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None &&
-                state.ExplicitDepth > 0)
+                (state.Options & RegexOptions.ExplicitCapture) != RegexOptions.None)
             {
                 kind = RuntimeFrontEnd.RegexNodeKind.Group;
             }
