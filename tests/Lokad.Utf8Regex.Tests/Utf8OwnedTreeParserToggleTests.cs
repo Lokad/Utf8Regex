@@ -7,8 +7,8 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser toggle stage: the differential battery pins bare option
 // toggles identical to the provider trees (positional option threading with
 // group-boundary restore, sequential leading contributions, top composites
-// carrying tree options while nested composites keep entry options), plus
-// decline agreement on flagless and double-dash shapes.
+// carrying tree options while nested composites keep entry options, dash runs
+// collapsing to one separator), plus decline agreement on flagless shapes.
 public sealed class Utf8OwnedTreeParserToggleTests
 {
     public static IEnumerable<object?[]> ToggleAcceptCases()
@@ -59,12 +59,23 @@ public sealed class Utf8OwnedTreeParserToggleTests
         yield return new object?[] { "((?i))", 512 };
         yield return new object?[] { "x(?i)y(?m)z", 512 };
         yield return new object?[] { "(?i)a|(?m)b", 512 };
+        yield return new object?[] { "(?i--m:a)", 512 };
+        yield return new object?[] { "(?--m:a)", 512 };
+        yield return new object?[] { "(?i---m:a)", 512 };
+        yield return new object?[] { "(?i-m-:a)", 512 };
+        yield return new object?[] { "(?i--:a)", 512 };
+        yield return new object?[] { "(?i--)", 512 };
+        yield return new object?[] { "(?-i-)", 512 };
+        yield return new object?[] { "(?i-m-)", 512 };
+        yield return new object?[] { "(?i--m)", 512 };
+        yield return new object?[] { "(?--m)", 512 };
     }
 
     public static IEnumerable<object?[]> ToggleDeclineCases()
     {
         yield return new object?[] { "(?-)" };
         yield return new object?[] { "(?i)(?-)" };
+        yield return new object?[] { "(?--)" };
     }
 
     [Theory]

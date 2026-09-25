@@ -19,7 +19,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         "ax", "xa", "ababa", "aabbaa", ">", "a>", "a>b", "(a)", "(a)(b)",
     };
 
-    // Machine-derived divergent rows (from the first differential run: 11 of 53).
+    // Machine-derived divergent rows (from the first differential run: 11 of 52).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -73,13 +73,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     [Theory]
     [MemberData(nameof(Utf8OwnedTreeParserSubtractionTests.SubtractionResidualCases), MemberType = typeof(Utf8OwnedTreeParserSubtractionTests))]
     public void SubtractionResidualCutoverDisposition(string pattern)
-    {
-        AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
-    }
-
-    [Theory]
-    [MemberData(nameof(Utf8OwnedTreeParserTests.OptionResidualCases), MemberType = typeof(Utf8OwnedTreeParserTests))]
-    public void OptionResidualCutoverDisposition(string pattern)
     {
         AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
     }

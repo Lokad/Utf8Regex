@@ -246,19 +246,7 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(?z:a)" };
         yield return new object?[] { "(?I:a)" };
         yield return new object?[] { "(?x:a#b)" };
-    }
-
-    public static IEnumerable<object?[]> OptionResidualCases()
-    {
-        yield return new object?[] { "(?i--m:a)" };
-    }
-
-    [Theory]
-    [MemberData(nameof(OptionResidualCases))]
-    public void OwnedParserDeclinesResidualOptionShapes(string pattern)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
+        yield return new object?[] { "(?--:a)" };
     }
 
     [Theory]

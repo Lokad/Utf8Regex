@@ -2313,19 +2313,20 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
             }
 
-            if (!state.AtEnd && state.Pattern[state.Position] == '-')
+            while (!state.AtEnd && state.Pattern[state.Position] == '-')
             {
                 state.Position++;
-                while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
-                {
-                    off |= ScopeFlag(state.Pattern[state.Position]);
-                    state.Position++;
-                }
+            }
 
-                if (!state.AtEnd && state.Pattern[state.Position] == '-')
-                {
-                    return false;
-                }
+            while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+            {
+                off |= ScopeFlag(state.Pattern[state.Position]);
+                state.Position++;
+            }
+
+            while (!state.AtEnd && state.Pattern[state.Position] == '-')
+            {
+                state.Position++;
             }
 
             if (on == RegexOptions.None && off == RegexOptions.None)
@@ -2367,19 +2368,19 @@ internal static class Utf8OwnedTreeParser
                 scopeOn |= ScopeFlag(state.Pattern[state.Position]);
                 state.Position++;
             }
-            if (!state.AtEnd && state.Pattern[state.Position] == '-')
+            while (!state.AtEnd && state.Pattern[state.Position] == '-')
             {
                 dashed = true;
                 state.Position++;
-                while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
-                {
-                    scopeOff |= ScopeFlag(state.Pattern[state.Position]);
-                    state.Position++;
-                }
-                if (!state.AtEnd && state.Pattern[state.Position] == '-')
-                {
-                    return false;
-                }
+            }
+            while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
+            {
+                scopeOff |= ScopeFlag(state.Pattern[state.Position]);
+                state.Position++;
+            }
+            while (!state.AtEnd && state.Pattern[state.Position] == '-')
+            {
+                state.Position++;
             }
             if (state.AtEnd || state.Pattern[state.Position] != ':')
             {
