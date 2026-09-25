@@ -51,7 +51,6 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
     public static IEnumerable<object?[]> SubtractionDeclineCases()
     {
         yield return new object?[] { "[a-\\d-[b]]" };
-        yield return new object?[] { "[a-[b-\\d]]" };
         yield return new object?[] { "[a-[b]-c]" };
         yield return new object?[] { "[a--[b]]" };
         yield return new object?[] { "[a-[b]-[c]]" };
@@ -93,6 +92,22 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+    }
+
+    public static IEnumerable<object?[]> SubtractionResidualCases()
+    {
+        // Fork-widening debt (no-vendor rule): BCL rejects the nested upper-bound
+        // shorthand escape while the pristine fork accepts it. Pins owned-decline plus
+        // legacy-accept; the provider gatekeeper still declines it.
+        yield return new object?[] { "[a-[b-\\d]]" };
+    }
+
+    [Theory]
+    [MemberData(nameof(SubtractionResidualCases))]
+    public void OwnedSubtractionDeclinesResidual(string pattern)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)

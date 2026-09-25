@@ -1,23 +1,24 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R02 extraction 5: length arithmetic saturates exactly like the pinned BCL formulas
-/// (long products and sums capped at int.MaxValue - 1 for minimums, null maximums on
-/// overflow) instead of wrapping. Values are read off the owned analysis; behavior on
+/// R02 extraction 5: length arithmetic saturates in the owned hub (long products and
+/// sums capped at int.MaxValue - 1 for minimums, null maximums on overflow) instead of
+/// wrapping like the pristine fork. Values are read off the owned analysis; behavior on
 /// non-saturating shapes is pinned alongside so the formulas cannot drift silently.
 /// </summary>
 public sealed class Utf8LengthArithmeticTests
 {
-    private static RuntimeFrontEnd.RegexFindOptimizations Analyze(string pattern)
+    private static Utf8OwnedFindFacts Analyze(string pattern)
     {
         var tree = Utf8RuntimeTreeProvider.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(tree);
-        return new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, RegexOptions.CultureInvariant);
+        var facts = Utf8OwnedFindFacts.FromTree(tree);
+        Assert.NotNull(facts);
+        return facts;
     }
 
     [Fact]

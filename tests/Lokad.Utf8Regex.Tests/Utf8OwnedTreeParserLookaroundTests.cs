@@ -144,14 +144,11 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?<=((a)))b" };
         yield return new object?[] { "(?<=\\1)a" };
         yield return new object?[] { "(?<=(?:(a)))b" };
-        yield return new object?[] { "[a-\\d]" };
-        yield return new object?[] { "[a-\\p{L}]" };
         yield return new object?[] { "[a-\\k]" };
         yield return new object?[] { "[a-\\8]" };
         yield return new object?[] { "[a-\\p]" };
         yield return new object?[] { "[a-\\q]" };
         yield return new object?[] { "[a-\\--]" };
-        yield return new object?[] { "[--\\d]" };
         yield return new object?[] { "[\\8]" };
         yield return new object?[] { "[\\8-a]" };
         yield return new object?[] { "[\\C]" };
@@ -163,6 +160,12 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
 
     public static IEnumerable<object?[]> LookaroundResidualCases()
     {
+        // Fork-widening debt (no-vendor rule): BCL rejects upper-bound shorthand escapes
+        // while the pristine fork accepts them; the provider gatekeeper still declines them.
+        yield return new object?[] { "[a-\\d]", 512 };
+        yield return new object?[] { "[a-\\p{L}]", 512 };
+        yield return new object?[] { "[--\\d]", 512 };
+
         yield return new object?[] { "(?<=b)(?<x>a)", 512 };
         yield return new object?[] { "(?<=(?<x>a))b", 512 };
         yield return new object?[] { "(?<=a|(?<x>b))c", 512 };

@@ -56,7 +56,6 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "(?#c)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "[ab]+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "x[yz]", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:ab){2000000000}", RegexOptions.CultureInvariant, 2147483646, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "(a|bc|def)", RegexOptions.CultureInvariant, 1, 3, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "^[ab]+$", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.EndZ };
         yield return new object?[] { "\\d+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
@@ -93,15 +92,12 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "a{0,0}", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "(?!)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "a{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:ab){2147483647}", RegexOptions.CultureInvariant, 2147483646, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:a{2147483647}){2}", RegexOptions.CultureInvariant, 2147483646, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "x{0}y", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "(x{0})", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "\\Ghi", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Start, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "hi\\G", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "[a]{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "(?m:\\G)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Start, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:a){1500000000}(?:b){1500000000}", RegexOptions.CultureInvariant, 2147483646, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "^a|^b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "^a|b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
         yield return new object?[] { "((^a))", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
@@ -146,6 +142,27 @@ public sealed class Utf8OwnedFindOptimizationsTests
         Assert.Equal(expectedLead, Utf8OwnedFindOptimizations.FindLeadingAnchor(tree.Root));
         Assert.Equal(expectedTrail, Utf8OwnedFindOptimizations.FindTrailingAnchor(tree.Root));
     }
+
+    public static IEnumerable<object?[]> SaturationCases()
+    {
+        yield return new object?[] { "(?:ab){2000000000}", 2147483646, null };
+        yield return new object?[] { "(?:a){1500000000}(?:b){1500000000}", 2147483646, null };
+        yield return new object?[] { "(?:ab){2147483647}", 2147483646, null };
+        yield return new object?[] { "(?:a{2147483647}){2}", 2147483646, null };
+    }
+
+    [Theory]
+    [MemberData(nameof(SaturationCases))]
+    public void OwnedSaturationPinsFormulas(string pattern, int min, int? max)
+    {
+        // The pristine fork wraps these products and sums in 32 bits while the owned hub
+        // saturates like the BCL-observed formulas, so these rows pin owned values only.
+        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
+        Assert.NotNull(tree);
+        Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(tree.Root));
+        Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(tree.Root));
+    }
+
     public static IEnumerable<object?[]> LiteralCases()
     {
         yield return new object?[] { "(ab)", "ab", "ab" };

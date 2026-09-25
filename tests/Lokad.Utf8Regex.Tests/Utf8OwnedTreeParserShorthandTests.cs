@@ -5,10 +5,10 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 namespace Lokad.Utf8Regex.Tests;
 
 // Owned parser shorthand stage: the differential battery pins predefined
-// shorthands, Unicode properties, and named blocks identical to the provider
+// shorthands, Unicode properties, and named blocks identical to the provider where the
 // trees (kinds, options, payloads, children, capture accounting), plus
-// decline agreement on malformed properties and range-into-set shapes, and
-// the subtraction residual that still routes to the provider.
+// fork still agrees with BCL; fork-divergent block names, range-into-set shapes, and
+// unknown properties pin owned residuals instead (no-vendor rule: the fork is never extended).
 public sealed class Utf8OwnedTreeParserShorthandTests
 {
     public static IEnumerable<object?[]> ShorthandAcceptCases()
@@ -59,15 +59,6 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\p{N}", 512 };
         yield return new object?[] { "\\P{Nd}", 512 };
         yield return new object?[] { "\\P{Lu}", 512 };
-        yield return new object?[] { "\\P{IsGreek}", 512 };
-        yield return new object?[] { "\\p{IsGreek}", 512 };
-        yield return new object?[] { "\\p{IsCyrillic}", 512 };
-        yield return new object?[] { "\\p{IsBasicLatin}", 512 };
-        yield return new object?[] { "\\p{IsSpecials}", 512 };
-        yield return new object?[] { "\\P{IsSpecials}", 512 };
-        yield return new object?[] { "\\P{IsBasicLatin}", 512 };
-        yield return new object?[] { "\\p{IsArmenian}", 512 };
-        yield return new object?[] { "\\P{IsArmenian}", 512 };
         yield return new object?[] { "\\d+", 512 };
         yield return new object?[] { "\\d*", 512 };
         yield return new object?[] { "\\d?", 512 };
@@ -137,8 +128,6 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "[\\p{Lu}\\p{Ll}]", 512 };
         yield return new object?[] { "[a\\p{Lu}]", 512 };
         yield return new object?[] { "[\\p{Lu}a]", 512 };
-        yield return new object?[] { "[\\p{IsGreek}a]", 512 };
-        yield return new object?[] { "[a\\p{IsGreek}]", 512 };
         yield return new object?[] { "[^\\p{Lu}]", 512 };
         yield return new object?[] { "[\\p{Lu}-\\p{Ll}]", 512 };
         yield return new object?[] { "[\\P{Lu}]", 512 };
@@ -160,8 +149,44 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\d+", 576 };
     }
 
-    public static IEnumerable<object?[]> BlockSweepCases()
+    public static IEnumerable<object?[]> ShorthandDeclineCases()
     {
+        yield return new object?[] { "\\p{}" };
+        yield return new object?[] { "\\p{L" };
+        yield return new object?[] { "\\p" };
+        yield return new object?[] { "\\P" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ShorthandAcceptCases))]
+    public void OwnedShorthandMatchesProviderTree(string pattern, int options)
+    {
+        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
+        Assert.NotNull(expected);
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
+        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
+        Assert.Equal(expected.Options, actual.Options);
+        Assert.Equal(expected.Culture, actual.Culture);
+        Assert.True(TreesEqual(expected.Root, actual.Root));
+    }
+
+    public static IEnumerable<object?[]> BlockResidualCases()
+    {
+        // Fork-narrowing debt (no-vendor rule): these BCL-valid block and _xml names
+        // are rejected by the pristine fork, while the owned parser serves them. They pin
+        // owned-accept plus legacy-decline instead of tree agreement.
+        yield return new object?[] { "[\\p{IsGreek}a]", 512 };
+        yield return new object?[] { "[a\\p{IsGreek}]", 512 };
+        yield return new object?[] { "\\p{_xmlC}", 512 };
+        yield return new object?[] { "\\P{_xmlC}", 512 };
+        yield return new object?[] { "\\p{_xmlD}", 512 };
+        yield return new object?[] { "\\P{_xmlD}", 512 };
+        yield return new object?[] { "\\p{_xmlI}", 512 };
+        yield return new object?[] { "\\P{_xmlI}", 512 };
+        yield return new object?[] { "\\p{_xmlW}", 512 };
+        yield return new object?[] { "\\P{_xmlW}", 512 };
         yield return new object?[] { "\\p{IsAlphabeticPresentationForms}", 512 };
         yield return new object?[] { "\\P{IsAlphabeticPresentationForms}", 512 };
         yield return new object?[] { "\\p{IsArabic}", 512 };
@@ -170,8 +195,12 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\P{IsArabicPresentationForms-A}", 512 };
         yield return new object?[] { "\\p{IsArabicPresentationForms-B}", 512 };
         yield return new object?[] { "\\P{IsArabicPresentationForms-B}", 512 };
+        yield return new object?[] { "\\p{IsArmenian}", 512 };
+        yield return new object?[] { "\\P{IsArmenian}", 512 };
         yield return new object?[] { "\\p{IsArrows}", 512 };
         yield return new object?[] { "\\P{IsArrows}", 512 };
+        yield return new object?[] { "\\p{IsBasicLatin}", 512 };
+        yield return new object?[] { "\\P{IsBasicLatin}", 512 };
         yield return new object?[] { "\\p{IsBengali}", 512 };
         yield return new object?[] { "\\P{IsBengali}", 512 };
         yield return new object?[] { "\\p{IsBlockElements}", 512 };
@@ -214,6 +243,7 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\P{IsControlPictures}", 512 };
         yield return new object?[] { "\\p{IsCurrencySymbols}", 512 };
         yield return new object?[] { "\\P{IsCurrencySymbols}", 512 };
+        yield return new object?[] { "\\p{IsCyrillic}", 512 };
         yield return new object?[] { "\\P{IsCyrillic}", 512 };
         yield return new object?[] { "\\p{IsCyrillicSupplement}", 512 };
         yield return new object?[] { "\\P{IsCyrillicSupplement}", 512 };
@@ -233,6 +263,8 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\P{IsGeometricShapes}", 512 };
         yield return new object?[] { "\\p{IsGeorgian}", 512 };
         yield return new object?[] { "\\P{IsGeorgian}", 512 };
+        yield return new object?[] { "\\p{IsGreek}", 512 };
+        yield return new object?[] { "\\P{IsGreek}", 512 };
         yield return new object?[] { "\\p{IsGreekandCoptic}", 512 };
         yield return new object?[] { "\\P{IsGreekandCoptic}", 512 };
         yield return new object?[] { "\\p{IsGreekExtended}", 512 };
@@ -333,6 +365,8 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\P{IsSmallFormVariants}", 512 };
         yield return new object?[] { "\\p{IsSpacingModifierLetters}", 512 };
         yield return new object?[] { "\\P{IsSpacingModifierLetters}", 512 };
+        yield return new object?[] { "\\p{IsSpecials}", 512 };
+        yield return new object?[] { "\\P{IsSpecials}", 512 };
         yield return new object?[] { "\\p{IsSuperscriptsandSubscripts}", 512 };
         yield return new object?[] { "\\P{IsSuperscriptsandSubscripts}", 512 };
         yield return new object?[] { "\\p{IsSupplementalArrows-A}", 512 };
@@ -369,51 +403,15 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\P{IsYiRadicals}", 512 };
         yield return new object?[] { "\\p{IsYiSyllables}", 512 };
         yield return new object?[] { "\\P{IsYiSyllables}", 512 };
-        yield return new object?[] { "\\p{_xmlC}", 512 };
-        yield return new object?[] { "\\P{_xmlC}", 512 };
-        yield return new object?[] { "\\p{_xmlD}", 512 };
-        yield return new object?[] { "\\P{_xmlD}", 512 };
-        yield return new object?[] { "\\p{_xmlI}", 512 };
-        yield return new object?[] { "\\P{_xmlI}", 512 };
-        yield return new object?[] { "\\p{_xmlW}", 512 };
-        yield return new object?[] { "\\P{_xmlW}", 512 };
-    }
-
-    public static IEnumerable<object?[]> ShorthandDeclineCases()
-    {
-        yield return new object?[] { "\\p{Nope}" };
-        yield return new object?[] { "\\p{}" };
-        yield return new object?[] { "\\p{L" };
-        yield return new object?[] { "\\p" };
-        yield return new object?[] { "\\P" };
-        yield return new object?[] { "[a-\\d]" };
-        yield return new object?[] { "[z-\\d]" };
-        yield return new object?[] { "[--\\d]" };
-        yield return new object?[] { "[a-\\p{Lu}]" };
-        yield return new object?[] { "\\p{Any}" };
-        yield return new object?[] { "\\p{Assigned}" };
-        yield return new object?[] { "\\p{lu}" };
-        yield return new object?[] { "\\p{LU}" };
-        yield return new object?[] { "\\p{ L}" };
-        yield return new object?[] { "\\p{L }" };
-        yield return new object?[] { "\\p{Greek}" };
-        yield return new object?[] { "\\p{isgreek}" };
     }
 
     [Theory]
-    [MemberData(nameof(ShorthandAcceptCases))]
-    [MemberData(nameof(BlockSweepCases))]
-    public void OwnedShorthandMatchesProviderTree(string pattern, int options)
+    [MemberData(nameof(BlockResidualCases))]
+    public void OwnedBlockAcceptsWhileLegacyDeclines(string pattern, int options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     [Theory]
@@ -425,6 +423,56 @@ public sealed class Utf8OwnedTreeParserShorthandTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+    }
+
+    public static IEnumerable<object?[]> ShorthandResidualCases()
+    {
+        // Fork-widening debt (no-vendor rule): BCL rejects a shorthand or category
+        // escape in upper-bound class position while the pristine fork accepts it. These pin
+        // owned-decline plus legacy-accept; the provider gatekeeper still declines them so
+        // construction fails BCL-exactly through the fallback.
+        yield return new object?[] { "[a-\\d]" };
+        yield return new object?[] { "[z-\\d]" };
+        yield return new object?[] { "[--\\d]" };
+        yield return new object?[] { "[a-\\p{Lu}]" };
+    }
+
+    public static IEnumerable<object?[]> UnknownPropertyCases()
+    {
+        // Fork-leak debt (no-vendor rule): the pristine fork leaks a bare ArgumentException
+        // for unknown property names where BCL raises a parse error. These pin owned-decline
+        // plus the exact leak; the provider seam maps it to a decline so construction still
+        // fails BCL-exactly through the fallback.
+        yield return new object?[] { "\\p{Nope}" };
+        yield return new object?[] { "\\p{Any}" };
+        yield return new object?[] { "\\p{Assigned}" };
+        yield return new object?[] { "\\p{lu}" };
+        yield return new object?[] { "\\p{LU}" };
+        yield return new object?[] { "\\p{ L}" };
+        yield return new object?[] { "\\p{L }" };
+        yield return new object?[] { "\\p{Greek}" };
+        yield return new object?[] { "\\p{isgreek}" };
+    }
+
+    [Theory]
+    [MemberData(nameof(ShorthandResidualCases))]
+    public void OwnedShorthandDeclinesResidual(string pattern)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
+    }
+
+    [Theory]
+    [MemberData(nameof(UnknownPropertyCases))]
+    public void OwnedShorthandDeclinesUnknownProperty(string pattern)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
+        var leak = Assert.Throws<ArgumentException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            RegexOptions.CultureInvariant,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+        Assert.Equal("categoryName", leak.ParamName);
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)

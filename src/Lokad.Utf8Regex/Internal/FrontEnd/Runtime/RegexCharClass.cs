@@ -135,43 +135,7 @@ internal sealed class RegexCharClass
         if (!s_definedCategories.TryGetValue(categoryName, out var category) &&
             !(caseInsensitive && s_definedCategories.TryGetValue(InternalRegexIgnoreCase, out category) && categoryName == "I"))
         {
-            // Named blocks (Is*/_xml*) resolve through the shared slice
-            // property table and land as closed ranges; anything else keeps
-            // the unknown-category throw. The shared arrays encode
-            // half-open endpoint pairs (with a trailing lone endpoint spanning to
-            // char.MaxValue) per the owned table contract.
-            if (!Execution.Utf8SliceCategories.TryResolve(categoryName, out _, out var blockRanges, out var isBlock) || !isBlock)
-            {
-                throw new ArgumentException($"Unknown category '{categoryName}' at index {currentPos} in '{pattern}'.", nameof(categoryName));
-            }
-
-            var ranges = EnsureRangeList();
-            var uncovered = 0;
-            for (var range = 0; range < blockRanges.Length; range += 2)
-            {
-                var first = (int)blockRanges[range];
-                var last = range + 1 < blockRanges.Length ? blockRanges[range + 1] - 1 : 0xFFFF;
-                if (invert)
-                {
-                    if (uncovered < first)
-                    {
-                        ranges.Add(((char)uncovered, (char)(first - 1)));
-                    }
-
-                    uncovered = last + 1;
-                }
-                else
-                {
-                    ranges.Add(((char)first, (char)last));
-                }
-            }
-
-            if (invert && uncovered <= 0xFFFF)
-            {
-                ranges.Add(((char)uncovered, char.MaxValue));
-            }
-
-            return;
+            throw new ArgumentException($"Unknown category '{categoryName}' at index {currentPos} in '{pattern}'.", nameof(categoryName));
         }
 
         AddCategory(category, invert);

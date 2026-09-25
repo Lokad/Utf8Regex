@@ -847,7 +847,7 @@ internal sealed partial class RegexParser
                 else
                 {
                     _pos = escapePos;
-                    if (!TryAppendCharClassEscape(charClass, scanOnly, inRange))
+                    if (!TryAppendCharClassEscape(charClass, scanOnly))
                     {
                         NoteScanError(RegexParseError.UnrecognizedEscape);
                         return null;
@@ -1161,10 +1161,7 @@ internal sealed partial class RegexParser
         return true;
     }
 
-    // BCL uniform rule: a shorthand or category escape in upper-bound position
-    // (right after `X-`) throws ShorthandClassInCharacterRange instead of joining
-    // a range. The scan still consumes the escape when scanOnly, exactly like BCL.
-    private bool TryAppendCharClassEscape(RegexCharClass? charClass, bool scanOnly, bool inRange)
+    private bool TryAppendCharClassEscape(RegexCharClass? charClass, bool scanOnly)
     {
         if (_pos >= _scanPattern.Length)
         {
@@ -1195,12 +1192,6 @@ internal sealed partial class RegexParser
 
         if (escaped is 'p' or 'P')
         {
-            if (inRange && !scanOnly)
-            {
-                NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                return false;
-            }
-
             if (!TryScanCategoryName(out var categoryName))
             {
                 return false;
@@ -1217,12 +1208,6 @@ internal sealed partial class RegexParser
         switch (escaped)
         {
             case 'd':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddDigit(ecma: false, negate: false, _scanPattern, _pos - 1);
@@ -1230,12 +1215,6 @@ internal sealed partial class RegexParser
 
                 return true;
             case 'D':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddDigit(ecma: false, negate: true, _scanPattern, _pos - 1);
@@ -1243,12 +1222,6 @@ internal sealed partial class RegexParser
 
                 return true;
             case 'w':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddWord(ecma: false, negate: false);
@@ -1256,12 +1229,6 @@ internal sealed partial class RegexParser
 
                 return true;
             case 'W':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddWord(ecma: false, negate: true);
@@ -1269,12 +1236,6 @@ internal sealed partial class RegexParser
 
                 return true;
             case 's':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddSpace(ecma: false, negate: false);
@@ -1282,12 +1243,6 @@ internal sealed partial class RegexParser
 
                 return true;
             case 'S':
-                if (inRange && !scanOnly)
-                {
-                    NoteScanError(RegexParseError.ShorthandClassInCharacterRange);
-                    return false;
-                }
-
                 if (!scanOnly)
                 {
                     RequireCharacterClass(charClass).AddSpace(ecma: false, negate: true);
@@ -1504,19 +1459,7 @@ internal sealed partial class RegexParser
         }
 
         var charClass = new RegexCharClass();
-        // Unknown names decline instead of throwing raw: the scan aborts
-        // above and the provider maps the failure to RegexParseException,
-        // matching the BCL construction-throw vocabulary (the shared slice
-        // parser already declined these shapes for the same reason).
-        try
-        {
-            charClass.AddCategoryFromName(categoryName, negate, caseInsensitive: false, _scanPattern, _pos);
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-
+        charClass.AddCategoryFromName(categoryName, negate, caseInsensitive: false, _scanPattern, _pos);
         node = new RegexNode(RegexNodeKind.Set, currentOptions & ~RegexOptions.IgnoreCase, charClass.ToStringClass());
         return true;
     }
