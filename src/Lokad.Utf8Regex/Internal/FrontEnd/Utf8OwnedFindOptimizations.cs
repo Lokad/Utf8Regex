@@ -1058,4 +1058,139 @@ internal static class Utf8OwnedFindOptimizations
             }
         }
     }
+
+    public readonly record struct OwnedCharRange(char LowInclusive, char HighInclusive);
+
+    public readonly record struct OwnedSet(string Set, int Distance, bool Negated, char[]? Chars, OwnedCharRange? Range);
+
+    // Owned fixed-distance sets, pinned against legacy instances over the probe
+    // catalog. The walk admits literals, clean ascii sets, transparent groups
+    // and line anchors only, accumulating minimum distances as it goes. Every
+    // other shape poisons the whole result: alternations, all loop kinds,
+    // lookarounds, backreferences, boundaries, opaque widths, categorized or
+    // negated or subtracted or non ascii classes, and conditionals. Single wire
+    // ranges project to the range form while wider sets project to distinct
+    // ascending characters with the wire payload reused verbatim. No options
+    // take part: folded payloads already carry their bytes. Every rule above
+    // was read off probe behavior.
+    public static OwnedSet[]? FindFixedDistanceSets(RuntimeFrontEnd.RegexNode node)
+    {
+        var sets = new List<OwnedSet>();
+        var result = WalkSets(node, 0, sets);
+        if (!result.Ok || sets.Count == 0)
+        {
+            return null;
+        }
+
+        return sets.ToArray();
+
+        static (int Distance, bool Ok) WalkSets(RuntimeFrontEnd.RegexNode current, int distance, List<OwnedSet> sets)
+        {
+            switch (current.Kind)
+            {
+                case RuntimeFrontEnd.RegexNodeKind.One:
+                    return (distance + 1, true);
+                case RuntimeFrontEnd.RegexNodeKind.Multi:
+                    return (distance + (current.Str is null ? 1 : current.Str.Length), true);
+                case RuntimeFrontEnd.RegexNodeKind.Set:
+                    if (!TryAddSet(current.Str, distance, sets))
+                    {
+                        return (distance, false);
+                    }
+
+                    return (distance + 1, true);
+                case RuntimeFrontEnd.RegexNodeKind.Capture:
+                case RuntimeFrontEnd.RegexNodeKind.Group:
+                case RuntimeFrontEnd.RegexNodeKind.Atomic:
+                case RuntimeFrontEnd.RegexNodeKind.Concatenate:
+                    var running = distance;
+                    for (var i = 0; i < current.ChildCount; i++)
+                    {
+                        var child = WalkSets(current.Child(i), running, sets);
+                        if (!child.Ok)
+                        {
+                            return (running, false);
+                        }
+
+                        running = child.Distance;
+                    }
+
+                    return (running, true);
+                case RuntimeFrontEnd.RegexNodeKind.Beginning:
+                case RuntimeFrontEnd.RegexNodeKind.Bol:
+                case RuntimeFrontEnd.RegexNodeKind.Start:
+                case RuntimeFrontEnd.RegexNodeKind.End:
+                case RuntimeFrontEnd.RegexNodeKind.EndZ:
+                case RuntimeFrontEnd.RegexNodeKind.Eol:
+                case RuntimeFrontEnd.RegexNodeKind.Empty:
+                    return (distance, true);
+                default:
+                    return (distance, false);
+            }
+        }
+
+        static bool TryAddSet(string? wire, int distance, List<OwnedSet> sets)
+        {
+            if (string.IsNullOrEmpty(wire) || wire.Length < 4)
+            {
+                return false;
+            }
+
+            if (RuntimeFrontEnd.RegexCharClass.IsNegated(wire) || RuntimeFrontEnd.RegexCharClass.IsSubtraction(wire))
+            {
+                return false;
+            }
+
+            var setLength = wire[1];
+            var categoryLength = wire[2];
+            if (setLength < 2 || categoryLength != 0 || setLength % 2 != 0 || 3 + setLength > wire.Length)
+            {
+                return false;
+            }
+
+            if (setLength == 2)
+            {
+                var low = wire[3];
+                var high = wire[4];
+                if (high <= low || high > 128)
+                {
+                    return false;
+                }
+
+                sets.Add(new OwnedSet(wire, distance, false, null, new OwnedCharRange(low, (char)(high - 1))));
+                return true;
+            }
+
+            var chars = new SortedSet<char>();
+            for (var i = 0; i < setLength; i += 2)
+            {
+                var low = wire[3 + i];
+                var high = wire[3 + i + 1];
+                if (high <= low)
+                {
+                    continue;
+                }
+
+                if (high > 128)
+                {
+                    return false;
+                }
+
+                for (var c = low; c < high; c++)
+                {
+                    chars.Add(c);
+                }
+            }
+
+            if (chars.Count == 0)
+            {
+                return false;
+            }
+
+            var array = new char[chars.Count];
+            chars.CopyTo(array);
+            sets.Add(new OwnedSet(wire, distance, false, array, null));
+            return true;
+        }
+    }
 }
