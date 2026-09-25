@@ -7,7 +7,9 @@ namespace Lokad.Utf8Regex.Tests;
 // owned parser declines while the fork serves is compared behaviorally between the
 // current product route and the BCL oracle over a fixed probe corpus plus a
 // deterministic seeded fuzz stream (128 xorshift inputs over a metachar-heavy
-// alphabet) and two astral inputs. Each row
+// alphabet) and two astral inputs. Witness depth covers construction verdicts,
+// group metadata, first-match positions, detailed group values and positions,
+// counts, and whole-match replacement. Each row
 // either agrees (null witness: safe to flip to BCL fallback at the choke point)
 // or reproduces its documented divergence below (non-null witness). A vanished
 // witness or a new witness both fail, forcing re-triage before the flip.
@@ -267,11 +269,37 @@ public sealed class Utf8OwnedCutoverBehaviorTests
                     return tag + "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.IndexInUtf16 + "," + actual.LengthInUtf16 + ")";
                 }
 
+                if (expected.Success)
+                {
+                    var actualDetailed = p.MatchDetailed(bytes);
+                    for (var g = 0; g < expectedNumbers.Length; g++)
+                    {
+                        var expectedGroup = expected.Groups[g];
+                        var actualGroup = actualDetailed.GetGroup(g);
+                        if (expectedGroup.Success != actualGroup.Success)
+                        {
+                            return tag + "group " + g + " success bcl=" + expectedGroup.Success + "/product=" + actualGroup.Success + " on input [" + input + "]";
+                        }
+
+                        if (expectedGroup.Success && (!string.Equals(expectedGroup.Value, actualGroup.GetValueString(), StringComparison.Ordinal) || expectedGroup.Index != actualGroup.IndexInUtf16 || expectedGroup.Length != actualGroup.LengthInUtf16))
+                        {
+                            return tag + "group " + g + " value bcl=[" + expectedGroup.Value + "]/product=[" + actualGroup.GetValueString() + "] on input [" + input + "]";
+                        }
+                    }
+                }
+
                 var expectedCount = b.Count(input);
                 var actualCount = p.Count(bytes);
                 if (expectedCount != actualCount)
                 {
                     return tag + "input '" + input + "':count bcl=" + expectedCount + "/product=" + actualCount;
+                }
+
+                var expectedReplaced = b.Replace(input, "$0");
+                var actualReplaced = Encoding.UTF8.GetString(p.Replace(bytes, "$0"));
+                if (!string.Equals(expectedReplaced, actualReplaced, StringComparison.Ordinal))
+                {
+                    return tag + "input '" + input + "':replace bcl=[" + expectedReplaced + "]/product=[" + actualReplaced + "]";
                 }
 
                 return null;
