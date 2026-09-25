@@ -21,7 +21,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     };
 
     // Machine-derived divergent rows (11 from the first run, 7 from the metadata
-    // and newline extension, 5 from the leak-family sweep: 23 of 68).
+    // and newline extension, 5 from the leak-family sweep: 23 of 67).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -82,6 +82,13 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     [Theory]
     [MemberData(nameof(Utf8OwnedTreeParserExplicitTests.ExplicitResidualCases), MemberType = typeof(Utf8OwnedTreeParserExplicitTests))]
     public void ExplicitResidualCutoverDisposition(string pattern, int options)
+    {
+        AssertCutoverDisposition(pattern, (RegexOptions)options);
+    }
+
+    [Theory]
+    [MemberData(nameof(Utf8OwnedTreeParserBalanceTests.BalanceResidualCases), MemberType = typeof(Utf8OwnedTreeParserBalanceTests))]
+    public void BalanceResidualCutoverDisposition(string pattern, int options)
     {
         AssertCutoverDisposition(pattern, (RegexOptions)options);
     }
