@@ -219,6 +219,77 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
+    public static IEnumerable<object?[]> LookaroundNarrowingCases()
+    {
+        // Fork-narrowing debt: the fork rejects a lookbehind followed by a group
+        // with InvalidPattern while BCL accepts it. The owned parser serves these with
+        // BCL-agreeing behavior, machine-verified row by row below.
+        yield return new object?[] { "(?<=.)([ab])", 512 };
+        yield return new object?[] { "(?<=.)|([ab])", 512 };
+        yield return new object?[] { "(?<=.)(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=.)|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=.)(^)?", 512 };
+        yield return new object?[] { "(?<=.)|(^)?", 512 };
+        yield return new object?[] { "(?<=a)*([ab])", 512 };
+        yield return new object?[] { "(?<=a)*|([ab])", 512 };
+        yield return new object?[] { "(?<=a)*(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=a)*|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=a)*(^)?", 512 };
+        yield return new object?[] { "(?<=a)*|(^)?", 512 };
+        yield return new object?[] { "(?<=\\d)?([ab])", 512 };
+        yield return new object?[] { "(?<=\\d)?|([ab])", 512 };
+        yield return new object?[] { "(?<=\\d)?(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=\\d)?|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=\\d)?(^)?", 512 };
+        yield return new object?[] { "(?<=\\d)?|(^)?", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}([ab])", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|([ab])", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}(^)?", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|(^)?", 512 };
+        yield return new object?[] { "(?<=.)+?([ab])", 512 };
+        yield return new object?[] { "(?<=.)+?|([ab])", 512 };
+        yield return new object?[] { "(?<=.)+?(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=.)+?|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=.)+?(^)?", 512 };
+        yield return new object?[] { "(?<=.)+?|(^)?", 512 };
+        yield return new object?[] { "(?<=$)+([ab])", 512 };
+        yield return new object?[] { "(?<=$)+|([ab])", 512 };
+        yield return new object?[] { "(?<=$)+(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=$)+|(\\d){1,2}", 512 };
+        yield return new object?[] { "(?<=$)+(^)?", 512 };
+        yield return new object?[] { "(?<=$)+|(^)?", 512 };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookaroundNarrowingCases))]
+    public void OwnedLookaroundServesForkNarrowedShapes(string pattern, int options)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            (RegexOptions)options,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var input in new[] { "", "a", "ab", "aab", "xaab", "b", "aaab", "abb", "aabb", "1", "11", "a1" })
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+            var expected = oracle.Match(input);
+            var match = product.Match(bytes);
+            Assert.Equal(expected.Success, match.Success);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, match.IndexInUtf16);
+                Assert.Equal(expected.Length, match.LengthInUtf16);
+            }
+
+            Assert.Equal(oracle.Count(input), product.Count(bytes));
+        }
+    }
+
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, RuntimeFrontEnd.RegexNode right)
     {
         return right.Kind == left.Kind &&
