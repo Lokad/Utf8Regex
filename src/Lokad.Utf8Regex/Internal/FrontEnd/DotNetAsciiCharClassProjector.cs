@@ -108,7 +108,7 @@ internal static class DotNetAsciiCharClassProjector
         ulong high = 0;
         for (var value = 0; value < 128; value++)
         {
-            if (RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet))
+            if (Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet))
             {
                 Add(ref low, ref high, (byte)value);
             }

@@ -368,7 +368,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         var result = default(Utf8SearchAsciiSet);
         for (var value = 0; value < 128; value++)
         {
-            if (Runtime.RegexCharClass.CharInClassBase((char)value, regexCharClass))
+            if (Utf8OwnedCharClass.CharInClassBase((char)value, regexCharClass))
             {
                 result = result.With((byte)value);
             }
@@ -1210,8 +1210,8 @@ internal static class Utf8FrontEndSearchAnalyzer
 
             case Utf8TreeNodeKind.Set:
                 if (node.Str is { Length: > 0 } set &&
-                    !Runtime.RegexCharClass.CharInClass('\r', set) &&
-                    !Runtime.RegexCharClass.CharInClass('\n', set))
+                    !Utf8OwnedCharClass.CharInClass('\r', set) &&
+                    !Utf8OwnedCharClass.CharInClass('\n', set))
                 {
                     maxLineBreaks = 0;
                     return true;
@@ -1236,8 +1236,8 @@ internal static class Utf8FrontEndSearchAnalyzer
                 if (node.N >= 0 &&
                     node.N != int.MaxValue &&
                     node.Str is { Length: > 0 } repeatedSet &&
-                    !Runtime.RegexCharClass.CharInClass('\r', repeatedSet) &&
-                    !Runtime.RegexCharClass.CharInClass('\n', repeatedSet))
+                    !Utf8OwnedCharClass.CharInClass('\r', repeatedSet) &&
+                    !Utf8OwnedCharClass.CharInClass('\n', repeatedSet))
                 {
                     maxLineBreaks = 0;
                     return true;
@@ -1333,8 +1333,8 @@ internal static class Utf8FrontEndSearchAnalyzer
         if (Utf8OwnedCharClass.IsAscii(set))
         {
             width = 1;
-            excludesNewlines = !Runtime.RegexCharClass.CharInClass('\r', set) &&
-                !Runtime.RegexCharClass.CharInClass('\n', set);
+            excludesNewlines = !Utf8OwnedCharClass.CharInClass('\r', set) &&
+                !Utf8OwnedCharClass.CharInClass('\n', set);
             return true;
         }
 

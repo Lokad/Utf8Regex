@@ -1936,7 +1936,7 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
     private static bool MatchesSet(byte value, string runtimeSet)
     {
-        return value < 128 && Lokad.Utf8Regex.Internal.FrontEnd.Runtime.RegexCharClass.CharInClassBase((char)value, runtimeSet);
+        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet);
     }
 
     private static bool TryMatchTokenWindowAt(ReadOnlySpan<byte> input, AsciiStructuralTokenWindowPlan plan, int startIndex, out int matchedLength)

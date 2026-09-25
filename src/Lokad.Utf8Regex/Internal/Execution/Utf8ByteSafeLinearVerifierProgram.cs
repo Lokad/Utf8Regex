@@ -950,7 +950,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
         for (var i = 0; i < 128; i++)
         {
-            if (RuntimeFrontEnd.RegexCharClass.CharInClass((char)i, set))
+            if (Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)i, set))
             {
                 AddByteToMask((byte)i, ref lowMask, ref highMask);
             }
@@ -1305,7 +1305,7 @@ internal readonly struct Utf8ByteSafeLinearVerifierProgram
 
     private static bool MatchesSet(byte value, string runtimeSet)
     {
-        return value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClass((char)value, runtimeSet);
+        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
     }
 
     private static bool IsBeginningOfLine(ReadOnlySpan<byte> input, int index, RegexOptions options)

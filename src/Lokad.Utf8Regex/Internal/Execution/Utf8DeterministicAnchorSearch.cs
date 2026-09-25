@@ -287,7 +287,7 @@ internal readonly record struct Utf8DeterministicAnchorSearch(PreparedSearcher S
 
         for (var i = 0; i < 128; i++)
         {
-            if (RegexCharClass.CharInClass((char)i, set))
+            if (Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)i, set))
             {
                 AddByteToMask((byte)i, ref lowMask, ref highMask);
             }

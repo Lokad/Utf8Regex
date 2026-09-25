@@ -2340,7 +2340,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var sawMatch = false;
         for (var value = 0; value < 128; value++)
         {
-            if (!RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet))
+            if (!Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet))
             {
                 continue;
             }
@@ -2422,7 +2422,7 @@ internal static class Utf8NativeExecutionAnalyzer
                 break;
 
             case Utf8TreeNodeKind.Set when node.Str is { } set:
-                maxLineBreaks = RuntimeFrontEnd.RegexCharClass.CharInClass('\n', set) ? 1 : 0;
+                maxLineBreaks = Utf8OwnedCharClass.CharInClass('\n', set) ? 1 : 0;
                 return true;
 
             case Utf8TreeNodeKind.Loop:
@@ -2432,7 +2432,7 @@ internal static class Utf8NativeExecutionAnalyzer
             case Utf8TreeNodeKind.Setloopatomic:
                 if (TryGetSetLoop(node, out var loopSetNode, out _, out var loopSetMax) &&
                     loopSetNode.Str is { } loopSet &&
-                    !RuntimeFrontEnd.RegexCharClass.CharInClass('\n', loopSet))
+                    !Utf8OwnedCharClass.CharInClass('\n', loopSet))
                 {
                     maxLineBreaks = 0;
                     return true;
@@ -2558,7 +2558,7 @@ internal static class Utf8NativeExecutionAnalyzer
     {
         for (var value = 0; value < 128; value++)
         {
-            var matches = RuntimeFrontEnd.RegexCharClass.CharInClass((char)value, runtimeSet);
+            var matches = Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
             if (value == '\n')
             {
                 if (matches)
@@ -2580,7 +2580,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var sawNewLine = false;
         for (var value = 0; value < 128; value++)
         {
-            var matches = RuntimeFrontEnd.RegexCharClass.CharInClass((char)value, runtimeSet);
+            var matches = Utf8OwnedCharClass.CharInClass((char)value, runtimeSet);
             if (!matches)
             {
                 return false;
@@ -2924,7 +2924,7 @@ internal static class Utf8NativeExecutionAnalyzer
         var folded = byte.MaxValue;
         for (var value = 0; value < 128; value++)
         {
-            if (!RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet))
+            if (!Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet))
             {
                 continue;
             }

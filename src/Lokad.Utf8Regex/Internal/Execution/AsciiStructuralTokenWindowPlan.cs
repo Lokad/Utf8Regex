@@ -58,6 +58,6 @@ internal readonly struct AsciiStructuralTokenWindowPlan
 
     public bool MatchesSeparator(byte value)
     {
-        return value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, SeparatorSet);
+        return value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, SeparatorSet);
     }
 }

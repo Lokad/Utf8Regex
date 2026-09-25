@@ -111,6 +111,6 @@ internal static class AsciiStructuralSuffixMatcher
     {
         return !charClass.IsEmpty
             ? charClass.Contains(value)
-            : value < 128 && RuntimeFrontEnd.RegexCharClass.CharInClassBase((char)value, runtimeSet);
+            : value < 128 && Internal.FrontEnd.Utf8OwnedCharClass.CharInClassBase((char)value, runtimeSet);
     }
 }

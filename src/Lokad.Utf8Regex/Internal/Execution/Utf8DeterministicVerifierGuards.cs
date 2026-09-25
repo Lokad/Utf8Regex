@@ -317,6 +317,6 @@ internal readonly struct Utf8DeterministicByteGuard
             return value == literal;
         }
 
-        return Set is { } set && Internal.FrontEnd.Runtime.RegexCharClass.CharInClass((char)value, set);
+        return Set is { } set && Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)value, set);
     }
 }

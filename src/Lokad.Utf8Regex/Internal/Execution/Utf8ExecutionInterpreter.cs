@@ -788,7 +788,7 @@ internal static class Utf8ExecutionInterpreter
 
                 case Utf8ExecutionNodeKind.Set when instruction.Text is not null:
                     if ((uint)offset >= (uint)input.Length ||
-                        !RuntimeFrontEnd.RegexCharClass.CharInClass((char)input[offset], instruction.Text))
+                        !Internal.FrontEnd.Utf8OwnedCharClass.CharInClass((char)input[offset], instruction.Text))
                     {
                         matchedLength = 0;
                         return false;
@@ -1270,7 +1270,7 @@ internal static class Utf8ExecutionInterpreter
         }
 
         var ch = (char)input[index];
-        if (!RuntimeFrontEnd.RegexCharClass.CharInClass(ch, instruction.Text))
+        if (!Internal.FrontEnd.Utf8OwnedCharClass.CharInClass(ch, instruction.Text))
         {
             if ((instruction.Options & RegexOptions.IgnoreCase) == 0 || input[index] > 0x7F)
             {
@@ -1278,7 +1278,7 @@ internal static class Utf8ExecutionInterpreter
             }
 
             var folded = (char)Internal.Search.AsciiSearch.FoldCase(input[index]);
-            if (!RuntimeFrontEnd.RegexCharClass.CharInClass(folded, instruction.Text))
+            if (!Internal.FrontEnd.Utf8OwnedCharClass.CharInClass(folded, instruction.Text))
             {
                 return false;
             }
