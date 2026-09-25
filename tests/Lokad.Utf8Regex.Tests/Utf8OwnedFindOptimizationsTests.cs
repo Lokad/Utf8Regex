@@ -542,6 +542,16 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "x[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "xa" } };
         yield return new object?[] { "[ab]c", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "ac" } };
         yield return new object?[] { "ab[cd]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "abc" } };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A \u005Cu0425\u005Cu043E\u005Cu043B\u005Cu043C\u005Cu0441", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "(?i)[\u005Cu0428]", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "[\u005Cu0428]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "(?i)\u005Cu0428", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "\u005Cu0428", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "x[\u005Cu00C5]", RegexOptions.CultureInvariant, new string[] { "x\u00C5" } };
+        yield return new object?[] { "[\u005Cu00C5][ab]", RegexOptions.CultureInvariant, new string[] { "\u00C5a", "\u00C5b" } };
+        yield return new object?[] { "x[a\u005Cu00C5]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "xa" } };
+        yield return new object?[] { "x[\u005Cu00C5a]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "xa" } };
     }
 
     [Theory]
@@ -728,6 +738,16 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "x[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
         yield return new object?[] { "[ab]c", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
         yield return new object?[] { "ab[cd]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A \u005Cu0425\u005Cu043E\u005Cu043B\u005Cu043C\u005Cu0441", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, " ", 6 };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
+        yield return new object?[] { "(?i)[\u005Cu0428]", RegexOptions.CultureInvariant, null, 0 };
+        yield return new object?[] { "[\u005Cu0428]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
+        yield return new object?[] { "(?i)\u005Cu0428", RegexOptions.CultureInvariant, null, 0 };
+        yield return new object?[] { "\u005Cu0428", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
+        yield return new object?[] { "x[\u005Cu00C5]", RegexOptions.CultureInvariant, "x", 0 };
+        yield return new object?[] { "[\u005Cu00C5][ab]", RegexOptions.CultureInvariant, null, 0 };
+        yield return new object?[] { "x[a\u005Cu00C5]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
+        yield return new object?[] { "x[\u005Cu00C5a]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null, 0 };
     }
 
     [Theory]
@@ -1021,6 +1041,16 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "x[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new SetsExpectation[] { new SetsExpectation(0, false, "Xx", null, "0000 0004 0000 0078 0079 0058 0059"), new SetsExpectation(1, false, "ABab", null, "0000 0010 0000 0061 0062 0062 0063 0061 0062 0061 0062 0041 0042 0062 0063 0062 0063 0042 0043") } };
         yield return new object?[] { "[ab]c", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new SetsExpectation[] { new SetsExpectation(0, false, "ABab", null, "0000 0010 0000 0061 0062 0062 0063 0061 0062 0061 0062 0041 0042 0062 0063 0062 0063 0042 0043"), new SetsExpectation(1, false, "Cc", null, "0000 0004 0000 0063 0064 0043 0044") } };
         yield return new object?[] { "ab[cd]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new SetsExpectation[] { new SetsExpectation(0, false, "Aa", null, "0000 0004 0000 0061 0062 0041 0042"), new SetsExpectation(1, false, "Bb", null, "0000 0004 0000 0062 0063 0042 0043"), new SetsExpectation(2, false, "CDcd", null, "0000 0010 0000 0063 0064 0064 0065 0063 0064 0063 0064 0043 0044 0064 0065 0064 0065 0044 0045") } };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A \u005Cu0425\u005Cu043E\u005Cu043B\u005Cu043C\u005Cu0441", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "\u005Cu0428\u005Cu0435\u005Cu0440\u005Cu043B\u005Cu043E\u005Cu043A", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "(?i)[\u005Cu0428]", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "[\u005Cu0428]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "(?i)\u005Cu0428", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "\u005Cu0428", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "x[\u005Cu00C5]", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "[\u005Cu00C5][ab]", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "x[a\u005Cu00C5]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
+        yield return new object?[] { "x[\u005Cu00C5a]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
     }
 
     [Theory]

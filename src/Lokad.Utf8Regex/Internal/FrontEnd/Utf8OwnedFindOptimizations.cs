@@ -620,10 +620,39 @@ internal static class Utf8OwnedFindOptimizations
                 return false;
             }
 
-            original = char.ToLowerInvariant(set[3]);
+            var setLength = set[1];
+            var minimum = (char)65535;
+            var found = false;
+            for (var i = 0; i < setLength; i += 2)
+            {
+                var low = set[3 + i];
+                var high = set[3 + i + 1];
+                if (high <= low)
+                {
+                    continue;
+                }
+
+                if (!found || low < minimum)
+                {
+                    minimum = low;
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+
+            var head = char.ToLowerInvariant(minimum);
+            if (head > 127)
+            {
+                return false;
+            }
+
+            original = head;
             return true;
         }
-
         static void ApplyPrimarySet(PrefixWalker walker, RuntimeFrontEnd.RegexNode node, bool topIgnoreCase)
         {
             if (SetIsOpaque(node.Str))

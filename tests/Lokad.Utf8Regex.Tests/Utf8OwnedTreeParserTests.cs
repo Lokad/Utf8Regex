@@ -188,6 +188,11 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "(?#a)b" };
         yield return new object?[] { "é" };
         yield return new object?[] { "aéb" };
+        yield return new object?[] { "(a)?" };
+        yield return new object?[] { "(a)*" };
+        yield return new object?[] { "(a)+" };
+        yield return new object?[] { "(a)*?" };
+        yield return new object?[] { "(a){2}" };
     }
 
     [Theory]
@@ -275,6 +280,7 @@ public sealed class Utf8OwnedTreeParserTests
     public static IEnumerable<object?[]> OptionDeclineCases()
     {
         yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
+        yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture };
     }
 
     [Theory]

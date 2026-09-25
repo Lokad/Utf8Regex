@@ -1204,7 +1204,7 @@ internal static class Utf8ExecutionInterpreter
             return TryMatchProgramSequence(input, program, enterIndex + 1, loop.PartnerIndex, index, captures, budget, out endIndex);
         }
 
-        if (loop.Text is not null)
+        if (loop.Text is { Length: > 0 })
         {
             return TryMatchSet(input, loop, index, out endIndex);
         }

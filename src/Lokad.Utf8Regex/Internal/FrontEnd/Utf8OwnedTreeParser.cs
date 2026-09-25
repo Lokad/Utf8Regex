@@ -26,6 +26,11 @@ internal static class Utf8OwnedTreeParser
 
     public static RuntimeFrontEnd.RegexTree? TryParse(string pattern, RegexOptions options)
     {
+        if ((options & RegexOptions.ExplicitCapture) != 0)
+        {
+            return null;
+        }
+
         var state = new ParserState(pattern, options);
         if (!ParseAlternation(ref state, 0, out var root) || root is null || state.Position != pattern.Length)
         {
@@ -1020,23 +1025,6 @@ internal static class Utf8OwnedTreeParser
                     M = minimum,
                     N = maximum,
                 };
-            }
-
-            if (atom.Kind == RuntimeFrontEnd.RegexNodeKind.Capture &&
-                atom.ChildCount == 1 &&
-                atom.Child(0).Kind == RuntimeFrontEnd.RegexNodeKind.One)
-            {
-                var inner = new RuntimeFrontEnd.RegexNode(
-                    lazy ? RuntimeFrontEnd.RegexNodeKind.Onelazy : RuntimeFrontEnd.RegexNodeKind.Oneloop,
-                    state.Options,
-                    atom.Child(0).Ch)
-                {
-                    M = minimum,
-                    N = maximum,
-                };
-                inner.Parent = atom;
-                atom.Children = inner;
-                return atom;
             }
 
             var loop = new RuntimeFrontEnd.RegexNode(

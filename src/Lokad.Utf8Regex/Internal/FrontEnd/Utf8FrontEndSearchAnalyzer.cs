@@ -10,7 +10,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     public static Utf8SearchFacts Analyze(Utf8SemanticRegex semanticRegex)
     {
         var runtimeTree = semanticRegex.RuntimeTree;
-        var findOptimizations = runtimeTree?.FindOptimizations;
+        var findOptimizations = Utf8OwnedFindFacts.FromTree(runtimeTree);
         if (findOptimizations is null || runtimeTree is null)
         {
             return Utf8SearchFacts.Create(Utf8SearchKind.None);
@@ -474,14 +474,15 @@ internal static class Utf8FrontEndSearchAnalyzer
         AsciiSimplePatternPlan simplePatternPlan,
         Utf8SearchFacts fallbackSearchFacts)
     {
-        var exactRequiredLength = semanticRegex.RuntimeTree?.FindOptimizations?.IsFixedLength == true
-            ? semanticRegex.RuntimeTree.FindOptimizations.MinRequiredLength
+        var simplePatternFacts = Utf8OwnedFindFacts.FromTree(semanticRegex.RuntimeTree);
+        var exactRequiredLength = simplePatternFacts?.IsFixedLength == true
+            ? simplePatternFacts.MinRequiredLength
             : fallbackSearchFacts.ExactRequiredLength;
-        var maxPossibleLength = semanticRegex.RuntimeTree?.FindOptimizations?.IsFixedLength == false
-            ? semanticRegex.RuntimeTree.FindOptimizations.MaxPossibleLength
+        var maxPossibleLength = simplePatternFacts?.IsFixedLength == false
+            ? simplePatternFacts.MaxPossibleLength
             : fallbackSearchFacts.MaxPossibleLength;
 
-        if (semanticRegex.RuntimeTree?.FindOptimizations is { } findOptimizations)
+        if (simplePatternFacts is { } findOptimizations)
         {
             if (TrySelectTrailingFixedLengthAnchor(findOptimizations, out var trailingKind, out var trailingLength))
             {
@@ -538,7 +539,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         if (!simplePatternPlan.IgnoreCase &&
-            semanticRegex.RuntimeTree?.FindOptimizations?.AlternatePrefixes is { Length: > 1 } simplePatternAlternatePrefixes &&
+            simplePatternFacts?.AlternatePrefixes is { Length: > 1 } simplePatternAlternatePrefixes &&
             TryEncodeAlternates(simplePatternAlternatePrefixes, out var alternateLiterals))
         {
             var searchKind = alternateLiterals.Any(static literal => literal.Any(static b => b > 0x7F))
@@ -554,7 +555,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        });
         }
 
-        if (semanticRegex.RuntimeTree?.FindOptimizations?.AlternatePrefixes is { Length: > 0 } alternatePrefixes)
+        if (simplePatternFacts?.AlternatePrefixes is { Length: > 0 } alternatePrefixes)
         {
             var longest = string.Empty;
             foreach (var prefix in alternatePrefixes)
@@ -578,7 +579,7 @@ internal static class Utf8FrontEndSearchAnalyzer
             }
         }
 
-        if (semanticRegex.RuntimeTree?.FindOptimizations?.LongestLiteral is { Length: > 0 } literal)
+        if (simplePatternFacts?.LongestLiteral is { Length: > 0 } literal)
         {
             return Utf8SearchFacts.Create(
                        simplePatternPlan.IgnoreCase ? Utf8SearchKind.AsciiFoldedByteLiteral : Utf8SearchKind.ExactAsciiLiteral,
@@ -607,7 +608,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectCandidateLiteral(Runtime.RegexFindOptimizations findOptimizations, out string candidate)
+    private static bool TrySelectCandidateLiteral(Utf8OwnedFindFacts findOptimizations, out string candidate)
     {
         if (findOptimizations.AlternatePrefixes is { Length: > 0 } alternatePrefixes)
         {
@@ -642,7 +643,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TrySelectLeadingLiteral(Runtime.RegexFindOptimizations findOptimizations, out string leadingLiteral)
+    private static bool TrySelectLeadingLiteral(Utf8OwnedFindFacts findOptimizations, out string leadingLiteral)
     {
         leadingLiteral = string.Empty;
         if (string.IsNullOrEmpty(findOptimizations.LeadingLiteral))
@@ -780,7 +781,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TrySelectOrderedAsciiWindow(
         Runtime.RegexNode root,
-        Runtime.RegexFindOptimizations findOptimizations,
+        Utf8OwnedFindFacts findOptimizations,
         bool ignoreCase,
         out byte[][] leadingLiteralsUtf8,
         out byte[] trailingLiteralUtf8)
@@ -870,7 +871,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         sameLine = excludesNewlines;
     }
 
-    private static bool TrySelectOrderedWindowLeadingLiterals(Runtime.RegexFindOptimizations findOptimizations, out byte[][] leadingLiteralsUtf8)
+    private static bool TrySelectOrderedWindowLeadingLiterals(Utf8OwnedFindFacts findOptimizations, out byte[][] leadingLiteralsUtf8)
     {
         if (findOptimizations.AlternatePrefixes is { Length: > 1 } alternatePrefixes &&
             alternatePrefixes.All(IsAscii) &&
@@ -1429,7 +1430,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
     }
 
-    private static bool TrySelectAlternatePrefixes(Runtime.RegexFindOptimizations findOptimizations, bool ignoreCase, out byte[][] alternateLiterals)
+    private static bool TrySelectAlternatePrefixes(Utf8OwnedFindFacts findOptimizations, bool ignoreCase, out byte[][] alternateLiterals)
     {
         alternateLiterals = [];
         if (ignoreCase ||
@@ -1441,7 +1442,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return TryEncodeAlternates(alternatePrefixes, out alternateLiterals);
     }
 
-    private static bool TrySelectTrailingFixedLengthAnchor(Runtime.RegexFindOptimizations findOptimizations, out Utf8SearchKind kind, out int minRequiredLength)
+    private static bool TrySelectTrailingFixedLengthAnchor(Utf8OwnedFindFacts findOptimizations, out Utf8SearchKind kind, out int minRequiredLength)
     {
         kind = Utf8SearchKind.None;
         minRequiredLength = 0;
@@ -1466,7 +1467,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectFixedDistanceLiteral(
-        Runtime.RegexFindOptimizations findOptimizations,
+        Utf8OwnedFindFacts findOptimizations,
         bool ignoreCase,
         out byte[] literalUtf8,
         out int distance,
@@ -1587,7 +1588,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     }
 
     private static bool TrySelectFixedDistanceSets(
-        Runtime.RegexFindOptimizations findOptimizations,
+        Utf8OwnedFindFacts findOptimizations,
         bool ignoreCase,
         out Utf8FixedDistanceSet[] fixedDistanceSets,
         out int minRequiredLength)
