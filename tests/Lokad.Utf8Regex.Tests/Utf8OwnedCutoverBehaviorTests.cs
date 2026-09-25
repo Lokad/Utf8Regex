@@ -5,7 +5,9 @@ namespace Lokad.Utf8Regex.Tests;
 
 // Cutover-readiness differential (choke-point evidence): every residual shape the
 // owned parser declines while the fork serves is compared behaviorally between the
-// current product route and the BCL oracle over a fixed probe corpus. Each row
+// current product route and the BCL oracle over a fixed probe corpus plus a
+// deterministic seeded fuzz stream (128 xorshift inputs over a metachar-heavy
+// alphabet) and two astral inputs. Each row
 // either agrees (null witness: safe to flip to BCL fallback at the choke point)
 // or reproduces its documented divergence below (non-null witness). A vanished
 // witness or a new witness both fail, forcing re-triage before the flip.
@@ -250,26 +252,66 @@ public sealed class Utf8OwnedCutoverBehaviorTests
                 return "metadata:numbers bcl=[" + string.Join(",", expectedNumbers) + "]/product=[" + string.Join(",", actualNumbers) + "]";
             }
 
-            foreach (var input in ProbeCorpus)
+            string? CheckInput(string input, string tag)
             {
                 var bytes = Encoding.UTF8.GetBytes(input);
                 var expected = b.Match(input);
                 var actual = p.Match(bytes);
                 if (expected.Success != actual.Success)
                 {
-                    return "input '" + input + "':bcl-" + expected.Success + "/product-" + actual.Success;
+                    return tag + "input '" + input + "':bcl-" + expected.Success + "/product-" + actual.Success;
                 }
 
                 if (expected.Success && (expected.Index != actual.IndexInUtf16 || expected.Length != actual.LengthInUtf16))
                 {
-                    return "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.IndexInUtf16 + "," + actual.LengthInUtf16 + ")";
+                    return tag + "input '" + input + "':range bcl=(" + expected.Index + "," + expected.Length + ")/product=(" + actual.IndexInUtf16 + "," + actual.LengthInUtf16 + ")";
                 }
 
                 var expectedCount = b.Count(input);
                 var actualCount = p.Count(bytes);
                 if (expectedCount != actualCount)
                 {
-                    return "input '" + input + "':count bcl=" + expectedCount + "/product=" + actualCount;
+                    return tag + "input '" + input + "':count bcl=" + expectedCount + "/product=" + actualCount;
+                }
+
+                return null;
+            }
+
+            foreach (var input in ProbeCorpus)
+            {
+                var witness = CheckInput(input, string.Empty);
+                if (witness is not null)
+                {
+                    return witness;
+                }
+            }
+
+            uint stream = 0x9E3779B9u;
+            const string alphabet = "aAbB09 \n\r#()[]{}>.+*?|^$\\éyZ";
+            for (var i = 0; i < 128; i++)
+            {
+                var chars = new char[i % 9];
+                for (var k = 0; k < chars.Length; k++)
+                {
+                    stream ^= stream << 13;
+                    stream ^= stream >> 17;
+                    stream ^= stream << 5;
+                    chars[k] = alphabet[(int)(stream % (uint)alphabet.Length)];
+                }
+
+                var witness = CheckInput(new string(chars), "fuzz#" + i + " ");
+                if (witness is not null)
+                {
+                    return witness;
+                }
+            }
+
+            foreach (var input in new[] { "\U0001F600", "a\U00010400b" })
+            {
+                var witness = CheckInput(input, "astral ");
+                if (witness is not null)
+                {
+                    return witness;
                 }
             }
 
