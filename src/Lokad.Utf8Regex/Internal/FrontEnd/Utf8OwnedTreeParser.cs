@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections;
 using System.Globalization;
 using Lokad.Utf8Regex.Internal.Execution;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -5,9 +7,10 @@ using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 // Owned parser strangler: literals, escapes, concatenation, alternation,
-// numbered groups, quantifiers, dot, anchors, character classes, predefined
-// shorthands, Unicode properties, scoped option
-// groups, and comments lower to runtime tree nodes.
+// numbered groups, named groups, backreferences, balance pops, octal escapes,
+// quantifiers, dot, anchors, character classes, predefined shorthands,
+// Unicode properties, scoped option groups, and comments lower to runtime
+// tree nodes.
 // Anything else declines (returns null) so the provider keeps exact behavior,
 // including construction throws. Output nodes intentionally mirror the runtime
 // tree shapes the differential battery pins; later stages widen the subset and
@@ -50,24 +53,29 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
+        if (!FinishNumbering(
+            ref state,
+            ref root,
+            out var captureCount,
+            out var captureNames,
+            out var captureNameToNumber,
+            out var captureSparseMapping))
+        {
+            return null;
+        }
+
         var treeOptions = options | state.TreeSeen;
         var tree = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, treeOptions & ~RegexOptions.IgnoreCase);
         tree.M = 0;
         tree.N = -1;
         tree.Children = root;
         root.Parent = tree;
-        var captureNames = new string[state.Groups + 1];
-        for (var number = 0; number < captureNames.Length; number++)
-        {
-            captureNames[number] = number.ToString();
-        }
-
         return new RuntimeFrontEnd.RegexTree(
             tree,
-            state.Groups + 1,
+            captureCount,
             captureNames,
-            null,
-            null,
+            captureNameToNumber,
+            captureSparseMapping,
             treeOptions,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(options),
             null);
@@ -139,6 +147,68 @@ internal static class Utf8OwnedTreeParser
                         }
 
                         children.Add(shorthandAtom);
+                        continue;
+                    }
+
+                    // Numeric backreferences stay out of IgnoreCase: a later octal
+                    // outcome would carry unfolded options, and the provider folds.
+                    if ((state.Options & RegexOptions.IgnoreCase) != 0)
+                    {
+                        return false;
+                    }
+
+                    var backrefDigits = TryScanBackrefDigits(ref state);
+                    if (backrefDigits is not null)
+                    {
+                        FlushRun(state, children, run);
+                        var tentative = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Backreference, state.Options);
+                        tentative.N = -1;
+                        var backrefAtom = tentative;
+                        if (!ParseQuantifier(ref state, ref backrefAtom))
+                        {
+                            return false;
+                        }
+
+                        if (backrefAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        {
+                            return false;
+                        }
+
+                        if (ReferenceEquals(backrefAtom, tentative))
+                        {
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits });
+                        }
+                        else if (backrefAtom.Kind is RuntimeFrontEnd.RegexNodeKind.Loop or RuntimeFrontEnd.RegexNodeKind.Lazyloop &&
+                            backrefAtom.ChildCount == 1 &&
+                            ReferenceEquals(backrefAtom.Child(0), tentative))
+                        {
+                            state.BackrefFixups.Add(new OwnedBackrefFixup { Node = tentative, Digits = backrefDigits, Wrapper = backrefAtom });
+                        }
+
+                        children.Add(backrefAtom);
+                        continue;
+                    }
+
+                    var backrefName = TryScanNamedBackref(ref state);
+                    if (backrefName is not null)
+                    {
+                        FlushRun(state, children, run);
+                        var namedBackref = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Backreference, state.Options);
+                        namedBackref.Str = backrefName;
+                        namedBackref.N = 0;
+                        var namedAtom = namedBackref;
+                        if (!ParseQuantifier(ref state, ref namedAtom))
+                        {
+                            return false;
+                        }
+
+                        if (namedAtom.Kind == RuntimeFrontEnd.RegexNodeKind.Empty)
+                        {
+                            return false;
+                        }
+
+                        state.BackrefFixups.Add(new OwnedBackrefFixup { Node = namedBackref, Name = backrefName });
+                        children.Add(namedAtom);
                         continue;
                     }
 
@@ -360,16 +430,21 @@ internal static class Utf8OwnedTreeParser
                     value = (char)unicode;
                     return true;
                 case '0':
-                    if (state.Position + 1 < state.Pattern.Length)
+                    // Octal: backslash-zero plus up to two more octal digits.
+                    // A non-octal follower stays literal.
+                    var octal = 0;
+                    var octalDigits = 0;
+                    while (octalDigits < 2 &&
+                        state.Position + 1 < state.Pattern.Length &&
+                        state.Pattern[state.Position + 1] >= '0' &&
+                        state.Pattern[state.Position + 1] <= '7')
                     {
-                        var follow = state.Pattern[state.Position + 1];
-                        if (follow >= '0' && follow <= '7')
-                        {
-                            return false;
-                        }
+                        state.Position++;
+                        octal = octal * 8 + (state.Pattern[state.Position] - '0');
+                        octalDigits++;
                     }
 
-                    value = '\0';
+                    value = (char)octal;
                     state.Position++;
                     return true;
                 case '.':
@@ -904,6 +979,584 @@ internal static class Utf8OwnedTreeParser
                 units.Add(unchecked((char)(0xFFFF + 1)));
             }
         }
+        static bool ParseNamedGroup(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? node)
+        {
+            node = null;
+            var open = state.Pattern[state.Position];
+            var close = open == '<' ? '>' : '\'';
+            state.Position++;
+            var contentStart = state.Position;
+            while (!state.AtEnd && state.Pattern[state.Position] != close)
+            {
+                state.Position++;
+            }
+
+            if (state.AtEnd)
+            {
+                return false;
+            }
+
+            var content = state.Pattern.Substring(contentStart, state.Position - contentStart);
+            state.Position++;
+
+            var isPop = false;
+            var name = content;
+            if (content.StartsWith('-'))
+            {
+                isPop = true;
+                name = content.Substring(1);
+                if (name.Length == 0 || name.Contains('-'))
+                {
+                    return false;
+                }
+            }
+            else if (name.Length == 0 || name.Contains('-'))
+            {
+                return false;
+            }
+
+            if (!ParseAlternation(ref state, depth + 1, out var body) || body is null)
+            {
+                return false;
+            }
+
+            if (state.AtEnd || state.Pattern[state.Position] != ')')
+            {
+                return false;
+            }
+
+            state.Position++;
+            var group = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, state.Options);
+            group.Children = body;
+            body.Parent = group;
+            node = group;
+
+            if (isPop)
+            {
+                group.M = -1;
+                group.N = -1;
+                state.BackrefFixups.Add(new OwnedBackrefFixup { Node = group, Name = name, IsPop = true });
+                return true;
+            }
+
+            if (IsAllAsciiDigits(name) && TryParseGroupNumber(name, out var declared))
+            {
+                group.Str = name;
+                group.M = declared;
+                group.N = -1;
+                if (declared != 0)
+                {
+                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = declared, IsAuto = false, Slot = declared });
+                }
+
+                return true;
+            }
+
+            if (IsAllAsciiDigits(name) || IsAsciiDigit(name[0]))
+            {
+                group.Str = name;
+                group.M = -1;
+                group.N = -1;
+                return true;
+            }
+
+            group.Str = name;
+            group.M = -1;
+            group.N = -1;
+            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1 });
+            return true;
+        }
+
+        static bool IsAllAsciiDigits(string value)
+        {
+            if (value.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var character in value)
+            {
+                if (character < '0' || character > '9')
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        static bool IsAsciiDigit(char value)
+        {
+            return value >= '0' && value <= '9';
+        }
+
+        static bool TryParseGroupNumber(string value, out int number)
+        {
+            number = 0;
+            if (value.Length == 0)
+            {
+                return false;
+            }
+
+            var total = 0L;
+            foreach (var character in value)
+            {
+                if (character < '0' || character > '9')
+                {
+                    return false;
+                }
+
+                total = total * 10 + (character - '0');
+                if (total > int.MaxValue)
+                {
+                    return false;
+                }
+            }
+
+            number = (int)total;
+            return true;
+        }
+
+        static string? TryScanBackrefDigits(ref ParserState state)
+        {
+            if (state.Position + 1 >= state.Pattern.Length)
+            {
+                return null;
+            }
+
+            var first = state.Pattern[state.Position + 1];
+            if (first < '1' || first > '9')
+            {
+                return null;
+            }
+
+            var end = state.Position + 2;
+            while (end < state.Pattern.Length && state.Pattern[end] >= '0' && state.Pattern[end] <= '9')
+            {
+                end++;
+            }
+
+            var digits = state.Pattern.Substring(state.Position + 1, end - state.Position - 1);
+            state.Position = end;
+            return digits;
+        }
+
+        static string? TryScanNamedBackref(ref ParserState state)
+        {
+            if (state.Position + 2 >= state.Pattern.Length || state.Pattern[state.Position + 1] != 'k')
+            {
+                return null;
+            }
+
+            var open = state.Pattern[state.Position + 2];
+            if (open != '<' && open != '\'')
+            {
+                return null;
+            }
+            var close = open == '<' ? '>' : '\'';
+            var end = state.Pattern.IndexOf(close, state.Position + 3);
+            if (end < 0)
+            {
+                return null;
+            }
+
+            var name = state.Pattern.Substring(state.Position + 3, end - state.Position - 3);
+            state.Position = end + 1;
+            return name;
+        }
+
+        static bool IsNamedGroupAhead(ParserState state)
+        {
+            // state.Position is at '?' after "(?". Angle and quote openers start
+            // named, pop, or balance shapes, except lookbehind markers.
+            if (state.AtEnd)
+            {
+                return false;
+            }
+
+            var opener = state.Pattern[state.Position];
+            if (opener == '\'')
+            {
+                return true;
+            }
+
+            return opener == '<' && (state.Position + 1 >= state.Pattern.Length || (state.Pattern[state.Position + 1] != '=' && state.Pattern[state.Position + 1] != '!'));
+        }
+
+        static bool FinishNumbering(
+            ref ParserState state,
+            ref RuntimeFrontEnd.RegexNode root,
+            out int captureCount,
+            out string[] captureNames,
+            out Hashtable? captureNameToNumber,
+            out Hashtable? captureSparseMapping)
+        {
+            captureCount = 0;
+            captureNames = [];
+            captureNameToNumber = null;
+            captureSparseMapping = null;
+
+            var taken = new HashSet<int>();
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (!definition.IsAuto && definition.Declared > 0)
+                {
+                    taken.Add(definition.Declared);
+                }
+            }
+
+            for (var slot = 1; slot <= state.Groups; slot++)
+            {
+                taken.Add(slot);
+            }
+
+            var nextFree = 1;
+            var autoSlots = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (!definition.IsAuto)
+                {
+                    definition.Slot = definition.Declared;
+                    continue;
+                }
+
+                if (autoSlots.TryGetValue(definition.Name, out var shared))
+                {
+                    definition.Slot = shared;
+                    definition.Node.M = shared;
+                    continue;
+                }
+
+                while (taken.Contains(nextFree))
+                {
+                    nextFree++;
+                }
+
+                definition.Slot = nextFree;
+                taken.Add(nextFree);
+                autoSlots[definition.Name] = nextFree;
+                definition.Node.M = nextFree;
+            }
+
+            var slots = new SortedSet<int> { 0 };
+            for (var slot = 1; slot <= state.Groups; slot++)
+            {
+                slots.Add(slot);
+            }
+
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (definition.Slot > 0)
+                {
+                    slots.Add(definition.Slot);
+                }
+            }
+
+            var orderedSlots = new List<int>(slots);
+            captureCount = orderedSlots.Count;
+
+            var autoBySlot = new Dictionary<int, string>();
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (definition.IsAuto && !autoBySlot.ContainsKey(definition.Slot))
+                {
+                    autoBySlot[definition.Slot] = definition.Name;
+                }
+            }
+
+            captureNames = new string[orderedSlots.Count];
+            for (var i = 0; i < orderedSlots.Count; i++)
+            {
+                var slot = orderedSlots[i];
+                captureNames[i] = slot == 0 ? "0" : autoBySlot.TryGetValue(slot, out var name) ? name : slot.ToString();
+            }
+
+            var dense = orderedSlots.Count == 0 || orderedSlots[orderedSlots.Count - 1] == orderedSlots.Count - 1;
+            if (!dense)
+            {
+                var sparse = new Hashtable();
+                for (var i = 0; i < orderedSlots.Count; i++)
+                {
+                    sparse[orderedSlots[i]] = i;
+                }
+
+                captureSparseMapping = sparse;
+            }
+
+            var hasAuto = false;
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (definition.IsAuto)
+                {
+                    hasAuto = true;
+                    break;
+                }
+            }
+
+            if (hasAuto)
+            {
+                var nameToNumber = new Hashtable { { "0", 0 } };
+                for (var slot = 1; slot <= state.Groups; slot++)
+                {
+                    nameToNumber[slot.ToString()] = slot;
+                }
+
+                foreach (var definition in state.GroupDefinitions)
+                {
+                    if (definition.IsAuto)
+                    {
+                        nameToNumber[definition.Name] = definition.Slot;
+                    }
+                    else
+                    {
+                        nameToNumber[definition.Declared.ToString()] = definition.Declared;
+                    }
+                }
+
+                captureNameToNumber = nameToNumber;
+            }
+
+            var slotByName = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < orderedSlots.Count; i++)
+            {
+                slotByName[captureNames[i]] = orderedSlots[i];
+            }
+
+            var morphed = false;
+            foreach (var fixup in state.BackrefFixups)
+            {
+                if (!ResolveFixup(fixup, slots, slotByName, ref morphed))
+                {
+                    return false;
+                }
+            }
+
+            if (morphed)
+            {
+                root = MergeLiteralRuns(root);
+            }
+
+            return true;
+        }
+
+        static bool ResolveFixup(OwnedBackrefFixup fixup, SortedSet<int> slots, Dictionary<string, int> slotByName, ref bool morphed)
+        {
+            if (fixup.IsPop)
+            {
+                var popName = fixup.Name;
+                if (popName is null)
+                {
+                    return false;
+                }
+
+                if (IsAllAsciiDigits(popName))
+                {
+                    if (!TryParseGroupNumber(popName, out var popNumber) || !slots.Contains(popNumber))
+                    {
+                        return false;
+                    }
+
+                    fixup.Node.N = popNumber;
+                    return true;
+                }
+
+                if (!slotByName.TryGetValue(popName, out var popSlot))
+                {
+                    return false;
+                }
+
+                fixup.Node.N = popSlot;
+                return true;
+            }
+
+            if (fixup.Name is not null)
+            {
+                if (!slotByName.TryGetValue(fixup.Name, out var namedSlot))
+                {
+                    return false;
+                }
+
+                fixup.Node.M = namedSlot;
+                return true;
+            }
+
+            if (fixup.Digits is not null &&
+                int.TryParse(fixup.Digits, out var backref) &&
+                backref >= 1 &&
+                slots.Contains(backref))
+            {
+                fixup.Node.M = backref;
+                return true;
+            }
+
+            return ResolveOctalFallback(fixup, ref morphed);
+        }
+
+        static bool ResolveOctalFallback(OwnedBackrefFixup fixup, ref bool morphed)
+        {
+            // Single non-zero digits never spell octal; longer runs without a
+            // matching slot fall back to up to three octal digits with no rest.
+            if (fixup.Digits is null || fixup.Digits.Length < 2)
+            {
+                return false;
+            }
+
+            var length = 0;
+            var value = 0;
+            while (length < 3 && length < fixup.Digits.Length)
+            {
+                var digit = fixup.Digits[length] - '0';
+                if (digit < 0 || digit > 7)
+                {
+                    break;
+                }
+
+                value = value * 8 + digit;
+                length++;
+            }
+
+            if (length == 0 || length != fixup.Digits.Length)
+            {
+                return false;
+            }
+
+            morphed = true;
+            if (fixup.Wrapper is null)
+            {
+                fixup.Node.Kind = RuntimeFrontEnd.RegexNodeKind.One;
+                fixup.Node.Ch = (char)value;
+                fixup.Node.M = 0;
+                fixup.Node.N = 0;
+                return true;
+            }
+
+            var wrapper = fixup.Wrapper;
+            if (wrapper.ChildCount != 1 || !ReferenceEquals(wrapper.Child(0), fixup.Node))
+            {
+                return false;
+            }
+
+            wrapper.Kind = wrapper.Kind == RuntimeFrontEnd.RegexNodeKind.Lazyloop
+                ? RuntimeFrontEnd.RegexNodeKind.Onelazy
+                : RuntimeFrontEnd.RegexNodeKind.Oneloop;
+            wrapper.Ch = (char)value;
+            wrapper.Children = null;
+            return true;
+        }
+
+        static RuntimeFrontEnd.RegexNode MergeLiteralRuns(RuntimeFrontEnd.RegexNode node)
+        {
+            if (node.Children is List<RuntimeFrontEnd.RegexNode> children)
+            {
+                for (var i = 0; i < children.Count; i++)
+                {
+                    var merged = MergeLiteralRuns(children[i]);
+                    if (!ReferenceEquals(merged, children[i]))
+                    {
+                        children[i] = merged;
+                        merged.Parent = node;
+                    }
+                }
+
+                var fused = new List<RuntimeFrontEnd.RegexNode>(children.Count);
+                var pending = new List<RuntimeFrontEnd.RegexNode>();
+                var pendingOptions = RegexOptions.None;
+                foreach (var child in children)
+                {
+                    if (TryMergeableText(child, out _, out _) && (pending.Count == 0 || child.Options == pendingOptions))
+                    {
+                        if (pending.Count == 0)
+                        {
+                            pendingOptions = child.Options;
+                        }
+
+                        pending.Add(child);
+                        continue;
+                    }
+
+                    FlushMergePending(node, fused, pending);
+                    fused.Add(child);
+                }
+
+                FlushMergePending(node, fused, pending);
+                if (fused.Count == children.Count)
+                {
+                    return node;
+                }
+
+                node.Children = fused;
+                foreach (var child in fused)
+                {
+                    child.Parent = node;
+                }
+
+                return fused.Count == 1 ? fused[0] : node;
+            }
+
+            if (node.Children is RuntimeFrontEnd.RegexNode single)
+            {
+                var merged = MergeLiteralRuns(single);
+                if (!ReferenceEquals(merged, single))
+                {
+                    node.Children = merged;
+                    merged.Parent = node;
+                }
+            }
+
+            return node;
+        }
+
+        static bool TryMergeableText(RuntimeFrontEnd.RegexNode node, out char single, out string? text)
+        {
+            single = '\0';
+            text = null;
+            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.One && node.Str is null)
+            {
+                single = node.Ch;
+                return true;
+            }
+
+            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Multi && node.Str2 is null && node.Str is not null)
+            {
+                text = node.Str;
+                return true;
+            }
+
+            return false;
+        }
+
+        static void FlushMergePending(RuntimeFrontEnd.RegexNode parent, List<RuntimeFrontEnd.RegexNode> fused, List<RuntimeFrontEnd.RegexNode> pending)
+        {
+            if (pending.Count == 0)
+            {
+                return;
+            }
+
+            if (pending.Count == 1)
+            {
+                fused.Add(pending[0]);
+                pending.Clear();
+                return;
+            }
+
+            var run = new StringBuilder();
+            foreach (var literal in pending)
+            {
+                if (literal.Kind == RuntimeFrontEnd.RegexNodeKind.One)
+                {
+                    run.Append(literal.Ch);
+                }
+                else
+                {
+                    run.Append(literal.Str);
+                }
+            }
+
+            var merged = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, pending[0].Options, run.ToString());
+            merged.Parent = parent;
+            fused.Add(merged);
+            pending.Clear();
+        }
         static bool AddClassUnit(List<char> units, char value)
         {
             if (IsRejectedClassChar(value))
@@ -1110,6 +1763,11 @@ internal static class Utf8OwnedTreeParser
             if (!state.AtEnd && state.Pattern[state.Position] == '?')
             {
                 state.Position++;
+                if (IsNamedGroupAhead(state))
+                {
+                    return ParseNamedGroup(ref state, depth, out node);
+                }
+
                 if (!TryTakeOptionScope(ref state, out var scopedOptions, out var contribution))
                 {
                     return false;
@@ -1327,6 +1985,8 @@ internal static class Utf8OwnedTreeParser
         public int Position;
         public int Groups;
         public RegexOptions TreeSeen;
+        public List<OwnedGroupDefinition> GroupDefinitions;
+        public List<OwnedBackrefFixup> BackrefFixups;
 
         public ParserState(string pattern, RegexOptions options)
         {
@@ -1335,8 +1995,34 @@ internal static class Utf8OwnedTreeParser
             Position = 0;
             Groups = 0;
             TreeSeen = RegexOptions.None;
+            GroupDefinitions = new List<OwnedGroupDefinition>();
+            BackrefFixups = new List<OwnedBackrefFixup>();
         }
 
         public bool AtEnd => Position >= Pattern.Length;
+    }
+
+    // A named or numbered group definition: unnamed groups never appear here.
+    // Auto-named groups take a pending slot that the end pass assigns; explicit
+    // numbers claim their literal slot (zero is a pure alias and is not recorded).
+    private sealed class OwnedGroupDefinition
+    {
+        public required RuntimeFrontEnd.RegexNode Node { get; init; }
+        public string Name = string.Empty;
+        public int Declared = -1;
+        public bool IsAuto;
+        public int Slot;
+    }
+
+    // A backreference or balance pop awaiting end-pass resolution, when group
+    // numbering is final. Numeric tentatives carry their digit text and an
+    // optional quantified wrapper for the octal outcome.
+    private sealed class OwnedBackrefFixup
+    {
+        public required RuntimeFrontEnd.RegexNode Node { get; init; }
+        public string? Digits;
+        public string? Name;
+        public bool IsPop;
+        public RuntimeFrontEnd.RegexNode? Wrapper;
     }
 }
