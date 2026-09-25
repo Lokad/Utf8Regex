@@ -181,6 +181,27 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
         yield return new object?[] { "(?i:a)$", 512 };
         yield return new object?[] { "(?i:a).", 512 };
         yield return new object?[] { "(?n:a).", 512 };
+        yield return new object?[] { "(?i:.){1,2}", 512 };
+        yield return new object?[] { "(?i:.){2}", 512 };
+        yield return new object?[] { "(?m:.){1,2}", 512 };
+        yield return new object?[] { "(?m:.){2}", 512 };
+        yield return new object?[] { "(?n:.){1,2}", 512 };
+        yield return new object?[] { "(?n:.){2}", 512 };
+        yield return new object?[] { "(?i:[ab]){2}(?m:[ab]){2}", 512 };
+        yield return new object?[] { "(?i:[ab]){2}([ab])", 512 };
+        yield return new object?[] { "(?i:[ab]){2}|([ab])", 512 };
+        yield return new object?[] { "(?i:[ab]){2}|a", 512 };
+        yield return new object?[] { "(?i:[ab]){2}|(?:a.)", 512 };
+        yield return new object?[] { "(?i:[ab]){2}|.{1,2}", 512 };
+        yield return new object?[] { "(?i:[ab]){2}(?n:.){1,2}", 512 };
+        yield return new object?[] { "(?i:[ab]){2}|(?n:.){1,2}", 512 };
+        yield return new object?[] { "(?i:[ab]){2}.{1,2}", 512 };
+        yield return new object?[] { "(?m:\\d){2}|.{1,2}", 512 };
+        yield return new object?[] { "(?m:\\d){2}|(?:a.)", 512 };
+        yield return new object?[] { "(?m:\\d){2}|(?n:.){1,2}", 512 };
+        yield return new object?[] { "(?n:a){2}|(?:a.)", 512 };
+        yield return new object?[] { "(?n:a){2}|.{1,2}", 512 };
+        yield return new object?[] { "(?n:a){2}|(?n:.){1,2}", 512 };
     }
 
     [Theory]

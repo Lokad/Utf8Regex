@@ -21,7 +21,8 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     };
 
     // Machine-derived divergent rows (11 from the first run, 7 from the metadata
-    // and newline extension, 5 from the leak-family sweep: 23 of 67).
+    // and newline extension, 5 from the leak-family sweep, 61 from the residual
+    // census: 84 of 128).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -35,6 +36,15 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     // - Trailing-dot family (3): a leaked option on a trailing dot makes it match a
     //   newline (observed for s/i/n marks on input a-newline-b) while BCL dots do not.
     //   The flip removes those matches.
+    // - Scoped-dot family (6): dots directly under scoped i/m/n match newlines in fork
+    //   behavior while BCL dots do not (singleline dots agree). Same quirk, leading form.
+    // - Numeric-lookbehind family (36): a numeric-named group after a lookbehind loses
+    //   its number in fork metadata while BCL numbers it. The flip changes the group
+    //   APIs; match outcomes already agree.
+    // - Folding-compound family (12): folding or dot leaks across alternation branches
+    //   and into compound tails change what matches. The flip moves these to BCL behavior.
+    // - Loop-alternation family (3): an n-loop alternation with a dot or second scope
+    //   in the other branch diverges on newline inputs. The flip moves it to BCL behavior.
     // - Phantom-name family (3): lookbehind phantom numbering leaks garbage names
     //   (=(?<, =a)b\], =(?<1) into the public group APIs while BCL reports just 0.
     //   The flip cleans the group APIs.
@@ -63,6 +73,67 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?s:a).", 512),
         ("(?i:a).", 512),
         ("(?n:a).", 512),
+        ("(?i:.){1,2}", 512),
+        ("(?i:.){2}", 512),
+        ("(?m:.){1,2}", 512),
+        ("(?m:.){2}", 512),
+        ("(?n:.){1,2}", 512),
+        ("(?n:.){2}", 512),
+        ("(?i:[ab]){2}(?m:[ab]){2}", 512),
+        ("(?i:[ab]){2}([ab])", 512),
+        ("(?i:[ab]){2}|([ab])", 512),
+        ("(?i:[ab]){2}|a", 512),
+        ("(?i:[ab]){2}|(?:a.)", 512),
+        ("(?i:[ab]){2}|.{1,2}", 512),
+        ("(?i:[ab]){2}(?n:.){1,2}", 512),
+        ("(?i:[ab]){2}|(?n:.){1,2}", 512),
+        ("(?i:[ab]){2}.{1,2}", 512),
+        ("(?m:\\d){2}|.{1,2}", 512),
+        ("(?m:\\d){2}|(?:a.)", 512),
+        ("(?m:\\d){2}|(?n:.){1,2}", 512),
+        ("(?n:a){2}([ab])", 512),
+        ("(?n:a){2}(\\d){1,2}", 512),
+        ("(?n:a){2}|([ab])", 512),
+        ("(?n:a){2}|(\\d){1,2}", 512),
+        ("(?n:a){2}|(?:a.)", 512),
+        ("(?n:a){2}|.{1,2}", 512),
+        ("(?n:a){2}|(?n:.){1,2}", 512),
+        ("(?<=.)(?<1>.)+?", 512),
+        ("(?<=.)(?<1>\\d){2}", 512),
+        ("(?<=.)(?<1>^)+", 512),
+        ("(?<=.)+?(?<1>.)+?", 512),
+        ("(?<=.)+?(?<1>\\d){2}", 512),
+        ("(?<=.)+?(?<1>^)+", 512),
+        ("(?<=.)+?|(?<1>.)+?", 512),
+        ("(?<=.)+?|(?<1>\\d){2}", 512),
+        ("(?<=.)+?|(?<1>^)+", 512),
+        ("(?<=.)|(?<1>.)+?", 512),
+        ("(?<=.)|(?<1>\\d){2}", 512),
+        ("(?<=.)|(?<1>^)+", 512),
+        ("(?<=[ab]){1,2}(?<1>.)+?", 512),
+        ("(?<=[ab]){1,2}(?<1>\\d){2}", 512),
+        ("(?<=[ab]){1,2}(?<1>^)+", 512),
+        ("(?<=[ab]){1,2}|(?<1>.)+?", 512),
+        ("(?<=[ab]){1,2}|(?<1>\\d){2}", 512),
+        ("(?<=[ab]){1,2}|(?<1>^)+", 512),
+        ("(?<=\\d)?(?<1>.)+?", 512),
+        ("(?<=\\d)?(?<1>\\d){2}", 512),
+        ("(?<=\\d)?(?<1>^)+", 512),
+        ("(?<=\\d)?|(?<1>.)+?", 512),
+        ("(?<=\\d)?|(?<1>\\d){2}", 512),
+        ("(?<=\\d)?|(?<1>^)+", 512),
+        ("(?<=$)+(?<1>.)+?", 512),
+        ("(?<=$)+(?<1>\\d){2}", 512),
+        ("(?<=$)+(?<1>^)+", 512),
+        ("(?<=$)+|(?<1>.)+?", 512),
+        ("(?<=$)+|(?<1>\\d){2}", 512),
+        ("(?<=$)+|(?<1>^)+", 512),
+        ("(?<=a)*(?<1>.)+?", 512),
+        ("(?<=a)*(?<1>\\d){2}", 512),
+        ("(?<=a)*(?<1>^)+", 512),
+        ("(?<=a)*|(?<1>.)+?", 512),
+        ("(?<=a)*|(?<1>\\d){2}", 512),
+        ("(?<=a)*|(?<1>^)+", 512),
     };
 
     [Theory]

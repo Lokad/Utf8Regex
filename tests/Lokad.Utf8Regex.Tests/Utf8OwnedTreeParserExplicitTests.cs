@@ -90,6 +90,10 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(?n:(?<x>a))(b)", 512 };
         yield return new object?[] { "(?n:(a)(?<y>b))(c)", 512 };
         yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?n:a){2}([ab])", 512 };
+        yield return new object?[] { "(?n:a){2}(\\d){1,2}", 512 };
+        yield return new object?[] { "(?n:a){2}|([ab])", 512 };
+        yield return new object?[] { "(?n:a){2}|(\\d){1,2}", 512 };
     }
 
     [Theory]

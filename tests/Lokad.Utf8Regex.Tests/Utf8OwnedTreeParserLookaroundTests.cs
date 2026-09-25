@@ -183,6 +183,42 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?<=a)b(?#>)c", 512 };
         yield return new object?[] { "(?<=a)b(?<x>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<=b)(?<y>c)", 512 };
+        yield return new object?[] { "(?<=.)(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=.)(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=.)(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=.)+?(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=.)+?(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=.)+?(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=.)+?|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=.)+?|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=.)+?|(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=.)|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=.)|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=.)|(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=\\d)?(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=\\d)?(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=\\d)?(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=\\d)?|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=\\d)?|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=\\d)?|(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=$)+(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=$)+(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=$)+(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=$)+|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=$)+|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=$)+|(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=a)*(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=a)*(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=a)*(?<1>^)+", 512 };
+        yield return new object?[] { "(?<=a)*|(?<1>.)+?", 512 };
+        yield return new object?[] { "(?<=a)*|(?<1>\\d){2}", 512 };
+        yield return new object?[] { "(?<=a)*|(?<1>^)+", 512 };
     }
 
     [Theory]
