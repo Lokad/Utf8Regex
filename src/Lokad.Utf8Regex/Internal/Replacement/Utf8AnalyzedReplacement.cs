@@ -1,12 +1,10 @@
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
-
 internal readonly struct Utf8AnalyzedReplacement
 {
     private Utf8AnalyzedReplacement(
         string originalText,
-        RuntimeFrontEnd.RegexReplacementPattern pattern,
+        Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan,
         byte[] literalUtf8,
         bool isLiteral)
@@ -20,7 +18,7 @@ internal readonly struct Utf8AnalyzedReplacement
 
     public string OriginalText { get; }
 
-    public RuntimeFrontEnd.RegexReplacementPattern Pattern { get; }
+    public Utf8ReplacementPattern Pattern { get; }
 
     public Utf8ReplacementPlan Plan { get; }
 
@@ -38,14 +36,14 @@ internal readonly struct Utf8AnalyzedReplacement
 
     public static Utf8AnalyzedReplacement Literal(
         string originalText,
-        RuntimeFrontEnd.RegexReplacementPattern pattern,
+        Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan,
         byte[] literalUtf8) =>
         new(originalText, pattern, plan, literalUtf8, isLiteral: true);
 
     public static Utf8AnalyzedReplacement Structured(
         string originalText,
-        RuntimeFrontEnd.RegexReplacementPattern pattern,
+        Utf8ReplacementPattern pattern,
         Utf8ReplacementPlan plan) =>
         new(originalText, pattern, plan, [], isLiteral: false);
 }

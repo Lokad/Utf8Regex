@@ -1,7 +1,5 @@
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
-
 internal static class Utf8FrontEndReplacementAnalyzer
 {
     public static Utf8AnalyzedReplacement Analyze(string replacement)
@@ -14,7 +12,7 @@ internal static class Utf8FrontEndReplacementAnalyzer
         ReadOnlySpan<int> validGroupNumbers,
         ReadOnlySpan<string> validGroupNames)
     {
-        var pattern = RuntimeFrontEnd.RegexParser.ParseReplacement(replacement);
+        var pattern = Utf8ReplacementPattern.Parse(replacement);
         var resolvedPattern = pattern.ResolveGroupReferences(validGroupNumbers, validGroupNames);
         var plan = Utf8ReplacementPlanLowerer.Lower(resolvedPattern);
         if (pattern.TryGetLiteralText(validGroupNumbers, validGroupNames, out var literalText))
