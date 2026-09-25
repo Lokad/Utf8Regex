@@ -70,6 +70,9 @@ internal static class Utf8OwnedTreeParser
         tree.N = -1;
         tree.Children = root;
         root.Parent = tree;
+        var culture = (options & RegexOptions.CultureInvariant) != 0
+            ? RuntimeFrontEnd.RegexParser.GetTargetCulture(options)
+            : null;
         return new RuntimeFrontEnd.RegexTree(
             tree,
             captureCount,
@@ -77,7 +80,7 @@ internal static class Utf8OwnedTreeParser
             captureNameToNumber,
             captureSparseMapping,
             treeOptions,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(options),
+            culture,
             null);
 
         static bool ParseAlternation(ref ParserState state, int depth, out RuntimeFrontEnd.RegexNode? root)
@@ -1604,6 +1607,21 @@ internal static class Utf8OwnedTreeParser
 
         static RuntimeFrontEnd.RegexNode MergeLiteralRuns(RuntimeFrontEnd.RegexNode node)
         {
+            if (node.Kind == RuntimeFrontEnd.RegexNodeKind.Alternate && node.Children is List<RuntimeFrontEnd.RegexNode> branches)
+            {
+                for (var i = 0; i < branches.Count; i++)
+                {
+                    var mergedBranch = MergeLiteralRuns(branches[i]);
+                    if (!ReferenceEquals(mergedBranch, branches[i]))
+                    {
+                        branches[i] = mergedBranch;
+                        mergedBranch.Parent = node;
+                    }
+                }
+
+                return node;
+            }
+
             if (node.Children is List<RuntimeFrontEnd.RegexNode> children)
             {
                 for (var i = 0; i < children.Count; i++)

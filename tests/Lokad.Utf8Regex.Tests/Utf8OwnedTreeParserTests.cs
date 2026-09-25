@@ -219,7 +219,6 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "*a" };
         yield return new object?[] { "(a" };
         yield return new object?[] { "a)" };
-        yield return new object?[] { "(?i)a" };
         yield return new object?[] { "\\q" };
 
         yield return new object?[] { "a{10000000000}" };
@@ -243,10 +242,15 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "*a)" };
         yield return new object?[] { "}a)" };
         yield return new object?[] { "]a)" };
-        yield return new object?[] { "(?i--m:a)" };
         yield return new object?[] { "(?-:a)" };
         yield return new object?[] { "(?z:a)" };
         yield return new object?[] { "(?I:a)" };
+        yield return new object?[] { "(?x:a#b)" };
+    }
+
+    public static IEnumerable<object?[]> OptionResidualCases()
+    {
+        yield return new object?[] { "(?i--m:a)" };
         yield return new object?[] { "(?n:a)" };
         yield return new object?[] { "(?n:(a))" };
         yield return new object?[] { "(?i)" };
@@ -259,9 +263,17 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { "((?i)a)" };
         yield return new object?[] { "(?i:(?m:a))" };
         yield return new object?[] { "(?x:a b)" };
-        yield return new object?[] { "(?x:a#b)" };
         yield return new object?[] { "(?ii:a)" };
         yield return new object?[] { "(?im-s:a)" };
+        yield return new object?[] { "(?i)a" };
+    }
+
+    [Theory]
+    [MemberData(nameof(OptionResidualCases))]
+    public void OwnedParserDeclinesResidualOptionShapes(string pattern)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
     }
 
     [Theory]
@@ -291,6 +303,9 @@ public sealed class Utf8OwnedTreeParserTests
         yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline };
         yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
         yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase };
+        yield return new object?[] { "", (RegexOptions)0 };
+        yield return new object?[] { "a", (RegexOptions)0 };
+        yield return new object?[] { "", RegexOptions.IgnoreCase };
     }
 
     [Theory]

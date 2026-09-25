@@ -138,6 +138,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "x\\10y", 512 };
         yield return new object?[] { "\\01a", 512 };
         yield return new object?[] { "\\10a", 512 };
+        yield return new object?[] { "\\10|z", 512 };
         yield return new object?[] { "(a)\\01b", 512 };
         yield return new object?[] { "\\10*", 512 };
         yield return new object?[] { "\\10?", 512 };
@@ -251,6 +252,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "\\10", 513 };
         yield return new object?[] { "(?<9>a)(b)", 513 };
         yield return new object?[] { "(?<007>a)", 513 };
+        yield return new object?[] { "[\\10]", 512 };
     }
 
     [Theory]
