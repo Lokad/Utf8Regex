@@ -1887,9 +1887,18 @@ internal static class Utf8OwnedTreeParser
         {
             if (fixup.Name is not null)
             {
-                if (!slotByName.TryGetValue(fixup.Name, out _))
+                // Pruned ({0}) references still fail construction when unbound,
+                // exactly like the BCL oracle; conditional fixups never reach
+                // this path (their nodes are BackreferenceConditional).
+                var lookupName = fixup.Name;
+                if (lookupName.Length > 1 && IsAllAsciiDigits(lookupName))
                 {
-                    return true;
+                    lookupName = lookupName.TrimStart('0');
+                }
+
+                if (!slotByName.TryGetValue(lookupName, out _))
+                {
+                    return false;
                 }
 
                 return true;
@@ -1901,6 +1910,14 @@ internal static class Utf8OwnedTreeParser
                 slots.Contains(backref))
             {
                 return true;
+            }
+
+            // Single non-zero digits never spell octal: an unbound one fails
+            // construction exactly like the BCL oracle, even under {0}.
+            // "0" alone is NUL and flows to the octal path below.
+            if (fixup.Digits is not null && fixup.Digits.Length == 1 && fixup.Digits[0] >= '1' && fixup.Digits[0] <= '9')
+            {
+                return false;
             }
 
             if (fixup.Digits is null || fixup.Digits.Length < 2)
