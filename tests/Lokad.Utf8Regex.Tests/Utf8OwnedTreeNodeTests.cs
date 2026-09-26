@@ -1,13 +1,12 @@
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned tree-node equivalence: every kind, constructor shape, and storage
-// transition must match the fork node member-for-member, since consumers
-// migrate by renaming. Expected values come from the fork live at run time;
-// the input rows below only enumerate the vocabulary and shapes.
+// Owned tree-node structural checks: kind values round-trip, constructors store
+// their payloads, and child storage transitions (empty to single to list) keep
+// parent links. Former fork-equivalence pins were removed at the cutover; these
+// pin the owned representation directly.
 public sealed class Utf8OwnedTreeNodeTests
 {
     public static IEnumerable<object?[]> KindCases()
@@ -55,64 +54,84 @@ public sealed class Utf8OwnedTreeNodeTests
 
     [Theory]
     [MemberData(nameof(KindCases))]
-    public void OwnedKindMatchesFork(int value)
+    public void OwnedKindRoundTripsValue(int value)
     {
-        var expected = new RuntimeFrontEnd.RegexNode((RuntimeFrontEnd.RegexNodeKind)value, RegexOptions.CultureInvariant);
-        var actual = new Utf8TreeNode((Utf8TreeNodeKind)value, RegexOptions.CultureInvariant);
-        Assert.Equal((int)expected.Kind, (int)actual.Kind);
-        Assert.Equal(value, (int)actual.Kind);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.IsBacktrackingConstruct, actual.IsBacktrackingConstruct);
-        Assert.Equal(expected.ChildCount, actual.ChildCount);
+        var node = new Utf8TreeNode((Utf8TreeNodeKind)value, RegexOptions.CultureInvariant);
+        Assert.Equal(value, (int)node.Kind);
+        Assert.Equal(RegexOptions.CultureInvariant, node.Options);
+        Assert.Equal(0, node.ChildCount);
+        Assert.Empty(node.ChildList);
+    }
+
+    public static IEnumerable<object?[]> BacktrackingCases()
+    {
+        yield return new object?[] { 3, true };
+        yield return new object?[] { 4, true };
+        yield return new object?[] { 5, true };
+        yield return new object?[] { 6, true };
+        yield return new object?[] { 7, true };
+        yield return new object?[] { 8, true };
+        yield return new object?[] { 24, true };
+        yield return new object?[] { 26, true };
+        yield return new object?[] { 27, true };
+        yield return new object?[] { 33, true };
+        yield return new object?[] { 34, true };
+        yield return new object?[] { 0, false };
+        yield return new object?[] { 9, false };
+        yield return new object?[] { 11, false };
+        yield return new object?[] { 13, false };
+        yield return new object?[] { 25, false };
+        yield return new object?[] { 28, false };
+        yield return new object?[] { 30, false };
+        yield return new object?[] { 41, false };
+    }
+
+    [Theory]
+    [MemberData(nameof(BacktrackingCases))]
+    public void OwnedBacktrackingPredicateMatchesKind(int value, bool expected)
+    {
+        var node = new Utf8TreeNode((Utf8TreeNodeKind)value, RegexOptions.None);
+        Assert.Equal(expected, node.IsBacktrackingConstruct);
     }
 
     [Fact]
-    public void OwnedConstructorsMatchFork()
+    public void OwnedConstructorsStorePayloads()
     {
-        var forkChar = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, RegexOptions.None, 'a');
-        var ownedChar = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
-        Assert.Equal(forkChar.Ch, ownedChar.Ch);
-        Assert.Equal(forkChar.M, ownedChar.M);
-        Assert.Equal(forkChar.N, ownedChar.N);
+        var charNode = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, 'a');
+        Assert.Equal('a', charNode.Ch);
+        Assert.Equal(0, charNode.M);
+        Assert.Equal(0, charNode.N);
 
-        var forkText = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Multi, RegexOptions.None, "ab");
-        var ownedText = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "ab");
-        Assert.Equal(forkText.Str, ownedText.Str);
+        var textNode = new Utf8TreeNode(Utf8TreeNodeKind.Multi, RegexOptions.None, "ab");
+        Assert.Equal("ab", textNode.Str);
 
-        var forkRange = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Loop, RegexOptions.None, 1, 3);
-        var ownedRange = new Utf8TreeNode(Utf8TreeNodeKind.Loop, RegexOptions.None, 1, 3);
-        Assert.Equal(forkRange.M, ownedRange.M);
-        Assert.Equal(forkRange.N, ownedRange.N);
+        var rangeNode = new Utf8TreeNode(Utf8TreeNodeKind.Loop, RegexOptions.None, 1, 3);
+        Assert.Equal(1, rangeNode.M);
+        Assert.Equal(3, rangeNode.N);
 
-        var forkSlot = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Capture, RegexOptions.None, 2);
-        var ownedSlot = new Utf8TreeNode(Utf8TreeNodeKind.Capture, RegexOptions.None, 2);
-        Assert.Equal(forkSlot.M, ownedSlot.M);
+        var slotNode = new Utf8TreeNode(Utf8TreeNodeKind.Capture, RegexOptions.None, 2);
+        Assert.Equal(2, slotNode.M);
 
-        forkText.Str2 = "witness";
-        ownedText.Str2 = "witness";
-        Assert.Equal(forkText.Str2, ownedText.Str2);
+        textNode.Str2 = "witness";
+        Assert.Equal("witness", textNode.Str2);
     }
 
     [Fact]
-    public void OwnedChildStorageMatchesFork()
+    public void OwnedChildStorageKeepsParentLinks()
     {
-        var forkParent = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.Concatenate, RegexOptions.None);
-        var ownedParent = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
-        Assert.Equal(forkParent.ChildCount, ownedParent.ChildCount);
-        Assert.Equal(forkParent.ChildList.Count, ownedParent.ChildList.Count);
+        var parent = new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, RegexOptions.None);
+        Assert.Equal(0, parent.ChildCount);
+        Assert.Empty(parent.ChildList);
 
         for (var i = 0; i < 3; i++)
         {
-            var forkChild = new RuntimeFrontEnd.RegexNode(RuntimeFrontEnd.RegexNodeKind.One, RegexOptions.None, (char)('a' + i));
-            var ownedChild = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, (char)('a' + i));
-            forkParent.AddChild(forkChild);
-            ownedParent.AddChild(ownedChild);
-            Assert.Equal(forkParent.ChildCount, ownedParent.ChildCount);
-            Assert.Same(forkParent, forkParent.Child(i).Parent);
-            Assert.Same(ownedParent, ownedParent.Child(i).Parent);
-            Assert.Equal(forkParent.Child(i).Ch, ownedParent.Child(i).Ch);
+            var child = new Utf8TreeNode(Utf8TreeNodeKind.One, RegexOptions.None, (char)('a' + i));
+            parent.AddChild(child);
+            Assert.Equal(i + 1, parent.ChildCount);
+            Assert.Same(parent, parent.Child(i).Parent);
+            Assert.Equal((char)('a' + i), parent.Child(i).Ch);
         }
 
-        Assert.Equal(forkParent.ChildList.Count, ownedParent.ChildList.Count);
+        Assert.Equal(3, parent.ChildList.Count);
     }
 }

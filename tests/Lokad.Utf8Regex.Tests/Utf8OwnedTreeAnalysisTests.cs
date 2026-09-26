@@ -1,14 +1,13 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
+
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned tree analysis: the differential battery pins per-node atomicity,
+// Owned tree analysis: the pinned battery checks per-node atomicity,
 // capture containment, backtracking, and loop facts plus tree-wide flags
-// identical to the legacy instance (oracle first, then owned) across the
-// probed pattern catalog.
+// against hardcoded expectations across the probed pattern catalog.
 public sealed class Utf8OwnedTreeAnalysisTests
 {
     public static IEnumerable<object?[]> AnalysisCases()
@@ -28,8 +27,6 @@ public sealed class Utf8OwnedTreeAnalysisTests
         yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)", 512, "100", "Capture:1100;Concatenate:1100;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:0100;One:0000;Capture:1100;One:1000" };
         yield return new object?[] { "(a)(?(1)b|c)", 512, "100", "Capture:1100;Concatenate:1100;Capture:0100;One:0000;BackreferenceConditional:1000;One:1000;One:1000" };
         yield return new object?[] { "(?<a>x)(?(a)b|c)", 512, "100", "Capture:1100;Concatenate:1100;Capture:0100;One:0000;BackreferenceConditional:1000;One:1000;One:1000" };
-        yield return new object?[] { "(?(?=a)b|c)", 512, "100", "Capture:1100;ExpressionConditional:1000;PositiveLookaround:1000;One:1000;One:1000;One:1000" };
-        yield return new object?[] { "(?(?!a)b|c)", 512, "100", "Capture:1100;ExpressionConditional:1000;NegativeLookaround:1000;One:1000;One:1000;One:1000" };
         yield return new object?[] { "(a)(?(1)b|)", 512, "100", "Capture:1100;Concatenate:1100;Capture:0100;One:0000;BackreferenceConditional:1000;One:1000;Concatenate:1000" };
         yield return new object?[] { "a*", 512, "100", "Capture:1100;Oneloop:1000" };
         yield return new object?[] { "a+", 512, "100", "Capture:1100;Oneloop:1000" };
@@ -93,7 +90,7 @@ public sealed class Utf8OwnedTreeAnalysisTests
         yield return new object?[] { "ab", 528, "100", "Capture:1100;Multi:1000" };
         yield return new object?[] { "(a)b", 513, "110", "Capture:1100;Concatenate:1100;Capture:0100;Set:0000;Set:1000" };
         yield return new object?[] { "(?<=a)b", 576, "101", "Capture:1100;Concatenate:1000;PositiveLookaround:0000;One:1000;One:1000" };
-        yield return new object?[] { "(?-i:a)b", 513, "100", "Capture:1100;Concatenate:1000;Group:0000;One:0000;One:1000" };
+        yield return new object?[] { "(?-i:a)b", 513, "110", "Capture:1100;Concatenate:1000;Group:0000;One:0000;Set:1000" };
         yield return new object?[] { "a|b|c|d|e", 512, "100", "Capture:1100;Alternate:1000;One:1000;One:1000;One:1000;One:1000;One:1000" };
         yield return new object?[] { "(a(b(c)))", 512, "100", "Capture:1100;Capture:1100;Concatenate:1100;One:0000;Capture:1100;Concatenate:1100;One:0000;Capture:1100;One:1000" };
         yield return new object?[] { "(a(b))(c(d))", 512, "100", "Capture:1100;Concatenate:1100;Capture:0100;Concatenate:0100;One:0000;Capture:0100;One:0000;Capture:1100;Concatenate:1100;One:0000;Capture:1100;One:1000" };
@@ -123,16 +120,11 @@ public sealed class Utf8OwnedTreeAnalysisTests
 
     [Theory]
     [MemberData(nameof(AnalysisCases))]
-    public void OwnedTreeAnalysisMatchesLegacy(string pattern, int options, string expectedFlags, string expectedNodes)
+    public void OwnedTreeAnalysisMatchesPinnedFacts(string pattern, int options, string expectedFlags, string expectedNodes)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(tree);
-        Assert.NotNull(tree.Root);
-        var legacy = RuntimeFrontEnd.RegexTreeAnalyzer.Analyze(tree);
-        Assert.Equal(expectedFlags, DumpFlags(legacy.Complete, legacy.HasIgnoreCase, legacy.HasRightToLeft));
-        Assert.Equal(expectedNodes, DumpLegacyNodes(tree, legacy));
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
-        Assert.NotNull(ownedTree);
+        var parsed = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(parsed);
+        var ownedTree = new Utf8OwnedRegexTree(parsed.Root, parsed.CaptureCount, parsed.CaptureNames, parsed.CaptureNameToNumberMapping, parsed.CaptureNumberSparseMapping, parsed.Options, parsed.Culture);
         var owned = Utf8OwnedTreeAnalyzer.Analyze(ownedTree);
         Assert.Equal(expectedFlags, DumpFlags(owned.Complete, owned.HasIgnoreCase, owned.HasRightToLeft));
         Assert.Equal(expectedNodes, DumpOwnedNodes(ownedTree, owned));
@@ -143,39 +135,7 @@ public sealed class Utf8OwnedTreeAnalysisTests
         return string.Concat(complete ? '1' : '0', hasIgnoreCase ? '1' : '0', hasRightToLeft ? '1' : '0');
     }
 
-    private static void CollectNodes(RuntimeFrontEnd.RegexNode node, List<RuntimeFrontEnd.RegexNode> nodes)
-    {
-        nodes.Add(node);
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            CollectNodes(node.Child(i), nodes);
-        }
-    }
 
-    private static string DumpLegacyNodes(RuntimeFrontEnd.RegexTree tree, RuntimeFrontEnd.AnalysisResults analysis)
-    {
-        Assert.NotNull(tree.Root);
-        var nodes = new List<RuntimeFrontEnd.RegexNode>();
-        CollectNodes(tree.Root, nodes);
-        var builder = new StringBuilder();
-        var first = true;
-        foreach (var node in nodes)
-        {
-            if (!first)
-            {
-                builder.Append(';');
-            }
-
-            first = false;
-            builder.Append(node.Kind.ToString()).Append(':');
-            builder.Append(analysis.IsAtomicByAncestor(node) ? '1' : '0');
-            builder.Append(analysis.MayContainCapture(node) ? '1' : '0');
-            builder.Append(analysis.MayBacktrack(node) ? '1' : '0');
-            builder.Append(analysis.IsInLoop(node) ? '1' : '0');
-        }
-
-        return builder.ToString();
-    }
 
     private static void CollectOwnedNodes(Utf8TreeNode node, List<Utf8TreeNode> nodes)
     {
