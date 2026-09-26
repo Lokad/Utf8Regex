@@ -2375,11 +2375,6 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
             }
 
-            if (on == RegexOptions.None && off == RegexOptions.None)
-            {
-                return false;
-            }
-
             if (state.AtEnd || state.Pattern[state.Position] != ')')
             {
                 return false;
@@ -2408,7 +2403,6 @@ internal static class Utf8OwnedTreeParser
             scoped = state.Options;
             scopeOn = RegexOptions.None;
             scopeOff = RegexOptions.None;
-            var dashed = false;
             while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
             {
                 scopeOn |= ScopeFlag(state.Pattern[state.Position]);
@@ -2416,7 +2410,6 @@ internal static class Utf8OwnedTreeParser
             }
             while (!state.AtEnd && state.Pattern[state.Position] == '-')
             {
-                dashed = true;
                 state.Position++;
             }
             while (!state.AtEnd && IsScopeFlag(state.Pattern[state.Position]))
@@ -2429,10 +2422,6 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
             }
             if (state.AtEnd || state.Pattern[state.Position] != ':')
-            {
-                return false;
-            }
-            if (dashed && scopeOn == RegexOptions.None && scopeOff == RegexOptions.None)
             {
                 return false;
             }

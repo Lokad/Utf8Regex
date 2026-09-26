@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -71,13 +72,6 @@ public sealed class Utf8OwnedTreeParserToggleTests
         yield return new object?[] { "(?--m)", 512 };
     }
 
-    public static IEnumerable<object?[]> ToggleDeclineCases()
-    {
-        yield return new object?[] { "(?-)" };
-        yield return new object?[] { "(?i)(?-)" };
-        yield return new object?[] { "(?--)" };
-    }
-
     [Theory]
     [MemberData(nameof(ToggleAcceptCases))]
     public void OwnedToggleMatchesProviderTree(string pattern, int options)
@@ -93,15 +87,30 @@ public sealed class Utf8OwnedTreeParserToggleTests
         Assert.True(TreesEqual(expected.Root, actual.Root));
     }
 
-    [Theory]
-    [MemberData(nameof(ToggleDeclineCases))]
-    public void OwnedToggleDeclinesUnsupported(string pattern)
+    public static IEnumerable<object?[]> DegenerateOptionClusterCases()
     {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            RegexOptions.CultureInvariant,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+        yield return new object?[] { "(?-)", 512 };
+        yield return new object?[] { "(?i)(?-)", 512 };
+        yield return new object?[] { "(?--)", 512 };
+        yield return new object?[] { "(?-:a)", 512 };
+        yield return new object?[] { "(?--:a)", 512 };
+    }
+
+    [Theory]
+    [MemberData(nameof(DegenerateOptionClusterCases))]
+    public void OwnedServesDegenerateOptionCluster(string pattern, int options)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var inputText in new string[] { "", "a" })
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
