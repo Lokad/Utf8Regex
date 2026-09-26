@@ -179,7 +179,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?<=(?<x>(a))b)c", 512 };
         yield return new object?[] { "(?<=(?<1>a))b", 512 };
         yield return new object?[] { "(?<=a)b[>]", 512 };
-        yield return new object?[] { "(?<=a)b\\>", 512 };
         yield return new object?[] { "(?<=a)b(?#>)c", 512 };
         yield return new object?[] { "(?<=a)b(?<x>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<=b)(?<y>c)", 512 };
@@ -311,6 +310,38 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var input in new[] { "", "a", "ab", "aab", "xaab", "b", "aaab", "abb", "aabb", "1", "11", "a1" })
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+            var expected = oracle.Match(input);
+            var match = product.Match(bytes);
+            Assert.Equal(expected.Success, match.Success);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, match.IndexInUtf16);
+                Assert.Equal(expected.Length, match.LengthInUtf16);
+            }
+
+            Assert.Equal(oracle.Count(input), product.Count(bytes));
+        }
+    }
+
+    public static IEnumerable<object?[]> EscapedGreaterThanCases()
+    {
+        // Escaped greater-thans are ordinary literals BCL serves, while the fork
+        // corrupts every post-opener greater-than shape: no fork assertion here,
+        // only owned-accept plus BCL-constructs plus detailed product agreement.
+        yield return new object?[] { "(?<=a)b\\>", 512, new string[] { "a>b", "ab", "a>", ">", "b", "xa>by" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(EscapedGreaterThanCases))]
+    public void OwnedServesEscapedGreaterThan(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var input in inputs)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(input);
             var expected = oracle.Match(input);

@@ -85,8 +85,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
     public static IEnumerable<object?[]> ExplicitResidualCases()
     {
         yield return new object?[] { "(?n:(?<-x>a))", 512 };
-        yield return new object?[] { "(?n:(?<x>a))(b)", 512 };
-        yield return new object?[] { "(?n:(a)(?<y>b))(c)", 512 };
         yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
     }
 
@@ -135,6 +133,10 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(?n:a){2}(\\d){1,2}", 512, new string[] { "aa12", "aa1", "aa" } };
         yield return new object?[] { "(?n:a){2}|([ab])", 512, new string[] { "aa", "b", "ab" } };
         yield return new object?[] { "(?n:a){2}|(\\d){1,2}", 512, new string[] { "aa", "1", "12" } };
+        yield return new object?[] { "(?n:(?<x>a))(b)", 512, new string[] { "ab", "a", "b", "" } };
+        yield return new object?[] { "(?n:(a)(?<y>b))(c)", 512, new string[] { "abc", "ab", "bc", "" } };
+        yield return new object?[] { "(b)(?n:(?<x>a))", 512, new string[] { "ba", "b", "a", "" } };
+        yield return new object?[] { "(?n:(?<x>a))(b)(c)", 512, new string[] { "abc", "ab", "bc", "" } };
     }
 
     [Theory]
