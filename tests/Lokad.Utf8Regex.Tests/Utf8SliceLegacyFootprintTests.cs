@@ -7,8 +7,8 @@ namespace Lokad.Utf8Regex.Tests;
 // contract a slice-first path must reproduce (or deliberately migrate), so it
 // is pinned per shape. Probed: fallback-verifier modes vary (anchored,
 // direct-plus-end-coverage, anchored-slice), one family kernel survives
-// (bounded letter count), and capturing lookbehinds null the tree and program
-// while every other slice shape keeps both.
+// (bounded letter count), and the capturing-lookbehind shape routes to the
+// fallback verifier with end coverage while keeping its tree and program.
 public sealed class Utf8SliceLegacyFootprintTests
 {
     public static IEnumerable<object?[]> SliceFootprintShapes()
@@ -26,7 +26,7 @@ public sealed class Utf8SliceLegacyFootprintTests
         yield return new object?[] { "(\\p{L}+)+$", "unsupported_loop", false, false, "AnchoredRegex", false, false, "None", true, false };
         yield return new object?[] { "\\p{L}{8,13}", "unsupported_loop", false, false, "AnchoredRegex", false, false, "UnicodeLetterBoundedCount", true, false };
         yield return new object?[] { "()", "unsupported_pattern", false, false, "AnchoredRegex", false, false, "None", true, false };
-        yield return new object?[] { "(?<=((a)b))c", "unsupported_pattern", true, true, "DirectRegex", false, false, "None", true, true };
+        yield return new object?[] { "(?<=((a)b))c", "unsupported_lookaround", false, false, "DirectRegex", true, false, "None", true, false };
         yield return new object?[] { "(a)(?>b+)(?(1)x|y)", "unsupported_conditional", false, false, "AnchoredRegex", false, false, "None", true, false };
     }
 

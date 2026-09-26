@@ -237,11 +237,13 @@ internal sealed class Utf8SliceProgram
     internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
 
-    // Legacy fallback taxonomy, probed: a capturing lookbehind forces the
-    // residual, overriding backreference and loop; otherwise backreference
-    // outranks conditional, conditional outranks lookaround, lookaround
-    // outranks atomic, atomic outranks loop, and balance-only or degenerate
-    // shapes report the residual. Lookarounds mark lowering flags (they
+    // Legacy fallback taxonomy, probed: backreference outranks conditional,
+    // conditional outranks lookaround, lookaround outranks atomic, atomic outranks
+    // loop, and balance-only or degenerate shapes report the residual. Capturing
+    // lookbehinds lower inline with SawCapturingLookbehind marked, but the reason
+    // follows the same precedence as the pipeline classifier (which keys off tree
+    // features), so the program mapping agrees with the pipeline oracle.
+    // Lookarounds mark lowering flags (they
     // lower inline or to assertion bodies depending on position, so neither
     // instructions nor assertions see them all); bare Commit rides lookahead
     // arms, so only AtomicCommit marks atomicity.
@@ -249,11 +251,6 @@ internal sealed class Utf8SliceProgram
     {
         get
         {
-            if (SawCapturingLookbehind)
-            {
-                return "unsupported_pattern";
-            }
-
             var loop = false;
             var atomic = false;
             var lookaround = SawLookaround;

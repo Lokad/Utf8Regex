@@ -27,7 +27,9 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     // Machine-derived divergent rows (11 from the first run, 7 from the metadata
     // and newline extension, 5 from the leak-family sweep, 61 from the residual
     // census: 84 of 128; 77 of 121 after the 2026-09-26 leading-scope graduation
-    // (40 clean rows serve BCL-exactly, 22 rejoin below under owned serving).
+    // (40 clean rows serve BCL-exactly, 22 rejoin below under owned serving);
+    // 5 of 43 after the 2026-09-26 numeric-lookbehind graduation (36 numeric plus
+    // 2 phantom rows serve BCL-exactly with null witnesses, entries removed).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -43,61 +45,26 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   The flip removes those matches.
     // - Scoped-dot family (6): dots directly under scoped i/m/n match newlines in fork
     //   behavior while BCL dots do not (singleline dots agree). Same quirk, leading form.
-    // - Numeric-lookbehind family (36): a numeric-named group after a lookbehind loses
-    //   its number in fork metadata while BCL numbers it. The flip changes the group
-    //   APIs; match outcomes already agree.
+    // - Numeric-lookbehind family (36, graduated 2026-09-26): numeric-named groups
+    //   after a lookbehind lost their numbers in fork metadata (phantom names) while
+    //   BCL numbers them. The owned parser serves these BCL-exactly (metadata, values,
+    //   counts, replacement over corpus plus fuzz plus astral all agree), so the flip
+    //   changes nothing for them; the rows left the residual set with the entries.
     // - Folding-compound family (12): folding or dot leaks across alternation branches
     //   and into compound tails change what matches. The flip moves these to BCL behavior.
     // - Loop-alternation family (3): an n-loop alternation with a dot or second scope
     //   in the other branch diverges on newline inputs. The flip moves it to BCL behavior.
-    // - Phantom-name family (3): lookbehind phantom numbering leaks garbage names
-    //   (=(?<, =a)b\], =(?<1) into the public group APIs while BCL reports just 0.
-    //   The flip cleans the group APIs.
+    // - Phantom-name family (graduated 2026-09-26 with the numeric family): lookbehind
+    //   phantom numbering leaked garbage fork names into the public group APIs while BCL
+    //   reports clean numbers. Owned serving is BCL-exact, so the flip changes nothing
+    //   for them either.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
         ("(?n:(?<-x>a))", 512),
         ("(?<=(?<1a>b))c", 512),
-        ("(?<=(?<-0>a)b)", 512),
-        ("(?<=(?<1>a))b", 512),
         ("(?i:[ab]){2}|(?:a.)", 512),
         ("(?m:\\d){2}|(?:a.)", 512),
         ("(?n:a){2}|(?:a.)", 512),
-        ("(?<=.)(?<1>.)+?", 512),
-        ("(?<=.)(?<1>\\d){2}", 512),
-        ("(?<=.)(?<1>^)+", 512),
-        ("(?<=.)+?(?<1>.)+?", 512),
-        ("(?<=.)+?(?<1>\\d){2}", 512),
-        ("(?<=.)+?(?<1>^)+", 512),
-        ("(?<=.)+?|(?<1>.)+?", 512),
-        ("(?<=.)+?|(?<1>\\d){2}", 512),
-        ("(?<=.)+?|(?<1>^)+", 512),
-        ("(?<=.)|(?<1>.)+?", 512),
-        ("(?<=.)|(?<1>\\d){2}", 512),
-        ("(?<=.)|(?<1>^)+", 512),
-        ("(?<=[ab]){1,2}(?<1>.)+?", 512),
-        ("(?<=[ab]){1,2}(?<1>\\d){2}", 512),
-        ("(?<=[ab]){1,2}(?<1>^)+", 512),
-        ("(?<=[ab]){1,2}|(?<1>.)+?", 512),
-        ("(?<=[ab]){1,2}|(?<1>\\d){2}", 512),
-        ("(?<=[ab]){1,2}|(?<1>^)+", 512),
-        ("(?<=\\d)?(?<1>.)+?", 512),
-        ("(?<=\\d)?(?<1>\\d){2}", 512),
-        ("(?<=\\d)?(?<1>^)+", 512),
-        ("(?<=\\d)?|(?<1>.)+?", 512),
-        ("(?<=\\d)?|(?<1>\\d){2}", 512),
-        ("(?<=\\d)?|(?<1>^)+", 512),
-        ("(?<=$)+(?<1>.)+?", 512),
-        ("(?<=$)+(?<1>\\d){2}", 512),
-        ("(?<=$)+(?<1>^)+", 512),
-        ("(?<=$)+|(?<1>.)+?", 512),
-        ("(?<=$)+|(?<1>\\d){2}", 512),
-        ("(?<=$)+|(?<1>^)+", 512),
-        ("(?<=a)*(?<1>.)+?", 512),
-        ("(?<=a)*(?<1>\\d){2}", 512),
-        ("(?<=a)*(?<1>^)+", 512),
-        ("(?<=a)*|(?<1>.)+?", 512),
-        ("(?<=a)*|(?<1>\\d){2}", 512),
-        ("(?<=a)*|(?<1>^)+", 512),
         // Owned-serving divergences (parser gate relaxation): these shapes parse
         // BCL-exactly but the lowered execution still leaks scope options onto trailing
         // content (case folding past i-scopes, Singleline past s-scopes, quantified dots).

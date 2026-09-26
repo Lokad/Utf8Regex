@@ -7,9 +7,10 @@ namespace Lokad.Utf8Regex.Tests;
 // Owned parser lookaround stage: the differential battery pins positive and
 // negative lookahead, lookbehind with forced direction options, atomic groups,
 // punctuation escapes, and class escape tiers identical to the provider trees,
-// plus decline agreement on captures and backreferences inside lookbehind,
-// malformed openers, shorthand range ends, and undecodable escapes, and the
-// named-in-lookbehind plus phantom-> residuals that still route to the provider.
+// plus decline agreement on backreferences inside lookbehind, malformed openers,
+// shorthand range ends, and undecodable escapes; captures in or after lookbehind
+// serve BCL-exactly with detailed group-value agreement, and only the
+// upper-bound shorthand plus single flip-decision residuals still route to the provider.
 public sealed class Utf8OwnedTreeParserLookaroundTests
 {
     public static IEnumerable<object?[]> LookaroundAcceptCases()
@@ -138,12 +139,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?=a" };
         yield return new object?[] { "(?<=a" };
         yield return new object?[] { "(?=a))" };
-        yield return new object?[] { "(?<=(a))b" };
-        yield return new object?[] { "(?<=(a)(b))c" };
-        yield return new object?[] { "(?<=(a|b))c" };
-        yield return new object?[] { "(?<=((a)))b" };
         yield return new object?[] { "(?<=\\1)a" };
-        yield return new object?[] { "(?<=(?:(a)))b" };
         yield return new object?[] { "[a-\\k]" };
         yield return new object?[] { "[a-\\8]" };
         yield return new object?[] { "[a-\\p]" };
@@ -166,58 +162,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "[a-\\p{L}]", 512 };
         yield return new object?[] { "[--\\d]", 512 };
 
-        yield return new object?[] { "(?<=b)(?<x>a)", 512 };
-        yield return new object?[] { "(?<=(?<x>a))b", 512 };
-        yield return new object?[] { "(?<=a|(?<x>b))c", 512 };
         yield return new object?[] { "(?<=(?<1a>b))c", 512 };
-        yield return new object?[] { "(?<=(?<-0>a)b)", 512 };
-        yield return new object?[] { "(?<!>)", 512 };
-        yield return new object?[] { "(?<!>a)b", 512 };
-        yield return new object?[] { "(?<=a>b)c", 512 };
-        yield return new object?[] { "(?<=(?>a))b", 512 };
-        yield return new object?[] { "(?<=(?=>a)b)c", 512 };
-        yield return new object?[] { "(?<=(?<x>(a))b)c", 512 };
-        yield return new object?[] { "(?<=(?<1>a))b", 512 };
-        yield return new object?[] { "(?<=a)b[>]", 512 };
-        yield return new object?[] { "(?<=a)b(?#>)c", 512 };
-        yield return new object?[] { "(?<=a)b(?<x>c)", 512 };
-        yield return new object?[] { "(?<x>a)(?<=b)(?<y>c)", 512 };
-        yield return new object?[] { "(?<=.)(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=.)(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=.)(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=.)+?(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=.)+?(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=.)+?(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=.)+?|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=.)+?|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=.)+?|(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=.)|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=.)|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=.)|(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=\\d)?(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=\\d)?(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=\\d)?(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=\\d)?|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=\\d)?|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=\\d)?|(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=$)+(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=$)+(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=$)+(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=$)+|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=$)+|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=$)+|(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=a)*(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=a)*(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=a)*(?<1>^)+", 512 };
-        yield return new object?[] { "(?<=a)*|(?<1>.)+?", 512 };
-        yield return new object?[] { "(?<=a)*|(?<1>\\d){2}", 512 };
-        yield return new object?[] { "(?<=a)*|(?<1>^)+", 512 };
     }
 
     [Theory]
@@ -325,6 +270,144 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         }
     }
 
+    public static IEnumerable<object?[]> LookbehindCaptureNarrowingCases()
+    {
+        // Fork-narrowing debt: the fork rejects captures inside lookbehind while
+        // BCL serves them with left-to-right numbering and populated values. The
+        // owned parser serves these; group values are pinned per group below.
+        yield return new object?[] { "(?<=(a))b", 512, new string[] { "ab", "b", "a", "aab" } };
+        yield return new object?[] { "(?<=(a)(b))c", 512, new string[] { "abc", "ac", "ab" } };
+        yield return new object?[] { "(?<=(a|b))c", 512, new string[] { "ac", "bc", "c" } };
+        yield return new object?[] { "(?<=((a)))b", 512, new string[] { "ab", "b", "a" } };
+        yield return new object?[] { "(?<=(?:(a)))b", 512, new string[] { "ab", "b", "a" } };
+        yield return new object?[] { "(?<=(a))", 512, new string[] { "a", "", "b" } };
+        yield return new object?[] { "(?<=((a)(b)))c", 512, new string[] { "abc", "ac" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookbehindCaptureNarrowingCases))]
+    public void OwnedLookbehindServesInnerCaptures(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            (RegexOptions)options,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        foreach (var inputText in inputs)
+        {
+            AssertDetailedAgreement(oracle, product, inputText);
+        }
+    }
+
+    public static IEnumerable<object?[]> LookbehindNamedBehaviorCases()
+    {
+        // Graduated lookbehind shapes the fork serves with corrupt name tables
+        // (phantom names) while BCL agrees with the owned numbering: named groups
+        // in or after lookbehind, numeric groups after lookbehind, greater-than
+        // literals, and nested assertions. They pin owned-accept plus fork-serves
+        // plus BCL metadata and detailed behavior instead of tree equality.
+        yield return new object?[] { "(?<=(?<x>a))b", 512, new string[] { "ab", "b", "a" } };
+        yield return new object?[] { "(?<=a|(?<x>b))c", 512, new string[] { "ac", "bc", "c" } };
+        yield return new object?[] { "(?<=(?<x>(a))b)c", 512, new string[] { "abc", "ac" } };
+        yield return new object?[] { "(?<=a)b(?<x>c)", 512, new string[] { "abc", "ab" } };
+        yield return new object?[] { "(?<x>a)(?<=b)(?<y>c)", 512, new string[] { "abc", "bc" } };
+        yield return new object?[] { "(?<=b)(?<x>a)", 512, new string[] { "ba", "a", "b" } };
+        yield return new object?[] { "(?<=(?<1>a))b", 512, new string[] { "ab", "b" } };
+        yield return new object?[] { "(?<!>)", 512, new string[] { "a", ">", "" } };
+        yield return new object?[] { "(?<!>a)b", 512, new string[] { "ab", "b" } };
+        yield return new object?[] { "(?<=a>b)c", 512, new string[] { "a>bc", "abc" } };
+        yield return new object?[] { "(?<=(?>a))b", 512, new string[] { "ab", "b" } };
+        yield return new object?[] { "(?<=(?=>a)b)c", 512, new string[] { "abc", "ac" } };
+        yield return new object?[] { "(?<=(?<-0>a)b)", 512, new string[] { "ab", "b" } };
+        yield return new object?[] { "(?<=a)b[>]", 512, new string[] { "ab>", "ab" } };
+        yield return new object?[] { "(?<=a)b(?#>)c", 512, new string[] { "abc", "ab" } };
+        yield return new object?[] { "(?<=.)(?<1>.)+?", 512, new string[] { "abc", "ab", "a" } };
+        yield return new object?[] { "(?<=.)(?<1>\\d){2}", 512, new string[] { "a12", "12", "a1" } };
+        yield return new object?[] { "(?<=.)(?<1>^)+", 512, new string[] { "abc", "a" } };
+        yield return new object?[] { "(?<=.)+?(?<1>.)+?", 512, new string[] { "abc", "ab", "a" } };
+        yield return new object?[] { "(?<=.)+?(?<1>\\d){2}", 512, new string[] { "a12", "12", "a1" } };
+        yield return new object?[] { "(?<=.)+?(?<1>^)+", 512, new string[] { "abc", "a" } };
+        yield return new object?[] { "(?<=.)+?|(?<1>.)+?", 512, new string[] { "abc", "ab", "a" } };
+        yield return new object?[] { "(?<=.)+?|(?<1>\\d){2}", 512, new string[] { "a12", "12", "a1" } };
+        yield return new object?[] { "(?<=.)+?|(?<1>^)+", 512, new string[] { "abc", "a" } };
+        yield return new object?[] { "(?<=.)|(?<1>.)+?", 512, new string[] { "abc", "ab", "a" } };
+        yield return new object?[] { "(?<=.)|(?<1>\\d){2}", 512, new string[] { "a12", "12", "a1" } };
+        yield return new object?[] { "(?<=.)|(?<1>^)+", 512, new string[] { "abc", "a" } };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>.)+?", 512, new string[] { "aab", "ab", "a" } };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>\\d){2}", 512, new string[] { "a12", "12" } };
+        yield return new object?[] { "(?<=[ab]){1,2}(?<1>^)+", 512, new string[] { "aab", "ab" } };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>.)+?", 512, new string[] { "aab", "ab", "a" } };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>\\d){2}", 512, new string[] { "a12", "12" } };
+        yield return new object?[] { "(?<=[ab]){1,2}|(?<1>^)+", 512, new string[] { "aab", "ab" } };
+        yield return new object?[] { "(?<=\\d)?(?<1>.)+?", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=\\d)?(?<1>\\d){2}", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=\\d)?(?<1>^)+", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=\\d)?|(?<1>.)+?", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=\\d)?|(?<1>\\d){2}", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=\\d)?|(?<1>^)+", 512, new string[] { "12", "1" } };
+        yield return new object?[] { "(?<=$)+(?<1>.)+?", 512, new string[] { "a", "ab" } };
+        yield return new object?[] { "(?<=$)+(?<1>\\d){2}", 512, new string[] { "a12", "12" } };
+        yield return new object?[] { "(?<=$)+(?<1>^)+", 512, new string[] { "a", "ab" } };
+        yield return new object?[] { "(?<=$)+|(?<1>.)+?", 512, new string[] { "a", "ab" } };
+        yield return new object?[] { "(?<=$)+|(?<1>\\d){2}", 512, new string[] { "a12", "12" } };
+        yield return new object?[] { "(?<=$)+|(?<1>^)+", 512, new string[] { "a", "ab" } };
+        yield return new object?[] { "(?<=a)*(?<1>.)+?", 512, new string[] { "aab", "ab" } };
+        yield return new object?[] { "(?<=a)*(?<1>\\d){2}", 512, new string[] { "aa12", "a12" } };
+        yield return new object?[] { "(?<=a)*(?<1>^)+", 512, new string[] { "aab", "ab" } };
+        yield return new object?[] { "(?<=a)*|(?<1>.)+?", 512, new string[] { "aab", "ab" } };
+        yield return new object?[] { "(?<=a)*|(?<1>\\d){2}", 512, new string[] { "aa12", "a12" } };
+        yield return new object?[] { "(?<=a)*|(?<1>^)+", 512, new string[] { "aab", "ab" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookbehindNamedBehaviorCases))]
+    public void OwnedLookbehindServesNamedShapes(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        foreach (var inputText in inputs)
+        {
+            AssertDetailedAgreement(oracle, product, inputText);
+        }
+    }
+
+    private static void AssertDetailedAgreement(System.Text.RegularExpressions.Regex oracle, Utf8Regex product, string inputText)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        var expected = oracle.Match(inputText);
+        var match = product.Match(input);
+        Assert.Equal(expected.Success, match.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, match.IndexInUtf16);
+            Assert.Equal(expected.Length, match.LengthInUtf16);
+            var actualDetailed = product.MatchDetailed(input);
+            for (var g = 0; g < expected.Groups.Count; g++)
+            {
+                var expectedGroup = expected.Groups[g];
+                var actualGroup = actualDetailed.GetGroup(g);
+                Assert.Equal(expectedGroup.Success, actualGroup.Success);
+                if (expectedGroup.Success)
+                {
+                    Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+                    Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+                    Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+                }
+            }
+        }
+
+        Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+    }
     public static IEnumerable<object?[]> EscapedGreaterThanCases()
     {
         // Escaped greater-thans are ordinary literals BCL serves, while the fork

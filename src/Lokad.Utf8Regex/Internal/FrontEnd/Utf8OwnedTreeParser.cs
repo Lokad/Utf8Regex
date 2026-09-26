@@ -2372,32 +2372,6 @@ internal static class Utf8OwnedTreeParser
             // state.Position is at the opener marker after "(?". Lookbehind
             // consumes its direction marker too and forces RightToLeft below.
             state.Position += isLookbehind ? 2 : 1;
-            if (isLookbehind && HasBareGreaterThanAhead(state))
-            {
-                return false;
-            }
-
-            static bool HasBareGreaterThanAhead(ParserState innerState)
-            {
-                var scan = innerState.Position;
-                while (scan < innerState.Pattern.Length)
-                {
-                    if (innerState.Pattern[scan] == '\\' && scan + 1 < innerState.Pattern.Length)
-                    {
-                        scan += 2;
-                        continue;
-                    }
-
-                    if (innerState.Pattern[scan] == '>')
-                    {
-                        return true;
-                    }
-
-                    scan++;
-                }
-
-                return false;
-            }
 
             var savedOptions = state.Options;
             var bodyOptions = kind == Utf8TreeNodeKind.Atomic
@@ -2420,7 +2394,7 @@ internal static class Utf8OwnedTreeParser
             }
 
             state.Position++;
-            if (isLookbehind && ContainsCaptureOrBackreference(body))
+            if (isLookbehind && ContainsLookbehindBackreference(body))
             {
                 state.Options = savedOptions;
                 return false;
@@ -2435,17 +2409,19 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ContainsCaptureOrBackreference(Utf8TreeNode node)
+        static bool ContainsLookbehindBackreference(Utf8TreeNode node)
         {
-            if (node.Kind == Utf8TreeNodeKind.Capture ||
-                node.Kind == Utf8TreeNodeKind.Backreference)
+            // Captures inside lookbehind serve BCL-exactly (left-to-right numbering
+            // with values populated); only backreferences stay declined since their
+            // right-to-left capture timing has no owned execution proof.
+            if (node.Kind == Utf8TreeNodeKind.Backreference)
             {
                 return true;
             }
 
             for (var i = 0; i < node.ChildCount; i++)
             {
-                if (ContainsCaptureOrBackreference(node.Child(i)))
+                if (ContainsLookbehindBackreference(node.Child(i)))
                 {
                     return true;
                 }
