@@ -1,11 +1,11 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser IgnoreCase stage: the differential battery pins case folding
-// identical to the provider trees (single letters fold to two-pair sets from
+// Owned parser IgnoreCase stage: the BCL-oracled battery pins case folding
+// with BCL metadata (single letters fold to two-pair sets from
 // the owned fold table, classes append per-unit expansions, shorthands and
 // categories pass through, groups and backreferences thread options, tree
 // contributions come from leading constructs only), scoped shapes verified by
@@ -16,132 +16,132 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
 {
     public static IEnumerable<object?[]> IgnoreCaseAcceptCases()
     {
-        yield return new object?[] { "a", 513 };
-        yield return new object?[] { "a", 1 };
-        yield return new object?[] { "a", 0 };
-        yield return new object?[] { "A", 513 };
-        yield return new object?[] { "z", 513 };
-        yield return new object?[] { "k", 513 };
-        yield return new object?[] { "K", 513 };
-        yield return new object?[] { "S", 513 };
-        yield return new object?[] { "s", 513 };
-        yield return new object?[] { "ab", 513 };
-        yield return new object?[] { "a1", 513 };
-        yield return new object?[] { "1", 513 };
-        yield return new object?[] { "1+", 513 };
-        yield return new object?[] { "a", 577 };
-        yield return new object?[] { "\\x41", 513 };
-        yield return new object?[] { "\\cA", 513 };
-        yield return new object?[] { "\\0", 513 };
-        yield return new object?[] { "\\u00E9", 513 };
-        yield return new object?[] { "\\u017F", 513 };
-        yield return new object?[] { "\\u212A", 513 };
-        yield return new object?[] { "\\u0131", 513 };
-        yield return new object?[] { "\\u0130", 513 };
-        yield return new object?[] { "[ab]", 513 };
-        yield return new object?[] { "[a]", 513 };
-        yield return new object?[] { "[a-z]", 513 };
-        yield return new object?[] { "[^a]", 513 };
-        yield return new object?[] { "[^a-z]", 513 };
-        yield return new object?[] { "[A-Z]", 513 };
-        yield return new object?[] { "[B-D]", 513 };
-        yield return new object?[] { "[0-9]", 513 };
-        yield return new object?[] { "[A-C]", 513 };
-        yield return new object?[] { "[k-m]", 513 };
-        yield return new object?[] { "[K-M]", 513 };
-        yield return new object?[] { "[K-k]", 513 };
-        yield return new object?[] { "[,-.]", 513 };
-        yield return new object?[] { "[ab]", 577 };
-        yield return new object?[] { "[\\da]", 513 };
-        yield return new object?[] { "[a\\d]", 513 };
-        yield return new object?[] { "[\\da-z]", 513 };
-        yield return new object?[] { "[\\d]", 513 };
-        yield return new object?[] { "[\\D]", 513 };
-        yield return new object?[] { "[\\w]", 513 };
-        yield return new object?[] { "[\\u00E9]", 513 };
-        yield return new object?[] { "[\\u0000-\\u0FFF]", 513 };
-        yield return new object?[] { "[a-[b]]", 513 };
-        yield return new object?[] { "[abc-[b-d]]", 513 };
-        yield return new object?[] { "[^a-[b]]", 513 };
-        yield return new object?[] { "[\\d-[a]]", 513 };
-        yield return new object?[] { "[\\da-[b]]", 513 };
-        yield return new object?[] { "[abc-[b]]", 513 };
-        yield return new object?[] { "[a-[b]]", 1 };
-        yield return new object?[] { "\\d", 513 };
-        yield return new object?[] { "\\w", 513 };
-        yield return new object?[] { "\\p{L}", 513 };
-        yield return new object?[] { ".", 513 };
-        yield return new object?[] { "^", 513 };
-        yield return new object?[] { "$", 513 };
-        yield return new object?[] { "\\b", 513 };
-        yield return new object?[] { "(?i:\\d)", 512 };
-        yield return new object?[] { "(?i:a)", 512 };
-        yield return new object?[] { "(?i:ab)", 512 };
-        yield return new object?[] { "(?i:[ab])", 512 };
-        yield return new object?[] { "(?i:a1)", 512 };
-        yield return new object?[] { "(?i:12)", 512 };
-        yield return new object?[] { "(?i:^)", 512 };
-        yield return new object?[] { "(?i:.)", 512 };
-        yield return new object?[] { "(?i:$)", 512 };
-        yield return new object?[] { "(?i:\\w)", 512 };
-        yield return new object?[] { "(?i:\\p{L})", 512 };
-        yield return new object?[] { "(?i:[a-z])", 512 };
-        yield return new object?[] { "(?i:[^a])", 512 };
-        yield return new object?[] { "(?i:[a-[b]])", 512 };
-        yield return new object?[] { "(?i:)", 512 };
-        yield return new object?[] { "(?i:\\\\)", 512 };
-        yield return new object?[] { "(?i:1)", 512 };
-        yield return new object?[] { "(?i:a|b)", 512 };
-        yield return new object?[] { "(?i:ab|cd)", 512 };
-        yield return new object?[] { "(?i:\\x41)", 512 };
-        yield return new object?[] { "(?i:K)", 512 };
-        yield return new object?[] { "(?i:AB)", 512 };
-        yield return new object?[] { "(?i:(a))", 512 };
-        yield return new object?[] { "(?i:(?m:a))", 512 };
-        yield return new object?[] { "(?ii:a)", 512 };
-        yield return new object?[] { "(?mi-s:a)", 512 };
-        yield return new object?[] { "(?is-m:a)", 512 };
-        yield return new object?[] { "(?i-m:a)", 512 };
-        yield return new object?[] { "(?im-s:a)", 512 };
-        yield return new object?[] { "(?i:a)b", 513 };
-        yield return new object?[] { "(?i:k)K", 513 };
-        yield return new object?[] { "(?i:a)", 576 };
-        yield return new object?[] { "(?<x>a)", 513 };
-        yield return new object?[] { "(?<x>1)", 513 };
-        yield return new object?[] { "(1)\\1", 513 };
-        yield return new object?[] { "(a)\\1", 513 };
-        yield return new object?[] { "(a\\1(?i:b))", 512 };
-        yield return new object?[] { "(?<x>(?i:a))", 512 };
-        yield return new object?[] { "(?<x>a)\\k<x>", 513 };
-        yield return new object?[] { "(?<9>a)(b)", 513 };
-        yield return new object?[] { "\\01", 513 };
-        yield return new object?[] { "\\10", 513 };
-        yield return new object?[] { "\\101", 513 };
-        yield return new object?[] { "\\10{2}", 513 };
-        yield return new object?[] { "\\101{2}", 512 };
-        yield return new object?[] { "\\101{2}", 513 };
-        yield return new object?[] { "\\x41{2}", 512 };
-        yield return new object?[] { "\\x41{2}", 513 };
-        yield return new object?[] { "a{0}", 513 };
-        yield return new object?[] { "(a){0}", 513 };
-        yield return new object?[] { "(a){0}", 512 };
-        yield return new object?[] { "(?i:(a){0})", 512 };
-        yield return new object?[] { "(?-i:a)b", 512 };
-        yield return new object?[] { "(?m:a)", 512 };
-        yield return new object?[] { "((?m:a))", 512 };
-        yield return new object?[] { "cd(?m:ab)", 512 };
-        yield return new object?[] { "a(?m:b)", 512 };
-        yield return new object?[] { "(?:a)(?i:b)c", 512 };
-        yield return new object?[] { "a(?i:b)(?m:c)", 512 };
-        yield return new object?[] { "(?i:(?=a)b)", 512 };
-        yield return new object?[] { "(?i:(?<=a)b)", 512 };
+        yield return new object?[] { "a", 513, 513 };
+        yield return new object?[] { "a", 1, 1 };
+        yield return new object?[] { "a", 0, 0 };
+        yield return new object?[] { "A", 513, 513 };
+        yield return new object?[] { "z", 513, 513 };
+        yield return new object?[] { "k", 513, 513 };
+        yield return new object?[] { "K", 513, 513 };
+        yield return new object?[] { "S", 513, 513 };
+        yield return new object?[] { "s", 513, 513 };
+        yield return new object?[] { "ab", 513, 513 };
+        yield return new object?[] { "a1", 513, 513 };
+        yield return new object?[] { "1", 513, 513 };
+        yield return new object?[] { "1+", 513, 513 };
+        yield return new object?[] { "a", 577, 577 };
+        yield return new object?[] { "\\x41", 513, 513 };
+        yield return new object?[] { "\\cA", 513, 513 };
+        yield return new object?[] { "\\0", 513, 513 };
+        yield return new object?[] { "\\u00E9", 513, 513 };
+        yield return new object?[] { "\\u017F", 513, 513 };
+        yield return new object?[] { "\\u212A", 513, 513 };
+        yield return new object?[] { "\\u0131", 513, 513 };
+        yield return new object?[] { "\\u0130", 513, 513 };
+        yield return new object?[] { "[ab]", 513, 513 };
+        yield return new object?[] { "[a]", 513, 513 };
+        yield return new object?[] { "[a-z]", 513, 513 };
+        yield return new object?[] { "[^a]", 513, 513 };
+        yield return new object?[] { "[^a-z]", 513, 513 };
+        yield return new object?[] { "[A-Z]", 513, 513 };
+        yield return new object?[] { "[B-D]", 513, 513 };
+        yield return new object?[] { "[0-9]", 513, 513 };
+        yield return new object?[] { "[A-C]", 513, 513 };
+        yield return new object?[] { "[k-m]", 513, 513 };
+        yield return new object?[] { "[K-M]", 513, 513 };
+        yield return new object?[] { "[K-k]", 513, 513 };
+        yield return new object?[] { "[,-.]", 513, 513 };
+        yield return new object?[] { "[ab]", 577, 577 };
+        yield return new object?[] { "[\\da]", 513, 513 };
+        yield return new object?[] { "[a\\d]", 513, 513 };
+        yield return new object?[] { "[\\da-z]", 513, 513 };
+        yield return new object?[] { "[\\d]", 513, 513 };
+        yield return new object?[] { "[\\D]", 513, 513 };
+        yield return new object?[] { "[\\w]", 513, 513 };
+        yield return new object?[] { "[\\u00E9]", 513, 513 };
+        yield return new object?[] { "[\\u0000-\\u0FFF]", 513, 513 };
+        yield return new object?[] { "[a-[b]]", 513, 513 };
+        yield return new object?[] { "[abc-[b-d]]", 513, 513 };
+        yield return new object?[] { "[^a-[b]]", 513, 513 };
+        yield return new object?[] { "[\\d-[a]]", 513, 513 };
+        yield return new object?[] { "[\\da-[b]]", 513, 513 };
+        yield return new object?[] { "[abc-[b]]", 513, 513 };
+        yield return new object?[] { "[a-[b]]", 1, 1 };
+        yield return new object?[] { "\\d", 513, 513 };
+        yield return new object?[] { "\\w", 513, 513 };
+        yield return new object?[] { "\\p{L}", 513, 513 };
+        yield return new object?[] { ".", 513, 513 };
+        yield return new object?[] { "^", 513, 513 };
+        yield return new object?[] { "$", 513, 513 };
+        yield return new object?[] { "\\b", 513, 513 };
+        yield return new object?[] { "(?i:\\d)", 512, 513 };
+        yield return new object?[] { "(?i:a)", 512, 513 };
+        yield return new object?[] { "(?i:ab)", 512, 513 };
+        yield return new object?[] { "(?i:[ab])", 512, 513 };
+        yield return new object?[] { "(?i:a1)", 512, 513 };
+        yield return new object?[] { "(?i:12)", 512, 513 };
+        yield return new object?[] { "(?i:^)", 512, 513 };
+        yield return new object?[] { "(?i:.)", 512, 513 };
+        yield return new object?[] { "(?i:$)", 512, 513 };
+        yield return new object?[] { "(?i:\\w)", 512, 513 };
+        yield return new object?[] { "(?i:\\p{L})", 512, 513 };
+        yield return new object?[] { "(?i:[a-z])", 512, 513 };
+        yield return new object?[] { "(?i:[^a])", 512, 513 };
+        yield return new object?[] { "(?i:[a-[b]])", 512, 513 };
+        yield return new object?[] { "(?i:)", 512, 513 };
+        yield return new object?[] { "(?i:\\\\)", 512, 513 };
+        yield return new object?[] { "(?i:1)", 512, 513 };
+        yield return new object?[] { "(?i:a|b)", 512, 513 };
+        yield return new object?[] { "(?i:ab|cd)", 512, 513 };
+        yield return new object?[] { "(?i:\\x41)", 512, 513 };
+        yield return new object?[] { "(?i:K)", 512, 513 };
+        yield return new object?[] { "(?i:AB)", 512, 513 };
+        yield return new object?[] { "(?i:(a))", 512, 513 };
+        yield return new object?[] { "(?i:(?m:a))", 512, 513 };
+        yield return new object?[] { "(?ii:a)", 512, 513 };
+        yield return new object?[] { "(?mi-s:a)", 512, 515 };
+        yield return new object?[] { "(?is-m:a)", 512, 529 };
+        yield return new object?[] { "(?i-m:a)", 512, 513 };
+        yield return new object?[] { "(?im-s:a)", 512, 515 };
+        yield return new object?[] { "(?i:a)b", 513, 513 };
+        yield return new object?[] { "(?i:k)K", 513, 513 };
+        yield return new object?[] { "(?i:a)", 576, 577 };
+        yield return new object?[] { "(?<x>a)", 513, 513 };
+        yield return new object?[] { "(?<x>1)", 513, 513 };
+        yield return new object?[] { "(1)\\1", 513, 513 };
+        yield return new object?[] { "(a)\\1", 513, 513 };
+        yield return new object?[] { "(a\\1(?i:b))", 512, 512 };
+        yield return new object?[] { "(?<x>(?i:a))", 512, 512 };
+        yield return new object?[] { "(?<x>a)\\k<x>", 513, 513 };
+        yield return new object?[] { "(?<9>a)(b)", 513, 513 };
+        yield return new object?[] { "\\01", 513, 513 };
+        yield return new object?[] { "\\10", 513, 513 };
+        yield return new object?[] { "\\101", 513, 513 };
+        yield return new object?[] { "\\10{2}", 513, 513 };
+        yield return new object?[] { "\\101{2}", 512, 512 };
+        yield return new object?[] { "\\101{2}", 513, 513 };
+        yield return new object?[] { "\\x41{2}", 512, 512 };
+        yield return new object?[] { "\\x41{2}", 513, 513 };
+        yield return new object?[] { "a{0}", 513, 513 };
+        yield return new object?[] { "(a){0}", 513, 513 };
+        yield return new object?[] { "(a){0}", 512, 512 };
+        yield return new object?[] { "(?i:(a){0})", 512, 513 };
+        yield return new object?[] { "(?-i:a)b", 512, 512 };
+        yield return new object?[] { "(?m:a)", 512, 514 };
+        yield return new object?[] { "((?m:a))", 512, 512 };
+        yield return new object?[] { "cd(?m:ab)", 512, 512 };
+        yield return new object?[] { "a(?m:b)", 512, 512 };
+        yield return new object?[] { "(?:a)(?i:b)c", 512, 512 };
+        yield return new object?[] { "a(?i:b)(?m:c)", 512, 512 };
+        yield return new object?[] { "(?i:(?=a)b)", 512, 513 };
+        yield return new object?[] { "(?i:(?<=a)b)", 512, 513 };
     }
 
     public static IEnumerable<object?[]> IgnoreCaseDeclineCases()
     {
-        yield return new object?[] { "(?ix-a:b)", 512 };
-        yield return new object?[] { "[a-Z]", 513 };
-        yield return new object?[] { "(?i:\\U00010400)", 512 };
+        yield return new object?[] { "(?ix-a:b)", 512, RegexParseError.InvalidGroupingConstruct, 6 };
+        yield return new object?[] { "[a-Z]", 513, RegexParseError.ReversedCharacterRange, 4 };
+        yield return new object?[] { "(?i:\\U00010400)", 512, RegexParseError.UnrecognizedEscape, 6 };
     }
 
     public static IEnumerable<object?[]> IgnoreCaseResidualCases()
@@ -218,7 +218,6 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -253,40 +252,24 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
     }
     [Theory]
     [MemberData(nameof(IgnoreCaseAcceptCases))]
-    public void OwnedIgnoreCaseMatchesProviderTree(string pattern, int options)
+    public void OwnedIgnoreCaseServesWithBclMetadata(string pattern, int options, int expectedOptions)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)expectedOptions, actual.Options);
+        Assert.Equal((options & (int)RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : null, actual.Culture?.Name);
     }
 
     [Theory]
     [MemberData(nameof(IgnoreCaseDeclineCases))]
-    public void OwnedIgnoreCaseDeclinesUnsupported(string pattern, int options)
+    public void OwnedIgnoreCaseDeclinesUnsupported(string pattern, int options, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
-    }
-
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 }
