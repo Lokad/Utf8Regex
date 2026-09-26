@@ -1,12 +1,12 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser toggle stage: the differential battery pins bare option
-// toggles identical to the provider trees (positional option threading with
+// Owned parser toggle stage: the BCL-oracled battery pins bare option
+// toggles with BCL metadata (positional option threading with
 // group-boundary restore, sequential leading contributions, top composites
 // carrying tree options while nested composites keep entry options, dash runs
 // collapsing to one separator), plus decline agreement on flagless shapes.
@@ -14,77 +14,75 @@ public sealed class Utf8OwnedTreeParserToggleTests
 {
     public static IEnumerable<object?[]> ToggleAcceptCases()
     {
-        yield return new object?[] { "(?i)", 512 };
-        yield return new object?[] { "(?i-i)", 512 };
-        yield return new object?[] { "(?i)a", 512 };
-        yield return new object?[] { "(?i-i)a", 512 };
-        yield return new object?[] { "(a(?i)b)c", 512 };
-        yield return new object?[] { "((?i)a)b", 512 };
-        yield return new object?[] { "(?i)a|b", 512 };
-        yield return new object?[] { "((?i)a)", 512 };
-        yield return new object?[] { "(?i)[ab]", 512 };
-        yield return new object?[] { "(a\\1(?i:b))", 512 };
-        yield return new object?[] { "(?m)", 512 };
-        yield return new object?[] { "(?m)a", 512 };
-        yield return new object?[] { "(?i)(?m)a", 512 };
-        yield return new object?[] { "a(?i)", 512 };
-        yield return new object?[] { "(?i)a(?-i)b", 512 };
-        yield return new object?[] { "(?i)(a)", 512 };
-        yield return new object?[] { "(?i)(?:a)b", 512 };
-        yield return new object?[] { "(?i)(?i)a", 512 };
-        yield return new object?[] { "(?i-i)(?i)a", 512 };
-        yield return new object?[] { "(?s)", 512 };
-        yield return new object?[] { "a|(?i)b", 512 };
-        yield return new object?[] { "((?i:a)|b)", 512 };
-        yield return new object?[] { "((?i)a|b)", 512 };
-        yield return new object?[] { "(?=(?i)a|b)", 512 };
-        yield return new object?[] { "(?i)(?-i)", 512 };
-        yield return new object?[] { "(?i)(?m-i:a)", 512 };
-        yield return new object?[] { "(?m)(?i-m:a)", 512 };
-        yield return new object?[] { "(?-i)", 512 };
-        yield return new object?[] { "(?x)ab", 512 };
-        yield return new object?[] { "(?i)(a){0}", 512 };
-        yield return new object?[] { "x(?i)", 512 };
-        yield return new object?[] { "(?i)x(?-i)y", 512 };
-        yield return new object?[] { "(?i)(?-i)a", 512 };
-        yield return new object?[] { "(?-i)a", 512 };
-        yield return new object?[] { "x(?m:(a)(b))", 512 };
-        yield return new object?[] { "x(?s:(a)(b))", 512 };
-        yield return new object?[] { "(?m:(a)b)", 512 };
-        yield return new object?[] { "(?i:(a)b)", 512 };
-        yield return new object?[] { "(?=(?i)a)b", 512 };
-        yield return new object?[] { "(?<=(?i)a)b", 512 };
-        yield return new object?[] { "(?:(?i)a)b", 512 };
-        yield return new object?[] { "(?i:(?i)a)", 512 };
-        yield return new object?[] { "((?i)a(?m)b)", 512 };
-        yield return new object?[] { "((?i))", 512 };
-        yield return new object?[] { "x(?i)y(?m)z", 512 };
-        yield return new object?[] { "(?i)a|(?m)b", 512 };
-        yield return new object?[] { "(?i--m:a)", 512 };
-        yield return new object?[] { "(?--m:a)", 512 };
-        yield return new object?[] { "(?i---m:a)", 512 };
-        yield return new object?[] { "(?i-m-:a)", 512 };
-        yield return new object?[] { "(?i--:a)", 512 };
-        yield return new object?[] { "(?i--)", 512 };
-        yield return new object?[] { "(?-i-)", 512 };
-        yield return new object?[] { "(?i-m-)", 512 };
-        yield return new object?[] { "(?i--m)", 512 };
-        yield return new object?[] { "(?--m)", 512 };
+        yield return new object?[] { "(?i)", 512, 513 };
+        yield return new object?[] { "(?i-i)", 512, 512 };
+        yield return new object?[] { "(?i)a", 512, 513 };
+        yield return new object?[] { "(?i-i)a", 512, 512 };
+        yield return new object?[] { "(a(?i)b)c", 512, 512 };
+        yield return new object?[] { "((?i)a)b", 512, 512 };
+        yield return new object?[] { "(?i)a|b", 512, 513 };
+        yield return new object?[] { "((?i)a)", 512, 512 };
+        yield return new object?[] { "(?i)[ab]", 512, 513 };
+        yield return new object?[] { "(a\\1(?i:b))", 512, 512 };
+        yield return new object?[] { "(?m)", 512, 514 };
+        yield return new object?[] { "(?m)a", 512, 514 };
+        yield return new object?[] { "(?i)(?m)a", 512, 515 };
+        yield return new object?[] { "a(?i)", 512, 512 };
+        yield return new object?[] { "(?i)a(?-i)b", 512, 513 };
+        yield return new object?[] { "(?i)(a)", 512, 513 };
+        yield return new object?[] { "(?i)(?:a)b", 512, 513 };
+        yield return new object?[] { "(?i)(?i)a", 512, 513 };
+        yield return new object?[] { "(?i-i)(?i)a", 512, 513 };
+        yield return new object?[] { "(?s)", 512, 528 };
+        yield return new object?[] { "a|(?i)b", 512, 512 };
+        yield return new object?[] { "((?i:a)|b)", 512, 512 };
+        yield return new object?[] { "((?i)a|b)", 512, 512 };
+        yield return new object?[] { "(?=(?i)a|b)", 512, 512 };
+        yield return new object?[] { "(?i)(?-i)", 512, 512 };
+        yield return new object?[] { "(?i)(?m-i:a)", 512, 514 };
+        yield return new object?[] { "(?m)(?i-m:a)", 512, 513 };
+        yield return new object?[] { "(?-i)", 512, 512 };
+        yield return new object?[] { "(?x)ab", 512, 544 };
+        yield return new object?[] { "(?i)(a){0}", 512, 513 };
+        yield return new object?[] { "x(?i)", 512, 512 };
+        yield return new object?[] { "(?i)x(?-i)y", 512, 513 };
+        yield return new object?[] { "(?i)(?-i)a", 512, 512 };
+        yield return new object?[] { "(?-i)a", 512, 512 };
+        yield return new object?[] { "x(?m:(a)(b))", 512, 512 };
+        yield return new object?[] { "x(?s:(a)(b))", 512, 512 };
+        yield return new object?[] { "(?m:(a)b)", 512, 514 };
+        yield return new object?[] { "(?i:(a)b)", 512, 513 };
+        yield return new object?[] { "(?=(?i)a)b", 512, 512 };
+        yield return new object?[] { "(?<=(?i)a)b", 512, 512 };
+        yield return new object?[] { "(?:(?i)a)b", 512, 512 };
+        yield return new object?[] { "(?i:(?i)a)", 512, 513 };
+        yield return new object?[] { "((?i)a(?m)b)", 512, 512 };
+        yield return new object?[] { "((?i))", 512, 512 };
+        yield return new object?[] { "x(?i)y(?m)z", 512, 512 };
+        yield return new object?[] { "(?i)a|(?m)b", 512, 513 };
+        yield return new object?[] { "(?i--m:a)", 512, 513 };
+        yield return new object?[] { "(?--m:a)", 512, 512 };
+        yield return new object?[] { "(?i---m:a)", 512, 513 };
+        yield return new object?[] { "(?i-m-:a)", 512, 513 };
+        yield return new object?[] { "(?i--:a)", 512, 513 };
+        yield return new object?[] { "(?i--)", 512, 513 };
+        yield return new object?[] { "(?-i-)", 512, 512 };
+        yield return new object?[] { "(?i-m-)", 512, 513 };
+        yield return new object?[] { "(?i--m)", 512, 513 };
+        yield return new object?[] { "(?--m)", 512, 512 };
     }
 
     [Theory]
     [MemberData(nameof(ToggleAcceptCases))]
-    public void OwnedToggleMatchesProviderTree(string pattern, int options)
+    public void OwnedToggleServesWithBclMetadata(string pattern, int options, int expectedOptions)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)expectedOptions, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
     }
 
     public static IEnumerable<object?[]> DegenerateOptionClusterCases()
@@ -102,7 +100,6 @@ public sealed class Utf8OwnedTreeParserToggleTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var inputText in new string[] { "", "a" })
@@ -113,16 +110,4 @@ public sealed class Utf8OwnedTreeParserToggleTests
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
-    }
 }

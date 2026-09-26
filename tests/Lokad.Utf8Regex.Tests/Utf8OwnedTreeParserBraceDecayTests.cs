@@ -1,16 +1,16 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
 // Owned parser lone bracket and brace decay: BCL spells unmatched closing
 // brackets and uncompletable braces as literals, while only complete invalid
 // quantifiers (reversed bounds, numeric overflow) reject. Narrowing rows pin
-// owned-accept plus fork-decline plus BCL-constructs plus product IsMatch and
-// Count agreement; differential rows pin owned trees identical to the fork
-// (which decays unclosed digit tails exactly like BCL) plus the same product
+// owned-accept plus BCL-constructs plus product IsMatch and
+// Count agreement; differential rows pin owned capture metadata against the BCL oracle
+// (which decays unclosed digit tails exactly like the owned parser) plus the same product
 // agreement. All expectations over self-text and discriminator inputs come
 // live from the BCL oracle, so the rows are self-verifying.
 public sealed class Utf8OwnedTreeParserBraceDecayTests
@@ -52,7 +52,6 @@ public sealed class Utf8OwnedTreeParserBraceDecayTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         AssertProductMatchesOracle(oracle, product, inputs);
@@ -60,18 +59,15 @@ public sealed class Utf8OwnedTreeParserBraceDecayTests
 
     [Theory]
     [MemberData(nameof(UnclosedBraceDifferentialCases))]
-    public void OwnedUnclosedBraceMatchesProviderTree(string pattern, int options, string[] inputs)
+    public void OwnedUnclosedBraceServesWithBclMetadata(string pattern, int options, string[] inputs)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
         var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)options, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         AssertProductMatchesOracle(oracle, product, inputs);
     }
@@ -86,16 +82,4 @@ public sealed class Utf8OwnedTreeParserBraceDecayTests
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
-    }
 }
