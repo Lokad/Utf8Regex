@@ -9,11 +9,12 @@ namespace Lokad.Utf8Regex.Tests;
 // and toggled n identical to the provider trees (unnamed groups in
 // parse-time n become slotless Group nodes with dense renumbering after
 // them, top-level n demotes unnamed groups the same way, backreferences
-// resolve surviving slots (unbound digits fail), simple named definitions
-// register dense slots under top-level n with cross-scope guard,
-// simple named definitions under scoped n stay slotless with mapped slots),
-// plus decline agreement on references into skipped slots; cross-scope named,
-// top-level n, pop, and loop-wrapped residuals still route to the provider.
+// resolve surviving slots (unbound digits fail), unnamed-first numbering holds
+// across explicit scopes (auto groups take the lowest free slots while canonical
+// numbers claim their literal slots, collisions included); scoped n keeps named
+// definitions slotless with mapped slots; decline agreement on references into
+// skipped slots holds; only the flip-decision balance-pop residual still routes
+// to the provider.
 public sealed class Utf8OwnedTreeParserExplicitTests
 {
     public static IEnumerable<object?[]> ExplicitAcceptCases()
@@ -71,6 +72,14 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(a)(?<x>b)\\1", 516 };
         yield return new object?[] { "(?<x>a)", 517 };
         yield return new object?[] { "(?<x>a)(?<y>b)", 516 };
+        yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?n:(?<1>a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?n:(?-n:(b))(?<1>a))", 512 };
+        yield return new object?[] { "(?n:(?<2>a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?n:(a)(?-n:(b)))", 512 };
+        yield return new object?[] { "(?n:(?-n:(b))(c))", 512 };
+        yield return new object?[] { "(?n:(a)(?-n:(b))(c))", 512 };
+        yield return new object?[] { "(?n:(?<x>a)(?-n:(b))(c))", 512 };
     }
 
     public static IEnumerable<object?[]> ExplicitDeclineCases()
@@ -84,7 +93,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
     public static IEnumerable<object?[]> ExplicitResidualCases()
     {
         yield return new object?[] { "(?n:(?<-x>a))", 512 };
-        yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
     }
 
     [Theory]

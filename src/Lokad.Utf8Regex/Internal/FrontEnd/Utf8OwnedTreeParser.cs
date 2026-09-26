@@ -47,11 +47,6 @@ internal static class Utf8OwnedTreeParser
             return null;
         }
 
-        if (state.NamedUnderExplicit && state.SlottedUnderExplicit)
-        {
-            return null;
-        }
-
         if ((options & RegexOptions.IgnoreCase) == 0 &&
             state.LeadingContribution != RegexOptions.None &&
             (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
@@ -1461,11 +1456,6 @@ internal static class Utf8OwnedTreeParser
                     state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = declared, IsAuto = false, Slot = declared });
                 }
 
-                if (underExplicit)
-                {
-                    state.NamedUnderExplicit = true;
-                }
-
                 return true;
             }
 
@@ -1485,10 +1475,6 @@ internal static class Utf8OwnedTreeParser
             }
 
             state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, UnderExplicit = underExplicit });
-            if (underExplicit)
-            {
-                state.NamedUnderExplicit = true;
-            }
 
             return true;
         }
@@ -2931,10 +2917,6 @@ internal static class Utf8OwnedTreeParser
             else
             {
                 slot = ++state.Groups;
-                if (state.ExplicitDepth > 0)
-                {
-                    state.SlottedUnderExplicit = true;
-                }
             }
 
             var groupEntryOptions = state.Options;
@@ -3176,8 +3158,6 @@ internal static class Utf8OwnedTreeParser
         public RegexOptions LeadingContribution;
         public Utf8TreeNode? LeadingGroup;
         public int ExplicitDepth;
-        public bool NamedUnderExplicit;
-        public bool SlottedUnderExplicit;
         public List<OwnedGroupDefinition> GroupDefinitions;
         public List<OwnedBackrefFixup> BackrefFixups;
         public List<int> RequiredSlots;
@@ -3194,7 +3174,6 @@ internal static class Utf8OwnedTreeParser
             LeadingContribution = RegexOptions.None;
             LeadingGroup = null;
             ExplicitDepth = 0;
-            SlottedUnderExplicit = false;
             GroupDefinitions = new List<OwnedGroupDefinition>();
             BackrefFixups = new List<OwnedBackrefFixup>();
             RequiredSlots = new List<int>();
