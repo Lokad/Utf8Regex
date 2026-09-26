@@ -31,6 +31,17 @@ internal static class Utf8AsciiAnchoredPrefixFamilyExecutor
                         plan.SecondaryLiteralUtf8,
                         out matchedLength);
 
+            case Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix:
+                if (plan.LiteralUtf8 is not { Length: > 0 } anchoredLiteral ||
+                    anchoredLiteral.Length > input.Length ||
+                    !input[..anchoredLiteral.Length].SequenceEqual(anchoredLiteral))
+                {
+                    return false;
+                }
+
+                matchedLength = anchoredLiteral.Length;
+                return true;
+
             default:
                 return false;
         }

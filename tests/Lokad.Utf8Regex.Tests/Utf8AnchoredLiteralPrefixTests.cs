@@ -1,0 +1,142 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.FrontEnd;
+
+namespace Lokad.Utf8Regex.Tests;
+
+// Anchored ASCII literal prefixes (^literal and \Aliteral covering the whole
+// pattern) verify by a byte-exact prefix compare: a miss at offset 0 is
+// definitive, so IsMatch and Match never construct the fallback engine.
+// Count, detailed matches, and enumeration stay BCL-backed for now.
+public sealed class Utf8AnchoredLiteralPrefixTests
+{
+    public static IEnumerable<object?[]> AcceptCases()
+    {
+        yield return new object?[] { "^ab" };
+        yield return new object?[] { "\\Aab" };
+        yield return new object?[] { "^a" };
+        yield return new object?[] { "^Test_123" };
+        yield return new object?[] { "^a-b" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AcceptCases))]
+    public void AnchoredLiteralShapesClassifyToPrefixFamily(string pattern)
+    {
+        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
+            pattern, pattern, RegexOptions.CultureInvariant, null);
+
+        Assert.Equal(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
+        Assert.Equal(Utf8FallbackFindModeKind.MatchAtStart, plan.FindMode);
+    }
+
+    public static IEnumerable<object?[]> DeclineCases()
+    {
+        yield return new object?[] { "^ab|cd", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^a.c", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^(ab)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^ab$", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^ab", RegexOptions.Multiline | RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?m:^ab)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "(?i:^ab)", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^ab", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
+        yield return new object?[] { "^\\d+", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^[ab]", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^a{2}", RegexOptions.CultureInvariant };
+        yield return new object?[] { "^ab", RegexOptions.RightToLeft | RegexOptions.CultureInvariant };
+        yield return new object?[] { "^ab", RegexOptions.ECMAScript };
+    }
+
+    [Theory]
+    [MemberData(nameof(DeclineCases))]
+    public void OtherShapesKeepExistingClassification(string pattern, RegexOptions options)
+    {
+        var plan = Utf8FallbackRegexFamilyAnalyzer.ClassifyPattern(
+            pattern, pattern, options, null);
+
+        Assert.NotEqual(Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix, plan.Kind);
+    }
+
+    public static IEnumerable<object?[]> BehaviorCases()
+    {
+        yield return new object?[] { "^ab", "abxx" };
+        yield return new object?[] { "^ab", "xxab" };
+        yield return new object?[] { "^ab", "ab" };
+        yield return new object?[] { "^ab", "x" };
+        yield return new object?[] { "^ab", "" };
+        yield return new object?[] { "^ab", "a" };
+        yield return new object?[] { "^ab", "abcab" };
+        yield return new object?[] { "\\Aab", "abxx" };
+        yield return new object?[] { "\\Aab", "xxab" };
+        yield return new object?[] { "^a", "ax" };
+        yield return new object?[] { "^a", "xa" };
+        yield return new object?[] { "^Test_123", "Test_123!" };
+        yield return new object?[] { "^Test_123", "xTest_123" };
+        yield return new object?[] { "^a-b", "a-bx" };
+        yield return new object?[] { "^a-b", "xa-b" };
+    }
+
+    [Theory]
+    [MemberData(nameof(BehaviorCases))]
+    public void AnchoredLiteralMatchesWithoutFallbackConstruction(string pattern, string inputText)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+            var isMatchRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.IsMatch(inputText), isMatchRegex.IsMatch(input));
+            Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+            var matchRegex = new Utf8Regex(pattern, options);
+            var expected = oracle.Match(inputText);
+            var actual = matchRegex.Match(input);
+            Assert.Equal(expected.Success, actual.Success);
+            Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, actual.IndexInUtf16);
+                Assert.Equal(expected.Length, actual.LengthInUtf16);
+            }
+        }
+    }
+
+    public static IEnumerable<object?[]> NonAsciiBehaviorCases()
+    {
+        // Non-ASCII inputs stay BCL-backed by design (the ASCII direct family
+        // declines them); these pin behavior parity only.
+        yield return new object?[] { "^ab", "\u00e9ab" };
+        yield return new object?[] { "^ab", "ab\u00e9" };
+    }
+
+    [Theory]
+    [MemberData(nameof(BehaviorCases))]
+    [MemberData(nameof(NonAsciiBehaviorCases))]
+    public void AnchoredLiteralOperationsMatchOracle(string pattern, string inputText)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var options = RegexOptions.CultureInvariant;
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+        var expectedCount = 0;
+        foreach (System.Text.RegularExpressions.Match _ in oracle.Matches(inputText))
+        {
+            expectedCount++;
+        }
+
+        var actualCount = 0;
+        var enumerator = regex.EnumerateMatches(input);
+        while (enumerator.MoveNext())
+        {
+            actualCount++;
+        }
+
+        Assert.Equal(expectedCount, actualCount);
+    }
+}

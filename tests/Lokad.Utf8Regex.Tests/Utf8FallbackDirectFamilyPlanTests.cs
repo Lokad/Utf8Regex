@@ -42,4 +42,19 @@ public sealed class Utf8FallbackDirectFamilyPlanTests
         Assert.True(plan.SupportsDefinitiveIsMatch);
         Assert.True(plan.SupportsAsciiTryMatchWithoutValidation);
     }
+
+    [Fact]
+    public void AnchoredAsciiLiteralPrefixSupportsDefinitiveDirectMatch()
+    {
+        var plan = Utf8FallbackDirectFamilyPlan.ForLiteral(
+            Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix,
+            Utf8FallbackFindModeKind.MatchAtStart,
+            "ab"u8.ToArray());
+
+        Assert.True(plan.SupportsAsciiDefinitiveIsMatch);
+        Assert.True(plan.SupportsDefinitiveIsMatch);
+        Assert.True(plan.SupportsAsciiTryMatchWithoutValidation);
+        Assert.False(plan.SupportsThrowIfInvalidOnlyCount);
+        Assert.False(plan.SkipsRequiredPrefilterForCount);
+    }
 }

@@ -478,4 +478,60 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
 
         return builder.ToString();
     }
+
+    // Generic anchored-literal prefix (^literal or \\Aliteral covering the whole
+    // pattern): the match, if any, is exactly the literal at offset 0, so a byte-exact
+    // prefix compare is definitive on every input. Only bare ASCII non-metacharacter
+    // runs qualify, so byte length always equals UTF-16 length in direct results.
+    // Escapes, classes, groups, quantifiers, alternations, anchors, and non-ASCII
+    // decline to the existing routes.
+    // Multiline changes ^ semantics (line starts), and RightToLeft, NonBacktracking,
+    // IgnoreCase, IgnorePatternWhitespace, and ECMAScript change or complicate matching,
+    // so those decline as well. Case folding, multiline line starts, and richer shapes
+    // stay explicit migration debt.
+    public static bool TryParseAnchoredAsciiLiteralPrefix(
+        string pattern,
+        RegexOptions options,
+        out byte[]? prefixUtf8)
+    {
+        prefixUtf8 = null;
+        options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
+        if ((options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking |
+                            RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace |
+                            RegexOptions.ECMAScript)) != 0)
+        {
+            return false;
+        }
+
+        var index = 0;
+        var isCaret = TryConsume(pattern, ref index, "^");
+        var isAbsoluteStart = !isCaret && TryConsume(pattern, ref index, "\\A");
+        if (!isCaret && !isAbsoluteStart)
+        {
+            return false;
+        }
+
+        if (isCaret && (options & RegexOptions.Multiline) != 0)
+        {
+            return false;
+        }
+
+        // ASCII only: byte length must equal UTF-16 length for the direct result
+        // coordinates, which non-ASCII literals would break. Surrogates always decline.
+        var start = index;
+        while (index < pattern.Length &&
+            pattern[index] <= 127 &&
+            !Utf8RegexSyntax.IsRegexMetaCharacter(pattern[index]))
+        {
+            index++;
+        }
+
+        if (index == start || index != pattern.Length)
+        {
+            return false;
+        }
+
+        prefixUtf8 = System.Text.Encoding.UTF8.GetBytes(pattern.Substring(start, index - start));
+        return prefixUtf8.Length > 0;
+    }
 }

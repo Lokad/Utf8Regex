@@ -37,6 +37,7 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     LeadingAnyRunTrailingAsciiLiteral = 30,
     Utf8WordDelimitedTokenCount = 31,
     Utf8BalancedBeginEndCount = 32,
+    AnchoredAsciiLiteralPrefix = 33,
 }
 
 internal enum Utf8FallbackFindModeKind : byte

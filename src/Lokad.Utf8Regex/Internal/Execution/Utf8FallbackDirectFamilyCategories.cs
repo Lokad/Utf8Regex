@@ -8,7 +8,8 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or
         Utf8FallbackDirectFamilyKind.AnchoredQuotedStringPrefix or
         Utf8FallbackDirectFamilyKind.AnchoredPrefixUntilByte or
-        Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail;
+        Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix;
 
     public static bool IsAnchoredWholeMatchFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail or
@@ -51,6 +52,7 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AnchoredNumberPrefix or
         Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail or
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole or
