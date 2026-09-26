@@ -44,7 +44,8 @@ internal static class Utf8RegexPreparer
         var fallbackVerifier = PrepareFallbackVerifier(
             analyzedRegex.SemanticRegex.Pattern,
             analyzedRegex.SemanticRegex.Options,
-            structuralSearchPlan);
+            structuralSearchPlan,
+            analyzedRegex.Features.HasAbsoluteStartAnchor);
 
         var structuralLinearProgram = Utf8StructuralLinearProgram.Create(
             analyzedRegex.ExecutionKind,
@@ -141,10 +142,15 @@ internal static class Utf8RegexPreparer
     internal static Utf8FallbackVerifierPlan PrepareFallbackVerifier(
         string pattern,
         RegexOptions options,
-        Utf8StructuralSearchPlan structuralSearchPlan)
+        Utf8StructuralSearchPlan structuralSearchPlan,
+        bool hasAbsoluteStartAnchor)
     {
         var canUseAnchoredRegex = CanUseAnchoredRegex(pattern, options);
-        var mode = structuralSearchPlan.ProducesBoundedCandidates && canUseAnchoredRegex
+        // Bounded slices rebase start anchors (^, \A) to the slice start, where BCL would
+        // fail them against the true string start. Keep those patterns on the anchored
+        // (start-verified, full-tail) mode, which evaluates anchors in full context.
+        var canUseBoundedSlice = canUseAnchoredRegex && !hasAbsoluteStartAnchor;
+        var mode = structuralSearchPlan.ProducesBoundedCandidates && canUseBoundedSlice
             ? Utf8FallbackVerifierMode.AnchoredSliceRegex
             : canUseAnchoredRegex
                 ? Utf8FallbackVerifierMode.AnchoredRegex

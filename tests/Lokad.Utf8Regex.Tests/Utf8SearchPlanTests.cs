@@ -968,7 +968,7 @@ public sealed class Utf8SearchPlanTests
             null,
             default);
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("using\\s+var.*await", RegexOptions.CultureInvariant, plan);
+        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("using\\s+var.*await", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
 
         Assert.True(verifier.RequiresCandidateEndCoverage);
         Assert.True(verifier.RequiresTrailingAnchorCoverage);
@@ -987,7 +987,7 @@ public sealed class Utf8SearchPlanTests
                                                   ExactRequiredLength = 5,
                                               })).StructuralSearchPlan;
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("foo..", RegexOptions.CultureInvariant, plan);
+        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("foo..", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
 
         Assert.True(verifier.RequiresCandidateEndCoverage);
         Assert.False(verifier.RequiresTrailingAnchorCoverage);
@@ -1001,6 +1001,39 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxfoofooyy")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxfooxxxyy")));
+    }
+
+    [Theory]
+    [InlineData("^ab", "xxab")]
+    [InlineData("^ab", "xxabxxab")]
+    [InlineData("^a", "xa")]
+    [InlineData("\\Aab", "xab")]
+    [InlineData("^ab", "abxx")]
+    [InlineData("\\Aab", "abxx")]
+    [InlineData("(?m:^ab)", "ab")]
+    [InlineData("(?m:^ab)", "x\nab")]
+    public void StartAnchoredCandidatesVerifyAgainstTheTrueStringStart(string pattern, string inputText)
+    {
+        // Bounded slices rebase ^ and \\A to the slice start; verification must use
+        // the full-tail anchored mode so misses away from the string start stay misses.
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+
+        Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+        Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+        var expected = oracle.Match(inputText);
+        var actual = regex.Match(input);
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+        {
+            Assert.Equal(expected.Index, actual.IndexInUtf16);
+            Assert.Equal(expected.Length, actual.LengthInUtf16);
+        }
+
+        var expectedDetailed = oracle.Match(inputText);
+        var actualDetailed = regex.MatchDetailed(input);
+        Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
     }
 
     [Fact]
@@ -1053,7 +1086,7 @@ public sealed class Utf8SearchPlanTests
                                                   MaxPossibleLength = 6,
                                               })).StructuralSearchPlan;
 
-        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("(foo)\\\\1?", RegexOptions.CultureInvariant, plan);
+        var verifier = Utf8RegexPreparer.PrepareFallbackVerifier("(foo)\\\\1?", RegexOptions.CultureInvariant, plan, hasAbsoluteStartAnchor: false);
 
         Assert.True(plan.ProducesBoundedCandidates);
         Assert.False(verifier.RequiresCandidateEndCoverage);
