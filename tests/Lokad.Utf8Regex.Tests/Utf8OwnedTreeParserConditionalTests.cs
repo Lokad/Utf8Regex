@@ -34,6 +34,10 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         yield return new object?[] { "(?i:(a)(?(1)b|c))", 512 };
         yield return new object?[] { "(a)(?(1)b|c)+", 512 };
         yield return new object?[] { "((a)(?(1)b|c))", 512 };
+        yield return new object?[] { "(a)(?(01)b|c)", 512 };
+        yield return new object?[] { "(b)(?(01)c|d)", 512 };
+        yield return new object?[] { "(?(007)a|b)(?<7>c)", 512 };
+        yield return new object?[] { "(?(01)a|b)(a)", 512 };
     }
 
     public static IEnumerable<object?[]> ConditionalDeclineCases()
@@ -43,6 +47,8 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         yield return new object?[] { "(?(1))", 512 };
         yield return new object?[] { "(?(1)|b)", 512 };
         yield return new object?[] { "(a)(?(1)b|c)", 516 };
+        yield return new object?[] { "(?(01)a|b)", 512 };
+        yield return new object?[] { "(?<x>a)(?(02)b|c)", 512 };
     }
 
     [Theory]
@@ -129,6 +135,33 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         }
     }
 
+    public static IEnumerable<object?[]> ConditionalZeroDigitCases()
+    {
+        // BCL serves (?(0)...)/(?(00)...) as never-matching tests while nonzero
+        // zero-padded numbers resolve strictly by slot. The fork serves these with
+        // a different tree shape, so they pin owned-accept plus fork-serves plus
+        // BCL behavior instead of tree equality.
+        yield return new object?[] { "(?(00)a|b)", 512, new string[] { "b", "a", "" } };
+        yield return new object?[] { "(?(0)a|b)", 512, new string[] { "b", "a", "" } };
+        yield return new object?[] { "(a)(?(00)b|c)", 512, new string[] { "ac", "a", "c" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(ConditionalZeroDigitCases))]
+    public void OwnedConditionalServesZeroDigit(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
+    }
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
     {
         return (int)right.Kind == (int)left.Kind &&

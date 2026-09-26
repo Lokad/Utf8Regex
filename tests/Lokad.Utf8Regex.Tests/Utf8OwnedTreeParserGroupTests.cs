@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -19,11 +20,9 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?'x'a)", 512 };
         yield return new object?[] { "(?<x>a)(?<y>b)", 512 };
         yield return new object?[] { "(?<ab12>c)", 512 };
-        yield return new object?[] { "(?<0>a)", 512 };
         yield return new object?[] { "(?<a b>c)", 512 };
         yield return new object?[] { "(?<,>a)", 512 };
         yield return new object?[] { "(?<9>a)", 512 };
-        yield return new object?[] { "(?<007>a)", 512 };
         yield return new object?[] { "(a)(?<x>b)", 512 };
         yield return new object?[] { "(?<x>a)(b)", 512 };
         yield return new object?[] { "(?<x>a)(?<x>b)", 512 };
@@ -56,8 +55,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(a)(?<1>b)", 512 };
         yield return new object?[] { "(?<2>a)", 512 };
         yield return new object?[] { "(?<2>a)(b)", 512 };
-        yield return new object?[] { "(?<00>a)", 512 };
-        yield return new object?[] { "(?<01>a)", 512 };
         yield return new object?[] { "(a)(?<x>b)(?<y>c)(d)", 512 };
         yield return new object?[] { "(?<x>a)(b)(?<y>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<y>b)(c)", 512 };
@@ -77,13 +74,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(a)\\k<1>", 512 };
         yield return new object?[] { "(?<1>a)\\k<1>", 512 };
         yield return new object?[] { "(?<1>a)\\k'1'", 512 };
-        yield return new object?[] { "(?<0>a)(b)", 512 };
-        yield return new object?[] { "(?<00>a)(?<0>b)", 512 };
-        yield return new object?[] { "(?<x>a)(?<007>b)", 512 };
-        yield return new object?[] { "(a)(?<007>b)(c)", 512 };
         yield return new object?[] { "(?<1>a)(?<1>b)", 512 };
-        yield return new object?[] { "(?<000>a)", 512 };
-        yield return new object?[] { "(?<01>a)(b)", 512 };
         yield return new object?[] { "(?<10>a)", 512 };
         yield return new object?[] { "(?<10>a)\\k<10>", 512 };
         yield return new object?[] { "(a)\\1\\12", 512 };
@@ -94,9 +85,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<9>a)(b)(?<8>c)", 512 };
         yield return new object?[] { "(?<9>a)(?<x>b)", 512 };
         yield return new object?[] { "(?<x>a)(?<9>b)", 512 };
-        yield return new object?[] { "(?<007>a)(?<-007>b)", 512 };
         yield return new object?[] { "(?<1>a)(?<-01>b)", 512 };
-        yield return new object?[] { "(?<01>a)(?<-1>b)", 512 };
         yield return new object?[] { "(?<x>a)(?<1>b)", 512 };
         yield return new object?[] { "(?<2>a)(?<x>b)(?<1>c)", 512 };
         yield return new object?[] { "(?<1>a)(?<x>b)(?<2>c)", 512 };
@@ -104,14 +93,11 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<x>a)(?<2>b)", 512 };
         yield return new object?[] { "(?<2>a)(?<2>b)", 512 };
         yield return new object?[] { "(?<+1>a)", 512 };
-        yield return new object?[] { "(?<1a>b)", 512 };
-        yield return new object?[] { "(?'1a'b)", 512 };
         yield return new object?[] { "(?<a+>b)", 512 };
         yield return new object?[] { "(?<.>b)", 512 };
         yield return new object?[] { "(?<\\\\>b>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<x>b)(?<x>c)", 512 };
         yield return new object?[] { "(\\k<x>)(?<x>a)(?<x>b)", 512 };
-        yield return new object?[] { "(?<01>a)(?<1>b)", 512 };
         yield return new object?[] { "(?<a+>b)\\k<a+>", 512 };
         yield return new object?[] { "(?<\u00E9>x)\\k<\u00E9>", 512 };
         yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)\\11", 512 };
@@ -153,7 +139,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(a)\\12+", 512 };
         yield return new object?[] { "(a)(b)\\12?", 512 };
         yield return new object?[] { "(?<1>a)(?<-1>b)", 512 };
-        yield return new object?[] { "(?<007>a)(?<-7>b)", 512 };
         yield return new object?[] { "(a)(?<-1>b)", 512 };
         yield return new object?[] { "(?<X>a)", 512 };
         yield return new object?[] { "(?<x>ab)", 512 };
@@ -163,11 +148,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<xy>ab)", 512 };
         yield return new object?[] { "(?<x>a)\\k'x'", 512 };
         yield return new object?[] { "\\k<0>", 512 };
-        yield return new object?[] { "(?<0>a)\\k<0>", 512 };
-        yield return new object?[] { "(?<0a>b)", 512 };
-        yield return new object?[] { "(?<99999999999999999999>a)", 512 };
         yield return new object?[] { "(?<2147483647>a)", 512 };
-        yield return new object?[] { "(?<2147483648>a)", 512 };
         yield return new object?[] { "\\078", 512 };
         yield return new object?[] { "\\080", 512 };
         yield return new object?[] { "\\09", 512 };
@@ -207,7 +188,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<a-b>c)(d)" };
         yield return new object?[] { "(?<9>a)\\1" };
         yield return new object?[] { "(?<9>a)(b)\\2" };
-        yield return new object?[] { "(?<7>a)\\k<007>" };
         yield return new object?[] { "\\k<10>" };
         yield return new object?[] { "\\k'1'" };
         yield return new object?[] { "(?<-1>b)" };
@@ -263,6 +243,123 @@ public sealed class Utf8OwnedTreeParserGroupTests
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
     }
 
+    public static IEnumerable<object?[]> GroupLeadingZeroDeclineCases()
+    {
+        yield return new object?[] { "(?<0>a)", 512 };
+        yield return new object?[] { "(?<007>a)", 512 };
+        yield return new object?[] { "(?<00>a)", 512 };
+        yield return new object?[] { "(?<01>a)", 512 };
+        yield return new object?[] { "(?<00>a)(?<0>b)", 512 };
+        yield return new object?[] { "(?<x>a)(?<007>b)", 512 };
+        yield return new object?[] { "(a)(?<007>b)(c)", 512 };
+        yield return new object?[] { "(?<000>a)", 512 };
+        yield return new object?[] { "(?<007>a)(?<-007>b)", 512 };
+        yield return new object?[] { "(?<01>a)(?<-1>b)", 512 };
+        yield return new object?[] { "(?<007>a)(?<-7>b)", 512 };
+        yield return new object?[] { "(?<007>a)", 513 };
+        yield return new object?[] { "(?<0>a)(b)", 512 };
+        yield return new object?[] { "(?<0>a)\\k<0>", 512 };
+        yield return new object?[] { "(?<1a>b)", 512 };
+        yield return new object?[] { "(?<0a>b)", 512 };
+        yield return new object?[] { "(?<01>a)(?(01)b|c)", 512 };
+        yield return new object?[] { "(?<007>a)(b)(c)(d)(e)(f)(g)", 512 };
+        yield return new object?[] { "(?n)(?<01>a)(b)", 512 };
+        yield return new object?[] { "(?n)(a)(?<01>b)", 512 };
+        yield return new object?[] { "(?<01>a)(?<01>b)", 512 };
+        yield return new object?[] { "(?'1a'b)", 512 };
+        yield return new object?[] { "(?<99999999999999999999>a)", 512 };
+        yield return new object?[] { "(?<2147483648>a)", 512 };
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupLeadingZeroDeclineCases))]
+    public void OwnedGroupDeclinesLeadingZeroDefinition(string pattern, int options)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+    }
+
+    public static IEnumerable<object?[]> GroupZeroPaddedRefCases()
+    {
+        yield return new object?[] { "(?<7>a)\\k<007>", 512, new string[] { "aa", "ab", "a" } };
+        yield return new object?[] { "(?<7>a)\\k<07>", 512, new string[] { "aa", "ab", "a" } };
+        yield return new object?[] { "(?<1>a)\\k<01>", 512, new string[] { "aa", "ab", "a" } };
+        yield return new object?[] { "(?<01>a)(b)\\k<01>", 512, new string[] { "abb", "ab", "a" } };
+        yield return new object?[] { "(?<01>a)(?<1>b)\\k<01>", 512, new string[] { "aba", "ab", "a" } };
+        yield return new object?[] { "(?<1>a)(?<01>b)\\k<01>", 512, new string[] { "aba", "ab", "a" } };
+        yield return new object?[] { "(?<7>a)\\k'007'", 512, new string[] { "aa", "ab", "a" } };
+        yield return new object?[] { "(b)\\k<01>", 512, new string[] { "bb", "ab", "b" } };
+    }
+    [Theory]
+    [MemberData(nameof(GroupZeroPaddedRefCases))]
+    public void OwnedGroupResolvesZeroPaddedRef(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            (RegexOptions)options,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
+    }
+
+    public static IEnumerable<object?[]> GroupTransparentDefinitionCases()
+    {
+        // BCL zero-padded nonzero definitions are transparent groups with a slot
+        // constraint: the content matches with no slot and no name, while the
+        // stripped slot must exist elsewhere (unnamed, canonical, or named). The
+        // fork serves these with a different tree shape, so they pin owned-accept
+        // plus fork-serves plus BCL metadata and behavior instead of tree equality.
+        yield return new object?[] { "(?<01>a)(b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(?<01>a)(?<1>b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(?<1>a)(?<01>b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(a)(?<01>x)", 512, new string[] { "a", "b", "" } };
+        yield return new object?[] { "(a)(?<01>x)(b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(b)(?<01>a)", 512, new string[] { "ba", "a", "b" } };
+        yield return new object?[] { "(?<01>a)(b)(c)", 512, new string[] { "abc", "ab", "a" } };
+        yield return new object?[] { "(?<01>ab)(b)", 512, new string[] { "abb", "ab", "a" } };
+        yield return new object?[] { "(?<01>(a))", 512, new string[] { "a", "b", "" } };
+        yield return new object?[] { "(?<01>a)(?=(b))", 512, new string[] { "ab", "a" } };
+        yield return new object?[] { "(?<01>a)(?:(b))", 512, new string[] { "ab", "a" } };
+        yield return new object?[] { "(?<01>a)(?<x>b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(?<01>a)(?'x'b)", 512, new string[] { "ab", "a", "b" } };
+        yield return new object?[] { "(?<01>a)(b)\\1", 512, new string[] { "abb", "ab", "a" } };
+        yield return new object?[] { "(?<01>a)(?<01>b)(c)", 512, new string[] { "abc", "ab" } };
+        yield return new object?[] { "(?<01>a)(?<02>b)(c)(d)", 512, new string[] { "abcd", "abc" } };
+        yield return new object?[] { "(a)(?<02>x)(b)", 512, new string[] { "ab", "a" } };
+        yield return new object?[] { "(?<02>a)(b)(c)", 512, new string[] { "abc", "ab" } };
+        yield return new object?[] { "(?<00000000000000000000001>a)(b)", 512, new string[] { "ab", "a" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupTransparentDefinitionCases))]
+    public void OwnedGroupServesTransparentDefinition(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
+    }
     private static void AssertHashtableEqual(Hashtable? expected, Hashtable? actual)
     {
         if (expected is null)

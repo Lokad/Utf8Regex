@@ -1431,9 +1431,22 @@ internal static class Utf8OwnedTreeParser
 
             if (IsAllAsciiDigits(name) && TryParseGroupNumber(name, out var declared))
             {
-                if (underExplicit && declared == 0)
+                if (declared == 0)
                 {
                     return false;
+                }
+
+                if (name.Length > 1 && name[0] == '0')
+                {
+                    // BCL transparent-constrained definition: the content matches
+                    // with no slot and no name (lowered exactly like (?:)), while
+                    // the end pass requires the stripped slot to exist elsewhere.
+                    var transparent = new Utf8TreeNode(Utf8TreeNodeKind.Group, namedEntryOptions);
+                    transparent.Children = body;
+                    body.Parent = transparent;
+                    node = transparent;
+                    state.RequiredSlots.Add(declared);
+                    return true;
                 }
 
                 if (!underExplicit)
@@ -1458,15 +1471,10 @@ internal static class Utf8OwnedTreeParser
 
             if (IsAllAsciiDigits(name) || IsAsciiDigit(name[0]))
             {
-                if (underExplicit)
-                {
-                    return false;
-                }
-
-                group.Str = name;
-                group.M = -1;
-                group.N = -1;
-                return true;
+                // BCL rejects every survivor of this branch: all-digit overflow
+                // fails group-number construction, and digit-start names are
+                // invalid group names. Only (?:)-style transparency above serves.
+                return false;
             }
 
             if (!underExplicit)
@@ -1677,6 +1685,14 @@ internal static class Utf8OwnedTreeParser
                 }
             }
 
+            foreach (var required in state.RequiredSlots)
+            {
+                if (!slots.Contains(required))
+                {
+                    return false;
+                }
+            }
+
             var orderedSlots = new List<int>(slots);
             captureCount = orderedSlots.Count;
 
@@ -1798,7 +1814,13 @@ internal static class Utf8OwnedTreeParser
 
             if (fixup.Name is not null)
             {
-                if (!slotByName.TryGetValue(fixup.Name, out var namedSlot))
+                var lookupName = fixup.Name;
+                if (lookupName.Length > 1 && IsAllAsciiDigits(lookupName))
+                {
+                    lookupName = lookupName.TrimStart('0');
+                }
+
+                if (!slotByName.TryGetValue(lookupName, out var namedSlot))
                 {
                     // BCL evaluates undefined conditional names as never-matching
                     // tests; only backreferences to undefined names fail construction.
@@ -1828,6 +1850,15 @@ internal static class Utf8OwnedTreeParser
 
             if (fixup.IsConditional)
             {
+                // BCL serves (?(0)...)/(?(00)...) as never-matching tests while
+                // undefined nonzero numbers fail construction.
+                if (fixup.Digits is not null &&
+                    int.TryParse(fixup.Digits, out var conditionalNumber) &&
+                    conditionalNumber == 0)
+                {
+                    return true;
+                }
+
                 return false;
             }
 
@@ -2716,11 +2747,9 @@ internal static class Utf8OwnedTreeParser
             string? name = null;
             if (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
             {
-                if (state.Pattern[state.Position] == '0')
-                {
-                    return false;
-                }
-
+                // Leading zeros ride the strict digit path: the end pass resolves
+                // the stripped number, serves (?(0)...)/(?(00)...) as
+                // never-matching tests, and declines undefined nonzero numbers.
                 var digitsStart = state.Position;
                 while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
                 {
@@ -3175,6 +3204,7 @@ internal static class Utf8OwnedTreeParser
         public bool SlottedUnderExplicit;
         public List<OwnedGroupDefinition> GroupDefinitions;
         public List<OwnedBackrefFixup> BackrefFixups;
+        public List<int> RequiredSlots;
 
         public ParserState(string pattern, RegexOptions options)
         {
@@ -3191,6 +3221,7 @@ internal static class Utf8OwnedTreeParser
             SlottedUnderExplicit = false;
             GroupDefinitions = new List<OwnedGroupDefinition>();
             BackrefFixups = new List<OwnedBackrefFixup>();
+            RequiredSlots = new List<int>();
         }
 
         public bool AtEnd => Position >= Pattern.Length;

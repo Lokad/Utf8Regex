@@ -114,7 +114,6 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
         yield return new object?[] { "(?<x>(?i:a))", 512 };
         yield return new object?[] { "(?<x>a)\\k<x>", 513 };
         yield return new object?[] { "(?<9>a)(b)", 513 };
-        yield return new object?[] { "(?<007>a)", 513 };
         yield return new object?[] { "\\01", 513 };
         yield return new object?[] { "\\10", 513 };
         yield return new object?[] { "\\101", 513 };
