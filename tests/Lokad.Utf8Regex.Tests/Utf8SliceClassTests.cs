@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -76,8 +77,9 @@ public sealed class Utf8SliceClassTests
 
     public static IEnumerable<object?[]> UnrecognizedClassEscapes()
     {
-        // BCL rejects anchor escapes inside classes at construction; the lazy
-        // legacy route surfaces the same RegexParseException on first use.
+        // BCL rejects anchor escapes inside classes at construction; the owned parser
+        // declines them, so the flip surfaces the same RegexParseException eagerly at
+        // construction instead of the old fork serving them to a lazy first-use failure.
         yield return new object?[] { "[\\A]+" };
         yield return new object?[] { "[\\z]+" };
         yield return new object?[] { "[\\B]+" };
@@ -87,9 +89,12 @@ public sealed class Utf8SliceClassTests
     [MemberData(nameof(UnrecognizedClassEscapes))]
     public void UnrecognizedClassEscapesFailLikeRuntime(string pattern)
     {
-        Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        Assert.Throws<RegexParseException>(() => regex.IsMatch(Encoding.UTF8.GetBytes("a")));
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
+        var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        var actual = Assert.Throws<RegexParseException>(() => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(expected.Error, actual.Error);
+        Assert.Equal(expected.Offset, actual.Offset);
+        Assert.Equal(expected.Message, actual.Message);
     }
 
     public static IEnumerable<object?[]> IsMatchCases()

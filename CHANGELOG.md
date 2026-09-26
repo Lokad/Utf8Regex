@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+### Parser ownership
+
+- The regex front end is now fully owned: the previous `System.Text.RegularExpressions`
+  parser fork (`Internal/FrontEnd/Runtime`) was removed by forward deletion, and the
+  owned parser (`Utf8OwnedTreeParser`) is the sole parse-tree source. No Microsoft
+  regex source is vendored anywhere; BCL `Regex` remains the semantic oracle for
+  behavior and the compatibility fallback for declined shapes.
+- Conformance bug fix: `(?n:(?<-x>a))` (balancing pop of undefined group `x`),
+  `(?<=(?<1a>b))c` (invalid capture name `1a`), and the class escapes `[\\A]+`,
+  `[\\z]+`, `[\\B]+` (anchor escapes BCL rejects inside classes) were accidentally
+  accepted by the old fork and are now rejected at construction with the identical
+  .NET 10 `RegexParseException` (error and offset included), like every other
+  invalid pattern. Valid named/numeric groups and balancing pops keep constructing
+  unchanged. The expression-conditional `(?(?=a)b|c)` still matches BCL-exactly
+  through the fallback, but its inspection reason is now the generic
+  `unsupported_pattern`: the owned tree parser declines expression conditionals,
+  so no tree features refine the taxonomy.
+
 ## 0.3.0 - 2026-08-28
 
 This release completes and qualifies the selected managed PCRE2 profile while

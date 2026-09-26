@@ -246,13 +246,52 @@ public sealed class EngineDependencyInventoryTests
     }
 
     [Fact]
-    public void ProductionSourceReachesBclRegexInternalsOnlyThroughTheVendoredFrontEnd()
+    public void VendoredParserForkIsAbsent()
     {
-        // R05: BCL regex implementation types (parser, nodes, char classes,
-        // writers/compilers/interpreters, persisted assemblies) are reachable
-        // only via the vendored front-end tree. Everywhere else they must be
-        // qualified through a FrontEnd alias or live in a file with a FrontEnd
-        // using. Own IL emission (Utf8Emit*) is the owned engine and is out of scope here.
+        // Parser flip (2026-09-26): the vendored Runtime/* parser fork was removed by
+        // forward deletion under the no-vendor rule. No production source may reference
+        // its types, seam, or directory again.
+        var repoRoot = FindRepositoryRoot();
+        Assert.False(Directory.Exists(Path.Combine(repoRoot, "src", "Lokad.Utf8Regex", "Internal", "FrontEnd", "Runtime")));
+        var tokens = new[] { "RuntimeFrontEnd", "FrontEnd.Runtime", "TryParseLegacy", "FromLegacy" };
+        var offenders = new System.Collections.Generic.List<string>();
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(repoRoot, "src"), "*.cs", SearchOption.AllDirectories))
+        {
+            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var number = 0;
+            foreach (var line in File.ReadLines(path))
+            {
+                number++;
+                foreach (var token in tokens)
+                {
+                    if (line.Contains(token, StringComparison.Ordinal))
+                    {
+                        offenders.Add($"{GetRelativePath(path)}:{number}: {line.Trim()}");
+                        break;
+                    }
+                }
+            }
+        }
+
+        Assert.Empty(offenders);
+    }
+
+    [Fact]
+    public void ProductionSourceReachesBclRegexInternalsOnlyThroughTheOwnedFrontEnd()
+    {
+        // R05 (parser flip 2026-09-26): BCL regex implementation types (parser, nodes,
+        // char classes, writers/compilers/interpreters, persisted assemblies)
+        // are reachable only through the owned front-end layer, whose Utf8-prefixed
+        // type names share substrings with the BCL vocabulary. Everywhere else they
+        // must be qualified through a FrontEnd alias or live in a file with a
+        // FrontEnd using. Own IL emission (Utf8Emit*) is the owned engine and is
+        // out of scope here. The vendored fork itself is gone; VendoredParserForkIsAbsent
+        // pins its absence.
         var repoRoot = FindRepositoryRoot();
         var srcRoot = Path.Combine(repoRoot, "src");
         var tokens = new[]
@@ -283,8 +322,7 @@ public sealed class EngineDependencyInventoryTests
             }
 
             var text = File.ReadAllText(path);
-            var hasFrontEndUsing = text.Contains("Internal.FrontEnd", StringComparison.Ordinal) ||
-                text.Contains("RuntimeFrontEnd", StringComparison.Ordinal);
+            var hasFrontEndUsing = text.Contains("Internal.FrontEnd", StringComparison.Ordinal);
             var number = 0;
             foreach (var line in File.ReadLines(path))
             {

@@ -37,6 +37,7 @@ public sealed class CoreCompilationArchitectureTests
         Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Utf8FallbackRegexFamilyAnalyzer.cs")));
         Assert.True(File.Exists(Path.Combine(sourceRoot, "Internal", "Execution", "Utf8SearchExecutor.cs")));
         Assert.False(File.Exists(Path.Combine(sourceRoot, "Utf8Regex.Partials.cs")));
+        Assert.False(Directory.Exists(Path.Combine(sourceRoot, "Internal", "FrontEnd", "Runtime")));
 
         foreach (var planningSourcePath in Directory.EnumerateFiles(
                      Path.Combine(sourceRoot, "Internal", "Planning"),
@@ -175,8 +176,7 @@ public sealed class CoreCompilationArchitectureTests
             BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
         var optionalParameters = assembly.GetTypes()
             .Where(static type =>
-                type.Namespace?.StartsWith("Lokad.Utf8Regex.Internal", StringComparison.Ordinal) == true &&
-                !type.Namespace.StartsWith("Lokad.Utf8Regex.Internal.FrontEnd.Runtime", StringComparison.Ordinal))
+                type.Namespace?.StartsWith("Lokad.Utf8Regex.Internal", StringComparison.Ordinal) == true)
             .SelectMany(type =>
                 type.GetMethods(declaredMembers).Cast<MethodBase>()
                     .Concat(type.GetConstructors(declaredMembers)))
@@ -188,10 +188,8 @@ public sealed class CoreCompilationArchitectureTests
         Assert.True(optionalParameters.Length == 0, string.Join(Environment.NewLine, optionalParameters));
 
         var sourceRoot = FindCoreSourceDirectory();
-        var copiedRuntimeRoot = Path.Combine(sourceRoot, "Internal", "FrontEnd", "Runtime") + Path.DirectorySeparatorChar;
         var nullSuppression = new Regex(@"(?<=[A-Za-z0-9_\)\]])!(?=[\.,;\)\]\[])", RegexOptions.CultureInvariant);
         var suppressions = Directory.EnumerateFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
-            .Where(path => !path.StartsWith(copiedRuntimeRoot, StringComparison.OrdinalIgnoreCase))
             .SelectMany(path => File.ReadLines(path)
                 .Select((line, lineNumber) => (path, line, lineNumber))
                 .Where(item => nullSuppression.IsMatch(item.line)))

@@ -182,17 +182,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "\\C", RegexParseError.UnrecognizedEscape, 2 };
         yield return new object?[] { "\\E", RegexParseError.UnrecognizedEscape, 2 };
         yield return new object?[] { "\\Q", RegexParseError.UnrecognizedEscape, 2 };
-    }
-
-    public static IEnumerable<object?[]> LookaroundResidualCases()
-    {
-        // Fork-widening debt (no-vendor rule): BCL rejects upper-bound shorthand escapes
-        // while the pristine fork accepts them; the provider gatekeeper still declines them.
-        yield return new object?[] { "[a-\\d]", 512 };
-        yield return new object?[] { "[a-\\p{L}]", 512 };
-        yield return new object?[] { "[--\\d]", 512 };
-
-        yield return new object?[] { "(?<=(?<1a>b))c", 512 };
+        yield return new object?[] { "(?<=(?<1a>b))c", RegexParseError.CaptureGroupNameInvalid, 8 };
     }
 
     [Theory]
@@ -216,14 +206,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
         Assert.Equal(error, thrown.Error);
         Assert.Equal(offset, thrown.Offset);
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaroundResidualCases))]
-    public void OwnedLookaroundDeclinesResidual(string pattern, int options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     public static IEnumerable<object?[]> LookaroundNarrowingCases()

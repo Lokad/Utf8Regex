@@ -2706,7 +2706,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData("(?!ab)ab", "unsupported_lookaround")]
     [InlineData("(?>ab)c", "unsupported_atomic")]
     [InlineData("(a)?(?(1)ab|cd)", "unsupported_conditional")]
-    [InlineData("(?(?=a)b|c)", "unsupported_conditional")]
+    [InlineData("(?(?=a)b|c)", "unsupported_pattern")]
     [InlineData("ab+", "unsupported_loop")]
     public void ConstructorExposesSemanticFallbackReasonForUnsupportedPatternFamilies(string pattern, string expectedReason)
     {

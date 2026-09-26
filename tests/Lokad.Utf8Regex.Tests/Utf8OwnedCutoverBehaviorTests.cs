@@ -3,16 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Cutover-readiness differential (choke-point evidence): every residual shape the
-// owned parser declines while the fork serves is compared behaviorally between the
-// current product route and the BCL oracle over a fixed probe corpus plus a
-// deterministic seeded fuzz stream (128 xorshift inputs over a metachar-heavy
-// alphabet) and two astral inputs. Witness depth covers construction verdicts,
-// group metadata, first-match positions, detailed group values and positions,
-// counts, and whole-match replacement. Each row
-// either agrees (null witness: safe to flip to BCL fallback at the choke point)
-// or reproduces its documented divergence below (non-null witness). A vanished
-// witness or a new witness both fail, forcing re-triage before the flip.
+// Owned-cutover differential: every remaining residual shape is compared
+// behaviorally between the current product route and the BCL oracle over a fixed
+// probe corpus plus a deterministic seeded fuzz stream (128 xorshift inputs over
+// a metachar-heavy alphabet) and two astral inputs. Witness depth covers
+// construction verdicts, group metadata, first-match positions, detailed group
+// values and positions, counts, and whole-match replacement. Each row either
+// agrees (null witness) or reproduces its documented divergence below (non-null
+// witness). A vanished witness or a new witness both fail, forcing re-triage.
 public sealed class Utf8OwnedCutoverBehaviorTests
 {
     private static readonly string[] ProbeCorpus =
@@ -29,14 +27,17 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     // census: 84 of 128; 77 of 121 after the 2026-09-26 leading-scope graduation
     // (40 clean rows serve BCL-exactly, 22 rejoin below under owned serving);
     // 5 of 43 after the 2026-09-26 numeric-lookbehind graduation (36 numeric plus
-    // 2 phantom rows serve BCL-exactly with null witnesses, entries removed).
+    // 2 phantom rows serve BCL-exactly with null witnesses, entries removed);
+    // 3 of 43 after the 2026-09-26 parser flip (2 widening rows become BCL-exact
+    // construction failures, entries removed).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
-    // - Fork-widening family (2): the fork serves shapes BCL rejects at construction
-    //   (balance pop under explicit capture; invalid group name inside lookbehind).
-    //   The flip turns serving into construction failure: blocked on an explicit
-    //   compatibility decision, never flipped silently.
+    // - Fork-widening family (2, corrected at the 2026-09-26 flip): the fork served
+    //   shapes BCL rejects at construction (balance pop under explicit capture;
+    //   invalid group name inside lookbehind). Construction now throws BCL-exactly;
+    //   Utf8CompileFailureDiffTests pins the errors and the parser batteries pin
+    //   owned-decline plus the BCL verdicts.
     // - Cross-scope numbering family (5): groups after an n-establishment lose their
     //   numbers in fork metadata while BCL numbers them. The flip changes the group
     //   APIs; match outcomes already agree. Includes the unscoped-outside case (?n:a)(b).
@@ -60,8 +61,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   for them either.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
-        ("(?n:(?<-x>a))", 512),
-        ("(?<=(?<1a>b))c", 512),
         ("(?i:[ab]){2}|(?:a.)", 512),
         ("(?m:\\d){2}|(?:a.)", 512),
         ("(?n:a){2}|(?:a.)", 512),
@@ -73,22 +72,8 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     };
 
     [Theory]
-    [MemberData(nameof(Utf8OwnedTreeParserLookaroundTests.LookaroundResidualCases), MemberType = typeof(Utf8OwnedTreeParserLookaroundTests))]
-    public void LookaroundResidualCutoverDisposition(string pattern, int options)
-    {
-        AssertCutoverDisposition(pattern, (RegexOptions)options);
-    }
-
-    [Theory]
     [MemberData(nameof(Utf8OwnedTreeParserIgnoreCaseTests.IgnoreCaseResidualCases), MemberType = typeof(Utf8OwnedTreeParserIgnoreCaseTests))]
     public void IgnoreCaseResidualCutoverDisposition(string pattern, int options)
-    {
-        AssertCutoverDisposition(pattern, (RegexOptions)options);
-    }
-
-    [Theory]
-    [MemberData(nameof(Utf8OwnedTreeParserExplicitTests.ExplicitResidualCases), MemberType = typeof(Utf8OwnedTreeParserExplicitTests))]
-    public void ExplicitResidualCutoverDisposition(string pattern, int options)
     {
         AssertCutoverDisposition(pattern, (RegexOptions)options);
     }

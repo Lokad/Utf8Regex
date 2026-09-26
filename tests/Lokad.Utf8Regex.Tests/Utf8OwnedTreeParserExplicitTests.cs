@@ -91,11 +91,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(?n:(?<-x>a))", 512, RegexParseError.UndefinedNamedReference, 9 };
     }
 
-    public static IEnumerable<object?[]> ExplicitResidualCases()
-    {
-        yield return new object?[] { "(?n:(?<-x>a))", 512 };
-    }
-
     [Theory]
     [MemberData(nameof(ExplicitAcceptCases))]
     public void OwnedExplicitServesWithBclMetadata(string pattern, int options, int expectedOptions)
@@ -119,14 +114,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
         Assert.Equal(error, thrown.Error);
         Assert.Equal(offset, thrown.Offset);
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitResidualCases))]
-    public void OwnedExplicitDeclinesResidual(string pattern, int options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     public static IEnumerable<object?[]> ExplicitNarrowingCases()
