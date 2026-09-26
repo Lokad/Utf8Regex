@@ -146,7 +146,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     {
         var root = FindRepositoryRoot();
         var projector = File.ReadAllText(Path.Combine(root, "src", "Lokad.Utf8Regex", "Internal", "FrontEnd", "DotNetAsciiCharClassProjector.cs"));
-        Assert.Contains("RegexCharClass", projector, StringComparison.Ordinal);
+        Assert.Contains("Utf8OwnedCharClass", projector, StringComparison.Ordinal);
 
         var formerProjectors = new[]
         {

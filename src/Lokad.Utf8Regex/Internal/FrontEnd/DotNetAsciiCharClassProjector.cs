@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 /// <summary>
-/// The sole projection boundary from the vendored .NET RegexCharClass encoding
+/// The sole projection boundary from the owned character-class wire encoding
 /// to the flavor-neutral ASCII byte-set carrier.
 /// </summary>
 internal static class DotNetAsciiCharClassProjector

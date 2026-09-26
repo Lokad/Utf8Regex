@@ -10,7 +10,6 @@ using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -7325,7 +7324,7 @@ internal static partial class BenchmarkInspectReporter
 
     private static bool IsBoundaryWordRune(Rune value)
     {
-        return value.IsBmp && RegexCharClass.IsBoundaryWordChar((char)value.Value);
+        return value.IsBmp && Utf8OwnedCharClass.IsBoundaryWordChar((char)value.Value);
     }
 
     private static Utf8ValueMatch ProjectLiteralFamilyMatch(
