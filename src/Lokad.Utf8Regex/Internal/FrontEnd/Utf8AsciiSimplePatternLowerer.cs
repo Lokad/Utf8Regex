@@ -56,6 +56,11 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         }
 
         var ignoreCase = (options & RegexOptions.IgnoreCase) != 0;
+        if (ignoreCase && HasCaseClearingGroup(root.Child(0)))
+        {
+            return false;
+        }
+
         if (ignoreCase)
         {
             NormalizeBranchesForIgnoreCase(branches);
@@ -126,6 +131,25 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                                                                     }),
             _ => Utf8SearchFacts.Create(Utf8SearchKind.None),
         };
+
+        static bool HasCaseClearingGroup(Utf8TreeNode node)
+        {
+            if (node.Kind == Utf8TreeNodeKind.Group &&
+                (node.Options & RegexOptions.IgnoreCase) == 0)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < node.ChildCount; i++)
+            {
+                if (HasCaseClearingGroup(node.Child(i)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         return true;
     }

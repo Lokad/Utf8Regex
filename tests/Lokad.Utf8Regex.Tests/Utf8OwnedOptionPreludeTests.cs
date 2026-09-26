@@ -20,7 +20,6 @@ public sealed class Utf8OwnedOptionPreludeTests
         yield return new object?[] { "(?i)", 512 };
         yield return new object?[] { "(?i)a", 512 };
         yield return new object?[] { "(?i-m)a", 512 };
-        yield return new object?[] { "(?i-m:s)a", 512 };
         yield return new object?[] { "(?i)(?m)x", 512 };
         yield return new object?[] { "(?i)(?-m)x", 512 };
         yield return new object?[] { "x(?i)", 512 };
@@ -39,11 +38,8 @@ public sealed class Utf8OwnedOptionPreludeTests
         yield return new object?[] { "(?:(?i))", 512 };
         yield return new object?[] { "(?i)a{2}", 512 };
         yield return new object?[] { "(?-i)a", 512 };
-        yield return new object?[] { "(?i-m", 512 };
         yield return new object?[] { "(?)", 512 };
         yield return new object?[] { "(?-)", 512 };
-        yield return new object?[] { "(?i:ab)", 512 };
-        yield return new object?[] { "(?im-sx:ab)", 512 };
         yield return new object?[] { "(?i)(?i)a", 512 };
         yield return new object?[] { "(?m)(?-i)a", 512 };
         yield return new object?[] { "(?x)(?x)#c", 512 };
@@ -100,6 +96,33 @@ public sealed class Utf8OwnedOptionPreludeTests
         var forkPattern = RuntimeFrontEnd.RegexParser.NormalizeLeadingGlobalOptions(pattern, ref forkOptions);
         Assert.Equal(forkPattern, ownedPattern);
         Assert.Equal(forkOptions, ownedOptions);
+    }
+
+    // Failed groups (colon, unknown letter, unterminated) leave construction options
+    // untouched: BCL end-to-end keeps trailing content case-sensitive after a leading
+    // scope (witnessed by (?i:k)K staying miss on Kk), so the fork helper mutation on
+    // failure is recorded here as debt rather than mirrored. The mutated values pin the
+    // exact leak the product no longer follows.
+    public static IEnumerable<object?[]> FailedGroupLeavesOptionsCases()
+    {
+        yield return new object?[] { "(?i-m:s)a", 512, 513 };
+        yield return new object?[] { "(?i-m", 512, 513 };
+        yield return new object?[] { "(?i:ab)", 512, 513 };
+        yield return new object?[] { "(?im-sx:ab)", 512, 515 };
+    }
+
+    [Theory]
+    [MemberData(nameof(FailedGroupLeavesOptionsCases))]
+    public void FailedGroupsLeaveOptionsUntouched(string pattern, int options, int forkMutatedOptions)
+    {
+        var ownedOptions = (RegexOptions)options;
+        var ownedPattern = Utf8OwnedOptionPrelude.NormalizeLeadingGlobalOptions(pattern, ref ownedOptions);
+        Assert.Equal(pattern, ownedPattern);
+        Assert.Equal((RegexOptions)options, ownedOptions);
+        var forkOptions = (RegexOptions)options;
+        var forkPattern = RuntimeFrontEnd.RegexParser.NormalizeLeadingGlobalOptions(pattern, ref forkOptions);
+        Assert.Equal(pattern, forkPattern);
+        Assert.Equal((RegexOptions)forkMutatedOptions, forkOptions);
     }
 
     [Theory]

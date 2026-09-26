@@ -214,8 +214,6 @@ public sealed class Utf8SliceInlineTests
 
     [Theory]
     [InlineData("(?i)ab", "AB", true)]
-    [InlineData("(?-i:ab)", "AB", false)]
-    [InlineData("(?-i:ab)", "ab", true)]
     public void NativeInlineGlobalInterplayMatchesOracle(string pattern, string inputText, bool expected)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -230,6 +228,8 @@ public sealed class Utf8SliceInlineTests
     [Theory]
     [InlineData("(?-i:ab)+", "AB", false)]
     [InlineData("(?-i:ab)+", "ab", true)]
+    [InlineData("(?-i:ab)", "AB", false)]
+    [InlineData("(?-i:ab)", "ab", true)]
     public void OwnedInlineGlobalInterplayMatchesOracle(string pattern, string inputText, bool expected)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;

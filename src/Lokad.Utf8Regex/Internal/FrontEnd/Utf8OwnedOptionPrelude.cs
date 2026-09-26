@@ -39,6 +39,7 @@ internal static class Utf8OwnedOptionPrelude
             var scan = index + 2;
             var enable = true;
             var changed = false;
+            var staged = options;
             while (scan < pattern.Length)
             {
                 var ch = pattern[scan];
@@ -52,6 +53,7 @@ internal static class Utf8OwnedOptionPrelude
                 if (ch == ')')
                 {
                     index = scan + 1;
+                    options = staged;
                     return changed;
                 }
 
@@ -60,7 +62,7 @@ internal static class Utf8OwnedOptionPrelude
                     return false;
                 }
 
-                options = enable ? options | option : options & ~option;
+                staged = enable ? staged | option : staged & ~option;
                 changed = true;
                 scan++;
             }

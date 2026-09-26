@@ -55,7 +55,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   The flip cleans the group APIs.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
-        ("(?i:a)|b", 512),
         ("(?n:(?<-x>a))", 512),
         ("(?<=(?<1a>b))c", 512),
         ("(?n:(?<x>a))(b)", 512),
@@ -63,8 +62,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?<=(?<-0>a)b)", 512),
         ("(?<=a)b\\>", 512),
         ("(?<=(?<1>a))b", 512),
-        ("(?i:[ab]){2}|([ab])", 512),
-        ("(?i:[ab]){2}|a", 512),
         ("(?i:[ab]){2}|(?:a.)", 512),
         ("(?i:[ab]){2}|.{1,2}", 512),
         ("(?i:[ab]){2}|(?n:.){1,2}", 512),
@@ -115,22 +112,11 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         // content (case folding past i-scopes, Singleline past s-scopes, quantified dots).
         // They reproduce witnesses under owned serving exactly where the fork used to
         // diverge; the downstream scoping fix graduates them like the clean rows.
-        ("(?i-m:a)b", 512),
         ("(?i:.){1,2}", 512),
         ("(?i:.){2}", 512),
         ("(?i:[ab]){2}.{1,2}", 512),
-        ("(?i:[ab]){2}(?m:[ab]){2}", 512),
         ("(?i:[ab]){2}(?n:.){1,2}", 512),
-        ("(?i:[ab]){2}([ab])", 512),
         ("(?i:a).", 512),
-        ("(?i:a)(?-i:b)", 512),
-        ("(?i:a)(?m:b)", 512),
-        ("(?i:a)(?m:b)c", 512),
-        ("(?i:a)(b(?m)c)", 512),
-        ("(?i:a)(b)", 512),
-        ("(?i:a)b(?i:c)", 512),
-        ("(?i:ab)cd", 512),
-        ("(?i:k)K", 512),
         ("(?m:.){1,2}", 512),
         ("(?m:.){2}", 512),
         ("(?n:.){1,2}", 512),
