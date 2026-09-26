@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -83,17 +84,10 @@ public sealed class Utf8OwnedTreeParserExplicitTests
 
     public static IEnumerable<object?[]> ExplicitResidualCases()
     {
-        yield return new object?[] { "(?n:(a))(b)", 512 };
-        yield return new object?[] { "(?n:(a))(b)", 528 };
         yield return new object?[] { "(?n:(?<-x>a))", 512 };
-        yield return new object?[] { "(?n:a)+", 512 };
         yield return new object?[] { "(?n:(?<x>a))(b)", 512 };
         yield return new object?[] { "(?n:(a)(?<y>b))(c)", 512 };
         yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
-        yield return new object?[] { "(?n:a){2}([ab])", 512 };
-        yield return new object?[] { "(?n:a){2}(\\d){1,2}", 512 };
-        yield return new object?[] { "(?n:a){2}|([ab])", 512 };
-        yield return new object?[] { "(?n:a){2}|(\\d){1,2}", 512 };
     }
 
     [Theory]
@@ -130,6 +124,36 @@ public sealed class Utf8OwnedTreeParserExplicitTests
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
         Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+    }
+
+    public static IEnumerable<object?[]> ExplicitNarrowingCases()
+    {
+        yield return new object?[] { "(?n:(a))(b)", 512, new string[] { "ab", "a", "b", "" } };
+        yield return new object?[] { "(?n:(a))(b)", 528, new string[] { "ab", "a", "b", "" } };
+        yield return new object?[] { "(?n:a)+", 512, new string[] { "a", "aa", "" } };
+        yield return new object?[] { "(?n:a){2}([ab])", 512, new string[] { "aaab", "aab", "ab" } };
+        yield return new object?[] { "(?n:a){2}(\\d){1,2}", 512, new string[] { "aa12", "aa1", "aa" } };
+        yield return new object?[] { "(?n:a){2}|([ab])", 512, new string[] { "aa", "b", "ab" } };
+        yield return new object?[] { "(?n:a){2}|(\\d){1,2}", 512, new string[] { "aa", "1", "12" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(ExplicitNarrowingCases))]
+    public void OwnedExplicitServesCrossScopeNumbering(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
     }
 
     private static void AssertHashtableEqual(System.Collections.Hashtable? left, System.Collections.Hashtable? right)

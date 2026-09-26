@@ -26,7 +26,8 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
     // Machine-derived divergent rows (11 from the first run, 7 from the metadata
     // and newline extension, 5 from the leak-family sweep, 61 from the residual
-    // census: 84 of 128).
+    // census: 84 of 128; 77 of 121 after the 2026-09-26 leading-scope graduation
+    // (40 clean rows serve BCL-exactly, 22 rejoin below under owned serving).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -54,51 +55,22 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   The flip cleans the group APIs.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
-        ("(?i:k)K", 512),
-        ("(?i:ab)cd", 512),
-        ("(?i:a)(?-i:b)", 512),
-        ("(?i:a)b(?i:c)", 512),
         ("(?i:a)|b", 512),
-        ("(?i:a)(?m:b)", 512),
-        ("(?i:a)(?m:b)c", 512),
-        ("(?i:a)(b(?m)c)", 512),
-        ("(?i-m:a)b", 512),
         ("(?n:(?<-x>a))", 512),
         ("(?<=(?<1a>b))c", 512),
-        ("(?n:(a))(b)", 512),
-        ("(?n:(a))(b)", 528),
         ("(?n:(?<x>a))(b)", 512),
         ("(?n:(a)(?<y>b))(c)", 512),
         ("(?<=(?<-0>a)b)", 512),
         ("(?<=a)b\\>", 512),
         ("(?<=(?<1>a))b", 512),
-        ("(?i:a)(b)", 512),
-        ("(?n:a)(b)", 512),
-        ("(?s:a).", 512),
-        ("(?i:a).", 512),
-        ("(?n:a).", 512),
-        ("(?i:.){1,2}", 512),
-        ("(?i:.){2}", 512),
-        ("(?m:.){1,2}", 512),
-        ("(?m:.){2}", 512),
-        ("(?n:.){1,2}", 512),
-        ("(?n:.){2}", 512),
-        ("(?i:[ab]){2}(?m:[ab]){2}", 512),
-        ("(?i:[ab]){2}([ab])", 512),
         ("(?i:[ab]){2}|([ab])", 512),
         ("(?i:[ab]){2}|a", 512),
         ("(?i:[ab]){2}|(?:a.)", 512),
         ("(?i:[ab]){2}|.{1,2}", 512),
-        ("(?i:[ab]){2}(?n:.){1,2}", 512),
         ("(?i:[ab]){2}|(?n:.){1,2}", 512),
-        ("(?i:[ab]){2}.{1,2}", 512),
         ("(?m:\\d){2}|.{1,2}", 512),
         ("(?m:\\d){2}|(?:a.)", 512),
         ("(?m:\\d){2}|(?n:.){1,2}", 512),
-        ("(?n:a){2}([ab])", 512),
-        ("(?n:a){2}(\\d){1,2}", 512),
-        ("(?n:a){2}|([ab])", 512),
-        ("(?n:a){2}|(\\d){1,2}", 512),
         ("(?n:a){2}|(?:a.)", 512),
         ("(?n:a){2}|.{1,2}", 512),
         ("(?n:a){2}|(?n:.){1,2}", 512),
@@ -138,6 +110,33 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?<=a)*|(?<1>.)+?", 512),
         ("(?<=a)*|(?<1>\\d){2}", 512),
         ("(?<=a)*|(?<1>^)+", 512),
+        // Owned-serving divergences (parser gate relaxation): these shapes parse
+        // BCL-exactly but the lowered execution still leaks scope options onto trailing
+        // content (case folding past i-scopes, Singleline past s-scopes, quantified dots).
+        // They reproduce witnesses under owned serving exactly where the fork used to
+        // diverge; the downstream scoping fix graduates them like the clean rows.
+        ("(?i-m:a)b", 512),
+        ("(?i:.){1,2}", 512),
+        ("(?i:.){2}", 512),
+        ("(?i:[ab]){2}.{1,2}", 512),
+        ("(?i:[ab]){2}(?m:[ab]){2}", 512),
+        ("(?i:[ab]){2}(?n:.){1,2}", 512),
+        ("(?i:[ab]){2}([ab])", 512),
+        ("(?i:a).", 512),
+        ("(?i:a)(?-i:b)", 512),
+        ("(?i:a)(?m:b)", 512),
+        ("(?i:a)(?m:b)c", 512),
+        ("(?i:a)(b(?m)c)", 512),
+        ("(?i:a)(b)", 512),
+        ("(?i:a)b(?i:c)", 512),
+        ("(?i:ab)cd", 512),
+        ("(?i:k)K", 512),
+        ("(?m:.){1,2}", 512),
+        ("(?m:.){2}", 512),
+        ("(?n:.){1,2}", 512),
+        ("(?n:.){2}", 512),
+        ("(?n:a).", 512),
+        ("(?s:a).", 512),
     };
 
     [Theory]

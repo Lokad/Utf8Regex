@@ -230,14 +230,6 @@ public sealed class Utf8OwnedTreeParserIgnoreCaseTests
             RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
     }
 
-    [Theory]
-    [MemberData(nameof(IgnoreCaseResidualCases))]
-    public void OwnedIgnoreCaseDeclinesResidual(string pattern, int options)
-    {
-        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
-    }
-
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
     {
         return (int)right.Kind == (int)left.Kind &&

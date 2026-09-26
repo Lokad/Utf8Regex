@@ -56,7 +56,11 @@ internal static class Utf8OwnedTreeParser
             state.LeadingContribution != RegexOptions.None &&
             (state.LeadingGroup is null || !ReferenceEquals(root, state.LeadingGroup)))
         {
-            return null;
+            // A leading scope that does not cover the whole pattern must not leak
+            // its options onto the top composite: strip the non-covering contribution
+            // instead of declining. Per-node scoping is already BCL-exact and the top
+            // composite options are inert downstream, so serving is safe.
+            state.TreeSeen &= ~state.LeadingContribution;
         }
 
         var treeOptions = options | state.TreeSeen;
