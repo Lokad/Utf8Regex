@@ -124,7 +124,6 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "[\\p{Lu}-a]", 512 };
         yield return new object?[] { "[\\b\\d]", 512 };
         yield return new object?[] { "[\\d\\b]", 512 };
-        yield return new object?[] { "[\\A\\d]", 512 };
         yield return new object?[] { "[\\p{Lu}\\p{Ll}]", 512 };
         yield return new object?[] { "[a\\p{Lu}]", 512 };
         yield return new object?[] { "[\\p{Lu}a]", 512 };
@@ -149,6 +148,22 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "\\d+", 576 };
     }
 
+    public static IEnumerable<object?[]> ShorthandClassAnchorDeclineCases()
+    {
+        // Anchor escapes are BCL-invalid inside a class (UnrecognizedEscape);
+        // the owned parser declines them to the BCL fallback exactly like the oracle.
+        yield return new object?[] { "[\\A\\d]", 512, RegexParseError.UnrecognizedEscape, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(ShorthandClassAnchorDeclineCases))]
+    public void OwnedShorthandDeclinesClassAnchorEscapes(string pattern, int options, RegexParseError error, int offset)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
+    }
     public static IEnumerable<object?[]> ShorthandDeclineCases()
     {
         yield return new object?[] { "\\p{}" };

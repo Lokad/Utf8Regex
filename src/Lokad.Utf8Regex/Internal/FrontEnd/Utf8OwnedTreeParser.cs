@@ -1074,20 +1074,10 @@ internal static class Utf8OwnedTreeParser
                     isPlain = true;
                     return true;
                 }
-                if (letter is 'B' or 'G' or 'Z' or 'z')
-                {
-                    value = letter;
-                    state.Position += 2;
-                    isPlain = true;
-                    return true;
-                }
-                if (letter == 'A')
-                {
-                    value = 'A';
-                    state.Position += 2;
-                    isPlain = true;
-                    return true;
-                }
+                // Anchor escapes (A, B, G, Z, z) are BCL-invalid inside a
+                // character class (UnrecognizedEscape): fall through to
+                // DecodeEscape, which declines ASCII letters, so these
+                // decline to the BCL fallback exactly like the oracle.
                 if (letter == '-')
                 {
                     value = '-';

@@ -100,12 +100,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "[\\cA-a]", 512 };
         yield return new object?[] { "[\\0-a]", 512 };
         yield return new object?[] { "[\\b-a]", 512 };
-        yield return new object?[] { "[\\A-a]", 512 };
-        yield return new object?[] { "[\\B]", 512 };
-        yield return new object?[] { "[\\G]", 512 };
-        yield return new object?[] { "[\\Z]", 512 };
-        yield return new object?[] { "[\\z]", 512 };
-        yield return new object?[] { "[\\B-a]", 512 };
         yield return new object?[] { "[a-\\,]", 512 };
         yield return new object?[] { "[a-\\:]", 512 };
         yield return new object?[] { "[a-\\.]", 512 };
@@ -133,6 +127,27 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "(?<=\\ba)b", 512 };
     }
 
+    public static IEnumerable<object?[]> LookaroundClassAnchorDeclineCases()
+    {
+        // Anchor escapes are BCL-invalid inside a class (UnrecognizedEscape);
+        // the owned parser declines them to the BCL fallback exactly like the oracle.
+        yield return new object?[] { "[\\A-a]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\B]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\G]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\Z]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\z]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\B-a]", 512, RegexParseError.UnrecognizedEscape, 3 };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookaroundClassAnchorDeclineCases))]
+    public void OwnedLookaroundDeclinesClassAnchorEscapes(string pattern, int options, RegexParseError error, int offset)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
+    }
     public static IEnumerable<object?[]> LookaroundDeclineCases()
     {
         yield return new object?[] { "(?>a" };
