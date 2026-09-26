@@ -1457,6 +1457,15 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
+            if (!IsValidGroupName(name))
+            {
+                // BCL capture-name rule (machine-probed on .NET 10): every name
+                // character is a Unicode word character (letters, decimal digits,
+                // connector punctuation, nonspacing marks, ZWJ/ZWNJ). Anything
+                // else declines to the BCL fallback exactly like the oracle.
+                return false;
+            }
+
             if (!underExplicit)
             {
                 group.Str = name;
@@ -1490,6 +1499,39 @@ internal static class Utf8OwnedTreeParser
         static bool IsAsciiDigit(char value)
         {
             return value >= '0' && value <= '9';
+        }
+
+        static bool IsValidGroupName(string value)
+        {
+            // Machine-probed BCL capture-name rule: every character is a
+            // Unicode word character (all letter kinds, decimal digits,
+            // connector punctuation, nonspacing marks) or a zero-width
+            // joiner. ASCII-digit starts are canonical or rejected above,
+            // so digits here only admit non-ASCII numerals as name text.
+            foreach (var character in value)
+            {
+                if (character == (char)0x200C || character == (char)0x200D)
+                {
+                    continue;
+                }
+
+                switch (char.GetUnicodeCategory(character))
+                {
+                    case UnicodeCategory.UppercaseLetter:
+                    case UnicodeCategory.LowercaseLetter:
+                    case UnicodeCategory.TitlecaseLetter:
+                    case UnicodeCategory.ModifierLetter:
+                    case UnicodeCategory.OtherLetter:
+                    case UnicodeCategory.NonSpacingMark:
+                    case UnicodeCategory.DecimalDigitNumber:
+                    case UnicodeCategory.ConnectorPunctuation:
+                        break;
+                    default:
+                        return false;
+                }
+            }
+
+            return value.Length != 0;
         }
 
         static bool TryParseGroupNumber(string value, out int number)

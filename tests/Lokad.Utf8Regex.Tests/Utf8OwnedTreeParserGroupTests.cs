@@ -1,15 +1,15 @@
 using System.Collections;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser group stage: the differential battery pins named groups,
-// numeric and named backreferences, balance pops, and octal escapes identical
-// to the provider trees (kinds, options, payloads, capture accounting, and
-// name/number/sparse metadata), plus decline agreement on undefined
+// Owned parser group stage: the BCL-oracled battery pins named groups,
+// numeric and named backreferences, balance pops, and octal escapes with BCL
+// metadata (capture accounting and name/number/sparse mappings checked against
+// the group APIs), plus decline pins with construction errors on undefined
 // references and malformed names, and the octal-rest residual that still
 // routes to the provider.
 public sealed class Utf8OwnedTreeParserGroupTests
@@ -20,8 +20,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?'x'a)", 512 };
         yield return new object?[] { "(?<x>a)(?<y>b)", 512 };
         yield return new object?[] { "(?<ab12>c)", 512 };
-        yield return new object?[] { "(?<a b>c)", 512 };
-        yield return new object?[] { "(?<,>a)", 512 };
         yield return new object?[] { "(?<9>a)", 512 };
         yield return new object?[] { "(a)(?<x>b)", 512 };
         yield return new object?[] { "(?<x>a)(b)", 512 };
@@ -59,9 +57,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(?<x>a)(b)(?<y>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<y>b)(c)", 512 };
         yield return new object?[] { "(?<a>b>c)", 512 };
-        yield return new object?[] { "(?<a'b>c)", 512 };
-        yield return new object?[] { "(?'a>b'c)", 512 };
-        yield return new object?[] { "(?<a\\)b>c)", 512 };
         yield return new object?[] { "(a\\2)(b)", 512 };
         yield return new object?[] { "(\\2a)(b)", 512 };
         yield return new object?[] { "(\\k<x>a)(?<x>b)", 512 };
@@ -92,13 +87,8 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "(a)(?<2>b)(?<x>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<2>b)", 512 };
         yield return new object?[] { "(?<2>a)(?<2>b)", 512 };
-        yield return new object?[] { "(?<+1>a)", 512 };
-        yield return new object?[] { "(?<a+>b)", 512 };
-        yield return new object?[] { "(?<.>b)", 512 };
-        yield return new object?[] { "(?<\\\\>b>c)", 512 };
         yield return new object?[] { "(?<x>a)(?<x>b)(?<x>c)", 512 };
         yield return new object?[] { "(\\k<x>)(?<x>a)(?<x>b)", 512 };
-        yield return new object?[] { "(?<a+>b)\\k<a+>", 512 };
         yield return new object?[] { "(?<\u00E9>x)\\k<\u00E9>", 512 };
         yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)\\11", 512 };
         yield return new object?[] { "\\11", 512 };
@@ -171,76 +161,112 @@ public sealed class Utf8OwnedTreeParserGroupTests
         yield return new object?[] { "^a$", 64 };
         yield return new object?[] { "a|b", 64 };
         yield return new object?[] { "(a)(b)", 520 };
-        yield return new object?[] { "(a)(b)", 1088 };
     }
 
+    public static IEnumerable<object?[]> GroupInvalidNameDeclineCases()
+    {
+        // BCL capture-name rule (machine-probed): names with non-word characters
+        // decline to the BCL fallback with the pinned construction error.
+        yield return new object?[] { "(?<a b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?<,>a)", 512, RegexParseError.CaptureGroupNameInvalid, 3 };
+        yield return new object?[] { "(?<a'b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?'a>b'c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?<a\\)b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?<+1>a)", 512, RegexParseError.CaptureGroupNameInvalid, 3 };
+        yield return new object?[] { "(?<a+>b)", 512, RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?<.>b)", 512, RegexParseError.CaptureGroupNameInvalid, 3 };
+        yield return new object?[] { "(?<\\\\>b>c)", 512, RegexParseError.CaptureGroupNameInvalid, 3 };
+        yield return new object?[] { "(?<a+>b)\\k<a+>", 512, RegexParseError.UnrecognizedEscape, 10 };
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupInvalidNameDeclineCases))]
+    public void OwnedGroupDeclinesInvalidName(string pattern, int options, RegexParseError error, int offset)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
+    }
     public static IEnumerable<object?[]> GroupDeclineCases()
     {
-        yield return new object?[] { "(?<a-b>c)" };
-        yield return new object?[] { "(?<>a)" };
-        yield return new object?[] { "(a)\\2" };
-        yield return new object?[] { "\\1" };
-        yield return new object?[] { "(?<x>a)\\k<y>" };
-        yield return new object?[] { "\\k<x>" };
-        yield return new object?[] { "\\k<>" };
-        yield return new object?[] { "\\k" };
-        yield return new object?[] { "(?<-x>a)" };
-        yield return new object?[] { "(?<a-b>c)(d)" };
-        yield return new object?[] { "(?<9>a)\\1" };
-        yield return new object?[] { "(?<9>a)(b)\\2" };
-        yield return new object?[] { "\\k<10>" };
-        yield return new object?[] { "\\k'1'" };
-        yield return new object?[] { "(?<-1>b)" };
-        yield return new object?[] { "(?<-007>b)" };
-        yield return new object?[] { "(a)\\4" };
-        yield return new object?[] { "\\4" };
-        yield return new object?[] { "(?<-a>b)" };
-        yield return new object?[] { "(?<a->b)" };
-        yield return new object?[] { "(?<--a>b)" };
-        yield return new object?[] { "(?'a-b'c)" };
-        yield return new object?[] { "(?<a-b-c>d)" };
-        yield return new object?[] { "(?<a>b" };
-        yield return new object?[] { "(?'a>b)" };
-        yield return new object?[] { "\\k<x" };
-        yield return new object?[] { "\\k'x" };
-        yield return new object?[] { "(?<x>" };
-        yield return new object?[] { "(a)\\k<2>" };
-        yield return new object?[] { "(?<-1a>b)" };
-        yield return new object?[] { "\\999" };
-        yield return new object?[] { "\\99999999999999999999" };
-        yield return new object?[] { "(?P<x>a)" };
-        yield return new object?[] { "\\k<1>" };
-        yield return new object?[] { "(?<01>a)\\k<01>" };
-        yield return new object?[] { "(a)\\9" };
-        yield return new object?[] { "(?<->b)" };
+        yield return new object?[] { "(?<a-b>c)", RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?<>a)", RegexParseError.CaptureGroupNameInvalid, 3 };
+        yield return new object?[] { "(a)\\2", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "\\1", RegexParseError.UndefinedNumberedReference, 2 };
+        yield return new object?[] { "(?<x>a)\\k<y>", RegexParseError.UndefinedNamedReference, 12 };
+        yield return new object?[] { "\\k<x>", RegexParseError.UndefinedNamedReference, 5 };
+        yield return new object?[] { "\\k<>", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "\\k", RegexParseError.MalformedNamedReference, 1 };
+        yield return new object?[] { "(?<-x>a)", RegexParseError.UndefinedNamedReference, 5 };
+        yield return new object?[] { "(?<a-b>c)(d)", RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?<9>a)\\1", RegexParseError.UndefinedNumberedReference, 9 };
+        yield return new object?[] { "(?<9>a)(b)\\2", RegexParseError.UndefinedNumberedReference, 12 };
+        yield return new object?[] { "\\k<10>", RegexParseError.UndefinedNumberedReference, 6 };
+        yield return new object?[] { "\\k'1'", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(?<-1>b)", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(?<-007>b)", RegexParseError.UndefinedNumberedReference, 7 };
+        yield return new object?[] { "(a)\\4", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "\\4", RegexParseError.UndefinedNumberedReference, 2 };
+        yield return new object?[] { "(?<-a>b)", RegexParseError.UndefinedNamedReference, 5 };
+        yield return new object?[] { "(?<a->b)", RegexParseError.CaptureGroupNameInvalid, 5 };
+        yield return new object?[] { "(?<--a>b)", RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "(?'a-b'c)", RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?<a-b-c>d)", RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?<a>b", RegexParseError.InsufficientClosingParentheses, 6 };
+        yield return new object?[] { "(?'a>b)", RegexParseError.CaptureGroupNameInvalid, 4 };
+        yield return new object?[] { "\\k<x", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "\\k'x", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "(?<x>", RegexParseError.InsufficientClosingParentheses, 5 };
+        yield return new object?[] { "(a)\\k<2>", RegexParseError.UndefinedNumberedReference, 8 };
+        yield return new object?[] { "(?<-1a>b)", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "\\999", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "\\99999999999999999999", RegexParseError.QuantifierOrCaptureGroupOutOfRange, 11 };
+        yield return new object?[] { "(?P<x>a)", RegexParseError.InvalidGroupingConstruct, 3 };
+        yield return new object?[] { "\\k<1>", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(?<01>a)\\k<01>", RegexParseError.InvalidGroupingConstruct, 5 };
+        yield return new object?[] { "(a)\\9", RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(?<->b)", RegexParseError.CaptureGroupNameInvalid, 4 };
     }
 
     [Theory]
     [MemberData(nameof(GroupAcceptCases))]
-    public void OwnedGroupsMatchProviderTree(string pattern, int options)
+    public void OwnedGroupsServeWithBclMetadata(string pattern, int options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        AssertHashtableEqual(expected.CaptureNameToNumberMapping, actual.CaptureNameToNumberMapping);
-        AssertHashtableEqual(expected.CaptureNumberSparseMapping, actual.CaptureNumberSparseMapping);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)options, actual.Options);
+        Assert.Equal((options & (int)RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture.Name : null, actual.Culture?.Name);
+        AssertGroupNameMapping(oracle, actual.CaptureNameToNumberMapping);
+        AssertGroupNumberMapping(oracle, actual.CaptureNumberSparseMapping);
+    }
+
+    [Fact]
+    public void OwnedNonBacktrackingRtlRowServesPinnedMetadata()
+    {
+        // NonBacktracking plus RightToLeft is BCL-rejected at the options layer,
+        // so no BCL construction oracle exists for this row: pin the owned values.
+        var actual = Utf8OwnedTreeParser.TryParse("(a)(b)", RegexOptions.NonBacktracking | RegexOptions.RightToLeft);
+        Assert.NotNull(actual);
+        Assert.Equal(3, actual.CaptureCount);
+        Assert.Equal(new[] { "0", "1", "2" }, actual.CaptureNames ?? []);
+        Assert.Equal(RegexOptions.NonBacktracking | RegexOptions.RightToLeft, actual.Options);
+        Assert.Null(actual.Culture);
+        Assert.Null(actual.CaptureNameToNumberMapping);
+        Assert.Null(actual.CaptureNumberSparseMapping);
     }
 
     [Theory]
     [MemberData(nameof(GroupDeclineCases))]
-    public void OwnedGroupsDeclineInvalidReference(string pattern)
+    public void OwnedGroupsDeclineInvalidReference(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            RegexOptions.CultureInvariant,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     public static IEnumerable<object?[]> GroupLeadingZeroDeclineCases()
@@ -276,7 +302,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
     public void OwnedGroupDeclinesLeadingZeroDefinition(string pattern, int options)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
     }
 
@@ -297,10 +322,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -347,7 +368,6 @@ public sealed class Utf8OwnedTreeParserGroupTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -360,33 +380,40 @@ public sealed class Utf8OwnedTreeParserGroupTests
             Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
         }
     }
-    private static void AssertHashtableEqual(Hashtable? expected, Hashtable? actual)
+    private static void AssertGroupNameMapping(Regex oracle, Hashtable? actual)
     {
-        if (expected is null)
+        var names = oracle.GetGroupNames();
+        if (actual is null)
         {
-            Assert.Null(actual);
+            Assert.All(names, static name => Assert.True(int.TryParse(name, out _), "Non-numeric group name without a mapping: " + name));
             return;
         }
 
-        Assert.NotNull(actual);
-        Assert.Equal(expected.Count, actual.Count);
-        foreach (DictionaryEntry entry in expected)
+        Assert.Equal(names.Length, actual.Count);
+        foreach (var name in names)
         {
-            Assert.True(actual.ContainsKey(entry.Key));
-            Assert.Equal(entry.Value, actual[entry.Key]);
+            Assert.True(actual.ContainsKey(name), "Missing name mapping: " + name);
+            Assert.Equal(oracle.GroupNumberFromName(name), (int)actual[name]!);
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
+    private static void AssertGroupNumberMapping(Regex oracle, Hashtable? actual)
     {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        var numbers = oracle.GetGroupNumbers();
+        if (actual is null)
+        {
+            for (var index = 0; index < numbers.Length; index++)
+            {
+                Assert.Equal(index, numbers[index]);
+            }
+
+            return;
+        }
+
+        Assert.Equal(numbers.Length, actual.Count);
+        foreach (DictionaryEntry entry in actual)
+        {
+            Assert.Equal((int)entry.Key, numbers[(int)entry.Value!]);
+        }
     }
 }
