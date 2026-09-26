@@ -418,7 +418,7 @@ public sealed class Utf8OwnedTreeParserShorthandTests
 
     [Theory]
     [MemberData(nameof(BlockResidualCases))]
-    public void OwnedBlockAcceptsWhileLegacyDeclines(string pattern, int options)
+    public void OwnedBlockAcceptsExtendedNames(string pattern, int options)
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
@@ -442,6 +442,7 @@ public sealed class Utf8OwnedTreeParserShorthandTests
         yield return new object?[] { "[z-\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
         yield return new object?[] { "[--\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
         yield return new object?[] { "[a-\\p{Lu}]", RegexParseError.ShorthandClassInCharacterRange, 5 };
+        yield return new object?[] { "[a-\\p{L}]", RegexParseError.ShorthandClassInCharacterRange, 5 };
     }
 
     public static IEnumerable<object?[]> UnknownPropertyCases()
