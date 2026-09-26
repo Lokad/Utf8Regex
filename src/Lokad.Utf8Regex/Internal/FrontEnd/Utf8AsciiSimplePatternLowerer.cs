@@ -154,6 +154,30 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         return true;
     }
 
+    // Non-literal simple patterns carry no per-branch folding flag, so a sensitive top
+    // level with an i-scoped group would search and match case-sensitively where BCL
+    // folds. Literal-extractable branches keep their route (search misses fall back
+    // BCL-exactly); only the plan-executed remainder declines until per-branch
+    // folding exists.
+    internal static bool HasScopedIgnoreCase(Utf8TreeNode node)
+    {
+        if (node.Kind == Utf8TreeNodeKind.Group &&
+            (node.Options & RegexOptions.IgnoreCase) != 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < node.ChildCount; i++)
+        {
+            if (HasScopedIgnoreCase(node.Child(i)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool IsUtf8ByteSafe(AsciiSimplePatternToken[][] branches)
     {
         foreach (var branch in branches)

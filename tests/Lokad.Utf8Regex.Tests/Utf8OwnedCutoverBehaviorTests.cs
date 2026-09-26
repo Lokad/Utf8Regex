@@ -29,7 +29,10 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     // 5 of 43 after the 2026-09-26 numeric-lookbehind graduation (36 numeric plus
     // 2 phantom rows serve BCL-exactly with null witnesses, entries removed);
     // 3 of 43 after the 2026-09-26 parser flip (2 widening rows become BCL-exact
-    // construction failures, entries removed).
+    // construction failures, entries removed);
+    // 2 of 43 after the scoped-folding decline (the (?i:[ab]){2}|(?:a.) folding
+    // witness graduates via BCL-exact fallback; the (?m:) and (?n:) rows keep
+    // astral-only witnesses for the bounded-verifier fix).
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -61,7 +64,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   for them either.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
-        ("(?i:[ab]){2}|(?:a.)", 512),
         ("(?m:\\d){2}|(?:a.)", 512),
         ("(?n:a){2}|(?:a.)", 512),
         // Owned-serving divergences (parser gate relaxation): these shapes parse

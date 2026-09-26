@@ -306,6 +306,17 @@ internal static class Utf8NativeExecutionAnalyzer
             return true;
         }
 
+        // Scoped case folding has no per-branch flag in plan execution: a sensitive
+        // top level with an i-scoped group would search and match case-sensitively
+        // where BCL folds (e.g. (?i:[ab]){2}|(?:a.)). Decline those non-literal shapes
+        // to the BCL-exact fallback; literal-extractable branches above keep theirs.
+        if ((executionOptions & RegexOptions.IgnoreCase) == 0 &&
+            Utf8AsciiSimplePatternLowerer.HasScopedIgnoreCase(root.Child(0)))
+        {
+            analyzedRegex = default;
+            return false;
+        }
+
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(semanticRegex);
         var analyzedSearchFacts = Utf8FrontEndSearchAnalyzer.AnalyzeSimplePattern(semanticRegex, simplePatternPlan, searchFacts);
         analyzedRegex = searchFacts.LiteralUtf8 is { } literalUtf8
