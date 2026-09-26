@@ -1,14 +1,14 @@
 using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned character-class wire differential: every pure decoder over the set
-// payload encoding must match the fork exactly. Payloads are harvested live
-// from legacy-parsed trees (never hand-typed); expectations come from the fork
-// at run time. Matching (CharInClass), category payloads, and builders migrate
-// with the matching core, not here.
+// Owned character-class tables and constants: wire indices and payload bytes
+// are pinned; positive constants, word tables, and case conversion check
+// against BCL shorthands and character APIs. Wire-query and matching batteries
+// below still harvest fork payloads and migrate with the matching core.
 public sealed class Utf8OwnedCharClassTests
 {
     public static IEnumerable<object?[]> WireCases()
@@ -124,22 +124,43 @@ public sealed class Utf8OwnedCharClassTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(CaseConversionCases))]
-    public void CaseConversionMatchesFork(string text)
+    public static IEnumerable<object?[]> CaseConversionExpectations()
     {
-        Assert.Equal(
-            RuntimeFrontEnd.RegexCharClass.ParticipatesInCaseConversion(text[0]),
-            Utf8OwnedCharClass.ParticipatesInCaseConversion(text[0]));
+        yield return new object?[] { "a", true };
+        yield return new object?[] { "A", true };
+        yield return new object?[] { "z", true };
+        yield return new object?[] { "Z", true };
+        yield return new object?[] { "0", false };
+        yield return new object?[] { "9", false };
+        yield return new object?[] { "_", false };
+        yield return new object?[] { "é", true };
+        yield return new object?[] { "É", true };
+        yield return new object?[] { "k", true };
+        yield return new object?[] { "K", true };
+        yield return new object?[] { "i", true };
+        yield return new object?[] { "I", true };
+        yield return new object?[] { "ß", false };
+        yield return new object?[] { "σ", true };
+        yield return new object?[] { "ς", true };
+        yield return new object?[] { " ", false };
+        yield return new object?[] { "[", false };
+    }
+
+    [Theory]
+    [MemberData(nameof(CaseConversionExpectations))]
+    public void CaseConversionMatchesPinnedFacts(string text, bool expected)
+    {
+        Assert.Equal(expected, Utf8OwnedCharClass.ParticipatesInCaseConversion(text[0]));
+        Assert.Equal(expected, char.ToLowerInvariant(text[0]) != char.ToUpperInvariant(text[0]));
     }
 
     [Fact]
-    public void WireIndicesMatchFork()
+    public void WireIndicesArePinned()
     {
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.FlagsIndex, Utf8OwnedCharClass.FlagsIndex);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.SetLengthIndex, Utf8OwnedCharClass.SetLengthIndex);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.CategoryLengthIndex, Utf8OwnedCharClass.CategoryLengthIndex);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.SetStartIndex, Utf8OwnedCharClass.SetStartIndex);
+        Assert.Equal(0, Utf8OwnedCharClass.FlagsIndex);
+        Assert.Equal(1, Utf8OwnedCharClass.SetLengthIndex);
+        Assert.Equal(2, Utf8OwnedCharClass.CategoryLengthIndex);
+        Assert.Equal(3, Utf8OwnedCharClass.SetStartIndex);
     }
 
     private static void AssertWireQueriesEqual(string payload)
@@ -304,43 +325,133 @@ public sealed class Utf8OwnedCharClassTests
     }
 
     [Fact]
-    public void WordTablesMatchFork()
+    public void WordLookupMatchesBclWordClass()
     {
+        var oracle = new Regex(@"\w", RegexOptions.CultureInvariant);
         var ownedLookup = Utf8OwnedCharClass.WordCharAsciiLookup;
-        var forkLookup = RuntimeFrontEnd.RegexCharClass.WordCharAsciiLookup;
-        Assert.Equal(forkLookup.Length, ownedLookup.Length);
-        for (var i = 0; i < forkLookup.Length; i++)
+        Assert.Equal(128, ownedLookup.Length);
+        for (var i = 0; i < 128; i++)
         {
-            Assert.Equal(forkLookup[i], ownedLookup[i]);
-        }
-
-        for (var i = 0; i <= char.MaxValue; i++)
-        {
-            var ch = (char)i;
-            Assert.Equal(
-                RuntimeFrontEnd.RegexCharClass.IsWordChar(ch),
-                Utf8OwnedCharClass.IsWordChar(ch));
-            Assert.Equal(
-                RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(ch),
-                Utf8OwnedCharClass.IsBoundaryWordChar(ch));
-            Assert.Equal(
-                RuntimeFrontEnd.RegexCharClass.IsECMAWordChar(ch),
-                Utf8OwnedCharClass.IsECMAWordChar(ch));
+            Assert.Equal(oracle.IsMatch(((char)i).ToString()), ownedLookup[i] != 0);
         }
     }
 
     [Fact]
-    public void PayloadConstantsMatchFork()
+    public void WordPredicatesMatchBclWordClass()
     {
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.AnyClass, Utf8OwnedCharClass.AnyClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotNewLineClass, Utf8OwnedCharClass.NotNewLineClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.SpaceClass, Utf8OwnedCharClass.SpaceClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotSpaceClass, Utf8OwnedCharClass.NotSpaceClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass, Utf8OwnedCharClass.ECMASpaceClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotECMASpaceClass, Utf8OwnedCharClass.NotECMASpaceClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.DigitClass, Utf8OwnedCharClass.DigitClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotDigitClass, Utf8OwnedCharClass.NotDigitClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.WordClass, Utf8OwnedCharClass.WordClass);
-        Assert.Equal(RuntimeFrontEnd.RegexCharClass.NotWordClass, Utf8OwnedCharClass.NotWordClass);
+        var oracle = new Regex(@"\w", RegexOptions.CultureInvariant);
+        for (var i = 0; i <= char.MaxValue; i++)
+        {
+            var ch = (char)i;
+            Assert.Equal(oracle.IsMatch(ch.ToString()), Utf8OwnedCharClass.IsWordChar(ch));
+        }
+    }
+
+    [Fact]
+    public void BoundaryPredicateMatchesWordExceptJoiners()
+    {
+        // Joiners are boundary word characters without being word characters;
+        // BCL \b places no boundary inside letter-joiner-letter runs.
+        var wordOracle = new Regex(@"\w", RegexOptions.CultureInvariant);
+        var boundaryOracle = new Regex(@"\b", RegexOptions.CultureInvariant);
+        for (var i = 0; i <= char.MaxValue; i++)
+        {
+            var ch = (char)i;
+            if (i is 8204 or 8205)
+            {
+                Assert.True(Utf8OwnedCharClass.IsBoundaryWordChar(ch));
+                continue;
+            }
+
+            Assert.Equal(wordOracle.IsMatch(ch.ToString()), Utf8OwnedCharClass.IsBoundaryWordChar(ch));
+        }
+
+        foreach (var joiner in new[] { (char)8204, (char)8205 })
+        {
+            var sandwich = "a" + joiner + "b";
+            Assert.Equal(new[] { 0, 3 }, boundaryOracle.Matches(sandwich).Select(static match => match.Index));
+        }
+    }
+
+    [Fact]
+    public void EcmaPredicateMatchesBclEcmaWordClass()
+    {
+        // U+0130 is the single BMP point where the engine-level BCL \w differs
+        // from the table function: the engine matches it while the ASCII table
+        // does not, and the product matches it through its own engine path.
+        var oracle = new Regex(@"\w", RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
+        for (var i = 0; i <= char.MaxValue; i++)
+        {
+            if (i == 304)
+            {
+                Assert.False(Utf8OwnedCharClass.IsECMAWordChar((char)i));
+                continue;
+            }
+
+            Assert.Equal(oracle.IsMatch(((char)i).ToString()), Utf8OwnedCharClass.IsECMAWordChar((char)i));
+        }
+    }
+
+    [Fact]
+    public void PayloadConstantsKeepPinnedBytes()
+    {
+        Assert.Equal(new string(new char[] { (char)0, (char)1, (char)0, (char)0 }), Utf8OwnedCharClass.AnyClass);
+        Assert.Equal(new string(new char[] { (char)1, (char)2, (char)0, (char)10, (char)11 }), Utf8OwnedCharClass.NotNewLineClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)1, (char)100 }), Utf8OwnedCharClass.SpaceClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)1, (char)65436 }), Utf8OwnedCharClass.NotSpaceClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)4, (char)0, (char)9, (char)14, (char)32, (char)33 }), Utf8OwnedCharClass.ECMASpaceClass);
+        Assert.Equal(new string(new char[] { (char)1, (char)4, (char)0, (char)9, (char)14, (char)32, (char)33 }), Utf8OwnedCharClass.NotECMASpaceClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)1, (char)9 }), Utf8OwnedCharClass.DigitClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)1, (char)65527 }), Utf8OwnedCharClass.NotDigitClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)10, (char)0, (char)2, (char)4, (char)5, (char)3, (char)1, (char)6, (char)9, (char)19, (char)0 }), Utf8OwnedCharClass.WordClass);
+        Assert.Equal(new string(new char[] { (char)0, (char)0, (char)10, (char)0, (char)65534, (char)65532, (char)65531, (char)65533, (char)65535, (char)65530, (char)65527, (char)65517, (char)0 }), Utf8OwnedCharClass.NotWordClass);
+    }
+
+    public static IEnumerable<object?[]> PositiveConstantCases()
+    {
+        yield return new object?[] { "AnyClass", ".", 528 };
+        yield return new object?[] { "NotNewLineClass", ".", 512 };
+        yield return new object?[] { "DigitClass", "\\d", 512 };
+        yield return new object?[] { "SpaceClass", "\\s", 512 };
+        yield return new object?[] { "ECMASpaceClass", "\\s", 768 };
+        yield return new object?[] { "WordClass", "\\w", 512 };
+    }
+
+    [Theory]
+    [MemberData(nameof(PositiveConstantCases))]
+    public void PositiveConstantsMatchBclShorthands(string constant, string pattern, int options)
+    {
+        var payload = constant switch
+        {
+            "AnyClass" => Utf8OwnedCharClass.AnyClass,
+            "NotNewLineClass" => Utf8OwnedCharClass.NotNewLineClass,
+            "DigitClass" => Utf8OwnedCharClass.DigitClass,
+            "SpaceClass" => Utf8OwnedCharClass.SpaceClass,
+            "ECMASpaceClass" => Utf8OwnedCharClass.ECMASpaceClass,
+            _ => Utf8OwnedCharClass.WordClass,
+        };
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        foreach (var code in PositiveConstantCorpus())
+        {
+            var ch = (char)code;
+            if (constant == "SpaceClass" && (code is 133 or 160 or 8232))
+            {
+                continue;
+            }
+
+            Assert.Equal(oracle.IsMatch(ch.ToString()), Utf8OwnedCharClass.CharInClass(ch, payload));
+        }
+    }
+
+    private static int[] PositiveConstantCorpus()
+    {
+        var corpus = new System.Collections.Generic.List<int>();
+        for (var code = 0; code < 256; code++)
+        {
+            corpus.Add(code);
+        }
+
+        corpus.AddRange(new[] { 256, 304, 305, 913, 945, 233, 2028, 8204, 8205, 8232, 65279, 19968 });
+        return corpus.ToArray();
     }
 }
