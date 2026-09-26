@@ -109,7 +109,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
     [Theory]
     [MemberData(nameof(Utf8OwnedTreeParserSubtractionTests.SubtractionResidualCases), MemberType = typeof(Utf8OwnedTreeParserSubtractionTests))]
-    public void SubtractionResidualCutoverDisposition(string pattern)
+    public void SubtractionResidualCutoverDisposition(string pattern, RegexParseError error, int offset)
     {
         AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
     }
