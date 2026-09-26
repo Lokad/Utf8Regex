@@ -1,148 +1,142 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned find-optimization facts: the differential battery pins owned lengths,
-// anchors, alternate prefixes and fixed-distance literals identical to legacy
-// instances (oracle first, then owned) across the probed shape catalog.
+// Owned find-optimization facts: the pinned battery checks owned lengths,
+// anchors, alternate prefixes, fixed-distance literals, and fixed-distance sets
+// against hardcoded expectations across the probed shape catalog. The expectations
+// were differentially pinned against legacy instances before the cutover; owned
+// representation checks plus BCL behavioral expectations remain.
 public sealed class Utf8OwnedFindOptimizationsTests
 {
     public static IEnumerable<object?[]> FactsCases()
     {
-        yield return new object?[] { "abc", RegexOptions.CultureInvariant, 3, 3, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a|b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a*", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a?", RegexOptions.CultureInvariant, 0, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{2}", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{2,4}", RegexOptions.CultureInvariant, 2, 4, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{2,}", RegexOptions.CultureInvariant, 2, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a+)(b+)", RegexOptions.CultureInvariant, 2, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "()", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a|)", RegexOptions.CultureInvariant, 0, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "|", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "ab|cd", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(ab)+", RegexOptions.CultureInvariant, 2, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a+?", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{0}", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { ".", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "$", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.EndZ, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "^a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a$", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "a.*b", RegexOptions.CultureInvariant, 2, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { ".+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "ab.cd", RegexOptions.CultureInvariant, 5, 5, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "[a-z]+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "[^a]+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\bhi\\B", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\A\\z", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.End };
-        yield return new object?[] { "a^b", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a$b", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^*", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\b+", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(.)+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{1}", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a){1}", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{1,1}", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?m:^a)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Bol, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?s:.)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?#c)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "[ab]+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "x[yz]", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a|bc|def)", RegexOptions.CultureInvariant, 1, 3, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^[ab]+$", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "\\d+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\w*", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\s?", RegexOptions.CultureInvariant, 0, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?=a)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?!a)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?>ab)c", RegexOptions.CultureInvariant, 3, 3, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a)\\1", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?<x>a)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\p{L}+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a*)*", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a+)+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:a|)", RegexOptions.CultureInvariant, 0, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:ab){3}(?:cd){2}", RegexOptions.CultureInvariant, 10, 10, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a)(b)(c)", RegexOptions.CultureInvariant, 3, 3, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\G", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Start, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\z", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.End, RuntimeFrontEnd.RegexNodeKind.End };
-        yield return new object?[] { "\\B", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\b", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\Z", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.EndZ, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "a\\G", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a\\z", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.End };
-        yield return new object?[] { "a\\B", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a\\b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?m:$)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Eol };
-        yield return new object?[] { "^$", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "$^", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.EndZ, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?!)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?=)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a*)", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a?)?", RegexOptions.CultureInvariant, 0, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:a{0})", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{0,0}", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?!)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "x{0}y", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(x{0})", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\Ghi", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Start, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "hi\\G", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "[a]{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?m:\\G)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Start, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^a|^b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^a|b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "((^a))", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?:^a)b", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(^a)+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(^a)*", RegexOptions.CultureInvariant, 0, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(ab$)", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "(a$)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.EndZ };
-        yield return new object?[] { "(a$|b$)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a|^b", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(^a|^b)", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "((((((((((a))))))))))", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(ab$|ab)", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(a$)+", RegexOptions.CultureInvariant, 1, null, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?=^a)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?!^a)a", RegexOptions.CultureInvariant, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?>^a)b", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Beginning, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?>a$)b", RegexOptions.CultureInvariant, 2, 2, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "a", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline, 0, 0, RuntimeFrontEnd.RegexNodeKind.Bol, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1, 1, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "\\b", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, 0, 0, RuntimeFrontEnd.RegexNodeKind.Unknown, RuntimeFrontEnd.RegexNodeKind.Unknown };
-        yield return new object?[] { "(?m:^)", RegexOptions.CultureInvariant, 0, 0, RuntimeFrontEnd.RegexNodeKind.Bol, RuntimeFrontEnd.RegexNodeKind.Unknown };
+        yield return new object?[] { "abc", RegexOptions.CultureInvariant, 3, 3, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a|b", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a*", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a?", RegexOptions.CultureInvariant, 0, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{2}", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{2,4}", RegexOptions.CultureInvariant, 2, 4, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{2,}", RegexOptions.CultureInvariant, 2, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a+)(b+)", RegexOptions.CultureInvariant, 2, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "()", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a|)", RegexOptions.CultureInvariant, 0, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "|", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "ab|cd", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(ab)+", RegexOptions.CultureInvariant, 2, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a+?", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{0}", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { ".", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "$", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.EndZ, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "^a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a$", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "a.*b", RegexOptions.CultureInvariant, 2, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { ".+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "ab.cd", RegexOptions.CultureInvariant, 5, 5, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "[a-z]+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "[^a]+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\bhi\\B", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\A\\z", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.End };
+        yield return new object?[] { "a^b", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a$b", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^*", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\b+", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(.)+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{1}", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a){1}", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{1,1}", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?m:^a)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Bol, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?s:.)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?#c)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "[ab]+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "x[yz]", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a|bc|def)", RegexOptions.CultureInvariant, 1, 3, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^[ab]+$", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "\\d+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\w*", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\s?", RegexOptions.CultureInvariant, 0, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?=a)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?!a)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?>ab)c", RegexOptions.CultureInvariant, 3, 3, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a)\\1", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?<x>a)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\p{L}+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a*)*", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a+)+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?:a|)", RegexOptions.CultureInvariant, 0, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?:ab){3}(?:cd){2}", RegexOptions.CultureInvariant, 10, 10, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a)(b)(c)", RegexOptions.CultureInvariant, 3, 3, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\G", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Start, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\z", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.End, Utf8TreeNodeKind.End };
+        yield return new object?[] { "\\B", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\b", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\Z", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.EndZ, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "a\\G", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a\\z", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.End };
+        yield return new object?[] { "a\\B", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a\\b", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?m:$)", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Eol };
+        yield return new object?[] { "^$", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "$^", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.EndZ, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?!)", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?=)", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a*)", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a?)?", RegexOptions.CultureInvariant, 0, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?:a{0})", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{0,0}", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?!)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "x{0}y", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(x{0})", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\Ghi", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Start, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "hi\\G", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "[a]{2147483647}", RegexOptions.CultureInvariant, 2147483647, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?m:\\G)", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Start, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^a|^b", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^a|b", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "((^a))", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?:^a)b", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(^a)+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(^a)*", RegexOptions.CultureInvariant, 0, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(ab$)", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "(a$)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.EndZ };
+        yield return new object?[] { "(a$|b$)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a|^b", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(^a|^b)", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "((((((((((a))))))))))", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(ab$|ab)", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(a$)+", RegexOptions.CultureInvariant, 1, null, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?=^a)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?!^a)a", RegexOptions.CultureInvariant, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?>^a)b", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Beginning, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?>a$)b", RegexOptions.CultureInvariant, 2, 2, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "a", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "^", RegexOptions.CultureInvariant | RegexOptions.Multiline, 0, 0, Utf8TreeNodeKind.Bol, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { ".", RegexOptions.CultureInvariant | RegexOptions.Singleline, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "[ab]", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, 1, 1, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "\\b", RegexOptions.CultureInvariant | RegexOptions.ECMAScript, 0, 0, Utf8TreeNodeKind.Unknown, Utf8TreeNodeKind.Unknown };
+        yield return new object?[] { "(?m:^)", RegexOptions.CultureInvariant, 0, 0, Utf8TreeNodeKind.Bol, Utf8TreeNodeKind.Unknown };
     }
 
     [Theory]
     [MemberData(nameof(FactsCases))]
-    public void OwnedFactsMatchLegacy(string pattern, RegexOptions options, int min, int? max, object lead, object trail)
+    public void OwnedFactsMatchPinnedFacts(string pattern, RegexOptions options, int min, int? max, object lead, object trail)
     {
-        var expectedLead = (RuntimeFrontEnd.RegexNodeKind)lead;
-        var expectedTrail = (RuntimeFrontEnd.RegexNodeKind)trail;
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var expectedLead = (Utf8TreeNodeKind)lead;
+        var expectedTrail = (Utf8TreeNodeKind)trail;
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
-        Assert.Equal(min, expected.MinRequiredLength);
-        Assert.Equal(max, expected.MaxPossibleLength);
-        Assert.Equal(expectedLead, expected.LeadingAnchor);
-        Assert.Equal(expectedTrail, expected.TrailingAnchor);
         Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(ownedTree.Root));
         Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(ownedTree.Root));
-        Assert.Equal((int)expectedLead, (int)Utf8OwnedFindOptimizations.FindLeadingAnchor(ownedTree.Root));
-        Assert.Equal((int)expectedTrail, (int)Utf8OwnedFindOptimizations.FindTrailingAnchor(ownedTree.Root));
+        Assert.Equal(expectedLead, Utf8OwnedFindOptimizations.FindLeadingAnchor(ownedTree.Root));
+        Assert.Equal(expectedTrail, Utf8OwnedFindOptimizations.FindTrailingAnchor(ownedTree.Root));
     }
 
     public static IEnumerable<object?[]> SaturationCases()
@@ -159,9 +153,7 @@ public sealed class Utf8OwnedFindOptimizationsTests
     {
         // The pristine fork wraps these products and sums in 32 bits while the owned hub
         // saturates like the BCL-observed formulas, so these rows pin owned values only.
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(ownedTree);
         Assert.Equal(min, Utf8OwnedFindOptimizations.ComputeMinLength(ownedTree.Root));
         Assert.Equal(max, Utf8OwnedFindOptimizations.ComputeMaxLength(ownedTree.Root));
@@ -361,15 +353,10 @@ public sealed class Utf8OwnedFindOptimizationsTests
 
     [Theory]
     [MemberData(nameof(LiteralCases))]
-    public void OwnedLiteralsMatchLegacy(string pattern, string? leading, string? longest)
+    public void OwnedLiteralsMatchPinnedFacts(string pattern, string? leading, string? longest)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(ownedTree);
-        var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, RegexOptions.CultureInvariant, tree.Culture);
-        Assert.Equal(leading, expected.LeadingLiteral);
-        Assert.Equal(longest, expected.LongestLiteral);
         Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(ownedTree.Root));
         Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(ownedTree.Root));
     }
@@ -382,15 +369,10 @@ public sealed class Utf8OwnedFindOptimizationsTests
 
     [Theory]
     [MemberData(nameof(OptionLiteralCases))]
-    public void OwnedLiteralsMatchLegacyWithOptions(string pattern, RegexOptions options, string? leading, string? longest)
+    public void OwnedLiteralsWithOptionsMatchPinnedFacts(string pattern, RegexOptions options, string? leading, string? longest)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var expected = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
-        Assert.Equal(leading, expected.LeadingLiteral);
-        Assert.Equal(longest, expected.LongestLiteral);
         Assert.Equal(leading, Utf8OwnedFindOptimizations.TryExtractLeadingLiteral(ownedTree.Root));
         Assert.Equal(longest, Utf8OwnedFindOptimizations.TryExtractLongestLiteral(ownedTree.Root));
     }
@@ -581,14 +563,10 @@ public sealed class Utf8OwnedFindOptimizationsTests
 
     [Theory]
     [MemberData(nameof(PrefixCases))]
-    public void OwnedPrefixesMatchLegacy(string pattern, RegexOptions options, string[]? expected)
+    public void OwnedPrefixesMatchPinnedFacts(string pattern, RegexOptions options, string[]? expected)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture);
-        Assert.Equal(expected, legacy.AlternatePrefixes);
         Assert.Equal(expected, Utf8OwnedFindOptimizations.FindAlternatePrefixes(ownedTree.Root, options));
     }
 
@@ -779,24 +757,10 @@ public sealed class Utf8OwnedFindOptimizationsTests
 
     [Theory]
     [MemberData(nameof(FdlCases))]
-    public void OwnedFixedDistanceLiteralMatchesLegacy(string pattern, RegexOptions options, string? literal, int distance)
+    public void OwnedFixedDistanceLiteralMatchesPinnedFacts(string pattern, RegexOptions options, string? literal, int distance)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture).FixedDistanceLiteral;
-        if (literal is null)
-        {
-            Assert.Null(legacy);
-        }
-        else
-        {
-            Assert.NotNull(legacy);
-            Assert.Equal(literal, legacy.Value.Literal);
-            Assert.Equal(distance, legacy.Value.Distance);
-        }
-
         var owned = Utf8OwnedFindOptimizations.TryExtractFixedDistanceLiteral(ownedTree.Root);
         if (literal is null)
         {
@@ -862,7 +826,9 @@ public sealed class Utf8OwnedFindOptimizationsTests
         yield return new object?[] { "(?i)[0-9]", RegexOptions.CultureInvariant, new SetsExpectation[] { new SetsExpectation(0, false, "0123456789", null, "0000 002C 0000 0030 003A 0030 003A 0030 0031 0030 0031 0031 0032 0031 0032 0032 0033 0032 0033 0033 0034 0033 0034 0034 0035 0034 0035 0035 0036 0035 0036 0036 0037 0036 0037 0037 0038 0037 0038 0038 0039 0038 0039 0039 003A 0039 003A") } };
         yield return new object?[] { "(?i)[\\da]", RegexOptions.CultureInvariant, null };
         yield return new object?[] { "(?i)[^ab]", RegexOptions.CultureInvariant, null };
-        yield return new object?[] { "(?i:ab)cd", RegexOptions.CultureInvariant, new SetsExpectation[] { new SetsExpectation(0, false, "Aa", null, "0000 0004 0000 0061 0062 0041 0042"), new SetsExpectation(1, false, "Bb", null, "0000 0004 0000 0062 0063 0042 0043"), new SetsExpectation(2, false, "Cc", null, "0000 0004 0000 0063 0064 0043 0044"), new SetsExpectation(3, false, "Dd", null, "0000 0004 0000 0064 0065 0044 0045") } };
+        // The fork leaked case-insensitivity onto the tail, folding Cc/Dd sets here;
+        // the owned tree scopes cd case-sensitively (BCL behavior), so only Aa/Bb remain.
+        yield return new object?[] { "(?i:ab)cd", RegexOptions.CultureInvariant, new SetsExpectation[] { new SetsExpectation(0, false, "Aa", null, "0000 0004 0000 0061 0062 0041 0042"), new SetsExpectation(1, false, "Bb", null, "0000 0004 0000 0062 0063 0042 0043") } };
         yield return new object?[] { "ab(?i:cd)", RegexOptions.CultureInvariant, new SetsExpectation[] { new SetsExpectation(2, false, "Cc", null, "0000 0004 0000 0063 0064 0043 0044"), new SetsExpectation(3, false, "Dd", null, "0000 0004 0000 0064 0065 0044 0045") } };
         yield return new object?[] { "[ab]\\b[cd]", RegexOptions.CultureInvariant, null };
         yield return new object?[] { "a{2}[bc]", RegexOptions.CultureInvariant, null };
@@ -1084,33 +1050,12 @@ public sealed class Utf8OwnedFindOptimizationsTests
 
     [Theory]
     [MemberData(nameof(SetsCases))]
-    public void OwnedSetsMatchLegacy(string pattern, RegexOptions options, SetsExpectation[]? expected)
+    public void OwnedSetsMatchPinnedFacts(string pattern, RegexOptions options, SetsExpectation[]? expected)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
+        var ownedTree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(ownedTree);
-        var legacy = new RuntimeFrontEnd.RegexFindOptimizations(tree.Root, options, tree.Culture).FixedDistanceSets;
-        Assert.Equal(expected, ToExpectationsLegacy(legacy));
         var owned = Utf8OwnedFindOptimizations.FindFixedDistanceSets(ownedTree.Root);
         Assert.Equal(expected, ToExpectationsOwned(owned));
-    }
-
-    private static SetsExpectation[]? ToExpectationsLegacy(RuntimeFrontEnd.RegexFindOptimizations.FixedDistanceSet[]? sets)
-    {
-        if (sets is null)
-        {
-            return null;
-        }
-
-        var result = new SetsExpectation[sets.Length];
-        for (var i = 0; i < sets.Length; i++)
-        {
-            var current = sets[i];
-            result[i] = new SetsExpectation(current.Distance, current.Negated, current.Chars is null ? null : new string(current.Chars), current.Range.HasValue ? ((int)current.Range.Value.LowInclusive).ToString() + "-" + ((int)current.Range.Value.HighInclusive).ToString() : null, ToPayloadHex(current.Set));
-        }
-
-        return result;
     }
 
     private static SetsExpectation[]? ToExpectationsOwned(Utf8OwnedFindOptimizations.OwnedSet[]? sets)
