@@ -187,9 +187,14 @@ internal static class Utf8OwnedTreeParser
                     {
                         FlushRun(state, children, run);
                         var anchorAtom = anchor;
-                        if (!ParseQuantifier(ref state, ref anchorAtom))
+                        if (!ParseQuantifier(ref state, ref anchorAtom, out var decayedAnchor))
                         {
                             return false;
+                        }
+
+                        if (decayedAnchor)
+                        {
+                            run.Append('{');
                         }
 
                         children.Add(anchorAtom);
@@ -200,9 +205,14 @@ internal static class Utf8OwnedTreeParser
                     {
                         FlushRun(state, children, run);
                         var shorthandAtom = shorthand;
-                        if (!ParseQuantifier(ref state, ref shorthandAtom))
+                        if (!ParseQuantifier(ref state, ref shorthandAtom, out var decayedShorthand))
                         {
                             return false;
+                        }
+
+                        if (decayedShorthand)
+                        {
+                            run.Append('{');
                         }
 
                         children.Add(shorthandAtom);
@@ -217,9 +227,14 @@ internal static class Utf8OwnedTreeParser
                         var tentative = new Utf8TreeNode(Utf8TreeNodeKind.Backreference, state.Options);
                         tentative.N = -1;
                         var backrefAtom = tentative;
-                        if (!ParseQuantifier(ref state, ref backrefAtom))
+                        if (!ParseQuantifier(ref state, ref backrefAtom, out var decayedBackref))
                         {
                             return false;
+                        }
+
+                        if (decayedBackref)
+                        {
+                            run.Append('{');
                         }
 
                         if (backrefAtom.Kind == Utf8TreeNodeKind.Empty)
@@ -249,9 +264,14 @@ internal static class Utf8OwnedTreeParser
                         namedBackref.Str = backrefName;
                         namedBackref.N = 0;
                         var namedAtom = namedBackref;
-                        if (!ParseQuantifier(ref state, ref namedAtom))
+                        if (!ParseQuantifier(ref state, ref namedAtom, out var decayedNamed))
                         {
                             return false;
+                        }
+
+                        if (decayedNamed)
+                        {
+                            run.Append('{');
                         }
 
                         if (namedAtom.Kind == Utf8TreeNodeKind.Empty)
@@ -276,9 +296,14 @@ internal static class Utf8OwnedTreeParser
                     {
                         FlushRun(state, children, run);
                         var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
-                        if (!ParseQuantifier(ref state, ref escapedAtom))
+                        if (!ParseQuantifier(ref state, ref escapedAtom, out var decayedEscaped))
                         {
                             return false;
+                        }
+
+                        if (decayedEscaped)
+                        {
+                            run.Append('{');
                         }
 
                         children.Add(escapedAtom);
@@ -297,9 +322,14 @@ internal static class Utf8OwnedTreeParser
                         FlushRun(state, children, run);
                         state.Position++;
                         var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
-                        if (!ParseQuantifier(ref state, ref foldedAtom))
+                        if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
                         {
                             return false;
+                        }
+
+                        if (decayedFolded)
+                        {
+                            run.Append('{');
                         }
 
                         children.Add(foldedAtom);
@@ -317,9 +347,14 @@ internal static class Utf8OwnedTreeParser
                     run.Length--;
                     FlushRun(state, children, run);
                     var unit = One(state, last);
-                    if (!ParseQuantifier(ref state, ref unit))
+                    if (!ParseQuantifier(ref state, ref unit, out var decayedUnit))
                     {
                         return false;
+                    }
+
+                    if (decayedUnit)
+                    {
+                        run.Append('{');
                     }
 
                     children.Add(unit);
@@ -387,6 +422,18 @@ internal static class Utf8OwnedTreeParser
 
                     atom = classNode;
                 }
+                else if (character == '{')
+                {
+                    // A leading brace that cannot complete decays (BCL shapes like
+                    // brace-a or brace-12); complete or invalid shapes still decline.
+                    if (!ParseBrace(ref state, out _, out _, out var decayedBrace) && decayedBrace)
+                    {
+                        run.Append('{');
+                        continue;
+                    }
+
+                    return false;
+                }
                 else if (character != '(')
                 {
                     return false;
@@ -401,9 +448,14 @@ internal static class Utf8OwnedTreeParser
                     atom = group;
                 }
 
-                if (!ParseQuantifier(ref state, ref atom))
+                if (!ParseQuantifier(ref state, ref atom, out var decayedAtom))
                 {
                     return false;
+                }
+
+                if (decayedAtom)
+                {
+                    run.Append('{');
                 }
 
                 children.Add(atom);
@@ -2536,9 +2588,7 @@ internal static class Utf8OwnedTreeParser
                 character != '+' &&
                 character != '?' &&
                 character != '^' &&
-                character != '$' &&
-                character != ']' &&
-                character != '}';
+                character != '$';
         }
 
         static bool IsQuantifierStart(char character)
@@ -2867,8 +2917,9 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseQuantifier(ref ParserState state, ref Utf8TreeNode atom)
+        static bool ParseQuantifier(ref ParserState state, ref Utf8TreeNode atom, out bool decayedBrace)
         {
+            decayedBrace = false;
             if (state.AtEnd)
             {
                 return true;
@@ -2897,8 +2948,14 @@ internal static class Utf8OwnedTreeParser
             }
             else if (character == '{')
             {
-                if (!ParseBrace(ref state, out minimum, out maximum))
+                if (!ParseBrace(ref state, out minimum, out maximum, out var braceDecayed))
                 {
+                    if (braceDecayed)
+                    {
+                        decayedBrace = true;
+                        return true;
+                    }
+
                     return false;
                 }
             }
@@ -2918,57 +2975,96 @@ internal static class Utf8OwnedTreeParser
             return true;
         }
 
-        static bool ParseBrace(ref ParserState state, out int minimum, out int maximum)
+        // Parses a '{m}', '{m,}' or '{m,n}' quantifier tail with the position on '{'.
+        // Returns true with minimum/maximum set and the position past '}' for a complete
+        // valid shape. A brace that cannot complete (non-digit opener, unclosed digits,
+        // closed garbage) decays to a literal: the position rewinds past '{' and
+        // decayToLiteral is set, exactly like BCL. Only a complete invalid shape
+        // (reversed bounds, numeric overflow) rejects.
+        static bool ParseBrace(ref ParserState state, out int minimum, out int maximum, out bool decayToLiteral)
         {
             minimum = 0;
             maximum = 0;
+            decayToLiteral = false;
+            var braceStart = state.Position;
             state.Position++;
-            if (!ParseNonNegative(ref state, out minimum))
+            if (state.AtEnd || state.Pattern[state.Position] < '0' || state.Pattern[state.Position] > '9')
             {
+                state.Position = braceStart + 1;
+                decayToLiteral = true;
                 return false;
             }
 
-            maximum = minimum;
+            var overflow = false;
+            var minimumValue = 0L;
+            while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
+            {
+                var next = minimumValue * 10 + (state.Pattern[state.Position] - '0');
+                if (next > Infinite)
+                {
+                    overflow = true;
+                }
+                else
+                {
+                    minimumValue = next;
+                }
+
+                state.Position++;
+            }
+
+            var maximumValue = minimumValue;
+            var maximumInfinite = false;
+            var hasMaximum = false;
             if (!state.AtEnd && state.Pattern[state.Position] == ',')
             {
                 state.Position++;
-                maximum = Infinite;
-                if (!state.AtEnd && state.Pattern[state.Position] != '}')
+                if (!state.AtEnd && state.Pattern[state.Position] == '}')
                 {
-                    if (!ParseNonNegative(ref state, out maximum))
+                    maximumInfinite = true;
+                }
+                else if (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
+                {
+                    maximumValue = 0;
+                    hasMaximum = true;
+                    while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
                     {
-                        return false;
+                        var nextMaximum = maximumValue * 10 + (state.Pattern[state.Position] - '0');
+                        if (nextMaximum > Infinite)
+                        {
+                            overflow = true;
+                        }
+                        else
+                        {
+                            maximumValue = nextMaximum;
+                        }
+
+                        state.Position++;
                     }
+                }
+                else
+                {
+                    state.Position = braceStart + 1;
+                    decayToLiteral = true;
+                    return false;
                 }
             }
 
-            if (state.AtEnd || state.Pattern[state.Position] != '}' || maximum < minimum)
+            if (state.AtEnd || state.Pattern[state.Position] != '}')
+            {
+                state.Position = braceStart + 1;
+                decayToLiteral = true;
+                return false;
+            }
+
+            if (overflow || (hasMaximum && maximumValue < minimumValue))
             {
                 return false;
             }
 
+            minimum = (int)minimumValue;
+            maximum = maximumInfinite ? Infinite : (int)maximumValue;
             state.Position++;
             return true;
-        }
-
-        static bool ParseNonNegative(ref ParserState state, out int value)
-        {
-            value = 0;
-            var digits = 0;
-            while (!state.AtEnd && state.Pattern[state.Position] >= '0' && state.Pattern[state.Position] <= '9')
-            {
-                var next = (long)value * 10 + (state.Pattern[state.Position] - '0');
-                if (next > Infinite)
-                {
-                    return false;
-                }
-
-                value = (int)next;
-                digits++;
-                state.Position++;
-            }
-
-            return digits != 0;
         }
 
         static Utf8TreeNode Quantify(ParserState state, Utf8TreeNode atom, int minimum, int maximum, bool lazy)

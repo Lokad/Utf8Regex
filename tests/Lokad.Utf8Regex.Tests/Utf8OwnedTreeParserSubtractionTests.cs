@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
@@ -58,13 +59,11 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
         yield return new object?[] { "[a-[]" };
         yield return new object?[] { "[a-[]b]" };
         yield return new object?[] { "[-[a]]" };
-        yield return new object?[] { "[[a]]" };
         yield return new object?[] { "[a-[b]" };
         yield return new object?[] { "[a-[]]" };
         yield return new object?[] { "[a-[b]-[\\d]]" };
         yield return new object?[] { "[a-[b]-\\d]" };
         yield return new object?[] { "[a-\\p{Lu}-[b]]" };
-        yield return new object?[] { "[[a]-[b]]" };
         yield return new object?[] { "[a-[b-c]-[d]]" };
     }
 
@@ -92,6 +91,29 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
             pattern,
             RegexOptions.CultureInvariant,
             RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+    }
+
+    public static IEnumerable<object?[]> NestedBracketNarrowingCases()
+    {
+        yield return new object?[] { "[[a]]", 512, new string[] { "[a]", "a]", "[]", "[b]", "]", "a" } };
+        yield return new object?[] { "[[a]-[b]]", 512, new string[] { "a-b]", "[-b]", "[a]", "a]", "[]", "[b]", "a-[b]]" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(NestedBracketNarrowingCases))]
+    public void OwnedServesNestedBracketSequence(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
     }
 
     public static IEnumerable<object?[]> SubtractionResidualCases()
