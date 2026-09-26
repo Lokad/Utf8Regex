@@ -31,8 +31,11 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     // 3 of 43 after the 2026-09-26 parser flip (2 widening rows become BCL-exact
     // construction failures, entries removed);
     // 2 of 43 after the scoped-folding decline (the (?i:[ab]){2}|(?:a.) folding
-    // witness graduates via BCL-exact fallback; the (?m:) and (?n:) rows keep
-    // astral-only witnesses for the bounded-verifier fix).
+    // witness graduates via BCL-exact fallback);
+    // 0 of 43 after the bounded-verifier split fix (the (?m:) and (?n:) astral
+    // witnesses graduate: scalar-split candidate ends verify BCL-exactly instead of
+    // failing definitively). The folding-compound family is fully graduated; only
+    // per-branch folding coverage remains as explicitly declared migration debt.
     // - Forward-leak family (9): the fork folds trailing or wrapped content under a
     //   scoped option and marks trailing nodes, so the product over-matches shapes
     //   BCL scopes correctly. The flip moves these to BCL behavior (fewer matches).
@@ -54,8 +57,10 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   BCL numbers them. The owned parser serves these BCL-exactly (metadata, values,
     //   counts, replacement over corpus plus fuzz plus astral all agree), so the flip
     //   changes nothing for them; the rows left the residual set with the entries.
-    // - Folding-compound family (12): folding or dot leaks across alternation branches
-    //   and into compound tails change what matches. The flip moves these to BCL behavior.
+    // - Folding-compound family (12, fully graduated): folding or dot leaks across
+    //   alternation branches and into compound tails changed what matched. The flip,
+    //   the scoped-folding decline, and the bounded-verifier split fix moved these to
+    //   BCL behavior; the residual rows below keep pinning agreement.
     // - Loop-alternation family (3): an n-loop alternation with a dot or second scope
     //   in the other branch diverges on newline inputs. The flip moves it to BCL behavior.
     // - Phantom-name family (graduated 2026-09-26 with the numeric family): lookbehind
@@ -64,13 +69,9 @@ public sealed class Utf8OwnedCutoverBehaviorTests
     //   for them either.
     private static readonly HashSet<(string Pattern, int Options)> CutoverDivergentShapes = new()
     {
-        ("(?m:\\d){2}|(?:a.)", 512),
-        ("(?n:a){2}|(?:a.)", 512),
-        // Owned-serving divergences (parser gate relaxation): these shapes parse
-        // BCL-exactly but the lowered execution still leaks scope options onto trailing
-        // content (case folding past i-scopes, Singleline past s-scopes, quantified dots).
-        // They reproduce witnesses under owned serving exactly where the fork used to
-        // diverge; the downstream scoping fix graduates them like the clean rows.
+        // Fully graduated: the last folding-compound witnesses left with the scoped-folding
+        // decline and the bounded-verifier split fix. The set stays as the registry for any
+        // future divergence discovered by the residual batteries below.
     };
 
     [Theory]

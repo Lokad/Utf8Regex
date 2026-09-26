@@ -82,7 +82,12 @@ internal abstract class Utf8FallbackCandidateVerifier
 
         if (!boundaryMap.TryGetUtf16OffsetForByteOffset(candidate.EndIndex, out var candidateEndUtf16Offset))
         {
-            return false;
+            // Scalar-split candidate end (astral input): byte-exact ends do not exist
+            // in char space. Start and exact-length candidates carry no trailing anchor
+            // (TrailingIndex < 0); their fixed length holds by construction for the
+            // BCL-verified match starting here, so coverage holds. Windowed candidates
+            // keep failing: their trailing bounds cannot be evaluated on a split end.
+            return candidate.TrailingIndex < 0;
         }
 
         var candidateEnd = boundaryMap.Resolve(candidateEndUtf16Offset);
@@ -203,7 +208,32 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
         var candidateStart = map.Resolve(candidateStartUtf16Offset);
         if (!map.TryGetUtf16OffsetForByteOffset(candidate.EndIndex, out var candidateEndUtf16Offset))
         {
-            return false;
+            // Scalar-split candidate end (astral input): the bounded slice cannot end
+            // exactly, so verify anchored from the candidate start over the tail and let
+            // the split-tolerant end coverage decide.
+            decoded ??= Encoding.UTF8.GetString(input);
+            var tailMatch = MatchCandidate(decoded, candidateStart.Utf16Offset);
+            if (!IsVerifiedMatch(
+                    tailMatch,
+                    candidateStart.Utf16Offset,
+                    candidate,
+                    map,
+                    Plan.RequiresCandidateEndCoverage,
+                    Plan.RequiresTrailingAnchorCoverage))
+            {
+                return false;
+            }
+
+            var tailEnd = map.Resolve(tailMatch.Index + tailMatch.Length);
+            var tailAligned = candidateStart.IsScalarBoundary && tailEnd.IsScalarBoundary;
+            result = new Utf8FallbackVerificationResult(
+                Success: true,
+                IndexInUtf16: tailMatch.Index,
+                LengthInUtf16: tailMatch.Length,
+                IndexInBytes: candidateStart.ByteOffset,
+                LengthInBytes: tailEnd.ByteOffset - candidateStart.ByteOffset,
+                IsByteAligned: tailAligned);
+            return true;
         }
 
         var candidateEnd = map.Resolve(candidateEndUtf16Offset);
