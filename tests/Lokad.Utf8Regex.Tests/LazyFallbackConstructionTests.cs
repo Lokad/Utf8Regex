@@ -147,6 +147,8 @@ public sealed class LazyFallbackConstructionTests
         yield return new object?[] { "(?<w>cat)|(?<v>horse)", RegexOptions.CultureInvariant, "cat horse fish", 4 };
         yield return new object?[] { "(a)", RegexOptions.CultureInvariant, "baac", 2 };
         yield return new object?[] { "(?:cat|horse)(?=horse)", RegexOptions.CultureInvariant, "cathorsecathorse", 3 };
+        yield return new object?[] { "^abc", RegexOptions.CultureInvariant, "xxabc", 1 };
+        yield return new object?[] { "^abc", RegexOptions.CultureInvariant, "abcxx", 0 };
         yield return new object?[] { "(caf\u00E9)|(ni\u00F1o)", RegexOptions.None, "\u03B1caf\u00E9\u03B2ni\u00F1o\u03B3", 2 };
     }
 
@@ -163,12 +165,13 @@ public sealed class LazyFallbackConstructionTests
 
     [Theory]
     [InlineData("\\b(?:cat|horse)\\b", "CAT horse Cat")]
-    [InlineData("^abc", "xxabc")]
     public void OriginSensitiveFromOffsetConstructsFallbackEngine(string pattern, string inputText)
     {
-        // From-offset origin shapes that the slice cannot serve (anchors,
-        // boundaries, non-slice lookbehind) divert to full-input BCL
+        // From-offset origin shapes that the slice cannot serve (boundaries,
+        // non-slice lookbehind, non-prefix anchors) divert to full-input BCL
         // verification inside the shared enumerator (established taxonomy).
+        // Anchored ASCII literal prefixes (^abc) graduated to the owned
+        // prefix-family cursor and live in OwnedFromOffsetCases instead.
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailedFromUtf16Offset(input, 1));

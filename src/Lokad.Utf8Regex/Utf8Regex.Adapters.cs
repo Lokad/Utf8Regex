@@ -122,6 +122,15 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // Anchored prefixes anchor to byte 0: nonzero starts miss definitively,
+        // offset 0 reuses the byte-exact prefix compare without BCL construction.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            return start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out _);
+        }
+
         // R03 balancing: adapter byte-offset entries serve the owned slice
         // exactly like the UTF-16-offset drivers; the BCL fallback below
         // keeps shapes the slice declines.
@@ -144,6 +153,18 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out var adapterMatchLength))
+            {
+                return new Utf8ValueMatch(true, true, 0, adapterMatchLength, 0, adapterMatchLength);
+            }
+
+            return Utf8ValueMatch.NoMatch;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
         {
             try
@@ -164,6 +185,21 @@ public sealed partial class Utf8Regex
 
     private Utf8MatchContext MatchDetailedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            var adapterDecoded = input.GetDecodedString();
+            if (start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input.Bytes, _fallbackDirectFamily, out var adapterDetailedLength))
+            {
+                return new Utf8MatchContext(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames, 0, adapterDetailedLength);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames);
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
         {
             try
@@ -185,6 +221,21 @@ public sealed partial class Utf8Regex
 
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } adapterCountLiteral)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (start.Value != 0)
+            {
+                return 0;
+            }
+
+            return adapterCountLiteral.Length <= input.Bytes.Length &&
+                input.Bytes[..adapterCountLiteral.Length].SequenceEqual(adapterCountLiteral)
+                ? 1
+                : 0;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input.Bytes))
         {
             try
@@ -236,6 +287,24 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator EnumerateMatchesAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // Anchored prefixes yield at most one match at byte 0 through the
+        // anchor-enforcing owned cursor; nonzero starts are a definitive miss.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } adapterEnumerateLiteral)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (start.Value != 0)
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
+                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            }
+
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input.Bytes, adapterEnumerateLiteral, CreateExecutionBudget()))
+                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         // Zero-start adapter enumeration rides the owned slice; nonzero
         // starts keep the origin-semantics fallback below (suffix slicing
         // loses absolute-origin anchors and left context).

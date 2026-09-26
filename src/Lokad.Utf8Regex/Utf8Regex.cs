@@ -851,6 +851,13 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            return start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out _);
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
@@ -1397,6 +1404,19 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredOffsetMatchLength))
+            {
+                return new Utf8ValueMatch(true, true, 0, anchoredOffsetMatchLength, 0, anchoredOffsetMatchLength);
+            }
+
+            return Utf8ValueMatch.NoMatch;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
@@ -1465,6 +1485,21 @@ public sealed partial class Utf8Regex
 
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var decoded = analysis.GetDecodedString();
+        // Anchored ASCII literal prefixes shape directly from the prefix compare:
+        // byte-exact on every input, so detailed matches never construct the BCL engine.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredDetailedLength))
+            {
+                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredDetailedLength);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+        }
+
         if (TryGetOwnedDetailedGroupCount(out var ownedGroupCount))
         {
             // R03: discovery runs through the shared value path and shaping projects owned
@@ -1546,6 +1581,22 @@ public sealed partial class Utf8Regex
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var start = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
         var decoded = analysis.GetDecodedString();
+        // Anchored prefixes anchor to offset 0: a nonzero start is a definitive miss,
+        // while offset 0 reuses the byte-exact prefix compare without BCL construction.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (start.Value == 0 &&
+                Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredOffsetLength))
+            {
+                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredOffsetLength);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchDetailedFromUnit(input, _sliceProgram, decoded, analysis.BoundaryMap, start.Value, cancellationToken);
@@ -1590,10 +1641,8 @@ public sealed partial class Utf8Regex
         // discover through owned kernels and shape from owned spans. Everything else keeps
         // BCL discovery and shaping until capture tracking migrates.
         groupCount = 1;
-        // Anchored literal prefixes stay BCL-shaped for now: their MatchCore path misses
-        // non-ASCII hits inside guided fallback verification (candidate search declines
-        // non-ASCII wholesale), so owned shaping would project those misses. Revisit with
-        // that gap.
+        // Anchored literal prefixes shape through the dedicated prefix-family arm above,
+        // not through this literal-kernel gate (their ExecutionKind is FallbackRegex).
         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
         {
             return false;
@@ -1755,6 +1804,17 @@ public sealed partial class Utf8Regex
     /// <summary>Enumerates non-overlapping matches in the well-formed UTF-8 input.</summary>
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input)
     {
+        // Anchored prefixes yield at most one match at offset 0 through the
+        // anchor-enforcing owned cursor, without BCL construction.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredEnumerateLiteral)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, anchoredEnumerateLiteral, CreateExecutionBudget()))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -1800,6 +1860,24 @@ public sealed partial class Utf8Regex
     {
         var analysis = Utf8InputAnalyzer.Analyze(input);
         var startInUtf16 = analysis.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        // Anchored prefixes from a nonzero start are a definitive miss; from offset 0
+        // they reuse the single-match owned cursor without BCL construction.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } anchoredOffsetLiteral)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            if (startInUtf16.Value != 0)
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input[..0], Array.Empty<byte>(), CreateExecutionBudget()))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, anchoredOffsetLiteral, CreateExecutionBudget()))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
         if (!UsesRightToLeft())
         {
             var startBoundary = analysis.BoundaryMap.Resolve(startInUtf16.Value);

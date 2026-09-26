@@ -227,6 +227,20 @@ public sealed partial class Utf8Regex
     private bool TryMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out Utf8ValueMatch match)
     {
         match = Utf8ValueMatch.NoMatch;
+        // Anchored ASCII literal prefixes are byte-exact on every input: astral scalars
+        // never start with ASCII bytes, so non-ASCII input stays direct instead of
+        // declining to the BCL fallback like the other ASCII direct families below.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredPrefixLength))
+            {
+                match = new Utf8ValueMatch(true, true, 0, anchoredPrefixLength, 0, anchoredPrefixLength);
+            }
+
+            return true;
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
@@ -296,6 +310,14 @@ public sealed partial class Utf8Regex
     private bool TryIsMatchDirectFallbackFamilyWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
+        // Same byte-exact contract as the Match arm above: anchored ASCII prefixes
+        // never need the BCL fallback, even on non-ASCII input.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        {
+            isMatch = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out _);
+            return true;
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)

@@ -368,8 +368,72 @@ internal ref struct Utf8OperationMatchCursor
             return false;
     }
 
+    // Anchored ASCII literal prefix enumeration: at most one match at offset 0,
+    // byte-exact on every input. The constructor below is public (not a counted
+    // private helper) and the move-next logic stays inline here to hold the
+    // single-caller debt ceiling.
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8ExecutionDeadline budget)
+    {
+        _plans = Utf8OperationMatchCursorPlans.Empty;
+        _smallAsciiLiteralFamilySearch = default;
+        _literalSearch = null;
+        _alternateLiteralUtf16Lengths = null;
+        _hasBoundaryRequirements = false;
+        _hasTrailingLiteralRequirement = false;
+        _literal = literal;
+        _input = input;
+        _boundaryMap = null;
+        _budget = budget;
+        _literalUtf16Length = literal.Length;
+        _totalUtf16Length = input.Length;
+        _projectionPlan = default;
+        _program = default;
+        _fallbackEnumerator = default;
+        _remaining = input;
+        _consumed = 0;
+        _consumedUtf16 = 0;
+        _multiLiteralScanState = default;
+        _deterministicScanState = default;
+        _current = Utf8ValueMatch.NoMatch;
+        _lastLiteralFamilyBranchId = 0;
+        _asciiFixedTokenCurrentIndex = -1;
+        _asciiFixedTokenMatchLength = 0;
+        _baseByteOffset = 0;
+        _baseUtf16Offset = 0;
+        _sliceProgram = null;
+        _sliceInvocation = default;
+        _sliceUnit = 0;
+        _sliceOriginUnit = 0;
+        _emittedKernelMatcher = null;
+        _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
+    }
+
     public bool MoveNext()
     {
+        if (_mode == EnumeratorMode.AnchoredAsciiLiteralPrefix)
+        {
+            if (_consumed != 0)
+            {
+                return false;
+            }
+
+            _consumed = 1;
+            _budget.Step();
+            var literal = _literal;
+            if (literal is null || literal.Length == 0 || literal.Length > _input.Length)
+            {
+                return false;
+            }
+
+            if (!_input[..literal.Length].SequenceEqual(literal))
+            {
+                return false;
+            }
+
+            _current = new Utf8ValueMatch(true, true, 0, literal.Length, 0, literal.Length);
+            return true;
+        }
+
         return _mode switch
         {
             EnumeratorMode.ExactAsciiLiteral => MoveNextExactLiteral(),
@@ -959,5 +1023,6 @@ internal ref struct Utf8OperationMatchCursor
         EmittedKernelPattern = 12,
         FallbackRegexAscii = 13,
         OwnedSlice = 14,
+        AnchoredAsciiLiteralPrefix = 15,
     }
 }
