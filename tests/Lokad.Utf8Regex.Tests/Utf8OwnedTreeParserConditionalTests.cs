@@ -1,11 +1,11 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser conditional stage: the differential battery pins conditional
+// Owned parser conditional stage: the BCL-oracled battery pins conditional
 // alternation identical to the provider trees (numeric and named conditions
 // resolving at the end pass with backreferences, empty branches lowering to
 // empty concatenations, single-kid form for bare defined closes), plus decline
@@ -15,66 +15,75 @@ public sealed class Utf8OwnedTreeParserConditionalTests
 {
     public static IEnumerable<object?[]> ConditionalAcceptCases()
     {
-        yield return new object?[] { "(?<x>a)(?(x)b|c)", 512 };
-        yield return new object?[] { "(a)(?(1)b|c)", 512 };
-        yield return new object?[] { "(?<x>a)(?(x)b|)", 512 };
-        yield return new object?[] { "(a)(?(1)b|)", 512 };
-        yield return new object?[] { "(?<x>a)(?(x))", 512 };
-        yield return new object?[] { "(a)(?(1)b|c)(d)", 512 };
-        yield return new object?[] { "(?(1)a|b)(c)", 512 };
-        yield return new object?[] { "(?(x)a|b)(?<x>c)", 512 };
-        yield return new object?[] { "(a)(?(1)|b)", 512 };
-        yield return new object?[] { "(a)(?(1)|)", 512 };
-        yield return new object?[] { "(a)(?(1))", 512 };
-        yield return new object?[] { "(a)(b)(?(1)(?(2)x|y)|z)", 512 };
-        yield return new object?[] { "(a(?(1)b|c))", 512 };
-        yield return new object?[] { "(?<x>a(?(x)b|c))", 512 };
-        yield return new object?[] { "(?<x>a)(?(x)b|c)", 516 };
-        yield return new object?[] { "(a)(?(1)b|c)", 1024 };
-        yield return new object?[] { "(?i:(a)(?(1)b|c))", 512 };
-        yield return new object?[] { "(a)(?(1)b|c)+", 512 };
-        yield return new object?[] { "((a)(?(1)b|c))", 512 };
-        yield return new object?[] { "(a)(?(01)b|c)", 512 };
-        yield return new object?[] { "(b)(?(01)c|d)", 512 };
-        yield return new object?[] { "(?(007)a|b)(?<7>c)", 512 };
-        yield return new object?[] { "(?(01)a|b)(a)", 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|c)", 512, 512 };
+        yield return new object?[] { "(a)(?(1)b|c)", 512, 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|)", 512, 512 };
+        yield return new object?[] { "(a)(?(1)b|)", 512, 512 };
+        yield return new object?[] { "(?<x>a)(?(x))", 512, 512 };
+        yield return new object?[] { "(a)(?(1)b|c)(d)", 512, 512 };
+        yield return new object?[] { "(?(1)a|b)(c)", 512, 512 };
+        yield return new object?[] { "(?(x)a|b)(?<x>c)", 512, 512 };
+        yield return new object?[] { "(a)(?(1)|b)", 512, 512 };
+        yield return new object?[] { "(a)(?(1)|)", 512, 512 };
+        yield return new object?[] { "(a)(?(1))", 512, 512 };
+        yield return new object?[] { "(a)(b)(?(1)(?(2)x|y)|z)", 512, 512 };
+        yield return new object?[] { "(a(?(1)b|c))", 512, 512 };
+        yield return new object?[] { "(?<x>a(?(x)b|c))", 512, 512 };
+        yield return new object?[] { "(?<x>a)(?(x)b|c)", 516, 516 };
+        yield return new object?[] { "(?i:(a)(?(1)b|c))", 512, 513 };
+        yield return new object?[] { "(a)(?(1)b|c)+", 512, 512 };
+        yield return new object?[] { "((a)(?(1)b|c))", 512, 512 };
+        yield return new object?[] { "(a)(?(01)b|c)", 512, 512 };
+        yield return new object?[] { "(b)(?(01)c|d)", 512, 512 };
+        yield return new object?[] { "(?(007)a|b)(?<7>c)", 512, 512 };
+        yield return new object?[] { "(?(01)a|b)(a)", 512, 512 };
     }
 
     public static IEnumerable<object?[]> ConditionalDeclineCases()
     {
-        yield return new object?[] { "(?(1)a|b)", 512 };
-        yield return new object?[] { "(?(1)a)", 512 };
-        yield return new object?[] { "(?(1))", 512 };
-        yield return new object?[] { "(?(1)|b)", 512 };
-        yield return new object?[] { "(a)(?(1)b|c)", 516 };
-        yield return new object?[] { "(?(01)a|b)", 512 };
-        yield return new object?[] { "(?<x>a)(?(02)b|c)", 512 };
+        yield return new object?[] { "(?(1)a|b)", 512, RegexParseError.AlternationHasUndefinedReference, 5 };
+        yield return new object?[] { "(?(1)a)", 512, RegexParseError.AlternationHasUndefinedReference, 5 };
+        yield return new object?[] { "(?(1))", 512, RegexParseError.AlternationHasUndefinedReference, 5 };
+        yield return new object?[] { "(?(1)|b)", 512, RegexParseError.AlternationHasUndefinedReference, 5 };
+        yield return new object?[] { "(a)(?(1)b|c)", 516, RegexParseError.AlternationHasUndefinedReference, 8 };
+        yield return new object?[] { "(?(01)a|b)", 512, RegexParseError.AlternationHasUndefinedReference, 6 };
+        yield return new object?[] { "(?<x>a)(?(02)b|c)", 512, RegexParseError.AlternationHasUndefinedReference, 13 };
     }
 
     [Theory]
     [MemberData(nameof(ConditionalAcceptCases))]
-    public void OwnedConditionalMatchesProviderTree(string pattern, int options)
+    public void OwnedConditionalServesWithBclMetadata(string pattern, int options, int expectedOptions)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)expectedOptions, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
+    }
+
+    [Fact]
+    public void OwnedNonBacktrackingConditionalFailsLikeBcl()
+    {
+        // BCL NonBacktracking rejects conditionals at construction; the owned
+        // parser still serves the shape while the product fails construction
+        // through the fallback engine exactly like the oracle.
+        var actual = Utf8OwnedTreeParser.TryParse("(a)(?(1)b|c)", RegexOptions.NonBacktracking);
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.CaptureCount);
+        Assert.Throws<NotSupportedException>(() => new Regex("(a)(?(1)b|c)", RegexOptions.NonBacktracking));
+        Assert.Throws<NotSupportedException>(() => new Utf8Regex("(a)(?(1)b|c)", RegexOptions.NonBacktracking));
     }
 
     [Theory]
     [MemberData(nameof(ConditionalDeclineCases))]
-    public void OwnedConditionalDeclinesUnsupported(string pattern, int options)
+    public void OwnedConditionalDeclinesUnsupported(string pattern, int options, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     public static IEnumerable<object?[]> ConditionalUndefinedNameCases()
@@ -95,10 +104,6 @@ public sealed class Utf8OwnedTreeParserConditionalTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var inputText in inputs)
@@ -124,7 +129,6 @@ public sealed class Utf8OwnedTreeParserConditionalTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var inputText in inputs)
@@ -152,7 +156,6 @@ public sealed class Utf8OwnedTreeParserConditionalTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var inputText in inputs)
@@ -161,17 +164,5 @@ public sealed class Utf8OwnedTreeParserConditionalTests
             Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
             Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
         }
-    }
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
     }
 }
