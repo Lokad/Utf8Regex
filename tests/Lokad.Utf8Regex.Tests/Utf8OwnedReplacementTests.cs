@@ -1,13 +1,11 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal.Replacement;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned replacement template parsing: the differential battery pins the owned
-// scan, group resolution, and literal-text extraction identical to the legacy
-// instance (oracle first, then owned) across the probed template catalog and
-// three group contexts.
+// Owned replacement template parsing: the pinned battery checks the owned
+// scan, group resolution, and literal-text extraction against hardcoded
+// expectations across the probed template catalog and three group contexts.
 public sealed class Utf8OwnedReplacementTests
 {
     private static readonly int[][] GroupNumbers =
@@ -460,12 +458,8 @@ public sealed class Utf8OwnedReplacementTests
 
     [Theory]
     [MemberData(nameof(ParseCases))]
-    public void OwnedReplacementParseMatchesLegacy(string template, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
+    public void OwnedReplacementParseMatchesPinnedFacts(string template, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
     {
-        var legacy = RuntimeFrontEnd.RegexParser.ParseReplacement(template);
-        Assert.Equal(expectedTokens, DumpLegacyTokens(legacy));
-        Assert.Equal(expectedLiteralOk, legacy.TryGetLiteralText(out var legacyLiteral));
-        Assert.Equal(expectedLiteral, legacyLiteral ?? string.Empty);
         var owned = Utf8ReplacementPattern.Parse(template);
         Assert.Equal(expectedTokens, DumpOwnedTokens(owned));
         Assert.Equal(expectedLiteralOk, owned.TryGetLiteralText(out var ownedLiteral));
@@ -474,15 +468,10 @@ public sealed class Utf8OwnedReplacementTests
 
     [Theory]
     [MemberData(nameof(ResolveCases))]
-    public void OwnedReplacementResolveMatchesLegacy(string template, int context, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
+    public void OwnedReplacementResolveMatchesPinnedFacts(string template, int context, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
     {
         var numbers = GroupNumbers[context];
         var names = GroupNames[context];
-        var legacy = RuntimeFrontEnd.RegexParser.ParseReplacement(template);
-        var legacyResolved = legacy.ResolveGroupReferences(numbers, names);
-        Assert.Equal(expectedTokens, DumpLegacyTokens(legacyResolved));
-        Assert.Equal(expectedLiteralOk, legacy.TryGetLiteralText(numbers, names, out var legacyLiteral));
-        Assert.Equal(expectedLiteral, legacyLiteral ?? string.Empty);
         var owned = Utf8ReplacementPattern.Parse(template);
         var ownedResolved = owned.ResolveGroupReferences(numbers, names);
         Assert.Equal(expectedTokens, DumpOwnedTokens(ownedResolved));
@@ -490,23 +479,6 @@ public sealed class Utf8OwnedReplacementTests
         Assert.Equal(expectedLiteral, ownedLiteral ?? string.Empty);
     }
 
-    private static string DumpLegacyTokens(RuntimeFrontEnd.RegexReplacementPattern pattern)
-    {
-        var builder = new StringBuilder("[");
-        var first = true;
-        foreach (var token in pattern.Tokens)
-        {
-            if (!first)
-            {
-                builder.Append(';');
-            }
-
-            first = false;
-            builder.Append(token.Kind.ToString()).Append(':').Append(token.Literal ?? string.Empty).Append(':').Append(token.GroupNumber).Append(':').Append(token.IsBraceEnclosed ? 'b' : '-');
-        }
-
-        return builder.Append(']').ToString();
-    }
 
     private static string DumpOwnedTokens(Utf8ReplacementPattern pattern)
     {

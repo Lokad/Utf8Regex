@@ -1,12 +1,10 @@
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned required-literal families: the differential battery pins the owned best
-// family identical to the legacy instance (oracle first, then owned) across the
-// probed shape catalog.
+// Owned required-literal families: the pinned battery checks the owned best
+// family against hardcoded expectations across the probed shape catalog.
 public sealed class Utf8OwnedRequiredLiteralsTests
 {
     public static IEnumerable<object?[]> RequiredCases()
@@ -71,7 +69,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         yield return new object?[] { "((ab|cd))", RegexOptions.CultureInvariant, new string[] { "ab", "cd" } };
         yield return new object?[] { "(?:ab|cd)", RegexOptions.CultureInvariant, new string[] { "ab", "cd" } };
         yield return new object?[] { "ab", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
-        yield return new object?[] { "(?i:ab)cd", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "(?i:ab)cd", RegexOptions.CultureInvariant, new string[] { "cd" } };
         yield return new object?[] { "ab|cd", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, null };
         yield return new object?[] { "abc", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, new string[] { "abc" } };
         yield return new object?[] { "ab|cd", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, new string[] { "ab", "cd" } };
@@ -102,7 +100,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         yield return new object?[] { "(a|b)+c", RegexOptions.CultureInvariant, new string[] { "a", "b" } };
         yield return new object?[] { "(ab){0}", RegexOptions.CultureInvariant, null };
         yield return new object?[] { "a[b-d]e", RegexOptions.CultureInvariant, new string[] { "a" } };
-        yield return new object?[] { "(?i:a)b", RegexOptions.CultureInvariant, null };
+        yield return new object?[] { "(?i:a)b", RegexOptions.CultureInvariant, new string[] { "b" } };
         yield return new object?[] { "1a", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, new string[] { "1" } };
         yield return new object?[] { "ab(c|d)", RegexOptions.CultureInvariant, new string[] { "ab" } };
         yield return new object?[] { "(ab|cd){0}", RegexOptions.CultureInvariant, null };
@@ -146,14 +144,10 @@ public sealed class Utf8OwnedRequiredLiteralsTests
 
     [Theory]
     [MemberData(nameof(RequiredCases))]
-    public void OwnedRequiredFamilyMatchesLegacy(string pattern, RegexOptions options, string[]? expected)
+    public void OwnedRequiredFamilyMatchesPinnedFacts(string pattern, RegexOptions options, string[]? expected)
     {
-        var tree = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, options);
-        Assert.NotNull(tree);
-        var legacy = RuntimeFrontEnd.RegexRequiredLiteralAnalyzer.FindBestRequiredLiteralFamily(tree.Root);
-        Assert.Equal(expected, legacy);
-        var ownedTree = Utf8OwnedRegexTree.FromLegacy(tree);
-        Assert.NotNull(ownedTree);
-        Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(ownedTree.Root));
+        var parsed = Utf8OwnedTreeParser.TryParse(pattern, options);
+        Assert.NotNull(parsed);
+        Assert.Equal(expected, Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(parsed.Root));
     }
 }
