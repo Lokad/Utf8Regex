@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -525,13 +524,7 @@ public sealed class Utf8SearchPlanTests
     public void ConstructorClassifiesAwsKeysFullPatternAsNativeQuotedRelation()
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
-        var parserException = Record.Exception(() => RegexParser.Parse(pattern, RegexOptions.Multiline, RegexParser.GetTargetCulture(RegexOptions.Multiline)));
-        if (parserException is Lokad.Utf8Regex.Internal.FrontEnd.Runtime.RegexParseException parseException)
-        {
-            throw new Xunit.Sdk.XunitException($"Parser failed: {parseException.Error} at {parseException.Offset}");
-        }
-
-        Assert.Null(parserException);
+        var oracle = new System.Text.RegularExpressions.Regex(pattern, RegexOptions.Multiline);
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.Multiline);
         Assert.NotNull(analysis.SemanticRegex.RuntimeTree);
         var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);

@@ -1,7 +1,7 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -69,14 +69,14 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     [Fact]
     public void DotNetProjectionOwnsRegexCharClassDecoding()
     {
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(RuntimeFrontEnd.RegexCharClass.DigitClass, out var digits));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(RuntimeFrontEnd.RegexCharClass.SpaceClass, out var spaces));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.SpaceClass, out _));
-        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass, out var ecmaSpaces));
-        Assert.False(DotNetAsciiCharClassProjector.TryProjectWholeClass(RuntimeFrontEnd.RegexCharClass.DigitClass, out _));
-        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.SpaceClass));
-        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.DigitClass));
-        Assert.False(DotNetAsciiCharClassProjector.RequiresAsciiInput(RuntimeFrontEnd.RegexCharClass.ECMASpaceClass));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(Utf8OwnedCharClass.DigitClass, out var digits));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectAsciiIntersection(Utf8OwnedCharClass.SpaceClass, out var spaces));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.SpaceClass, out _));
+        Assert.True(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.ECMASpaceClass, out var ecmaSpaces));
+        Assert.False(DotNetAsciiCharClassProjector.TryProjectWholeClass(Utf8OwnedCharClass.DigitClass, out _));
+        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.SpaceClass));
+        Assert.True(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.DigitClass));
+        Assert.False(DotNetAsciiCharClassProjector.RequiresAsciiInput(Utf8OwnedCharClass.ECMASpaceClass));
 
         for (var value = 0; value < 128; value++)
         {
@@ -94,18 +94,19 @@ public sealed class Utf8AsciiClassAndBoundaryTests
     [InlineData("a😀b")]
     [InlineData("a\u0301b")]
     [InlineData("Ж cat")]
-    public void CanonicalBoundaryMatchesDotNetUtf16BoundaryClassification(string text)
+    public void CanonicalBoundaryMatchesBclWordBoundaryClassification(string text)
     {
         var utf8 = Encoding.UTF8.GetBytes(text);
+        var boundaries = new HashSet<int>(new Regex(@"\b", RegexOptions.CultureInvariant).Matches(text).Select(static match => match.Index));
         var byteOffset = 0;
         var utf16Offset = 0;
-        AssertBoundary(text, utf8, byteOffset, utf16Offset);
+        AssertBoundary(utf8, byteOffset, utf16Offset, boundaries);
 
         foreach (var rune in text.EnumerateRunes())
         {
             byteOffset += rune.Utf8SequenceLength;
             utf16Offset += rune.Utf16SequenceLength;
-            AssertBoundary(text, utf8, byteOffset, utf16Offset);
+            AssertBoundary(utf8, byteOffset, utf16Offset, boundaries);
         }
     }
 
@@ -165,11 +166,9 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         Assert.DoesNotContain(coreFiles, static file => File.ReadAllText(file).Contains("MatchesSet(byte value, Utf8FixedDistanceSet", StringComparison.Ordinal));
     }
 
-    private static void AssertBoundary(string text, byte[] utf8, int byteOffset, int utf16Offset)
+    private static void AssertBoundary(byte[] utf8, int byteOffset, int utf16Offset, HashSet<int> boundaries)
     {
-        var previousIsWord = utf16Offset > 0 && RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(text[utf16Offset - 1]);
-        var nextIsWord = utf16Offset < text.Length && RuntimeFrontEnd.RegexCharClass.IsBoundaryWordChar(text[utf16Offset]);
-        Assert.Equal(previousIsWord != nextIsWord, DotNetUtf8WordBoundary.IsBoundary(utf8, byteOffset));
+        Assert.Equal(boundaries.Contains(utf16Offset), DotNetUtf8WordBoundary.IsBoundary(utf8, byteOffset));
     }
 
     private static string FindRepositoryRoot()
