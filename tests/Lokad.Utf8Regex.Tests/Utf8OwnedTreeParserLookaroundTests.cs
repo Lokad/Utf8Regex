@@ -1,13 +1,13 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser lookaround stage: the differential battery pins positive and
+// Owned parser lookaround stage: the BCL-oracled battery pins positive and
 // negative lookahead, lookbehind with forced direction options, atomic groups,
-// punctuation escapes, and class escape tiers identical to the provider trees,
-// plus decline agreement on backreferences inside lookbehind, malformed openers,
+// punctuation escapes, and class escape tiers with BCL metadata,
+// plus decline pins with construction errors on backreferences inside lookbehind, malformed openers,
 // shorthand range ends, and undecodable escapes; captures in or after lookbehind
 // serve BCL-exactly with detailed group-value agreement, and only the
 // upper-bound shorthand plus single flip-decision residuals still route to the provider.
@@ -85,25 +85,18 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         yield return new object?[] { "\\`", 512 };
         yield return new object?[] { "\\~", 512 };
         yield return new object?[] { "\\@", 512 };
-        yield return new object?[] { "\\_", 512 };
         yield return new object?[] { "\\ ", 512 };
         yield return new object?[] { "a\\,b", 512 };
         yield return new object?[] { "[\\,]", 512 };
         yield return new object?[] { "[\\:]", 512 };
         yield return new object?[] { "[\\>]", 512 };
         yield return new object?[] { "[\\@]", 512 };
-        yield return new object?[] { "[\\_]", 512 };
         yield return new object?[] { "[\\,-a]", 512 };
-        yield return new object?[] { "\\é", 512 };
         yield return new object?[] { "[\\n-a]", 512 };
         yield return new object?[] { "[\\x41-a]", 512 };
         yield return new object?[] { "[\\cA-a]", 512 };
         yield return new object?[] { "[\\0-a]", 512 };
         yield return new object?[] { "[\\b-a]", 512 };
-        yield return new object?[] { "[a-\\,]", 512 };
-        yield return new object?[] { "[a-\\:]", 512 };
-        yield return new object?[] { "[a-\\.]", 512 };
-        yield return new object?[] { "[a-\\+]", 512 };
         yield return new object?[] { "[\\--a]", 512 };
         yield return new object?[] { "[\\d-a]", 512 };
         yield return new object?[] { "[\\d-z]", 512 };
@@ -148,25 +141,47 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         Assert.Equal(error, thrown.Error);
         Assert.Equal(offset, thrown.Offset);
     }
+    public static IEnumerable<object?[]> LookaroundEscapeDeclineCases()
+    {
+        // Bare word-character escapes and reversed escaped-upper-bound ranges
+        // are BCL-invalid; they decline to the BCL fallback with the pinned error.
+        yield return new object?[] { "\\_", 512, RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "[\\_]", 512, RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "\\é", 512, RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "[a-\\,]", 512, RegexParseError.ReversedCharacterRange, 5 };
+        yield return new object?[] { "[a-\\:]", 512, RegexParseError.ReversedCharacterRange, 5 };
+        yield return new object?[] { "[a-\\.]", 512, RegexParseError.ReversedCharacterRange, 5 };
+        yield return new object?[] { "[a-\\+]", 512, RegexParseError.ReversedCharacterRange, 5 };
+    }
+
+    [Theory]
+    [MemberData(nameof(LookaroundEscapeDeclineCases))]
+    public void OwnedLookaroundDeclinesInvalidEscape(string pattern, int options, RegexParseError error, int offset)
+    {
+        Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
+    }
     public static IEnumerable<object?[]> LookaroundDeclineCases()
     {
-        yield return new object?[] { "(?>a" };
-        yield return new object?[] { "(?=a" };
-        yield return new object?[] { "(?<=a" };
-        yield return new object?[] { "(?=a))" };
-        yield return new object?[] { "(?<=\\1)a" };
-        yield return new object?[] { "[a-\\k]" };
-        yield return new object?[] { "[a-\\8]" };
-        yield return new object?[] { "[a-\\p]" };
-        yield return new object?[] { "[a-\\q]" };
-        yield return new object?[] { "[a-\\--]" };
-        yield return new object?[] { "[\\8]" };
-        yield return new object?[] { "[\\8-a]" };
-        yield return new object?[] { "[\\C]" };
-        yield return new object?[] { "[\\E]" };
-        yield return new object?[] { "\\C" };
-        yield return new object?[] { "\\E" };
-        yield return new object?[] { "\\Q" };
+        yield return new object?[] { "(?>a", RegexParseError.InsufficientClosingParentheses, 4 };
+        yield return new object?[] { "(?=a", RegexParseError.InsufficientClosingParentheses, 4 };
+        yield return new object?[] { "(?<=a", RegexParseError.InsufficientClosingParentheses, 5 };
+        yield return new object?[] { "(?=a))", RegexParseError.InsufficientOpeningParentheses, 6 };
+        yield return new object?[] { "(?<=\\1)a", RegexParseError.UndefinedNumberedReference, 6 };
+        yield return new object?[] { "[a-\\k]", RegexParseError.UnrecognizedEscape, 5 };
+        yield return new object?[] { "[a-\\8]", RegexParseError.UnrecognizedEscape, 5 };
+        yield return new object?[] { "[a-\\p]", RegexParseError.InvalidUnicodePropertyEscape, 5 };
+        yield return new object?[] { "[a-\\q]", RegexParseError.UnrecognizedEscape, 5 };
+        yield return new object?[] { "[a-\\--]", RegexParseError.ReversedCharacterRange, 5 };
+        yield return new object?[] { "[\\8]", RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\8-a]", RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\C]", RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "[\\E]", RegexParseError.UnrecognizedEscape, 3 };
+        yield return new object?[] { "\\C", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "\\E", RegexParseError.UnrecognizedEscape, 2 };
+        yield return new object?[] { "\\Q", RegexParseError.UnrecognizedEscape, 2 };
     }
 
     public static IEnumerable<object?[]> LookaroundResidualCases()
@@ -182,28 +197,25 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
 
     [Theory]
     [MemberData(nameof(LookaroundAcceptCases))]
-    public void OwnedLookaroundMatchesProviderTree(string pattern, int options)
+    public void OwnedLookaroundServesWithBclMetadata(string pattern, int options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)options, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
     }
 
     [Theory]
     [MemberData(nameof(LookaroundDeclineCases))]
-    public void OwnedLookaroundDeclinesUnsupported(string pattern)
+    public void OwnedLookaroundDeclinesUnsupported(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            RegexOptions.CultureInvariant,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     [Theory]
@@ -263,10 +275,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         foreach (var input in new[] { "", "a", "ab", "aab", "xaab", "b", "aaab", "abb", "aabb", "1", "11", "a1" })
@@ -305,10 +313,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -385,7 +389,6 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -455,16 +458,4 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
-    }
 }

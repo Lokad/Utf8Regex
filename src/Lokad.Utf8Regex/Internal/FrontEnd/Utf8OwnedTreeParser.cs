@@ -597,9 +597,10 @@ internal static class Utf8OwnedTreeParser
                     state.Position++;
                     return true;
                 default:
-                    // Other characters spell themselves; only ASCII letters
-                    // and digits without an escape meaning keep declining.
-                    if ((escaped >= 'a' && escaped <= 'z') || (escaped >= 'A' && escaped <= 'Z') || (escaped >= '0' && escaped <= '9'))
+                    // Other characters spell themselves; a word character
+                    // without an escape meaning declines exactly like the
+                    // BCL oracle (UnrecognizedEscape).
+                    if (IsWordChar(escaped))
                     {
                         return false;
                     }
@@ -711,18 +712,6 @@ internal static class Utf8OwnedTreeParser
                             return false;
                         }
 
-                        if (TryTakeComplexRangeEnd(ref state, units))
-                        {
-                            hasPending = false;
-                            pendingAdded = false;
-                            first = false;
-                            if (state.AtEnd || state.Pattern[state.Position] != ']')
-                            {
-                                return false;
-                            }
-
-                            continue;
-                        }
 
                         if (!TryTakeRangeEnd(ref state, pending, units))
                         {
@@ -939,31 +928,6 @@ internal static class Utf8OwnedTreeParser
             return TryTakeShorthandMembers(ref probe, new List<char>(), new List<char>());
         }
 
-        static bool TryTakeComplexRangeEnd(ref ParserState state, List<char> units)
-        {
-            // state.Position is at '-'; consumes a complex-decodable end
-            // (punctuation resolution) as a single, discarding the pending start
-            // exactly like the provider, whose range never starts there.
-            if (state.Position + 1 >= state.Pattern.Length || state.Pattern[state.Position + 1] != '\\')
-            {
-                return false;
-            }
-
-            var probe = state;
-            probe.Position++;
-            if (!DecodeClassEscape(ref probe, out var end, out var isPlain) || isPlain)
-            {
-                return false;
-            }
-
-            state.Position = probe.Position;
-            if (!AddClassUnit(units, end))
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         static bool TryTakeRangeEnd(ref ParserState state, char start, List<char> units)
         {
@@ -1504,34 +1468,49 @@ internal static class Utf8OwnedTreeParser
         static bool IsValidGroupName(string value)
         {
             // Machine-probed BCL capture-name rule: every character is a
-            // Unicode word character (all letter kinds, decimal digits,
-            // connector punctuation, nonspacing marks) or a zero-width
-            // joiner. ASCII-digit starts are canonical or rejected above,
-            // so digits here only admit non-ASCII numerals as name text.
+            // Unicode word character. ASCII-digit starts are canonical or
+            // rejected above, so digits here only admit non-ASCII numerals
+            // as name text.
+            if (value.Length == 0)
+            {
+                return false;
+            }
+
             foreach (var character in value)
             {
-                if (character == (char)0x200C || character == (char)0x200D)
+                if (!IsWordChar(character))
                 {
-                    continue;
-                }
-
-                switch (char.GetUnicodeCategory(character))
-                {
-                    case UnicodeCategory.UppercaseLetter:
-                    case UnicodeCategory.LowercaseLetter:
-                    case UnicodeCategory.TitlecaseLetter:
-                    case UnicodeCategory.ModifierLetter:
-                    case UnicodeCategory.OtherLetter:
-                    case UnicodeCategory.NonSpacingMark:
-                    case UnicodeCategory.DecimalDigitNumber:
-                    case UnicodeCategory.ConnectorPunctuation:
-                        break;
-                    default:
-                        return false;
+                    return false;
                 }
             }
 
-            return value.Length != 0;
+            return true;
+        }
+
+        static bool IsWordChar(char value)
+        {
+            // Machine-probed BCL word-character rule shared by capture names
+            // and bare escapes: all letter kinds, decimal digits, connector
+            // punctuation, nonspacing marks, and zero-width joiners.
+            if (value == (char)0x200C || value == (char)0x200D)
+            {
+                return true;
+            }
+
+            switch (char.GetUnicodeCategory(value))
+            {
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.ConnectorPunctuation:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         static bool TryParseGroupNumber(string value, out int number)
