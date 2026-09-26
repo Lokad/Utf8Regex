@@ -1,14 +1,13 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser shorthand stage: the differential battery pins predefined
-// shorthands, Unicode properties, and named blocks identical to the provider where the
-// trees (kinds, options, payloads, children, capture accounting), plus
-// fork still agrees with BCL; fork-divergent block names, range-into-set shapes, and
-// unknown properties pin owned residuals instead (no-vendor rule: the fork is never extended).
+// Owned parser shorthand stage: the BCL-oracled battery pins predefined
+// shorthands, Unicode properties, and named blocks with BCL metadata (capture
+// accounting, construction verdicts with error pins), plus block names beyond
+// the old fork coverage that the owned parser serves BCL-exactly.
 public sealed class Utf8OwnedTreeParserShorthandTests
 {
     public static IEnumerable<object?[]> ShorthandAcceptCases()
@@ -166,32 +165,29 @@ public sealed class Utf8OwnedTreeParserShorthandTests
     }
     public static IEnumerable<object?[]> ShorthandDeclineCases()
     {
-        yield return new object?[] { "\\p{}" };
-        yield return new object?[] { "\\p{L" };
-        yield return new object?[] { "\\p" };
-        yield return new object?[] { "\\P" };
+        yield return new object?[] { "\\p{}", RegexParseError.InvalidUnicodePropertyEscape, 2 };
+        yield return new object?[] { "\\p{L", RegexParseError.InvalidUnicodePropertyEscape, 2 };
+        yield return new object?[] { "\\p", RegexParseError.InvalidUnicodePropertyEscape, 2 };
+        yield return new object?[] { "\\P", RegexParseError.InvalidUnicodePropertyEscape, 2 };
     }
 
     [Theory]
     [MemberData(nameof(ShorthandAcceptCases))]
-    public void OwnedShorthandMatchesProviderTree(string pattern, int options)
+    public void OwnedShorthandServesWithBclMetadata(string pattern, int options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)options, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
     }
 
     public static IEnumerable<object?[]> BlockResidualCases()
     {
-        // Fork-narrowing debt (no-vendor rule): these BCL-valid block and _xml names
-        // are rejected by the pristine fork, while the owned parser serves them. They pin
-        // owned-accept plus legacy-decline instead of tree agreement.
+        // These BCL-valid block and _xml names extend beyond the old fork coverage.
+        // They pin owned-accept with BCL-exact serving.
         yield return new object?[] { "[\\p{IsGreek}a]", 512 };
         yield return new object?[] { "[a\\p{IsGreek}]", 512 };
         yield return new object?[] { "\\p{_xmlC}", 512 };
@@ -426,80 +422,60 @@ public sealed class Utf8OwnedTreeParserShorthandTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
     }
 
     [Theory]
     [MemberData(nameof(ShorthandDeclineCases))]
-    public void OwnedShorthandDeclinesInvalidProperty(string pattern)
+    public void OwnedShorthandDeclinesInvalidProperty(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            RegexOptions.CultureInvariant,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     public static IEnumerable<object?[]> ShorthandResidualCases()
     {
-        // Fork-widening debt (no-vendor rule): BCL rejects a shorthand or category
-        // escape in upper-bound class position while the pristine fork accepts it. These pin
-        // owned-decline plus legacy-accept; the provider gatekeeper still declines them so
-        // construction fails BCL-exactly through the fallback.
-        yield return new object?[] { "[a-\\d]" };
-        yield return new object?[] { "[z-\\d]" };
-        yield return new object?[] { "[--\\d]" };
-        yield return new object?[] { "[a-\\p{Lu}]" };
+        // BCL rejects a shorthand or category escape in upper-bound class position.
+        // These pin owned-decline plus the BCL construction error.
+        yield return new object?[] { "[a-\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
+        yield return new object?[] { "[z-\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
+        yield return new object?[] { "[--\\d]", RegexParseError.ShorthandClassInCharacterRange, 5 };
+        yield return new object?[] { "[a-\\p{Lu}]", RegexParseError.ShorthandClassInCharacterRange, 5 };
     }
 
     public static IEnumerable<object?[]> UnknownPropertyCases()
     {
-        // Fork-leak debt (no-vendor rule): the pristine fork leaks a bare ArgumentException
-        // for unknown property names where BCL raises a parse error. These pin owned-decline
-        // plus the exact leak; the provider seam maps it to a decline so construction still
-        // fails BCL-exactly through the fallback.
-        yield return new object?[] { "\\p{Nope}" };
-        yield return new object?[] { "\\p{Any}" };
-        yield return new object?[] { "\\p{Assigned}" };
-        yield return new object?[] { "\\p{lu}" };
-        yield return new object?[] { "\\p{LU}" };
-        yield return new object?[] { "\\p{ L}" };
-        yield return new object?[] { "\\p{L }" };
-        yield return new object?[] { "\\p{Greek}" };
-        yield return new object?[] { "\\p{isgreek}" };
+        // Unknown property names decline in the owned parser while BCL raises a
+        // parse error; construction fails BCL-exactly through the fallback.
+        yield return new object?[] { "\\p{Nope}", RegexParseError.UnrecognizedUnicodeProperty, 8 };
+        yield return new object?[] { "\\p{Any}", RegexParseError.UnrecognizedUnicodeProperty, 7 };
+        yield return new object?[] { "\\p{Assigned}", RegexParseError.UnrecognizedUnicodeProperty, 12 };
+        yield return new object?[] { "\\p{lu}", RegexParseError.UnrecognizedUnicodeProperty, 6 };
+        yield return new object?[] { "\\p{LU}", RegexParseError.UnrecognizedUnicodeProperty, 6 };
+        yield return new object?[] { "\\p{ L}", RegexParseError.InvalidUnicodePropertyEscape, 4 };
+        yield return new object?[] { "\\p{L }", RegexParseError.InvalidUnicodePropertyEscape, 5 };
+        yield return new object?[] { "\\p{Greek}", RegexParseError.UnrecognizedUnicodeProperty, 9 };
+        yield return new object?[] { "\\p{isgreek}", RegexParseError.UnrecognizedUnicodeProperty, 11 };
     }
 
     [Theory]
     [MemberData(nameof(ShorthandResidualCases))]
-    public void OwnedShorthandDeclinesResidual(string pattern)
+    public void OwnedShorthandDeclinesResidual(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     [Theory]
     [MemberData(nameof(UnknownPropertyCases))]
-    public void OwnedShorthandDeclinesUnknownProperty(string pattern)
+    public void OwnedShorthandDeclinesUnknownProperty(string pattern, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, RegexOptions.CultureInvariant));
-        Assert.Null(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, RegexOptions.CultureInvariant));
-        var leak = Assert.Throws<ArgumentException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            RegexOptions.CultureInvariant,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture(RegexOptions.CultureInvariant)));
-        Assert.Equal("categoryName", leak.ParamName);
-    }
-
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, RegexOptions.CultureInvariant));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 }

@@ -102,7 +102,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
     [Theory]
     [MemberData(nameof(Utf8OwnedTreeParserShorthandTests.ShorthandResidualCases), MemberType = typeof(Utf8OwnedTreeParserShorthandTests))]
-    public void ShorthandResidualCutoverDisposition(string pattern)
+    public void ShorthandResidualCutoverDisposition(string pattern, RegexParseError error, int offset)
     {
         AssertCutoverDisposition(pattern, RegexOptions.CultureInvariant);
     }
