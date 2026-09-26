@@ -1,11 +1,11 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser balance stage: the differential battery pins balancing-group
-// pops identical to the provider trees (pop nodes carry the resolved slot,
+// Owned parser balance stage: the BCL-oracled battery pins balancing-group
+// pops with BCL metadata (pop nodes carry the resolved slot,
 // definitions keep their numbers), plus decline agreement on pops of
 // undefined groups and a residual for pops under top-level ExplicitCapture
 // where named definitions stay routed to the provider.
@@ -19,9 +19,9 @@ public sealed class Utf8OwnedTreeParserBalanceTests
 
     public static IEnumerable<object?[]> BalanceDeclineCases()
     {
-        yield return new object?[] { "(?<a-b>x)", 512 };
-        yield return new object?[] { "(?'a-b'x)", 512 };
-        yield return new object?[] { "(?'a'x)(?-'a'y)", 512 };
+        yield return new object?[] { "(?<a-b>x)", 512, RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?'a-b'x)", 512, RegexParseError.UndefinedNamedReference, 6 };
+        yield return new object?[] { "(?'a'x)(?-'a'y)", 512, RegexParseError.InvalidGroupingConstruct, 11 };
     }
 
     public static IEnumerable<object?[]> BalanceResidualCases()
@@ -31,48 +31,36 @@ public sealed class Utf8OwnedTreeParserBalanceTests
 
     [Theory]
     [MemberData(nameof(BalanceAcceptCases))]
-    public void OwnedBalanceMatchesProviderTree(string pattern, int options)
+    public void OwnedBalanceServesWithBclMetadata(string pattern, int options)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)options, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
     }
 
     [Theory]
     [MemberData(nameof(BalanceDeclineCases))]
-    public void OwnedBalanceDeclinesUnsupported(string pattern, int options)
+    public void OwnedBalanceDeclinesUnsupported(string pattern, int options, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     [Theory]
     [MemberData(nameof(BalanceResidualCases))]
-    public void OwnedBalanceDeclinesResidual(string pattern, int options)
+    public void OwnedBalanceDeclinesTopLevelExplicitResidual(string pattern, int options)
     {
+        // Top-level ExplicitCapture leaves this pop shape to the provider today;
+        // the BCL fallback constructs it, so the flip keeps serving BCL-exactly.
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
-    }
-
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
-    {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(new[] { 0, 1 }, oracle.GetGroupNumbers());
+        Assert.Equal(new[] { "0", "a" }, oracle.GetGroupNames());
     }
 }
