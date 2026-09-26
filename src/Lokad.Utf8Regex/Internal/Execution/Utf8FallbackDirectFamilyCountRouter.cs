@@ -14,13 +14,28 @@ internal static class Utf8FallbackDirectFamilyCountRouter
         Utf8AsciiLiteralFinder linePrefixFinder,
         in PreparedAsciiDelimitedTokenSearch delimitedTokenSearch,
         in PreparedAsciiLiteralStructuredTokenSearch literalStructuredTokenSearch,
-        Regex fallbackRegex,
+        Func<Regex> fallbackRegexFactory,
         out int count)
     {
+        // Anchored literal prefixes match at most once (at offset 0), so the count is the
+        // prefix hit itself. Byte-exact on every input: astral scalars never start with ASCII
+        // bytes, and the extractor admits sensitive ASCII literals only.
+        if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
+            directFamily.LiteralUtf8 is { Length: > 0 } anchoredLiteral)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
+            count = anchoredLiteral.Length <= input.Length &&
+                input[..anchoredLiteral.Length].SequenceEqual(anchoredLiteral)
+                ? 1
+                : 0;
+
+            return true;
+        }
+
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredQuotedLineSegment);
-            count = Utf8QuotedLineSegmentExecutor.CountOrFallback(input, directFamily, fallbackRegex);
+            count = Utf8QuotedLineSegmentExecutor.CountOrFallback(input, directFamily, fallbackRegexFactory);
             return true;
         }
 
@@ -44,7 +59,7 @@ internal static class Utf8FallbackDirectFamilyCountRouter
                 input,
                 minCount: directFamily.MinCount,
                 maxCount: directFamily.MaxCount,
-                fallbackRegex);
+                fallbackRegexFactory);
             return true;
         }
 

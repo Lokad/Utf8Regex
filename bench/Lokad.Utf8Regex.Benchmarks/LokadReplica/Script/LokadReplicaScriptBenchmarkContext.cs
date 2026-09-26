@@ -502,7 +502,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     {
         EnsureCountModel();
         return BenchmarkCase.Id == "lokad/imports/module-imports"
-            ? Utf8QuotedLineSegmentExecutor.CountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, Regex)
+            ? Utf8QuotedLineSegmentExecutor.CountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, () => Regex)
             : 0;
     }
 

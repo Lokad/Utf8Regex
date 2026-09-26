@@ -95,6 +95,10 @@ public sealed class Utf8AnchoredLiteralPrefixTests
             var expected = oracle.Match(inputText);
             var actual = matchRegex.Match(input);
             Assert.Equal(expected.Success, actual.Success);
+
+            var countRegex = new Utf8Regex(pattern, options);
+            Assert.Equal(oracle.Matches(inputText).Count, countRegex.Count(input));
+            Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
             Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
             if (expected.Success)
             {

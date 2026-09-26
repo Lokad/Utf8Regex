@@ -112,7 +112,6 @@ public sealed class EngineDependencyInventoryTests
             "Utf8CompiledEngineRuntime.cs",
             "Utf8CompiledOperationCursorFactory.cs",
             "Utf8FallbackCandidateVerifier.cs",
-            "Utf8QuotedLineSegmentExecutor.cs",
             "Utf8Regex.Adapters.cs",
             "Utf8Regex.Compiled.cs",
             "Utf8Regex.cs",
@@ -122,7 +121,6 @@ public sealed class EngineDependencyInventoryTests
             "Utf8RegexProgram.cs",
             "Utf8StructuralLinearCompiledRouter.cs",
             "Utf8StructuralLinearProgram.cs",
-            "Utf8UnicodeLetterBoundedRepeatExecutor.cs",
         };
         Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);
 

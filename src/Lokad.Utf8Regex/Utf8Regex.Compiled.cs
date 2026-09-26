@@ -160,6 +160,13 @@ public sealed partial class Utf8Regex
 
     private int CountViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
+        // Anchored literal prefixes count directly through the router below: at most one
+        // anchored match, byte-exact on every input, so neither BCL fallback applies.
+        if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
+        {
+            return _compiledEngineRuntime.Count(input, validation, budget);
+        }
+
         var boundedSuffixLiteralPlan = _preparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan;
         if (!validation.IsAscii &&
             validation.ByteLength == input.Length &&
@@ -168,7 +175,8 @@ public sealed partial class Utf8Regex
             return Utf8AsciiBoundedSuffixLiteralExecutor.Count(input, boundedSuffixLiteralPlan, budget);
         }
 
-        if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
+        if (ShouldUseFallbackForAnchoredSimplePattern() ||
+            ShouldUseFallbackForNonAsciiSimplePattern(validation, allowByteSafeStructuralLinear: true))
         {
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Count(Encoding.UTF8.GetString(input));
         }

@@ -70,14 +70,14 @@ internal static class Utf8UnicodeLetterBoundedRepeatExecutor
         return count;
     }
 
-    public static int CountLettersOrFallback(ReadOnlySpan<byte> input, int minCount, int maxCount, Regex fallbackRegex)
+    public static int CountLettersOrFallback(ReadOnlySpan<byte> input, int minCount, int maxCount, Func<Regex> fallbackRegexFactory)
     {
         if (TryCountLetters(input, minCount, maxCount, out var count))
         {
             return count;
         }
 
-        return fallbackRegex.Count(Encoding.UTF8.GetString(input));
+        return fallbackRegexFactory().Count(Encoding.UTF8.GetString(input));
     }
 
     private static bool TryCountLetters(ReadOnlySpan<byte> input, int minCount, int maxCount, out int count)

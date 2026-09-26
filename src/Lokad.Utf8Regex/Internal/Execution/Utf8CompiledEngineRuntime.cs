@@ -1229,7 +1229,7 @@ internal sealed class Utf8FallbackRegexCompiledEngineRuntime : Utf8CompiledEngin
             _linePrefixFinder,
             _delimitedTokenSearch,
             _literalStructuredTokenSearch,
-            _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
+            () => _verifierRuntime.FallbackCandidateVerifier.FallbackRegex,
             out var directCount))
         {
             return directCount;

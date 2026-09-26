@@ -4,14 +4,14 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8QuotedLineSegmentExecutor
 {
-    public static int CountOrFallback(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan family, Regex fallbackRegex)
+    public static int CountOrFallback(ReadOnlySpan<byte> input, Utf8FallbackDirectFamilyPlan family, Func<Regex> fallbackRegexFactory)
     {
         if (family.LiteralUtf8 is not { Length: > 0 } requiredPrefix)
         {
-            return fallbackRegex.Count(System.Text.Encoding.UTF8.GetString(input));
+            return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
         }
 
-        return CountViaLineWalk(input, requiredPrefix, family.SecondaryLiteralUtf8, fallbackRegex);
+        return CountViaLineWalk(input, requiredPrefix, family.SecondaryLiteralUtf8, fallbackRegexFactory);
     }
 
     public static int CountViaCandidateScan(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, out bool requiresFallback)
@@ -26,11 +26,11 @@ internal static class Utf8QuotedLineSegmentExecutor
             out requiresFallback);
     }
 
-    public static int CountViaLineWalk(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, Regex fallbackRegex)
+    public static int CountViaLineWalk(ReadOnlySpan<byte> input, ReadOnlySpan<byte> requiredPrefix, ReadOnlySpan<byte> optionalSegment, Func<Regex> fallbackRegexFactory)
     {
         if (requiredPrefix.IsEmpty)
         {
-            return fallbackRegex.Count(System.Text.Encoding.UTF8.GetString(input));
+            return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
         }
 
         var count = 0;
@@ -62,7 +62,7 @@ internal static class Utf8QuotedLineSegmentExecutor
             }
             else if (requiresFallback)
             {
-                return fallbackRegex.Count(System.Text.Encoding.UTF8.GetString(input));
+                return fallbackRegexFactory().Count(System.Text.Encoding.UTF8.GetString(input));
             }
             else
             {
