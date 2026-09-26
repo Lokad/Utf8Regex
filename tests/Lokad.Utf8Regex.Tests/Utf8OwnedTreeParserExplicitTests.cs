@@ -79,7 +79,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         yield return new object?[] { "(a)\\1", 516 };
         yield return new object?[] { "(?n:(a)\\1)", 512 };
         yield return new object?[] { "(?(1)a|b)", 516 };
-        yield return new object?[] { "(?(x)a|b)", 516 };
     }
 
     public static IEnumerable<object?[]> ExplicitResidualCases()

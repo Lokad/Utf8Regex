@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
@@ -38,14 +39,9 @@ public sealed class Utf8OwnedTreeParserConditionalTests
     public static IEnumerable<object?[]> ConditionalDeclineCases()
     {
         yield return new object?[] { "(?(1)a|b)", 512 };
-        yield return new object?[] { "(?(x)a|b)", 512 };
         yield return new object?[] { "(?(1)a)", 512 };
         yield return new object?[] { "(?(1))", 512 };
         yield return new object?[] { "(?(1)|b)", 512 };
-        yield return new object?[] { "(?(y))", 512 };
-        yield return new object?[] { "(?(DEFINE)a|b)", 512 };
-        yield return new object?[] { "(?(R)a|b)", 512 };
-        yield return new object?[] { "(?(R1)a|b)", 512 };
         yield return new object?[] { "(a)(?(1)b|c)", 516 };
     }
 
@@ -73,6 +69,64 @@ public sealed class Utf8OwnedTreeParserConditionalTests
             pattern,
             (RegexOptions)options,
             RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+    }
+
+    public static IEnumerable<object?[]> ConditionalUndefinedNameCases()
+    {
+        yield return new object?[] { "(?(x)a|b)", 512, new string[] { "b", "a", "" } };
+        yield return new object?[] { "(?(x)a|b)", 516, new string[] { "b", "a", "" } };
+        yield return new object?[] { "(?(y))", 512, new string[] { "", "a" } };
+        yield return new object?[] { "(?(x)a)", 512, new string[] { "", "a" } };
+        yield return new object?[] { "(?(DEFINE)a|b)", 512, new string[] { "b", "a" } };
+        yield return new object?[] { "(?(R)a|b)", 512, new string[] { "b", "a" } };
+        yield return new object?[] { "(?(R1)a|b)", 512, new string[] { "b", "a" } };
+        yield return new object?[] { "(?(undefined)ab|cd)", 512, new string[] { "cd", "ab", "" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(ConditionalUndefinedNameCases))]
+    public void OwnedConditionalServesUndefinedName(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
+            pattern,
+            (RegexOptions)options,
+            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
+    }
+
+    public static IEnumerable<object?[]> ConditionalSingleBranchCases()
+    {
+        // Single non-empty branches without else lower with an implicit empty else.
+        // The fork serves these with a different (single-kid) tree shape, so they pin
+        // owned-accept plus fork-serves plus BCL behavior instead of tree equality.
+        yield return new object?[] { "(a)(?(1)a)", 512, new string[] { "aa", "a" } };
+        yield return new object?[] { "(?<x>a)(?(x)a)", 512, new string[] { "aa", "a" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(ConditionalSingleBranchCases))]
+    public void OwnedConditionalServesSingleBranch(string pattern, int options, string[] inputs)
+    {
+        var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
+        Assert.NotNull(actual);
+        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        foreach (var inputText in inputs)
+        {
+            var input = Encoding.UTF8.GetBytes(inputText);
+            Assert.Equal(oracle.IsMatch(inputText), product.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, product.Count(input));
+        }
     }
 
     private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)

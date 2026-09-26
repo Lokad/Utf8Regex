@@ -1800,7 +1800,17 @@ internal static class Utf8OwnedTreeParser
             {
                 if (!slotByName.TryGetValue(fixup.Name, out var namedSlot))
                 {
-                    return false;
+                    // BCL evaluates undefined conditional names as never-matching
+                    // tests; only backreferences to undefined names fail construction.
+                    // The node keeps its unbound marker, which no owned-tree reader
+                    // consults for execution (slices parse raw patterns, fallbacks use
+                    // BCL): matching always takes the else branch, exactly like BCL.
+                    if (!fixup.IsConditional)
+                    {
+                        return false;
+                    }
+
+                    return true;
                 }
 
                 fixup.Node.M = namedSlot;
@@ -2789,10 +2799,12 @@ internal static class Utf8OwnedTreeParser
                 state.Position++;
                 branches = new List<Utf8TreeNode> { yesBranch, noBranch };
             }
-            else if (yesIsEmpty && !state.AtEnd && state.Pattern[state.Position] == ')')
+            else if (!state.AtEnd && state.Pattern[state.Position] == ')')
             {
                 state.Position++;
-                branches = new List<Utf8TreeNode> { yesBranch };
+                branches = yesIsEmpty
+                    ? new List<Utf8TreeNode> { yesBranch }
+                    : new List<Utf8TreeNode> { yesBranch, new Utf8TreeNode(Utf8TreeNodeKind.Concatenate, conditionalOptions) };
             }
             else
             {
