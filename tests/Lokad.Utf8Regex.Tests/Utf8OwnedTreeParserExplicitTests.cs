@@ -1,12 +1,12 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using RuntimeFrontEnd = Lokad.Utf8Regex.Internal.FrontEnd.Runtime;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser ExplicitCapture stage: the differential battery pins scoped
-// and toggled n identical to the provider trees (unnamed groups in
+// Owned parser ExplicitCapture stage: the BCL-oracled battery pins scoped
+// and toggled n with BCL metadata (unnamed groups in
 // parse-time n become slotless Group nodes with dense renumbering after
 // them, top-level n demotes unnamed groups the same way, backreferences
 // resolve surviving slots (unbound digits fail), unnamed-first numbering holds
@@ -19,75 +19,75 @@ public sealed class Utf8OwnedTreeParserExplicitTests
 {
     public static IEnumerable<object?[]> ExplicitAcceptCases()
     {
-        yield return new object?[] { "(?n:a)", 512 };
-        yield return new object?[] { "(?n:(a))", 512 };
-        yield return new object?[] { "(?n)", 512 };
-        yield return new object?[] { "(?n)a", 512 };
-        yield return new object?[] { "(?n:(a)(b))", 512 };
-        yield return new object?[] { "(?n:(a)b(c))", 512 };
-        yield return new object?[] { "(a)(?n:b)", 512 };
-        yield return new object?[] { "(?<x>a)(?n:(b))", 512 };
-        yield return new object?[] { "(a)(?n)\\1", 512 };
-        yield return new object?[] { "(?n:(a|b))", 512 };
-        yield return new object?[] { "(?<x>(?n:a))", 512 };
-        yield return new object?[] { "(?n:(?i:a))", 512 };
-        yield return new object?[] { "(?i:(?n:a))", 512 };
-        yield return new object?[] { "(?n)(a)", 512 };
-        yield return new object?[] { "(?n:(a){0})", 512 };
-        yield return new object?[] { "((?n:a)(x))", 512 };
-        yield return new object?[] { "(?n:(?m:(a)))", 512 };
-        yield return new object?[] { "(?n-i:x)", 512 };
-        yield return new object?[] { "(?m-n:a)", 512 };
-        yield return new object?[] { "(a)(b)", 512 };
-        yield return new object?[] { "(a)(b)", 528 };
-        yield return new object?[] { "[ab]", 528 };
-        yield return new object?[] { "(?n:(a))", 528 };
-        yield return new object?[] { "(?n)(a)", 528 };
-        yield return new object?[] { "(?n:a)", 528 };
-        yield return new object?[] { "(?-n:a)", 528 };
-        yield return new object?[] { "((?n:a)(x)\\2)", 512 };
-        yield return new object?[] { "(?n:(?m:(a))(b))", 512 };
-        yield return new object?[] { "(?n:(?<x>a))", 512 };
-        yield return new object?[] { "(?n:(?<x>a))", 528 };
-        yield return new object?[] { "(?n:(?<1>a))", 512 };
-        yield return new object?[] { "(?n:(?<1>a))", 528 };
-        yield return new object?[] { "(?n:(a)(?<y>b))", 512 };
-        yield return new object?[] { "(?n:(a)(?<y>b))", 528 };
-        yield return new object?[] { "(?n:(?<x>a)(?<y>b))", 512 };
-        yield return new object?[] { "(?n:(?<x>a)?)", 512 };
-        yield return new object?[] { "(?n:(?<x>a)*)", 512 };
-        yield return new object?[] { "(?n:(?m:(?<x>a)))", 512 };
-        yield return new object?[] { "(?n)(?<x>a)", 512 };
-        yield return new object?[] { "(a)(b)", 516 };
-        yield return new object?[] { "(?n:a)", 516 };
-        yield return new object?[] { "(a)(?-n:(b))", 516 };
-        yield return new object?[] { "((a)(b))", 516 };
-        yield return new object?[] { "(a)+", 516 };
-        yield return new object?[] { "(a)|(b)", 516 };
-        yield return new object?[] { "(?<x>a)", 516 };
-        yield return new object?[] { "(?<1>a)", 516 };
-        yield return new object?[] { "(a)(?<x>b)", 516 };
-        yield return new object?[] { "(?<x>a)(b)", 516 };
-        yield return new object?[] { "(?<x>a)\\k<x>", 516 };
-        yield return new object?[] { "(a)(?<x>b)\\1", 516 };
-        yield return new object?[] { "(?<x>a)", 517 };
-        yield return new object?[] { "(?<x>a)(?<y>b)", 516 };
-        yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512 };
-        yield return new object?[] { "(?n:(?<1>a)(?-n:(b)))", 512 };
-        yield return new object?[] { "(?n:(?-n:(b))(?<1>a))", 512 };
-        yield return new object?[] { "(?n:(?<2>a)(?-n:(b)))", 512 };
-        yield return new object?[] { "(?n:(a)(?-n:(b)))", 512 };
-        yield return new object?[] { "(?n:(?-n:(b))(c))", 512 };
-        yield return new object?[] { "(?n:(a)(?-n:(b))(c))", 512 };
-        yield return new object?[] { "(?n:(?<x>a)(?-n:(b))(c))", 512 };
+        yield return new object?[] { "(?n:a)", 512, 516 };
+        yield return new object?[] { "(?n:(a))", 512, 516 };
+        yield return new object?[] { "(?n)", 512, 516 };
+        yield return new object?[] { "(?n)a", 512, 516 };
+        yield return new object?[] { "(?n:(a)(b))", 512, 516 };
+        yield return new object?[] { "(?n:(a)b(c))", 512, 516 };
+        yield return new object?[] { "(a)(?n:b)", 512, 512 };
+        yield return new object?[] { "(?<x>a)(?n:(b))", 512, 512 };
+        yield return new object?[] { "(a)(?n)\\1", 512, 512 };
+        yield return new object?[] { "(?n:(a|b))", 512, 516 };
+        yield return new object?[] { "(?<x>(?n:a))", 512, 512 };
+        yield return new object?[] { "(?n:(?i:a))", 512, 516 };
+        yield return new object?[] { "(?i:(?n:a))", 512, 513 };
+        yield return new object?[] { "(?n)(a)", 512, 516 };
+        yield return new object?[] { "(?n:(a){0})", 512, 516 };
+        yield return new object?[] { "((?n:a)(x))", 512, 512 };
+        yield return new object?[] { "(?n:(?m:(a)))", 512, 516 };
+        yield return new object?[] { "(?n-i:x)", 512, 516 };
+        yield return new object?[] { "(?m-n:a)", 512, 514 };
+        yield return new object?[] { "(a)(b)", 512, 512 };
+        yield return new object?[] { "(a)(b)", 528, 528 };
+        yield return new object?[] { "[ab]", 528, 528 };
+        yield return new object?[] { "(?n:(a))", 528, 532 };
+        yield return new object?[] { "(?n)(a)", 528, 532 };
+        yield return new object?[] { "(?n:a)", 528, 532 };
+        yield return new object?[] { "(?-n:a)", 528, 528 };
+        yield return new object?[] { "((?n:a)(x)\\2)", 512, 512 };
+        yield return new object?[] { "(?n:(?m:(a))(b))", 512, 516 };
+        yield return new object?[] { "(?n:(?<x>a))", 512, 516 };
+        yield return new object?[] { "(?n:(?<x>a))", 528, 532 };
+        yield return new object?[] { "(?n:(?<1>a))", 512, 516 };
+        yield return new object?[] { "(?n:(?<1>a))", 528, 532 };
+        yield return new object?[] { "(?n:(a)(?<y>b))", 512, 516 };
+        yield return new object?[] { "(?n:(a)(?<y>b))", 528, 532 };
+        yield return new object?[] { "(?n:(?<x>a)(?<y>b))", 512, 516 };
+        yield return new object?[] { "(?n:(?<x>a)?)", 512, 516 };
+        yield return new object?[] { "(?n:(?<x>a)*)", 512, 516 };
+        yield return new object?[] { "(?n:(?m:(?<x>a)))", 512, 516 };
+        yield return new object?[] { "(?n)(?<x>a)", 512, 516 };
+        yield return new object?[] { "(a)(b)", 516, 516 };
+        yield return new object?[] { "(?n:a)", 516, 516 };
+        yield return new object?[] { "(a)(?-n:(b))", 516, 516 };
+        yield return new object?[] { "((a)(b))", 516, 516 };
+        yield return new object?[] { "(a)+", 516, 516 };
+        yield return new object?[] { "(a)|(b)", 516, 516 };
+        yield return new object?[] { "(?<x>a)", 516, 516 };
+        yield return new object?[] { "(?<1>a)", 516, 516 };
+        yield return new object?[] { "(a)(?<x>b)", 516, 516 };
+        yield return new object?[] { "(?<x>a)(b)", 516, 516 };
+        yield return new object?[] { "(?<x>a)\\k<x>", 516, 516 };
+        yield return new object?[] { "(a)(?<x>b)\\1", 516, 516 };
+        yield return new object?[] { "(?<x>a)", 517, 517 };
+        yield return new object?[] { "(?<x>a)(?<y>b)", 516, 516 };
+        yield return new object?[] { "(?n:(?<x>a)(?-n:(b)))", 512, 516 };
+        yield return new object?[] { "(?n:(?<1>a)(?-n:(b)))", 512, 516 };
+        yield return new object?[] { "(?n:(?-n:(b))(?<1>a))", 512, 516 };
+        yield return new object?[] { "(?n:(?<2>a)(?-n:(b)))", 512, 516 };
+        yield return new object?[] { "(?n:(a)(?-n:(b)))", 512, 516 };
+        yield return new object?[] { "(?n:(?-n:(b))(c))", 512, 516 };
+        yield return new object?[] { "(?n:(a)(?-n:(b))(c))", 512, 516 };
+        yield return new object?[] { "(?n:(?<x>a)(?-n:(b))(c))", 512, 516 };
     }
 
     public static IEnumerable<object?[]> ExplicitDeclineCases()
     {
-        yield return new object?[] { "(?n)\\1", 512 };
-        yield return new object?[] { "(a)\\1", 516 };
-        yield return new object?[] { "(?n:(a)\\1)", 512 };
-        yield return new object?[] { "(?(1)a|b)", 516 };
+        yield return new object?[] { "(?n)\\1", 512, RegexParseError.UndefinedNumberedReference, 6 };
+        yield return new object?[] { "(a)\\1", 516, RegexParseError.UndefinedNumberedReference, 5 };
+        yield return new object?[] { "(?n:(a)\\1)", 512, RegexParseError.UndefinedNumberedReference, 9 };
+        yield return new object?[] { "(?(1)a|b)", 516, RegexParseError.AlternationHasUndefinedReference, 5 };
     }
 
     public static IEnumerable<object?[]> ExplicitResidualCases()
@@ -97,30 +97,27 @@ public sealed class Utf8OwnedTreeParserExplicitTests
 
     [Theory]
     [MemberData(nameof(ExplicitAcceptCases))]
-    public void OwnedExplicitMatchesProviderTree(string pattern, int options)
+    public void OwnedExplicitServesWithBclMetadata(string pattern, int options, int expectedOptions)
     {
-        var expected = Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options);
-        Assert.NotNull(expected);
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.Equal(expected.CaptureCount, actual.CaptureCount);
-        Assert.Equal(expected.CaptureNames ?? [], actual.CaptureNames ?? []);
-        Assert.Equal(expected.Options, actual.Options);
-        Assert.Equal(expected.Culture, actual.Culture);
-        AssertHashtableEqual(expected.CaptureNameToNumberMapping, actual.CaptureNameToNumberMapping);
-        AssertHashtableEqual(expected.CaptureNumberSparseMapping, actual.CaptureNumberSparseMapping);
-        Assert.True(TreesEqual(expected.Root, actual.Root));
+        var oracle = new Regex(pattern, (RegexOptions)options);
+        Assert.Equal(oracle.GetGroupNumbers().Length, actual.CaptureCount);
+        Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
+        Assert.Equal((RegexOptions)expectedOptions, actual.Options);
+        Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
+        AssertGroupNameMapping(oracle, actual.CaptureNameToNumberMapping);
+        AssertGroupNumberMapping(oracle, actual.CaptureNumberSparseMapping);
     }
 
     [Theory]
     [MemberData(nameof(ExplicitDeclineCases))]
-    public void OwnedExplicitDeclinesUnsupported(string pattern, int options)
+    public void OwnedExplicitDeclinesUnsupported(string pattern, int options, RegexParseError error, int offset)
     {
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options));
-        Assert.Throws<RuntimeFrontEnd.RegexParseException>(() => RuntimeFrontEnd.RegexParser.Parse(
-            pattern,
-            (RegexOptions)options,
-            RuntimeFrontEnd.RegexParser.GetTargetCulture((RegexOptions)options)));
+        var thrown = Assert.Throws<RegexParseException>(() => new Regex(pattern, (RegexOptions)options));
+        Assert.Equal(error, thrown.Error);
+        Assert.Equal(offset, thrown.Offset);
     }
 
     [Theory]
@@ -152,7 +149,6 @@ public sealed class Utf8OwnedTreeParserExplicitTests
     {
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
-        Assert.NotNull(Utf8RuntimeTreeProvider.TryParseLegacy(pattern, (RegexOptions)options));
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
@@ -165,32 +161,41 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         }
     }
 
-    private static void AssertHashtableEqual(System.Collections.Hashtable? left, System.Collections.Hashtable? right)
+    private static void AssertGroupNameMapping(Regex oracle, System.Collections.Hashtable? actual)
     {
-        if (left is null || right is null)
+        var names = oracle.GetGroupNames();
+        if (actual is null)
         {
-            Assert.True(left is null && right is null);
+            Assert.All(names, static name => Assert.True(int.TryParse(name, out _), "Non-numeric group name without a mapping: " + name));
             return;
         }
 
-        Assert.Equal(left.Count, right.Count);
-        foreach (var key in left.Keys)
+        Assert.Equal(names.Length, actual.Count);
+        foreach (var name in names)
         {
-            Assert.True(right.ContainsKey(key));
-            Assert.Equal(left[key], right[key]);
+            Assert.True(actual.ContainsKey(name), "Missing name mapping: " + name);
+            Assert.Equal(oracle.GroupNumberFromName(name), (int)actual[name]!);
         }
     }
 
-    private static bool TreesEqual(RuntimeFrontEnd.RegexNode left, Utf8TreeNode right)
+    private static void AssertGroupNumberMapping(Regex oracle, System.Collections.Hashtable? actual)
     {
-        return (int)right.Kind == (int)left.Kind &&
-            right.Options == left.Options &&
-            right.Ch == left.Ch &&
-            right.Str == left.Str &&
-            right.Str2 == left.Str2 &&
-            right.M == left.M &&
-            right.N == left.N &&
-            right.ChildCount == left.ChildCount &&
-            Enumerable.Range(0, left.ChildCount).All(index => TreesEqual(left.Child(index), right.Child(index)));
+        var numbers = oracle.GetGroupNumbers();
+        if (actual is null)
+        {
+            for (var index = 0; index < numbers.Length; index++)
+            {
+                Assert.Equal(index, numbers[index]);
+            }
+
+            return;
+        }
+
+        Assert.Equal(numbers.Length, actual.Count);
+        foreach (System.Collections.DictionaryEntry entry in actual)
+        {
+            Assert.Equal((int)entry.Key, numbers[(int)entry.Value!]);
+        }
     }
+
 }
