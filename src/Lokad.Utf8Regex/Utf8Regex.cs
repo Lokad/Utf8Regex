@@ -1590,6 +1590,10 @@ public sealed partial class Utf8Regex
         // discover through owned kernels and shape from owned spans. Everything else keeps
         // BCL discovery and shaping until capture tracking migrates.
         groupCount = 1;
+        // Anchored literal prefixes stay BCL-shaped for now: their MatchCore path misses
+        // non-ASCII hits inside guided fallback verification (candidate search declines
+        // non-ASCII wholesale), so owned shaping would project those misses. Revisit with
+        // that gap.
         if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
         {
             return false;

@@ -216,6 +216,8 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, byte[]? literal, Utf8ExecutionDeadline budget)
     {
+        // The owned cursors do not enforce start anchors, so anchored shapes (including the
+        // literal-prefix family) keep the BCL enumerator until cursor anchor handling lands.
         if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);

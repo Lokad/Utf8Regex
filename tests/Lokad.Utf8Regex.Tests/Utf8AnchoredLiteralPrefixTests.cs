@@ -7,8 +7,9 @@ namespace Lokad.Utf8Regex.Tests;
 
 // Anchored ASCII literal prefixes (^literal and \Aliteral covering the whole
 // pattern) verify by a byte-exact prefix compare: a miss at offset 0 is
-// definitive, so IsMatch and Match never construct the fallback engine.
-// Count, detailed matches, and enumeration stay BCL-backed for now.
+// definitive, so IsMatch, Match, and Count never construct the fallback engine.
+// Detailed matches and enumeration stay BCL-backed: owned shaping misses non-ASCII
+// hits inside guided verification, and the owned cursors do not enforce start anchors.
 public sealed class Utf8AnchoredLiteralPrefixTests
 {
     public static IEnumerable<object?[]> AcceptCases()
