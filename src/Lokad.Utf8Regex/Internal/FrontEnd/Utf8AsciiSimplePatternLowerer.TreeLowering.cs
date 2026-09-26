@@ -60,7 +60,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return true;
 
             case Utf8TreeNodeKind.Set:
-                if (!TryLowerSet(node.Str, out var setToken))
+                if (!TryLowerSet(node.Str, (node.Options & RegexOptions.Singleline) != 0, out var setToken))
                 {
                     branches = [];
                     return false;
@@ -93,7 +93,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     out branches);
 
             case Utf8TreeNodeKind.Setloop:
-                if (!TryLowerSet(node.Str, out var repeatedSet))
+                if (!TryLowerSet(node.Str, (node.Options & RegexOptions.Singleline) != 0, out var repeatedSet))
                 {
                     branches = [];
                     return false;

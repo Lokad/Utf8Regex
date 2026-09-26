@@ -104,6 +104,44 @@ internal readonly struct Utf8BoundaryMap
             "The requested byte offset is not aligned to a scalar boundary.");
     }
 
+    public bool TryGetUtf16OffsetForByteOffset(int byteOffset, out int utf16Offset)
+    {
+        utf16Offset = 0;
+        if (byteOffset < 0 || byteOffset > ByteLength)
+        {
+            return false;
+        }
+
+        if (_isAscii)
+        {
+            utf16Offset = byteOffset;
+            return true;
+        }
+
+        var offsets = _byteOffsets;
+        var index = Array.BinarySearch(offsets, byteOffset);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        while (index > 0 && offsets[index - 1] == byteOffset)
+        {
+            index--;
+        }
+
+        for (var candidate = index; candidate < offsets.Length && offsets[candidate] == byteOffset; candidate++)
+        {
+            if (IsScalarBoundary(candidate))
+            {
+                utf16Offset = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public bool TryGetByteRange(int indexInUtf16, int lengthInUtf16, out int indexInBytes, out int lengthInBytes)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(indexInUtf16);

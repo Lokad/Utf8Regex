@@ -397,6 +397,12 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData("abc$", "zzz\nabc\nyyy", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
     [InlineData("(?x)a b", "zzabyy", RegexOptions.CultureInvariant)]
     [InlineData("(ab)", "zzabyy", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant)]
+    [InlineData("a.b", "xa\nby", RegexOptions.CultureInvariant)]
+    [InlineData("a.b", "a\nb", RegexOptions.CultureInvariant)]
+    [InlineData("(?:a).", "a\nb", RegexOptions.CultureInvariant)]
+    [InlineData("(?s:a).", "a\nb", RegexOptions.CultureInvariant)]
+    [InlineData("a.*b", "a\nb", RegexOptions.CultureInvariant)]
+    [InlineData("(?m:.){2}", "a\nb", RegexOptions.CultureInvariant)]
     public void IsMatchMatchesRuntimeForAdditionalNativeOptionFamilies(string pattern, string input, RegexOptions options)
     {
         var utf8Regex = new Utf8Regex(pattern, options);

@@ -80,7 +80,12 @@ internal abstract class Utf8FallbackCandidateVerifier
             return true;
         }
 
-        var candidateEnd = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.EndIndex));
+        if (!boundaryMap.TryGetUtf16OffsetForByteOffset(candidate.EndIndex, out var candidateEndUtf16Offset))
+        {
+            return false;
+        }
+
+        var candidateEnd = boundaryMap.Resolve(candidateEndUtf16Offset);
         return candidateEnd.IsScalarBoundary && match.Index + match.Length >= candidateEnd.Utf16Offset;
     }
 
@@ -94,8 +99,14 @@ internal abstract class Utf8FallbackCandidateVerifier
             return false;
         }
 
-        var trailingStart = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.TrailingIndex));
-        var trailingEnd = boundaryMap.Resolve(boundaryMap.GetUtf16OffsetForByteOffset(candidate.TrailingIndex + candidate.TrailingMatchLength));
+        if (!boundaryMap.TryGetUtf16OffsetForByteOffset(candidate.TrailingIndex, out var trailingStartUtf16Offset) ||
+            !boundaryMap.TryGetUtf16OffsetForByteOffset(candidate.TrailingIndex + candidate.TrailingMatchLength, out var trailingEndUtf16Offset))
+        {
+            return false;
+        }
+
+        var trailingStart = boundaryMap.Resolve(trailingStartUtf16Offset);
+        var trailingEnd = boundaryMap.Resolve(trailingEndUtf16Offset);
         if (!trailingStart.IsScalarBoundary || !trailingEnd.IsScalarBoundary)
         {
             return false;
@@ -127,7 +138,12 @@ internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidate
         result = default;
         var map = boundaryMap ?? Utf8BoundaryMap.Create(input, validation);
         boundaryMap = map;
-        var candidateStart = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
+        if (!map.TryGetUtf16OffsetForByteOffset(candidate.StartIndex, out var candidateStartUtf16Offset))
+        {
+            return false;
+        }
+
+        var candidateStart = map.Resolve(candidateStartUtf16Offset);
         decoded ??= Encoding.UTF8.GetString(input);
         var match = MatchCandidate(decoded, candidateStart.Utf16Offset);
         if (!IsVerifiedMatch(
@@ -179,8 +195,18 @@ internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCa
 
         var map = boundaryMap ?? Utf8BoundaryMap.Create(input, validation);
         boundaryMap = map;
-        var candidateStart = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.StartIndex));
-        var candidateEnd = map.Resolve(map.GetUtf16OffsetForByteOffset(candidate.EndIndex));
+        if (!map.TryGetUtf16OffsetForByteOffset(candidate.StartIndex, out var candidateStartUtf16Offset))
+        {
+            return false;
+        }
+
+        var candidateStart = map.Resolve(candidateStartUtf16Offset);
+        if (!map.TryGetUtf16OffsetForByteOffset(candidate.EndIndex, out var candidateEndUtf16Offset))
+        {
+            return false;
+        }
+
+        var candidateEnd = map.Resolve(candidateEndUtf16Offset);
         if (!candidateStart.IsScalarBoundary || !candidateEnd.IsScalarBoundary)
         {
             return false;

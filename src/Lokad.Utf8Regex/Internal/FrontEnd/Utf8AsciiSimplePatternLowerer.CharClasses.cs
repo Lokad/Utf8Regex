@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 
 internal static partial class Utf8AsciiSimplePatternLowerer
 {
-    private static bool TryLowerSet(string? set, out AsciiSimplePatternToken token)
+    private static bool TryLowerSet(string? set, bool singleline, out AsciiSimplePatternToken token)
     {
         if (set is null)
         {
@@ -12,7 +12,9 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        if (set == Utf8OwnedCharClass.NotNewLineClass)
+        // A dot token matches any byte including newlines, so only singleline dots lower
+        // to it; other dots become exact newline-excluding classes through the projector.
+        if (singleline && set == Utf8OwnedCharClass.NotNewLineClass)
         {
             token = AsciiSimplePatternToken.Dot;
             return true;

@@ -63,14 +63,8 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         ("(?<=a)b\\>", 512),
         ("(?<=(?<1>a))b", 512),
         ("(?i:[ab]){2}|(?:a.)", 512),
-        ("(?i:[ab]){2}|.{1,2}", 512),
-        ("(?i:[ab]){2}|(?n:.){1,2}", 512),
-        ("(?m:\\d){2}|.{1,2}", 512),
         ("(?m:\\d){2}|(?:a.)", 512),
-        ("(?m:\\d){2}|(?n:.){1,2}", 512),
         ("(?n:a){2}|(?:a.)", 512),
-        ("(?n:a){2}|.{1,2}", 512),
-        ("(?n:a){2}|(?n:.){1,2}", 512),
         ("(?<=.)(?<1>.)+?", 512),
         ("(?<=.)(?<1>\\d){2}", 512),
         ("(?<=.)(?<1>^)+", 512),
@@ -112,17 +106,6 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         // content (case folding past i-scopes, Singleline past s-scopes, quantified dots).
         // They reproduce witnesses under owned serving exactly where the fork used to
         // diverge; the downstream scoping fix graduates them like the clean rows.
-        ("(?i:.){1,2}", 512),
-        ("(?i:.){2}", 512),
-        ("(?i:[ab]){2}.{1,2}", 512),
-        ("(?i:[ab]){2}(?n:.){1,2}", 512),
-        ("(?i:a).", 512),
-        ("(?m:.){1,2}", 512),
-        ("(?m:.){2}", 512),
-        ("(?n:.){1,2}", 512),
-        ("(?n:.){2}", 512),
-        ("(?n:a).", 512),
-        ("(?s:a).", 512),
     };
 
     [Theory]
