@@ -7,8 +7,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // recorded group spans a fixed UTF-16 range of the discovered literal, so detailed shaping
 // projects every group from the owned discovery hit without executing the fallback engine;
 // the hit length selects the present or absent projection for optional shapes. Other
-// quantifiers, divergent alternations, loops inside alternations, sets, anchors,
-// lookarounds, backreferences, and empty nodes decline; a null table means the shape keeps
+// quantifiers, divergent alternations, loops inside alternations, multi-char sets,
+// anchors, lookarounds, backreferences, and empty nodes decline; a null table means the shape keeps
 // the existing BCL routes. Construction is eager and pure over the owned tree: no fallback
 // engine is built here.
 internal sealed class Utf8GroupedLiteralSpanTable
@@ -179,6 +179,45 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     }
 
                     Position += node.Text.Length;
+                    return true;
+                case Utf8ExecutionNodeKind.Set:
+                    // Folded literals lower to per-character fold sets; shaping only
+                    // needs widths, and a character class always matches exactly one
+                    // UTF-16 unit when every member is a BMP scalar. Surrogate halves
+                    // decline so astral widths can never collapse to one, and any
+                    // residual width error fails closed on the hit-length check.
+                    // Negations, subtractions, and categories decline in the wire
+                    // decoder. Bare sets match exactly once by construction
+                    // (quantified sets lower to loops).
+                    if (node.Text is not { Length: > 0 } set)
+                    {
+                        return false;
+                    }
+
+                    char[] setChars;
+                    try
+                    {
+                        setChars = Internal.FrontEnd.Utf8OwnedCharClass.GetSetChars(set);
+                    }
+                    catch (ArgumentException)
+                    {
+                        return false;
+                    }
+
+                    if (setChars.Length == 0)
+                    {
+                        return false;
+                    }
+
+                    foreach (var setChar in setChars)
+                    {
+                        if (char.IsSurrogate(setChar))
+                        {
+                            return false;
+                        }
+                    }
+
+                    Position += 1;
                     return true;
                 case Utf8ExecutionNodeKind.Concatenate:
                     for (var i = 0; i < node.Children.Count; i++)
