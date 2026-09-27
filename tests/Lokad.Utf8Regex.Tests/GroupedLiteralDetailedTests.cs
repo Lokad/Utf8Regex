@@ -6,7 +6,9 @@ namespace Lokad.Utf8Regex.Tests;
 /// <summary>
 /// R05 grouped-literal detailed shaping: single exact literals with fixed-span captures
 /// shape detailed matches from the owned discovery hit without constructing the fallback
-/// engine. Single-optional shapes ((a)?b) keep BCL shaping until branch-span attribution lands.
+/// engine. Single-optional shapes project present or absent spans by hit length.
+/// Divergent alternation spans and multi-loop optionals keep BCL shaping until
+/// branch-span attribution lands.
 /// </summary>
 public sealed class GroupedLiteralDetailedTests
 {
@@ -117,6 +119,10 @@ public sealed class GroupedLiteralDetailedTests
         yield return new object?[] { "a(b)?", RegexOptions.CultureInvariant, "xab", 1 };
         yield return new object?[] { "(a)?b", RegexOptions.CultureInvariant, "ab", 1 };
         yield return new object?[] { "(a)?b", RegexOptions.CultureInvariant, "ab", 2 };
+        yield return new object?[] { "(ab|cd)e", RegexOptions.CultureInvariant, "xxabex", 2 };
+        yield return new object?[] { "(ab|cd)e", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabex", 0 };
+        yield return new object?[] { "a(b|c)d", RegexOptions.CultureInvariant, "xabd", 1 };
+        yield return new object?[] { "(a|b)c", RegexOptions.CultureInvariant, "xbc", 1 };
     }
 
     [Theory]
@@ -240,10 +246,79 @@ public sealed class GroupedLiteralDetailedTests
         Assert.Equal(expected.Groups.Count, actual.GroupCount);
     }
 
+    public static IEnumerable<object?[]> AlternationSpanHitCases()
+    {
+        string[] patterns =
+        [
+            "(ab|cd)e",
+            "(?<w>ab|cd)e",
+            "a(b|c)d",
+            "(a|b)c",
+        ];
+        string[] texts = ["abe", "cde", "xxabex", "abd", "acd", "bc", "ac", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+
+        yield return new object?[] { "(ab|cd)e", RegexOptions.CultureInvariant, "éabe" };
+        yield return new object?[] { "x(a|b)y", RegexOptions.CultureInvariant, "xay" };
+        yield return new object?[] { "x(a|b)y", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xby" };
+        yield return new object?[] { "x(a|b)y", RegexOptions.CultureInvariant, "xy" };
+        yield return new object?[] { "((a|b)(c|d))", RegexOptions.CultureInvariant, "ac" };
+        yield return new object?[] { "((a|b)(c|d))", RegexOptions.Compiled | RegexOptions.CultureInvariant, "bd" };
+        yield return new object?[] { "((a|b)(c|d))", RegexOptions.CultureInvariant, "ab" };
+        yield return new object?[] { "a(b|c)d", RegexOptions.Compiled | RegexOptions.CultureInvariant, "éabd" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AlternationSpanHitCases))]
+    public void AlternationSpanDetailedMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (!expected.Success)
+        {
+            return;
+        }
+
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(expected.Value, actual.GetValueString());
+        for (var i = 0; i < expected.Groups.Count; i++)
+        {
+            var expectedGroup = expected.Groups[i];
+            var actualGroup = actual.GetGroup(i);
+            Assert.Equal(expectedGroup.Success, actualGroup.Success);
+            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
+            Assert.True(actual.TryGetGroup(i, out var tryGroup));
+            Assert.Equal(expectedGroup.Success, tryGroup.Success);
+            var groupName = expected.Groups[i].Name;
+            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
+            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
+        }
+
+        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+    }
+
     public static IEnumerable<object?[]> GroupedLiteralZeroConstructionCases()
     {
-        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c"];
-        string[] texts = ["xabcy", "ab", "xa", "b", "ac", "no match here"];
+        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))"];
+        string[] texts = ["xabcy", "ab", "xa", "b", "ac", "xay", "no match here"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -298,11 +373,21 @@ public sealed class GroupedLiteralDetailedTests
     [InlineData("(ab|c)(d)", "abd")]
     [InlineData("(ab|c)(d)", "xxabdex")]
     [InlineData("(ab|c)(d)", "ce")]
-    public void AlternationPartialSpanKeepsBclShaping(string pattern, string text)
+    [InlineData("(a|bc)d", "ad")]
+    [InlineData("(a|bc)d", "bcd")]
+    [InlineData("(a)?b(c)?", "abce")]
+    [InlineData("(a)?b(c)?", "bcd")]
+    [InlineData("(a)?b(c)?", "xyz")]
+    [InlineData("(x(a)|(b)y)", "xay")]
+    [InlineData("(x(a)|(b)y)", "xby")]
+    [InlineData("(a)(b)|(c)", "ab")]
+    [InlineData("(a)(b)|(c)", "c")]
+    public void RemainingDetailedDebtKeepsBclShaping(string pattern, string text)
     {
-        // Declared R05 debt: alternations with partial-span captures still shape detailed
-        // matches through the fallback engine until branch-span attribution lands. Parity
-        // holds; only Detailed constructs.
+        // Declared R05 debt: divergent alternation spans (branch lengths or group spans
+        // differ) and multi-loop optionals still shape detailed matches through the
+        // fallback engine until branch-span attribution lands. Parity holds; only
+        // Detailed constructs.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);

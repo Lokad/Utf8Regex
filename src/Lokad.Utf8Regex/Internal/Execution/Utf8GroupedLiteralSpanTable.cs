@@ -2,13 +2,15 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 // R05: fixed-span capture map for single exact literals whose captures partition the
 // literal (concatenated runs wrapped in capturing or non-capturing groups), plus at most
-// one optional single-iteration loop over a literal run. Each recorded group spans a fixed
-// UTF-16 range of the discovered literal, so detailed shaping projects every group from
-// the owned discovery hit without executing the fallback engine; the hit length selects
-// the present or absent projection for optional shapes. Other quantifiers, alternations,
-// sets, anchors, lookarounds, backreferences, and empty nodes decline; a null table means
-// the shape keeps the existing BCL routes. Construction is eager and pure over the owned
-// tree: no fallback engine is built here.
+// one optional single-iteration loop over a literal run and branch-invariant alternations
+// whose branches agree group for group on spans and end at the same position. Each
+// recorded group spans a fixed UTF-16 range of the discovered literal, so detailed shaping
+// projects every group from the owned discovery hit without executing the fallback engine;
+// the hit length selects the present or absent projection for optional shapes. Other
+// quantifiers, divergent alternations, loops inside alternations, sets, anchors,
+// lookarounds, backreferences, and empty nodes decline; a null table means the shape keeps
+// the existing BCL routes. Construction is eager and pure over the owned tree: no fallback
+// engine is built here.
 internal sealed class Utf8GroupedLiteralSpanTable
 {
     private Utf8GroupedLiteralSpanTable(
@@ -61,7 +63,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
         }
 
         var walker = new SpanWalker();
-        if (!walker.TryWalk(root.Children[0], inLoop: false))
+        if (!walker.TryWalk(root.Children[0], inLoop: false, inAlternate: false))
         {
             return null;
         }
@@ -144,7 +146,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
         internal int LoopStart = -1;
         internal int LoopLength;
 
-        internal bool TryWalk(Utf8ExecutionNode node, bool inLoop)
+        internal bool TryWalk(Utf8ExecutionNode node, bool inLoop, bool inAlternate)
         {
             switch (node.Kind)
             {
@@ -162,7 +164,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 case Utf8ExecutionNodeKind.Concatenate:
                     for (var i = 0; i < node.Children.Count; i++)
                     {
-                        if (!TryWalk(node.Children[i], inLoop))
+                        if (!TryWalk(node.Children[i], inLoop, inAlternate))
                         {
                             return false;
                         }
@@ -175,7 +177,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                         return false;
                     }
 
-                    return TryWalk(node.Children[0], inLoop);
+                    return TryWalk(node.Children[0], inLoop, inAlternate);
                 case Utf8ExecutionNodeKind.Capture:
                     if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber))
                     {
@@ -183,7 +185,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     }
 
                     var start = Position;
-                    if (!TryWalk(node.Children[0], inLoop))
+                    if (!TryWalk(node.Children[0], inLoop, inAlternate))
                     {
                         return false;
                     }
@@ -193,16 +195,49 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     Lengths.Add(Position - start);
                     InLoop.Add(inLoop);
                     return true;
+                case Utf8ExecutionNodeKind.Alternate:
+                    if (node.Children.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    // Branch-invariant alternations: the first branch walks into the
+                    // shared lists while the rest walk scratch copies that must agree
+                    // group for group and end at the same position. Divergence keeps
+                    // the BCL routes.
+                    var branchBase = Position;
+                    var branchCountBase = Groups.Count;
+                    if (!TryWalk(node.Children[0], inLoop, inAlternate: true))
+                    {
+                        return false;
+                    }
+
+                    var branchEnd = Position;
+                    for (var branch = 1; branch < node.Children.Count; branch++)
+                    {
+                        var scratch = new SpanWalker { Position = branchBase };
+                        if (!scratch.TryWalk(node.Children[branch], inLoop, inAlternate: true))
+                        {
+                            return false;
+                        }
+
+                        if (scratch.Position != branchEnd || !BranchMatches(scratch, branchCountBase))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
                 case Utf8ExecutionNodeKind.Loop:
                 case Utf8ExecutionNodeKind.LazyLoop:
-                    if (LoopSeen || inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                    if (LoopSeen || inLoop || inAlternate || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
                     {
                         return false;
                     }
 
                     LoopSeen = true;
                     LoopStart = Position;
-                    if (!TryWalk(node.Children[0], inLoop: true))
+                    if (!TryWalk(node.Children[0], inLoop: true, inAlternate: false))
                     {
                         return false;
                     }
@@ -217,6 +252,27 @@ internal sealed class Utf8GroupedLiteralSpanTable
                 default:
                     return false;
             }
+        }
+
+        private bool BranchMatches(SpanWalker scratch, int baseCount)
+        {
+            if (scratch.Groups.Count != Groups.Count - baseCount)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < scratch.Groups.Count; i++)
+            {
+                if (scratch.Groups[i] != Groups[baseCount + i] ||
+                    scratch.Starts[i] != Starts[baseCount + i] ||
+                    scratch.Lengths[i] != Lengths[baseCount + i] ||
+                    scratch.InLoop[i] != InLoop[baseCount + i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
