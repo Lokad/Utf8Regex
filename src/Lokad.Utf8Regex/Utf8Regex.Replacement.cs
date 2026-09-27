@@ -128,6 +128,21 @@ public sealed partial class Utf8Regex
         }
 
         var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
+        // R05: WholeMatch bytes are the pattern literal, which equals the hit only
+        // under case-sensitive matching. Folded singles decline here so the
+        // per-hit routes (native plan, owned template) splice the actual hit.
+        if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase)
+        {
+            foreach (var instruction in plan.Instructions)
+            {
+                if (instruction.Kind == Utf8ReplacementInstructionKind.WholeMatch)
+                {
+                    replacementBytes = [];
+                    return false;
+                }
+            }
+        }
+
         var totalLength = 0;
         foreach (var instruction in plan.Instructions)
         {

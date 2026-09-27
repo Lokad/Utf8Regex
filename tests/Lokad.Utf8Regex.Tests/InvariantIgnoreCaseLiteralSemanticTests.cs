@@ -473,6 +473,114 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> NonAsciiTemplateCases()
+    {
+        string[] patterns = ["abc", "kil", "IB"];
+        string[] templates = ["x", "<$1>", "$&", "$`", "$\u0027", "$_", "$+", "$$"];
+        string[] texts = ["ééABCé", "xKILy", "x\U0001F600aB", "nomatchhere"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NonAsciiTemplateCases))]
+    public void TemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static IEnumerable<object?[]> GroupedFoldedTemplateCases()
+    {
+        string[] templates = ["<$1>", "$+"];
+        string[] texts = ["xxAB12cdxx", "xKILy", "ééABCé"];
+        foreach (var template in templates)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, template, text };
+                yield return new object?[] { RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupedFoldedTemplateCases))]
+    public void GroupedFoldedTemplateKeepsBclShaping(RegexOptions options, string template, string text)
+    {
+        // Declared R05 debt: grouped folded singles ((aI)) expand templates through
+        // the fallback engine on every input, both lanes. Parity holds;
+        // construction is pinned.
+        const string pattern = "(aI)";
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.True(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.True(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    public static IEnumerable<object?[]> GroupedFoldedLiteralTemplateCases()
+    {
+        string[] texts = ["xxAB12cdxx", "xKILy", "ééABCé", "x\U0001F600aB", "nomatchhere"];
+        string[] templates = ["x", "$&"];
+        foreach (var template in templates)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, template, text };
+                yield return new object?[] { RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupedFoldedLiteralTemplateCases))]
+    public void GroupedFoldedLiteralTemplateOwnsNonAscii(RegexOptions options, string template, string text)
+    {
+        const string pattern = "(aI)";
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)
     {
         foreach (var _ in regex.EnumerateMatches(input))
