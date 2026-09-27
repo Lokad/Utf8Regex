@@ -113,6 +113,53 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         }
     }
 
+    public static IEnumerable<object?[]> LightMatchCases()
+    {
+        // Lightweight `Match` (and detailed group 0 shaped from it) must report
+        // UTF-16 coordinates on non-ASCII input, never raw byte offsets. Byte and
+        // UTF-16 offsets diverge past non-ASCII content, in both directions.
+        yield return new object?[] { "\\bab\\b", RegexOptions.CultureInvariant, "x\U0001F600ab" };
+        yield return new object?[] { "(?i)ab", RegexOptions.CultureInvariant, "x\u00E9ab" };
+        yield return new object?[] { "(?i)ab", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "x\u00E9ab" };
+        yield return new object?[] { "ab", RegexOptions.CultureInvariant, "x\U0001F600ab" };
+        yield return new object?[] { "\\bab\\b", RegexOptions.CultureInvariant, "ab\U0001F600" };
+        yield return new object?[] { "ab", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "x\U0001F600ab" };
+        yield return new object?[] { "\\bab\\b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "x\U0001F600ab" };
+        yield return new object?[] { "(?i)ab", RegexOptions.CultureInvariant, "ab\u00E9" };
+    }
+
+    [Theory]
+    [MemberData(nameof(LightMatchCases))]
+    public void LightMatchProjectsCoordinatesLikeRuntime(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var lane in new[] { options, options | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, lane, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, lane);
+
+            var expected = oracle.Match(text);
+            var actual = regex.Match(input);
+            Assert.Equal(expected.Success, actual.Success);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, actual.IndexInUtf16);
+                Assert.Equal(expected.Length, actual.LengthInUtf16);
+            }
+
+            var detailed = regex.MatchDetailed(input);
+            Assert.Equal(expected.Success, detailed.Success);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, detailed.GetGroup(0).IndexInUtf16);
+                Assert.Equal(expected.Length, detailed.GetGroup(0).LengthInUtf16);
+            }
+
+            // The mapping stays owned: no fallback engine is constructed.
+            Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        }
+    }
+
     private static bool IsScalarBoundary(string text, int utf16Offset)
     {
         if ((uint)utf16Offset > (uint)text.Length)

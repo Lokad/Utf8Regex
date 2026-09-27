@@ -198,7 +198,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             if (CanUseDirectExactSingleScalar(budget))
             {
                 return _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral
-                    ? MatchExactAsciiLiteral(input, budget, rightToLeft: false, validation.IsAscii)
+                    ? MatchExactAsciiLiteral(input, budget, rightToLeft: false)
                     : MatchExactUtf8Literal(input, budget, rightToLeft: false);
             }
 
@@ -208,15 +208,39 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
                 input,
                 validation,
                 budget);
-            return cursor.MoveNext()
-                ? cursor.Current.ToValueMatch()
-                : Utf8ValueMatch.NoMatch;
+            if (!cursor.MoveNext())
+            {
+                return Utf8ValueMatch.NoMatch;
+            }
+
+            var match = cursor.Current.ToValueMatch();
+            // The ASCII literal cursors above project byte offsets as UTF-16
+            // coordinates (this override runs without validation by design, so the
+            // factory ASCII-only gate cannot see it): remap the index through the
+            // UTF-16 prefix length on non-ASCII input. ASCII literal lengths match
+            // in both encodings, and ASCII bytes sit on scalar boundaries, so only
+            // the index needs mapping.
+            if (_regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+                _regexPlan.LiteralUtf8 is { Length: > 0 } &&
+                match.Success &&
+                !Utf8InputAnalyzer.IsAscii(input))
+            {
+                match = new Utf8ValueMatch(
+                    true,
+                    match.IsByteAligned,
+                    GetUtf16LengthOfPrefix(input, match.IndexInBytes),
+                    match.LengthInUtf16,
+                    match.IndexInBytes,
+                    match.LengthInBytes);
+            }
+
+            return match;
         }
 
         return _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral
-                => MatchExactAsciiLiteral(input, budget, rightToLeft: true, validation.IsAscii),
+                => MatchExactAsciiLiteral(input, budget, rightToLeft: true),
             NativeExecutionKind.ExactUtf8Literal
                 => MatchExactUtf8Literal(input, budget, rightToLeft: true),
             NativeExecutionKind.AsciiLiteralIgnoreCase
@@ -307,7 +331,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
         }
 
         match = _regexPlan.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral
-            ? MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false, inputIsAscii: false)
+            ? MatchExactAsciiLiteral(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false)
             : MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         return true;
     }
@@ -450,8 +474,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
                 input,
                 Utf8ExecutionDeadline.Infinite,
-                rightToLeft: false,
-                inputIsAscii: false),
+                rightToLeft: false),
             NativeExecutionKind.ExactUtf8Literal => MatchExactUtf8Literal(input, Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             _ => Utf8ValueMatch.NoMatch,
         };
@@ -487,8 +510,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
                 input,
                 budget,
-                _usesRightToLeft,
-                inputIsAscii: true),
+                _usesRightToLeft),
             NativeExecutionKind.ExactUtf8Literal when IsAllAscii(_regexPlan.LiteralUtf8)
                 => MatchAsciiAlignedExactUtf8Literal(input, budget),
             NativeExecutionKind.AsciiLiteralIgnoreCase => MatchAsciiLiteralIgnoreCase(input, budget, _usesRightToLeft),
@@ -1768,8 +1790,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
     private Utf8ValueMatch MatchExactAsciiLiteral(
         ReadOnlySpan<byte> input,
         Utf8ExecutionDeadline budget,
-        bool rightToLeft,
-        bool inputIsAscii)
+        bool rightToLeft)
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
@@ -1780,7 +1801,7 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return Utf8ValueMatch.NoMatch;
         }
 
-        var indexInUtf16 = inputIsAscii ? index : GetUtf16LengthOfPrefix(input, index);
+        var indexInUtf16 = Utf8InputAnalyzer.IsAscii(input) ? index : GetUtf16LengthOfPrefix(input, index);
         return new Utf8ValueMatch(true, true, indexInUtf16, literal.Length, index, literal.Length);
     }
 
@@ -1829,7 +1850,8 @@ internal sealed class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRunti
             return Utf8ValueMatch.NoMatch;
         }
 
-        return new Utf8ValueMatch(true, true, index, literal.Length, index, literal.Length);
+        var indexInUtf16 = Utf8InputAnalyzer.IsAscii(input) ? index : GetUtf16LengthOfPrefix(input, index);
+        return new Utf8ValueMatch(true, true, indexInUtf16, literal.Length, index, literal.Length);
     }
 
     private bool CanProjectLiteralFamilyAsAscii(ReadOnlySpan<byte> input)
