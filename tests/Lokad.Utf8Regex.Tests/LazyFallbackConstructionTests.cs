@@ -212,12 +212,13 @@ public sealed class LazyFallbackConstructionTests
     }
 
     [Theory]
-    [InlineData("(a)?b(c)?", "abce")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi")]
     public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
     {
-        // Multi-loop optionals still shape detailed matches through the fallback
-        // engine (declared R05 debt; grouped single literals, optional shapes, and
-        // divergent alternations graduate to owned shaping in GroupedLiteralDetailedTests).
+        // Beyond-cap loop counts still shape detailed matches through the fallback
+        // engine (declared R05 debt; grouped single literals, optional shapes,
+        // divergent alternations, and capped multi-loop shapes graduate to owned
+        // shaping in GroupedLiteralDetailedTests).
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailed(input));

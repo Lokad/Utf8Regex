@@ -133,6 +133,10 @@ public sealed class GroupedLiteralDetailedTests
         yield return new object?[] { "(ab|c)(d)", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxcdx", 2 };
         yield return new object?[] { "(a|bc)d", RegexOptions.CultureInvariant, "xbcd", 1 };
         yield return new object?[] { "(x(a)|(b)y)", RegexOptions.CultureInvariant, "xby", 0 };
+        yield return new object?[] { "(a)?b(c)?", RegexOptions.CultureInvariant, "xabcx", 1 };
+        yield return new object?[] { "(a)?b(c)?", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xbcx", 1 };
+        yield return new object?[] { "(a)?(a)?", RegexOptions.CultureInvariant, "xaa", 1 };
+        yield return new object?[] { "((a)?(b)?)", RegexOptions.CultureInvariant, "xab", 1 };
     }
 
     [Theory]
@@ -392,9 +396,77 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(actual.TryGetGroup("missing-group-name", out _));
     }
 
+    public static IEnumerable<object?[]> MultiLoopHitCases()
+    {
+        string[] patterns =
+        [
+            "(a)?b(c)?",
+            "(a)?(b)?c",
+            "(x)?(y)?",
+            "(a)?(a)?",
+            "(ab)?(ab)?",
+            "(a)?(a)?(a)?",
+            "(a)??(b)??",
+            "(a)?(a)??",
+            "((a)?(b)?)",
+            "(?<x>a)?(?<y>b)?",
+        ];
+        string[] texts = ["abc", "ab", "bc", "b", "a", "aa", "xy", "x", "y", "", "xxabcxx", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+
+        yield return new object?[] { "(a)?b(c)?", RegexOptions.CultureInvariant, "eabce" };
+    }
+
+    [Theory]
+    [MemberData(nameof(MultiLoopHitCases))]
+    public void MultiLoopDetailedMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (!expected.Success)
+        {
+            return;
+        }
+
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(expected.Value, actual.GetValueString());
+        for (var i = 0; i < expected.Groups.Count; i++)
+        {
+            var expectedGroup = expected.Groups[i];
+            var actualGroup = actual.GetGroup(i);
+            Assert.Equal(expectedGroup.Success, actualGroup.Success);
+            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
+            Assert.True(actual.TryGetGroup(i, out var tryGroup));
+            Assert.Equal(expectedGroup.Success, tryGroup.Success);
+            var groupName = expected.Groups[i].Name;
+            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
+            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
+        }
+
+        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+    }
+
     public static IEnumerable<object?[]> GroupedLiteralZeroConstructionCases()
     {
-        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))", "((?<x>a)|(?<y>a))b", "((a)|(a))"];
+        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(a)?b(c)?", "(a)?(b)?c", "(x)?(y)?", "(a)?(a)?", "(ab)?(ab)?", "(a)?(a)?(a)?", "((a)?(b)?)", "(?<x>a)?(?<y>b)?", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))", "((?<x>a)|(?<y>a))b", "((a)|(a))"];
         string[] texts = ["xabcy", "ab", "xa", "b", "ac", "xay", "no match here"];
         foreach (var pattern in patterns)
         {
@@ -446,6 +518,39 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> LazyLoopOrdinaryCases()
+    {
+        // Lazy loops serve the ordinary lane through the slice program but construct
+        // the fallback engine on the compiled lane (compiled discovery stays BCL for
+        // lazy shapes); the loop-pattern map covers the compiled lane only where its
+        // discovery is owned, so these rows pin ordinary-lane zero construction.
+        string[] patterns = ["(a)??(b)??", "(a)?(a)??"];
+        string[] texts = ["xabcy", "ab", "b", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(LazyLoopOrdinaryCases))]
+    public void LazyLoopOrdinaryOperationsConstructNoFallbackEngine(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var detailedRegex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.Equal(oracle.Match(text).Success, detailedRegex.MatchDetailed(input).Success);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     public static IEnumerable<object?[]> GroupedEvaluatorCases()
     {
         string[] patterns =
@@ -458,6 +563,8 @@ public sealed class GroupedLiteralDetailedTests
             "((a|b)(c|d))",
             "(?<x>(?<y>a))",
             "(a)?",
+            "(a)?b(c)?",
+            "(a)?(b)?c",
         ];
         string[] texts = ["xabx", "abd", "xxabdex", "ac", "xyz", "a", "b"];
         foreach (var pattern in patterns)
@@ -508,6 +615,8 @@ public sealed class GroupedLiteralDetailedTests
             "(a)?",
             "(ab)",
             "(?<a>x)(b)(?<c>y)",
+            "(a)?b(c)?",
+            "(a)?(b)?c",
         ];
         string[] templates = ["<$1$2>", "$1-$2", "[$0][$1]", "$`|$'|$_", "$+", "$$", "<$9>", "x", "$&"];
         string[] texts = ["xabx", "abd", "xyz", "a", "b"];
@@ -544,12 +653,15 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [InlineData("(a)?b(c)?", "abce", "<$1$2>")]
-    [InlineData("(a)?b(c)?", "xyz", "<$1$2>")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi", "<$1$2$3$4$5>")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "bdfhi", "<$1$2$3$4$5>")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "xyz", "<$1$2$3$4$5>")]
     public void GroupedTemplateMultiLoopKeepsBclShaping(string pattern, string text, string template)
     {
-        // Declared R05 debt: multi-loop template group references still expand
-        // through the fallback engine. Parity holds; construction is pinned.
+        // Declared R05 debt: beyond-cap loop counts (five optionals plus fixed runs
+        // here, keeping the literal-family kind past the four-loop map cap) still expand
+        // template group references through the fallback engine. Parity holds;
+        // construction is pinned.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -564,13 +676,15 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [InlineData("(a)?b(c)?", "abce")]
-    [InlineData("(a)?b(c)?", "bcd")]
-    [InlineData("(a)?b(c)?", "xyz")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "bdfhi")]
+    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "xyz")]
     public void RemainingDetailedDebtKeepsBclShaping(string pattern, string text)
     {
-        // Declared R05 debt: multi-loop optionals still shape detailed matches
-        // through the fallback engine. Parity holds; only Detailed constructs.
+        // Declared R05 debt: beyond-cap loop counts (five optionals plus fixed runs
+        // here, keeping the literal-family kind past the four-loop map cap) still shape
+        // detailed matches through the fallback engine. Parity holds; construction
+        // is pinned.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);

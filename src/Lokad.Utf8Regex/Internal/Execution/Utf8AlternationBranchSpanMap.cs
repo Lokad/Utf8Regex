@@ -2,11 +2,15 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-// R05: per-branch capture spans for single-alternation literal shapes whose branches may
-// diverge (different lengths or group spans). Each branch records the literal expansion
+// R05: ordered expansion-span maps for single-alternation literal shapes whose branches
+// may diverge (different lengths or group spans), and for pure multi-loop shapes with two
+// to four optional loops over literal runs. Each pattern records the literal expansion
 // text plus every enclosed capture fixed UTF-16 range, so detailed shaping identifies
-// the winning branch by ordinal text comparison against the owned discovery hit and
-// projects its spans without executing the fallback engine. Nested alternations, loops,
+// the winning pattern by ordinal text comparison against the owned discovery hit and
+// projects its spans without executing the fallback engine. Stored order is the BCL
+// choice order (source order for branches; per-loop preference with rightmost unwinding
+// for loops, as probed on .NET 10), so the first ordinal match wins. Nested alternations,
+// loops inside alternations, alternations inside loop construction, other quantifiers,
 // sets, anchors, lookarounds, backreferences, and empty nodes decline; a null map means
 // the shape keeps the existing BCL routes. Construction is eager and pure over the owned
 // tree: no fallback engine is built here.
@@ -71,6 +75,11 @@ internal sealed class Utf8AlternationBranchSpanMap
         Utf8ExecutionNode? alternate = null;
         var alternateCount = 0;
         CountAlternates(node, ref alternate, ref alternateCount);
+        if (alternateCount == 0)
+        {
+            return TryCreateLoopPatterns(root.Children[0], node, wholeMatchGroups);
+        }
+
         if (alternateCount != 1 || alternate is null || alternate.Children.Count == 0)
         {
             return null;
@@ -145,6 +154,230 @@ internal sealed class Utf8AlternationBranchSpanMap
             branchGroups,
             branchStarts,
             branchLengths);
+    }
+
+    private static Utf8AlternationBranchSpanMap? TryCreateLoopPatterns(
+        Utf8ExecutionNode body,
+        Utf8ExecutionNode node,
+        List<int> wholeMatchGroups)
+    {
+        // Pure multi-loop shapes: two to four optional loops over literal runs, no
+        // alternation. Single loops belong to the span table; deeper counts stay BCL.
+        // Stored pattern order is the BCL choice order (per-loop preference with the
+        // rightmost loop unwinding first), so the shared first-ordinal-match shaping
+        // attributes exactly like the oracle.
+        var greedy = new List<bool>();
+        if (!TryCollectLoops(node, greedy) || greedy.Count < 2 || greedy.Count > 4)
+        {
+            return null;
+        }
+
+        var order = BuildPatternOrder(greedy);
+        var expansions = new string[order.Length];
+        var groups = new int[order.Length][];
+        var starts = new int[order.Length][];
+        var lengths = new int[order.Length][];
+        var anyGroups = wholeMatchGroups.Count > 0;
+        for (var pattern = 0; pattern < order.Length; pattern++)
+        {
+            var walker = new PatternWalker(ToPresent(greedy, order[pattern]));
+            if (!walker.TryWalk(node, inLoop: false))
+            {
+                return null;
+            }
+
+            expansions[pattern] = walker.Expansion.ToString();
+            groups[pattern] = walker.Groups.ToArray();
+            starts[pattern] = walker.Starts.ToArray();
+            lengths[pattern] = walker.Lengths.ToArray();
+            anyGroups |= walker.Groups.Count > 0;
+        }
+
+        if (!anyGroups)
+        {
+            return null;
+        }
+
+        var slots = Utf8BclSlotTranslator.TryCreateMap(body);
+        if (slots is null)
+        {
+            return null;
+        }
+
+        var translatedWhole = new int[wholeMatchGroups.Count];
+        for (var i = 0; i < wholeMatchGroups.Count; i++)
+        {
+            if (!slots.TryGetValue(wholeMatchGroups[i], out var wholeSlot))
+            {
+                return null;
+            }
+
+            translatedWhole[i] = wholeSlot;
+        }
+
+        for (var pattern = 0; pattern < groups.Length; pattern++)
+        {
+            for (var i = 0; i < groups[pattern].Length; i++)
+            {
+                if (!slots.TryGetValue(groups[pattern][i], out var branchSlot))
+                {
+                    return null;
+                }
+
+                groups[pattern][i] = branchSlot;
+            }
+        }
+
+        return new Utf8AlternationBranchSpanMap(
+            translatedWhole,
+            expansions,
+            groups,
+            starts,
+            lengths);
+    }
+
+    private static bool TryCollectLoops(Utf8ExecutionNode node, List<bool> greedy)
+    {
+        switch (node.Kind)
+        {
+            case Utf8ExecutionNodeKind.Loop:
+            case Utf8ExecutionNodeKind.LazyLoop:
+                greedy.Add(node.Kind == Utf8ExecutionNodeKind.Loop);
+                return true;
+            case Utf8ExecutionNodeKind.Alternate:
+                return false;
+            default:
+                for (var i = 0; i < node.Children.Count; i++)
+                {
+                    if (!TryCollectLoops(node.Children[i], greedy))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+        }
+    }
+
+    private static int[] BuildPatternOrder(List<bool> greedy)
+    {
+        var order = new List<int>();
+        CollectPatternOrder(greedy, 0, 0, order);
+        return order.ToArray();
+    }
+
+    private static void CollectPatternOrder(List<bool> greedy, int index, int mask, List<int> order)
+    {
+        if (index >= greedy.Count)
+        {
+            order.Add(mask);
+            return;
+        }
+
+        var preferred = greedy[index] ? 1 : 0;
+        CollectPatternOrder(greedy, index + 1, mask | (preferred << index), order);
+        CollectPatternOrder(greedy, index + 1, mask | ((1 - preferred) << index), order);
+    }
+
+    private static bool[] ToPresent(List<bool> greedy, int mask)
+    {
+        var present = new bool[greedy.Count];
+        for (var i = 0; i < greedy.Count; i++)
+        {
+            present[i] = (mask & (1 << i)) != 0;
+        }
+
+        return present;
+    }
+
+    private sealed class PatternWalker
+    {
+        private readonly bool[] _present;
+        private int _cursor;
+        internal readonly StringBuilder Expansion = new();
+        internal int Position;
+        internal readonly List<int> Groups = new();
+        internal readonly List<int> Starts = new();
+        internal readonly List<int> Lengths = new();
+
+        internal PatternWalker(bool[] present)
+        {
+            _present = present;
+        }
+
+        internal bool TryWalk(Utf8ExecutionNode node, bool inLoop)
+        {
+            switch (node.Kind)
+            {
+                case Utf8ExecutionNodeKind.One:
+                    Position += 1;
+                    Expansion.Append(node.Ch);
+                    return true;
+                case Utf8ExecutionNodeKind.Multi:
+                    if (node.Text is null)
+                    {
+                        return false;
+                    }
+
+                    Position += node.Text.Length;
+                    Expansion.Append(node.Text);
+                    return true;
+                case Utf8ExecutionNodeKind.Concatenate:
+                    for (var i = 0; i < node.Children.Count; i++)
+                    {
+                        if (!TryWalk(node.Children[i], inLoop))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                case Utf8ExecutionNodeKind.Group:
+                    if (node.Children.Count != 1)
+                    {
+                        return false;
+                    }
+
+                    return TryWalk(node.Children[0], inLoop);
+                case Utf8ExecutionNodeKind.Capture:
+                    if (node.CaptureNumber <= 0 || node.Children.Count != 1 || Groups.Contains(node.CaptureNumber))
+                    {
+                        return false;
+                    }
+
+                    var start = Position;
+                    if (!TryWalk(node.Children[0], inLoop))
+                    {
+                        return false;
+                    }
+
+                    Groups.Add(node.CaptureNumber);
+                    Starts.Add(start);
+                    Lengths.Add(Position - start);
+                    return true;
+                case Utf8ExecutionNodeKind.Loop:
+                case Utf8ExecutionNodeKind.LazyLoop:
+                    if (inLoop || node.Min != 0 || node.Max != 1 || node.Children.Count != 1)
+                    {
+                        return false;
+                    }
+
+                    var index = _cursor++;
+                    if ((uint)index >= (uint)_present.Length)
+                    {
+                        return false;
+                    }
+
+                    if (!_present[index])
+                    {
+                        return true;
+                    }
+
+                    return TryWalk(node.Children[0], inLoop: true);
+                default:
+                    return false;
+            }
+        }
     }
 
     private static void CountAlternates(Utf8ExecutionNode node, ref Utf8ExecutionNode? found, ref int count)
