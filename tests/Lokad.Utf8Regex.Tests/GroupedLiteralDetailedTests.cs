@@ -335,6 +335,8 @@ public sealed class GroupedLiteralDetailedTests
             "(a)(b)|(c)",
             "((a|b)c)",
             "(?<x>ab|(?<y>c))d",
+            "((?<x>a)|(?<y>a))b",
+            "((a)|(a))",
         ];
         string[] texts = ["abd", "cd", "xxabdex", "ad", "bcd", "xay", "xby", "ab", "c", "ac", "bc", "xyz"];
         foreach (var pattern in patterns)
@@ -392,7 +394,7 @@ public sealed class GroupedLiteralDetailedTests
 
     public static IEnumerable<object?[]> GroupedLiteralZeroConstructionCases()
     {
-        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))"];
+        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))", "((?<x>a)|(?<y>a))b", "((a)|(a))"];
         string[] texts = ["xabcy", "ab", "xa", "b", "ac", "xay", "no match here"];
         foreach (var pattern in patterns)
         {
@@ -445,16 +447,13 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [InlineData("((?<x>a)|(?<y>a))b", "ab")]
-    [InlineData("((?<x>a)|(?<y>a))b", "xab")]
     [InlineData("(a)?b(c)?", "abce")]
     [InlineData("(a)?b(c)?", "bcd")]
     [InlineData("(a)?b(c)?", "xyz")]
     public void RemainingDetailedDebtKeepsBclShaping(string pattern, string text)
     {
-        // Declared R05 debt: ambiguous duplicate-text branches and multi-loop
-        // optionals still shape detailed matches through the fallback engine.
-        // Parity holds; only Detailed constructs.
+        // Declared R05 debt: multi-loop optionals still shape detailed matches
+        // through the fallback engine. Parity holds; only Detailed constructs.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);

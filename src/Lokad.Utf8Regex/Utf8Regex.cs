@@ -1934,9 +1934,11 @@ public sealed partial class Utf8Regex
         out Utf8MatchContext detailed)
     {
         // R05: identifies the winning branch by ordinal text comparison against the
-        // owned discovery hit, then projects its spans. Multiple matching branches
-        // with different span maps decline as ambiguous, as does any length or
-        // capture-number disagreement.
+        // owned discovery hit, then projects its spans. The first text-matching branch
+        // wins: BCL tries branches in order, and with the same text consumed at the same
+        // position every earlier-matching branch would have committed already (literal
+        // runs carry no backreference or conditional side channels, which decline at
+        // construction). Any length or capture-number disagreement still declines.
         detailed = default;
         var map = _alternationBranchSpanMap;
         if (map is null)
@@ -1954,16 +1956,8 @@ public sealed partial class Utf8Regex
                 continue;
             }
 
-            if (selected < 0)
-            {
-                selected = branch;
-                continue;
-            }
-
-            if (!BranchSpanMapsEqual(map, selected, branch))
-            {
-                return false;
-            }
+            selected = branch;
+            break;
         }
 
         if (selected < 0)
@@ -2004,28 +1998,6 @@ public sealed partial class Utf8Regex
         }
 
         detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
-        return true;
-    }
-
-    private static bool BranchSpanMapsEqual(Utf8AlternationBranchSpanMap map, int first, int second)
-    {
-        var firstGroups = map.BranchGroups[first];
-        var secondGroups = map.BranchGroups[second];
-        if (firstGroups.Length != secondGroups.Length)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < firstGroups.Length; i++)
-        {
-            if (firstGroups[i] != secondGroups[i] ||
-                map.BranchStarts[first][i] != map.BranchStarts[second][i] ||
-                map.BranchLengths[first][i] != map.BranchLengths[second][i])
-            {
-                return false;
-            }
-        }
-
         return true;
     }
 

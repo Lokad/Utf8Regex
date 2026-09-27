@@ -6,11 +6,10 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // diverge (different lengths or group spans). Each branch records the literal expansion
 // text plus every enclosed capture fixed UTF-16 range, so detailed shaping identifies
 // the winning branch by ordinal text comparison against the owned discovery hit and
-// projects its spans without executing the fallback engine. Multiple matching branches
-// with different span maps decline as ambiguous, as do nested alternations, loops, sets,
-// anchors, lookarounds, backreferences, and empty nodes; a null map means the shape keeps
-// the existing BCL routes. Construction is eager and pure over the owned tree: no
-// fallback engine is built here.
+// projects its spans without executing the fallback engine. Nested alternations, loops,
+// sets, anchors, lookarounds, backreferences, and empty nodes decline; a null map means
+// the shape keeps the existing BCL routes. Construction is eager and pure over the owned
+// tree: no fallback engine is built here.
 internal sealed class Utf8AlternationBranchSpanMap
 {
     private Utf8AlternationBranchSpanMap(
