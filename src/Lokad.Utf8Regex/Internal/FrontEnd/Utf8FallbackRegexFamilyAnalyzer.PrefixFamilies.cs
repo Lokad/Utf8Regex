@@ -534,4 +534,79 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
         prefixUtf8 = System.Text.Encoding.UTF8.GetBytes(pattern.Substring(start, index - start));
         return prefixUtf8.Length > 0;
     }
+    // Generic anchored-literal suffix (literal$ or literal\Z covering the whole
+    // pattern, plus the strict literal\z twin): the match, if any, is exactly the
+    // literal at the input end (or right before a single trailing line feed for
+    // the lax $/\Z forms), so a byte-exact tail compare is definitive on every
+    // input. Only bare ASCII non-metacharacter runs qualify, so byte length always
+    // equals UTF-16 length in direct results. Escapes, classes, groups,
+    // quantifiers, alternations, anchors, and non-ASCII decline to the existing
+    // routes. Multiline changes $ semantics (line ends), and RightToLeft,
+    // NonBacktracking, IgnoreCase, IgnorePatternWhitespace, and ECMAScript change
+    // or complicate matching, so those decline as well.
+    public static bool TryParseAnchoredAsciiLiteralSuffix(
+        string pattern,
+        RegexOptions options,
+        out byte[]? suffixUtf8,
+        out bool allowTrailingNewline)
+    {
+        suffixUtf8 = null;
+        allowTrailingNewline = false;
+        options = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
+        if ((options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking |
+                            RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace |
+                            RegexOptions.ECMAScript)) != 0)
+        {
+            return false;
+        }
+
+        // The literal runs from the pattern start; the anchor must close it.
+        // Scanning from the front keeps escaped dollars declined: the backslash
+        // is a metacharacter, so the run stops before any anchor.
+        var index = 0;
+        while (index < pattern.Length &&
+            pattern[index] <= 127 &&
+            !Utf8RegexSyntax.IsRegexMetaCharacter(pattern[index]))
+        {
+            index++;
+        }
+
+        if (index == 0)
+        {
+            return false;
+        }
+
+        var literalEnd = index;
+        if (TryConsume(pattern, ref index, "$"))
+        {
+            if ((options & RegexOptions.Multiline) != 0)
+            {
+                return false;
+            }
+
+            allowTrailingNewline = true;
+        }
+        else if (TryConsume(pattern, ref index, "\\z"))
+        {
+            allowTrailingNewline = false;
+        }
+        else if (TryConsume(pattern, ref index, "\\Z"))
+        {
+            allowTrailingNewline = true;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (index != pattern.Length)
+        {
+            return false;
+        }
+
+        // ASCII only: byte length must equal UTF-16 length for the direct result
+        // coordinates, which non-ASCII literals would break. Surrogates always decline.
+        suffixUtf8 = System.Text.Encoding.UTF8.GetBytes(pattern.Substring(0, literalEnd));
+        return suffixUtf8.Length > 0;
+    }
 }

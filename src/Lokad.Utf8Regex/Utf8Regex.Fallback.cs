@@ -264,6 +264,24 @@ public sealed partial class Utf8Regex
             return true;
         }
 
+        // Anchored ASCII literal suffixes are byte-exact on every input, just like
+        // prefixes: astral scalars never end with ASCII bytes. Unlike prefixes,
+        // the match index needs UTF-16 mapping past non-ASCII content (which also
+        // validates the prefix, matching the invalid-input contract on hits).
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            if (Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, _fallbackDirectFamily, out var suffixByteIndex, out var suffixLength))
+            {
+                var suffixUtf16Index = Utf8InputAnalyzer.IsAscii(input)
+                    ? suffixByteIndex
+                    : Utf8Validation.Validate(input[..suffixByteIndex]).Utf16Length;
+                match = new Utf8ValueMatch(true, true, suffixUtf16Index, suffixLength, suffixByteIndex, suffixLength);
+            }
+
+            return true;
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiSignedDecimalWhole)
         {
             if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
@@ -338,6 +356,14 @@ public sealed partial class Utf8Regex
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
         {
             isMatch = Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out _);
+            return true;
+        }
+
+        // Same byte-exact contract for suffixes: a tail miss is definitive on
+        // every input, and IsMatch needs no coordinates.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind))
+        {
+            isMatch = Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, _fallbackDirectFamily, out _, out _);
             return true;
         }
 

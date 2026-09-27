@@ -58,6 +58,7 @@ internal enum Utf8ExecutionRoute : byte
     NativeAsciiSimplePatternSymmetricLiteralWindowCompiled,
     NativeAsciiSimplePatternSymmetricLiteralWindow,
     FallbackDirectAnchoredAsciiLiteralPrefix,
+    FallbackDirectAnchoredAsciiLiteralSuffix,
 }
 
 internal static class Utf8ExecutionRouteText
@@ -120,6 +121,7 @@ internal static class Utf8ExecutionRouteText
         Utf8ExecutionRoute.NativeAsciiSimplePatternSymmetricLiteralWindowCompiled => "native_ascii_simple_pattern_symmetric_literal_window_compiled",
         Utf8ExecutionRoute.NativeAsciiSimplePatternSymmetricLiteralWindow => "native_ascii_simple_pattern_symmetric_literal_window",
         Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix => "fallback_direct_anchored_ascii_literal_prefix",
+        Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix => "fallback_direct_anchored_ascii_literal_suffix",
         _ => throw new InvalidOperationException("Unknown UTF-8 execution route."),
     };
 }

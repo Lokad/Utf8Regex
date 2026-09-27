@@ -35,6 +35,11 @@ internal static class Utf8AsciiDirectFamilyExecutor
             return Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, plan, out matchedLength);
         }
 
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(plan.Kind))
+        {
+            return Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, plan, out matchIndex, out matchedLength);
+        }
+
         if (Utf8FallbackDirectFamilyCategories.IsAnchoredWholeMatchFamily(plan.Kind))
         {
             return Utf8AsciiAnchoredWholeFamilyExecutor.TryMatchWhole(input, plan, out matchedLength);

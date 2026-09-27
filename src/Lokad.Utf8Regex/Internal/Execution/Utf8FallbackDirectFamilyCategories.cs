@@ -11,6 +11,10 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AnchoredTrimmedOptionalLiteralPrefixTail or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix;
 
+    public static bool IsAnchoredSuffixMatchFamily(Utf8FallbackDirectFamilyKind kind)
+        => kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd;
+
     public static bool IsAnchoredWholeMatchFamily(Utf8FallbackDirectFamilyKind kind)
         => kind is Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole or
@@ -53,6 +57,8 @@ internal static class Utf8FallbackDirectFamilyCategories
         Utf8FallbackDirectFamilyKind.AnchoredOperatorRun or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiLeadingDigitsTail or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix or
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix or
+        Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiEmailWhole or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiDigitsQueryWhole or
         Utf8FallbackDirectFamilyKind.AnchoredAsciiHexQueryWhole or

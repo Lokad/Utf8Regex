@@ -327,6 +327,17 @@ internal static partial class Utf8FallbackRegexFamilyAnalyzer
                 literalUtf8: RequireBytes(anchoredLiteralUtf8));
         }
 
+        if (TryParseAnchoredAsciiLiteralSuffix(executionPattern, options, out var anchoredSuffixUtf8, out var suffixTrailingNewline) ||
+            TryParseAnchoredAsciiLiteralSuffix(semanticPattern, options, out anchoredSuffixUtf8, out suffixTrailingNewline))
+        {
+            return Utf8FallbackDirectFamilyPlan.ForLiteral(
+                suffixTrailingNewline
+                    ? Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix
+                    : Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd,
+                Utf8FallbackFindModeKind.MatchAtEnd,
+                literalUtf8: RequireBytes(anchoredSuffixUtf8));
+        }
+
         return default;
     }
 

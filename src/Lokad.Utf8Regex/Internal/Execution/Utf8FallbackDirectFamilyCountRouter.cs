@@ -32,6 +32,19 @@ internal static class Utf8FallbackDirectFamilyCountRouter
             return true;
         }
 
+        // Anchored literal suffixes match at most once (at the input end), so the
+        // count is the tail hit itself. Byte-exact on every input, like prefixes.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(directFamily.Kind) &&
+            directFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            count = Utf8AsciiAnchoredSuffixFamilyExecutor.TryMatchSuffix(input, directFamily, out _, out _)
+                ? 1
+                : 0;
+
+            return true;
+        }
+
         if (directFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredQuotedLineSegmentCount)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredQuotedLineSegment);

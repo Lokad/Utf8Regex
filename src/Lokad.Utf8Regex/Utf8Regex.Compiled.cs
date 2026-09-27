@@ -167,6 +167,13 @@ public sealed partial class Utf8Regex
             return _compiledEngineRuntime.Count(input, validation, budget);
         }
 
+        // Anchored literal suffixes count the same way: at most one match at the
+        // input end, byte-exact on every input.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind))
+        {
+            return _compiledEngineRuntime.Count(input, validation, budget);
+        }
+
         var boundedSuffixLiteralPlan = _preparedRegex.SimplePatternPlan.BoundedSuffixLiteralPlan;
         if (!validation.IsAscii &&
             validation.ByteLength == input.Length &&

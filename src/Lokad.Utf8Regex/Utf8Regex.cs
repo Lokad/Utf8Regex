@@ -858,6 +858,17 @@ public sealed partial class Utf8Regex
                 Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out _);
         }
 
+        // Anchored suffixes match at most once at a fixed end position: a start past
+        // it misses definitively, otherwise the direct hit itself decides.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            return TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixDirect) &&
+                suffixDirect.Success &&
+                start.Value <= suffixDirect.IndexInUtf16;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceIsMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
@@ -1204,6 +1215,18 @@ public sealed partial class Utf8Regex
     {
         var subject = Utf8InputAnalyzer.Analyze(input);
         var start = subject.GetUtf16Position(utf16Offset, nameof(utf16Offset));
+        // At most one anchored suffix match exists past the start: count it directly.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            return TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixCount) &&
+                suffixCount.Success &&
+                start.Value <= suffixCount.IndexInUtf16
+                ? 1
+                : 0;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceCountFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
@@ -1424,6 +1447,20 @@ public sealed partial class Utf8Regex
             return Utf8ValueMatch.NoMatch;
         }
 
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixDirect) &&
+                suffixDirect.Success &&
+                start.Value <= suffixDirect.IndexInUtf16)
+            {
+                return suffixDirect;
+            }
+
+            return Utf8ValueMatch.NoMatch;
+        }
+
         if (_sliceProgram is not null && _sliceProgram.ServesInput(input))
         {
             return OwnedSliceMatchFromUnit(input, _sliceProgram, subject.BoundaryMap, start.Value, cancellationToken);
@@ -1502,6 +1539,22 @@ public sealed partial class Utf8Regex
             if (Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredDetailedLength))
             {
                 return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredDetailedLength);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+        }
+
+        // Anchored suffixes shape the same way from the direct hit, which already
+        // carries UTF-16 coordinates without BCL construction.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixDetailed) &&
+                suffixDetailed.Success)
+            {
+                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, suffixDetailed.IndexInUtf16, suffixDetailed.LengthInUtf16);
             }
 
             return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
@@ -1599,6 +1652,21 @@ public sealed partial class Utf8Regex
                 Utf8AsciiAnchoredPrefixFamilyExecutor.TryMatchPrefix(input, _fallbackDirectFamily, out var anchoredOffsetLength))
             {
                 return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, 0, anchoredOffsetLength);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+        }
+
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixOffsetDetailed) &&
+                suffixOffsetDetailed.Success &&
+                start.Value <= suffixOffsetDetailed.IndexInUtf16)
+            {
+                return new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, suffixOffsetDetailed.IndexInUtf16, suffixOffsetDetailed.LengthInUtf16);
             }
 
             return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
@@ -1822,6 +1890,17 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 
+        // Anchored suffixes yield at most one match at the input end through the
+        // anchor-enforcing owned cursor, without BCL construction.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
         if (TryGetAsciiCultureInvariantTwin(input, out var twin))
         {
             return twin.EnumerateMatches(input).WithTimeoutMapping(input, Pattern, MatchTimeout);
@@ -1882,6 +1961,26 @@ public sealed partial class Utf8Regex
 
             return new Utf8ValueMatchEnumerator(
                 new Utf8OperationMatchCursor(input, anchoredOffsetLiteral, CreateExecutionBudget()))
+                .WithTimeoutMapping(input, Pattern, MatchTimeout);
+        }
+
+        // Anchored suffixes match at most once at a fixed end position: a start past
+        // it misses definitively, otherwise the single-match cursor decides.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input, out var suffixEnumerate) &&
+                suffixEnumerate.Success &&
+                startInUtf16.Value <= suffixEnumerate.IndexInUtf16)
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    .WithTimeoutMapping(input, Pattern, MatchTimeout);
+            }
+
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input[..0], Array.Empty<byte>(), CreateExecutionBudget()))
                 .WithTimeoutMapping(input, Pattern, MatchTimeout);
         }
 

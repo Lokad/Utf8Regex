@@ -122,6 +122,17 @@ public sealed partial class Utf8Regex
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // Anchored suffixes match at most once at a fixed end position: a start past
+        // it misses definitively, otherwise the direct hit itself decides.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterIsMatch) &&
+                suffixAdapterIsMatch.Success &&
+                input.Project(start).Value <= suffixAdapterIsMatch.IndexInUtf16;
+        }
+
         // Anchored prefixes anchor to byte 0: nonzero starts miss definitively,
         // offset 0 reuses the byte-exact prefix compare without BCL construction.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
@@ -153,6 +164,20 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatch MatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterMatch) &&
+                suffixAdapterMatch.Success &&
+                input.Project(start).Value <= suffixAdapterMatch.IndexInUtf16)
+            {
+                return suffixAdapterMatch;
+            }
+
+            return Utf8ValueMatch.NoMatch;
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix)
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
@@ -185,6 +210,22 @@ public sealed partial class Utf8Regex
 
     private Utf8MatchContext MatchDetailedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
+            _groupNumbers.Length <= 1)
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            var adapterDecoded = input.GetDecodedString();
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterDetailed) &&
+                suffixAdapterDetailed.Success &&
+                input.Project(start).Value <= suffixAdapterDetailed.IndexInUtf16)
+            {
+                return new Utf8MatchContext(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames, suffixAdapterDetailed.IndexInUtf16, suffixAdapterDetailed.LengthInUtf16);
+            }
+
+            return Utf8MatchContext.Unsuccessful(input.Bytes, adapterDecoded, input.BoundaryMap, _groupNames);
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } &&
             _groupNumbers.Length <= 1)
@@ -221,6 +262,17 @@ public sealed partial class Utf8Regex
 
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            return TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterCount) &&
+                suffixAdapterCount.Success &&
+                input.Project(start).Value <= suffixAdapterCount.IndexInUtf16
+                ? 1
+                : 0;
+        }
+
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&
             _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 } adapterCountLiteral)
         {
@@ -287,6 +339,26 @@ public sealed partial class Utf8Regex
 
     private Utf8ValueMatchEnumerator EnumerateMatchesAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
+        // Anchored suffixes yield at most one match at the fixed end position
+        // through the anchor-enforcing owned cursor; a start past it misses.
+        if (Utf8FallbackDirectFamilyCategories.IsAnchoredSuffixMatchFamily(_fallbackDirectFamily.Kind) &&
+            _fallbackDirectFamily.LiteralUtf8 is { Length: > 0 })
+        {
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
+            if (TryMatchDirectFallbackFamilyWithoutValidation(input.Bytes, out var suffixAdapterEnumerate) &&
+                suffixAdapterEnumerate.Success &&
+                input.Project(start).Value <= suffixAdapterEnumerate.IndexInUtf16)
+            {
+                return new Utf8ValueMatchEnumerator(
+                    new Utf8OperationMatchCursor(input.Bytes, _fallbackDirectFamily.LiteralUtf8, CreateExecutionBudget(), _fallbackDirectFamily.Kind))
+                    .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+            }
+
+            return new Utf8ValueMatchEnumerator(
+                new Utf8OperationMatchCursor(input.Bytes[..0], Array.Empty<byte>(), CreateExecutionBudget()))
+                .WithTimeoutMapping(input.Bytes, Pattern, MatchTimeout);
+        }
+
         // Anchored prefixes yield at most one match at byte 0 through the
         // anchor-enforcing owned cursor; nonzero starts are a definitive miss.
         if (_fallbackDirectFamily.Kind == Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralPrefix &&

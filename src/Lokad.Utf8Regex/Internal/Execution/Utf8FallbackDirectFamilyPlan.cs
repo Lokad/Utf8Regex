@@ -38,12 +38,15 @@ internal enum Utf8FallbackDirectFamilyKind : byte
     Utf8WordDelimitedTokenCount = 31,
     Utf8BalancedBeginEndCount = 32,
     AnchoredAsciiLiteralPrefix = 33,
+    AnchoredAsciiLiteralSuffix = 34,
+    AnchoredAsciiLiteralSuffixStrictEnd = 35,
 }
 
 internal enum Utf8FallbackFindModeKind : byte
 {
     None = 0,
     MatchAtStart = 1,
+    MatchAtEnd = 4,
     FindToken = 2,
     CountLines = 3,
 }

@@ -408,6 +408,26 @@ internal ref struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.AnchoredAsciiLiteralPrefix;
     }
 
+    // Anchored ASCII literal suffix enumeration: at most one match at the input
+    // end (or right before a single trailing line feed for the lax kind). The
+    // kind-based constructor below is public (not a counted private helper) and
+    // the move-next logic stays inline here to hold the single-caller debt ceiling.
+    public Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input,
+        byte[] literal,
+        Utf8ExecutionDeadline budget,
+        Utf8FallbackDirectFamilyKind familyKind)
+        : this(input, literal, budget)
+    {
+        // The mode carries strictness so verification needs no extra fields.
+        _mode = familyKind switch
+        {
+            Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffixStrictEnd => EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd,
+            Utf8FallbackDirectFamilyKind.AnchoredAsciiLiteralSuffix => EnumeratorMode.AnchoredAsciiLiteralSuffix,
+            _ => EnumeratorMode.Exhausted,
+        };
+    }
+
     public bool MoveNext()
     {
         if (_mode == EnumeratorMode.AnchoredAsciiLiteralPrefix)
@@ -431,6 +451,49 @@ internal ref struct Utf8OperationMatchCursor
             }
 
             _current = new Utf8ValueMatch(true, true, 0, literal.Length, 0, literal.Length);
+            return true;
+        }
+
+        // Anchored suffix verification mirrors Utf8AsciiAnchoredSuffixFamilyExecutor
+        // inline: the cursor keeps no plan reference, and the mode carries lax versus
+        // strict end handling. Only the start index needs UTF-16 mapping on
+        // non-ASCII input; ASCII literal lengths match in both encodings.
+        if (_mode is EnumeratorMode.AnchoredAsciiLiteralSuffix or EnumeratorMode.AnchoredAsciiLiteralSuffixStrictEnd)
+        {
+            if (_consumed != 0)
+            {
+                return false;
+            }
+
+            _consumed = 1;
+            _budget.Step();
+            var suffixLiteral = _literal;
+            if (suffixLiteral is null || suffixLiteral.Length == 0 || suffixLiteral.Length > _input.Length)
+            {
+                return false;
+            }
+
+            var suffixEnd = _input.Length;
+            if (_mode == EnumeratorMode.AnchoredAsciiLiteralSuffix &&
+                suffixEnd > suffixLiteral.Length &&
+                _input[suffixEnd - 1] == (byte)'\n')
+            {
+                suffixEnd--;
+            }
+
+            var suffixStart = suffixEnd - suffixLiteral.Length;
+            if (suffixStart < 0 || !_input.Slice(suffixStart, suffixLiteral.Length).SequenceEqual(suffixLiteral))
+            {
+                return false;
+            }
+
+            var suffixStartUtf16 = suffixStart;
+            if (_input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
+            {
+                suffixStartUtf16 = Utf8Validation.Validate(_input[..suffixStart]).Utf16Length;
+            }
+
+            _current = new Utf8ValueMatch(true, true, suffixStartUtf16, suffixLiteral.Length, suffixStart, suffixLiteral.Length);
             return true;
         }
 
@@ -1024,5 +1087,7 @@ internal ref struct Utf8OperationMatchCursor
         FallbackRegexAscii = 13,
         OwnedSlice = 14,
         AnchoredAsciiLiteralPrefix = 15,
+        AnchoredAsciiLiteralSuffix = 16,
+        AnchoredAsciiLiteralSuffixStrictEnd = 17,
     }
 }
