@@ -864,60 +864,78 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    [Theory]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi", "<$1$2$3$4$5>")]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "bdfhi", "<$1$2$3$4$5>")]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "xyz", "<$1$2$3$4$5>")]
-    public void GroupedTemplateMultiLoopKeepsBclShaping(string pattern, string text, string template)
+    public static IEnumerable<object?[]> MultiLoopOverCapCases()
     {
-        // Declared R05 debt: beyond-cap loop counts (five optionals plus fixed runs
-        // here, keeping the literal-family kind past the four-loop map cap) still expand
-        // template group references through the fallback engine. Parity holds;
-        // construction is pinned.
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        (string Pattern, string Template, string[] Texts)[] shapes =
+        [
+            ("(a)?b(c)?d(e)?f(g)?h(i)?", "<$1$2$3$4$5>", ["abcdefghi", "bdfhi", "xyz"]),
+            ("(a)?(b)?(c)?(d)?(e)?", "<$1$2$3$4$5>", ["abcde", "ace", "xyz"]),
+            ("(a)??b(c)?d(e)??f(g)?h(i)?", "<$1$2$3$4$5>", ["abcdefghi", "bdfhi", "xyz"]),
+            ("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?", "<$1$2$3$4$5$6>", ["abcdefghijk", "bdfhj", "xyz"]),
+            ("(a)?(b)?(c)?(d)?(e)?(f)?", "<$1$2$3$4$5$6>", ["abcdef", "ace", "xyz"]),
+        ];
+        foreach (var shape in shapes)
         {
-            var input = Encoding.UTF8.GetBytes(text);
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, options);
-            var expected = oracle.Replace(text, template);
-            var actual = regex.ReplaceToString(input, template);
-
-            Assert.Equal(expected, actual);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
-        }
-    }
-
-    [Theory]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi")]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "bdfhi")]
-    [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "xyz")]
-    public void RemainingDetailedDebtKeepsBclShaping(string pattern, string text)
-    {
-        // Declared R05 debt: beyond-cap loop counts (five optionals plus fixed runs
-        // here, keeping the literal-family kind past the four-loop map cap) still shape
-        // detailed matches through the fallback engine. Parity holds; construction
-        // is pinned.
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
-        {
-            var input = Encoding.UTF8.GetBytes(text);
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, options);
-            var expected = oracle.Match(text);
-            var actual = regex.MatchDetailed(input);
-
-            Assert.Equal(expected.Success, actual.Success);
-            Assert.Equal(expected.Groups.Count, actual.GroupCount);
-            if (expected.Success)
+            // Mixed greedy/lazy shapes stay BCL-backed on the compiled lane
+            // (lazy-compiled discovery debt); greedy shapes cover both lanes.
+            var compiledLaneIsOwned = shape.Pattern.IndexOf(")??", System.StringComparison.Ordinal) < 0;
+            foreach (var text in shape.Texts)
             {
-                for (var i = 0; i < expected.Groups.Count; i++)
+                yield return new object?[] { shape.Pattern, shape.Template, RegexOptions.CultureInvariant, text };
+                if (compiledLaneIsOwned)
                 {
-                    Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
-                    Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
-                    Assert.Equal(expected.Groups[i].Value, actual.GetGroup(i).GetValueString());
+                    yield return new object?[] { shape.Pattern, shape.Template, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
                 }
             }
-
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         }
     }
+
+    [Theory]
+    [MemberData(nameof(MultiLoopOverCapCases))]
+    public void MultiLoopOverCapDetailedMatchesOwned(string pattern, string template, RegexOptions options, string text)
+    {
+        _ = template;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (expected.Success)
+        {
+            for (var i = 0; i < expected.Groups.Count; i++)
+            {
+                Assert.Equal(expected.Groups[i].Success, actual.GetGroup(i).Success);
+                Assert.Equal(expected.Groups[i].Index, actual.GetGroup(i).IndexInUtf16);
+                Assert.Equal(expected.Groups[i].Length, actual.GetGroup(i).LengthInUtf16);
+            }
+        }
+
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(MultiLoopOverCapCases))]
+    public void MultiLoopOverCapTemplateMatchesOwned(string pattern, string template, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
 }

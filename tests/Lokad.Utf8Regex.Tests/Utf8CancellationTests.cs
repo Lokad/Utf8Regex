@@ -275,10 +275,11 @@ public sealed class Utf8CancellationTests
     [Fact]
     public void CancelInsideBclFallbackEvaluatorAbortsReplace()
     {
-        // Beyond-cap loop counts keep the BCL evaluator route (declared R05 debt).
-        var regex = new Utf8Regex("(a)?b(c)?d(e)?f(g)?h(i)?");
+        // Seven-loop shapes stay past the six-loop map cap and keep the BCL evaluator
+        // route (declared R05 debt).
+        var regex = new Utf8Regex("(a)?b(c)?d(e)?f(g)?h(i)?j(k)?l(m)?");
         using var canceled = new CancellationTokenSource();
-        var input = Encoding.UTF8.GetBytes("abcdefghi abcdefghi");
+        var input = Encoding.UTF8.GetBytes("abcdefghijklm abcdefghijklm");
         var calls = 0;
         var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
             input,

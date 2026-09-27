@@ -4,7 +4,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 // R05: ordered expansion-span maps for single-alternation literal shapes whose branches
 // may diverge (different lengths or group spans), and for pure multi-loop shapes with two
-// to four optional loops over literal runs. Each pattern records the literal expansion
+// to six optional loops over literal runs. Each pattern records the literal expansion
 // text plus every enclosed capture fixed UTF-16 range, so detailed shaping identifies
 // the winning pattern by ordinal text comparison against the owned discovery hit and
 // projects its spans without executing the fallback engine. Stored order is the BCL
@@ -161,13 +161,15 @@ internal sealed class Utf8AlternationBranchSpanMap
         Utf8ExecutionNode node,
         List<int> wholeMatchGroups)
     {
-        // Pure multi-loop shapes: two to four optional loops over literal runs, no
+        // Pure multi-loop shapes: two to six optional loops over literal runs, no
         // alternation. Single loops belong to the span table; deeper counts stay BCL.
+        // Six bounds the eager per-pattern expansion (64 patterns) while covering
+        // the witnessed five-loop debt; the ordering rule below is count-generic.
         // Stored pattern order is the BCL choice order (per-loop preference with the
         // rightmost loop unwinding first), so the shared first-ordinal-match shaping
         // attributes exactly like the oracle.
         var greedy = new List<bool>();
-        if (!TryCollectLoops(node, greedy) || greedy.Count < 2 || greedy.Count > 4)
+        if (!TryCollectLoops(node, greedy) || greedy.Count < 2 || greedy.Count > 6)
         {
             return null;
         }
