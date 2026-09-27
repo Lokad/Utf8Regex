@@ -178,6 +178,13 @@ public readonly ref struct Utf8GroupContext
 
     private int GetIndexInBytes()
     {
+        // R05: unmatched groups project empty at zero without touching boundaries,
+        // mirroring the BCL-backed route instead of throwing NullReferenceException.
+        if (_group is null && !_ownedHasValue)
+        {
+            return 0;
+        }
+
         return ResolveBoundary(_group?.Index ?? (_ownedHasValue ? _ownedIndex : 0)).ByteOffset;
     }
 

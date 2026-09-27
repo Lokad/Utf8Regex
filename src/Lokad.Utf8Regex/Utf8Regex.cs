@@ -2760,7 +2760,7 @@ public sealed partial class Utf8Regex
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
         var budget = CreateExecutionBudget();
-        if (ShouldUseFallbackForSimplePatternReplacement(replacementPattern))
+        if (ShouldUseFallbackForSimplePatternReplacement(replacementPattern, input))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
                 Encoding.UTF8.GetString(input),

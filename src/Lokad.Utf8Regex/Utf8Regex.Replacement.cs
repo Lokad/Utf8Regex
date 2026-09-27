@@ -34,7 +34,7 @@ public sealed partial class Utf8Regex
             return OwnedSliceReplace(input, _sliceProgram, replacement, cancellationToken);
         }
 
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement))
+        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -172,7 +172,7 @@ public sealed partial class Utf8Regex
         }
 
 
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement))
+        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
             return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -188,6 +188,11 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
+        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
+        {
+            return ownedTemplate;
+        }
+
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             return Encoding.UTF8.GetString(nativeResult);
@@ -224,7 +229,7 @@ public sealed partial class Utf8Regex
         }
 
 
-        if (ShouldUseFallbackForSimplePatternReplacement(replacement))
+        if (ShouldUseFallbackForSimplePatternReplacement(replacement, input))
         {
             Utf8Validation.ThrowIfInvalidOnly(input);
             var replaced = _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
@@ -245,7 +250,8 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
-        if (TryReplaceViaNativePlan(input, validation, replacement, budget, destination, out bytesWritten))
+        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate) &&
+            TryEncodeUtf8ToDestination(ownedTemplate, destination, out bytesWritten))
         {
             return OperationStatus.Done;
         }
@@ -374,9 +380,74 @@ public sealed partial class Utf8Regex
     private string ReplaceFallbackWithSharedPlan(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement)
     {
         var decoded = Encoding.UTF8.GetString(input);
+        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var owned))
+        {
+            return owned;
+        }
+
         return _verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
             decoded,
             match => Utf8ReplacementPlanInterpreter.Apply(replacement.Plan, match, decoded));
+    }
+
+    // R05: expands group-reference templates from owned discovery hits without
+    // executing the fallback engine. The first hit validates the projection channel
+    // before any output; a later projection failure throws instead of emitting a
+    // half-owned result, mirroring the evaluator contract.
+    private bool TryReplaceTemplateWithOwnedGroups(
+        ReadOnlySpan<byte> input,
+        Utf8AnalyzedReplacement replacement,
+        out string replaced)
+    {
+        // The decode below runs only for map-covered shapes, so group-free routes
+        // keep their allocation profile (see the destination allocation bound test).
+        replaced = string.Empty;
+        if (_groupedLiteralSpanTable is null && _alternationBranchSpanMap is null)
+        {
+            return false;
+        }
+
+        if (RequiresCultureSensitiveFallback || ShouldUseKelvinSignFallback(input))
+        {
+            return false;
+        }
+
+        var decoded = Encoding.UTF8.GetString(input);
+        var analysis = Utf8InputAnalyzer.Analyze(input);
+        var builder = new StringBuilder(decoded.Length);
+        var sourcePosition = 0;
+        var first = true;
+        foreach (var valueMatch in EnumerateMatches(input))
+        {
+            Utf8MatchContext context;
+            if (_groupedLiteralSpanTable is not null &&
+                TryShapeGroupedLiteralDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var grouped))
+            {
+                context = grouped;
+            }
+            else if (_alternationBranchSpanMap is not null &&
+                TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var branched))
+            {
+                context = branched;
+            }
+            else if (!first)
+            {
+                throw new InvalidOperationException("The grouped template projection failed after matching began.");
+            }
+            else
+            {
+                return false;
+            }
+
+            first = false;
+            builder.Append(decoded, sourcePosition, valueMatch.IndexInUtf16 - sourcePosition);
+            builder.Append(Utf8ReplacementPlanInterpreter.ApplyOwned(replacement.Plan, decoded, in context));
+            sourcePosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+        }
+
+        builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
+        replaced = builder.ToString();
+        return true;
     }
 
     private bool TryReplaceViaNativePlan(

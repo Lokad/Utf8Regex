@@ -457,8 +457,9 @@ public sealed class GroupedLiteralDetailedTests
             "(ab|cd)e",
             "((a|b)(c|d))",
             "(?<x>(?<y>a))",
+            "(a)?",
         ];
-        string[] texts = ["xabx", "abd", "xxabdex", "ac", "xyz"];
+        string[] texts = ["xabx", "abd", "xxabdex", "ac", "xyz", "a", "b"];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)
@@ -493,21 +494,69 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
-    [Theory]
-    [InlineData("(a)(b)", "xabx")]
-    [InlineData("(ab|c)(d)", "abd")]
-    [InlineData("(?<x>ab|(?<y>c))d", "abd")]
-    public void GroupedTemplateKeepsBclShaping(string pattern, string text)
+    public static IEnumerable<object?[]> GroupedTemplateCases()
     {
-        // Declared R05 debt: template replacement with group references still expands
+        string[] patterns =
+        [
+            "(a)(b)",
+            "(a)?b",
+            "(ab|c)(d)",
+            "(?<x>ab|(?<y>c))d",
+            "(ab|cd)e",
+            "((a|b)(c|d))",
+            "(?<x>(?<y>a))",
+            "(a)?",
+            "(ab)",
+            "(?<a>x)(b)(?<c>y)",
+        ];
+        string[] templates = ["<$1$2>", "$1-$2", "[$0][$1]", "$`|$'|$_", "$+", "$$", "<$9>", "x", "$&"];
+        string[] texts = ["xabx", "abd", "xyz", "a", "b"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupedTemplateCases))]
+    public void GroupedTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("(a)?b(c)?", "abce", "<$1$2>")]
+    [InlineData("(a)?b(c)?", "xyz", "<$1$2>")]
+    public void GroupedTemplateMultiLoopKeepsBclShaping(string pattern, string text, string template)
+    {
+        // Declared R05 debt: multi-loop template group references still expand
         // through the fallback engine. Parity holds; construction is pinned.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex(pattern, options);
-            var expected = oracle.Replace(text, "<$1$2>");
-            var actual = regex.ReplaceToString(input, "<$1$2>");
+            var expected = oracle.Replace(text, template);
+            var actual = regex.ReplaceToString(input, template);
 
             Assert.Equal(expected, actual);
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);

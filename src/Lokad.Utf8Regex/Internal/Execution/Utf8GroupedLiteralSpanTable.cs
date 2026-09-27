@@ -215,8 +215,10 @@ internal sealed class Utf8GroupedLiteralSpanTable
                     InLoop.Add(inLoop);
                     return true;
                 case Utf8ExecutionNodeKind.Alternate:
-                    if (node.Children.Count == 0)
+                    if (node.Children.Count == 0 || LoopSeen)
                     {
+                        // Loops and alternations combine only through the BCL routes:
+                        // joint present/absent by branch selection is future work.
                         return false;
                     }
 

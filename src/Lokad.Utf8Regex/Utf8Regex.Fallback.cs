@@ -680,11 +680,26 @@ public sealed partial class Utf8Regex
             MatchTimeout != Regex.InfiniteMatchTimeout;
     }
 
-    private bool ShouldUseFallbackForSimplePatternReplacement(Utf8AnalyzedReplacement replacement)
+    private bool ShouldUseFallbackForSimplePatternReplacement(Utf8AnalyzedReplacement replacement, ReadOnlySpan<byte> input)
     {
+        if (replacement.ContainsGroupReferences && HasOwnedTemplateGroupShaping(input))
+        {
+            return false;
+        }
+
         return replacement.ContainsGroupReferences ||
             (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
              ShouldUseFallbackForAnchoredSimplePattern());
+    }
+
+    // R05: template group references stay on the owned replacement route when the
+    // grouped span maps cover the shape; culture and Kelvin declines still divert,
+    // and the anchored simple-pattern clause below is untouched.
+    private bool HasOwnedTemplateGroupShaping(ReadOnlySpan<byte> input)
+    {
+        return (_groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null) &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input);
     }
 
     private bool CanGuideFallbackVerification()
