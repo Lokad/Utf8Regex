@@ -360,6 +360,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -391,6 +392,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> NonAsciiSplitCases()
@@ -432,6 +434,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         Assert.Equal(expected, actual);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     [Theory]
@@ -471,6 +474,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> NonAsciiTemplateCases()
@@ -503,11 +507,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     public static IEnumerable<object?[]> GroupedFoldedLiteralTemplateCases()
@@ -537,11 +543,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(bytesRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
 
         var stringRegex = new Utf8Regex(pattern, options);
         var stringActual = stringRegex.ReplaceToString(input, template);
         Assert.Equal(expected, stringActual);
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(stringRegex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)

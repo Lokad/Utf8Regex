@@ -202,6 +202,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
         Assert.Equal(expected, actual);
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
 
     private static bool IsScalarBoundary(string text, int utf16Offset)
