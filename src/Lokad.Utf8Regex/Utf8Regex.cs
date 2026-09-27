@@ -2846,6 +2846,54 @@ public sealed partial class Utf8Regex
         }
 
 
+        // R05: grouped single-literal shapes enumerate like groupless shapes and
+        // project every group from fixed literal-relative spans. The first hit validates
+        // the projection channel before any output, mirroring the branched contract.
+        if (_groupedLiteralSpanTable is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var groupedDeclined = false;
+            var groupedFirst = true;
+            try
+            {
+                foreach (var valueMatch in EnumerateMatches(input))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!valueMatch.IsByteAligned)
+                    {
+                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                    }
+
+                    if (!TryShapeGroupedLiteralDetailedMatch(input, decoded, boundaryMap, valueMatch, out var groupedContext))
+                    {
+                        if (!groupedFirst)
+                        {
+                            throw new InvalidOperationException("The grouped span projection failed after matching began.");
+                        }
+
+                        groupedDeclined = true;
+                        break;
+                    }
+
+                    groupedFirst = false;
+                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
+                    evaluator(in groupedContext, ref writer, ref state);
+                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!groupedDeclined)
+            {
+                writer.Append(input[sourcePosition..]);
+                return writer.GetValidatedBytes().ToArray();
+            }
+        }
+
         // R03: mapped branch shapes discover through the family cursor and shape every
         // callback argument from owned spans. The first hit validates the branch channel;
         // no output is produced before it, so an unknown branch still declines cleanly.
@@ -2896,6 +2944,54 @@ public sealed partial class Utf8Regex
             }
 
             if (!declined)
+            {
+                writer.Append(input[sourcePosition..]);
+                return writer.GetValidatedBytes().ToArray();
+            }
+        }
+
+        // R05: divergent single-alternation shapes enumerate like groupless shapes and
+        // project the winning branch spans identified by ordinal text comparison, with
+        // the same first-hit decline contract as the arms above.
+        if (_alternationBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var alternationDeclined = false;
+            var alternationFirst = true;
+            try
+            {
+                foreach (var valueMatch in EnumerateMatches(input))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!valueMatch.IsByteAligned)
+                    {
+                        throw new InvalidOperationException("The evaluator match is not aligned to UTF-8 scalar boundaries.");
+                    }
+
+                    if (!TryShapeAlternationBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, out var alternationContext))
+                    {
+                        if (!alternationFirst)
+                        {
+                            throw new InvalidOperationException("The alternation branch projection failed after matching began.");
+                        }
+
+                        alternationDeclined = true;
+                        break;
+                    }
+
+                    alternationFirst = false;
+                    writer.Append(input[sourcePosition..valueMatch.IndexInBytes]);
+                    evaluator(in alternationContext, ref writer, ref state);
+                    sourcePosition = valueMatch.IndexInBytes + valueMatch.LengthInBytes;
+                }
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!alternationDeclined)
             {
                 writer.Append(input[sourcePosition..]);
                 return writer.GetValidatedBytes().ToArray();
@@ -3024,6 +3120,44 @@ public sealed partial class Utf8Regex
         }
 
 
+        // R05: grouped single-literal shapes enumerate like groupless shapes and
+        // project every group from fixed literal-relative spans, with the same
+        // first-hit decline contract as the arms around it.
+        if (_groupedLiteralSpanTable is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var groupedBuilder = new StringBuilder(decoded.Length);
+            var groupedPosition = 0;
+            var groupedDeclined = false;
+            var groupedFirst = true;
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryShapeGroupedLiteralDetailedMatch(input, decoded, boundaryMap, valueMatch, out var groupedContext))
+                {
+                    if (!groupedFirst)
+                    {
+                        throw new InvalidOperationException("The grouped span projection failed after matching began.");
+                    }
+
+                    groupedDeclined = true;
+                    break;
+                }
+
+                groupedFirst = false;
+                groupedBuilder.Append(decoded, groupedPosition, valueMatch.IndexInUtf16 - groupedPosition);
+                groupedBuilder.Append(evaluator(in groupedContext, ref state));
+                groupedPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+            }
+
+            if (!groupedDeclined)
+            {
+                groupedBuilder.Append(decoded, groupedPosition, decoded.Length - groupedPosition);
+                return groupedBuilder.ToString();
+            }
+        }
+
         // R03: mapped branch shapes discover through the family cursor and shape every
         // callback argument from owned spans, with the same first-hit decline contract as
         // the byte-wise evaluator overload.
@@ -3074,6 +3208,44 @@ public sealed partial class Utf8Regex
             {
                 builder.Append(decoded, sourcePosition, decoded.Length - sourcePosition);
                 return builder.ToString();
+            }
+        }
+
+        // R05: divergent single-alternation shapes enumerate like groupless shapes and
+        // project the winning branch spans identified by ordinal text comparison, with
+        // the same first-hit decline contract as the arms above.
+        if (_alternationBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            var alternationBuilder = new StringBuilder(decoded.Length);
+            var alternationPosition = 0;
+            var alternationDeclined = false;
+            var alternationFirst = true;
+            foreach (var valueMatch in EnumerateMatches(input))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryShapeAlternationBranchDetailedMatch(input, decoded, boundaryMap, valueMatch, out var alternationContext))
+                {
+                    if (!alternationFirst)
+                    {
+                        throw new InvalidOperationException("The alternation branch projection failed after matching began.");
+                    }
+
+                    alternationDeclined = true;
+                    break;
+                }
+
+                alternationFirst = false;
+                alternationBuilder.Append(decoded, alternationPosition, valueMatch.IndexInUtf16 - alternationPosition);
+                alternationBuilder.Append(evaluator(in alternationContext, ref state));
+                alternationPosition = valueMatch.IndexInUtf16 + valueMatch.LengthInUtf16;
+            }
+
+            if (!alternationDeclined)
+            {
+                alternationBuilder.Append(decoded, alternationPosition, decoded.Length - alternationPosition);
+                return alternationBuilder.ToString();
             }
         }
 

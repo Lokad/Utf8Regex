@@ -239,9 +239,43 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void CancelInsideBclFallbackEvaluatorAbortsReplace()
+    public void CancelInsideGroupedSpanEvaluatorAbortsReplace()
     {
         var regex = new Utf8Regex("(a)(b)");
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("ab ab");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
+            input,
+            0,
+            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void CancelInsideDivergentBranchEvaluatorAbortsReplace()
+    {
+        var regex = new Utf8Regex("(ab|c)(d)");
+        using var canceled = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("abd cd");
+        var calls = 0;
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(
+            input,
+            0,
+            (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) => { if (++calls == 1) { canceled.Cancel(); } writer.Append("pet"u8); },
+            canceled.Token));
+        Assert.Equal(canceled.Token, exception.CancellationToken);
+        Assert.Equal(1, calls);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Fact]
+    public void CancelInsideBclFallbackEvaluatorAbortsReplace()
+    {
+        var regex = new Utf8Regex("(a)?b(c)?");
         using var canceled = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes("ab ab");
         var calls = 0;

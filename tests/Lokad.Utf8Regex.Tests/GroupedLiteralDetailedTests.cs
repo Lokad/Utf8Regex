@@ -446,6 +446,74 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> GroupedEvaluatorCases()
+    {
+        string[] patterns =
+        [
+            "(a)(b)",
+            "(a)?b",
+            "(ab|c)(d)",
+            "(?<x>ab|(?<y>c))d",
+            "(ab|cd)e",
+            "((a|b)(c|d))",
+            "(?<x>(?<y>a))",
+        ];
+        string[] texts = ["xabx", "abd", "xxabdex", "ac", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GroupedEvaluatorCases))]
+    public void GroupedEvaluatorMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, static match => "[" + match.Groups[1].Value + "]");
+
+        var byteRegex = new Utf8Regex(pattern, options);
+        var byteReplaced = byteRegex.Replace(input, 0, static (in Utf8MatchContext context, ref Utf8ReplacementWriter writer, ref int state) =>
+        {
+            writer.Append("["u8);
+            writer.Append(context.GetGroup(1).GetValueBytes());
+            writer.Append("]"u8);
+        });
+        Assert.Equal(expected, Encoding.UTF8.GetString(byteReplaced));
+        Assert.False(byteRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, 0, static (in Utf8MatchContext context, ref int state) => "[" + context.GetGroup(1).GetValueString() + "]");
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("(a)(b)", "xabx")]
+    [InlineData("(ab|c)(d)", "abd")]
+    [InlineData("(?<x>ab|(?<y>c))d", "abd")]
+    public void GroupedTemplateKeepsBclShaping(string pattern, string text)
+    {
+        // Declared R05 debt: template replacement with group references still expands
+        // through the fallback engine. Parity holds; construction is pinned.
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        {
+            var input = Encoding.UTF8.GetBytes(text);
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            var expected = oracle.Replace(text, "<$1$2>");
+            var actual = regex.ReplaceToString(input, "<$1$2>");
+
+            Assert.Equal(expected, actual);
+            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+        }
+    }
+
     [Theory]
     [InlineData("(a)?b(c)?", "abce")]
     [InlineData("(a)?b(c)?", "bcd")]
