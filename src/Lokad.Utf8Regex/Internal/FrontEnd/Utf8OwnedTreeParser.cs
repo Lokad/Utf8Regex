@@ -1312,6 +1312,7 @@ internal static class Utf8OwnedTreeParser
         static bool ParseNamedGroup(ref ParserState state, int depth, out Utf8TreeNode? node)
         {
             node = null;
+            var openPosition = state.Position;
             var open = state.Pattern[state.Position];
             var close = open == '<' ? '>' : '\'';
             state.Position++;
@@ -1407,7 +1408,7 @@ internal static class Utf8OwnedTreeParser
 
                 if (declared != 0)
                 {
-                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = declared, IsAuto = false, Slot = declared });
+                    state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = declared, IsAuto = false, Slot = declared, OpenPosition = openPosition });
                 }
 
                 return true;
@@ -1437,7 +1438,7 @@ internal static class Utf8OwnedTreeParser
                 group.N = -1;
             }
 
-            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, UnderExplicit = underExplicit });
+            state.GroupDefinitions.Add(new OwnedGroupDefinition { Node = group, Name = name, Declared = -1, IsAuto = true, Slot = -1, UnderExplicit = underExplicit, OpenPosition = openPosition });
 
             return true;
         }
@@ -1640,9 +1641,25 @@ internal static class Utf8OwnedTreeParser
                 if (!definition.IsAuto)
                 {
                     definition.Slot = definition.Declared;
-                    continue;
                 }
+            }
 
+            // BCL numbers auto groups in opening order, but definitions append at
+            // close: nested named groups would otherwise take closing order
+            // (oracle: (?<x>ab|(?<y>c))d owns x=1,y=2). Sorting by open position
+            // keeps nested names BCL-exact while leaving sequential shapes unchanged.
+            var autoDefinitions = new List<OwnedGroupDefinition>();
+            foreach (var definition in state.GroupDefinitions)
+            {
+                if (definition.IsAuto)
+                {
+                    autoDefinitions.Add(definition);
+                }
+            }
+
+            autoDefinitions.Sort(static (left, right) => left.OpenPosition.CompareTo(right.OpenPosition));
+            foreach (var definition in autoDefinitions)
+            {
                 if (autoSlots.TryGetValue(definition.Name, out var shared))
                 {
                     definition.Slot = shared;
@@ -3221,6 +3238,7 @@ internal static class Utf8OwnedTreeParser
         public bool IsAuto;
         public bool UnderExplicit;
         public int Slot;
+        public int OpenPosition = -1;
     }
 
     // A backreference or balance pop awaiting end-pass resolution, when group

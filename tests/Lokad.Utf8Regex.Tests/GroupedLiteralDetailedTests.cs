@@ -7,8 +7,9 @@ namespace Lokad.Utf8Regex.Tests;
 /// R05 grouped-literal detailed shaping: single exact literals with fixed-span captures
 /// shape detailed matches from the owned discovery hit without constructing the fallback
 /// engine. Single-optional shapes project present or absent spans by hit length.
-/// Divergent alternation spans and multi-loop optionals keep BCL shaping until
-/// branch-span attribution lands.
+/// Divergent single alternations project the winning branch identified by ordinal
+/// text comparison. Ambiguous duplicate-text branches and multi-loop optionals
+/// keep BCL shaping.
 /// </summary>
 public sealed class GroupedLiteralDetailedTests
 {
@@ -24,6 +25,11 @@ public sealed class GroupedLiteralDetailedTests
             "(ab)",
             "(a)",
             "(1)(2)",
+            "(?<x>(?<y>a))",
+            "((?<x>a)(b))",
+            "(?<x>(a)(b))",
+            "(?<x>a(?<y>b))",
+            "(a(?<x>b))",
         ];
         string[] texts = ["xabcy", "ab", "xa", "eab", "abe"];
         foreach (var pattern in patterns)
@@ -123,6 +129,10 @@ public sealed class GroupedLiteralDetailedTests
         yield return new object?[] { "(ab|cd)e", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxabex", 0 };
         yield return new object?[] { "a(b|c)d", RegexOptions.CultureInvariant, "xabd", 1 };
         yield return new object?[] { "(a|b)c", RegexOptions.CultureInvariant, "xbc", 1 };
+        yield return new object?[] { "(ab|c)(d)", RegexOptions.CultureInvariant, "xxabdex", 2 };
+        yield return new object?[] { "(ab|c)(d)", RegexOptions.Compiled | RegexOptions.CultureInvariant, "xxcdx", 2 };
+        yield return new object?[] { "(a|bc)d", RegexOptions.CultureInvariant, "xbcd", 1 };
+        yield return new object?[] { "(x(a)|(b)y)", RegexOptions.CultureInvariant, "xby", 0 };
     }
 
     [Theory]
@@ -315,9 +325,74 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(actual.TryGetGroup("missing-group-name", out _));
     }
 
+    public static IEnumerable<object?[]> DivergentBranchHitCases()
+    {
+        string[] patterns =
+        [
+            "(ab|c)(d)",
+            "(a|bc)d",
+            "(x(a)|(b)y)",
+            "(a)(b)|(c)",
+            "((a|b)c)",
+            "(?<x>ab|(?<y>c))d",
+        ];
+        string[] texts = ["abd", "cd", "xxabdex", "ad", "bcd", "xay", "xby", "ab", "c", "ac", "bc", "xyz"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+
+        yield return new object?[] { "(ab|c)(d)", RegexOptions.CultureInvariant, "éabd" };
+        yield return new object?[] { "(a|bc)d", RegexOptions.Compiled | RegexOptions.CultureInvariant, "éabcd" };
+    }
+
+    [Theory]
+    [MemberData(nameof(DivergentBranchHitCases))]
+    public void DivergentBranchDetailedMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+        var expected = oracle.Match(text);
+        var actual = regex.MatchDetailed(input);
+
+        Assert.Equal(expected.Success, actual.Success);
+        Assert.Equal(expected.Groups.Count, actual.GroupCount);
+        if (!expected.Success)
+        {
+            return;
+        }
+
+        Assert.Equal(expected.Index, actual.IndexInUtf16);
+        Assert.Equal(expected.Length, actual.LengthInUtf16);
+        Assert.Equal(expected.Value, actual.GetValueString());
+        for (var i = 0; i < expected.Groups.Count; i++)
+        {
+            var expectedGroup = expected.Groups[i];
+            var actualGroup = actual.GetGroup(i);
+            Assert.Equal(expectedGroup.Success, actualGroup.Success);
+            Assert.Equal(expectedGroup.Index, actualGroup.IndexInUtf16);
+            Assert.Equal(expectedGroup.Length, actualGroup.LengthInUtf16);
+            Assert.Equal(expectedGroup.Value, actualGroup.GetValueString());
+            Assert.Equal(expectedGroup.Captures.Count, actualGroup.CaptureCount);
+            Assert.True(actual.TryGetGroup(i, out var tryGroup));
+            Assert.Equal(expectedGroup.Success, tryGroup.Success);
+            var groupName = expected.Groups[i].Name;
+            Assert.True(actual.TryGetGroup(groupName, out var tryNamedGroup));
+            Assert.Equal(expectedGroup.Success, tryNamedGroup.Success);
+        }
+
+        Assert.False(actual.TryGetGroup(expected.Groups.Count, out _));
+        Assert.False(actual.TryGetGroup("missing-group-name", out _));
+    }
+
     public static IEnumerable<object?[]> GroupedLiteralZeroConstructionCases()
     {
-        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))"];
+        string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))"];
         string[] texts = ["xabcy", "ab", "xa", "b", "ac", "xay", "no match here"];
         foreach (var pattern in patterns)
         {
@@ -370,24 +445,16 @@ public sealed class GroupedLiteralDetailedTests
     }
 
     [Theory]
-    [InlineData("(ab|c)(d)", "abd")]
-    [InlineData("(ab|c)(d)", "xxabdex")]
-    [InlineData("(ab|c)(d)", "ce")]
-    [InlineData("(a|bc)d", "ad")]
-    [InlineData("(a|bc)d", "bcd")]
+    [InlineData("((?<x>a)|(?<y>a))b", "ab")]
+    [InlineData("((?<x>a)|(?<y>a))b", "xab")]
     [InlineData("(a)?b(c)?", "abce")]
     [InlineData("(a)?b(c)?", "bcd")]
     [InlineData("(a)?b(c)?", "xyz")]
-    [InlineData("(x(a)|(b)y)", "xay")]
-    [InlineData("(x(a)|(b)y)", "xby")]
-    [InlineData("(a)(b)|(c)", "ab")]
-    [InlineData("(a)(b)|(c)", "c")]
     public void RemainingDetailedDebtKeepsBclShaping(string pattern, string text)
     {
-        // Declared R05 debt: divergent alternation spans (branch lengths or group spans
-        // differ) and multi-loop optionals still shape detailed matches through the
-        // fallback engine until branch-span attribution lands. Parity holds; only
-        // Detailed constructs.
+        // Declared R05 debt: ambiguous duplicate-text branches and multi-loop
+        // optionals still shape detailed matches through the fallback engine.
+        // Parity holds; only Detailed constructs.
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var input = Encoding.UTF8.GetBytes(text);

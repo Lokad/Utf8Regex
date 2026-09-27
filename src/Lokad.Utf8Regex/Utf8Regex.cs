@@ -45,6 +45,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
+    private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -134,6 +135,7 @@ public sealed partial class Utf8Regex
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
+        _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
         // instruction count; over-cap shapes decline here to legacy routing.
@@ -1616,6 +1618,34 @@ public sealed partial class Utf8Regex
             }
         }
 
+        if (_alternationBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            // R05: divergent single-alternation shapes discover through the shared
+            // value path and project the winning branch spans identified by ordinal
+            // text comparison. Ambiguity or disagreement declines to the routes below.
+            Utf8ValueMatch alternationFirst;
+            try
+            {
+                alternationFirst = MatchCore(input, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!alternationFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            if (TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, alternationFirst, out var alternationDetailed))
+            {
+                return alternationDetailed;
+            }
+        }
+
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
         {
@@ -1758,6 +1788,33 @@ public sealed partial class Utf8Regex
             }
         }
 
+        if (_alternationBranchSpanMap is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            // R05: divergent single-alternation shapes keep origin semantics through
+            // first-of-shared-enumeration and project the winning branch spans,
+            // mirroring the zero-offset arm above.
+            Utf8ValueMatch alternationOffsetFirst = default;
+            var alternationOffsetFound = false;
+            foreach (var candidate in EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+            {
+                alternationOffsetFirst = candidate;
+                alternationOffsetFound = true;
+                break;
+            }
+
+            if (!alternationOffsetFound || !alternationOffsetFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            if (TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, alternationOffsetFirst, out var alternationOffsetDetailed))
+            {
+                return alternationOffsetDetailed;
+            }
+        }
+
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, start.Value, out var branched))
         {
@@ -1866,6 +1923,109 @@ public sealed partial class Utf8Regex
         }
 
         detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        return true;
+    }
+
+    private bool TryShapeAlternationBranchDetailedMatch(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        Utf8ValueMatch hit,
+        out Utf8MatchContext detailed)
+    {
+        // R05: identifies the winning branch by ordinal text comparison against the
+        // owned discovery hit, then projects its spans. Multiple matching branches
+        // with different span maps decline as ambiguous, as does any length or
+        // capture-number disagreement.
+        detailed = default;
+        var map = _alternationBranchSpanMap;
+        if (map is null)
+        {
+            return false;
+        }
+
+        var hitSpan = decoded.AsSpan(hit.IndexInUtf16, hit.LengthInUtf16);
+        var selected = -1;
+        for (var branch = 0; branch < map.BranchExpansions.Length; branch++)
+        {
+            var expansion = map.BranchExpansions[branch];
+            if (expansion.Length != hit.LengthInUtf16 || !hitSpan.SequenceEqual(expansion.AsSpan()))
+            {
+                continue;
+            }
+
+            if (selected < 0)
+            {
+                selected = branch;
+                continue;
+            }
+
+            if (!BranchSpanMapsEqual(map, selected, branch))
+            {
+                return false;
+            }
+        }
+
+        if (selected < 0)
+        {
+            return false;
+        }
+
+        var groupCount = _groupNumbers.Length;
+        var starts = new int[groupCount];
+        var lengths = new int[groupCount];
+        Array.Fill(starts, -1);
+        starts[0] = hit.IndexInUtf16;
+        lengths[0] = hit.LengthInUtf16;
+        foreach (var whole in map.WholeMatchGroups)
+        {
+            if ((uint)whole >= (uint)groupCount)
+            {
+                return false;
+            }
+
+            starts[whole] = hit.IndexInUtf16;
+            lengths[whole] = hit.LengthInUtf16;
+        }
+
+        var selectedGroups = map.BranchGroups[selected];
+        var selectedStarts = map.BranchStarts[selected];
+        var selectedLengths = map.BranchLengths[selected];
+        for (var i = 0; i < selectedGroups.Length; i++)
+        {
+            var number = selectedGroups[i];
+            if ((uint)number >= (uint)groupCount)
+            {
+                return false;
+            }
+
+            starts[number] = hit.IndexInUtf16 + selectedStarts[i];
+            lengths[number] = selectedLengths[i];
+        }
+
+        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        return true;
+    }
+
+    private static bool BranchSpanMapsEqual(Utf8AlternationBranchSpanMap map, int first, int second)
+    {
+        var firstGroups = map.BranchGroups[first];
+        var secondGroups = map.BranchGroups[second];
+        if (firstGroups.Length != secondGroups.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < firstGroups.Length; i++)
+        {
+            if (firstGroups[i] != secondGroups[i] ||
+                map.BranchStarts[first][i] != map.BranchStarts[second][i] ||
+                map.BranchLengths[first][i] != map.BranchLengths[second][i])
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 

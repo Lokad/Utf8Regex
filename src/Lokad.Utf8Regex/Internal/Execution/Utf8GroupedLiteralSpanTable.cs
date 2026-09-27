@@ -73,6 +73,25 @@ internal sealed class Utf8GroupedLiteralSpanTable
             return null;
         }
 
+        // Owned-tree capture numbers diverge from BCL group numbers for nested named
+        // captures; translate every recorded group up front so shaping projects BCL
+        // slots, declining on any numbering surprise.
+        var slots = Utf8BclSlotTranslator.TryCreateMap(root.Children[0]);
+        if (slots is null)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < walker.Groups.Count; i++)
+        {
+            if (!slots.TryGetValue(walker.Groups[i], out var slot))
+            {
+                return null;
+            }
+
+            walker.Groups[i] = slot;
+        }
+
         if (!walker.LoopSeen)
         {
             return new Utf8GroupedLiteralSpanTable(

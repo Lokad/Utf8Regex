@@ -212,12 +212,12 @@ public sealed class LazyFallbackConstructionTests
     }
 
     [Theory]
-    [InlineData("(ab|c)(d)", "abd")]
+    [InlineData("(a)?b(c)?", "abce")]
     public void FallbackOperationsConstructFallbackEngine(string pattern, string inputText)
     {
-        // Alternations with partial-span captures still shape detailed matches through
-        // the fallback engine (declared R05 debt; grouped single literals and optional
-        // shapes graduate to the owned span table in GroupedLiteralDetailedTests).
+        // Multi-loop optionals still shape detailed matches through the fallback
+        // engine (declared R05 debt; grouped single literals, optional shapes, and
+        // divergent alternations graduate to owned shaping in GroupedLiteralDetailedTests).
         var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
         Touch(regex.MatchDetailed(input));
