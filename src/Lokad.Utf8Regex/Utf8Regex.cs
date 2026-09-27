@@ -1349,11 +1349,13 @@ public sealed partial class Utf8Regex
             }
 
             // A whole-match miss is definitive only when a miss at offset 0 rules
-            // out every substring match. Line-anchored (`(?m:^)`) plans can still
-            // match after a line feed, so they fall through to the engine below.
+            // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
+            // still match inside the input, so they fall through to the engine below.
             if (_compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive &&
                 !(_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-                    !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored))
+                    !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) &&
+                !(_preparedRegex.SimplePatternPlan.IsEndAnchored &&
+                    !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
             {
                 return Utf8ValueMatch.NoMatch;
             }

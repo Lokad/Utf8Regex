@@ -683,8 +683,11 @@ internal static class Utf8ExecutionInterpreter
         out int matchedLength)
     {
         matchedLength = 0;
-        if (startIndex + branch.Length > input.Length ||
-            (plan.IsEndAnchored && startIndex + branch.Length != input.Length))
+        // Line end anchors (`(?m:$)`) also accept right before any line feed.
+        var branchEnd = startIndex + branch.Length;
+        if (branchEnd > input.Length ||
+            (plan.IsEndAnchored && branchEnd != input.Length &&
+                !(!plan.IsAbsoluteEndAnchored && (uint)branchEnd < (uint)input.Length && input[branchEnd] == (byte)'\n')));
         {
             return false;
         }

@@ -135,7 +135,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
         int fixedWidthLength,
         bool isAbsoluteStartAnchored,
         bool allowsTrailingNewlineBeforeEnd,
-        bool isStartAnchored)
+        bool isStartAnchored,
+        bool isAbsoluteEndAnchored)
     {
         Steps = steps;
         FixedLiteralChecks = fixedLiteralChecks;
@@ -148,6 +149,7 @@ internal readonly struct Utf8AsciiDeterministicProgram
         IsAbsoluteStartAnchored = isAbsoluteStartAnchored;
         AllowsTrailingNewlineBeforeEnd = allowsTrailingNewlineBeforeEnd;
         IsStartAnchored = isStartAnchored;
+        IsAbsoluteEndAnchored = isAbsoluteEndAnchored;
     }
 
     public Utf8AsciiDeterministicStep[] Steps { get; }
@@ -173,6 +175,9 @@ internal readonly struct Utf8AsciiDeterministicProgram
 
     /// <summary>Gets whether `$`/`\Z` accept a trailing line feed at Accept.</summary>
     public bool AllowsTrailingNewlineBeforeEnd { get; }
+
+    /// <summary>Gets whether the end anchor is absolute, as opposed to a line anchor matching before any line feed.</summary>
+    public bool IsAbsoluteEndAnchored { get; }
 
     public bool HasValue => Steps is { Length: > 0 };
 
@@ -221,7 +226,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
             fixedWidthChecks.Length,
             instructionProgram.IsAbsoluteStartAnchored,
             instructionProgram.AllowsTrailingNewlineBeforeEnd,
-            instructionProgram.IsStartAnchored);
+            instructionProgram.IsStartAnchored,
+            instructionProgram.IsAbsoluteEndAnchored);
     }
 
     private static Utf8AsciiDeterministicFixedWidthCheck[] CreateFixedWidthChecks(Utf8AsciiDeterministicStep[] steps)
@@ -386,7 +392,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
         bool isEndAnchored,
         bool ignoreCase,
         bool isAbsoluteStartAnchored,
-        bool allowsTrailingNewlineBeforeEnd)
+        bool allowsTrailingNewlineBeforeEnd,
+        bool isAbsoluteEndAnchored)
     {
         Instructions = instructions;
         Search = search;
@@ -399,6 +406,7 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
         IsStartAnchored = isStartAnchored;
         IsAbsoluteStartAnchored = isAbsoluteStartAnchored;
         IsEndAnchored = isEndAnchored;
+        IsAbsoluteEndAnchored = isAbsoluteEndAnchored;
         AllowsTrailingNewlineBeforeEnd = allowsTrailingNewlineBeforeEnd;
         IgnoreCase = ignoreCase;
     }
@@ -422,6 +430,9 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
 
     public bool IsEndAnchored { get; }
 
+    /// <summary>Gets whether the end anchor is absolute, as opposed to a line anchor matching before any line feed.</summary>
+    public bool IsAbsoluteEndAnchored { get; }
+
     /// <summary>Gets whether `$`/`\Z` accept a trailing line feed, mirroring the whole-match route.</summary>
     public bool AllowsTrailingNewlineBeforeEnd { get; }
 
@@ -444,7 +455,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             isEndAnchored: false,
             ignoreCase: false,
             isAbsoluteStartAnchored: false,
-            allowsTrailingNewlineBeforeEnd: false);
+            allowsTrailingNewlineBeforeEnd: false,
+            isAbsoluteEndAnchored: false);
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiSimplePatternPlan simplePatternPlan)
@@ -474,7 +486,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             simplePatternPlan.IsEndAnchored,
             simplePatternPlan.IgnoreCase,
             simplePatternPlan.IsAbsoluteStartAnchored,
-            simplePatternPlan.AllowsTrailingNewlineBeforeEnd);
+            simplePatternPlan.AllowsTrailingNewlineBeforeEnd,
+            simplePatternPlan.IsAbsoluteEndAnchored);
     }
 
     public static Utf8StructuralLinearInstructionProgram CreateLiteralFamilyRun(AsciiSimplePatternPlan simplePatternPlan)
@@ -492,7 +505,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             simplePatternPlan.IsEndAnchored,
             simplePatternPlan.IgnoreCase,
             simplePatternPlan.IsAbsoluteStartAnchored,
-            simplePatternPlan.AllowsTrailingNewlineBeforeEnd);
+            simplePatternPlan.AllowsTrailingNewlineBeforeEnd,
+            simplePatternPlan.IsAbsoluteEndAnchored);
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralRepeatedSegmentPlan repeatedSegmentPlan)
@@ -517,7 +531,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             isEndAnchored: false,
             ignoreCase: false,
             isAbsoluteStartAnchored: false,
-            allowsTrailingNewlineBeforeEnd: false);
+            allowsTrailingNewlineBeforeEnd: false,
+            isAbsoluteEndAnchored: false);
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralTokenWindowPlan tokenWindowPlan)
@@ -535,7 +550,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             isEndAnchored: false,
             ignoreCase: false,
             isAbsoluteStartAnchored: false,
-            allowsTrailingNewlineBeforeEnd: false);
+            allowsTrailingNewlineBeforeEnd: false,
+            isAbsoluteEndAnchored: false);
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiStructuralQuotedRelationPlan quotedRelationPlan)
@@ -553,7 +569,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             isEndAnchored: false,
             ignoreCase: false,
             isAbsoluteStartAnchored: false,
-            allowsTrailingNewlineBeforeEnd: false);
+            allowsTrailingNewlineBeforeEnd: false,
+            isAbsoluteEndAnchored: false);
     }
 
     public static Utf8StructuralLinearInstructionProgram Create(AsciiOrderedLiteralWindowPlan orderedLiteralWindowPlan)
@@ -571,7 +588,8 @@ internal readonly struct Utf8StructuralLinearInstructionProgram
             isEndAnchored: false,
             ignoreCase: false,
             isAbsoluteStartAnchored: false,
-            allowsTrailingNewlineBeforeEnd: false);
+            allowsTrailingNewlineBeforeEnd: false,
+            isAbsoluteEndAnchored: false);
     }
 }
 
@@ -1023,7 +1041,9 @@ internal static class Utf8AsciiInstructionLinearExecutor
             return -1;
         }
 
-        if (instructionProgram.IsStartAnchored && startIndex != 0)
+        // Resumed scans stay barred only for absolute anchors: per-candidate gates
+        // below keep line-anchored resumption exact.
+        if (instructionProgram.IsAbsoluteStartAnchored && startIndex != 0)
         {
             return -1;
         }
@@ -1336,7 +1356,9 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
         var deterministicProgram = program.DeterministicProgram;
         var diagnostics = Utf8SearchDiagnosticsSession.Current;
-        if (program.InstructionProgram.IsStartAnchored && state.NextStartIndex != 0)
+        // Resumed scans stay barred only for absolute anchors: per-candidate gates
+        // below keep line-anchored resumption exact.
+        if (program.InstructionProgram.IsAbsoluteStartAnchored && state.NextStartIndex != 0)
         {
             return false;
         }
@@ -1469,7 +1491,9 @@ internal static class Utf8AsciiInstructionLinearExecutor
         }
 
         var diagnostics = Utf8SearchDiagnosticsSession.Current;
-        if (program.InstructionProgram.IsStartAnchored && state.NextStartIndex != 0)
+        // Resumed scans stay barred only for absolute anchors: per-candidate gates
+        // below keep line-anchored resumption exact.
+        if (program.InstructionProgram.IsAbsoluteStartAnchored && state.NextStartIndex != 0)
         {
             return false;
         }
@@ -1769,9 +1793,11 @@ internal static class Utf8AsciiInstructionLinearExecutor
 
                 case Utf8StructuralLinearInstructionKind.Accept:
                     // `$`/`\Z` accept a trailing line feed exactly like the whole-match
-                    // route; strict `\z` (and interior `\n`) stay exact.
+                    // route; strict `\z` stays exact. Line anchors (`(?m:$)`) also
+                    // accept right before any line feed.
                     if (program.IsEndAnchored && index != input.Length &&
-                        !(program.AllowsTrailingNewlineBeforeEnd && index + 1 == input.Length && input[index] == (byte)'\n'))
+                        !(program.AllowsTrailingNewlineBeforeEnd && index + 1 == input.Length && input[index] == (byte)'\n') &&
+                        !(!program.IsAbsoluteEndAnchored && (uint)index < (uint)input.Length && input[index] == (byte)'\n'))
                     {
                         return false;
                     }
@@ -1898,9 +1924,11 @@ internal static class Utf8AsciiInstructionLinearExecutor
                 }
 
                 case Utf8AsciiDeterministicStepKind.Accept:
-                    // Trailing-newline tolerance mirrors the whole-match route.
+                    // Trailing-newline tolerance mirrors the whole-match route; line
+                    // anchors also accept right before any line feed.
                     if (program.IsEndAnchored && index != input.Length &&
-                        !(program.AllowsTrailingNewlineBeforeEnd && index + 1 == input.Length && input[index] == (byte)'\n'))
+                        !(program.AllowsTrailingNewlineBeforeEnd && index + 1 == input.Length && input[index] == (byte)'\n') &&
+                        !(!program.IsAbsoluteEndAnchored && (uint)index < (uint)input.Length && input[index] == (byte)'\n'))
                     {
                         return false;
                     }
@@ -1975,7 +2003,8 @@ internal static class Utf8AsciiInstructionLinearExecutor
         }
 
         if (program.IsEndAnchored && endIndex != input.Length &&
-            !(program.AllowsTrailingNewlineBeforeEnd && endIndex + 1 == input.Length && input[endIndex] == (byte)'\n'))
+            !(program.AllowsTrailingNewlineBeforeEnd && endIndex + 1 == input.Length && input[endIndex] == (byte)'\n') &&
+            !(!program.IsAbsoluteEndAnchored && (uint)endIndex < (uint)input.Length && input[endIndex] == (byte)'\n'))
         {
             return false;
         }

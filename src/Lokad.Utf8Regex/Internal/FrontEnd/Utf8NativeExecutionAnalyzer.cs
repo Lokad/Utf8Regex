@@ -384,7 +384,8 @@ internal static class Utf8NativeExecutionAnalyzer
             repeatedDigitGroupPlan: default,
             boundedSuffixLiteralPlan: default,
             symmetricLiteralWindowPlan: default,
-            isAbsoluteStartAnchored: true);
+            isAbsoluteStartAnchored: true,
+            isAbsoluteEndAnchored: true);
 
         analyzedRegex = Utf8RegexAnalysis.CreateSimple(
             semanticRegex,

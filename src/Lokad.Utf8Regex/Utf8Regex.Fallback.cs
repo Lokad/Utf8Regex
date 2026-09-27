@@ -65,10 +65,12 @@ public sealed partial class Utf8Regex
         }
 
         // Whole-match fast paths are definitive only when a miss at offset 0 rules
-        // out every substring match. Line-anchored (`(?m:^)`) plans can still match
-        // after a line feed, so they decline to the validating scan paths.
-        if (_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored)
+        // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
+        // still match inside the input, so they decline to the validating scan paths.
+        if ((_preparedRegex.SimplePatternPlan.IsStartAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) ||
+            (_preparedRegex.SimplePatternPlan.IsEndAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
         {
             return false;
         }
@@ -139,10 +141,12 @@ public sealed partial class Utf8Regex
         isMatch = false;
 
         // Whole-match fast paths are definitive only when a miss at offset 0 rules
-        // out every substring match. Line-anchored (`(?m:^)`) plans can still match
-        // after a line feed, so they decline to the validating scan paths.
-        if (_preparedRegex.SimplePatternPlan.IsStartAnchored &&
-            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored)
+        // out every substring match. Line-anchored (`(?m:^)`, `(?m:$)`) plans can
+        // still match inside the input, so they decline to the validating scan paths.
+        if ((_preparedRegex.SimplePatternPlan.IsStartAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored) ||
+            (_preparedRegex.SimplePatternPlan.IsEndAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored))
         {
             return false;
         }

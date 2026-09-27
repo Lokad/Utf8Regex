@@ -37,16 +37,18 @@ internal static partial class Utf8AsciiSimplePatternLowerer
 
         var isStartAnchored = loweredBranches[0].IsStartAnchored;
         var isEndAnchored = loweredBranches[0].IsEndAnchored;
-        // Absolute and line start anchors lower identically above; the verifier
-        // may only pin offset 0 when every branch agrees on an absolute anchor.
+        // Absolute and line anchors lower identically above; the verifier may only
+        // pin absolute positions when every branch agrees on an absolute anchor.
         var isAbsoluteStartAnchored = loweredBranches[0].IsAbsoluteStartAnchored;
+        var isAbsoluteEndAnchored = loweredBranches[0].IsAbsoluteEndAnchored;
         var allowsTrailingNewlineBeforeEnd = AllowsTrailingNewlineBeforeEnd(root.Child(0));
         for (var i = 1; i < loweredBranches.Length; i++)
         {
             if (loweredBranches[i].Tokens.Count == 0 ||
                 loweredBranches[i].IsStartAnchored != isStartAnchored ||
                 loweredBranches[i].IsEndAnchored != isEndAnchored ||
-                loweredBranches[i].IsAbsoluteStartAnchored != isAbsoluteStartAnchored)
+                loweredBranches[i].IsAbsoluteStartAnchored != isAbsoluteStartAnchored ||
+                loweredBranches[i].IsAbsoluteEndAnchored != isAbsoluteEndAnchored)
             {
                 return false;
             }
@@ -119,7 +121,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             symmetricLiteralWindowPlan: TryExtractSymmetricLiteralWindowPlan(branches, isStartAnchored, isEndAnchored, out var symmetricLiteralWindowPlan)
                 ? symmetricLiteralWindowPlan
                 : default,
-            isAbsoluteStartAnchored: isAbsoluteStartAnchored);
+            isAbsoluteStartAnchored: isAbsoluteStartAnchored,
+            isAbsoluteEndAnchored: isAbsoluteEndAnchored);
         searchFacts = searchLiterals.Length switch
         {
             1 => Utf8SearchFacts.Create(
@@ -299,5 +302,6 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         List<AsciiFixedLiteralCheck> FixedChecks,
         bool IsStartAnchored,
         bool IsEndAnchored,
-        bool IsAbsoluteStartAnchored);
+        bool IsAbsoluteStartAnchored,
+        bool IsAbsoluteEndAnchored);
 }
