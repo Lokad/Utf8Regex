@@ -1592,8 +1592,9 @@ public sealed partial class Utf8Regex
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: grouped single-literal shapes discover through the shared value path
-            // and project every group from fixed literal-relative spans. A hit-length
-            // disagreement declines to the routes below instead of shaping blindly.
+            // and project every group from fixed literal-relative spans, with present or
+            // absent selection for optional shapes. A hit-length disagreement declines
+            // to the routes below instead of shaping blindly.
             Utf8ValueMatch groupedFirst;
             try
             {
@@ -1735,8 +1736,8 @@ public sealed partial class Utf8Regex
             !ShouldUseKelvinSignFallback(input))
         {
             // R05: grouped single-literal shapes keep origin semantics through
-            // first-of-shared-enumeration and project from fixed spans, mirroring
-            // the zero-offset arm above.
+            // first-of-shared-enumeration and project from fixed spans (present or
+            // absent for optional shapes), mirroring the zero-offset arm above.
             Utf8ValueMatch groupedOffsetFirst = default;
             var groupedOffsetFound = false;
             foreach (var candidate in EnumerateMatchesFromUtf16Offset(input, utf16Offset))
@@ -1804,11 +1805,39 @@ public sealed partial class Utf8Regex
         out Utf8MatchContext detailed)
     {
         // R05: projects every group from fixed literal-relative spans onto the owned
-        // discovery hit. A hit-length disagreement or an out-of-range capture number
+        // discovery hit. The hit length selects the present or absent projection for
+        // optional shapes; any other disagreement or out-of-range capture number
         // declines to the BCL routes instead of shaping blindly.
         detailed = default;
         var table = _groupedLiteralSpanTable;
-        if (table is null || hit.LengthInUtf16 != table.TotalLengthInUtf16)
+        if (table is null)
+        {
+            return false;
+        }
+
+        int[] projectionStarts;
+        int[] projectionLengths;
+        if (!table.HasOptionalLoop)
+        {
+            if (hit.LengthInUtf16 != table.TotalLengthInUtf16)
+            {
+                return false;
+            }
+
+            projectionStarts = table.StartsInLiteral;
+            projectionLengths = table.LengthsInLiteral;
+        }
+        else if (hit.LengthInUtf16 == table.TotalLengthInUtf16)
+        {
+            projectionStarts = table.StartsInLiteral;
+            projectionLengths = table.LengthsInLiteral;
+        }
+        else if (hit.LengthInUtf16 == table.TotalLengthWithoutLoopInUtf16)
+        {
+            projectionStarts = table.AbsentStartsInLiteral;
+            projectionLengths = table.AbsentLengthsInLiteral;
+        }
+        else
         {
             return false;
         }
@@ -1827,8 +1856,13 @@ public sealed partial class Utf8Regex
                 return false;
             }
 
-            starts[number] = hit.IndexInUtf16 + table.StartsInLiteral[i];
-            lengths[number] = table.LengthsInLiteral[i];
+            if (projectionStarts[i] < 0)
+            {
+                continue;
+            }
+
+            starts[number] = hit.IndexInUtf16 + projectionStarts[i];
+            lengths[number] = projectionLengths[i];
         }
 
         detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
