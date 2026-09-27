@@ -682,7 +682,15 @@ public sealed partial class Utf8Regex
 
     private bool ShouldUseFallbackForSimplePatternReplacement(Utf8AnalyzedReplacement replacement, ReadOnlySpan<byte> input)
     {
-        if (replacement.ContainsGroupReferences && HasOwnedTemplateGroupShaping(input))
+        // R05: groupless templates stay on owned routes under an infinite timeout
+        // (mirroring the groupless evaluator arm); finite timeouts keep the legacy
+        // routing so BCL timeout enforcement is preserved exactly.
+        if (MatchTimeout == Regex.InfiniteMatchTimeout && !_hasCaptures)
+        {
+            return false;
+        }
+
+        if (replacement.ContainsGroupReferences && MatchTimeout == Regex.InfiniteMatchTimeout && HasOwnedTemplateGroupShaping(input))
         {
             return false;
         }
@@ -693,10 +701,17 @@ public sealed partial class Utf8Regex
     }
 
     // R05: template group references stay on the owned replacement route when the
-    // grouped span maps cover the shape; culture and Kelvin declines still divert,
-    // and the anchored simple-pattern clause below is untouched.
+    // grouped span maps cover the shape, or when the shape is groupless (mirroring the
+    // groupless evaluator arm, which carries no declines). Culture and Kelvin declines
+    // still divert grouped shapes, and the anchored simple-pattern clause below
+    // is untouched.
     private bool HasOwnedTemplateGroupShaping(ReadOnlySpan<byte> input)
     {
+        if (!_hasCaptures)
+        {
+            return true;
+        }
+
         return (_groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null) &&
             !RequiresCultureSensitiveFallback &&
             !ShouldUseKelvinSignFallback(input);

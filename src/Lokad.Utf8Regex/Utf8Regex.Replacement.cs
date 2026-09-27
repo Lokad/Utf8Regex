@@ -52,6 +52,12 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
+        if (UsesOwnedTemplateBeforeNativePlan() &&
+            TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
+        {
+            return Encoding.UTF8.GetBytes(ownedTemplate);
+        }
+
         if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
         {
             return nativeResult;
@@ -188,7 +194,8 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
-        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
+        if (UsesOwnedTemplateBeforeNativePlan() &&
+            TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate))
         {
             return ownedTemplate;
         }
@@ -250,7 +257,8 @@ public sealed partial class Utf8Regex
 
         var validation = Utf8Validation.Validate(input);
         var budget = CreateExecutionBudget();
-        if (TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate) &&
+        if (UsesOwnedTemplateBeforeNativePlan() &&
+            TryReplaceTemplateWithOwnedGroups(input, replacement, out var ownedTemplate) &&
             TryEncodeUtf8ToDestination(ownedTemplate, destination, out bytesWritten))
         {
             return OperationStatus.Done;
@@ -390,19 +398,46 @@ public sealed partial class Utf8Regex
             match => Utf8ReplacementPlanInterpreter.Apply(replacement.Plan, match, decoded));
     }
 
-    // R05: expands group-reference templates from owned discovery hits without
-    // executing the fallback engine. The first hit validates the projection channel
-    // before any output; a later projection failure throws instead of emitting a
-    // half-owned result, mirroring the evaluator contract.
+    // R05: the native plan cursor is BCL-backed for fallback-backed and absolute-anchored
+    // shapes, so the owned template attempt runs before it there; literal shapes keep
+    // their allocation profile by staying on the native-first order (see the
+    // destination allocation bound test). Simple shapes ride along because the native
+    // executor throws on unaligned matches (folding across scalar boundaries) where
+    // BCL produces values; the string-based worker agrees with BCL there instead.
+    private bool UsesOwnedTemplateBeforeNativePlan()
+    {
+        // Finite timeouts keep the legacy routing so BCL timeout enforcement is
+        // preserved exactly; the owned template worker carries no deadline mapping.
+        if (MatchTimeout != Regex.InfiniteMatchTimeout)
+        {
+            return false;
+        }
+
+        return _preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex or NativeExecutionKind.AsciiSimplePattern;
+    }
+
+    // R05: expands group-reference templates for grouped shapes from owned discovery
+    // hits without executing the fallback engine. Groupless shapes use the dedicated
+    // arm below so this worker never allocates for them (see the destination
+    // allocation bound test). The first hit validates the projection channel before
+    // any output; a later projection failure throws instead of emitting a half-owned
+    // result, mirroring the evaluator contract.
     private bool TryReplaceTemplateWithOwnedGroups(
         ReadOnlySpan<byte> input,
         Utf8AnalyzedReplacement replacement,
         out string replaced)
     {
-        // The decode below runs only for map-covered shapes, so group-free routes
-        // keep their allocation profile (see the destination allocation bound test).
+        // The decode below runs only for map-covered or groupless shapes, so other
+        // routes keep their allocation profile (see the destination allocation
+        // bound test). Finite timeouts keep the legacy routing so BCL timeout
+        // enforcement is preserved exactly.
         replaced = string.Empty;
-        if (_groupedLiteralSpanTable is null && _alternationBranchSpanMap is null)
+        if (MatchTimeout != Regex.InfiniteMatchTimeout)
+        {
+            return false;
+        }
+        var hasMaps = _groupedLiteralSpanTable is not null || _alternationBranchSpanMap is not null;
+        if (!hasMaps && _hasCaptures)
         {
             return false;
         }
@@ -429,6 +464,10 @@ public sealed partial class Utf8Regex
                 TryShapeAlternationBranchDetailedMatch(input, decoded, analysis.BoundaryMap, valueMatch, out var branched))
             {
                 context = branched;
+            }
+            else if (!hasMaps && !_hasCaptures)
+            {
+                context = new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, valueMatch.IndexInUtf16, valueMatch.LengthInUtf16);
             }
             else if (!first)
             {

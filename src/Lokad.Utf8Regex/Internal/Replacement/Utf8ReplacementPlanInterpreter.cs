@@ -84,11 +84,8 @@ internal static class Utf8ReplacementPlanInterpreter
 
     private static void AppendOwnedLastGroup(StringBuilder builder, in Utf8MatchContext context)
     {
-        if (context.GroupCount <= 1)
-        {
-            return;
-        }
-
+        // R05: BCL substitutes Groups[Count - 1] (the whole match when groupless),
+        // not empty: the oracle keeps "ab" for "$+" on groupless "ab".
         if (context.TryGetGroup(context.GroupCount - 1, out var group) && group.Success)
         {
             builder.Append(group.GetValueString());

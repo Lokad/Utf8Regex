@@ -652,6 +652,121 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> GrouplessTemplateCases()
+    {
+        string[] patterns =
+        [
+            "ab|cd",
+            "cat|horse|dog",
+            "a{2,4}",
+            "a*",
+            @"\d+",
+            "[a-z]+",
+            "^abc",
+            "abc$",
+            "ab[0-9]d",
+            "a.*b",
+            ".*",
+            "café",
+            "(?:ab)+",
+            "(?i:ab)",
+        ];
+        string[] templates = ["x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$"];
+        string[] texts = ["xxab12cdxx", "nomatchhere", "ééabcé", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    public static IEnumerable<object?[]> SingleLiteralTemplateCases()
+    {
+        string[] patterns = ["a.c", "abc"];
+        string[] templates = ["x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$"];
+        string[] texts = ["xxab12cdxx", "nomatchhere", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, RegexOptions.CultureInvariant, template, text };
+                    yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleLiteralTemplateCases))]
+    public void SingleLiteralTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData("a.c")]
+    [InlineData("abc")]
+    public void SingleLiteralNonAsciiTemplateKeepsBclShaping(string pattern)
+    {
+        // Declared R05 debt: single-literal enumeration diverts to BCL verification
+        // on non-ASCII input (established R03 projection rule), so templates there
+        // construct. Parity holds; construction is pinned.
+        const string text = "ééabcé";
+        foreach (var template in new[] { "x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$" })
+        {
+            foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+            {
+                var input = Encoding.UTF8.GetBytes(text);
+                var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+                var regex = new Utf8Regex(pattern, options);
+                var expected = oracle.Replace(text, template);
+                var actual = regex.ReplaceToString(input, template);
+
+                Assert.Equal(expected, actual);
+                Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GrouplessTemplateCases))]
+    public void GrouplessTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     [Theory]
     [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "abcdefghi", "<$1$2$3$4$5>")]
     [InlineData("(a)?b(c)?d(e)?f(g)?h(i)?", "bdfhi", "<$1$2$3$4$5>")]

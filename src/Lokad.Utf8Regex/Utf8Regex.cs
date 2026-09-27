@@ -44,6 +44,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
+    private readonly bool _hasCaptures;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly Utf8AlternationBranchSpanMap? _alternationBranchSpanMap;
     private readonly Utf8SliceProgram? _sliceProgram;
@@ -134,6 +135,7 @@ public sealed partial class Utf8Regex
                     ? packedNibbleLiteralFamilyCountStrategy
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
+        _hasCaptures = HasOwnedCaptures(preparedRegex.ExecutionTree);
         _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
         _alternationBranchSpanMap = UsesRightToLeft() ? null : Utf8AlternationBranchSpanMap.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
@@ -2001,6 +2003,36 @@ public sealed partial class Utf8Regex
         return true;
     }
 
+    // R05: construction-cached pure-tree capture predicate for the template divert.
+    // A missing tree conservatively reports captures so BCL routing is preserved.
+    private static bool HasOwnedCaptures(Utf8ExecutionTree? tree)
+    {
+        if (tree?.Root is null)
+        {
+            return true;
+        }
+
+        return ContainsCapture(tree.Root);
+    }
+
+    private static bool ContainsCapture(Utf8ExecutionNode node)
+    {
+        if (node.Kind == Utf8ExecutionNodeKind.Capture && node.CaptureNumber > 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < node.Children.Count; i++)
+        {
+            if (ContainsCapture(node.Children[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool TryGetBranchedLiteralFamilyMap(out Utf8LiteralFamilyCaptureMap? map)
     {
         // R03: multi-group top-level literal alternations with a branch-to-group map discover
@@ -2676,22 +2708,33 @@ public sealed partial class Utf8Regex
         int groups,
         ref Utf8SliceInvocation invocation)
     {
+        // R05: BCL substitutes Groups[Count - 1] (the whole match when groupless),
+        // not the last participating group: the oracle keeps "ab" for "$+" on
+        // groupless "ab" and drops unmatched highest groups instead of scanning down.
+        if (groups <= 0)
+        {
+            return writer.Append(input.Slice(outcome.StartByte, outcome.EndByte - outcome.StartByte), ref invocation);
+        }
+
         if (outcome.CaptureStarts is null || outcome.CaptureLengths is null)
         {
             return true;
         }
 
-        for (var group = groups; group >= 1; group--)
+        if ((uint)(groups - 1) >= (uint)outcome.CaptureStarts.Length ||
+            (uint)(groups - 1) >= (uint)outcome.CaptureLengths.Length)
         {
-            var starts = outcome.CaptureStarts[group - 1];
-            var lengths = outcome.CaptureLengths[group - 1];
-            if (starts.Length != 0)
-            {
-                return writer.Append(input.Slice(starts[^1], lengths[^1]), ref invocation);
-            }
+            return true;
         }
 
-        return true;
+        var starts = outcome.CaptureStarts[groups - 1];
+        var lengths = outcome.CaptureLengths[groups - 1];
+        if (starts.Length == 0)
+        {
+            return true;
+        }
+
+        return writer.Append(input.Slice(starts[^1], lengths[^1]), ref invocation);
     }
 
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8.</summary>
@@ -2760,6 +2803,12 @@ public sealed partial class Utf8Regex
         var replacementText = Encoding.UTF8.GetString(replacementPatternUtf8);
         var replacementPattern = GetParsedReplacement(replacementText);
         var budget = CreateExecutionBudget();
+        if (UsesOwnedTemplateBeforeNativePlan() &&
+            TryReplaceTemplateWithOwnedGroups(input, replacementPattern, out var ownedTemplate))
+        {
+            return Encoding.UTF8.GetBytes(ownedTemplate);
+        }
+
         if (ShouldUseFallbackForSimplePatternReplacement(replacementPattern, input))
         {
             return Encoding.UTF8.GetBytes(_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Replace(
