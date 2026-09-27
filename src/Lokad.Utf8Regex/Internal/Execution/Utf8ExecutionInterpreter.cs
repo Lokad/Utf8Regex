@@ -203,8 +203,13 @@ internal static class Utf8ExecutionInterpreter
 
             var absoluteAnchor = searchFrom + relative;
             var branchCandidate = absoluteAnchor - anchorOffset;
+            // Absolute anchors pin candidates at offset 0; line anchors accept
+            // offset 0 and positions right after a line feed.
+            var holdsStartAnchor = !plan.IsStartAnchored ||
+                branchCandidate == 0 ||
+                (!plan.IsAbsoluteStartAnchored && (uint)branchCandidate <= (uint)input.Length && branchCandidate > 0 && input[branchCandidate - 1] == (byte)'\n');
             if (branchCandidate >= startIndex &&
-                (!plan.IsStartAnchored || branchCandidate == 0) &&
+                holdsStartAnchor &&
                 branchCandidate <= maxCandidate)
             {
                 Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
@@ -651,7 +656,9 @@ internal static class Utf8ExecutionInterpreter
     {
         matchedLength = 0;
         if ((uint)startIndex > (uint)input.Length ||
-            (plan.IsStartAnchored && startIndex != 0))
+            (plan.IsAbsoluteStartAnchored && startIndex != 0) ||
+            (plan.IsStartAnchored && !plan.IsAbsoluteStartAnchored && startIndex != 0 &&
+                input[startIndex - 1] != (byte)'\n'))
         {
             return false;
         }

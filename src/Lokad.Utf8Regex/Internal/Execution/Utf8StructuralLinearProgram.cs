@@ -134,7 +134,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
         Utf8AsciiDeterministicFixedWidthCheck[] fixedWidthChecks,
         int fixedWidthLength,
         bool isAbsoluteStartAnchored,
-        bool allowsTrailingNewlineBeforeEnd)
+        bool allowsTrailingNewlineBeforeEnd,
+        bool isStartAnchored)
     {
         Steps = steps;
         FixedLiteralChecks = fixedLiteralChecks;
@@ -146,6 +147,7 @@ internal readonly struct Utf8AsciiDeterministicProgram
         FixedWidthLength = fixedWidthLength;
         IsAbsoluteStartAnchored = isAbsoluteStartAnchored;
         AllowsTrailingNewlineBeforeEnd = allowsTrailingNewlineBeforeEnd;
+        IsStartAnchored = isStartAnchored;
     }
 
     public Utf8AsciiDeterministicStep[] Steps { get; }
@@ -163,6 +165,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
     public Utf8AsciiDeterministicFixedWidthCheck[] FixedWidthChecks { get; }
 
     public int FixedWidthLength { get; }
+
+    public bool IsStartAnchored { get; }
 
     /// <summary>Gets whether the start anchor is absolute, pinning verification at offset 0.</summary>
     public bool IsAbsoluteStartAnchored { get; }
@@ -216,7 +220,8 @@ internal readonly struct Utf8AsciiDeterministicProgram
             fixedWidthChecks,
             fixedWidthChecks.Length,
             instructionProgram.IsAbsoluteStartAnchored,
-            instructionProgram.AllowsTrailingNewlineBeforeEnd);
+            instructionProgram.AllowsTrailingNewlineBeforeEnd,
+            instructionProgram.IsStartAnchored);
     }
 
     private static Utf8AsciiDeterministicFixedWidthCheck[] CreateFixedWidthChecks(Utf8AsciiDeterministicStep[] steps)
@@ -1653,6 +1658,13 @@ internal static class Utf8AsciiInstructionLinearExecutor
             return false;
         }
 
+        // Line anchors accept offset 0 and positions right after a line feed.
+        if (program.IsStartAnchored && !program.IsAbsoluteStartAnchored && startIndex != 0 &&
+            ((uint)startIndex > (uint)input.Length || input[startIndex - 1] != (byte)'\n'))
+        {
+            return false;
+        }
+
         foreach (var check in program.FixedLiteralChecks)
         {
             var offset = startIndex + check.Offset;
@@ -1790,6 +1802,13 @@ internal static class Utf8AsciiInstructionLinearExecutor
             return false;
         }
 
+        // Line anchors accept offset 0 and positions right after a line feed.
+        if (program.IsStartAnchored && !program.IsAbsoluteStartAnchored && startIndex != 0 &&
+            ((uint)startIndex > (uint)input.Length || input[startIndex - 1] != (byte)'\n'))
+        {
+            return false;
+        }
+
         if (program.FixedWidthChecks.Length > 0 &&
             TryMatchFixedWidthAt(input, program, startIndex, out matchedLength))
         {
@@ -1903,6 +1922,13 @@ internal static class Utf8AsciiInstructionLinearExecutor
         // Absolute start anchors pin verification at offset 0; line anchors stay
         // relative so post-`\n` hits keep working.
         if (program.IsAbsoluteStartAnchored && startIndex != 0)
+        {
+            return false;
+        }
+
+        // Line anchors accept offset 0 and positions right after a line feed.
+        if (program.IsStartAnchored && !program.IsAbsoluteStartAnchored && startIndex != 0 &&
+            ((uint)startIndex > (uint)input.Length || input[startIndex - 1] != (byte)'\n'))
         {
             return false;
         }

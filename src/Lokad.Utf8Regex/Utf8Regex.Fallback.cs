@@ -64,6 +64,15 @@ public sealed partial class Utf8Regex
             return false;
         }
 
+        // Whole-match fast paths are definitive only when a miss at offset 0 rules
+        // out every substring match. Line-anchored (`(?m:^)`) plans can still match
+        // after a line feed, so they decline to the validating scan paths.
+        if (_preparedRegex.SimplePatternPlan.IsStartAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored)
+        {
+            return false;
+        }
+
         if (_anchoredBoundedDatePlan.HasValue)
         {
             var matched = Utf8AsciiBoundedDateTokenExecutor.TryMatchWhole(
@@ -128,6 +137,16 @@ public sealed partial class Utf8Regex
     private bool TryIsMatchAsciiSimplePatternWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
+
+        // Whole-match fast paths are definitive only when a miss at offset 0 rules
+        // out every substring match. Line-anchored (`(?m:^)`) plans can still match
+        // after a line feed, so they decline to the validating scan paths.
+        if (_preparedRegex.SimplePatternPlan.IsStartAnchored &&
+            !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored)
+        {
+            return false;
+        }
+
         var repeatedDigitGroupPlan = _preparedRegex.SimplePatternPlan.RepeatedDigitGroupPlan;
         if (repeatedDigitGroupPlan.HasValue)
         {

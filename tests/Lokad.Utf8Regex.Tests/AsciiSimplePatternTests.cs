@@ -562,6 +562,60 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
+    public static IEnumerable<object?[]> LineStartAnchorInterpreterCases()
+    {
+        // Multiline `^` matches at offset 0 and after `\n`. Oracles are
+        // runtime-computed BCL expectations. `\A` stays absolute even under
+        // the Multiline option and pins offset 0 exactly like `^` does.
+        yield return new object?[] { "(?m:^ab$)", "a\nab" };
+        yield return new object?[] { "(?m:^ab$)", "ab" };
+        yield return new object?[] { "(?m:^ab$)", "xab" };
+        yield return new object?[] { "(?m:^ab$)", "abx" };
+        yield return new object?[] { "(?m:^ab)", "xab\nab" };
+        yield return new object?[] { "(?m:\\Aab)", "ab" };
+        yield return new object?[] { "(?m:\\Aab)", "x\nab" };
+    }
+
+    [Theory]
+    [MemberData(nameof(LineStartAnchorInterpreterCases))]
+    public void LineStartAnchorInterpreterOperationsMatchOracle(string pattern, string inputText)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+
+            Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+
+            var expectedMatch = oracle.Match(inputText);
+            var actualMatch = regex.Match(input);
+            Assert.Equal(expectedMatch.Success, actualMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            }
+
+            Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+
+            var expectedPositions = new List<string>();
+            foreach (Match m in oracle.Matches(inputText))
+            {
+                expectedPositions.Add(m.Index + ":" + m.Length);
+            }
+
+            var actualPositions = new List<string>();
+            foreach (var m in regex.EnumerateMatches(input))
+            {
+                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            }
+
+            Assert.Equal(expectedPositions, actualPositions);
+        }
+    }
+
     [Theory]
     [InlineData("^ab$", true)]
     [InlineData("\\Aab\\z", true)]

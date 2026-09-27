@@ -413,6 +413,16 @@ internal sealed class Utf8SimplePatternCompiledEngineRuntime : Utf8CompiledEngin
 
     public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8ValueMatch match)
     {
+        // Whole-match fast paths are definitive only when a miss at offset 0 rules
+        // out every substring match. Line-anchored (`(?m:^)`) plans can still match
+        // after a line feed, so they decline to the validating scan paths.
+        if (_regexPlan.SimplePatternPlan.IsStartAnchored &&
+            !_regexPlan.SimplePatternPlan.IsAbsoluteStartAnchored)
+        {
+            match = Utf8ValueMatch.NoMatch;
+            return false;
+        }
+
         if (Utf8SimplePatternCompiledSearchGuidedRouter.TryMatchWithoutValidation(
                 _anchoredBoundedDatePlan,
                 _repeatedDigitGroupPlan,
