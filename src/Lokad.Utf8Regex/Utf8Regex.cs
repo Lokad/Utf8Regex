@@ -44,6 +44,7 @@ public sealed partial class Utf8Regex
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     private readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly Utf8LiteralFamilyCaptureMap? _literalFamilyCaptureMap;
+    private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly Utf8SliceProgram? _sliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache = new();
 
@@ -132,6 +133,7 @@ public sealed partial class Utf8Regex
                     ? packedNibbleLiteralFamilyCountStrategy
                     : null;
         _literalFamilyCaptureMap = Utf8LiteralFamilyCaptureMap.TryCreate(preparedRegex.ExecutionTree);
+        _groupedLiteralSpanTable = UsesRightToLeft() ? null : Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree);
         // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
         // slice (R03 adds dots). R02b construction admission caps the pattern length and lowered
         // instruction count; over-cap shapes decline here to legacy routing.
@@ -1585,6 +1587,34 @@ public sealed partial class Utf8Regex
                 : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        if (_groupedLiteralSpanTable is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            // R05: grouped single-literal shapes discover through the shared value path
+            // and project every group from fixed literal-relative spans. A hit-length
+            // disagreement declines to the routes below instead of shaping blindly.
+            Utf8ValueMatch groupedFirst;
+            try
+            {
+                groupedFirst = MatchCore(input, cancellationToken);
+            }
+            catch (Utf8ExecutionDeadlineExpiredException)
+            {
+                throw CreateMatchTimeoutException(input);
+            }
+
+            if (!groupedFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            if (TryShapeGroupedLiteralDetailedMatch(input, decoded, analysis.BoundaryMap, groupedFirst, out var groupedDetailed))
+            {
+                return groupedDetailed;
+            }
+        }
+
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, 0, out var branched))
         {
@@ -1700,6 +1730,33 @@ public sealed partial class Utf8Regex
                 : new Utf8MatchContext(input, decoded, analysis.BoundaryMap, _groupNames, first.IndexInUtf16, first.LengthInUtf16);
         }
 
+        if (_groupedLiteralSpanTable is not null &&
+            !RequiresCultureSensitiveFallback &&
+            !ShouldUseKelvinSignFallback(input))
+        {
+            // R05: grouped single-literal shapes keep origin semantics through
+            // first-of-shared-enumeration and project from fixed spans, mirroring
+            // the zero-offset arm above.
+            Utf8ValueMatch groupedOffsetFirst = default;
+            var groupedOffsetFound = false;
+            foreach (var candidate in EnumerateMatchesFromUtf16Offset(input, utf16Offset))
+            {
+                groupedOffsetFirst = candidate;
+                groupedOffsetFound = true;
+                break;
+            }
+
+            if (!groupedOffsetFound || !groupedOffsetFirst.Success)
+            {
+                return Utf8MatchContext.Unsuccessful(input, decoded, analysis.BoundaryMap, _groupNames);
+            }
+
+            if (TryShapeGroupedLiteralDetailedMatch(input, decoded, analysis.BoundaryMap, groupedOffsetFirst, out var groupedOffsetDetailed))
+            {
+                return groupedOffsetDetailed;
+            }
+        }
+
         if (TryGetBranchedLiteralFamilyMap(out var branchMap) &&
             TryMatchDetailedBranchedLiteralFamily(input, decoded, analysis.BoundaryMap, branchMap, start.Value, out var branched))
         {
@@ -1737,6 +1794,45 @@ public sealed partial class Utf8Regex
         }
 
         return false;
+    }
+
+    private bool TryShapeGroupedLiteralDetailedMatch(
+        ReadOnlySpan<byte> input,
+        string decoded,
+        Utf8BoundaryMap boundaryMap,
+        Utf8ValueMatch hit,
+        out Utf8MatchContext detailed)
+    {
+        // R05: projects every group from fixed literal-relative spans onto the owned
+        // discovery hit. A hit-length disagreement or an out-of-range capture number
+        // declines to the BCL routes instead of shaping blindly.
+        detailed = default;
+        var table = _groupedLiteralSpanTable;
+        if (table is null || hit.LengthInUtf16 != table.TotalLengthInUtf16)
+        {
+            return false;
+        }
+
+        var groupCount = _groupNumbers.Length;
+        var starts = new int[groupCount];
+        var lengths = new int[groupCount];
+        Array.Fill(starts, -1);
+        starts[0] = hit.IndexInUtf16;
+        lengths[0] = hit.LengthInUtf16;
+        for (var i = 0; i < table.Groups.Length; i++)
+        {
+            var number = table.Groups[i];
+            if ((uint)number >= (uint)groupCount)
+            {
+                return false;
+            }
+
+            starts[number] = hit.IndexInUtf16 + table.StartsInLiteral[i];
+            lengths[number] = table.LengthsInLiteral[i];
+        }
+
+        detailed = new Utf8MatchContext(input, decoded, boundaryMap, _groupNames, hit.IndexInUtf16, hit.LengthInUtf16, starts, lengths);
+        return true;
     }
 
     private bool TryGetBranchedLiteralFamilyMap(out Utf8LiteralFamilyCaptureMap? map)

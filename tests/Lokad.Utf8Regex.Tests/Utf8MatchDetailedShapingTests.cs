@@ -6,7 +6,8 @@ namespace Lokad.Utf8Regex.Tests;
 /// <summary>
 /// R03 detailed shaping: groupless matches project every Match, Group, and Capture
 /// view field from owned spans (BCL still discovers), with full view parity to the
-/// BCL-backed oracle and bounded shaping allocation. Grouped patterns keep BCL shaping.
+/// BCL-backed oracle and bounded shaping allocation. Other grouped patterns keep BCL
+/// shaping; grouped single literals are owned in GroupedLiteralDetailedTests.
 /// </summary>
 public sealed class Utf8MatchDetailedShapingTests
 {
