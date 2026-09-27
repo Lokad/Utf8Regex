@@ -442,6 +442,141 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
     }
 
+    public static IEnumerable<object?[]> AbsoluteStartAnchoredLinearCases()
+    {
+        // Absolute `^`/`\A` anchor every operation at offset 0. Oracles are
+        // runtime-computed BCL expectations; rows cover hits, misses, trailing
+        // newlines, and the former phantom positions (mid-string `ab` ending at
+        // the input end verified while `^` went unchecked on linear paths).
+        yield return new object?[] { "^ab$", "ab" };
+        yield return new object?[] { "^ab$", "abab" };
+        yield return new object?[] { "^ab$", "xxab" };
+        yield return new object?[] { "^ab$", "abxx" };
+        yield return new object?[] { "^ab$", "aab" };
+        yield return new object?[] { "^ab$", "" };
+        yield return new object?[] { "^ab$", "ab\n" };
+        yield return new object?[] { "^ab$", "\nab" };
+        yield return new object?[] { "^ab$", "ab\nab" };
+        yield return new object?[] { "\\Aab\\z", "ab" };
+        yield return new object?[] { "\\Aab\\z", "abab" };
+        yield return new object?[] { "\\Aab\\z", "xxab" };
+        yield return new object?[] { "\\Aab\\z", "ab\n" };
+    }
+
+    [Theory]
+    [MemberData(nameof(AbsoluteStartAnchoredLinearCases))]
+    public void AbsoluteStartAnchoredLinearOperationsMatchOracle(string pattern, string inputText)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+
+            Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
+            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+
+            var expectedMatch = oracle.Match(inputText);
+            var actualMatch = regex.Match(input);
+            Assert.Equal(expectedMatch.Success, actualMatch.Success);
+            if (expectedMatch.Success)
+            {
+                Assert.Equal(expectedMatch.Index, actualMatch.IndexInUtf16);
+                Assert.Equal(expectedMatch.Length, actualMatch.LengthInUtf16);
+            }
+
+            Assert.Equal(oracle.Match(inputText).Success, regex.MatchDetailed(input).Success);
+
+            var expectedPositions = new List<string>();
+            foreach (Match m in oracle.Matches(inputText))
+            {
+                expectedPositions.Add(m.Index + ":" + m.Length);
+            }
+
+            var actualPositions = new List<string>();
+            foreach (var m in regex.EnumerateMatches(input))
+            {
+                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            }
+
+            Assert.Equal(expectedPositions, actualPositions);
+
+            foreach (var offset in new[] { 0, 1, 2 })
+            {
+                if (offset > inputText.Length)
+                {
+                    continue;
+                }
+
+                Assert.Equal(oracle.IsMatch(inputText, offset), regex.IsMatchFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.Matches(inputText, offset).Count, regex.CountFromUtf16Offset(input, offset));
+                Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchFromUtf16Offset(input, offset).Success);
+                Assert.Equal(oracle.Match(inputText, offset).Success, regex.MatchDetailedFromUtf16Offset(input, offset).Success);
+
+                var expectedOffsetPositions = new List<string>();
+                foreach (Match m in oracle.Matches(inputText, offset))
+                {
+                    expectedOffsetPositions.Add(m.Index + ":" + m.Length);
+                }
+
+                var actualOffsetPositions = new List<string>();
+                foreach (var m in regex.EnumerateMatchesFromUtf16Offset(input, offset))
+                {
+                    actualOffsetPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+                }
+
+                Assert.Equal(expectedOffsetPositions, actualOffsetPositions);
+            }
+        }
+    }
+
+    public static IEnumerable<object?[]> LineAnchoredLinearControls()
+    {
+        // Multiline `^` legitimately matches after `\n`: these post-line-start
+        // Count/Enumerate rows agree today and must not regress. (Multiline
+        // IsMatch/Match misses and `$`-before-`\n` are separate follow-ups.)
+        yield return new object?[] { "(?m:^ab$)", "a\nab", 1, "2:2" };
+        yield return new object?[] { "(?m:^ab$)", "ab", 1, "0:2" };
+    }
+
+    [Theory]
+    [MemberData(nameof(LineAnchoredLinearControls))]
+    public void LineAnchoredLinearCountAndEnumerationHoldPostLineStartHits(string pattern, string inputText, int expectedCount, string expectedPositions)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+
+            Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
+            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
+
+            var actualPositions = new List<string>();
+            foreach (var m in regex.EnumerateMatches(input))
+            {
+                actualPositions.Add(m.IndexInUtf16 + ":" + m.LengthInUtf16);
+            }
+
+            Assert.Equal(new List<string> { expectedPositions }, actualPositions);
+        }
+    }
+
+    [Theory]
+    [InlineData("^ab$", true)]
+    [InlineData("\\Aab\\z", true)]
+    [InlineData("(?m:^ab$)", false)]
+    public void StartAnchorKindThreadsThroughSimplePlan(string pattern, bool expectedAbsolute)
+    {
+        // Absolute `^`/`\A` lower distinctly from line-anchored `(?m:^)`: only
+        // the former may pin linear verification at offset 0.
+        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+
+        Assert.Equal(NativeExecutionKind.AsciiSimplePattern, regex.Inspection.ExecutionKind);
+        Assert.True(regex.Inspection.SimplePatternPlan.IsStartAnchored);
+        Assert.Equal(expectedAbsolute, regex.Inspection.SimplePatternPlan.IsAbsoluteStartAnchored);
+    }
+
     [Theory]
     [InlineData("^$")]
     [InlineData("^")]

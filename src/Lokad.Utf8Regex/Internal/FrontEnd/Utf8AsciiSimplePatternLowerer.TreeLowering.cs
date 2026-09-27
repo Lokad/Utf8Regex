@@ -24,19 +24,22 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 return TryLowerBranches(node.Child(0), budget, depth + 1, out branches);
 
             case Utf8TreeNodeKind.Empty:
-                branches = [new LoweredBranch([], [], false, false)];
+                branches = [new LoweredBranch([], [], false, false, false)];
                 return true;
 
             case Utf8TreeNodeKind.Bol:
             case Utf8TreeNodeKind.Beginning:
             case Utf8TreeNodeKind.Start:
-                branches = [new LoweredBranch([], [], true, false)];
+                // Only absolute anchors (`Beginning` for `^`, `Start` for `\A`) pin
+                // the match at offset 0; line anchors (`Bol` for multiline `^`)
+                // legitimately match after `\n` and stay relative downstream.
+                branches = [new LoweredBranch([], [], true, false, node.Kind is Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start)];
                 return true;
 
             case Utf8TreeNodeKind.Eol:
             case Utf8TreeNodeKind.EndZ:
             case Utf8TreeNodeKind.End:
-                branches = [new LoweredBranch([], [], false, true)];
+                branches = [new LoweredBranch([], [], false, true, false)];
                 return true;
 
             case Utf8TreeNodeKind.One:
@@ -46,7 +49,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                branches = [new LoweredBranch([literalToken], [], false, false)];
+                branches = [new LoweredBranch([literalToken], [], false, false, false)];
                 return true;
 
             case Utf8TreeNodeKind.Multi:
@@ -56,7 +59,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                branches = [new LoweredBranch(literalTokens, [], false, false)];
+                branches = [new LoweredBranch(literalTokens, [], false, false, false)];
                 return true;
 
             case Utf8TreeNodeKind.Set:
@@ -66,7 +69,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                     return false;
                 }
 
-                branches = [new LoweredBranch([setToken], [], false, false)];
+                branches = [new LoweredBranch([setToken], [], false, false, false)];
                 return true;
 
             case Utf8TreeNodeKind.PositiveLookaround:
@@ -86,7 +89,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 }
 
                 return TryExpandFiniteRepeat(
-                    [new LoweredBranch([repeatedLiteral], [], false, false)],
+                    [new LoweredBranch([repeatedLiteral], [], false, false, false)],
                     node.M,
                     node.N,
                     budget,
@@ -100,7 +103,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
                 }
 
                 return TryExpandFiniteRepeat(
-                    [new LoweredBranch([repeatedSet], [], false, false)],
+                    [new LoweredBranch([repeatedSet], [], false, false, false)],
                     node.M,
                     node.N,
                     budget,
@@ -170,7 +173,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             branches = [];
             return false;
         }
-        var accumulated = new List<LoweredBranch> { new([], [], false, false) };
+        var accumulated = new List<LoweredBranch> { new([], [], false, false, false) };
 
         for (var i = 0; i < node.ChildCount; i++)
         {
@@ -312,7 +315,8 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             combinedTokens,
             combinedChecks,
             left.IsStartAnchored || right.IsStartAnchored,
-            left.IsEndAnchored || right.IsEndAnchored);
+            left.IsEndAnchored || right.IsEndAnchored,
+            left.IsAbsoluteStartAnchored || right.IsAbsoluteStartAnchored);
         return true;
     }
 
@@ -339,7 +343,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
         var variants = new List<LoweredBranch>();
         for (var count = maxCount; count >= minCount; count--)
         {
-            var expanded = new List<LoweredBranch> { new([], [], false, false) };
+            var expanded = new List<LoweredBranch> { new([], [], false, false, false) };
             for (var i = 0; i < count; i++)
             {
                 if (!TryConcatenate(expanded, repeatedBranches, budget, out expanded))
@@ -387,7 +391,7 @@ internal static partial class Utf8AsciiSimplePatternLowerer
             return false;
         }
 
-        branches = [new LoweredBranch([], [new AsciiFixedLiteralCheck(0, literal)], false, false)];
+        branches = [new LoweredBranch([], [new AsciiFixedLiteralCheck(0, literal)], false, false, false)];
         return true;
     }
 }

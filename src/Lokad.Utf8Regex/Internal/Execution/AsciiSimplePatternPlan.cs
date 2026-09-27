@@ -22,7 +22,8 @@ internal readonly struct AsciiSimplePatternPlan
         AsciiSimplePatternAnchoredOptionalFieldPlan anchoredOptionalFieldPlan,
         AsciiSimplePatternRepeatedDigitGroupPlan repeatedDigitGroupPlan,
         AsciiSimplePatternBoundedSuffixLiteralPlan boundedSuffixLiteralPlan,
-        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan)
+        AsciiSimplePatternSymmetricLiteralWindowPlan symmetricLiteralWindowPlan,
+        bool isAbsoluteStartAnchored)
     {
         Branches = branches;
         MinLength = 0;
@@ -48,6 +49,7 @@ internal readonly struct AsciiSimplePatternPlan
         SearchLiterals = searchLiterals;
         FixedLiteralChecks = fixedLiteralChecks;
         IsStartAnchored = isStartAnchored;
+        IsAbsoluteStartAnchored = isAbsoluteStartAnchored;
         IsEndAnchored = isEndAnchored;
         AllowsTrailingNewlineBeforeEnd = allowsTrailingNewlineBeforeEnd;
         IgnoreCase = ignoreCase;
@@ -77,6 +79,9 @@ internal readonly struct AsciiSimplePatternPlan
     public AsciiFixedLiteralCheck[] FixedLiteralChecks { get; }
 
     public bool IsStartAnchored { get; }
+
+    /// <summary>Gets whether the start anchor is absolute (`^`/`\A` outside multiline), pinning matches at offset 0. Line anchors (`(?m:^)`) legitimately match after `\n`.</summary>
+    public bool IsAbsoluteStartAnchored { get; }
 
     public bool IsEndAnchored { get; }
 

@@ -383,7 +383,8 @@ internal static class Utf8NativeExecutionAnalyzer
             anchoredOptionalFieldPlan: default,
             repeatedDigitGroupPlan: default,
             boundedSuffixLiteralPlan: default,
-            symmetricLiteralWindowPlan: default);
+            symmetricLiteralWindowPlan: default,
+            isAbsoluteStartAnchored: true);
 
         analyzedRegex = Utf8RegexAnalysis.CreateSimple(
             semanticRegex,
