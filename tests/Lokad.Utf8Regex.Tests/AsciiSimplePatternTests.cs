@@ -731,6 +731,120 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedAbsolute, regex.Inspection.SimplePatternPlan.IsAbsoluteEndAnchored);
     }
 
+    public static IEnumerable<object?[]> GrouplessSimpleDetailedCases()
+    {
+        // Groupless simple patterns shape group 0 from the shared value path,
+        // so detailed matches never construct the fallback engine where the value
+        // path itself is owned. `a.c` keeps parity while its value path stays
+        // BCL-backed; only ASCII-star-free rows below assert zero construction.
+        yield return new object?[] { "\\d{2,4}", "xx12yy", true };
+        yield return new object?[] { "[0-9]{3}", "ab123", true };
+        yield return new object?[] { "ab[0-9]d", "xab2dxx", true };
+        yield return new object?[] { "a[^x]d", "xabd", true };
+        yield return new object?[] { "a.c", "xabc", false };
+    }
+
+    [Theory]
+    [MemberData(nameof(GrouplessSimpleDetailedCases))]
+    public void GrouplessSimpleDetailedMatchesOracle(string pattern, string inputText, bool expectOwned)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options);
+            var expected = oracle.Match(inputText);
+
+            var actual = regex.MatchDetailed(input);
+            Assert.Equal(expected.Success, actual.Success);
+            if (expected.Success)
+            {
+                Assert.Equal(expected.Index, actual.GetGroup(0).IndexInUtf16);
+                Assert.Equal(expected.Length, actual.GetGroup(0).LengthInUtf16);
+            }
+
+            // Owned discovery stays construction-free on the ordinary
+            // lane; the compiled lane keeps parity while its value path stays
+            // BCL-backed, and `a.c` keeps parity on both lanes.
+            if (expectOwned && (options & RegexOptions.Compiled) == 0)
+            {
+                Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+            }
+
+            foreach (var offset in new[] { 0, 1, 2 })
+            {
+                if (offset > inputText.Length)
+                {
+                    continue;
+                }
+
+                var expectedOffset = oracle.Match(inputText, offset);
+                var actualOffset = regex.MatchDetailedFromUtf16Offset(input, offset);
+                Assert.Equal(expectedOffset.Success, actualOffset.Success);
+                if (expectedOffset.Success)
+                {
+                    Assert.Equal(expectedOffset.Index, actualOffset.GetGroup(0).IndexInUtf16);
+                    Assert.Equal(expectedOffset.Length, actualOffset.GetGroup(0).LengthInUtf16);
+                }
+            }
+        }
+    }
+
+    public static IEnumerable<object?[]> OwnedRouteZeroConstructionCases()
+    {
+        // Routing must never construct the fallback engine just to decide a route:
+        // every predicate below answers from owned analysis state. Rows cover all
+        // five operations on shapes whose values are served owned end to end.
+        yield return new object?[] { "ab[0-9]d", RegexOptions.CultureInvariant, "xab2dxx" };
+        yield return new object?[] { "a[^x]d", RegexOptions.CultureInvariant, "xabd" };
+        yield return new object?[] { "\\d{2,4}", RegexOptions.CultureInvariant, "xx12yy" };
+        yield return new object?[] { "\\d{2,4}", RegexOptions.CultureInvariant | RegexOptions.Compiled, "xx12yy" };
+        yield return new object?[] { "[0-9]{3}", RegexOptions.CultureInvariant, "ab123" };
+        yield return new object?[] { "[0-9]{3}", RegexOptions.CultureInvariant | RegexOptions.Compiled, "ab123" };
+        yield return new object?[] { "a.c", RegexOptions.CultureInvariant, "xabc" };
+        yield return new object?[] { "a.c", RegexOptions.CultureInvariant | RegexOptions.Compiled, "xabc" };
+    }
+
+    [Theory]
+    [MemberData(nameof(OwnedRouteZeroConstructionCases))]
+    public void OwnedRoutesNeverConstructFallbackEngine(string pattern, RegexOptions options, string inputText)
+    {
+        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+
+        var isMatchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(inputText), isMatchRegex.IsMatch(input));
+        Assert.False(isMatchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var countRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Matches(inputText).Count, countRegex.Count(input));
+        Assert.False(countRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var matchRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Match(inputText).Success, matchRegex.Match(input).Success);
+        Assert.False(matchRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var detailedRegex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.Match(inputText).Success, detailedRegex.MatchDetailed(input).Success);
+        Assert.False(detailedRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var enumerateRegex = new Utf8Regex(pattern, options);
+        var enumerated = 0;
+        foreach (var _ in enumerateRegex.EnumerateMatches(input))
+        {
+            enumerated++;
+        }
+
+        var expectedEnumerated = 0;
+        foreach (Match _ in oracle.Matches(inputText))
+        {
+            expectedEnumerated++;
+        }
+
+        Assert.Equal(expectedEnumerated, enumerated);
+        Assert.False(enumerateRegex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     [Theory]
     [InlineData("^$")]
     [InlineData("^")]

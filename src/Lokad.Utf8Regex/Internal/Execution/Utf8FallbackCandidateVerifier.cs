@@ -9,14 +9,19 @@ internal abstract class Utf8FallbackCandidateVerifier
 {
     // R03: BCL engines construct lazily so owned routes never construct them; the first
     // fallback use pays the construction cost once (thread-safe).
-    protected Utf8FallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex)
+    protected Utf8FallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex, RegexOptions fallbackOptions)
     {
         Plan = plan;
+        FallbackOptions = fallbackOptions;
         _fallbackRegex = fallbackRegex;
         _anchoredFallbackRegex = anchoredFallbackRegex;
     }
 
     public Utf8FallbackVerifierPlan Plan { get; }
+
+    /// <summary>Gets the options the lazily constructed fallback engines use, so routing
+    /// decisions can read them without constructing anything.</summary>
+    public RegexOptions FallbackOptions { get; }
 
     private readonly Lazy<Regex> _fallbackRegex;
 
@@ -127,8 +132,8 @@ internal abstract class Utf8FallbackCandidateVerifier
 
 internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8StartFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex)
-        : base(plan, fallbackRegex, anchoredFallbackRegex)
+    public Utf8StartFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex>? anchoredFallbackRegex, RegexOptions fallbackOptions)
+        : base(plan, fallbackRegex, anchoredFallbackRegex, fallbackOptions)
     {
     }
 
@@ -177,8 +182,8 @@ internal sealed class Utf8StartFallbackCandidateVerifier : Utf8FallbackCandidate
 
 internal sealed class Utf8BoundedSliceFallbackCandidateVerifier : Utf8FallbackCandidateVerifier
 {
-    public Utf8BoundedSliceFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex> anchoredFallbackRegex)
-        : base(plan, fallbackRegex, anchoredFallbackRegex)
+    public Utf8BoundedSliceFallbackCandidateVerifier(Utf8FallbackVerifierPlan plan, Lazy<Regex> fallbackRegex, Lazy<Regex> anchoredFallbackRegex, RegexOptions fallbackOptions)
+        : base(plan, fallbackRegex, anchoredFallbackRegex, fallbackOptions)
     {
     }
 

@@ -104,6 +104,8 @@ public sealed class EngineDependencyInventoryTests
 
         // 1. Core fallback execution (union of the three receiver spellings below).
         //    Purpose: candidate verification plus all uncovered-pattern routes. Owner: R03.
+        //    The linear compiled router left this set in R05 once its RightToLeft
+        //    predicates read cached fallback options instead of constructing the engine.
         var fallbackFiles = FilesContainingAny("FallbackCandidateVerifier.FallbackRegex", "FallbackRegex.", "fallbackRegex.Count(");
         var expectedFallbackFiles = new[]
         {
@@ -119,7 +121,6 @@ public sealed class EngineDependencyInventoryTests
             "Utf8Regex.Fallback.cs",
             "Utf8Regex.Replacement.cs",
             "Utf8RegexProgram.cs",
-            "Utf8StructuralLinearCompiledRouter.cs",
             "Utf8StructuralLinearProgram.cs",
         };
         Assert.Equal(expectedFallbackFiles.Order(StringComparer.Ordinal).ToArray(), fallbackFiles);

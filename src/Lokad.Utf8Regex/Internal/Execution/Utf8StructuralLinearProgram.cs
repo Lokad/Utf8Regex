@@ -2633,7 +2633,7 @@ internal sealed class Utf8AsciiStructuralFamilyLinearRuntime : Utf8StructuralLin
 
     private static bool UsesRightToLeft(Utf8VerifierRuntime verifierRuntime)
     {
-        return (verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Options & RegexOptions.RightToLeft) != 0;
+        return (verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) != 0;
     }
 }
 

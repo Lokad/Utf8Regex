@@ -292,7 +292,8 @@ internal sealed class Utf8StructuralFamilyCompiledEngineRuntime : Utf8CompiledEn
 
     private bool UsesRightToLeft()
     {
-        return (_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Options & RegexOptions.RightToLeft) != 0;
+        // The cached options answer without constructing the lazy engine.
+        return (_verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) != 0;
     }
 }
 
@@ -706,7 +707,7 @@ internal sealed class Utf8StructuralLinearAutomatonCompiledEngineRuntime : Utf8C
             ? emittedKernelMatcher
             : null;
         _emittedBoundaryLiteralFamily = emitEnabled &&
-            (_verifierRuntime.FallbackCandidateVerifier.FallbackRegex.Options & RegexOptions.RightToLeft) == 0 &&
+            (_verifierRuntime.FallbackCandidateVerifier.FallbackOptions & RegexOptions.RightToLeft) == 0 &&
             Utf8EmittedLiteralFamilyCounter.TryCreateBoundaryOnlyStructuralFamily(
                 _regexPlan,
                 out var emittedBoundaryLiteralFamily)

@@ -1712,13 +1712,15 @@ public sealed partial class Utf8Regex
 
     private bool TryGetOwnedDetailedGroupCount(out int groupCount)
     {
-        // R03: groupless literal shapes and single groups wrapping a whole literal family
-        // discover through owned kernels and shape from owned spans. Everything else keeps
-        // BCL discovery and shaping until capture tracking migrates.
+        // R03: groupless shapes (literal or simple) and single groups wrapping a whole
+        // literal family discover through the shared value path and shape from owned
+        // spans. Semantic declines inside the value path keep their existing BCL
+        // routes; everything else keeps BCL discovery and shaping until capture
+        // tracking migrates.
         groupCount = 1;
         // Anchored literal prefixes shape through the dedicated prefix-family arm above,
         // not through this literal-kernel gate (their ExecutionKind is FallbackRegex).
-        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals or NativeExecutionKind.AsciiSimplePattern))
         {
             return false;
         }

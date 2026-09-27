@@ -42,8 +42,8 @@ internal static class Utf8FallbackVerifierRuntimeFactory
         return plan.Mode switch
         {
             Utf8FallbackVerifierMode.AnchoredSliceRegex when anchoredFallbackRegex is not null
-                => new Utf8BoundedSliceFallbackCandidateVerifier(plan, fallbackRegex, anchoredFallbackRegex),
-            _ => new Utf8StartFallbackCandidateVerifier(plan, fallbackRegex, anchoredFallbackRegex),
+                => new Utf8BoundedSliceFallbackCandidateVerifier(plan, fallbackRegex, anchoredFallbackRegex, options),
+            _ => new Utf8StartFallbackCandidateVerifier(plan, fallbackRegex, anchoredFallbackRegex, options),
         };
     }
 }

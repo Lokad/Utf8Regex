@@ -7,16 +7,16 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8StructuralLinearCompiledRouter
 {
-    public static bool CanUseDirectStructuralIdentifierFamilyRoute(Utf8PreparedRegex regexPlan, Regex regex)
+    public static bool CanUseDirectStructuralIdentifierFamilyRoute(Utf8PreparedRegex regexPlan, RegexOptions options)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiStructuralIdentifierFamily &&
-            !UsesRightToLeft(regex);
+            !UsesRightToLeft(options);
     }
 
-    public static bool CanUseDirectOrderedLiteralWindowRoute(Utf8PreparedRegex regexPlan, Regex regex)
+    public static bool CanUseDirectOrderedLiteralWindowRoute(Utf8PreparedRegex regexPlan, RegexOptions options)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.AsciiOrderedLiteralWindow &&
-            !UsesRightToLeft(regex);
+            !UsesRightToLeft(options);
     }
 
     public static bool CanUseEmittedDeterministicMatcher(
@@ -58,7 +58,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out bool isMatch)
     {
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             isMatch = AsciiOrderedLiteralWindowExecutor.FindNext(
                 input,
@@ -78,7 +78,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             isMatch = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
                 input,
@@ -115,7 +115,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out int count)
     {
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.NativeOrderedLiteralWindow);
             count = AsciiOrderedLiteralWindowExecutor.Count(
@@ -135,7 +135,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             if (regexPlan.SearchPlan.PreparedSearcher.HasValue &&
                 Utf8AsciiStructuralIdentifierFamilyExecutor.CanUseSuffixOnlyCountKernel(regexPlan.StructuralIdentifierFamilyPlan))
@@ -193,7 +193,7 @@ internal static class Utf8StructuralLinearCompiledRouter
         Utf8ExecutionDeadline budget,
         out Utf8ValueMatch match)
     {
-        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectOrderedLiteralWindowRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             var index = AsciiOrderedLiteralWindowExecutor.FindNext(
                 input,
@@ -219,7 +219,7 @@ internal static class Utf8StructuralLinearCompiledRouter
             return true;
         }
 
-        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackRegex))
+        if (CanUseDirectStructuralIdentifierFamilyRoute(regexPlan, verifierRuntime.FallbackCandidateVerifier.FallbackOptions))
         {
             var index = Utf8AsciiStructuralIdentifierFamilyExecutor.FindNext(
                 input,
@@ -250,8 +250,8 @@ internal static class Utf8StructuralLinearCompiledRouter
         return false;
     }
 
-    private static bool UsesRightToLeft(Regex regex)
+    private static bool UsesRightToLeft(RegexOptions options)
     {
-        return (regex.Options & RegexOptions.RightToLeft) != 0;
+        return (options & RegexOptions.RightToLeft) != 0;
     }
 }
