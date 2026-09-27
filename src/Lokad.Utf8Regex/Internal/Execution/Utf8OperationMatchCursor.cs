@@ -780,6 +780,27 @@ internal ref struct Utf8OperationMatchCursor
             return false;
         }
 
+        if (!_asciiInput)
+        {
+            // R05: folded ASCII literals project incrementally on non-ASCII input
+            // (every fold variant is ASCII, so the literal length is the UTF-16
+            // length), mirroring the exact-literal mode. Kelvin and culture
+            // divergences stay fenced upstream of the cursor.
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                _consumed,
+                _consumedUtf16,
+                _consumed + index,
+                literal.Length,
+                literal.Length,
+                out _consumed,
+                out _consumedUtf16);
+            _remaining = _input[_consumed..];
+            _lastLiteralFamilyBranchId = 0;
+            return true;
+        }
+
         _current = new Utf8ValueMatch(
             success: true,
             isByteAligned: true,

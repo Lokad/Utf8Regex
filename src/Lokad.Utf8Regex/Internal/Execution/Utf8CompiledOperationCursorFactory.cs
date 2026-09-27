@@ -32,18 +32,9 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
-        // R03: the case-insensitive ASCII literal cursor below projects byte offsets
-        // as UTF-16 coordinates and is only valid for ASCII input; other inputs keep
-        // BCL verification. Exact ASCII literals project incrementally instead (R05).
-        if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
-            regexPlan.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase &&
-            literal is { Length: > 0 })
-        {
-            return CreateFallbackMatchEnumerator(
-                verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
-                input);
-        }
-
+        // R05: single ASCII literals (exact and folded) project incrementally on
+        // non-ASCII input, so no BCL verification divert remains here. Kelvin and
+        // culture divergences stay fenced upstream of the cursor factory.
         return regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or
@@ -95,9 +86,9 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
-        // R03: the case-insensitive ASCII literal cursor below projects byte offsets
-        // as UTF-16 coordinates and is only valid for ASCII input; other inputs keep
-        // BCL verification. Exact ASCII literals project incrementally instead (R05).
+        // R05: folded single literals stay on BCL verification for split on non-ASCII
+        // input until the split router carries the Kelvin fence (the match router is
+        // fenced upstream; the split router is not). Exact singles split owned.
         if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
             regexPlan.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase &&
             literal is { Length: > 0 })

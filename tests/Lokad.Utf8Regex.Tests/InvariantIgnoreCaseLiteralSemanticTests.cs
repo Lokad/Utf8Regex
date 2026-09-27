@@ -305,6 +305,94 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.Equal(expectedSplits, actualSplits);
     }
 
+    public static IEnumerable<object?[]> NonAsciiEnumerationCases()
+    {
+        string[] patterns = ["abc", "kil", "IB", "(aI)"];
+        string[] texts = ["xxAB12cdxx", "ééABCé", "xKILy", "\u0130\u0131-test-K", "x\U0001F600aB", "nomatchhere", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerationKeepsBclShapingForKelvin(bool compiled)
+    {
+        // Declared R05 debt: the Kelvin fence diverts IgnoreCase enumeration to BCL
+        // verification when the pattern holds k/K and the input holds U+212A, since
+        // byte search cannot reproduce the invariant fold. Parity holds;
+        // construction is pinned.
+        const string pattern = "kil";
+        const string text = "x\u212Ailo";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        if (compiled)
+        {
+            options |= RegexOptions.Compiled;
+        }
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [MemberData(nameof(NonAsciiEnumerationCases))]
+    public void EnumerationOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)
     {
         foreach (var _ in regex.EnumerateMatches(input))
