@@ -30,6 +30,7 @@ internal ref struct Utf8OperationMatchCursor
     private readonly int[]? _alternateLiteralUtf16Lengths;
     private readonly bool _hasBoundaryRequirements;
     private readonly bool _hasTrailingLiteralRequirement;
+    private readonly bool _asciiInput;
     private readonly byte[]? _literal;
     private readonly ReadOnlySpan<byte> _input;
     private readonly Utf8BoundaryMap? _boundaryMap;
@@ -55,7 +56,7 @@ internal ref struct Utf8OperationMatchCursor
     private int _sliceUnit;
     private int _sliceOriginUnit;
 
-    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+    public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget, bool asciiInput)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
@@ -64,6 +65,7 @@ internal ref struct Utf8OperationMatchCursor
         _alternateLiteralUtf16Lengths = searchPlan.AlternateLiteralUtf16Lengths;
         _hasBoundaryRequirements = searchPlan.HasBoundaryRequirements;
         _hasTrailingLiteralRequirement = searchPlan.HasTrailingLiteralRequirement;
+        _asciiInput = asciiInput;
         _literal = literal;
         _input = input;
         _boundaryMap = null;
@@ -725,6 +727,26 @@ internal ref struct Utf8OperationMatchCursor
         if (index < 0)
         {
             return false;
+        }
+
+        if (!_asciiInput)
+        {
+            // R05: ASCII literals on non-ASCII input project incrementally (the
+            // literal length is the UTF-16 length; only the gap needs decoding),
+            // mirroring the UTF-8 literal mode instead of declining to BCL.
+            _current = Utf8ProjectionExecutor.ProjectMatch(
+                new Utf8ProjectionPlan(Utf8ProjectionKind.Utf16Incremental),
+                _input,
+                _consumed,
+                _consumedUtf16,
+                _consumed + index,
+                literal.Length,
+                literal.Length,
+                out _consumed,
+                out _consumedUtf16);
+            _remaining = _input[_consumed..];
+            _lastLiteralFamilyBranchId = 0;
+            return true;
         }
 
         _current = new Utf8ValueMatch(

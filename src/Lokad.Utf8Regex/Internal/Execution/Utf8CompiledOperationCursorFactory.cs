@@ -32,10 +32,11 @@ internal static class Utf8CompiledOperationCursorFactory
         Utf8ExecutionDeadline budget)
     {
         var literal = regexPlan.LiteralUtf8;
-        // R03: the ASCII literal cursors below project byte offsets as UTF-16 coordinates
-        // and are only valid for ASCII input; other inputs keep BCL verification.
+        // R03: the case-insensitive ASCII literal cursor below projects byte offsets
+        // as UTF-16 coordinates and is only valid for ASCII input; other inputs keep
+        // BCL verification. Exact ASCII literals project incrementally instead (R05).
         if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
-            regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+            regexPlan.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase &&
             literal is { Length: > 0 })
         {
             return CreateFallbackMatchEnumerator(
@@ -51,7 +52,7 @@ internal static class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, Utf8InputAnalyzer.Analyze(input).BoundaryMap, budget),
             NativeExecutionKind.ExactAsciiLiteral or
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
-                => new Utf8OperationMatchCursor(input, regexPlan, literal, regexPlan.ExecutionKind, budget),
+                => new Utf8OperationMatchCursor(input, regexPlan, literal, regexPlan.ExecutionKind, budget, validation.IsAscii),
             NativeExecutionKind.ExactUtf8Literal when literal is { Length: > 0 }
                 => new Utf8OperationMatchCursor(
                     input,
@@ -113,7 +114,7 @@ internal static class Utf8CompiledOperationCursorFactory
             NativeExecutionKind.AsciiLiteralIgnoreCase when literal is { Length: > 0 }
                 => new Utf8ValueSplitEnumerator(
                     input,
-                    CreateLiteralMatchCursor(input, regexPlan, literal, budget),
+                    CreateLiteralMatchCursor(input, regexPlan, literal, validation.IsAscii, budget),
                     count,
                     regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
                         ? totalUtf16Length
@@ -169,6 +170,7 @@ internal static class Utf8CompiledOperationCursorFactory
         ReadOnlySpan<byte> input,
         Utf8PreparedRegex regexPlan,
         byte[] literal,
+        bool asciiInput,
         Utf8ExecutionDeadline budget)
     {
         return regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal
@@ -183,7 +185,8 @@ internal static class Utf8CompiledOperationCursorFactory
                 regexPlan,
                 literal,
                 regexPlan.ExecutionKind,
-                budget);
+                budget,
+                asciiInput);
     }
 
     private static Utf8ValueSplitEnumerator CreateFallbackSplitEnumerator(

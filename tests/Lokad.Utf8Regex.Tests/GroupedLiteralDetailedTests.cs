@@ -464,6 +464,65 @@ public sealed class GroupedLiteralDetailedTests
         Assert.False(actual.TryGetGroup("missing-group-name", out _));
     }
 
+    public static IEnumerable<object?[]> LiteralEnumerationNonAsciiCases()
+    {
+        string[] patterns =
+        [
+            "abc",
+            "(ab)",
+            "(a)(b)",
+            "a(?=b)",
+            "ab",
+            "a{1}",
+            "(?i:ab)",
+            "ab|cd",
+        ];
+        string[] texts = ["xxab12cdxx", "ééabcé", "xaby", "nomatchhere", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+
+        yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant, "x\U0001F600aby" };
+        yield return new object?[] { "(a)(b)", RegexOptions.Compiled | RegexOptions.CultureInvariant, "x\U0001F600aby" };
+        yield return new object?[] { "abc", RegexOptions.CultureInvariant, "x\U0001F600abc" };
+    }
+
+    [Theory]
+    [MemberData(nameof(LiteralEnumerationNonAsciiCases))]
+    public void LiteralEnumerationMatchesOracle(string pattern, RegexOptions options, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (Match expectedMatch in oracle.Matches(text))
+        {
+            expected.Add((expectedMatch.Index, expectedMatch.Length));
+        }
+
+        var actual = new System.Collections.Generic.List<(int Index, int Length)>();
+        foreach (var valueMatch in regex.EnumerateMatches(input))
+        {
+            actual.Add((valueMatch.IndexInUtf16, valueMatch.LengthInUtf16));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i].Index, actual[i].Index);
+            Assert.Equal(expected[i].Length, actual[i].Length);
+        }
+
+        Assert.Equal(oracle.Matches(text).Count, regex.Count(input));
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     public static IEnumerable<object?[]> GroupedLiteralZeroConstructionCases()
     {
         string[] patterns = ["(a)(b)", "(a)(b)(c)", "((a))", "(a)?b(c)?", "(a)?(b)?c", "(x)?(y)?", "(a)?(a)?", "(ab)?(ab)?", "(a)?(a)?(a)?", "((a)?(b)?)", "(?<x>a)?(?<y>b)?", "(?<x>a)(?<y>b)", "(?<a>x)(b)(?<c>y)", "(ab)", "(a)", "(1)(2)", "(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c", "(ab|cd)e", "(?<w>ab|cd)e", "a(b|c)d", "(a|b)c", "x(a|b)y", "((a|b)(c|d))", "(ab|c)(d)", "(a|bc)d", "(x(a)|(b)y)", "(a)(b)|(c)", "((a|b)c)", "(?<x>ab|(?<y>c))d", "(?<x>(?<y>a))", "((?<x>a)(b))", "(?<x>(a)(b))", "(?<x>a(?<y>b))", "(a(?<x>b))", "((?<x>a)|(?<y>a))b", "((a)|(a))"];
@@ -725,12 +784,13 @@ public sealed class GroupedLiteralDetailedTests
 
     [Theory]
     [InlineData("a.c")]
-    [InlineData("abc")]
     public void SingleLiteralNonAsciiTemplateKeepsBclShaping(string pattern)
     {
-        // Declared R05 debt: single-literal enumeration diverts to BCL verification
-        // on non-ASCII input (established R03 projection rule), so templates there
-        // construct. Parity holds; construction is pinned.
+        // Declared R05 debt: non-literal single shapes (a.c here) still divert
+        // to BCL verification on non-ASCII input (established R03 projection
+        // rule), so templates there construct. Exact ASCII literals (abc)
+        // graduated to owned enumeration with incremental projection; their
+        // templates are covered owned below. Parity holds; construction is pinned.
         const string text = "ééabcé";
         foreach (var template in new[] { "x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$" })
         {
@@ -746,6 +806,40 @@ public sealed class GroupedLiteralDetailedTests
                 Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
             }
         }
+    }
+
+    public static IEnumerable<object?[]> SingleLiteralNonAsciiTemplateOwnedCases()
+    {
+        string[] templates = ["x", "<$1>", "$&", "$`", "$'", "$_", "$+", "$$"];
+        string[] texts = ["ééabcé", "xaby", "nomatchhere"];
+        foreach (var template in templates)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { RegexOptions.CultureInvariant, template, text };
+                yield return new object?[] { RegexOptions.Compiled | RegexOptions.CultureInvariant, template, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SingleLiteralNonAsciiTemplateOwnedCases))]
+    public void SingleLiteralNonAsciiTemplateMatchesOwned(RegexOptions options, string template, string text)
+    {
+        const string pattern = "abc";
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
+        Assert.Equal(expected, bytesActual);
+        Assert.False(bytesRegex.Inspection.DebugFallbackRegexIsCreated);
+
+        var stringRegex = new Utf8Regex(pattern, options);
+        var stringActual = stringRegex.ReplaceToString(input, template);
+        Assert.Equal(expected, stringActual);
+        Assert.False(stringRegex.Inspection.DebugFallbackRegexIsCreated);
     }
 
     [Theory]
