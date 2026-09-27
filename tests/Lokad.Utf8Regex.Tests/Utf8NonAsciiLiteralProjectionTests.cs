@@ -160,6 +160,50 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         }
     }
 
+    public static IEnumerable<object?[]> NonAsciiSplitCases()
+    {
+        string[] patterns = ["abc", "ab", "(ab)", "a{1}"];
+        string[] texts = ["xxab12cdxx", "ééabcé", "xaby", "nomatchhere", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+
+        yield return new object?[] { "ab", RegexOptions.CultureInvariant, "x\U0001F600abx" };
+        yield return new object?[] { "ab", RegexOptions.Compiled | RegexOptions.CultureInvariant, "x\U0001F600abx" };
+    }
+
+    [Theory]
+    [MemberData(nameof(NonAsciiSplitCases))]
+    public void EnumerateSplitsOwnsNonAsciiSingleLiterals(string pattern, RegexOptions options, string text)
+    {
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     private static bool IsScalarBoundary(string text, int utf16Offset)
     {
         if ((uint)utf16Offset > (uint)text.Length)
