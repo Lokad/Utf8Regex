@@ -393,6 +393,86 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
     }
 
+    public static IEnumerable<object?[]> NonAsciiSplitCases()
+    {
+        string[] patterns = ["abc", "kil", "IB", "(aI)"];
+        string[] texts = ["xxAB12cdxx", "ééABCé", "xKILy", "\u0130\u0131-test-K", "x\U0001F600aB", "nomatchhere", ""];
+        foreach (var pattern in patterns)
+        {
+            foreach (var text in texts)
+            {
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, text };
+                yield return new object?[] { pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(NonAsciiSplitCases))]
+    public void SplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    {
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SplitKeepsBclShapingForKelvin(bool compiled)
+    {
+        // Declared R05 debt: the split-router Kelvin fence diverts IgnoreCase splits
+        // to BCL verification when the pattern holds k/K and the input holds U+212A.
+        // Parity holds; construction is pinned.
+        const int count = int.MaxValue;
+        const string pattern = "kil";
+        const string text = "x\u212Ailo";
+        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        if (compiled)
+        {
+            options |= RegexOptions.Compiled;
+        }
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+    }
+
     private static void ConsumeMatches(Utf8Regex regex, byte[] input)
     {
         foreach (var _ in regex.EnumerateMatches(input))

@@ -85,20 +85,10 @@ internal static class Utf8CompiledOperationCursorFactory
         int count,
         Utf8ExecutionDeadline budget)
     {
+        // R05: single ASCII literals (exact and folded) split through the owned
+        // incremental-projection cursor on every input. Kelvin, culture, and RTL
+        // stay fenced in the split router upstream of this factory.
         var literal = regexPlan.LiteralUtf8;
-        // R05: folded single literals stay on BCL verification for split on non-ASCII
-        // input until the split router carries the Kelvin fence (the match router is
-        // fenced upstream; the split router is not). Exact singles split owned.
-        if (verifierRuntime is not null && !validation.IsAscii && validation.ByteLength > 0 &&
-            regexPlan.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase &&
-            literal is { Length: > 0 })
-        {
-            return CreateFallbackSplitEnumerator(
-                verifierRuntime ?? throw new InvalidOperationException("Fallback cursor construction requires verifier state."),
-                input,
-                count);
-        }
-
         return regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral or
