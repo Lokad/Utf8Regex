@@ -12,8 +12,9 @@ internal static class Utf8ScalarSimplePatternVerifier
     // byte-compare, singleline dots match any scalar, ASCII-closed classes apply the
     // byte predicate on ASCII scalars and their negation bit beyond). BCL parity holds
     // on BMP input where units equal scalars. Astral inputs, IgnoreCase plans, runs,
-    // shorthand/Unicode-dependent classes, anchored plans, and the ASCII fast path
-    // decline to the existing routes. Hooks sit past validation, so inputs are
+    // non-Digit shorthand and Unicode-dependent classes, anchored plans, and the
+    // ASCII fast path decline to the existing routes. Hooks sit past validation,
+    // so inputs are
     // well-formed; malformed scalars fail the walk closed.
     public static bool TryIsMatch(
         ReadOnlySpan<byte> input,
@@ -83,10 +84,33 @@ internal static class Utf8ScalarSimplePatternVerifier
             plan.IgnoreCase ||
             plan.IsStartAnchored ||
             plan.IsEndAnchored ||
-            plan.RunPlan.HasValue ||
             plan.Branches.Length == 0)
         {
             return false;
+        }
+
+        // Bounded runs lower to one branch per length and serve through the branches
+        // below, so every length in the run envelope must have its branch or
+        // matching falls back closed. Unbounded repetitions never reach simple plans.
+        if (plan.RunPlan.HasValue)
+        {
+            for (var length = plan.RunPlan.MinLength; length <= plan.RunPlan.MaxLength; length++)
+            {
+                var covered = false;
+                foreach (var branch in plan.Branches)
+                {
+                    if (branch.Length == length)
+                    {
+                        covered = true;
+                        break;
+                    }
+                }
+
+                if (!covered)
+                {
+                    return false;
+                }
+            }
         }
 
         foreach (var branch in plan.Branches)
@@ -105,7 +129,10 @@ internal static class Utf8ScalarSimplePatternVerifier
                         break;
                     case AsciiSimplePatternTokenKind.CharClass:
                         if (token.CharClass.IsEmpty ||
-                            (token.RequiresAsciiInput && token.ScalarClassKind != Utf8SimplePatternScalarClassKind.AsciiClosedNegation))
+                            (token.RequiresAsciiInput &&
+                             token.ScalarClassKind != Utf8SimplePatternScalarClassKind.AsciiClosedNegation &&
+                             !(token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
+                               predicateKind == AsciiCharClassPredicateKind.Digit)))
                         {
                             return false;
                         }
@@ -230,10 +257,23 @@ internal static class Utf8ScalarSimplePatternVerifier
                 }
 
                 // Positive ASCII sets never match non-ASCII scalars while ASCII-closed
-                // negations match every one of them; ASCII scalars use the byte rule.
-                var matches = scalar < 0x80
-                    ? token.CharClass.Contains((byte)scalar)
-                    : token.CharClass.Negated;
+                // negations match every one of them; decimal digits consult the owned
+                // Nd table. ASCII scalars always use the byte rule.
+                bool matches;
+                if (scalar < 0x80)
+                {
+                    matches = token.CharClass.Contains((byte)scalar);
+                }
+                else if (token.RequiresAsciiInput &&
+                    token.CharClass.TryGetKnownPredicateKind(out var predicateKind) &&
+                    predicateKind == AsciiCharClassPredicateKind.Digit)
+                {
+                    matches = Utf8DecimalDigitRanges.IsDecimalDigit(scalar);
+                }
+                else
+                {
+                    matches = token.CharClass.Negated;
+                }
                 if (!matches)
                 {
                     ok = false;
