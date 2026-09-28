@@ -46,39 +46,104 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
         Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
     }
-    [Theory]
-    [InlineData("(?m:^ab)", "ab\ncd")]
-    [InlineData("(?m:^ab)", "xxab")]
-    [InlineData("(?m:ab$)", "ab\ncd")]
-    [InlineData("(?m:ab$)", "xxab")]
-    public void MultilineAnchoredSplitKeepsBclShaping(string pattern, string text)
+    public static System.Collections.Generic.IEnumerable<object?[]> MultilineAnchoredSplitOwnedCases()
     {
-        // Declared R05 debt: line-anchored shapes are not absolute-anchored direct
-        // families, so splits stay BCL-backed. Parity holds; construction is pinned.
-        const int count = int.MaxValue;
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
+        (string pattern, string text)[] rows =
+        [
+            ("(?m:^ab$)", "ab\ncd"),
+            ("(?m:^ab$)", "ab\nab"),
+            ("(?m:^ab$)", "xxab"),
+            ("(?m:^ab$)", ""),
+            ("(?m:^ab$)", "éab\ncd"),
+            ("(?m:^ab$)", "a\U0001F600\nab"),
+            ("(?m:^ab)", "ab\ncd"),
+            ("(?m:^ab)", "xxab\nab"),
+            ("(?m:^ab)", "xxab"),
+            ("(?m:ab$)", "ab\ncd"),
+            ("(?m:ab$)", "xxab"),
+            ("(?m:ab$)", "ab\nab"),
+            ("(?m:a.c$)", "abc\nadc"),
+            ("(?m:a.c$)", "xxabc"),
+        ];
+        foreach (var row in rows)
         {
-            var input = Encoding.UTF8.GetBytes(text);
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, options);
-
-            var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-            foreach (var range in oracle.EnumerateSplits(text, count))
-            {
-                var start = range.Start.Value;
-                var end = range.End.Value;
-                expected.Add((text[start..end], start, end - start));
-            }
-
-            var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-            foreach (var split in regex.EnumerateSplits(input, count))
-            {
-                actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
-            }
-
-            Assert.Equal(expected, actual);
-            Assert.True(regex.Inspection.DebugFallbackRegexIsCreated);
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(MultilineAnchoredSplitOwnedCases))]
+    public void MultilineAnchoredSplitStaysOwned(string pattern, RegexOptions options, string text)
+    {
+        // R05: line-anchored splits iterate line-edge matches through the owned split
+        // cursors exactly like enumeration; absolute-anchored shapes keep their
+        // dedicated arms and fallbacks.
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.False(regex.Inspection.DebugFallbackRegexIsCreated);
+        Assert.False(regex.Inspection.DebugAnchoredFallbackRegexIsCreated);
+    }
+
+    public static System.Collections.Generic.IEnumerable<object?[]> MultilineMixedSplitDeclineCases()
+    {
+        // Absolute-start shapes keep BCL splits even with a line-anchored end;
+        // parity holds and construction is pinned per lane.
+        (string pattern, string text)[] rows =
+        [
+            ("^(?m:ab$)", "ab\ncd"),
+            ("^(?m:ab$)", "xxab\nab"),
+        ];
+        foreach (var row in rows)
+        {
+            yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
+            yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(MultilineMixedSplitDeclineCases))]
+    public void MultilineMixedSplitKeepsBclShaping(string pattern, RegexOptions options, string text)
+    {
+        const int count = int.MaxValue;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options);
+
+        var expected = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var range in oracle.EnumerateSplits(text, count))
+        {
+            var start = range.Start.Value;
+            var end = range.End.Value;
+            expected.Add((text[start..end], start, end - start));
+        }
+
+        var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
+        foreach (var split in regex.EnumerateSplits(input, count))
+        {
+            actual.Add((split.GetValueString(), split.IndexInUtf16, split.LengthInUtf16));
+        }
+
+        Assert.Equal(expected, actual);
+        Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredReplaceCases()
     {

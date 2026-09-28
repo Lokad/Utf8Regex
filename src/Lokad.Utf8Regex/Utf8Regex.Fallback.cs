@@ -597,6 +597,19 @@ public sealed partial class Utf8Regex
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input) && !ScalarVerifierServesInput(input);
 
+    // R05: line-anchored splits iterate line-edge matches through the owned split
+    // cursors exactly like enumeration; absolute-anchored shapes keep their
+    // dedicated arms and fallbacks. Culture, Kelvin, and right-to-left keep
+    // their existing fences at the call sites.
+    private bool CanSplitLineAnchoredOwned(ReadOnlySpan<byte> input)
+        => _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiSimplePattern &&
+        !_preparedRegex.SimplePatternPlan.IsAbsoluteStartAnchored &&
+        !_preparedRegex.SimplePatternPlan.IsAbsoluteEndAnchored &&
+        (_preparedRegex.SimplePatternPlan.IsStartAnchored || _preparedRegex.SimplePatternPlan.IsEndAnchored) &&
+        !RequiresCultureSensitiveFallback &&
+        !UsesRightToLeft() &&
+        !ShouldUseKelvinSignFallback(input);
+
     // Guided verification and owned template replacement only try scalar-boundary
     // starts, so astral inputs need shapes whose matches start at scalar
     // boundaries: literal spans (exact and folded literals, grouped literal tables),

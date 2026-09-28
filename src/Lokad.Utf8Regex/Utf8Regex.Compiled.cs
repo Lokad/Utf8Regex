@@ -330,7 +330,9 @@ public sealed partial class Utf8Regex
                 totalUtf16Length);
         }
 
-        if (ShouldUseFallbackForAnchoredSimplePattern() || ShouldUseFallbackForNonAsciiSimplePattern(validation))
+        // Line-anchored shapes fall through to the owned cursors below; absolute
+        // anchors and non-ASCII input keep BCL verification here.
+        if ((ShouldUseFallbackForAnchoredSimplePattern() && !CanSplitLineAnchoredOwned(input)) || ShouldUseFallbackForNonAsciiSimplePattern(validation))
         {
             var analysis = Utf8InputAnalyzer.Analyze(input);
             return new Utf8ValueSplitEnumerator(input, Encoding.UTF8.GetString(input), _verifierRuntime.FallbackCandidateVerifier.FallbackRegex, count, analysis.BoundaryMap);
