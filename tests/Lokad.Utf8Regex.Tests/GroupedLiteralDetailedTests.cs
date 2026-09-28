@@ -961,5 +961,45 @@ public sealed class GroupedLiteralDetailedTests
             Assert.True(regex.Inspection.DebugFallbackRegexIsCreated, "pattern=" + pattern);
         }
     }
+    public static System.Collections.Generic.IEnumerable<object?[]> FiniteTimeoutTemplateCases()
+    {
+        string[] patterns = ["(a)(b)", "(a)?b(c)?"];
+        string[] templates = ["x", "q$&q", "q$1q", "<$1$2>", "$$", "$+"];
+        string[] texts = ["xxabxx"];
+        foreach (var pattern in patterns)
+        {
+            foreach (var template in templates)
+            {
+                foreach (var text in texts)
+                {
+                    yield return new object?[] { pattern, template, text };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FiniteTimeoutTemplateCases))]
+    public void FiniteTimeoutTemplateRoutingMatchesContract(string pattern, string template, string text)
+    {
+        // Finite timeouts keep BCL timeout enforcement for group-reference expansion
+        // (the owned template worker carries no deadline mapping); all other template
+        // forms stay owned. Parity holds everywhere; construction follows the route.
+        var timeout = System.TimeSpan.FromSeconds(5);
+        var options = RegexOptions.CultureInvariant;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+        var expected = oracle.Replace(text, template);
+
+        var regex = new Utf8Regex(pattern, options, timeout);
+        var actual = regex.ReplaceToString(input, template);
+        Assert.Equal(expected, actual);
+
+        // LastGroup needs the same group machinery as numbered references; whole-match
+        // and literal forms stay owned. The rule covers only the template forms used in this battery.
+        var expectConstruction = template.Contains("$1") || template.Contains("$2") ||
+            template == "$+";
+        Assert.Equal(expectConstruction, regex.Inspection.DebugFallbackRegexIsCreated);
+    }
 
 }
