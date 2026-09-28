@@ -1014,7 +1014,7 @@ public sealed class AsciiSimplePatternTests
     public static System.Collections.Generic.IEnumerable<object?[]> NonAsciiEvaluatorCases()
     {
         string[] patterns = ["ab[0-9]d", "[0-9]{3}"];
-        string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere"];
+        string[] texts = ["xxab1dxx123", "ééab1dé123é", "123ééab1d", "nomatchhere", ""];
         foreach (var pattern in patterns)
         {
             foreach (var text in texts)

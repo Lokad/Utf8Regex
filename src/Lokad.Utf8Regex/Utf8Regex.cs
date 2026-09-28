@@ -2855,7 +2855,9 @@ public sealed partial class Utf8Regex
         var validation = Utf8Validation.Validate(input);
         var decoded = Encoding.UTF8.GetString(input);
         var boundaryMap = Utf8BoundaryMap.Create(input, validation);
-        var output = new ArrayBufferWriter<byte>(input.Length);
+        // R05: empty input still runs the evaluator loop below (BCL-equivalent
+        // patterns can match empty), and the writer rejects a zero capacity.
+        var output = new ArrayBufferWriter<byte>(Math.Max(input.Length, 1));
         var writer = new Utf8ReplacementWriter(output);
         var sourcePosition = 0;
         // R03: patterns without captures project every callback argument from owned spans,
